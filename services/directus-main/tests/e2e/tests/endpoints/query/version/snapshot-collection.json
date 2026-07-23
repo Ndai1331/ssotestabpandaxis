@@ -169,21 +169,21 @@
 	],
 	"systemFields": [
 		{
-			"collection": "directus_activity",
+			"collection": "axis_activity",
 			"field": "timestamp",
 			"schema": {
 				"is_indexed": true
 			}
 		},
 		{
-			"collection": "directus_revisions",
+			"collection": "axis_revisions",
 			"field": "activity",
 			"schema": {
 				"is_indexed": true
 			}
 		},
 		{
-			"collection": "directus_revisions",
+			"collection": "axis_revisions",
 			"field": "parent",
 			"schema": {
 				"is_indexed": true

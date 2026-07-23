@@ -84,10 +84,10 @@ vi.mock('./fields/get-collection-meta-updates.js', () => ({
 }));
 
 const schema = new SchemaBuilder()
-	.collection('directus_collections', (c) => {
+	.collection('axis_collections', (c) => {
 		c.field('collection').string().primary();
 	})
-	.collection('directus_fields', (c) => {
+	.collection('axis_fields', (c) => {
 		c.field('id').integer().primary();
 	})
 	.collection('test_collection', (c) => {
@@ -122,7 +122,7 @@ describe('Integration Tests', () => {
 			const invalidPayloads: Array<[any, string]> = [
 				[{}, 'collection name is missing'],
 				[{ collection: '' }, 'collection name is empty'],
-				[{ collection: 'directus_test' }, 'collection names start with "directus_"'],
+				[{ collection: 'axis_test' }, 'collection names start with "axis_"'],
 				[{ collection: 'Folder/Test' }, 'collection name contains "/"'],
 			];
 
@@ -132,14 +132,14 @@ describe('Integration Tests', () => {
 			});
 
 			test('should throw InvalidPayloadError for existing collection', async () => {
-				tracker.on.select('directus_collections').response([{ collection: 'existing_collection' }]);
+				tracker.on.select('axis_collections').response([{ collection: 'existing_collection' }]);
 				const service = new CollectionsService({ knex: db, schema, accountability: null });
 
 				await expect(service.createOne({ collection: 'existing_collection' })).rejects.toThrow(InvalidPayloadError);
 			});
 
 			test('should create collection with schema and default primary key', async () => {
-				tracker.on.select('directus_collections').response([]);
+				tracker.on.select('axis_collections').response([]);
 				const service = new CollectionsService({ knex: db, schema, accountability: null });
 
 				const result = await service.createOne({
@@ -152,7 +152,7 @@ describe('Integration Tests', () => {
 			});
 
 			test('should parse collection name before creating', async () => {
-				tracker.on.select('directus_collections').response([]);
+				tracker.on.select('axis_collections').response([]);
 				const service = new CollectionsService({ knex: db, schema, accountability: null });
 
 				const parseCollectionNameSpy = vi
@@ -170,7 +170,7 @@ describe('Integration Tests', () => {
 			});
 
 			test('should create collection with meta only', async () => {
-				tracker.on.select('directus_collections').response([]);
+				tracker.on.select('axis_collections').response([]);
 
 				const createOneSpy = vi.spyOn(ItemsService.prototype, 'createOne').mockResolvedValue('meta_collection');
 
@@ -193,7 +193,7 @@ describe('Integration Tests', () => {
 			});
 
 			test('should create collection with fields', async () => {
-				tracker.on.select('directus_collections').response([]);
+				tracker.on.select('axis_collections').response([]);
 
 				const createManySpy = vi.spyOn(ItemsService.prototype, 'createMany').mockResolvedValue([1, 2]);
 
@@ -223,7 +223,7 @@ describe('Integration Tests', () => {
 			});
 
 			test('should throw InvalidPayloadError when fields is not an array', async () => {
-				tracker.on.select('directus_collections').response([]);
+				tracker.on.select('axis_collections').response([]);
 
 				const service = new CollectionsService({
 					knex: db,
@@ -241,7 +241,7 @@ describe('Integration Tests', () => {
 			});
 
 			test('should clear cache after creation', async () => {
-				tracker.on.select('directus_collections').response([]);
+				tracker.on.select('axis_collections').response([]);
 				const clearSpy = vi.fn();
 
 				vi.mocked(cacheModule.getCache).mockReturnValue({
@@ -264,7 +264,7 @@ describe('Integration Tests', () => {
 			});
 
 			test('should respect attemptConcurrentIndex option', async () => {
-				tracker.on.select('directus_collections').response([]);
+				tracker.on.select('axis_collections').response([]);
 				const createTableSpy = vi.fn();
 
 				db.schema.createTable = createTableSpy;
@@ -333,7 +333,7 @@ describe('Integration Tests', () => {
 
 				const result = await service.readByQuery();
 
-				// Should have test_collection plus system collections (directus_*)
+				// Should have test_collection plus system collections (axis_*)
 				expect(result.length).toBeGreaterThan(0);
 				expect(result.some((c) => c.collection === 'test_collection')).toBe(true);
 			});
@@ -456,7 +456,7 @@ describe('Integration Tests', () => {
 			});
 
 			test('should update existing collection meta', async () => {
-				tracker.on.select('directus_collections').response([{ collection: 'test_collection' }]);
+				tracker.on.select('axis_collections').response([{ collection: 'test_collection' }]);
 
 				const updateOneSpy = vi.spyOn(ItemsService.prototype, 'updateOne').mockResolvedValue('test_collection');
 
@@ -474,7 +474,7 @@ describe('Integration Tests', () => {
 			});
 
 			test('should create collection meta if not exists', async () => {
-				tracker.on.select('directus_collections').response([]);
+				tracker.on.select('axis_collections').response([]);
 
 				const createOneSpy = vi.spyOn(ItemsService.prototype, 'createOne').mockResolvedValue('test_collection');
 

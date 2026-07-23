@@ -376,9 +376,9 @@ geometry:
 theme_auto: Automatique (basé sur le système)
 theme_light: Mode Clair
 theme_dark: Mode Sombre
-theme_directus_default: Directus par défaut
-theme_directus_minimal: Directus Minimale
-theme_directus_colormatch: Correspondance de couleur de Directus
+theme_axis_default: Directus par défaut
+theme_axis_minimal: Directus Minimale
+theme_axis_colormatch: Correspondance de couleur de Directus
 not_available_for_type: Non disponible pour ce type
 create_translations: Créer des traductions
 auto_refresh: Actualisation automatique
@@ -1257,34 +1257,34 @@ content: Contenu
 singleton: Singleton
 singleton_label: Est un objet unique
 system_fields_locked: Les champs système sont verrouillés et ne peuvent pas être modifiés
-directus_collection:
-  directus_access: Polices attachées
-  directus_activity: Journaux de traçabilité de tous les événements
-  directus_collections: Configuration de la collection supplémentaire et métadonnées
-  directus_comments: Commentez pour items
-  directus_dashboards: Tableaux de bord dans le module Insights
-  directus_fields: Configuration supplémentaire des champs et métadonnées
-  directus_files: Métadonnées pour tous les fichiers gérés
-  directus_folders: Fournit des répertoires virtuels pour les fichiers
-  directus_migrations: Quelle version de la base de données que vous utilisez
-  directus_notifications: Notifications envoyées aux utilisateurs
-  directus_operations: Opérations qui s'exécutent dans les Flux
-  directus_panels: Panneaux individuels dans les tableaux de bord Insights
-  directus_permissions: Permissions d'accès pour chaque police
-  directus_policies: Règles de contrôle d'accès
-  directus_presets: Préréglages pour la collection par défaut et les signets
-  directus_relations: Configuration de la relation et métadonnées
-  directus_revisions: Instantanés de données pour toutes les activités
-  directus_roles: Groupes de permissions pour les utilisateurs système
-  directus_sessions: Informations sur la session utilisateur
-  directus_settings: Options de configuration du projet
-  directus_shares: Trace les éléments externes partagés
-  directus_users: Utilisateurs du système pour la plateforme
-  directus_translations: Traductions personnalisées
-  directus_versions: Versions de contenu pour les éléments
-  directus_extensions: Configuration des extensions
+axis_collection:
+  axis_access: Polices attachées
+  axis_activity: Journaux de traçabilité de tous les événements
+  axis_collections: Configuration de la collection supplémentaire et métadonnées
+  axis_comments: Commentez pour items
+  axis_dashboards: Tableaux de bord dans le module Insights
+  axis_fields: Configuration supplémentaire des champs et métadonnées
+  axis_files: Métadonnées pour tous les fichiers gérés
+  axis_folders: Fournit des répertoires virtuels pour les fichiers
+  axis_migrations: Quelle version de la base de données que vous utilisez
+  axis_notifications: Notifications envoyées aux utilisateurs
+  axis_operations: Opérations qui s'exécutent dans les Flux
+  axis_panels: Panneaux individuels dans les tableaux de bord Insights
+  axis_permissions: Permissions d'accès pour chaque police
+  axis_policies: Règles de contrôle d'accès
+  axis_presets: Préréglages pour la collection par défaut et les signets
+  axis_relations: Configuration de la relation et métadonnées
+  axis_revisions: Instantanés de données pour toutes les activités
+  axis_roles: Groupes de permissions pour les utilisateurs système
+  axis_sessions: Informations sur la session utilisateur
+  axis_settings: Options de configuration du projet
+  axis_shares: Trace les éléments externes partagés
+  axis_users: Utilisateurs du système pour la plateforme
+  axis_translations: Traductions personnalisées
+  axis_versions: Versions de contenu pour les éléments
+  axis_extensions: Configuration des extensions
 fields:
-  directus_activity:
+  axis_activity:
     item: Clé principale de l'élément
     action: Action
     collection: Collection
@@ -1295,7 +1295,7 @@ fields:
     origin: Origine
     ip: Adresse IP
     revisions: Historique
-  directus_collections:
+  axis_collections:
     collection: Collection
     icon: Icône
     note: Remarque
@@ -1313,7 +1313,7 @@ fields:
     versioning: Versionnement
     archive_field: Champ d'archivage
     item_duplication_fields: Champs de duplication d'éléments
-  directus_files:
+  axis_files:
     $thumbnail: Miniature
     title: Titre
     description: Description
@@ -1339,7 +1339,7 @@ fields:
     duration: Durée
     focal_point_x: Coordonnée X (abscisse)
     focal_point_y: Coordonnée Y (ordonnée)
-  directus_users:
+  axis_users:
     first_name: Prénom
     last_name: Nom
     email: E-mail
@@ -1372,7 +1372,7 @@ fields:
     theme_dark: Thème Sombre
     theme_light_overrides: Personnalisation du thème clair
     theme_dark_overrides: Personnalisation du thème sombre
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1432,7 +1432,7 @@ fields:
     collaborative_editing_enabled: Activer l'édition collaborative
     collaborative_editing_note: Les WebSockets sont nécessaires pour que l'édition collaborative puisse fonctionner.
     ai_header_name: En-tête
-  directus_shares:
+  axis_shares:
     name: Nom
     role: Rôle
     password: Mot de passe
@@ -1440,7 +1440,7 @@ fields:
     date_end: Se termine le
     max_uses: Utilisations max
     times_used: Nombre d'utilisations
-  directus_fields:
+  axis_fields:
     collection: Nom de la Collection
     icon: Icône de Collection
     note: Remarque
@@ -1448,14 +1448,14 @@ fields:
     singleton: Singleton
     translation: Traductions du nom de champ
     display_template: Modèle
-  directus_roles:
+  axis_roles:
     name: Nom de rôle
     icon: Icône de rôle
     description: Description
     users: Membres avec le rôle
     parent: Rôle parent
     children: Rôles enfants
-  directus_policies:
+  axis_policies:
     name: Nom de la Règle
     description: Description
     app_access: Accès à l'application
@@ -1463,7 +1463,7 @@ fields:
     ip_access: Accès IP
     enforce_tfa: Nécessite une authentification à deux facteurs
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Mon projet...
     project_color_note: Fond de connexion et de logo
     project_logo_note: SVG/PNG de 40×40 Blanc
@@ -1493,12 +1493,12 @@ field_options:
     basemaps_style: Style de Mapbox
     files_divider_title: Fichiers et miniatures
     overrides_divider_title: Personnalisations de l'application
-  directus_activity:
+  axis_activity:
     login: Identifiant
     create: Créer
     update: Mettre à jour
     delete: Supprimer
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Enregistrer les activités et l'historique
     only_track_activity: Enregistrer seulement l'activité
     do_not_track_anything: Ne rien enregistrer
@@ -1524,7 +1524,7 @@ field_options:
     preview_divider: Prévisualiser
     content_versioning_divider: Versionnement du contenu
     enable_versioning: Activer la gestion des versions
-  directus_files:
+  axis_files:
     title: Un titre unique...
     description: Une description optionnelle...
     location: Un emplacement optionnel...
@@ -1532,13 +1532,13 @@ field_options:
     focal_point_divider: Point focal
     filename_disk: Nom du fichier sur le disque...
     filename_download: Nom du fichier téléchargé...
-  directus_policies:
+  axis_policies:
     name: Un nom unique pour cette règle...
     description: Une description de cette règle...
     ip_access: Ajouter les adresses IP autorisées, les plages IP et les blocs CIDR. Laisser vide pour tout autoriser...
     enforce_tfa: Imposer l'authentification à deux facteurs
     assigned_to: Assigné à
-  directus_roles:
+  axis_roles:
     name: Le nom unique de ce rôle...
     description: Une description pour ce rôle...
     fields:
@@ -1551,7 +1551,7 @@ field_options:
     children_note: Rôles imbriqués qui héritent des permissions de ces rôles
     collections_name: Collections
     collections_addLabel: Ajouter une collection...
-  directus_users:
+  axis_users:
     preferences_divider: Préférences utilisateur
     dropdown_auto: Automatique (Basé sur le système)
     dropdown_light: Mode Clair

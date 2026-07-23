@@ -6,5 +6,5 @@ export interface ActiveUser {
 }
 
 export async function fetchActiveUsers(knex: Knex): Promise<ActiveUser[]> {
-	return await knex.select('id', 'role').from('directus_users').where('status', 'active');
+	return await knex.select('id', 'role').from('axis_users').where('status', 'active');
 }

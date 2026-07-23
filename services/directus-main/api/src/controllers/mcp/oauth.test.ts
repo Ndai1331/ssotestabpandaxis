@@ -30,7 +30,7 @@ const mockDbChain = {
 const mockSettingsReadSingleton = vi.fn().mockResolvedValue({
 	mcp_enabled: true,
 	mcp_oauth_enabled: true,
-	project_name: 'Directus',
+	project_name: 'Axis',
 	project_color: '#6644ff',
 	project_logo: null,
 	default_appearance: 'auto',
@@ -126,7 +126,7 @@ vi.mock('../../logger/index.js', () => ({
 vi.mock('@directus/env', () => ({
 	useEnv: vi.fn().mockReturnValue({
 		PUBLIC_URL: 'http://localhost',
-		SESSION_COOKIE_NAME: 'directus_session',
+		SESSION_COOKIE_NAME: 'axis_session',
 		RATE_LIMITER_MCP_OAUTH_ENABLED: true,
 		RATE_LIMITER_MCP_OAUTH_REGISTRATION_ENABLED: true,
 	}),
@@ -248,7 +248,7 @@ describe('mcp-oauth controller', () => {
 
 		vi.mocked(useEnv).mockReturnValue({
 			PUBLIC_URL: 'http://localhost',
-			SESSION_COOKIE_NAME: 'directus_session',
+			SESSION_COOKIE_NAME: 'axis_session',
 			RATE_LIMITER_MCP_OAUTH_ENABLED: true,
 			RATE_LIMITER_MCP_OAUTH_REGISTRATION_ENABLED: true,
 			MCP_OAUTH_ALLOWED_CUSTOM_REDIRECTS: ['raycast://oauth', 'cursor://cursor.mcp', 'cursor://anysphere.cursor-mcp'],
@@ -257,7 +257,7 @@ describe('mcp-oauth controller', () => {
 		mockSettingsReadSingleton.mockResolvedValue({
 			mcp_enabled: true,
 			mcp_oauth_enabled: true,
-			project_name: 'Directus',
+			project_name: 'Axis',
 			project_color: '#6644ff',
 			project_logo: null,
 			default_appearance: 'auto',
@@ -727,7 +727,7 @@ describe('mcp-oauth controller', () => {
 					resource: 'http://localhost/mcp',
 					...query,
 				},
-				cookies: { directus_session: 'valid-session-token' },
+				cookies: { axis_session: 'valid-session-token' },
 				originalUrl: '/mcp-oauth/authorize?client_id=test-client',
 			} as any);
 		}
@@ -779,7 +779,7 @@ describe('mcp-oauth controller', () => {
 
 			useEnv.mockReturnValue({
 				PUBLIC_URL: 'http://localhost',
-				SESSION_COOKIE_NAME: 'directus_session',
+				SESSION_COOKIE_NAME: 'axis_session',
 				RATE_LIMITER_MCP_OAUTH_ENABLED: true,
 				RATE_LIMITER_MCP_OAUTH_REGISTRATION_ENABLED: true,
 				MCP_OAUTH_ALLOWED_CUSTOM_REDIRECTS: ['myapp://oauth'],

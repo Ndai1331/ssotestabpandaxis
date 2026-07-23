@@ -314,6 +314,6 @@ Date: `year(field)`, `month(field)`, `day(field)`, `hour(field)` Aggregate: `cou
 
 ## Restrictions
 
-- Cannot operate on `directus_*` collections
+- Cannot operate on `axis_*` collections
 - Respects user permissions/RBAC
 - Delete operations may be environment-disabled

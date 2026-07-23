@@ -11,7 +11,7 @@ import { sanitizeQuery } from '../utils/sanitize-query.js';
 
 const router = express.Router();
 
-router.use(useCollection('directus_access'));
+router.use(useCollection('axis_access'));
 
 router.post(
 	'/',
@@ -71,7 +71,7 @@ const readHandler = asyncHandler(async (req, res, next) => {
 		result = await service.readByQuery(req.sanitizedQuery);
 	}
 
-	const meta = await metaService.getMetaForQuery('directus_access', req.sanitizedQuery);
+	const meta = await metaService.getMetaForQuery('axis_access', req.sanitizedQuery);
 
 	res.locals['payload'] = { data: result, meta };
 	return next();

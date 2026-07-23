@@ -108,8 +108,8 @@ let collab: ReturnType<typeof useCollab> | undefined;
 let relatedCollab: ReturnType<typeof useCollab> | undefined;
 
 if (
-	!collection.value.startsWith('directus_') &&
-	(!relatedCollection.value || !relatedCollection.value.startsWith('directus_'))
+	!collection.value.startsWith('axis_') &&
+	(!relatedCollection.value || !relatedCollection.value.startsWith('axis_'))
 ) {
 	if (relatedCollection.value) {
 		const relatedInitialValues = computed(() => (initialValues.value ?? {})[props.junctionField!] ?? {});

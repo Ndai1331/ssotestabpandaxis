@@ -27,12 +27,12 @@ const REVISIONS_RETENTION_TIMEFRAME = getMilliseconds(env['REVISIONS_RETENTION']
 
 const retentionTasks: RetentionTask[] = [
 	{
-		collection: 'directus_activity',
+		collection: 'axis_activity',
 		where: ['action', '!=', Action.RUN],
 		timeframe: ACTIVITY_RETENTION_TIMEFRAME,
 	},
 	{
-		collection: 'directus_activity',
+		collection: 'axis_activity',
 		where: ['action', '=', Action.RUN],
 		timeframe: FLOW_LOGS_RETENTION_TIMEFRAME,
 	},
@@ -132,8 +132,8 @@ export default async function schedule(): Promise<boolean> {
 			ACTIVITY_RETENTION_TIMEFRAME > REVISIONS_RETENTION_TIMEFRAME)
 	) {
 		retentionTasks.push({
-			collection: 'directus_revisions',
-			join: ['directus_activity', 'directus_revisions.activity', 'directus_activity.id'],
+			collection: 'axis_revisions',
+			join: ['axis_activity', 'axis_revisions.activity', 'axis_activity.id'],
 			timeframe: REVISIONS_RETENTION_TIMEFRAME,
 		});
 	}

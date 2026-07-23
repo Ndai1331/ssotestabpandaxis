@@ -4,7 +4,7 @@ import type { DirectusUser } from './user.js';
 
 export type DirectusRole<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_roles',
+	'axis_roles',
 	{
 		id: string;
 		name: string;

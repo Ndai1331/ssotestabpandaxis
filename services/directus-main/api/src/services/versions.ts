@@ -31,7 +31,7 @@ import { RevisionsService } from './revisions.js';
 
 export class VersionsService extends ItemsService<ContentVersion> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_versions', options);
+		super('axis_versions', options);
 	}
 
 	private async validateCreateData(data: Partial<Item>): Promise<void> {

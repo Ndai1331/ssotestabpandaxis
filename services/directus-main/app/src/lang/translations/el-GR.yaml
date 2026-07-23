@@ -349,10 +349,10 @@ cancel: Ακύρωση
 collection: Συλλογή
 collections: Συλλογές
 content: Περιεχόμενο
-directus_collection:
-  directus_translations: Προσαρμοσμένες μεταφράσεις
+axis_collection:
+  axis_translations: Προσαρμοσμένες μεταφράσεις
 fields:
-  directus_activity:
+  axis_activity:
     item: Στοιχείο Πρωτεύον Κλειδί
     action: Ενέργεια
     collection: Συλλογή
@@ -361,13 +361,13 @@ fields:
     comment: Σχόλιο
     user_agent: Πράκτορας χρήστη
     ip: Διεύθυνση IP
-  directus_collections:
+  axis_collections:
     collection: Συλλογή
     icon: Εικονίδιο
     note: Σημείωση
     status: Κατάσταση
     hidden: Κρυφό
-  directus_files:
+  axis_files:
     title: Τίτλος
     description: Περιγραφή
     tags: Ετικέτες
@@ -382,7 +382,7 @@ fields:
     uploaded_on: Μεταφορτώθηκε στις
     height: Ύψος
     duration: Διάρκεια
-  directus_users:
+  axis_users:
     first_name: Όνομα
     last_name: Επώνυμο
     email: Ηλεκτρονικό ταχυδρομείο
@@ -396,32 +396,32 @@ fields:
     tfa_secret: Έλεγχος ταυτότητας δυο παραγόντων
     status: Κατάσταση
     role: Ρόλος
-  directus_settings:
+  axis_settings:
     project_name: Όνομα Έργου
     module_bar: Γραμμή Ενθεμάτων
-  directus_shares:
+  axis_shares:
     name: Όνομα
     role: Ρόλος
     password: Κωδικός
-  directus_fields:
+  axis_fields:
     note: Σημείωση
     hidden: Κρυφό
     translation: Μεταφράσεις Ονόματος Πεδίου
-  directus_roles:
+  axis_roles:
     name: Όνομα Ρόλου
     description: Περιγραφή
-  directus_policies:
+  axis_policies:
     description: Περιγραφή
 field_options:
-  directus_activity:
+  axis_activity:
     create: Δημιουργία
     update: Ενημέρωση
     delete: Διαγραφή
-  directus_collections:
+  axis_collections:
     language: Γλώσσα
     translation: Μετάφραση
     archive_divider: Αρχειοθέτηση
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: Εικονίδιο
       name_name: Όνομα

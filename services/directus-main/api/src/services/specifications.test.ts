@@ -90,7 +90,7 @@ describe('Integration Tests', () => {
 						{
 							label: 'system list path',
 							schema: new SchemaBuilder()
-								.collection('directus_users', (c) => {
+								.collection('axis_users', (c) => {
 									c.field('id').uuid().primary();
 								})
 								.build(),

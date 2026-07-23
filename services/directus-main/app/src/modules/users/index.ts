@@ -61,7 +61,7 @@ export default defineModule({
 		const admin = user.admin_access;
 		if (admin) return true;
 
-		const access = permissions['directus_users']?.['read']?.access;
+		const access = permissions['axis_users']?.['read']?.access;
 		return access === 'partial' || access === 'full';
 	},
 });

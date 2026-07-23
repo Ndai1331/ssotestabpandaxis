@@ -11,7 +11,7 @@ import { UsersService } from './users.js';
 
 export class RolesService extends ItemsService {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_roles', options);
+		super('axis_roles', options);
 	}
 
 	// No need to check user integrity in createOne, as the creation of a role itself does not influence the number of
@@ -54,7 +54,7 @@ export class RolesService extends ItemsService {
 				schema: this.schema,
 			};
 
-			const rolesItemsService = new ItemsService('directus_roles', options);
+			const rolesItemsService = new ItemsService('axis_roles', options);
 			const rolesService = new RolesService(options);
 			const accessService = new AccessService(options);
 			const presetsService = new PresetsService(options);

@@ -24,7 +24,7 @@ beforeAll(async () => {
 		knex: true,
 		env: {
 			CACHE_SCHEMA: 'false',
-			DB_FILENAME: `directus_test_${randomUUID()}.db`,
+			DB_FILENAME: `axis_test_${randomUUID()}.db`,
 		},
 	});
 
@@ -32,7 +32,7 @@ beforeAll(async () => {
 
 	const knex = directus.knex!;
 
-	await knex('directus_deployments').insert([
+	await knex('axis_deployments').insert([
 		{
 			id: NETLIFY_DEPLOYMENT,
 			provider: 'netlify',
@@ -48,7 +48,7 @@ beforeAll(async () => {
 		},
 	]);
 
-	await knex('directus_deployment_projects').insert({
+	await knex('axis_deployment_projects').insert({
 		id: randomUUID(),
 		deployment: VERCEL_DEPLOYMENT,
 		external_id: SHARED_EXTERNAL_ID,

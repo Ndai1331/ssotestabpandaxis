@@ -396,7 +396,7 @@ describe('items tool', () => {
 		test('should throw InvalidPayloadError for system collections', async () => {
 			await expect(
 				items.handler({
-					args: { action: 'read', collection: 'directus_users' },
+					args: { action: 'read', collection: 'axis_users' },
 					schema: mockSchema,
 					accountability: mockAccountability,
 				}),

@@ -159,7 +159,7 @@ describe('/auth/login/saml', () => {
 						.join(';');
 
 					// Assert
-					expect(cookies).toMatch(/directus_session_token/);
+					expect(cookies).toMatch(/axis_session_token/);
 				});
 			});
 

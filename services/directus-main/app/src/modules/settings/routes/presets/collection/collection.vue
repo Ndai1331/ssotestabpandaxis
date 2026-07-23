@@ -23,7 +23,7 @@ import RefreshSidebarDetail from '@/views/private/components/refresh-sidebar-det
 import SearchInput from '@/views/private/components/search-input.vue';
 
 const layout = ref('tabular');
-const collection = ref('directus_presets');
+const collection = ref('axis_presets');
 
 const { layoutOptions, layoutQuery, filter, search, refreshInterval } = usePreset(collection);
 

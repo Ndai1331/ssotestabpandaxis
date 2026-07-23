@@ -5,7 +5,7 @@ import { ItemsService } from './items.js';
 
 export class FoldersService extends ItemsService<Folder> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_folders', options);
+		super('axis_folders', options);
 	}
 
 	/**
@@ -36,7 +36,7 @@ export class FoldersService extends ItemsService<Folder> {
 		if (this.accountability && this.accountability.admin !== true) {
 			await validateAccess(
 				{
-					collection: 'directus_folders',
+					collection: 'axis_folders',
 					accountability: this.accountability,
 					action: 'read',
 					primaryKeys: [root],

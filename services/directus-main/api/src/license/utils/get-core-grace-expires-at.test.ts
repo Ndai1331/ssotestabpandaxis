@@ -59,7 +59,7 @@ test('upgrade returns v12 timestamp in seconds', async () => {
 });
 
 describe('caching', () => {
-	test('repeated calls will only ever call directus_migrations once', async () => {
+	test('repeated calls will only ever call axis_migrations once', async () => {
 		const spy = vi
 			.spyOn(ItemsService.prototype, 'readByQuery')
 			.mockResolvedValueOnce([{ timestamp: new Date(FIXED_NOW_MS - 365 * DAY_MS).toISOString() }])

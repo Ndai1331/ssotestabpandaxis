@@ -6,7 +6,7 @@ export type DirectusRelation<Schema = any> = {
 	related_collection: string; // TODO keyof complete schema
 	meta: MergeCoreCollection<
 		Schema,
-		'directus_relations',
+		'axis_relations',
 		{
 			id: number;
 			junction_field: string | null;

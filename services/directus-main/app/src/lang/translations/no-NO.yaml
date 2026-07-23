@@ -706,14 +706,14 @@ collection: Kolleksjon
 collections: Kolleksjoner
 content: Innhold
 fields:
-  directus_activity:
+  axis_activity:
     item: Element Hovednøkkel
     collection: Kolleksjon
     comment: Kommenter
     user_agent: Brukeragent
     origin: Opprinnelse
     ip: IP-addresse
-  directus_collections:
+  axis_collections:
     collection: Kolleksjon
     icon: Ikon
     note: Notat
@@ -721,7 +721,7 @@ fields:
     color: Farge
     hidden: Skjult
     sort_field: Sorter felt
-  directus_files:
+  axis_files:
     title: Tittel
     description: Beskrivelse
     tags: Etiketter
@@ -733,7 +733,7 @@ fields:
     folder: Mappe
     charset: Charset
     duration: Varighet
-  directus_users:
+  axis_users:
     first_name: Fornavn
     last_name: Etternavn
     email: E-post
@@ -749,38 +749,38 @@ fields:
     last_page: Siste side
     last_access: Siste tilgang
     email_notifications: E-postvarsler
-  directus_settings:
+  axis_settings:
     project_name: Prosjektnavn
     module_bar: Modul Bar
-  directus_shares:
+  axis_shares:
     name: Navn
     password: Passord
-  directus_fields:
+  axis_fields:
     note: Notat
     hidden: Skjult
     translation: Feltnavn oversettelser
-  directus_roles:
+  axis_roles:
     name: Rollenavn
     description: Beskrivelse
-  directus_policies:
+  axis_policies:
     name: Navn på rettighet
     description: Beskrivelse
 field_options:
-  directus_settings:
+  axis_settings:
     security_divider_title: Sikkerhet
-  directus_activity:
+  axis_activity:
     create: Opprett
     update: Oppdater
-  directus_collections:
+  axis_collections:
     language: Språk
     archive_divider: Arkiv
     sort_divider: Sorter
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: Ikon
       name_name: Navn
     collections_name: Kolleksjoner
-  directus_users:
+  axis_users:
     preferences_divider: Brukerinnstillinger
     status_dropdown_active: Aktiv
 comment: Kommenter

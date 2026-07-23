@@ -74,13 +74,13 @@ const tableHeaders = ref<TableHeader[]>([
 		description: null,
 	},
 	{
-		text: t('fields.directus_roles.children'),
+		text: t('fields.axis_roles.children'),
 		display: 'related-values',
 		displayOptions: {
 			template: '{{ name }}',
 		},
 		field: 'children',
-		collection: 'directus_roles',
+		collection: 'axis_roles',
 		value: 'children',
 		sortable: false,
 		width: 140,

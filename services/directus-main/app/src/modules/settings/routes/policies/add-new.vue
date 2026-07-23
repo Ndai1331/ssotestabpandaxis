@@ -36,12 +36,12 @@ const { saving, save } = useSave({ name, appAccess, adminAccess });
 					</div>
 
 					<div class="field half">
-						<p class="type-label">{{ $t('fields.directus_policies.app_access') }}</p>
+						<p class="type-label">{{ $t('fields.axis_policies.app_access') }}</p>
 						<VCheckbox v-model="appAccess" block :label="$t('enabled')" />
 					</div>
 
 					<div class="field half">
-						<p class="type-label">{{ $t('fields.directus_policies.admin_access') }}</p>
+						<p class="type-label">{{ $t('fields.axis_policies.admin_access') }}</p>
 						<VCheckbox v-model="adminAccess" block :label="$t('enabled')" />
 					</div>
 				</div>

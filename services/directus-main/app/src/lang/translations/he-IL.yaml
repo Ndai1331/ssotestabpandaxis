@@ -20,7 +20,7 @@
 #'SIMD', 'ArrayBuffer', 'DataView', 'JSON', 'Promise', 'Generator', 'GeneratorFunction', 'Reflect',
 #'Proxy', 'Intl'
 about: אודות
-directus_mscl: Directus MSCL-1.0-GPL
+axis_mscl: Directus MSCL-1.0-GPL
 privacy_policy: מדיניות פרטיות
 contact_support: יצירת קשר עם התמיכה
 setup_welcome: ברוכים הבאים ל-Directus
@@ -1574,39 +1574,39 @@ content: תוכן
 singleton: יחידון
 singleton_label: התייחס כאל אובייקט יחיד
 system_fields_locked: שדות מערכת נעולים ולא ניתן לערוך אותם
-directus_collection:
-  directus_access: צירופי מדיניות
-  directus_activity: יומני אחריות לכל האירועים
-  directus_collections: הגדרות ומטא-נתונים נוספים של אוספים
-  directus_comments: תגובות לפריטים
-  directus_dashboards: מרכזי בקרה בתוך מודול התובנות
-  directus_fields: הגדרות ומטא-נתונים נוספים של שדות
-  directus_files: מטא-נתונים לכל נכסי הקבצים המנוהלים
-  directus_flows: תהליכי אוטומציה
-  directus_folders: מספק תיקיות וירטואליות לקבצים
-  directus_migrations: באיזו גרסה של מסד הנתונים נעשה שימוש
-  directus_notifications: התראות שנשלחו למשתמשים
-  directus_operations: פעולות שרצות בתהליכים
-  directus_panels: לוחות בודדים בתוך מרכזי בקרה של תובנות
-  directus_permissions: הרשאות גישה לכל מדיניות
-  directus_policies: מדיניות בקרת גישה
-  directus_presets: הגדרות מראש לברירות מחדל של אוספים ולסימניות
-  directus_relations: הגדרות ומטא-נתונים של קשרים
-  directus_revisions: תצלומי מצב של נתונים לכל פעילות
-  directus_roles: קבוצות הרשאה למשתמשי מערכת
-  directus_sessions: מידע על הפעלת משתמש
-  directus_settings: אפשרויות הגדרה של הפרויקט
-  directus_shares: מעקב אחר פריטים ששותפו חיצונית
-  directus_users: משתמשי מערכת של הפלטפורמה
-  directus_translations: תרגומים מותאמים אישית
-  directus_versions: גרסאות תוכן לפריטים
-  directus_extensions: הגדרות של הרחבות
-  directus_oauth_clients: יישומי לקוח OAuth רשומים
-  directus_oauth_codes: קודי הרשאה עבור תהליכי OAuth
-  directus_oauth_consents: הסכמות משתמש ללקוחות OAuth
-  directus_oauth_tokens: אסימוני גישה ורענון ללקוחות OAuth
+axis_collection:
+  axis_access: צירופי מדיניות
+  axis_activity: יומני אחריות לכל האירועים
+  axis_collections: הגדרות ומטא-נתונים נוספים של אוספים
+  axis_comments: תגובות לפריטים
+  axis_dashboards: מרכזי בקרה בתוך מודול התובנות
+  axis_fields: הגדרות ומטא-נתונים נוספים של שדות
+  axis_files: מטא-נתונים לכל נכסי הקבצים המנוהלים
+  axis_flows: תהליכי אוטומציה
+  axis_folders: מספק תיקיות וירטואליות לקבצים
+  axis_migrations: באיזו גרסה של מסד הנתונים נעשה שימוש
+  axis_notifications: התראות שנשלחו למשתמשים
+  axis_operations: פעולות שרצות בתהליכים
+  axis_panels: לוחות בודדים בתוך מרכזי בקרה של תובנות
+  axis_permissions: הרשאות גישה לכל מדיניות
+  axis_policies: מדיניות בקרת גישה
+  axis_presets: הגדרות מראש לברירות מחדל של אוספים ולסימניות
+  axis_relations: הגדרות ומטא-נתונים של קשרים
+  axis_revisions: תצלומי מצב של נתונים לכל פעילות
+  axis_roles: קבוצות הרשאה למשתמשי מערכת
+  axis_sessions: מידע על הפעלת משתמש
+  axis_settings: אפשרויות הגדרה של הפרויקט
+  axis_shares: מעקב אחר פריטים ששותפו חיצונית
+  axis_users: משתמשי מערכת של הפלטפורמה
+  axis_translations: תרגומים מותאמים אישית
+  axis_versions: גרסאות תוכן לפריטים
+  axis_extensions: הגדרות של הרחבות
+  axis_oauth_clients: יישומי לקוח OAuth רשומים
+  axis_oauth_codes: קודי הרשאה עבור תהליכי OAuth
+  axis_oauth_consents: הסכמות משתמש ללקוחות OAuth
+  axis_oauth_tokens: אסימוני גישה ורענון ללקוחות OAuth
 fields:
-  directus_activity:
+  axis_activity:
     item: מפתח ראשי
     action: פעולה
     collection: מאגר
@@ -1617,7 +1617,7 @@ fields:
     origin: מקור
     ip: '‏כתובת IP'
     revisions: מהדורות
-  directus_collections:
+  axis_collections:
     collection: מאגר
     icon: סמל
     note: הערה
@@ -1636,7 +1636,7 @@ fields:
     autosave_revision_interval: מרווח שמירה אוטומטית של מהדורות
     archive_field: שדה ארכיון
     item_duplication_fields: שדות לשכפול פריט
-  directus_files:
+  axis_files:
     $thumbnail: תמונה ממוזערת
     title: כותרת
     description: תיאור
@@ -1662,7 +1662,7 @@ fields:
     duration: משך זמן
     focal_point_x: קואורדינטת X
     focal_point_y: קואורדינטת Y
-  directus_users:
+  axis_users:
     first_name: שם פרטי
     last_name: שם משפחה
     email: דוא"ל
@@ -1697,7 +1697,7 @@ fields:
     theme_dark: ערכת נושא כהה
     theme_light_overrides: התאמה אישית של ערכת נושא בהירה
     theme_dark_overrides: התאמה אישית של ערכת נושא כהה
-  directus_settings:
+  axis_settings:
     reporting: דיווח
     mapping: מיפוי
     basemaps: מפות בסיס
@@ -1804,7 +1804,7 @@ fields:
     ai_provider_options: אפשרויות ספק
     ai_provider_options_note: אפשרויות ייחודיות לספק המועברות לנקודות קצה של AI.
     ai_header_name: כותרת
-  directus_shares:
+  axis_shares:
     name: שם
     role: תפקיד
     password: סיסמה
@@ -1812,7 +1812,7 @@ fields:
     date_end: תאריך סיום
     max_uses: מספר שימושים מרבי
     times_used: מספר פעמים שנעשה שימוש
-  directus_fields:
+  axis_fields:
     collection: שם אוסף
     icon: סמל אוסף
     note: הערה
@@ -1820,7 +1820,7 @@ fields:
     singleton: יחידון
     translation: תרגומי שמות שדות
     display_template: תבנית
-  directus_roles:
+  axis_roles:
     name: שם תפקיד
     icon: סמל תפקיד
     description: תיאור
@@ -1828,7 +1828,7 @@ fields:
     parent: תפקיד אב
     children: תפקידי בן
     policies: מדיניות
-  directus_policies:
+  axis_policies:
     name: שם מדיניות
     description: תיאור
     app_access: גישה לאפליקציה
@@ -1836,7 +1836,7 @@ fields:
     ip_access: גישת IP
     enforce_tfa: דרוש 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: הפרויקט שלי...
     project_color_note: רקע התחברות ולוגו
     project_logo_note: SVG/PNG לבן 40×40
@@ -1863,13 +1863,13 @@ field_options:
     basemaps_style: סגנון Mapbox
     files_divider_title: קבצים ותמונות ממוזערות
     overrides_divider_title: עקיפות אפליקציה
-  directus_activity:
+  axis_activity:
     login: התחברות
     logout: התנתקות
     create: צור
     update: עדכן
     delete: מחק
-  directus_collections:
+  axis_collections:
     track_activity_revisions: מעקב אחר פעילות ומהדורות
     only_track_activity: מעקב אחר פעילות בלבד
     do_not_track_anything: אל תעקוב אחר דבר
@@ -1899,7 +1899,7 @@ field_options:
     enable_versioning: הפעל ניהול גרסאות
     interval_default: 'ברירת מחדל ({minutes} דקות)'
     interval_default_seconds: 'ברירת מחדל ({seconds} שניות)'
-  directus_files:
+  axis_files:
     title: כותרת ייחודית...
     description: תיאור אופציונלי...
     location: מיקום אופציונלי...
@@ -1907,13 +1907,13 @@ field_options:
     focal_point_divider: נקודת מוקד
     filename_disk: שם באחסון בדיסק...
     filename_download: שם בעת הורדה...
-  directus_policies:
+  axis_policies:
     name: שם ייחודי למדיניות זו...
     description: תיאור של מדיניות זו...
     ip_access: הוסיפו כתובות IP, טווחי IP ובלוקים של CIDR מורשים. השאירו ריק כדי לאפשר את הכול...
     enforce_tfa: אכוף אימות דו-שלבי
     assigned_to: משויך ל...
-  directus_roles:
+  axis_roles:
     name: השם הייחודי לתפקיד זה...
     description: תיאור של תפקיד זה...
     fields:
@@ -1926,7 +1926,7 @@ field_options:
     children_note: תפקידי בן מקוננים היורשים את הרשאות תפקיד זה
     collections_name: אוספים
     collections_addLabel: הוסף אוסף...
-  directus_users:
+  axis_users:
     preferences_divider: העדפות משתמש
     dropdown_auto: אוטומטי (בהתאם למערכת)
     dropdown_light: מצב בהיר

@@ -6,7 +6,7 @@ import { ItemsService } from './items.js';
 
 export class FlowsService extends ItemsService<FlowRaw> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_flows', options);
+		super('axis_flows', options);
 	}
 
 	override async createOne(data: Partial<Item>, opts?: MutationOptions): Promise<PrimaryKey> {
@@ -39,7 +39,7 @@ export class FlowsService extends ItemsService<FlowRaw> {
 		if (this.accountability) {
 			await validateAccess(
 				{
-					collection: 'directus_flows',
+					collection: 'axis_flows',
 					action: 'delete',
 					accountability: this.accountability,
 					primaryKeys: keys,
@@ -48,8 +48,8 @@ export class FlowsService extends ItemsService<FlowRaw> {
 			);
 		}
 
-		// this is to prevent foreign key constraint error on directus_operations resolve/reject during cascade deletion
-		await this.knex('directus_operations').update({ resolve: null, reject: null }).whereIn('flow', keys);
+		// this is to prevent foreign key constraint error on axis_operations resolve/reject during cascade deletion
+		await this.knex('axis_operations').update({ resolve: null, reject: null }).whereIn('flow', keys);
 
 		const result = await super.deleteMany(keys, opts);
 

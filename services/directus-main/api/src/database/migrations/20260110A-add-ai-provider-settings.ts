@@ -5,7 +5,7 @@ const DEFAULT_ANTHROPIC_MODELS = ['claude-haiku-4-5', 'claude-sonnet-4-6'];
 const DEFAULT_GOOGLE_MODELS = ['gemini-3-pro-preview', 'gemini-3-flash-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'];
 
 export async function up(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_settings', (table) => {
+	await knex.schema.alterTable('axis_settings', (table) => {
 		table.text('ai_google_api_key');
 		table.text('ai_openai_compatible_api_key');
 		table.text('ai_openai_compatible_base_url');
@@ -18,7 +18,7 @@ export async function up(knex: Knex): Promise<void> {
 	});
 
 	// Set default allowed models for existing installations
-	await knex('directus_settings').update({
+	await knex('axis_settings').update({
 		ai_openai_allowed_models: JSON.stringify(DEFAULT_OPENAI_MODELS),
 		ai_anthropic_allowed_models: JSON.stringify(DEFAULT_ANTHROPIC_MODELS),
 		ai_google_allowed_models: JSON.stringify(DEFAULT_GOOGLE_MODELS),
@@ -26,7 +26,7 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_settings', (table) => {
+	await knex.schema.alterTable('axis_settings', (table) => {
 		table.dropColumn('ai_google_api_key');
 		table.dropColumn('ai_openai_compatible_api_key');
 		table.dropColumn('ai_openai_compatible_base_url');

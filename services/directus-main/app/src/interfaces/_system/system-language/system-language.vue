@@ -21,7 +21,7 @@ const languages = Object.entries(availableLanguages).map(([key, value]) => ({
 }));
 
 if (props.includeProjectDefault) {
-	languages.splice(0, 0, { text: t('fields.directus_settings.default_language'), value: null });
+	languages.splice(0, 0, { text: t('fields.axis_settings.default_language'), value: null });
 }
 </script>
 

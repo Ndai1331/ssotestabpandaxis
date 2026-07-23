@@ -322,7 +322,7 @@ function useURLImport() {
 		<DrawerItem
 			v-if="file"
 			v-model:active="editDrawerActive"
-			collection="directus_files"
+			collection="axis_files"
 			:primary-key="file.id"
 			:edits="edits"
 			:disabled="internalDisabled"

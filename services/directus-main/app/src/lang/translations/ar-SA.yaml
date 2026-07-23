@@ -337,9 +337,9 @@ geometry:
 theme_auto: تلقائي (مبني على النظام)
 theme_light: الوضع الفاتح
 theme_dark: الوضع المُعتِم
-theme_directus_default: إفتراضي
-theme_directus_minimal: بساطة
-theme_directus_colormatch: تطابق الألوان
+theme_axis_default: إفتراضي
+theme_axis_minimal: بساطة
+theme_axis_colormatch: تطابق الألوان
 not_available_for_type: غير متوفّر لنوع الملفات هذا
 create_translations: إنشاء ترجمات
 auto_refresh: تحديث تلقائي
@@ -1148,29 +1148,29 @@ content: المحتوى
 singleton: متفرد
 singleton_label: معاملته ككائن واحد
 system_fields_locked: حقول النظام مقفلة ولا يمكن تعديلها
-directus_collection:
-  directus_activity: سجلات المساءلة لجميع الأحداث
-  directus_collections: تكوين وبيانات المجموعة الإضافية الوصفية
-  directus_dashboards: لوحات التحكم داخل وحدة البصائر
-  directus_fields: تكوين وبيانات الحقل الإضافي الوصفية
-  directus_files: البيانات الوصفية لجميع أصول الملفات المدارة
-  directus_folders: يوفر مجلدات افتراضية للملفات
-  directus_migrations: ما هي نسخة قاعدة البيانات التي تستخدمها
-  directus_notifications: الإشعارات المرسلة إلى المستخدمين
-  directus_operations: العمليات التي تشتغل في التدفقات
-  directus_panels: لوحات فردية ضمن لوحة تحكم البصائر
-  directus_presets: الإعداد المسبق للقيم الافتراضية للمجموعة والعلامات المرجعية
-  directus_relations: تكوين وبيانات العَلاقة الوصفية
-  directus_revisions: لقطات بيانات لجميع الأنشطة
-  directus_roles: مجموعات الأذونات لمستخدمي النظام
-  directus_sessions: معلومات جلسة المستخدم
-  directus_settings: خيارات تكوين المشروع
-  directus_shares: تتبع العناصر المشتركة خارجيًا
-  directus_users: مستخدمي النظام للمنصة
-  directus_translations: ترجمات مخصصة
-  directus_extensions: إعدادات الإضافات
+axis_collection:
+  axis_activity: سجلات المساءلة لجميع الأحداث
+  axis_collections: تكوين وبيانات المجموعة الإضافية الوصفية
+  axis_dashboards: لوحات التحكم داخل وحدة البصائر
+  axis_fields: تكوين وبيانات الحقل الإضافي الوصفية
+  axis_files: البيانات الوصفية لجميع أصول الملفات المدارة
+  axis_folders: يوفر مجلدات افتراضية للملفات
+  axis_migrations: ما هي نسخة قاعدة البيانات التي تستخدمها
+  axis_notifications: الإشعارات المرسلة إلى المستخدمين
+  axis_operations: العمليات التي تشتغل في التدفقات
+  axis_panels: لوحات فردية ضمن لوحة تحكم البصائر
+  axis_presets: الإعداد المسبق للقيم الافتراضية للمجموعة والعلامات المرجعية
+  axis_relations: تكوين وبيانات العَلاقة الوصفية
+  axis_revisions: لقطات بيانات لجميع الأنشطة
+  axis_roles: مجموعات الأذونات لمستخدمي النظام
+  axis_sessions: معلومات جلسة المستخدم
+  axis_settings: خيارات تكوين المشروع
+  axis_shares: تتبع العناصر المشتركة خارجيًا
+  axis_users: مستخدمي النظام للمنصة
+  axis_translations: ترجمات مخصصة
+  axis_extensions: إعدادات الإضافات
 fields:
-  directus_activity:
+  axis_activity:
     item: المفتاح الأساسي للعنصر
     action: الإجراء
     collection: المجموعة
@@ -1181,7 +1181,7 @@ fields:
     origin: الأصل
     ip: عنوان IP
     revisions: المراجعات
-  directus_collections:
+  axis_collections:
     collection: المجموعة
     icon: أيقونة
     note: ملحوظة
@@ -1198,7 +1198,7 @@ fields:
     accountability: تتبع النشاط والتنقيح
     archive_field: حقل الأرشيف
     item_duplication_fields: الحقول الممكن تكرارها للعنصر
-  directus_files:
+  axis_files:
     $thumbnail: صورة مصغرة
     title: العنوان
     description: التفاصيل
@@ -1222,7 +1222,7 @@ fields:
     height: الارتفاع
     charset: اصطفاف تعليق افتراضي
     duration: المدة
-  directus_users:
+  axis_users:
     first_name: الاسم الأول
     last_name: الاسم الأخير
     email: البريد الإلكتروني
@@ -1254,7 +1254,7 @@ fields:
     theme_dark: الثيم الداكن
     theme_light_overrides: تخصيصات الثيم الفاتح
     theme_dark_overrides: تخصيصات الثيم الغامق
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1303,7 +1303,7 @@ fields:
     public_registration_verify_email: تحقق من البريد الإلكتروني
     public_registration_verify_email_note: يرسل رسالة بريد إلكتروني إلى المستخدم المسجل يطلب منه النقر على رابط التحقق قبل أن يتمكن من تسجيل الدخول.
     ai_header_name: الترويسة
-  directus_shares:
+  axis_shares:
     name: الاسم
     role: الدور
     password: كلمة المرور
@@ -1311,7 +1311,7 @@ fields:
     date_end: تاريخ الانتهاء
     max_uses: الحد الأقصى للاستخدامات
     times_used: الوقت المستغرق
-  directus_fields:
+  axis_fields:
     collection: اسم المجموعة
     icon: أيقونة المجموعة
     note: ملحوظة
@@ -1319,13 +1319,13 @@ fields:
     singleton: متفرد
     translation: ترجمة اسم الحقل
     display_template: قالب
-  directus_roles:
+  axis_roles:
     name: إسم الدور
     icon: أيقونة الدور
     description: التفاصيل
     users: المستخدمون في الدور
     parent: الدور الأب
-  directus_policies:
+  axis_policies:
     name: اسم السياسة
     description: التفاصيل
     app_access: الوصول إلى التطبيق
@@ -1333,7 +1333,7 @@ fields:
     ip_access: الوصول إلى IP
     enforce_tfa: يتطلب التحقق بخطوتين 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: مشروعي...
     project_color_note: خلفية تسجيل الدخول والشعار
     public_note_placeholder: رسالة عامة قصيرة تدعم تنسيق مارك داون...
@@ -1356,12 +1356,12 @@ field_options:
     basemaps_raster: 'ِشبكة نقطية'
     files_divider_title: الملفات و الصور المصغرة
     overrides_divider_title: تجاوزات التطبيق
-  directus_activity:
+  axis_activity:
     login: تسجيل الدخول
     create: انشاء
     update: تحديث
     delete: حذف
-  directus_collections:
+  axis_collections:
     track_activity_revisions: تتبع النشاط والتنقيحات
     only_track_activity: تتبع النشاط فقط
     do_not_track_anything: عدم تتبع أي شيء
@@ -1387,16 +1387,16 @@ field_options:
     preview_divider: معاينة
     content_versioning_divider: تعيين إصدار للمحتوى
     enable_versioning: تفعيل عمليّة الإصدار
-  directus_files:
+  axis_files:
     title: عنوان فريد...
     description: وصف اختياري...
     location: موقع اختياري...
     storage_divider: تسمية الملف
     filename_disk: الإسم على قرص التخزين...
     filename_download: الاسم عند التنزيل...
-  directus_policies:
+  axis_policies:
     assigned_to: تم تعيينها لـ
-  directus_roles:
+  axis_roles:
     name: الاسم الفريد لهذا الدور...
     description: وصف لهذا الدور...
     fields:
@@ -1408,7 +1408,7 @@ field_options:
     parent_note: الدور الرئيس (اختياري) الذي يرث هذا الدور الأذونات منه
     collections_name: مجموعات
     collections_addLabel: مجموعة جديدة...
-  directus_users:
+  axis_users:
     preferences_divider: تفضيلات المستخدم
     dropdown_auto: تلقائي (مبني على النظام)
     dropdown_light: الوضع المضيء

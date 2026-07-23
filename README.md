@@ -92,6 +92,4 @@ Luồng đăng nhập: App → Keycloak → Zimbra (xác thực) → Keycloak c�
 
 ## Lưu ý quan trọng
 
-- **Không** còn stack Task9 (ui/api/agent/worker/n8n/metabase…). File `plans/`, wiki cũ Task9 nếu còn là **archive** — không dùng làm nguồn sự thật cho BD.
-- Chưa có remote GitHub → không deploy, không GHA, không force-push policy remote.
 - Ưu tiên thử nghiệm SSO local: Keycloak realm/clients + OIDC mapping Directus/ABP.

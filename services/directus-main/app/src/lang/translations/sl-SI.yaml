@@ -748,7 +748,7 @@ singleton: En zapis
 singleton_label: Obravnavaj kot en objekt
 system_fields_locked: Sistemska polja so zaklenjena in se ne urejajo
 fields:
-  directus_activity:
+  axis_activity:
     item: Primarni ključ zapisa
     action: Dejanje
     collection: Zbirka
@@ -758,7 +758,7 @@ fields:
     user_agent: Brskalnik
     ip: IP naslov
     revisions: Revizija
-  directus_collections:
+  axis_collections:
     collection: Zbirka
     icon: Ikona
     note: Opomba
@@ -773,7 +773,7 @@ fields:
     unarchive_value: Odarhiviraj vrednost
     sort_field: Polje za razvrščanje
     accountability: Sledenje aktivnosti in revizij
-  directus_files:
+  axis_files:
     $thumbnail: Predogledna slika
     title: Naslov
     description: Opis
@@ -797,7 +797,7 @@ fields:
     height: Višina
     charset: Nabor znakov
     duration: Trajanje
-  directus_users:
+  axis_users:
     first_name: Ime
     last_name: Priimek
     email: E-pošta
@@ -821,7 +821,7 @@ fields:
     token: Žeton
     last_page: Zadnja stran
     last_access: Zadnji dostop
-  directus_settings:
+  axis_settings:
     transforms_note: Ime Sharp metode in parametri. Več na https://sharp.pixelplumbing.com/api-constructor.
     additional_transforms: Dodatne pretvorbe
     project_name: Ime projekta
@@ -836,11 +836,11 @@ fields:
     overrides: Aplikacijske preglasitve
     custom_css: CSS po meri
     module_bar: Stranski Meni
-  directus_shares:
+  axis_shares:
     name: Ime
     role: Vloga
     password: Geslo
-  directus_fields:
+  axis_fields:
     collection: Ime zbirke
     icon: Ikona zbirke
     note: Opomba
@@ -848,15 +848,15 @@ fields:
     singleton: En zapis
     translation: Prevodi imen polj
     display_template: Predloga
-  directus_roles:
+  axis_roles:
     name: Ime vloge
     icon: Ikona vloge
     description: Opis
     users: Uporabniki v vlogi
-  directus_policies:
+  axis_policies:
     description: Opis
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Moj projekt ...
     public_note_placeholder: Kratko javno sporočilo, ki podpira Markdown oblikovanje ...
     security_divider_title: Varnost
@@ -874,12 +874,12 @@ field_options:
     transforms_note: Ime Sharp metode in parametri. Več na https://sharp.pixelplumbing.com/api-constructor.
     files_divider_title: Datoteke & sličice
     overrides_divider_title: Aplikacijske preglasitve
-  directus_activity:
+  axis_activity:
     login: Prijava
     create: Ustvari
     update: Posodobi
     delete: Izbriši
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Sledi aktivnosti in revizije
     only_track_activity: Sledi samo aktivnosti
     do_not_track_anything: Ne sledi ničesar
@@ -898,14 +898,14 @@ field_options:
     sort_divider: Razvrsti
     sort_field: Izberite polje ...
     accountability_divider: Odgovornost
-  directus_files:
+  axis_files:
     title: Edinstven naziv ...
     description: Opcijski opis ...
     location: Opcijska lokacija ...
     storage_divider: Imenovanje datotek
     filename_disk: Ime na disku ...
     filename_download: Ime za prenos ...
-  directus_roles:
+  axis_roles:
     name: Edinstveno ime te vloge ...
     description: Opis te vloge ...
     fields:
@@ -916,7 +916,7 @@ field_options:
       link_placeholder: Relativni ali absolutni URL naslov ...
     collections_name: Zbirke
     collections_addLabel: Dodaj zbirko ...
-  directus_users:
+  axis_users:
     preferences_divider: Uporabniške nastavitve
     dropdown_auto: Avtomatsko (sistemsko)
     dropdown_light: Svetla tema

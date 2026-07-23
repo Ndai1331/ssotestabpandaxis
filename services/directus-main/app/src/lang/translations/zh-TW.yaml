@@ -321,8 +321,8 @@ geometry:
 theme_auto: 自動 (根據系統設定)
 theme_light: 淺色模式
 theme_dark: 深色模式
-theme_directus_default: Directus預設
-theme_directus_minimal: Directus最小
+theme_axis_default: Directus預設
+theme_axis_minimal: Directus最小
 not_available_for_type: 此類別無法使用
 create_translations: 創建翻譯
 auto_refresh: 自動重新整理
@@ -1041,27 +1041,27 @@ content: 內容管理
 singleton: 單一資料
 singleton_label: 視為單一物件
 system_fields_locked: 系統欄位已鎖定無法編輯
-directus_collection:
-  directus_activity: 所有事件的詳細紀錄
-  directus_collections: 額外的資料集設定以及元資料
-  directus_dashboards: 儀表板以及預測模組
-  directus_fields: 額外的資料集設定以及元資料
-  directus_files: 所有檔案資源的元資料
-  directus_folders: 提供虛擬資料夾供存放檔案。
-  directus_migrations: 您使用的資料庫類型
-  directus_notifications: 傳送給使用者的通知
-  directus_operations: 執行在流程中的操作
-  directus_panels: 在儀表板中的獨立面板
-  directus_presets: 資料集以及書籤的預設值
-  directus_relations: 關聯資料及元資料的設定
-  directus_revisions: 所有操作的資料快照
-  directus_roles: 系統使用者的權限組
-  directus_sessions: 使用者登入階段資訊
-  directus_settings: 專案設定選項
-  directus_shares: 追蹤外部分享資料項目
-  directus_users: 平台的系統使用者
+axis_collection:
+  axis_activity: 所有事件的詳細紀錄
+  axis_collections: 額外的資料集設定以及元資料
+  axis_dashboards: 儀表板以及預測模組
+  axis_fields: 額外的資料集設定以及元資料
+  axis_files: 所有檔案資源的元資料
+  axis_folders: 提供虛擬資料夾供存放檔案。
+  axis_migrations: 您使用的資料庫類型
+  axis_notifications: 傳送給使用者的通知
+  axis_operations: 執行在流程中的操作
+  axis_panels: 在儀表板中的獨立面板
+  axis_presets: 資料集以及書籤的預設值
+  axis_relations: 關聯資料及元資料的設定
+  axis_revisions: 所有操作的資料快照
+  axis_roles: 系統使用者的權限組
+  axis_sessions: 使用者登入階段資訊
+  axis_settings: 專案設定選項
+  axis_shares: 追蹤外部分享資料項目
+  axis_users: 平台的系統使用者
 fields:
-  directus_activity:
+  axis_activity:
     item: 項目主鍵值
     action: 操作
     collection: 集合
@@ -1072,7 +1072,7 @@ fields:
     origin: 來源
     ip: IP位址
     revisions: 修訂版本
-  directus_collections:
+  axis_collections:
     collection: 集合
     icon: 圖示
     note: 備註
@@ -1089,7 +1089,7 @@ fields:
     accountability: 操作及修訂追蹤
     archive_field: 歸檔欄位
     item_duplication_fields: 項目重複欄位
-  directus_files:
+  axis_files:
     $thumbnail: 縮圖
     title: 標題
     description: 描述說明
@@ -1113,7 +1113,7 @@ fields:
     height: 高度
     charset: 字元集
     duration: 持續時間
-  directus_users:
+  axis_users:
     first_name: 名字
     last_name: 姓氏
     email: 電子郵件
@@ -1140,7 +1140,7 @@ fields:
     last_page: 最後一頁
     last_access: 最後存取
     email_notifications: 電子郵件通知
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1194,7 +1194,7 @@ fields:
     ai_openai_compatible_models: 模型
     ai_openai_compatible_headers: 自訂標頭
     ai_header_name: 標題
-  directus_shares:
+  axis_shares:
     name: 名稱
     role: 角色
     password: 密碼
@@ -1202,7 +1202,7 @@ fields:
     date_end: 結束日期
     max_uses: 最大使用次數
     times_used: 使用次數
-  directus_fields:
+  axis_fields:
     collection: 集合名稱
     icon: 集合圖示
     note: 備註
@@ -1210,16 +1210,16 @@ fields:
     singleton: 單一資料
     translation: 欄位名稱翻譯
     display_template: 模板
-  directus_roles:
+  axis_roles:
     name: 角色名稱
     icon: 角色圖示
     description: 描述說明
     users: 角色中的使用者
-  directus_policies:
+  axis_policies:
     name: 策略名稱
     description: 描述說明
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: 我的專案...
     project_color_note: 登入及 Logo 背景
     public_note_placeholder: 可使用 markdown 格式撰寫
@@ -1247,12 +1247,12 @@ field_options:
     basemaps_style: Mapbox 風格
     files_divider_title: 檔案與縮圖
     overrides_divider_title: 管理介面強迫修改
-  directus_activity:
+  axis_activity:
     login: 登入
     create: 新建
     update: 更新
     delete: 刪除
-  directus_collections:
+  axis_collections:
     track_activity_revisions: 追蹤活動與紀錄
     only_track_activity: 只追蹤操作紀錄
     do_not_track_anything: 不進行任何追蹤
@@ -1276,14 +1276,14 @@ field_options:
     accountability_divider: 稽核
     duplication_divider: 重複欄位
     preview_divider: 預覽
-  directus_files:
+  axis_files:
     title: 不重複的標題...
     description: 選填的描述內容
     location: 選填的地點....
     storage_divider: 檔案命名
     filename_disk: 在磁碟儲存的名稱
     filename_download: 下載時的名稱
-  directus_roles:
+  axis_roles:
     name: 這個角色的名稱
     description: 這個角色的簡介
     fields:
@@ -1294,7 +1294,7 @@ field_options:
       link_placeholder: 相關或絕對網址
     collections_name: 資料集
     collections_addLabel: 新增資料集
-  directus_users:
+  axis_users:
     preferences_divider: 使用者喜好設定
     dropdown_auto: 自動 (根據系統設定)
     dropdown_light: 淺色模式

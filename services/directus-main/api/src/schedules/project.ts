@@ -24,14 +24,14 @@ export default async function schedule(): Promise<boolean> {
 	scheduleSynchronizedJob('project-status', `${random(59)} ${random(23)} * * *`, async () => {
 		const { project_status, ...ownerInfo } = await db
 			.select('project_status', 'project_owner', 'project_usage', 'org_name', 'product_updates', 'project_id')
-			.from('directus_settings')
+			.from('axis_settings')
 			.first();
 
 		if (project_status !== 'pending') return;
 
 		try {
 			await sendReport({ version, ...ownerInfo });
-			await db.update('project_status', '').from('directus_settings');
+			await db.update('project_status', '').from('axis_settings');
 		} catch {
 			// Empty catch
 		}

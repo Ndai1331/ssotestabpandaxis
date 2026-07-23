@@ -11,18 +11,18 @@ export function getCollectionType(schemaComposer: SchemaComposer, schema: Schema
 	const prefix = action === 'read' ? '' : 'write_';
 
 	const Collection = schemaComposer.createObjectTC({
-		name: `${prefix}directus_collections`,
+		name: `${prefix}axis_collections`,
 	});
 
-	if ('directus_collections' in schema.read.collections === false) {
+	if ('axis_collections' in schema.read.collections === false) {
 		return Collection;
 	}
 
 	Collection.addFields({
 		collection: GraphQLString,
 		meta: schemaComposer.createObjectTC({
-			name: `${prefix}directus_collections_meta`,
-			fields: Object.values(schema.read.collections['directus_collections']!.fields).reduce(
+			name: `${prefix}axis_collections_meta`,
+			fields: Object.values(schema.read.collections['axis_collections']!.fields).reduce(
 				(acc, field) => {
 					acc[field.field] = {
 						type:
@@ -38,7 +38,7 @@ export function getCollectionType(schemaComposer: SchemaComposer, schema: Schema
 			),
 		}),
 		schema: schemaComposer.createObjectTC({
-			name: `${prefix}directus_collections_schema`,
+			name: `${prefix}axis_collections_schema`,
 			fields: {
 				name: GraphQLString,
 				comment: GraphQLString,

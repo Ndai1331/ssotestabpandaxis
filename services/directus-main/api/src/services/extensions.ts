@@ -31,7 +31,7 @@ export class ExtensionsService {
 		this.accountability = options.accountability || null;
 		this.extensionsManager = getExtensionManager();
 
-		this.extensionsItemService = new ItemsService('directus_extensions', {
+		this.extensionsItemService = new ItemsService('axis_extensions', {
 			knex: this.knex,
 			schema: this.schema,
 			accountability: this.accountability,
@@ -251,7 +251,7 @@ export class ExtensionsService {
 	private async checkBundleAndSyncStatus(trx: Knex, extensionId: string, extension: ApiOutput) {
 		if (extension.bundle === null && extension.schema?.type === 'bundle') {
 			// If extension is the parent bundle, set it and all nested extensions to enabled
-			await trx('directus_extensions')
+			await trx('axis_extensions')
 				.update({ enabled: extension.meta.enabled })
 				.where({ bundle: extensionId })
 				.orWhere({ id: extensionId });
@@ -275,15 +275,15 @@ export class ExtensionsService {
 			});
 		}
 
-		const hasEnabledChildren = !!(await trx('directus_extensions')
+		const hasEnabledChildren = !!(await trx('axis_extensions')
 			.where({ bundle: parentId })
 			.where({ enabled: true })
 			.first());
 
 		if (hasEnabledChildren) {
-			await trx('directus_extensions').update({ enabled: true }).where({ id: parentId });
+			await trx('axis_extensions').update({ enabled: true }).where({ id: parentId });
 		} else {
-			await trx('directus_extensions').update({ enabled: false }).where({ id: parentId });
+			await trx('axis_extensions').update({ enabled: false }).where({ id: parentId });
 		}
 	}
 }

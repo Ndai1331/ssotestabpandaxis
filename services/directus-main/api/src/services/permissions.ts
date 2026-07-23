@@ -25,7 +25,7 @@ import { ItemsService } from './items.js';
 
 export class PermissionsService extends ItemsService {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_permissions', options);
+		super('axis_permissions', options);
 	}
 
 	private async clearCaches(opts?: MutationOptions) {

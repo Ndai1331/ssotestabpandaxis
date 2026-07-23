@@ -15,7 +15,7 @@ import { Dashboard } from '@/types/insights';
 defineEmits(['create']);
 
 const insightsStore = useInsightsStore();
-const { createAllowed } = useCollectionPermissions('directus_dashboards');
+const { createAllowed } = useCollectionPermissions('axis_dashboards');
 
 const navItems = computed(() =>
 	insightsStore.dashboards.map((dashboard: Dashboard) => ({

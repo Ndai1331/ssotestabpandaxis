@@ -21,8 +21,8 @@ const defaultPreset: Omit<Preset, 'collection'> = {
 };
 
 const systemDefaults: Record<string, Partial<Preset>> = {
-	directus_files: {
-		collection: 'directus_files',
+	axis_files: {
+		collection: 'axis_files',
 		layout: 'cards',
 		layout_query: {
 			cards: {
@@ -39,8 +39,8 @@ const systemDefaults: Record<string, Partial<Preset>> = {
 			},
 		},
 	},
-	directus_users: {
-		collection: 'directus_users',
+	axis_users: {
+		collection: 'axis_users',
 		layout: 'tabular',
 		layout_query: {
 			tabular: {
@@ -60,8 +60,8 @@ const systemDefaults: Record<string, Partial<Preset>> = {
 			},
 		},
 	},
-	directus_activity: {
-		collection: 'directus_activity',
+	axis_activity: {
+		collection: 'axis_activity',
 		layout: 'tabular',
 		layout_query: {
 			tabular: {
@@ -80,8 +80,8 @@ const systemDefaults: Record<string, Partial<Preset>> = {
 			},
 		},
 	},
-	directus_roles: {
-		collection: 'directus_roles',
+	axis_roles: {
+		collection: 'axis_roles',
 		layout: 'tabular',
 		layout_query: {
 			tabular: {
@@ -99,8 +99,8 @@ const systemDefaults: Record<string, Partial<Preset>> = {
 			},
 		},
 	},
-	directus_policies: {
-		collection: 'directus_policies',
+	axis_policies: {
+		collection: 'axis_policies',
 		layout: 'tabular',
 		layout_query: {
 			tabular: {
@@ -118,8 +118,8 @@ const systemDefaults: Record<string, Partial<Preset>> = {
 			},
 		},
 	},
-	directus_presets: {
-		collection: 'directus_presets',
+	axis_presets: {
+		collection: 'axis_presets',
 		layout: 'tabular',
 		layout_query: {
 			tabular: {

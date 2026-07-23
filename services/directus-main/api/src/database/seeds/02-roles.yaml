@@ -1,4 +1,4 @@
-table: directus_roles
+table: axis_roles
 
 columns:
   id:

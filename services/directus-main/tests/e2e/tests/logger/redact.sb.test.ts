@@ -11,7 +11,7 @@ test('redact sensitive data', async () => {
 		env: {
 			LOG_LEVEL: 'debug',
 			LOG_STYLE: 'raw',
-			DB_FILENAME: `directus_test_${getUID()}.db`,
+			DB_FILENAME: `axis_test_${getUID()}.db`,
 		},
 	});
 

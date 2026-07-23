@@ -111,7 +111,7 @@ const revisionsSidebarDetailRef = ref<InstanceType<typeof RevisionsSidebarDetail
 
 const { info: collectionInfo, defaults, primaryKeyField, isSingleton, accountabilityScope } = useCollection(collection);
 
-const { deleteAllowed: deleteVersionsAllowed } = useCollectionPermissions('directus_versions');
+const { deleteAllowed: deleteVersionsAllowed } = useCollectionPermissions('axis_versions');
 
 const { primaryKeyParam, resolvedPrimaryKey, existingPrimaryKey, resolvePrimaryKey } = useResolvePrimaryKey();
 
@@ -360,7 +360,7 @@ const isSavable = computed(() => {
 });
 
 const { updateAllowed: updateVersionsAllowed } = useItemPermissions(
-	'directus_versions',
+	'axis_versions',
 	computed(() => currentVersion.value?.id ?? null),
 	computed(() => !currentVersion.value),
 );

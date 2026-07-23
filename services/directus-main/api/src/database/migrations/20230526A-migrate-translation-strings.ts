@@ -37,14 +37,14 @@ function transformStringsOldFormat(newStrings: NewTranslationString[]): OldTrans
 }
 
 export async function up(knex: Knex): Promise<void> {
-	await knex.schema.createTable('directus_translations', (table) => {
+	await knex.schema.createTable('axis_translations', (table) => {
 		table.uuid('id').primary().notNullable();
 		table.string('language').notNullable();
 		table.string('key').notNullable();
 		table.text('value').notNullable();
 	});
 
-	const data = await knex.select('translation_strings', 'id').from('directus_settings').first();
+	const data = await knex.select('translation_strings', 'id').from('axis_settings').first();
 
 	if (data?.translation_strings && data?.id) {
 		const parsedTranslationStrings =
@@ -53,32 +53,32 @@ export async function up(knex: Knex): Promise<void> {
 		const newTranslationStrings = transformStringsNewFormat(parsedTranslationStrings);
 
 		for (const item of newTranslationStrings) {
-			await knex('directus_translations').insert(item);
+			await knex('axis_translations').insert(item);
 		}
 	}
 
-	await knex.schema.alterTable('directus_settings', (table) => {
+	await knex.schema.alterTable('axis_settings', (table) => {
 		table.dropColumn('translation_strings');
 	});
 }
 
 export async function down(knex: Knex): Promise<void> {
-	const data = await knex.select('language', 'key', 'value').from('directus_translations');
-	const settingsId = await knex.select('id').from('directus_settings').first();
+	const data = await knex.select('language', 'key', 'value').from('axis_translations');
+	const settingsId = await knex.select('id').from('axis_settings').first();
 
-	await knex.schema.alterTable('directus_settings', (table) => {
+	await knex.schema.alterTable('axis_settings', (table) => {
 		table.json('translation_strings');
 	});
 
 	if (settingsId?.id && data) {
 		const oldTranslationStrings = transformStringsOldFormat(data);
 
-		await knex('directus_settings')
+		await knex('axis_settings')
 			.where({ id: settingsId.id })
 			.update({
 				translation_strings: JSON.stringify(oldTranslationStrings),
 			});
 	}
 
-	await knex.schema.dropTable('directus_translations');
+	await knex.schema.dropTable('axis_translations');
 }

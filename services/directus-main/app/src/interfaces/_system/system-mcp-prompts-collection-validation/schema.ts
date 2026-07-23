@@ -101,7 +101,7 @@ export function generateFields(collection: string | null, fields: string[] | nul
 				data_type: 'uuid',
 				is_nullable: true,
 				foreign_key_schema: 'public',
-				foreign_key_table: 'directus_users',
+				foreign_key_table: 'axis_users',
 				foreign_key_column: 'id',
 			},
 			meta: {
@@ -154,7 +154,7 @@ export function generateFields(collection: string | null, fields: string[] | nul
 				data_type: 'uuid',
 				is_nullable: true,
 				foreign_key_schema: 'public',
-				foreign_key_table: 'directus_users',
+				foreign_key_table: 'axis_users',
 				foreign_key_column: 'id',
 			},
 			meta: {

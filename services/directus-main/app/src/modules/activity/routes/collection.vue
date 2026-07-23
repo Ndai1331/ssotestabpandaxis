@@ -18,7 +18,7 @@ defineProps<{
 	primaryKey?: string;
 }>();
 
-const { layout, layoutOptions, layoutQuery, filter, search } = usePreset(ref('directus_activity'));
+const { layout, layoutOptions, layoutQuery, filter, search } = usePreset(ref('axis_activity'));
 
 const { layoutWrapper } = useLayout(layout);
 
@@ -38,7 +38,7 @@ const { activityHistoryTimeframe } = storeToRefs(useLicenseStore());
 		:filter-system="roleFilter"
 		:search="search"
 		show-select="none"
-		collection="directus_activity"
+		collection="axis_activity"
 	>
 		<PrivateView :title="$t('activity_feed')" icon="access_time">
 			<template #actions:prepend>
@@ -46,7 +46,7 @@ const { activityHistoryTimeframe } = storeToRefs(useLicenseStore());
 			</template>
 
 			<template #actions>
-				<SearchInput v-model="search" v-model:filter="filter" collection="directus_activity" />
+				<SearchInput v-model="search" v-model:filter="filter" collection="axis_activity" />
 			</template>
 
 			<template #navigation>

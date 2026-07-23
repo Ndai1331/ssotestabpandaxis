@@ -159,7 +159,7 @@ function setupPermission(fields: string[] | null = null, access = 'full') {
 
 function setupVersionPermissions({ read = false, create = false, update = false }) {
 	vi.mocked(usePermissionsStore().hasPermission).mockImplementation((collection, action) => {
-		if (collection !== 'directus_versions') return false;
+		if (collection !== 'axis_versions') return false;
 		if (action === 'read') return read;
 		if (action === 'create') return create;
 		if (action === 'update') return update;
@@ -303,7 +303,7 @@ describe('checkFieldAccess', () => {
 		expect(postMessageSpy).toHaveBeenCalledWith({ action: 'activateElements', data: ['el-0'] }, FRAME_SRC);
 	});
 
-	it('filters out elements when version is set but user has no directus_versions permissions', () => {
+	it('filters out elements when version is set but user has no axis_versions permissions', () => {
 		mountEditingLayer({ key: 'draft', name: 'Draft' });
 		setupCollection({ versioning: true });
 		setupNonAdmin();
@@ -314,7 +314,7 @@ describe('checkFieldAccess', () => {
 		expect(postMessageSpy).toHaveBeenCalledWith({ action: 'activateElements', data: [] }, FRAME_SRC);
 	});
 
-	it('filters out elements when user has only read on directus_versions', () => {
+	it('filters out elements when user has only read on axis_versions', () => {
 		mountEditingLayer({ key: 'draft', name: 'Draft' });
 		setupCollection({ versioning: true });
 		setupNonAdmin();
@@ -325,7 +325,7 @@ describe('checkFieldAccess', () => {
 		expect(postMessageSpy).toHaveBeenCalledWith({ action: 'activateElements', data: [] }, FRAME_SRC);
 	});
 
-	it('allows elements when user has read + create on directus_versions', () => {
+	it('allows elements when user has read + create on axis_versions', () => {
 		mountEditingLayer({ key: 'draft', name: 'Draft' });
 		setupCollection({ versioning: true });
 		setupNonAdmin();
@@ -337,7 +337,7 @@ describe('checkFieldAccess', () => {
 		expect(postMessageSpy).toHaveBeenCalledWith({ action: 'activateElements', data: ['el-0'] }, FRAME_SRC);
 	});
 
-	it('allows elements when user has read + update on directus_versions', () => {
+	it('allows elements when user has read + update on axis_versions', () => {
 		mountEditingLayer({ key: 'draft', name: 'Draft' });
 		setupCollection({ versioning: true });
 		setupNonAdmin();

@@ -373,9 +373,9 @@ geometry:
 theme_auto: Automatisch (gebaseerd op systeem)
 theme_light: Lichtmodus
 theme_dark: Donkere Modus
-theme_directus_default: Directus Standaard
-theme_directus_minimal: Directus Minimaal
-theme_directus_colormatch: Directus Kleurovereenkomst
+theme_axis_default: Directus Standaard
+theme_axis_minimal: Directus Minimaal
+theme_axis_colormatch: Directus Kleurovereenkomst
 not_available_for_type: Niet beschikbaar voor dit type
 create_translations: Vertalingen aanmaken
 auto_refresh: Automatische verversen
@@ -1250,35 +1250,35 @@ content: Inhoud
 singleton: Singleton
 singleton_label: Behandel als één object
 system_fields_locked: Systeem velden zijn vergrendeld en kunnen niet worden bewerkt
-directus_collection:
-  directus_access: Policy koppelingen
-  directus_activity: Verantwoordings-logboeken voor alle gebeurtenissen
-  directus_collections: Aanvullende collectie configuratie en metadata
-  directus_comments: Reacties voor items
-  directus_dashboards: Dashboards binnen de Inzichten module
-  directus_fields: Aanvullende collectie configuratie en metadata
-  directus_files: Metadata voor alle beheerde bestanden
-  directus_flows: Automatisering Flows
-  directus_folders: Geeft virtuele map voor bestanden
-  directus_migrations: Welke versie van de database je gebruikt
-  directus_notifications: Notificaties verzonden naar gebruikers
-  directus_operations: Operaties die worden uitgevoerd in Flows
-  directus_panels: Individuele panelen binnen de Inzichten dashboards
-  directus_permissions: Toegangsrechten voor elke policy
-  directus_policies: Toegangscontrole policies
-  directus_presets: Standaardinstellingen voor collecties en bladwijzers
-  directus_relations: Relatie configuratie en metadata
-  directus_revisions: Data snapshots voor alle activiteit
-  directus_roles: Machtigingsgroepen voor systeemgebruikers
-  directus_sessions: Gebruikerssessie-informatie
-  directus_settings: Project configuratie opties
-  directus_shares: Volgt extern gedeelde items
-  directus_users: Systeemgebruikers voor het platform
-  directus_translations: Aangepaste vertalingen
-  directus_versions: Inhoud Versies voor items
-  directus_extensions: Configuratie van extensies
+axis_collection:
+  axis_access: Policy koppelingen
+  axis_activity: Verantwoordings-logboeken voor alle gebeurtenissen
+  axis_collections: Aanvullende collectie configuratie en metadata
+  axis_comments: Reacties voor items
+  axis_dashboards: Dashboards binnen de Inzichten module
+  axis_fields: Aanvullende collectie configuratie en metadata
+  axis_files: Metadata voor alle beheerde bestanden
+  axis_flows: Automatisering Flows
+  axis_folders: Geeft virtuele map voor bestanden
+  axis_migrations: Welke versie van de database je gebruikt
+  axis_notifications: Notificaties verzonden naar gebruikers
+  axis_operations: Operaties die worden uitgevoerd in Flows
+  axis_panels: Individuele panelen binnen de Inzichten dashboards
+  axis_permissions: Toegangsrechten voor elke policy
+  axis_policies: Toegangscontrole policies
+  axis_presets: Standaardinstellingen voor collecties en bladwijzers
+  axis_relations: Relatie configuratie en metadata
+  axis_revisions: Data snapshots voor alle activiteit
+  axis_roles: Machtigingsgroepen voor systeemgebruikers
+  axis_sessions: Gebruikerssessie-informatie
+  axis_settings: Project configuratie opties
+  axis_shares: Volgt extern gedeelde items
+  axis_users: Systeemgebruikers voor het platform
+  axis_translations: Aangepaste vertalingen
+  axis_versions: Inhoud Versies voor items
+  axis_extensions: Configuratie van extensies
 fields:
-  directus_activity:
+  axis_activity:
     item: Item Primary Key
     action: Actie
     collection: Collectie
@@ -1289,7 +1289,7 @@ fields:
     origin: Herkomst
     ip: IP Adres
     revisions: Revisies
-  directus_collections:
+  axis_collections:
     collection: Collectie
     icon: Icoon
     note: Notitie
@@ -1307,7 +1307,7 @@ fields:
     versioning: Versiebeheer
     archive_field: Veld archiveren
     item_duplication_fields: Item Duplicatie Velden
-  directus_files:
+  axis_files:
     $thumbnail: Thumbnail
     title: Titel
     description: Beschrijving
@@ -1333,7 +1333,7 @@ fields:
     duration: Duur
     focal_point_x: X-coördinaat
     focal_point_y: Y-coördinaat
-  directus_users:
+  axis_users:
     first_name: Voornaam
     last_name: Achternaam
     email: Email
@@ -1367,7 +1367,7 @@ fields:
     theme_dark: Donker thema
     theme_light_overrides: Aanpassingen licht thema
     theme_dark_overrides: Aanpassingen donker thema
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1439,7 +1439,7 @@ fields:
     mcp_system_prompt_note: 'Aangepast systeemprompt om de standaard te vervangen. Laat leeg om standaard te gebruiken (indien ingeschakeld).'
     ai_system_prompt: AI Systeemprompt
     ai_header_name: Header
-  directus_shares:
+  axis_shares:
     name: Naam
     role: Rol
     password: Wachtwoord
@@ -1447,7 +1447,7 @@ fields:
     date_end: Einddatum
     max_uses: Max gebruiken
     times_used: Keer gebruikt
-  directus_fields:
+  axis_fields:
     collection: Collectie naam
     icon: Collectie Icoon
     note: Notitie
@@ -1455,14 +1455,14 @@ fields:
     singleton: Singleton
     translation: Veld-naam Vertalingen
     display_template: Sjabloon
-  directus_roles:
+  axis_roles:
     name: Rol Naam
     icon: Rol Icoon
     description: Beschrijving
     users: Gebruikers in rol
     parent: Bovenliggende Rol
     children: Onderliggende Rollen
-  directus_policies:
+  axis_policies:
     name: Beleidsnaam
     description: Beschrijving
     app_access: Apptoegang
@@ -1470,7 +1470,7 @@ fields:
     ip_access: IP Toegang
     enforce_tfa: Verplicht 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Mijn project...
     project_color_note: Inlog- en logoachtergrond
     project_logo_note: Wit 40×40 SVG/PNG
@@ -1500,12 +1500,12 @@ field_options:
     basemaps_style: Mapbox stijl
     files_divider_title: Bestanden en miniaturen
     overrides_divider_title: App Overschrijvingen
-  directus_activity:
+  axis_activity:
     login: Inloggen
     create: Maak
     update: Updaten
     delete: Verwijderen
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Track Activiteiten & Revisies
     only_track_activity: Track alleen activiteiten
     do_not_track_anything: Niets tracken
@@ -1531,7 +1531,7 @@ field_options:
     preview_divider: Voorvertoning
     content_versioning_divider: Contentversie
     enable_versioning: Versiebeheer inschakelen
-  directus_files:
+  axis_files:
     title: Een unieke titel...
     description: Een optionele beschrijving...
     location: Een optionele locatie...
@@ -1539,13 +1539,13 @@ field_options:
     focal_point_divider: Focus Punt
     filename_disk: Naam op schijfopslag...
     filename_download: Naam bij downloaden...
-  directus_policies:
+  axis_policies:
     name: Een unieke naam voor deze policy...
     description: Een beschrijving van deze policy...
     ip_access: Toegestane IP-adressen, IP-bereiken en CIDR-blokken toevoegen. Laat leeg om alles toe te staan...
     enforce_tfa: Tweestapsverificatie afdwingen
     assigned_to: Toegewezen aan
-  directus_roles:
+  axis_roles:
     name: De unieke naam voor deze rol...
     description: Een beschrijving van deze rol...
     fields:
@@ -1558,7 +1558,7 @@ field_options:
     children_note: Geneste onderliggende rollen die de permissies van deze rol erft
     collections_name: Collecties
     collections_addLabel: Collectie toevoegen...
-  directus_users:
+  axis_users:
     preferences_divider: Gebruikersvoorkeuren
     dropdown_auto: Automatisch (Gebaseerd op systeem)
     dropdown_light: Lichte modus

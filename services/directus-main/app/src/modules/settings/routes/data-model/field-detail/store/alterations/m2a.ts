@@ -224,7 +224,7 @@ function generateFields(updates: StateUpdates, state: State, { getCurrent }: Hel
 		set(updates, 'fields.oneCollectionField', {
 			collection: junctionCollection,
 			field: oneCollectionField,
-			// directus_collections.collection is a string
+			// axis_collections.collection is a string
 			type: 'string',
 			schema: {},
 			meta: {

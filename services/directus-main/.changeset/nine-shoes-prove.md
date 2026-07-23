@@ -2,4 +2,4 @@
 '@directus/sdk': patch
 ---
 
-Removed phantom `timestamp` from directus_operations
+Removed phantom `timestamp` from axis_operations

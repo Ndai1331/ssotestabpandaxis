@@ -43,11 +43,11 @@ const { refresh: refreshNavigation } = useDeploymentNavigation();
 const permissionsStore = usePermissionsStore();
 
 const canManageProjects =
-	permissionsStore.hasPermission('directus_deployment_projects', 'create') ||
-	permissionsStore.hasPermission('directus_deployment_projects', 'delete');
+	permissionsStore.hasPermission('axis_deployment_projects', 'create') ||
+	permissionsStore.hasPermission('axis_deployment_projects', 'delete');
 
-const canDelete = permissionsStore.hasPermission('directus_deployments', 'delete');
-const canUpdate = permissionsStore.hasPermission('directus_deployments', 'update');
+const canDelete = permissionsStore.hasPermission('axis_deployments', 'delete');
+const canUpdate = permissionsStore.hasPermission('axis_deployments', 'update');
 const loading = ref(true);
 const saving = ref(false);
 const deleting = ref(false);

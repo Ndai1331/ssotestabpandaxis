@@ -3,7 +3,7 @@ import type { DirectusPolicy } from './policy.js';
 
 export type DirectusPermission<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_permissions',
+	'axis_permissions',
 	{
 		id: number;
 		policy: DirectusPolicy<Schema> | string | null;

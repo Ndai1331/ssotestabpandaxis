@@ -101,11 +101,11 @@ export default async function init(): Promise<void> {
 	const role = randomUUID();
 	const policy = randomUUID();
 
-	await db('directus_roles').insert({ ...defaultAdminRole, id: role });
-	await db('directus_policies').insert({ ...defaultAdminPolicy, id: policy });
-	await db('directus_access').insert({ id: randomUUID(), role, policy });
+	await db('axis_roles').insert({ ...defaultAdminRole, id: role });
+	await db('axis_policies').insert({ ...defaultAdminPolicy, id: policy });
+	await db('axis_access').insert({ id: randomUUID(), role, policy });
 
-	await db('directus_users').insert({
+	await db('axis_users').insert({
 		...defaultAdminUser,
 		id: randomUUID(),
 		email: firstUser.email.trim(),
@@ -117,7 +117,7 @@ export default async function init(): Promise<void> {
 
 	process.stdout.write(`\nYour project has been created at ${chalk.green(rootPath)}.\n`);
 	process.stdout.write(`\nThe configuration can be found in ${chalk.green(rootPath + '/.env')}\n`);
-	process.stdout.write(`\nStart Directus by running:\n`);
+	process.stdout.write(`\nStart Axis by running:\n`);
 	process.stdout.write(`  ${chalk.blue('cd')} ${rootPath}\n`);
 	process.stdout.write(`  ${chalk.blue('npx directus')} start\n`);
 

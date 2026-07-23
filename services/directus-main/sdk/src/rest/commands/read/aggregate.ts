@@ -20,7 +20,7 @@ export const aggregate =
 		const collectionName = String(collection);
 		throwIfEmpty(collectionName, 'Collection cannot be empty');
 
-		const path = isSystemCollection(collectionName) ? `/${collectionName.substring(9)}` : `/items/${collectionName}`;
+		const path = isSystemCollection(collectionName) ? `/${collectionName.substring(5)}` : `/items/${collectionName}`;
 
 		return {
 			path,

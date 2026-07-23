@@ -75,9 +75,9 @@ function setupMount(excludeCollections?: string[]) {
 		} as any,
 		// System collection
 		{
-			collection: 'directus_users',
+			collection: 'axis_users',
 			meta: { icon: 'user' },
-			schema: { name: 'directus_users' },
+			schema: { name: 'axis_users' },
 		} as any,
 	];
 
@@ -123,7 +123,7 @@ describe('AddCollection', () => {
 		expect(items[0].collection).toBe('articles');
 		expect(items[1].collection).toBe('comments');
 		expect(items[2]).toMatchObject({ divider: true });
-		expect(items[3].collection).toBe('directus_users');
+		expect(items[3].collection).toBe('axis_users');
 	});
 
 	test('disables excluded collections', () => {

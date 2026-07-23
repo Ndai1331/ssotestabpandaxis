@@ -22,7 +22,7 @@ function parseRange(range: unknown, defaultMs: number): Date {
 	return new Date(Date.now() - ms);
 }
 
-router.use(useCollection('directus_deployments'));
+router.use(useCollection('axis_deployments'));
 
 // Validate provider parameter
 const validateProvider = (provider: string): provider is ProviderType => {
@@ -435,7 +435,7 @@ router.get(
 			schema: req.schema,
 		});
 
-		const meta = await metaService.getMetaForQuery('directus_deployment_runs', query);
+		const meta = await metaService.getMetaForQuery('axis_deployment_runs', query);
 
 		res.locals['payload'] = { data: runs, meta };
 		return next();

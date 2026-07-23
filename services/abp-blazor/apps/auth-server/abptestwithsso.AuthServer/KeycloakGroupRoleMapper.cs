@@ -2,12 +2,12 @@ namespace abptestwithsso.AuthServer;
 
 /// <summary>
 /// Maps Keycloak group claims to ABP Identity role names (BD SSO lab).
-/// App gate: <c>bd-app-abp</c>. Role priority: admin &gt; lanhdao &gt; bacsi &gt; nhanvien.
+/// App gate: <c>bd-app-hcs</c>. Role priority: admin &gt; lanhdao &gt; bacsi &gt; nhanvien.
 /// </summary>
 public static class KeycloakGroupRoleMapper
 {
     public const string GroupsClaim = "groups";
-    public const string AppAccessGroup = "bd-app-abp";
+    public const string AppAccessGroup = "bd-app-hcs";
 
     private static readonly (string Group, string Role)[] Map =
     [

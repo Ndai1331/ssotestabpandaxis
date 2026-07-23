@@ -31,7 +31,7 @@ const SYNC_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
 
 export class DeploymentService extends ItemsService<DeploymentConfig> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_deployments', options);
+		super('axis_deployments', options);
 	}
 
 	override async createOne(data: Partial<DeploymentConfig>, opts?: any): Promise<PrimaryKey> {
@@ -190,7 +190,7 @@ export class DeploymentService extends ItemsService<DeploymentConfig> {
 	 * Read deployment config with decrypted credentials (internal use)
 	 */
 	private async readConfig(provider: ProviderType): Promise<DeploymentConfig> {
-		const internalService = new ItemsService<DeploymentConfig>('directus_deployments', {
+		const internalService = new ItemsService<DeploymentConfig>('axis_deployments', {
 			knex: this.knex,
 			schema: this.schema,
 			accountability: null,
@@ -245,7 +245,7 @@ export class DeploymentService extends ItemsService<DeploymentConfig> {
 
 		const config = await this.readConfig(provider);
 
-		const projectsService = new ItemsService<DeploymentProject>('directus_deployment_projects', {
+		const projectsService = new ItemsService<DeploymentProject>('axis_deployment_projects', {
 			knex: this.knex,
 			schema: this.schema,
 			accountability: null,

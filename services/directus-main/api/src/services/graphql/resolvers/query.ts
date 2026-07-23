@@ -14,7 +14,7 @@ import { replaceFragmentsInSelections } from '../utils/replace-fragments.js';
  */
 export async function resolveQuery(gql: GraphQLService, info: GraphQLResolveInfo): Promise<Partial<Item> | null> {
 	let collection = info.fieldName;
-	if (gql.scope === 'system') collection = `directus_${collection}`;
+	if (gql.scope === 'system') collection = `axis_${collection}`;
 	const selections = replaceFragmentsInSelections(info.fieldNodes[0]?.selectionSet?.selections, info.fragments);
 
 	if (!selections) return null;

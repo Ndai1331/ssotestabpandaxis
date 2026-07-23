@@ -16,7 +16,7 @@ import { ItemsService } from './items.js';
 
 export class SettingsService extends ItemsService<Settings> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_settings', options);
+		super('axis_settings', options);
 	}
 
 	override async createOne(data: Partial<Settings>, opts?: MutationOptions): Promise<PrimaryKey> {
@@ -96,7 +96,7 @@ export class SettingsService extends ItemsService<Settings> {
 	}
 
 	async setOwner(data: OwnerInformation) {
-		const { project_id } = await this.knex.select('project_id').from('directus_settings').first();
+		const { project_id } = await this.knex.select('project_id').from('axis_settings').first();
 
 		const primaryKey = await this.upsertSingleton({
 			project_owner: data.project_owner,
@@ -108,7 +108,7 @@ export class SettingsService extends ItemsService<Settings> {
 		sendReport({ ...data, project_id, version }).catch(async () => {
 			await this.knex
 				.update('project_status', 'pending')
-				.from('directus_settings')
+				.from('axis_settings')
 				.catch(() => {});
 		});
 

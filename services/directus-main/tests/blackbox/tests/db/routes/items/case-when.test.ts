@@ -104,10 +104,10 @@ describe('retrieves items with filters', async () => {
 
 		// A query which produces a case when statement in the final query
 		// where the fields to compare, have different data types:
-		// user_created is a string, whereas directus_users.id is a of type UUID.
+		// user_created is a string, whereas axis_users.id is a of type UUID.
 		const comparisonResult = await request(getUrl(vendor))
 			.get(
-				`/comments?filter[_and][0][collection][_eq]=directus_users&filter[_and][1][item][_eq]=${userResponse.body.data.id}&aggregate[count]=id`,
+				`/comments?filter[_and][0][collection][_eq]=axis_users&filter[_and][1][item][_eq]=${userResponse.body.data.id}&aggregate[count]=id`,
 			)
 			.set('Authorization', `Bearer ${userToken}`)
 			.expect(200);

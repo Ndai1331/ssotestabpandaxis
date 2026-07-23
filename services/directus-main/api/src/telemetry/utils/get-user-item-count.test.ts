@@ -43,10 +43,10 @@ describe('getUserItemCount', () => {
 		.collection('test-b', (c) => {
 			c.field('id').id();
 		})
-		.collection('directus_a', (c) => {
+		.collection('axis_a', (c) => {
 			c.field('id').id();
 		})
-		.collection('directus_users', (c) => {
+		.collection('axis_users', (c) => {
 			c.field('id').id();
 		})
 		.build();
@@ -59,7 +59,7 @@ describe('getUserItemCount', () => {
 		expect(getItemCount).toHaveBeenCalledWith(mockDb, [
 			{ collection: 'test-a' },
 			{ collection: 'test-b' },
-			{ collection: 'directus_a' },
+			{ collection: 'axis_a' },
 		]);
 	});
 

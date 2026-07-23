@@ -6,7 +6,7 @@ export type DirectusExtension<Schema = any> = {
 	schema: ExtensionSchema | null;
 	meta: MergeCoreCollection<
 		Schema,
-		'directus_extensions',
+		'axis_extensions',
 		{ id: string; source: 'module' | 'registry' | 'local'; enabled: boolean; bundle: string | null; folder: string }
 	>;
 };

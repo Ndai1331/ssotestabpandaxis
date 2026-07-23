@@ -68,7 +68,7 @@ it('should include primary keys for relational fields', () => {
 
 		if (collection === 'authors' && field === 'avatar')
 			return {
-				relatedCollection: 'directus_files',
+				relatedCollection: 'axis_files',
 			};
 
 		if (collection === 'articles' && field === 'translations')
@@ -84,7 +84,7 @@ it('should include primary keys for relational fields', () => {
 
 	fieldsStore.getPrimaryKeyFieldForCollection.mockImplementation((collection) => {
 		switch (collection) {
-			case 'directus_files':
+			case 'axis_files':
 			case 'articles_translations':
 				return { field: 'id' } as Field;
 			default:

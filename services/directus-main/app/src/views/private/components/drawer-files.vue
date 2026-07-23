@@ -18,7 +18,7 @@ const props = withDefaults(
 		filter?: Filter;
 	}>(),
 	{
-		collection: 'directus_files',
+		collection: 'axis_files',
 	},
 );
 
@@ -29,7 +29,7 @@ const drawerProps = {
 };
 
 // Positional key so that collection, field, and folder contexts never collide
-// (e.g. field="avatar" → "directus_files:avatar:", collection="articles", field="avatar" → "articles:avatar:")
+// (e.g. field="avatar" → "axis_files:avatar:", collection="articles", field="avatar" → "articles:avatar:")
 const stateKey = `${props.collection ?? ''}:${props.field ?? ''}:${props.folder ?? ''}`;
 
 const persisted = useSessionStorage<{ folder?: string; special?: SpecialFolder }>(

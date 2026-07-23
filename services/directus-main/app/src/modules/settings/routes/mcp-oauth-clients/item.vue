@@ -23,7 +23,7 @@ const props = defineProps<{
 const router = useRouter();
 const { primaryKey } = toRefs(props);
 
-const { item, loading } = useItem(ref('directus_oauth_clients'), primaryKey);
+const { item, loading } = useItem(ref('axis_oauth_clients'), primaryKey);
 
 const confirmRevoke = ref(false);
 const revoking = ref(false);
@@ -94,7 +94,7 @@ async function revokeClient() {
 				:initial-values="item"
 				:fields="undefined"
 				:primary-key="primaryKey"
-				collection="directus_oauth_clients"
+				collection="axis_oauth_clients"
 				disabled
 			/>
 		</div>

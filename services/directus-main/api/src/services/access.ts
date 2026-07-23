@@ -5,7 +5,7 @@ import { ItemsService } from './items.js';
 
 export class AccessService extends ItemsService {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_access', options);
+		super('axis_access', options);
 	}
 
 	private async clearCaches(opts?: MutationOptions) {

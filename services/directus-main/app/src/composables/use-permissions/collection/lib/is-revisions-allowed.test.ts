@@ -17,11 +17,11 @@ afterEach(() => {
 	vi.clearAllMocks();
 });
 
-it('should be disallowed if user has no read permission on directus_revisions', () => {
+it('should be disallowed if user has no read permission on axis_revisions', () => {
 	const permissionsStore = mockedStore(usePermissionsStore());
 
 	permissionsStore.hasPermission.mockImplementation((collection, action) => {
-		if (collection === 'directus_revisions' && action === 'read') return false;
+		if (collection === 'axis_revisions' && action === 'read') return false;
 		return true;
 	});
 
@@ -30,11 +30,11 @@ it('should be disallowed if user has no read permission on directus_revisions', 
 	expect(result.value).toBe(false);
 });
 
-it('should be allowed if user has read permission on directus_revisions', () => {
+it('should be allowed if user has read permission on axis_revisions', () => {
 	const permissionsStore = mockedStore(usePermissionsStore());
 
 	permissionsStore.hasPermission.mockImplementation((collection, action) => {
-		if (collection === 'directus_revisions' && action === 'read') return true;
+		if (collection === 'axis_revisions' && action === 'read') return true;
 		return false;
 	});
 

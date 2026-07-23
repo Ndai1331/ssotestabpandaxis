@@ -8,7 +8,7 @@ vi.mock('@/stores/fields', () => ({
 		getField: vi.fn((_collectionName: string, fieldKey: string) => ({
 			field: fieldKey,
 			name: fieldKey,
-			collection: 'directus_files',
+			collection: 'axis_files',
 			type: 'string',
 		})),
 	}),
@@ -34,7 +34,7 @@ const VMenuStub = defineComponent({
 function mountComponent(props: Record<string, unknown> = {}) {
 	return shallowMount(InterfaceSystemFields, {
 		props: {
-			collectionName: 'directus_files',
+			collectionName: 'axis_files',
 			...props,
 		},
 		global: {

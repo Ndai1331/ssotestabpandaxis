@@ -149,7 +149,7 @@ function useAiSidebar(isMobile: ComputedRef<boolean>) {
 }
 
 function useVersionSelection() {
-	const { readAllowed: readVersionsAllowed } = useCollectionPermissions('directus_versions');
+	const { readAllowed: readVersionsAllowed } = useCollectionPermissions('axis_versions');
 	const versionPlacements = computed(() => urlTemplates.value.map(analyzeTemplate));
 
 	const activeVersionPlacement = computed(() => {

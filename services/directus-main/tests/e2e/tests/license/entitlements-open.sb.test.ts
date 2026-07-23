@@ -51,20 +51,20 @@ describe('entitlements unlimited', () => {
 				const settings = await api.request(updateSettings({ ai_openai_compatible_name: 'gpt-custom' } as any));
 				expect((settings as any)['ai_openai_compatible_name']).toBe('gpt-custom');
 			} finally {
-				await directus.knex!('directus_settings')
+				await directus.knex!('axis_settings')
 					.update({ ai_openai_compatible_name: null })
 					.catch(() => {});
 			}
 		});
 
 		test('GET /settings does NOT strip LLM fields', async () => {
-			await directus.knex!('directus_settings').update({ ai_openai_compatible_name: 'visible' });
+			await directus.knex!('axis_settings').update({ ai_openai_compatible_name: 'visible' });
 
 			try {
 				const settings = await api.request(readSettings());
 				expect(settings['ai_openai_compatible_name']).toBe('visible');
 			} finally {
-				await directus.knex!('directus_settings')
+				await directus.knex!('axis_settings')
 					.update({ ai_openai_compatible_name: null })
 					.catch(() => {});
 			}
@@ -129,7 +129,7 @@ describe('entitlements unlimited', () => {
 				new Date(Date.now() - 60 * DAY_SEC * 1000).toISOString(),
 			);
 
-			await directus.knex!('directus_activity').insert([
+			await directus.knex!('axis_activity').insert([
 				{ action: 'create', user: null, timestamp: within, collection: tag, item: 'within' },
 				{ action: 'create', user: null, timestamp: outside, collection: tag, item: 'outside' },
 			]);
@@ -139,7 +139,7 @@ describe('entitlements unlimited', () => {
 
 				expect(rows.map((r) => r['item']).sort()).toEqual(['outside', 'within']);
 			} finally {
-				await directus.knex!('directus_activity')
+				await directus.knex!('axis_activity')
 					.where({ collection: tag })
 					.delete()
 					.catch(() => {});
@@ -159,17 +159,17 @@ describe('entitlements unlimited', () => {
 				new Date(Date.now() - 60 * DAY_SEC * 1000).toISOString(),
 			);
 
-			const [activityWithin] = await directus.knex!('directus_activity').insert(
+			const [activityWithin] = await directus.knex!('axis_activity').insert(
 				{ action: 'create', user: null, timestamp: within, collection: tag, item: 'within' },
 				['id'],
 			);
 
-			const [activityOutside] = await directus.knex!('directus_activity').insert(
+			const [activityOutside] = await directus.knex!('axis_activity').insert(
 				{ action: 'create', user: null, timestamp: outside, collection: tag, item: 'outside' },
 				['id'],
 			);
 
-			await directus.knex!('directus_revisions').insert([
+			await directus.knex!('axis_revisions').insert([
 				{ activity: activityWithin?.id ?? activityWithin, collection: tag, item: 'within', data: '{}', delta: '{}' },
 				{ activity: activityOutside?.id ?? activityOutside, collection: tag, item: 'outside', data: '{}', delta: '{}' },
 			]);
@@ -179,12 +179,12 @@ describe('entitlements unlimited', () => {
 
 				expect(rows.map((r) => r['item']).sort()).toEqual(['outside', 'within']);
 			} finally {
-				await directus.knex!('directus_revisions')
+				await directus.knex!('axis_revisions')
 					.where({ collection: tag })
 					.delete()
 					.catch(() => {});
 
-				await directus.knex!('directus_activity')
+				await directus.knex!('axis_activity')
 					.where({ collection: tag })
 					.delete()
 					.catch(() => {});

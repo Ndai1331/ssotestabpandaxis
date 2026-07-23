@@ -257,7 +257,7 @@ describe('stripVersionOnNonVersioned', () => {
 describe('stripVersionWithoutReadAccess', () => {
 	beforeEach(() => mockHasPermission.mockReset());
 
-	it('strips version and versionId when user lacks directus_versions read access', () => {
+	it('strips version and versionId when user lacks axis_versions read access', () => {
 		mockHasPermission.mockReturnValue(false);
 
 		const to = makeRoute({
@@ -266,7 +266,7 @@ describe('stripVersionWithoutReadAccess', () => {
 		});
 
 		expect(stripVersionWithoutReadAccess(to)).toBe('/content/posts/3');
-		expect(mockHasPermission).toHaveBeenCalledWith('directus_versions', 'read');
+		expect(mockHasPermission).toHaveBeenCalledWith('axis_versions', 'read');
 	});
 
 	it('passes through when user has read access', () => {

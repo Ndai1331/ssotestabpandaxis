@@ -241,7 +241,7 @@ export class McpOAuthService {
 		const env = useEnv();
 		const baseUrl = env['PUBLIC_URL'] as string;
 
-		const settings = await this.knex('directus_settings')
+		const settings = await this.knex('axis_settings')
 			.select('mcp_oauth_dcr_enabled', 'mcp_oauth_cimd_enabled')
 			.first();
 
@@ -303,7 +303,7 @@ export class McpOAuthService {
 			throw new OAuthError(404, 'not_found', 'Dynamic client registration is not available');
 		}
 
-		const settings = await this.knex('directus_settings').select('mcp_oauth_dcr_enabled').first();
+		const settings = await this.knex('axis_settings').select('mcp_oauth_dcr_enabled').first();
 
 		if (!toBoolean(settings?.mcp_oauth_dcr_enabled)) {
 			logger.debug({ reason: 'dcr_setting_disabled' }, 'MCP OAuth DCR registration rejected');
@@ -443,7 +443,7 @@ export class McpOAuthService {
 		const maxClients = Number.isNaN(parsed) ? 10_000 : parsed;
 
 		if (maxClients > 0) {
-			const [{ count }] = (await this.knex('directus_oauth_clients').count('* as count')) as [
+			const [{ count }] = (await this.knex('axis_oauth_clients').count('* as count')) as [
 				{ count: number | string },
 			];
 
@@ -466,7 +466,7 @@ export class McpOAuthService {
 		const clientId = crypto.randomUUID();
 		const now = Math.floor(Date.now() / 1000);
 
-		await this.knex('directus_oauth_clients').insert({
+		await this.knex('axis_oauth_clients').insert({
 			client_id: clientId,
 			client_name: clientName,
 			redirect_uris: JSON.stringify(redirectUris),
@@ -728,7 +728,7 @@ export class McpOAuthService {
 		this.validateRedirectUri(redirectUri);
 
 		// Re-validate client and redirect against DB before any front-channel redirect.
-		const client = await this.knex('directus_oauth_clients').where('client_id', clientId).first();
+		const client = await this.knex('axis_oauth_clients').where('client_id', clientId).first();
 
 		if (!client) {
 			throw new OAuthError(400, 'invalid_request', 'Client no longer exists');
@@ -755,7 +755,7 @@ export class McpOAuthService {
 		const codeExpiry = new Date(Date.now() + getMilliseconds(env['MCP_OAUTH_AUTH_CODE_TTL'], 0));
 
 		await transaction(this.knex, async (trx) => {
-			await trx('directus_oauth_codes').insert({
+			await trx('axis_oauth_codes').insert({
 				id: crypto.randomUUID(),
 				code_hash: codeHash,
 				client: clientId,
@@ -771,16 +771,16 @@ export class McpOAuthService {
 			// Upsert consent record. Read-then-write race is benign: concurrent inserts hit the
 			// unique(user, client, redirect_uri) constraint, rolling back the loser's entire
 			// transaction (including the code insert). The user simply re-approves.
-			const existing = await trx('directus_oauth_consents')
+			const existing = await trx('axis_oauth_consents')
 				.where({ user: userId, client: clientId, redirect_uri: redirectUri })
 				.first();
 
 			const now = new Date();
 
 			if (existing) {
-				await trx('directus_oauth_consents').where('id', existing['id']).update({ date_updated: now });
+				await trx('axis_oauth_consents').where('id', existing['id']).update({ date_updated: now });
 			} else {
-				await trx('directus_oauth_consents').insert({
+				await trx('axis_oauth_consents').insert({
 					id: crypto.randomUUID(),
 					user: userId,
 					client: clientId,
@@ -875,7 +875,7 @@ export class McpOAuthService {
 		// 3. Hash incoming code and look up by code_hash (read-only, outside transaction)
 		const codeHash = this.hashToken(params.code);
 
-		const codeRecord = await this.knex('directus_oauth_codes').where({ code_hash: codeHash }).first();
+		const codeRecord = await this.knex('axis_oauth_codes').where({ code_hash: codeHash }).first();
 
 		if (!codeRecord) {
 			throw new OAuthError(400, 'invalid_grant', 'Authorization code is invalid or has expired');
@@ -896,7 +896,7 @@ export class McpOAuthService {
 
 		const exchangeResult = await transaction(this.knex, async (trx) => {
 			// 4a. RFC 6749 Section 4.1.2: codes are single-use. Atomic burn via UPDATE WHERE used_at IS NULL
-			const burned = await trx('directus_oauth_codes')
+			const burned = await trx('axis_oauth_codes')
 				.where({ code_hash: codeHash })
 				.whereNull('used_at')
 				.update({ used_at: new Date() });
@@ -965,20 +965,20 @@ export class McpOAuthService {
 			const txResource = codeRecord['resource'] as string;
 
 			// 4f. Delete existing grant + its session if exists
-			const existingGrant = await trx('directus_oauth_tokens')
+			const existingGrant = await trx('axis_oauth_tokens')
 				.where({ client: params.client_id, user: txUserId })
 				.first();
 
 			if (existingGrant) {
-				await trx('directus_oauth_tokens').where({ client: params.client_id, user: txUserId }).delete();
-				await trx('directus_sessions').where('token', existingGrant.session).delete();
+				await trx('axis_oauth_tokens').where({ client: params.client_id, user: txUserId }).delete();
+				await trx('axis_sessions').where('token', existingGrant.session).delete();
 			}
 
 			// 4g. Create session + grant.
-			// directus_sessions: the stateful session used by Directus for accountability resolution.
+			// axis_sessions: the stateful session used by Directus for accountability resolution.
 			// oauth_client FK marks it as an OAuth session (filtered out by refresh/logout guards).
 			// token is the SHA-256 hash of the raw session token (which becomes the refresh_token).
-			await trx('directus_sessions').insert({
+			await trx('axis_sessions').insert({
 				token: sessionHash,
 				user: txUserId,
 				expires: sessionExpiry,
@@ -987,10 +987,10 @@ export class McpOAuthService {
 				oauth_client: params.client_id,
 			});
 
-			// directus_oauth_tokens: the OAuth grant tracking the (client, user) relationship.
+			// axis_oauth_tokens: the OAuth grant tracking the (client, user) relationship.
 			// Links to the session via session hash. Holds resource + scope for token refresh,
 			// and previous_session for reuse detection (populated on refresh rotation).
-			await trx('directus_oauth_tokens').insert({
+			await trx('axis_oauth_tokens').insert({
 				id: grantId,
 				client: params.client_id,
 				user: txUserId,
@@ -1113,7 +1113,7 @@ export class McpOAuthService {
 		// 3. Hash refresh_token and look up grant by session
 		const oldSessionHash = this.hashToken(params.refresh_token);
 
-		const grant = await this.knex('directus_oauth_tokens').where('session', oldSessionHash).first();
+		const grant = await this.knex('axis_oauth_tokens').where('session', oldSessionHash).first();
 
 		if (!grant) {
 			// 4. Reuse detection: check previous_session
@@ -1171,13 +1171,13 @@ export class McpOAuthService {
 		const clientName = client['client_name'] as string;
 
 		// Rotate the OAuth refresh token and its Directus accountability session together.
-		// The grant row records which session hash is current, while directus_sessions is
+		// The grant row records which session hash is current, while axis_sessions is
 		// the liveness row that access-token accountability resolution depends on.
 		const rotated = await transaction(this.knex, async (trx) => {
 			// The session row is the Directus liveness/accountability record referenced by
 			// access tokens and also backs the OAuth refresh token hash. Deleting it first
 			// makes the old refresh token single-use before we move the grant pointer.
-			const consumedSession = await trx('directus_sessions')
+			const consumedSession = await trx('axis_sessions')
 				.where({
 					token: oldSessionHash,
 					user: userId,
@@ -1186,7 +1186,7 @@ export class McpOAuthService {
 				.delete();
 
 			if (consumedSession === 0) {
-				const currentGrant = await trx('directus_oauth_tokens')
+				const currentGrant = await trx('axis_oauth_tokens')
 					.where({ id: grantId, session: oldSessionHash, client: params.client_id })
 					.first('id');
 
@@ -1194,7 +1194,7 @@ export class McpOAuthService {
 					// The grant still points at this hash, but the backing Directus session
 					// was already consumed or cleaned up. Drop the orphaned grant instead of
 					// issuing a replacement refresh token for a session we cannot prove live.
-					await trx('directus_oauth_tokens')
+					await trx('axis_oauth_tokens')
 						.where({ id: grantId, session: oldSessionHash, client: params.client_id })
 						.delete();
 				} else {
@@ -1210,7 +1210,7 @@ export class McpOAuthService {
 			// Move the grant from old hash to new hash only if it still points at the
 			// session we consumed above. previous_session is a one-step replay sentinel,
 			// not a retry window and not a complete history of older refresh tokens.
-			const updated = await trx('directus_oauth_tokens')
+			const updated = await trx('axis_oauth_tokens')
 				.where({ id: grantId, session: oldSessionHash, client: params.client_id })
 				.update({
 					session: newSessionHash,
@@ -1228,7 +1228,7 @@ export class McpOAuthService {
 			// Insert the new Directus liveness/accountability row after the grant pointer
 			// moved. New access tokens will reference this hash; the raw token is returned
 			// only once as the OAuth refresh_token response value.
-			await trx('directus_sessions').insert({
+			await trx('axis_sessions').insert({
 				token: newSessionHash,
 				user: userId,
 				expires: newExpiry,
@@ -1323,7 +1323,7 @@ export class McpOAuthService {
 		// RFC 7009 Section 2.2: return 200 for unknown/mismatched tokens (no information leak).
 		const tokenHash = this.hashToken(params.token);
 
-		const grant = await this.knex('directus_oauth_tokens').where('session', tokenHash).first();
+		const grant = await this.knex('axis_oauth_tokens').where('session', tokenHash).first();
 
 		if (!grant || grant['client'] !== params.client_id) {
 			return;
@@ -1335,12 +1335,12 @@ export class McpOAuthService {
 
 		// 5. Delete grant + session atomically
 		await transaction(this.knex, async (trx) => {
-			await trx('directus_oauth_tokens').where('id', grantId).delete();
-			await trx('directus_sessions').where('token', tokenHash).delete();
+			await trx('axis_oauth_tokens').where('id', grantId).delete();
+			await trx('axis_sessions').where('token', tokenHash).delete();
 		});
 
 		// 6. Activity record
-		const userRecord = await this.knex('directus_users').where('id', userId).select('email').first();
+		const userRecord = await this.knex('axis_users').where('id', userId).select('email').first();
 		const userEmail = userRecord?.email ?? 'unknown';
 
 		await this.recordOAuthActivity({
@@ -1364,7 +1364,7 @@ export class McpOAuthService {
 	 * 1. Expired unused codes
 	 * 2. Used codes older than 1 hour (kept briefly for replay detection logging)
 	 * 3. Expired grants + their sessions
-	 * 4. Orphaned grants (session no longer in directus_sessions)
+	 * 4. Orphaned grants (session no longer in axis_sessions)
 	 * 5. Stale clients in two tiers:
 	 *    a) Never-authorized (no consents, no sessions/grants, older than MCP_OAUTH_CLIENT_UNUSED_TTL)
 	 *    b) Idle authorized (has consents but no sessions/grants, older than MCP_OAUTH_CLIENT_IDLE_TTL; disabled when '0')
@@ -1375,22 +1375,22 @@ export class McpOAuthService {
 		const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
 		// 1. Delete expired unused codes
-		await this.knex('directus_oauth_codes').where('expires_at', '<', now).whereNull('used_at').delete();
+		await this.knex('axis_oauth_codes').where('expires_at', '<', now).whereNull('used_at').delete();
 
 		// 2. Delete used (already-exchanged) codes older than 1 hour.
 		// Kept briefly for replay detection logging; no impact on active sessions.
-		await this.knex('directus_oauth_codes').whereNotNull('used_at').andWhere('used_at', '<', oneHourAgo).delete();
+		await this.knex('axis_oauth_codes').whereNotNull('used_at').andWhere('used_at', '<', oneHourAgo).delete();
 
 		// 3. Delete expired grants along with their sessions
-		const expiredGrants = await this.knex('directus_oauth_tokens')
+		const expiredGrants = await this.knex('axis_oauth_tokens')
 			.where('expires_at', '<', now)
 			.select('id', 'session');
 
 		if (expiredGrants.length > 0) {
 			const sessionHashes = expiredGrants.map((g) => g.session);
-			await this.knex('directus_sessions').whereIn('token', sessionHashes).delete();
+			await this.knex('axis_sessions').whereIn('token', sessionHashes).delete();
 
-			await this.knex('directus_oauth_tokens')
+			await this.knex('axis_oauth_tokens')
 				.whereIn(
 					'id',
 					expiredGrants.map((g) => g.id),
@@ -1398,16 +1398,16 @@ export class McpOAuthService {
 				.delete();
 		}
 
-		// 4. Delete orphaned grants (session not in directus_sessions)
-		const orphanedGrants = await this.knex('directus_oauth_tokens')
-			.leftJoin('directus_sessions', function () {
-				this.on('directus_oauth_tokens.session', '=', 'directus_sessions.token');
+		// 4. Delete orphaned grants (session not in axis_sessions)
+		const orphanedGrants = await this.knex('axis_oauth_tokens')
+			.leftJoin('axis_sessions', function () {
+				this.on('axis_oauth_tokens.session', '=', 'axis_sessions.token');
 			})
-			.whereNull('directus_sessions.token')
-			.select('directus_oauth_tokens.id');
+			.whereNull('axis_sessions.token')
+			.select('axis_oauth_tokens.id');
 
 		if (orphanedGrants.length > 0) {
-			await this.knex('directus_oauth_tokens')
+			await this.knex('axis_oauth_tokens')
 				.whereIn(
 					'id',
 					orphanedGrants.map((g) => g.id),
@@ -1419,18 +1419,18 @@ export class McpOAuthService {
 		const unusedTtl = getMilliseconds(env['MCP_OAUTH_CLIENT_UNUSED_TTL'], DEFAULT_UNUSED_CLIENT_TTL_MS);
 		const unusedCutoff = new Date(now.getTime() - unusedTtl);
 
-		const neverAuthorizedClients = await this.knex('directus_oauth_clients')
-			.leftJoin('directus_oauth_consents', 'directus_oauth_clients.client_id', 'directus_oauth_consents.client')
-			.leftJoin('directus_sessions', 'directus_oauth_clients.client_id', 'directus_sessions.oauth_client')
-			.leftJoin('directus_oauth_tokens', 'directus_oauth_clients.client_id', 'directus_oauth_tokens.client')
-			.whereNull('directus_oauth_consents.id')
-			.whereNull('directus_sessions.token')
-			.whereNull('directus_oauth_tokens.id')
-			.where('directus_oauth_clients.date_created', '<', unusedCutoff)
-			.select('directus_oauth_clients.client_id');
+		const neverAuthorizedClients = await this.knex('axis_oauth_clients')
+			.leftJoin('axis_oauth_consents', 'axis_oauth_clients.client_id', 'axis_oauth_consents.client')
+			.leftJoin('axis_sessions', 'axis_oauth_clients.client_id', 'axis_sessions.oauth_client')
+			.leftJoin('axis_oauth_tokens', 'axis_oauth_clients.client_id', 'axis_oauth_tokens.client')
+			.whereNull('axis_oauth_consents.id')
+			.whereNull('axis_sessions.token')
+			.whereNull('axis_oauth_tokens.id')
+			.where('axis_oauth_clients.date_created', '<', unusedCutoff)
+			.select('axis_oauth_clients.client_id');
 
 		if (neverAuthorizedClients.length > 0) {
-			await this.knex('directus_oauth_clients')
+			await this.knex('axis_oauth_clients')
 				.whereIn(
 					'client_id',
 					neverAuthorizedClients.map((c) => c.client_id),
@@ -1444,20 +1444,20 @@ export class McpOAuthService {
 		if (idleTtl > 0) {
 			const idleCutoff = new Date(now.getTime() - idleTtl);
 
-			const idleAuthorizedClients = await this.knex('directus_oauth_clients')
-				.leftJoin('directus_sessions', 'directus_oauth_clients.client_id', 'directus_sessions.oauth_client')
-				.leftJoin('directus_oauth_tokens', 'directus_oauth_clients.client_id', 'directus_oauth_tokens.client')
-				.whereNull('directus_sessions.token')
-				.whereNull('directus_oauth_tokens.id')
-				.where('directus_oauth_clients.date_created', '<', idleCutoff)
+			const idleAuthorizedClients = await this.knex('axis_oauth_clients')
+				.leftJoin('axis_sessions', 'axis_oauth_clients.client_id', 'axis_sessions.oauth_client')
+				.leftJoin('axis_oauth_tokens', 'axis_oauth_clients.client_id', 'axis_oauth_tokens.client')
+				.whereNull('axis_sessions.token')
+				.whereNull('axis_oauth_tokens.id')
+				.where('axis_oauth_clients.date_created', '<', idleCutoff)
 				.whereNotIn(
-					'directus_oauth_clients.client_id',
+					'axis_oauth_clients.client_id',
 					neverAuthorizedClients.map((c) => c.client_id),
 				)
-				.select('directus_oauth_clients.client_id');
+				.select('axis_oauth_clients.client_id');
 
 			if (idleAuthorizedClients.length > 0) {
-				await this.knex('directus_oauth_clients')
+				await this.knex('axis_oauth_clients')
 					.whereIn(
 						'client_id',
 						idleAuthorizedClients.map((c) => c.client_id),
@@ -1485,7 +1485,7 @@ export class McpOAuthService {
 		}
 
 		if (type === 'dcr') {
-			const row = await this.knex('directus_oauth_clients').where('client_id', clientId).first();
+			const row = await this.knex('axis_oauth_clients').where('client_id', clientId).first();
 
 			if (!row) throw new OAuthError(400, 'invalid_request', 'Invalid client_id or redirect_uri');
 
@@ -1500,7 +1500,7 @@ export class McpOAuthService {
 			throw new OAuthError(400, 'invalid_client', 'CIMD client registration is disabled');
 		}
 
-		const settings = await this.knex('directus_settings').select('mcp_oauth_cimd_enabled').first();
+		const settings = await this.knex('axis_settings').select('mcp_oauth_cimd_enabled').first();
 
 		if (!toBoolean(settings?.mcp_oauth_cimd_enabled)) {
 			throw new OAuthError(400, 'invalid_client', 'CIMD client registration is disabled');
@@ -1519,7 +1519,7 @@ export class McpOAuthService {
 		}
 
 		// DB lookup
-		const existing = await this.knex('directus_oauth_clients').where('client_id', clientId).first();
+		const existing = await this.knex('axis_oauth_clients').where('client_id', clientId).first();
 
 		if (existing) {
 			const expiresAt = existing['metadata_expires_at'] ? new Date(existing['metadata_expires_at']).getTime() : 0;
@@ -1542,7 +1542,7 @@ export class McpOAuthService {
 		clientId: string,
 		db: Knex | Knex.Transaction = this.knex,
 	): Promise<Record<string, unknown> | undefined> {
-		return db('directus_oauth_clients').where('client_id', clientId).first();
+		return db('axis_oauth_clients').where('client_id', clientId).first();
 	}
 
 	/** Base64 character set: A-Z, a-z, 0-9, +, /, = (padding) */
@@ -1733,7 +1733,7 @@ export class McpOAuthService {
 		const maxClients = Number.isNaN(parsed) ? 10_000 : parsed;
 
 		if (maxClients > 0) {
-			const [{ count }] = (await this.knex('directus_oauth_clients').count('* as count')) as [
+			const [{ count }] = (await this.knex('axis_oauth_clients').count('* as count')) as [
 				{ count: number | string },
 			];
 
@@ -1770,7 +1770,7 @@ export class McpOAuthService {
 		};
 
 		try {
-			await this.knex('directus_oauth_clients').insert(row);
+			await this.knex('axis_oauth_clients').insert(row);
 			logger.info({ client_id: clientId }, 'CIMD client registered');
 			return row;
 		} catch (err: unknown) {
@@ -1779,7 +1779,7 @@ export class McpOAuthService {
 
 			if (translated instanceof RecordNotUniqueError) {
 				logger.debug({ client_id: clientId }, 'CIMD concurrent insert, selecting existing');
-				const existing = await this.knex('directus_oauth_clients').where('client_id', clientId).first();
+				const existing = await this.knex('axis_oauth_clients').where('client_id', clientId).first();
 
 				if (!existing) throw new OAuthError(400, 'invalid_client', 'Failed to register CIMD client');
 
@@ -1824,7 +1824,7 @@ export class McpOAuthService {
 
 				const expiresAt = newTtlMs > 0 ? new Date(now.getTime() + newTtlMs) : now;
 
-				await this.knex('directus_oauth_clients').where('client_id', clientId).update({
+				await this.knex('axis_oauth_clients').where('client_id', clientId).update({
 					metadata_fetched_at: now,
 					metadata_expires_at: expiresAt,
 				});
@@ -1878,7 +1878,7 @@ export class McpOAuthService {
 			metadata_etag: etag,
 		};
 
-		await this.knex('directus_oauth_clients').where('client_id', existing['client_id']).update(updates);
+		await this.knex('axis_oauth_clients').where('client_id', existing['client_id']).update(updates);
 		logger.info({ client_id: existing['client_id'] }, 'CIMD metadata refreshed');
 
 		return { ...existing, ...updates };
@@ -1948,7 +1948,7 @@ export class McpOAuthService {
 		await activityService.createOne({
 			action: opts.action,
 			user: opts.userId,
-			collection: 'directus_oauth_tokens',
+			collection: 'axis_oauth_tokens',
 			item: opts.grantId,
 			comment: opts.comment,
 			ip: opts.ip,
@@ -1960,7 +1960,7 @@ export class McpOAuthService {
 		userId: string,
 		knex: Knex | Knex.Transaction,
 	): Promise<{ email: string; role: string | null }> {
-		const userRecord = await knex('directus_users').where('id', userId).select('email', 'status', 'role').first();
+		const userRecord = await knex('axis_users').where('id', userId).select('email', 'status', 'role').first();
 
 		if (!userRecord || userRecord.status !== 'active') {
 			throw new OAuthError(400, 'invalid_grant', 'User account is not active');
@@ -1976,16 +1976,16 @@ export class McpOAuthService {
 		clientId: string,
 		logger: ReturnType<typeof useLogger>,
 	): Promise<void> {
-		const reuseGrant = await db('directus_oauth_tokens')
+		const reuseGrant = await db('axis_oauth_tokens')
 			.where({ previous_session: oldSessionHash, client: clientId })
 			.first();
 
 		if (reuseGrant) {
-			await db('directus_oauth_tokens')
+			await db('axis_oauth_tokens')
 				.where({ id: reuseGrant['id'], previous_session: oldSessionHash, client: clientId })
 				.delete();
 
-			await db('directus_sessions')
+			await db('axis_sessions')
 				.where({ token: reuseGrant['session'], user: reuseGrant['user'], oauth_client: clientId })
 				.delete();
 
@@ -1995,11 +1995,11 @@ export class McpOAuthService {
 
 	/** Detect and revoke a grant issued from a replayed authorization code. */
 	private async revokeGrantByCodeHash(db: Knex | Knex.Transaction, codeHash: string, clientId: string): Promise<void> {
-		const replayGrant = await db('directus_oauth_tokens').where({ code_hash: codeHash, client: clientId }).first();
+		const replayGrant = await db('axis_oauth_tokens').where({ code_hash: codeHash, client: clientId }).first();
 
 		if (replayGrant) {
-			await db('directus_oauth_tokens').where('id', replayGrant['id']).delete();
-			await db('directus_sessions').where('token', replayGrant['session']).delete();
+			await db('axis_oauth_tokens').where('id', replayGrant['id']).delete();
+			await db('axis_sessions').where('token', replayGrant['session']).delete();
 		}
 	}
 

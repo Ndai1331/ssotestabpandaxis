@@ -611,7 +611,7 @@ describe('PermissionCache Invalidation', () => {
 
 		// Trigger schema change invalidation
 		const bus = useBus();
-		await bus.publish('websocket.event', { collection: 'directus_fields' });
+		await bus.publish('websocket.event', { collection: 'axis_fields' });
 
 		// Cache should be cleared
 		expect(permissionCache.get(client, 'articles', '1', 'read')).toBeUndefined();
@@ -630,7 +630,7 @@ describe('PermissionCache Invalidation', () => {
 
 		// Trigger collection metadata change invalidation
 		const bus = useBus();
-		await bus.publish('websocket.event', { collection: 'directus_collections' });
+		await bus.publish('websocket.event', { collection: 'axis_collections' });
 
 		// Cache should be cleared
 		expect(permissionCache.get(client, 'articles', '1', 'read')).toBeUndefined();
@@ -695,7 +695,7 @@ describe('PermissionCache Invalidation', () => {
 
 		// Trigger invalidation for user A ONLY
 		const bus = useBus();
-		await bus.publish('websocket.event', { collection: 'directus_users', key: 'user-a' });
+		await bus.publish('websocket.event', { collection: 'axis_users', key: 'user-a' });
 
 		// Cache for user A should be cleared, but user B should remain
 		expect(permissionCache.get(clientA, 'articles', '1', 'read')).toBeUndefined();

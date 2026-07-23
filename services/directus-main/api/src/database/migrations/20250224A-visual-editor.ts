@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 type ModuleBar = (SettingsModuleBarLink | SettingsModuleBarModule)[];
 
 export async function up(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_settings', (table) => {
+	await knex.schema.alterTable('axis_settings', (table) => {
 		table.json('visual_editor_urls').nullable();
 	});
 
@@ -25,7 +25,7 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_settings', (table) => {
+	await knex.schema.alterTable('axis_settings', (table) => {
 		table.dropColumns('visual_editor_urls');
 	});
 
@@ -33,7 +33,7 @@ export async function down(knex: Knex): Promise<void> {
 }
 
 async function updateModuleBar(knex: Knex, modify: (moduleBar: ModuleBar) => ModuleBar | undefined) {
-	const result = await knex('directus_settings').select('module_bar', 'id').first();
+	const result = await knex('axis_settings').select('module_bar', 'id').first();
 
 	if (result && result.module_bar) {
 		const moduleBar = typeof result.module_bar === 'string' ? JSON.parse(result.module_bar) : result.module_bar;
@@ -41,7 +41,7 @@ async function updateModuleBar(knex: Knex, modify: (moduleBar: ModuleBar) => Mod
 		const updatedModuleBar = modify(moduleBar);
 		if (!updatedModuleBar) return;
 
-		await knex('directus_settings')
+		await knex('axis_settings')
 			.update({ module_bar: JSON.stringify(updatedModuleBar) })
 			.where('id', result.id);
 	}

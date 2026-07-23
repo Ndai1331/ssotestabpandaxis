@@ -23,7 +23,7 @@ import { sanitizeQuery } from '../utils/sanitize-query.js';
 
 const router = express.Router();
 
-router.use(useCollection('directus_users'));
+router.use(useCollection('axis_users'));
 
 router.post(
 	'/',
@@ -76,7 +76,7 @@ const readHandler = asyncHandler(async (req, res, next) => {
 	});
 
 	const item = await service.readByQuery(req.sanitizedQuery);
-	const meta = await metaService.getMetaForQuery('directus_users', req.sanitizedQuery);
+	const meta = await metaService.getMetaForQuery('axis_users', req.sanitizedQuery);
 
 	res.locals['payload'] = { data: item || null, meta };
 	return next();
@@ -345,7 +345,7 @@ router.post(
 
 		const currentUser = await getDatabase()
 			.select('provider')
-			.from('directus_users')
+			.from('axis_users')
 			.where({ id: req.accountability.user })
 			.first();
 

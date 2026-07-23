@@ -339,9 +339,9 @@ geometry:
 theme_auto: Автомат (Системийн тохиргоо)
 theme_light: Өдрийн горим
 theme_dark: Шөнийн горим
-theme_directus_default: Directus өгөгдмөл
-theme_directus_minimal: Directus минимал
-theme_directus_colormatch: Directus өнгөний зохицол
+theme_axis_default: Directus өгөгдмөл
+theme_axis_minimal: Directus минимал
+theme_axis_colormatch: Directus өнгөний зохицол
 not_available_for_type: Энэ төрөлд боломжгүй
 create_translations: Орчуулга үүсгэх
 auto_refresh: Автоматаар шинэчлэх
@@ -1176,34 +1176,34 @@ content: Контент
 singleton: Синглтон
 singleton_label: Нэг объект гэж үзэх
 system_fields_locked: Системийн талбарууд түгжигдсэн бөгөөд засах боломжгүй болсон байна
-directus_collection:
-  directus_access: Хавсралтын бодлого
-  directus_activity: Бүх үйл явдлын лог бүртгэл
-  directus_collections: Нэмэлт бүрдлийн тохируулга болон мета өгөгдөл
-  directus_comments: Оруулгуудын сэтгэгдэл
-  directus_dashboards: Аналитик модулийн хянах самбарууд
-  directus_fields: Нэмэлт талбарын тохируулга болон мета өгөгдөл
-  directus_files: Бүх удирддаг файлуудын мета өгөгдөл
-  directus_folders: Файлуудад зориулсан виртуал лавлахыг хангадаг
-  directus_migrations: Өгөгдлийн сангийн ямар хувилбарыг ашиглаж байгаа
-  directus_notifications: Хэрэглэгчдэд мэдэгдлийг илгээлээ
-  directus_operations: Урсгалд ажилладаг үйлдлүүд
-  directus_panels: Аналитик хянах самбарт харгалзах бие даасан самбарууд
-  directus_permissions: Бодлого бүрийн хандах эрхүүд
-  directus_policies: Хандалтын хяналтын бодлого
-  directus_presets: Бүрдлийн өгөгдмөлүүд болон тэмдэглэлүүдийн урьдчилан тохиргоо
-  directus_relations: Харилцааны тохируулга болон мета өгөгдөл
-  directus_revisions: Бүх үйл ажиллагааны өгөгдлийн хормын хувилбарууд
-  directus_roles: Системийн хэрэглэгчдэд зориулсан зөвшөөрлийн бүлгүүд
-  directus_sessions: Хэрэглэгчийн сесс мэдээлэл
-  directus_settings: Төслийн тохируулга
-  directus_shares: Гаднаас хуваалцсан зүйлсийг хянадаг
-  directus_users: Платформд зориулсан системийн хэрэглэгчид
-  directus_translations: Тохируулгат орчуулгууд
-  directus_versions: Оруулгуудын контент хувилбарууд
-  directus_extensions: Хэрэгслүүдийн тохируулга
+axis_collection:
+  axis_access: Хавсралтын бодлого
+  axis_activity: Бүх үйл явдлын лог бүртгэл
+  axis_collections: Нэмэлт бүрдлийн тохируулга болон мета өгөгдөл
+  axis_comments: Оруулгуудын сэтгэгдэл
+  axis_dashboards: Аналитик модулийн хянах самбарууд
+  axis_fields: Нэмэлт талбарын тохируулга болон мета өгөгдөл
+  axis_files: Бүх удирддаг файлуудын мета өгөгдөл
+  axis_folders: Файлуудад зориулсан виртуал лавлахыг хангадаг
+  axis_migrations: Өгөгдлийн сангийн ямар хувилбарыг ашиглаж байгаа
+  axis_notifications: Хэрэглэгчдэд мэдэгдлийг илгээлээ
+  axis_operations: Урсгалд ажилладаг үйлдлүүд
+  axis_panels: Аналитик хянах самбарт харгалзах бие даасан самбарууд
+  axis_permissions: Бодлого бүрийн хандах эрхүүд
+  axis_policies: Хандалтын хяналтын бодлого
+  axis_presets: Бүрдлийн өгөгдмөлүүд болон тэмдэглэлүүдийн урьдчилан тохиргоо
+  axis_relations: Харилцааны тохируулга болон мета өгөгдөл
+  axis_revisions: Бүх үйл ажиллагааны өгөгдлийн хормын хувилбарууд
+  axis_roles: Системийн хэрэглэгчдэд зориулсан зөвшөөрлийн бүлгүүд
+  axis_sessions: Хэрэглэгчийн сесс мэдээлэл
+  axis_settings: Төслийн тохируулга
+  axis_shares: Гаднаас хуваалцсан зүйлсийг хянадаг
+  axis_users: Платформд зориулсан системийн хэрэглэгчид
+  axis_translations: Тохируулгат орчуулгууд
+  axis_versions: Оруулгуудын контент хувилбарууд
+  axis_extensions: Хэрэгслүүдийн тохируулга
 fields:
-  directus_activity:
+  axis_activity:
     item: Оруулгын гол түлхүүр
     action: Үйлдэл
     collection: Бүрдэл
@@ -1214,7 +1214,7 @@ fields:
     origin: Эх
     ip: IP хаяг
     revisions: Хяналтууд
-  directus_collections:
+  axis_collections:
     collection: Бүрдэл
     icon: Таних тэмдэг
     note: Тэмдэглэл
@@ -1232,7 +1232,7 @@ fields:
     versioning: Хувилбарын удирдлага
     archive_field: Талбар архивлах
     item_duplication_fields: Оруулгын давхардлын талбарууд
-  directus_files:
+  axis_files:
     $thumbnail: Өнгөц зураг
     title: Гарчиг
     description: Тайлбар
@@ -1258,7 +1258,7 @@ fields:
     duration: Хугацаа
     focal_point_x: X координат
     focal_point_y: Y координат
-  directus_users:
+  axis_users:
     first_name: Нэр
     last_name: Овог
     email: Цахим шуудан
@@ -1291,7 +1291,7 @@ fields:
     theme_dark: Шөнийн загвар
     theme_light_overrides: Өдрийн загварын тохируулга
     theme_dark_overrides: Шөнийн загварын тохируулга
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1348,7 +1348,7 @@ fields:
     public_registration_verify_email: Цахим шуудан баталгаажуулах
     public_registration_verify_email_note: Бүртгүүлж буй хэрэглэгч рүү нэвтрэхийн өмнө баталгаажуулах холбоос дээр дарахыг хүссэн имэйл илгээнэ.
     ai_header_name: Толгой
-  directus_shares:
+  axis_shares:
     name: Нэр
     role: Үүрэг
     password: Нууц үг
@@ -1356,7 +1356,7 @@ fields:
     date_end: Дуусах огноо
     max_uses: Ашиглалтын дээд тоо
     times_used: Ашигласан тоо
-  directus_fields:
+  axis_fields:
     collection: Бүрдлийн нэр
     icon: Бүрдлийн таних тэмдэг
     note: Тэмдэглэл
@@ -1364,14 +1364,14 @@ fields:
     singleton: Синглтон
     translation: Талбарын нэрний орчуулга
     display_template: Загвар
-  directus_roles:
+  axis_roles:
     name: Үүргийн нэр
     icon: Үүргийн таних тэмдэг
     description: Тайлбар
     users: Үүрэгт харгалзах хэрэглэгчид
     parent: Эцэг үүрэг
     children: Хүүхэд үүрэг
-  directus_policies:
+  axis_policies:
     name: Бодлогын нэр
     description: Тайлбар
     app_access: Апп хандалт
@@ -1379,7 +1379,7 @@ fields:
     ip_access: IP хандалт
     enforce_tfa: 2FA шаардах
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Миний төсөл...
     project_color_note: Нэвтрэх, таних тэмдгийн ар дэвсгэр
     project_logo_note: Цагаан 40x40 SVG/PNG
@@ -1409,12 +1409,12 @@ field_options:
     basemaps_style: Mapbox хэв маяг
     files_divider_title: Файл болон өнгөц зургууд
     overrides_divider_title: Апп үл хэрэгсэнэ
-  directus_activity:
+  axis_activity:
     login: Нэвтрэх
     create: Үүсгэх
     update: Шинэчлэх
     delete: Устгах
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Үйл ажиллагаа болон засваруудыг хянах
     only_track_activity: Зөвхөн үйл ажиллагааг хянах
     do_not_track_anything: Юу ч хянахгүй байх
@@ -1440,7 +1440,7 @@ field_options:
     preview_divider: Урьдчилан үзэх
     content_versioning_divider: Контентийн хувилбар
     enable_versioning: Хувилбарлалтыг идэвхжүүлэх
-  directus_files:
+  axis_files:
     title: Дахин давтагдашгүй гарчиг...
     description: Нэмэлт тайлбар...
     location: Нэмэлт байршил...
@@ -1448,13 +1448,13 @@ field_options:
     focal_point_divider: Төв цэг
     filename_disk: Хадгалах диск дээрх нэр...
     filename_download: Татаж авах нэр...
-  directus_policies:
+  axis_policies:
     name: Энэ бодлогын дахин давтагдашгүй нэр...
     description: Энэ бодлогын тайлбар...
     ip_access: Зөвшөөрөгдсөн IP хаяг, IP муж, CIDR блокуудыг нэмнэ үү. Бүгдийг зөвшөөрөх бол хоосон орхино уу...
     enforce_tfa: Хоёр давхар баталгаажуулалтыг шаардах
     assigned_to: Хуваарилагдсан
-  directus_roles:
+  axis_roles:
     name: Энэ үүргийн дахин давтагдашгүй нэр...
     description: Энэ үүргийн тайлбар...
     fields:
@@ -1467,7 +1467,7 @@ field_options:
     children_note: Энэ үүргийн зөвшөөрлийг өвлөсөн үүрлэсэн хүүхэд үүрэг
     collections_name: Бүрдлүүд
     collections_addLabel: Бүрдэл нэмэх...
-  directus_users:
+  axis_users:
     preferences_divider: Тусгай тохиргоо
     dropdown_auto: Автомат (Системийн тохиргоо)
     dropdown_light: Өдрийн горим

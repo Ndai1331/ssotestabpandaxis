@@ -14,7 +14,7 @@ import { sanitizeQuery } from '../utils/sanitize-query.js';
 
 const router = express.Router();
 
-router.use(useCollection('directus_flows'));
+router.use(useCollection('axis_flows'));
 
 const webhookFlowHandler = asyncHandler(async (req, res, next) => {
 	const flowManager = getFlowManager();

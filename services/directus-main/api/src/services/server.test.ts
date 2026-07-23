@@ -19,7 +19,7 @@ vi.mock('@directus/env', () => ({
 
 vi.mock('./settings.js', () => ({
 	SettingsService: vi.fn().mockImplementation(() => ({
-		readSingleton: vi.fn().mockResolvedValue({ project_name: 'Directus' }),
+		readSingleton: vi.fn().mockResolvedValue({ project_name: 'Axis' }),
 	})),
 }));
 
@@ -78,7 +78,7 @@ describe('ServerService', () => {
 	});
 
 	test('serverInfo includes MCP OAuth env capability flags for authenticated users', async () => {
-		tracker.on.select('directus_users').response([{ id: 'user-id' }]);
+		tracker.on.select('axis_users').response([{ id: 'user-id' }]);
 
 		const service = new ServerService({
 			knex: db,
@@ -94,7 +94,7 @@ describe('ServerService', () => {
 	});
 
 	test('serverInfo defaults project_owner_enabled to true for authenticated users', async () => {
-		tracker.on.select('directus_users').response([{ id: 'user-id' }]);
+		tracker.on.select('axis_users').response([{ id: 'user-id' }]);
 
 		const service = new ServerService({
 			knex: db,
@@ -110,7 +110,7 @@ describe('ServerService', () => {
 	test('serverInfo respects PROJECT_OWNER_ENABLED=false for authenticated users', async () => {
 		Object.assign(mockEnv, { PROJECT_OWNER_ENABLED: false });
 
-		tracker.on.select('directus_users').response([{ id: 'user-id' }]);
+		tracker.on.select('axis_users').response([{ id: 'user-id' }]);
 
 		const service = new ServerService({
 			knex: db,

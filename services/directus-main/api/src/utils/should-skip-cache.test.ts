@@ -16,7 +16,7 @@ test.each([
 			PUBLIC_URL: publicURL,
 			CACHE_SKIP_ALLOWED: false,
 			CACHE_AUTO_PURGE: false,
-			CACHE_AUTO_PURGE_IGNORE_LIST: ['directus_activity', 'directus_presets'],
+			CACHE_AUTO_PURGE_IGNORE_LIST: ['axis_activity', 'axis_presets'],
 		});
 
 		const req = {
@@ -46,7 +46,7 @@ test.each([
 			PUBLIC_URL: publicURL,
 			CACHE_SKIP_ALLOWED: false,
 			CACHE_AUTO_PURGE: true,
-			CACHE_AUTO_PURGE_IGNORE_LIST: ['directus_activity', 'directus_presets', 'ignore_collection'],
+			CACHE_AUTO_PURGE_IGNORE_LIST: ['axis_activity', 'axis_presets', 'ignore_collection'],
 		});
 
 		const req = {
@@ -76,7 +76,7 @@ test.each([
 			PUBLIC_URL: publicURL,
 			CACHE_SKIP_ALLOWED: false,
 			CACHE_AUTO_PURGE: true,
-			CACHE_AUTO_PURGE_IGNORE_LIST: ['directus_activity', 'directus_presets', 'ignore_collection'],
+			CACHE_AUTO_PURGE_IGNORE_LIST: ['axis_activity', 'axis_presets', 'ignore_collection'],
 		});
 
 		const req = {

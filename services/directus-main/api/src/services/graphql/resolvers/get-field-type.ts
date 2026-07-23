@@ -11,10 +11,10 @@ export function getFieldType(schemaComposer: SchemaComposer, schema: Schema, act
 	const prefix = action === 'read' ? '' : 'write_';
 
 	const Field = schemaComposer.createObjectTC({
-		name: `${prefix}directus_fields`,
+		name: `${prefix}axis_fields`,
 	});
 
-	if ('directus_fields' in schema.read.collections === false) {
+	if ('axis_fields' in schema.read.collections === false) {
 		return Field;
 	}
 
@@ -23,8 +23,8 @@ export function getFieldType(schemaComposer: SchemaComposer, schema: Schema, act
 		field: GraphQLString,
 		type: GraphQLString,
 		meta: schemaComposer.createObjectTC({
-			name: `${prefix}directus_fields_meta`,
-			fields: Object.values(schema.read.collections['directus_fields']!.fields).reduce(
+			name: `${prefix}axis_fields_meta`,
+			fields: Object.values(schema.read.collections['axis_fields']!.fields).reduce(
 				(acc, field) => {
 					acc[field.field] = {
 						type:
@@ -40,7 +40,7 @@ export function getFieldType(schemaComposer: SchemaComposer, schema: Schema, act
 			),
 		}),
 		schema: schemaComposer.createObjectTC({
-			name: `${prefix}directus_fields_schema`,
+			name: `${prefix}axis_fields_schema`,
 			fields: {
 				name: GraphQLString,
 				table: GraphQLString,

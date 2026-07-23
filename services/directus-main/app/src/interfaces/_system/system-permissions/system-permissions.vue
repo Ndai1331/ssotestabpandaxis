@@ -444,7 +444,7 @@ function usePermissions(
 			if (itemId.value !== '+') {
 				const filter: Filter = { _and: [{ policy: itemId.value } as Filter] };
 
-				const response = await api.get(getEndpoint('directus_permissions'), {
+				const response = await api.get(getEndpoint('axis_permissions'), {
 					params: {
 						fields: '*',
 						filter,

@@ -58,7 +58,7 @@ vi.mock('../../src/database/index', async () => {
 });
 
 const schema = new SchemaBuilder()
-	.collection('directus_deployments', (c) => {
+	.collection('axis_deployments', (c) => {
 		c.field('id').integer().primary();
 		c.field('provider').string();
 		c.field('credentials').text();
@@ -212,7 +212,7 @@ describe('DeploymentService', () => {
 			mockTestConnection.mockResolvedValue(undefined);
 
 			// Mock DB query for readConfig (internal readByQuery)
-			tracker.on.select('directus_deployments').response([existingConfig]);
+			tracker.on.select('axis_deployments').response([existingConfig]);
 		});
 
 		it('should skip validation when no credentials or options provided', async () => {
@@ -332,7 +332,7 @@ describe('DeploymentService', () => {
 			});
 
 			tracker.on
-				.select('directus_deployments')
+				.select('axis_deployments')
 				.response([{ id: 1, provider: 'vercel', credentials: JSON.stringify({ access_token: 'token' }) }]);
 		});
 
@@ -371,7 +371,7 @@ describe('DeploymentService', () => {
 			});
 
 			tracker.on
-				.select('directus_deployments')
+				.select('axis_deployments')
 				.response([{ id: 1, provider: 'vercel', credentials: JSON.stringify({ access_token: 'token' }) }]);
 		});
 
@@ -438,7 +438,7 @@ describe('DeploymentService', () => {
 
 			vi.spyOn(ItemsService.prototype, 'readByQuery').mockResolvedValue([deployment]);
 
-			tracker.on.select('directus_deployments').response([deployment]);
+			tracker.on.select('axis_deployments').response([deployment]);
 		});
 
 		it('should skip sync when last_synced_at is recent', async () => {

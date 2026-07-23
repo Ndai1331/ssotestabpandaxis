@@ -2,107 +2,107 @@ import type { Knex } from 'knex';
 
 const updates = [
 	{
-		table: 'directus_fields',
+		table: 'axis_fields',
 		constraints: [
 			{
 				column: 'group',
-				references: 'directus_fields.id',
+				references: 'axis_fields.id',
 			},
 		],
 	},
 	{
-		table: 'directus_files',
+		table: 'axis_files',
 		constraints: [
 			{
 				column: 'folder',
-				references: 'directus_folders.id',
+				references: 'axis_folders.id',
 			},
 			{
 				column: 'uploaded_by',
-				references: 'directus_users.id',
+				references: 'axis_users.id',
 			},
 			{
 				column: 'modified_by',
-				references: 'directus_users.id',
+				references: 'axis_users.id',
 			},
 		],
 	},
 	{
-		table: 'directus_folders',
+		table: 'axis_folders',
 		constraints: [
 			{
 				column: 'parent',
-				references: 'directus_folders.id',
+				references: 'axis_folders.id',
 			},
 		],
 	},
 	{
-		table: 'directus_permissions',
+		table: 'axis_permissions',
 		constraints: [
 			{
 				column: 'role',
-				references: 'directus_roles.id',
+				references: 'axis_roles.id',
 			},
 		],
 	},
 	{
-		table: 'directus_presets',
+		table: 'axis_presets',
 		constraints: [
 			{
 				column: 'user',
-				references: 'directus_users.id',
+				references: 'axis_users.id',
 			},
 			{
 				column: 'role',
-				references: 'directus_roles.id',
+				references: 'axis_roles.id',
 			},
 		],
 	},
 	{
-		table: 'directus_revisions',
+		table: 'axis_revisions',
 		constraints: [
 			{
 				column: 'activity',
-				references: 'directus_activity.id',
+				references: 'axis_activity.id',
 			},
 			{
 				column: 'parent',
-				references: 'directus_revisions.id',
+				references: 'axis_revisions.id',
 			},
 		],
 	},
 	{
-		table: 'directus_sessions',
+		table: 'axis_sessions',
 		constraints: [
 			{
 				column: 'user',
-				references: 'directus_users.id',
+				references: 'axis_users.id',
 			},
 		],
 	},
 	{
-		table: 'directus_settings',
+		table: 'axis_settings',
 		constraints: [
 			{
 				column: 'project_logo',
-				references: 'directus_files.id',
+				references: 'axis_files.id',
 			},
 			{
 				column: 'public_foreground',
-				references: 'directus_files.id',
+				references: 'axis_files.id',
 			},
 			{
 				column: 'public_background',
-				references: 'directus_files.id',
+				references: 'axis_files.id',
 			},
 		],
 	},
 	{
-		table: 'directus_users',
+		table: 'axis_users',
 		constraints: [
 			{
 				column: 'role',
-				references: 'directus_roles.id',
+				references: 'axis_roles.id',
 			},
 		],
 	},

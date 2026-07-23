@@ -53,7 +53,7 @@ afterAll(async () => {
 async function seedActiveAdmins(count: number) {
 	const ids: string[] = Array.from({ length: count }, () => randomUUID());
 
-	await directus.knex!('directus_users').insert(
+	await directus.knex!('axis_users').insert(
 		ids.map((id) => ({
 			id,
 			first_name: `seat_extra_${id}`,
@@ -158,7 +158,7 @@ describe('entitlements limits restrictions', () => {
 						table.increments('id').primary();
 					});
 
-					await directus.knex!('directus_collections').insert({ collection: name });
+					await directus.knex!('axis_collections').insert({ collection: name });
 				}
 
 				// Going inactive is always allowed, even while over the limit.
@@ -251,7 +251,7 @@ describe('entitlements limits restrictions', () => {
 			try {
 				await expect(api.request(updateUser(ids[0]!, { status: 'suspended' }))).resolves.toBeDefined();
 			} finally {
-				await directus.knex!('directus_users').whereIn('id', ids).delete();
+				await directus.knex!('axis_users').whereIn('id', ids).delete();
 			}
 		});
 
@@ -261,7 +261,7 @@ describe('entitlements limits restrictions', () => {
 			try {
 				await expect(api.request(updateUser(ids[0]!, { role: null }))).resolves.toBeDefined();
 			} finally {
-				await directus.knex!('directus_users').whereIn('id', ids).delete();
+				await directus.knex!('axis_users').whereIn('id', ids).delete();
 			}
 		});
 
@@ -284,7 +284,7 @@ describe('entitlements limits restrictions', () => {
 
 				expect(apiUser).toBeDefined();
 			} finally {
-				await directus.knex!('directus_users').whereIn('id', ids).delete();
+				await directus.knex!('axis_users').whereIn('id', ids).delete();
 			}
 		});
 	});
@@ -358,7 +358,7 @@ describe('entitlements limits restrictions', () => {
 			try {
 				// Seed extra active flows directly via knex to push the count over the limit.
 				for (const id of extras) {
-					await directus.knex!('directus_flows').insert({
+					await directus.knex!('axis_flows').insert({
 						id,
 						name: `flow_extra_${id}`,
 						status: 'active',

@@ -21,7 +21,7 @@ test('Generates a base64-encoded SVG data URL', () => {
 	expect(svg).toContain('fill="#6644ff"');
 });
 
-test('Includes the Directus logo by default and omits it when disabled', () => {
+test('Includes the Axis logo by default and omits it when disabled', () => {
 	expect(decode(generateFavicon('#6644ff'))).toContain('<path');
 	expect(decode(generateFavicon('#6644ff', false))).not.toContain('<path');
 });

@@ -77,43 +77,43 @@ describe('useCollections', () => {
 
 			collectionsStore.collections = [
 				makeCollection('articles'),
-				makeCollection('directus_users'),
-				makeCollection('directus_files'),
+				makeCollection('axis_users'),
+				makeCollection('axis_files'),
 			];
 
 			const { systemCollections } = useCollections({ excludeCollections: [] });
 
 			expect(systemCollections.value).toHaveLength(2);
-			expect(systemCollections.value.map((c) => c.collection).sort()).toEqual(['directus_files', 'directus_users']);
+			expect(systemCollections.value.map((c) => c.collection).sort()).toEqual(['axis_files', 'axis_users']);
 		});
 
 		it('orders system collections alphabetically', () => {
 			const collectionsStore = useCollectionsStore();
 
 			collectionsStore.collections = [
-				makeCollection('directus_users'),
-				makeCollection('directus_activity'),
-				makeCollection('directus_files'),
+				makeCollection('axis_users'),
+				makeCollection('axis_activity'),
+				makeCollection('axis_files'),
 			];
 
 			const { systemCollections } = useCollections({ excludeCollections: [] });
 
 			expect(systemCollections.value.map((c) => c.collection)).toEqual([
-				'directus_activity',
-				'directus_files',
-				'directus_users',
+				'axis_activity',
+				'axis_files',
+				'axis_users',
 			]);
 		});
 
 		it('marks excluded system collections as disabled', () => {
 			const collectionsStore = useCollectionsStore();
 
-			collectionsStore.collections = [makeCollection('directus_users'), makeCollection('directus_files')];
+			collectionsStore.collections = [makeCollection('axis_users'), makeCollection('axis_files')];
 
-			const { systemCollections } = useCollections({ excludeCollections: ['directus_users'] });
+			const { systemCollections } = useCollections({ excludeCollections: ['axis_users'] });
 
-			const users = systemCollections.value.find((c) => c.collection === 'directus_users');
-			const files = systemCollections.value.find((c) => c.collection === 'directus_files');
+			const users = systemCollections.value.find((c) => c.collection === 'axis_users');
+			const files = systemCollections.value.find((c) => c.collection === 'axis_files');
 
 			expect(users?.disabled).toBe(true);
 			expect(files?.disabled).toBe(false);
@@ -124,20 +124,20 @@ describe('useCollections', () => {
 		it('includes both user and system collections', () => {
 			const collectionsStore = useCollectionsStore();
 
-			collectionsStore.collections = [makeCollection('articles'), makeCollection('directus_users')];
+			collectionsStore.collections = [makeCollection('articles'), makeCollection('axis_users')];
 
 			const { displayItems } = useCollections({ excludeCollections: [] });
 
 			const collectionNames = displayItems.value.filter((item) => !item.divider).map((c) => c.collection);
 
 			expect(collectionNames).toContain('articles');
-			expect(collectionNames).toContain('directus_users');
+			expect(collectionNames).toContain('axis_users');
 		});
 
 		it('adds a divider between user and system collections', () => {
 			const collectionsStore = useCollectionsStore();
 
-			collectionsStore.collections = [makeCollection('articles'), makeCollection('directus_users')];
+			collectionsStore.collections = [makeCollection('articles'), makeCollection('axis_users')];
 
 			const { displayItems } = useCollections({ excludeCollections: [] });
 
@@ -161,7 +161,7 @@ describe('useCollections', () => {
 		it('does not add divider when only system collections exist', () => {
 			const collectionsStore = useCollectionsStore();
 
-			collectionsStore.collections = [makeCollection('directus_users'), makeCollection('directus_files')];
+			collectionsStore.collections = [makeCollection('axis_users'), makeCollection('axis_files')];
 
 			const { displayItems } = useCollections({ excludeCollections: [] });
 

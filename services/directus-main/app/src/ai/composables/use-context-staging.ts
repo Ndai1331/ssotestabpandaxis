@@ -230,7 +230,7 @@ export function useContextStaging() {
 
 		try {
 			const response = await sdk.request<FileContextData[]>(
-				requestEndpoint(getEndpoint('directus_files'), {
+				requestEndpoint(getEndpoint('axis_files'), {
 					params: {
 						filter: { id: { _in: ids } },
 						fields: ['id', 'filename_download', 'type', 'title'],

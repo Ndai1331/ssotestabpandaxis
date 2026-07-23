@@ -20,7 +20,7 @@
 #'SIMD', 'ArrayBuffer', 'DataView', 'JSON', 'Promise', 'Generator', 'GeneratorFunction', 'Reflect',
 #'Proxy', 'Intl'
 about: Über
-directus_mscl: Directus MSCL-1.0-GPL
+axis_mscl: Directus MSCL-1.0-GPL
 privacy_policy: Datenschutzerklärung
 contact_support: kontaktiere Support
 setup_welcome: Willkommen bei Directus
@@ -440,9 +440,9 @@ geometry:
 theme_auto: Automatisch (Systemeinstellung folgen)
 theme_light: Heller Modus
 theme_dark: Dunkler Modus
-theme_directus_default: Directus Standard
-theme_directus_minimal: Directus Minimal
-theme_directus_colormatch: Directus Farbabstimmung
+theme_axis_default: Directus Standard
+theme_axis_minimal: Directus Minimal
+theme_axis_colormatch: Directus Farbabstimmung
 not_available_for_type: Nicht verfügbar für diesen Typ
 create_translations: Übersetzungen erstellen
 auto_refresh: Auto-Aktualisierung
@@ -1591,39 +1591,39 @@ content: Inhalt
 singleton: Singleton
 singleton_label: Als einzelnes Objekt behandeln
 system_fields_locked: Systemfelder sind gesperrt und können nicht bearbeitet werden
-directus_collection:
-  directus_access: Richtlinien-Zuweisungen
-  directus_activity: Verantwortungsprotokoll für alle Ereignisse
-  directus_collections: Weitere Konfiguration und Metadaten
-  directus_comments: Kommentare für Elemente
-  directus_dashboards: Dashboards innerhalb des Moduls "Einblicke"
-  directus_fields: Weitere Felder und Metadaten
-  directus_files: Metadaten für alle verwalteten Dateien
-  directus_flows: Automation Flows
-  directus_folders: Stellt virtuelle Verzeichnisse für Dateien bereit
-  directus_migrations: Welche Version der Datenbank verwenden Sie
-  directus_notifications: Benachrichtigungen an Benutzer gesendet
-  directus_operations: In Flows ausgeführte Operationen
-  directus_panels: Individuelle Panels in Einblicke-Dashboards
-  directus_permissions: Zugriffsrechte für jede Richtlinie
-  directus_policies: Zugriffskontrollrichtlinien
-  directus_presets: Vorlagen für Sammlung und Lesezeichen
-  directus_relations: Relationen und Metadaten
-  directus_revisions: Speicherabzug für alle Aktivitäten
-  directus_roles: Berechtigungsgruppen für Systembenutzer
-  directus_sessions: Sitzungsinformation
-  directus_settings: Projekt-Konfiguration
-  directus_shares: Verfolgen von extern freigegebenen Elementen
-  directus_users: Systembenutzer für die Plattform
-  directus_translations: Benutzerdefinierte Übersetzungen
-  directus_versions: Versionierung für Elemente
-  directus_extensions: Konfiguration der Erweiterungen
-  directus_oauth_clients: Registrierte OAuth-Client-Anwendungen
-  directus_oauth_codes: Autorisierungscodes für OAuth-Flows
-  directus_oauth_consents: Benutzergenehmigungen für OAuth-Clients
-  directus_oauth_tokens: Zugang und Aktualisierung von Token für OAuth-Clients
+axis_collection:
+  axis_access: Richtlinien-Zuweisungen
+  axis_activity: Verantwortungsprotokoll für alle Ereignisse
+  axis_collections: Weitere Konfiguration und Metadaten
+  axis_comments: Kommentare für Elemente
+  axis_dashboards: Dashboards innerhalb des Moduls "Einblicke"
+  axis_fields: Weitere Felder und Metadaten
+  axis_files: Metadaten für alle verwalteten Dateien
+  axis_flows: Automation Flows
+  axis_folders: Stellt virtuelle Verzeichnisse für Dateien bereit
+  axis_migrations: Welche Version der Datenbank verwenden Sie
+  axis_notifications: Benachrichtigungen an Benutzer gesendet
+  axis_operations: In Flows ausgeführte Operationen
+  axis_panels: Individuelle Panels in Einblicke-Dashboards
+  axis_permissions: Zugriffsrechte für jede Richtlinie
+  axis_policies: Zugriffskontrollrichtlinien
+  axis_presets: Vorlagen für Sammlung und Lesezeichen
+  axis_relations: Relationen und Metadaten
+  axis_revisions: Speicherabzug für alle Aktivitäten
+  axis_roles: Berechtigungsgruppen für Systembenutzer
+  axis_sessions: Sitzungsinformation
+  axis_settings: Projekt-Konfiguration
+  axis_shares: Verfolgen von extern freigegebenen Elementen
+  axis_users: Systembenutzer für die Plattform
+  axis_translations: Benutzerdefinierte Übersetzungen
+  axis_versions: Versionierung für Elemente
+  axis_extensions: Konfiguration der Erweiterungen
+  axis_oauth_clients: Registrierte OAuth-Client-Anwendungen
+  axis_oauth_codes: Autorisierungscodes für OAuth-Flows
+  axis_oauth_consents: Benutzergenehmigungen für OAuth-Clients
+  axis_oauth_tokens: Zugang und Aktualisierung von Token für OAuth-Clients
 fields:
-  directus_activity:
+  axis_activity:
     item: Item-Primärschlüssel
     action: Aktion
     collection: Sammlung
@@ -1634,7 +1634,7 @@ fields:
     origin: Ursprung
     ip: IP Adresse
     revisions: Revisionen
-  directus_collections:
+  axis_collections:
     collection: Sammlung
     icon: Symbol
     note: Notiz
@@ -1653,7 +1653,7 @@ fields:
     autosave_revision_interval: Aktualisierungsintervall automatisch speichern
     archive_field: Archivfeld
     item_duplication_fields: Vervielfältigungsfelder
-  directus_files:
+  axis_files:
     $thumbnail: Miniaturansicht
     title: Titel
     description: Beschreibung
@@ -1679,7 +1679,7 @@ fields:
     duration: Dauer
     focal_point_x: X-Koordinate
     focal_point_y: Y-Koordinate
-  directus_users:
+  axis_users:
     first_name: Vorname
     last_name: Nachname
     email: E-Mail
@@ -1714,7 +1714,7 @@ fields:
     theme_dark: Dunkles Theme
     theme_light_overrides: Anpassung des hellen Themes
     theme_dark_overrides: Anpassung des dunklen Themes
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1830,7 +1830,7 @@ fields:
     ai_provider_options: Anbieter-Optionen
     ai_provider_options_note: Provider-spezifische Optionen an KI-Endpunkte übergeben.
     ai_header_name: Header
-  directus_shares:
+  axis_shares:
     name: Name
     role: Rolle
     password: Passwort
@@ -1838,7 +1838,7 @@ fields:
     date_end: Enddatum
     max_uses: Max. Verwendungen
     times_used: Anzahl der Nutzungen
-  directus_fields:
+  axis_fields:
     collection: Sammlungsname
     icon: Sammlungsicon
     note: Notiz
@@ -1846,7 +1846,7 @@ fields:
     singleton: Singleton
     translation: Feldnamen-Übersetzungen
     display_template: Vorlage
-  directus_roles:
+  axis_roles:
     name: Rollenname
     icon: Rollen-Symbol
     description: Beschreibung
@@ -1854,7 +1854,7 @@ fields:
     parent: Übergeordnete Rolle
     children: Untergeordnete Rollen
     policies: Richtlinien
-  directus_policies:
+  axis_policies:
     name: Richtlinienname
     description: Beschreibung
     app_access: App-Zugriff
@@ -1862,7 +1862,7 @@ fields:
     ip_access: IP-Zugriff
     enforce_tfa: 2FA erzwingen
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Mein Projekt...
     project_color_note: Login & Logo Hintergrund
     project_logo_note: Weiß 40×40 SVG/PNG
@@ -1892,16 +1892,16 @@ field_options:
     basemaps_style: Mapbox-Stil
     files_divider_title: Dateien & Vorschaubilder
     overrides_divider_title: App-Überschreibungen
-  directus_activity:
+  axis_activity:
     login: Login
     logout: Abmelden
     create: Erstellen
     update: Aktualisieren
     delete: Löschen
-  directus_oauth_clients:
+  axis_oauth_clients:
     registration_type_dcr: DCR
     registration_type_cimd: CIMD
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Verfolge Aktivitäten und Änderungen
     only_track_activity: Nur Aktivitäten verfolgen
     do_not_track_anything: Nichts verfolgen
@@ -1931,7 +1931,7 @@ field_options:
     enable_versioning: Versionierung aktivieren
     interval_default: 'Standard ({minutes} Minuten)'
     interval_default_seconds: 'Standard ({seconds} Sekunden)'
-  directus_files:
+  axis_files:
     title: Ein einzigartiger Titel...
     description: Eine optionale Beschreibung...
     location: Eine optionale Position...
@@ -1939,13 +1939,13 @@ field_options:
     focal_point_divider: Fokuspunkt
     filename_disk: Name auf Festplatte...
     filename_download: Name während des Downloads...
-  directus_policies:
+  axis_policies:
     name: Ein eindeutiger Name für diese Richtlinie...
     description: Eine Beschreibung dieser Richtlinie...
     ip_access: Erlaubte IP-Adressen, IP-Bereiche und CIDR-Blöcke hinzufügen. Leer lassen, um alle zuzulassen...
     enforce_tfa: Zwei-Faktor-Authentifizierung erzwingen
     assigned_to: Zugewiesen an
-  directus_roles:
+  axis_roles:
     name: Der einzigartige Name für diese Rolle...
     description: Eine Beschreibung von dieser Rolle...
     fields:
@@ -1958,7 +1958,7 @@ field_options:
     children_note: Verschachtelte untergeordnete Rollen, welche die Rechte dieser Rolle erben
     collections_name: Sammlungen
     collections_addLabel: Sammlung hinzufügen...
-  directus_users:
+  axis_users:
     preferences_divider: Benutzereinstellungen
     dropdown_auto: Automatisch (Systemeinstellung verwenden)
     dropdown_light: Heller Modus

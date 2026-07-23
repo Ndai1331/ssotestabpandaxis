@@ -205,11 +205,11 @@ def main() -> None:
         "bd-bacsi",
         "bd-lanhdao",
         "bd-nhanvien",
-        "bd-app-directus",
-        "bd-app-abp",
+        "bd-app-axis",
+        "bd-app-hcs",
     )
     groups = {name: ensure_group(token, name) for name in group_names}
-    app_both = [groups["bd-app-directus"], groups["bd-app-abp"]]
+    app_both = [groups["bd-app-axis"], groups["bd-app-hcs"]]
     # Lab users: both apps + one role (override groups in Admin UI to test single-app)
     ensure_user(token, "admin@benhvien.vn", [groups["bd-admin"], *app_both])
     ensure_user(token, "bacsi@benhvien.vn", [groups["bd-bacsi"], *app_both])

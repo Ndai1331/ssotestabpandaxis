@@ -5,7 +5,7 @@ import type { Knex } from 'knex';
 export async function up(knex: Knex): Promise<void> {
 	// remove foreign key constraint for projects already migrated to retentions-p1
 	try {
-		await knex.schema.alterTable('directus_comments', (table) => {
+		await knex.schema.alterTable('axis_comments', (table) => {
 			table.dropForeign('collection');
 		});
 	} catch {
@@ -21,7 +21,7 @@ export async function up(knex: Knex): Promise<void> {
 	while (hasMore) {
 		const legacyComments = await knex
 			.select('*')
-			.from('directus_activity')
+			.from('axis_activity')
 			.where('action', '=', Action.COMMENT)
 			.limit(rowsLimit);
 
@@ -46,7 +46,7 @@ export async function up(knex: Knex): Promise<void> {
 						} else if (!existingUsers.has(legacyCommentUserId)) {
 							const userExists = await trx
 								.select('id')
-								.from('directus_users')
+								.from('axis_users')
 								.where('id', '=', legacyCommentUserId)
 								.first();
 
@@ -59,7 +59,7 @@ export async function up(knex: Knex): Promise<void> {
 						}
 					}
 
-					await trx('directus_comments').insert({
+					await trx('axis_comments').insert({
 						id: primaryKey,
 						collection: legacyComment.collection,
 						item: legacyComment.item,
@@ -68,10 +68,10 @@ export async function up(knex: Knex): Promise<void> {
 						date_created: legacyComment.timestamp,
 					});
 
-					await trx('directus_activity')
+					await trx('axis_activity')
 						.update({
 							action: Action.CREATE,
-							collection: 'directus_comments',
+							collection: 'axis_comments',
 							item: primaryKey,
 							comment: null,
 						})
@@ -81,13 +81,13 @@ export async function up(knex: Knex): Promise<void> {
 		});
 	}
 
-	await knex.schema.alterTable('directus_activity', (table) => {
+	await knex.schema.alterTable('axis_activity', (table) => {
 		table.dropColumn('comment');
 	});
 }
 
 export async function down(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_activity', (table) => {
+	await knex.schema.alterTable('axis_activity', (table) => {
 		table.text('comment');
 	});
 }

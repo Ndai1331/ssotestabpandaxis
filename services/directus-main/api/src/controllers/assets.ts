@@ -27,7 +27,7 @@ const router = Router();
 
 const env = useEnv();
 
-router.use(useCollection('directus_files'));
+router.use(useCollection('axis_files'));
 router.use(checkIsLocked('assets'));
 
 router.post(
@@ -158,14 +158,14 @@ router.get(
 	'/:pk/:filename?',
 	// Validate query params
 	asyncHandler(async (req, res, next) => {
-		const payloadService = new PayloadService('directus_settings', { schema: req.schema });
+		const payloadService = new PayloadService('axis_settings', { schema: req.schema });
 		const defaults = { storage_asset_presets: [], storage_asset_transform: 'all' };
 
 		const database = getDatabase();
 
 		const savedAssetSettings = await database
 			.select('storage_asset_presets', 'storage_asset_transform')
-			.from('directus_settings')
+			.from('axis_settings')
 			.first();
 
 		if (savedAssetSettings) {
@@ -345,7 +345,7 @@ router.get(
 						{
 							accountability: req.accountability,
 							action: 'read',
-							collection: 'directus_files',
+							collection: 'axis_files',
 							primaryKeys: [id],
 						},
 						{

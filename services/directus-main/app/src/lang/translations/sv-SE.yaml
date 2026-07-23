@@ -344,8 +344,8 @@ geometry:
   Polygon: Polygon
 theme_light: Ljust läge
 theme_dark: Mörkt läge
-theme_directus_default: Directus Default
-theme_directus_minimal: Directus Minimal
+theme_axis_default: Directus Default
+theme_axis_minimal: Directus Minimal
 not_available_for_type: Inte tillgänglig för denna typ
 create_translations: Skapa översättningar
 auto_refresh: Uppdatera automatiskt
@@ -1110,22 +1110,22 @@ content: Innehåll
 singleton: Singleton
 singleton_label: Behandla som ett enskilt objekt
 system_fields_locked: Systemfälten är låsta och kan inte redigeras
-directus_collection:
-  directus_activity: Ansvarsloggar för alla händelser
-  directus_comments: Kommentarer för objekt
-  directus_dashboards: Kontrollpaneler i insights modulen
-  directus_migrations: Vilken version av databasen du använder
-  directus_notifications: Meddelande skickat till användare
-  directus_panels: Individuella paneler inom Insights kontrollpaneler
-  directus_revisions: Ögonblicksbilder för all aktivitet
-  directus_roles: Behörighetsgrupper för systemanvändare
-  directus_sessions: Information om användarsessioner
-  directus_settings: Projektets konfigurationsalternativ
-  directus_users: Systemanvändare för plattformen
-  directus_translations: Anpassade översättningar
-  directus_extensions: Konfiguration av tillägg
+axis_collection:
+  axis_activity: Ansvarsloggar för alla händelser
+  axis_comments: Kommentarer för objekt
+  axis_dashboards: Kontrollpaneler i insights modulen
+  axis_migrations: Vilken version av databasen du använder
+  axis_notifications: Meddelande skickat till användare
+  axis_panels: Individuella paneler inom Insights kontrollpaneler
+  axis_revisions: Ögonblicksbilder för all aktivitet
+  axis_roles: Behörighetsgrupper för systemanvändare
+  axis_sessions: Information om användarsessioner
+  axis_settings: Projektets konfigurationsalternativ
+  axis_users: Systemanvändare för plattformen
+  axis_translations: Anpassade översättningar
+  axis_extensions: Konfiguration av tillägg
 fields:
-  directus_activity:
+  axis_activity:
     item: Primärnyckel för objekt
     action: Åtgärd
     collection: Kollektion
@@ -1136,7 +1136,7 @@ fields:
     origin: Ursprung
     ip: IP-adress
     revisions: Revidering
-  directus_collections:
+  axis_collections:
     collection: Kollektion
     icon: Ikon
     note: Anteckning
@@ -1150,7 +1150,7 @@ fields:
     unarchive_value: Avarkivera värde
     sort_field: Sortera fält
     archive_field: Arkivera fält
-  directus_files:
+  axis_files:
     $thumbnail: Miniatyrbild
     title: Rubrik
     description: Beskrivning
@@ -1176,7 +1176,7 @@ fields:
     duration: Varaktighet
     focal_point_x: X-koordinat
     focal_point_y: Y-koordinat
-  directus_users:
+  axis_users:
     first_name: Förnamn
     last_name: Efternamn
     email: E-post
@@ -1208,7 +1208,7 @@ fields:
     theme_dark: Mörkt tema
     theme_light_overrides: Anpassning av ljust tema
     theme_dark_overrides: Anpassning av mörkt tema
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1250,14 +1250,14 @@ fields:
     public_registration_role: Användarroll
     public_registration_verify_email: Verifiera e-post
     visual_editor_urls: URL:er för visuell redigare
-  directus_shares:
+  axis_shares:
     name: Namn
     role: Roll
     password: Lösenord
     date_start: Startdatum
     date_end: Slutdatum
     times_used: Gånger använd
-  directus_fields:
+  axis_fields:
     collection: Namn kollektion
     icon: Ikon kollektion
     note: Anteckning
@@ -1265,13 +1265,13 @@ fields:
     singleton: Singleton
     translation: Översättningar fältnamn
     display_template: Mall
-  directus_roles:
+  axis_roles:
     name: Rollens namn
     icon: Ikon roll
     description: Beskrivning
     users: Användare i rollen
     parent: Förälderroll
-  directus_policies:
+  axis_policies:
     name: Policynamn
     description: Beskrivning
     app_access: Appåtkomst
@@ -1279,7 +1279,7 @@ fields:
     ip_access: IP-åtkomst
     enforce_tfa: Kräv 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Mitt projekt...
     project_color_note: Inloggning & logotyp bakgrund
     project_logo_note: Vit 40×40 SVG/PNG
@@ -1307,12 +1307,12 @@ field_options:
     basemaps_tile: Raster TileJSON
     basemaps_style: Mapbox-stil
     files_divider_title: Filer och miniatyrer
-  directus_activity:
+  axis_activity:
     login: Inloggning
     create: Skapa
     update: Uppdatera
     delete: Radera
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Spåra aktivitet och revisioner
     only_track_activity: Spåra endast aktivitet
     do_not_track_anything: Spåra ingenting
@@ -1336,7 +1336,7 @@ field_options:
     accountability_divider: Ansvarsskyldighet
     duplication_divider: Duplicering
     preview_divider: Förhandsgranska
-  directus_files:
+  axis_files:
     title: En unik titel...
     description: En valfri beskrivning...
     location: En valfri plats...
@@ -1344,10 +1344,10 @@ field_options:
     focal_point_divider: Fokuspunkt
     filename_disk: Namn på disk...
     filename_download: Namn vid nedladdning...
-  directus_policies:
+  axis_policies:
     description: En beskrivning av denna policy...
     assigned_to: Tilldelad till
-  directus_roles:
+  axis_roles:
     name: Unikt namn för denna roll...
     description: Beskrivning av rollen...
     fields:
@@ -1358,7 +1358,7 @@ field_options:
       link_placeholder: Relativ eller absolut URL...
     collections_name: Kollektioner
     collections_addLabel: Lägg till kollektion...
-  directus_users:
+  axis_users:
     preferences_divider: Användarinställningar
     dropdown_auto: Automatisk (baserat på system)
     dropdown_light: Ljust läge

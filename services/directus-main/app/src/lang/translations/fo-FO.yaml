@@ -87,20 +87,20 @@ no_collections_copy: Tú hevur eingi Søvn enn. Set teg vinarliga í samband vi�
 system_collections: Kervissøvnini
 interface_options: Takførisflatastillingar
 system_fields_locked: Kervisteigar eru læstir og kunnu ikki broytast
-directus_collection:
-  directus_roles: Bólkar av loyvum fyri kervisbrúkarum
-  directus_users: Kervisbrúkarir til verkætlanina
+axis_collection:
+  axis_roles: Bólkar av loyvum fyri kervisbrúkarum
+  axis_users: Kervisbrúkarir til verkætlanina
 fields:
-  directus_settings:
+  axis_settings:
     module_bar: Modul Bjálki
-  directus_fields:
+  axis_fields:
     translation: Navna Teiga Umsetingar
-  directus_roles:
+  axis_roles:
     name: Leikluts Heiti
 field_options:
-  directus_collections:
+  axis_collections:
     archive_divider: Skjalasavna
-  directus_users:
+  axis_users:
     dropdown_auto: Sjálvvirkin (Grunda á Kervi)
 interfaces:
   group-tabs:

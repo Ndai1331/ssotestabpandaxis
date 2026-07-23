@@ -23,7 +23,7 @@ const router = useRouter();
 const settingsStore = useSettingsStore();
 const serverStore = useServerStore();
 
-const { fields: allFields } = useCollection('directus_settings');
+const { fields: allFields } = useCollection('axis_settings');
 
 const fields = computed(() =>
 	unref(allFields).filter((field) => field.meta?.group === 'theming_group' || field.field === 'theming_group'),

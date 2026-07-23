@@ -8,7 +8,7 @@ import asyncHandler from '../utils/async-handler.js';
 
 const router = express.Router();
 
-router.use(useCollection('directus_activity'));
+router.use(useCollection('axis_activity'));
 
 const readHandler = asyncHandler(async (req, res, next) => {
 	const service = new ActivityService({
@@ -33,7 +33,7 @@ const readHandler = asyncHandler(async (req, res, next) => {
 
 	const historyQuery = service.getLimitedHistoryQuery(req.sanitizedQuery);
 
-	const meta = await metaService.getMetaForQuery('directus_activity', historyQuery);
+	const meta = await metaService.getMetaForQuery('axis_activity', historyQuery);
 
 	res.locals['payload'] = {
 		data: result,

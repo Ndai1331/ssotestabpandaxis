@@ -347,9 +347,9 @@ geometry:
 theme_auto: Otomatik (Sisteme Bağlı)
 theme_light: Açık Mod
 theme_dark: Koyu Mod
-theme_directus_default: Directus Varsayılanı
-theme_directus_minimal: Direcrus Minimalı
-theme_directus_colormatch: Directus Reng Eşi
+theme_axis_default: Directus Varsayılanı
+theme_axis_minimal: Direcrus Minimalı
+theme_axis_colormatch: Directus Reng Eşi
 not_available_for_type: Bu Tip için Mevcut Değil
 create_translations: Çeviriler Oluşturun
 auto_refresh: Otomatik Yenile
@@ -1175,27 +1175,27 @@ content: İçerik
 singleton: Tekil
 singleton_label: Tekil obje olarak davran
 system_fields_locked: Sistem alanları kilitlidir ve düzenlenemez
-directus_collection:
-  directus_activity: Tüm etkinlikler için izlenebilirlik kayıtları
-  directus_collections: Ek koleksiyon ayarları ve metaveri
-  directus_dashboards: Panolar modülündeki panolar
-  directus_fields: Ek alan ayarları ve metaveri
-  directus_files: Yönetilen tüm dosyalar için metaveri
-  directus_folders: Dosyalar için sanal klasörler sunar
-  directus_migrations: Veritabanının hangi sürümünü kullanıyorsunuz
-  directus_notifications: Bildirimler kullanıcılara gönderildi
-  directus_operations: Akışların içerisindeki operasyonlar
-  directus_panels: Panolar modülündeki panolardaki tekil paneller
-  directus_presets: Koleksiyon varsayılanları ve yer işaretleri için ön ayarlar
-  directus_relations: İlişki ayarı ve metaveri
-  directus_revisions: Tüm etkinlikler için anlık veri görüntüleri
-  directus_roles: Sistem kullanıcıları için yetki grupları
-  directus_sessions: Kullanıcı oturum bilgisi
-  directus_settings: Proje konfigürasyon seçenekleri
-  directus_shares: Dışarı paylaşılan öğeleri takip eder
-  directus_users: Platform için sistem kullanıcıları
+axis_collection:
+  axis_activity: Tüm etkinlikler için izlenebilirlik kayıtları
+  axis_collections: Ek koleksiyon ayarları ve metaveri
+  axis_dashboards: Panolar modülündeki panolar
+  axis_fields: Ek alan ayarları ve metaveri
+  axis_files: Yönetilen tüm dosyalar için metaveri
+  axis_folders: Dosyalar için sanal klasörler sunar
+  axis_migrations: Veritabanının hangi sürümünü kullanıyorsunuz
+  axis_notifications: Bildirimler kullanıcılara gönderildi
+  axis_operations: Akışların içerisindeki operasyonlar
+  axis_panels: Panolar modülündeki panolardaki tekil paneller
+  axis_presets: Koleksiyon varsayılanları ve yer işaretleri için ön ayarlar
+  axis_relations: İlişki ayarı ve metaveri
+  axis_revisions: Tüm etkinlikler için anlık veri görüntüleri
+  axis_roles: Sistem kullanıcıları için yetki grupları
+  axis_sessions: Kullanıcı oturum bilgisi
+  axis_settings: Proje konfigürasyon seçenekleri
+  axis_shares: Dışarı paylaşılan öğeleri takip eder
+  axis_users: Platform için sistem kullanıcıları
 fields:
-  directus_activity:
+  axis_activity:
     item: Öğe Birincil Anahtarı
     action: İşlem
     collection: Koleksiyon
@@ -1206,7 +1206,7 @@ fields:
     origin: Kaynak
     ip: IP Adresi
     revisions: Revizyonlar
-  directus_collections:
+  axis_collections:
     collection: Koleksiyon
     icon: İkon
     note: Not
@@ -1223,7 +1223,7 @@ fields:
     accountability: Etkinlik ve Revizyon Takibi
     archive_field: Arşiv Alanı
     item_duplication_fields: Öğe Çoğaltma Alanları
-  directus_files:
+  axis_files:
     $thumbnail: Küçük Resim
     title: Başlık
     description: Açıklama
@@ -1248,7 +1248,7 @@ fields:
     charset: Karakter Seti
     duration: Süre
     focal_point_x: X-Kordinatı
-  directus_users:
+  axis_users:
     first_name: Ad
     last_name: Soyad
     email: E-posta
@@ -1280,7 +1280,7 @@ fields:
     theme_dark: Karanlık Tema
     theme_light_overrides: Parlak Tema Kişileştirmesi
     theme_dark_overrides: Karanlık Tema Kişileştirilmesi
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1335,7 +1335,7 @@ fields:
     public_registration_email_filter_note: Sadece bu filtreyle uyuşan kullanıcılar giriş yapabilir.
     public_registration_verify_email: Doğrulanmış Email
     ai_header_name: Header
-  directus_shares:
+  axis_shares:
     name: Ad
     role: Rol
     password: Parola
@@ -1343,7 +1343,7 @@ fields:
     date_end: Bitiş Tarihi
     max_uses: Maksimum Kullanım
     times_used: Kullanım Sayısı
-  directus_fields:
+  axis_fields:
     collection: Koleksiyon Adı
     icon: Koleksiyon İkonu
     note: Not
@@ -1351,14 +1351,14 @@ fields:
     singleton: Tekil
     translation: Alan Adı Çevirileri
     display_template: Şablon
-  directus_roles:
+  axis_roles:
     name: Rol Adı
     icon: Rol İkonu
     description: Açıklama
     users: Rol'deki Kullanıcılar
     parent: Ebeveyn Rolü
     children: Çocuk Rolü
-  directus_policies:
+  axis_policies:
     name: Politika İsmi
     description: Açıklama
     app_access: Uygulama Erişimş
@@ -1366,7 +1366,7 @@ fields:
     ip_access: IP Erişimi
     enforce_tfa: 2FA Gerekiyor
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Benim projem...
     project_color_note: Oturum Açma ve Logo Arkaplanı
     project_logo_note: White 40×40 SVG/PNG
@@ -1396,12 +1396,12 @@ field_options:
     basemaps_style: Mapbox Stili
     files_divider_title: Dosya ve Küçük Resimler
     overrides_divider_title: Uygulamada yönlendirme
-  directus_activity:
+  axis_activity:
     login: Oturum Açma
     create: Oluşturma
     update: Güncelleme
     delete: Silme
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Etkinlik ve Revizyonları Takip Et
     only_track_activity: Sadece Etkinlikleri Takip Et
     do_not_track_anything: Hiçbir Şeyi Takip Etme
@@ -1425,7 +1425,7 @@ field_options:
     accountability_divider: İzlenebilirlik
     duplication_divider: Çoğaltma
     preview_divider: Önizleme
-  directus_files:
+  axis_files:
     title: Benzersiz bir başlık...
     description: Opsiyonel bir açıklama...
     location: Opsiyonel bir konum...
@@ -1433,7 +1433,7 @@ field_options:
     focal_point_divider: Odak Noktası
     filename_disk: Diskteki adı...
     filename_download: İndirirkenki adı...
-  directus_roles:
+  axis_roles:
     name: Bu rol için benzersiz bir isim...
     description: Bu rolün bir açıklaması...
     fields:
@@ -1444,7 +1444,7 @@ field_options:
       link_placeholder: Göreceli ya da tam URL...
     collections_name: Koleksiyonlar
     collections_addLabel: Koleksiyon Ekle...
-  directus_users:
+  axis_users:
     preferences_divider: Kullanıcı Tercihleri
     dropdown_auto: Otomatik (Sisteme Göre)
     dropdown_light: Açık Mod

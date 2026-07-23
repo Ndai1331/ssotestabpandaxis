@@ -21,7 +21,7 @@ export function withDefaultSandboxOptions(overrides?: DeepPartial<Options>): Dee
 			cache: false,
 			env: {
 				CACHE_SCHEMA: 'false',
-				DB_FILENAME: `directus_test_${randomUUID()}.db`,
+				DB_FILENAME: `axis_test_${randomUUID()}.db`,
 			},
 		},
 		overrides,

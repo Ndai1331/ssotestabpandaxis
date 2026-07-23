@@ -14,7 +14,7 @@ import asyncHandler from '../utils/async-handler.js';
 
 const router = Router();
 
-router.use(useCollection('directus_fields'));
+router.use(useCollection('axis_fields'));
 
 router.get(
 	'/',

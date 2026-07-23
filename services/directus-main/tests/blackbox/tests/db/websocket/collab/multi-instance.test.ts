@@ -754,7 +754,7 @@ describe('Collaborative Editing: Multi-Instance', () => {
 					role: roleId,
 					permissions: [
 						{ collection: collectionCollabMultiInstance, action: 'read', fields: ['*'] },
-						{ collection: 'directus_versions', action: 'read', fields: ['*'] },
+						{ collection: 'axis_versions', action: 'read', fields: ['*'] },
 					],
 				});
 

@@ -339,9 +339,9 @@ geometry:
 theme_auto: Otomatîk (Li gorî Pergalê)
 theme_light: Moda Ronî
 theme_dark: Moda Tarî
-theme_directus_default: Standarda Directus
-theme_directus_minimal: Directus Minimal
-theme_directus_colormatch: Directus Color Match
+theme_axis_default: Standarda Directus
+theme_axis_minimal: Directus Minimal
+theme_axis_colormatch: Directus Color Match
 not_available_for_type: Ne Berdest e ji bo vê Cureyê
 create_translations: Wergerînan Biafirîne
 auto_refresh: Nûbûna Otomatîk
@@ -1183,34 +1183,34 @@ content: Naverok
 singleton: Yekta
 singleton_label: Wekî tiştê yekta bi kar bîne
 system_fields_locked: Qadên pergalê hatine quflekirin û nayên guhertin
-directus_collection:
-  directus_access: Pêvekirinên polîtîkayê
-  directus_activity: Têketinên berpirsiyariyê ji bo hemû bûyeran
-  directus_collections: Veavakirin û metadaneyên zêde yên koleksiyonê
-  directus_comments: Şîroveyên ji bo hêmanan
-  directus_dashboards: Daşbordên di Modula Têgihiştinan de
-  directus_fields: Veavakirin û metadaneyên zêde yên qadê
-  directus_files: Metadaneya ji bo hemû tiştên pelê yên birêvebirî
-  directus_folders: Peldankên virtual ji bo pelan peyda dike
-  directus_migrations: Tu kîjan guhertoya databeysa bi kar tînî
-  directus_notifications: Agahdariyên şandî ji bikarhêneran re
-  directus_operations: Operasyonên ku di Herikînan de dixebitin
-  directus_panels: Panelên takekesî di daşbordên Têgihiştinan de
-  directus_permissions: Destûrên gihîştinê ji her polîtîkayekê re
-  directus_policies: Polîtîkayên kontrola gihîştinê
-  directus_presets: Pêşmîhengkirin ji bo standardên koleksiyonê û nîşankan
-  directus_relations: Veavakirin û metadaneyên têkiliyê
-  directus_revisions: Wênegirtinên daneya ji bo hemû çalakiyan
-  directus_roles: Komên destûra ji bo bikarhênerên pergalê
-  directus_sessions: Agahdariya danişîna bikarhêner
-  directus_settings: Vebijêrkên veavakirina projeyê
-  directus_shares: Hêmanên ku ji derve hatine parvekirin dişopîne
-  directus_users: Bikarhênerên pergalê ji bo platformê
-  directus_translations: Wergerînên taybet
-  directus_versions: Guhertoyên Naveroka hêmanan
-  directus_extensions: Veavakirina pêvekan
+axis_collection:
+  axis_access: Pêvekirinên polîtîkayê
+  axis_activity: Têketinên berpirsiyariyê ji bo hemû bûyeran
+  axis_collections: Veavakirin û metadaneyên zêde yên koleksiyonê
+  axis_comments: Şîroveyên ji bo hêmanan
+  axis_dashboards: Daşbordên di Modula Têgihiştinan de
+  axis_fields: Veavakirin û metadaneyên zêde yên qadê
+  axis_files: Metadaneya ji bo hemû tiştên pelê yên birêvebirî
+  axis_folders: Peldankên virtual ji bo pelan peyda dike
+  axis_migrations: Tu kîjan guhertoya databeysa bi kar tînî
+  axis_notifications: Agahdariyên şandî ji bikarhêneran re
+  axis_operations: Operasyonên ku di Herikînan de dixebitin
+  axis_panels: Panelên takekesî di daşbordên Têgihiştinan de
+  axis_permissions: Destûrên gihîştinê ji her polîtîkayekê re
+  axis_policies: Polîtîkayên kontrola gihîştinê
+  axis_presets: Pêşmîhengkirin ji bo standardên koleksiyonê û nîşankan
+  axis_relations: Veavakirin û metadaneyên têkiliyê
+  axis_revisions: Wênegirtinên daneya ji bo hemû çalakiyan
+  axis_roles: Komên destûra ji bo bikarhênerên pergalê
+  axis_sessions: Agahdariya danişîna bikarhêner
+  axis_settings: Vebijêrkên veavakirina projeyê
+  axis_shares: Hêmanên ku ji derve hatine parvekirin dişopîne
+  axis_users: Bikarhênerên pergalê ji bo platformê
+  axis_translations: Wergerînên taybet
+  axis_versions: Guhertoyên Naveroka hêmanan
+  axis_extensions: Veavakirina pêvekan
 fields:
-  directus_activity:
+  axis_activity:
     item: Kilîla Sereke ya Hêmanê
     action: Çalakî
     collection: Koleksiyon
@@ -1221,7 +1221,7 @@ fields:
     origin: Çavkanî
     ip: Navnîşana IP
     revisions: Serastkirin
-  directus_collections:
+  axis_collections:
     collection: Koleksiyon
     icon: Îkon
     note: Not
@@ -1239,7 +1239,7 @@ fields:
     versioning: Guhertoparêzî
     archive_field: Qada Arşîvê
     item_duplication_fields: Qadên Dubarkirina Hêmanê
-  directus_files:
+  axis_files:
     $thumbnail: Wêneguhêzk
     title: Sernav
     description: Danasîn
@@ -1265,7 +1265,7 @@ fields:
     duration: Mawe
     focal_point_x: Koordînata-X
     focal_point_y: Koordînata-Y
-  directus_users:
+  axis_users:
     first_name: Navê Pêşîn
     last_name: Navê Paşîn
     email: E-peyam
@@ -1298,7 +1298,7 @@ fields:
     theme_dark: Temaya Tarî
     theme_light_overrides: Taybetkarina Temaya Ronî
     theme_dark_overrides: Taybetkarina Temaya Tarî
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1356,7 +1356,7 @@ fields:
     public_registration_verify_email_note: E-peyamek ji bikarhênerê ku qeyd dibe re dişîne û jê dixwaze ku beriya têketinê li girêdana rastpêkirinê bitikîne.
     visual_editor_urls: URL yên Edîtora Dîtbarî
     ai_header_name: Sernav
-  directus_shares:
+  axis_shares:
     name: Nav
     role: Rol
     password: Şîfre
@@ -1364,7 +1364,7 @@ fields:
     date_end: Dîroka Dawiyê
     max_uses: Bikaranînên Herî Zêde
     times_used: Çend Caran Bikar Hatiye
-  directus_fields:
+  axis_fields:
     collection: Navê Koleksiyonê
     icon: Îkona Koleksiyonê
     note: Not
@@ -1372,14 +1372,14 @@ fields:
     singleton: Yekta
     translation: Wergerînên Navê Qadê
     display_template: Şablon
-  directus_roles:
+  axis_roles:
     name: Navê Rolê
     icon: Îkona Rolê
     description: Danasîn
     users: Bikarhênerên di Rolê de
     parent: Rola Dê
     children: Rolên Zarok
-  directus_policies:
+  axis_policies:
     name: Navê Polîtîkayê
     description: Danasîn
     app_access: Gihîştina Sepanê
@@ -1387,7 +1387,7 @@ fields:
     ip_access: Gihîştina IP
     enforce_tfa: 2FA Mecbûr Bike
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Projeya min...
     project_color_note: Paşa Têketin & Logoyê
     project_logo_note: SVG/PNG ya Spî 40×40
@@ -1417,12 +1417,12 @@ field_options:
     basemaps_style: Şêwaza Mapbox
     files_divider_title: Pel & Wêneguhêzk
     overrides_divider_title: Serdabiriyên Sepanê
-  directus_activity:
+  axis_activity:
     login: Têketin
     create: Afirandin
     update: Nûkirin
     delete: Jêbirin
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Çalakî & Serastikirina Bişopîne
     only_track_activity: Tenê Çalakiyê Bişopîne
     do_not_track_anything: Tiştek Neşopîne
@@ -1448,7 +1448,7 @@ field_options:
     preview_divider: Pêşdîtin
     content_versioning_divider: Guhertoparêziya Naveroka
     enable_versioning: Guhertoparêziyê Çalak Bike
-  directus_files:
+  axis_files:
     title: Sernavek yekta...
     description: Danasînek nebicî...
     location: Cihek nebicî...
@@ -1456,13 +1456,13 @@ field_options:
     focal_point_divider: Xala Fokusê
     filename_disk: Nav li hilanîna diskê...
     filename_download: Nav dema daxistinê...
-  directus_policies:
+  axis_policies:
     name: Navek yekta ji bo vê polîtîkayê...
     description: Danasînek ji bo vê polîtîkayê...
     ip_access: Navnîşanên IP yên destûrdar, navberên IP û CIDR blok zêde bike. Ji bo destûrdana hemûyan vala bihêle...
     enforce_tfa: Rastpêkirina Du-Faktor Mecbûr Bike
     assigned_to: Dayînî
-  directus_roles:
+  axis_roles:
     name: Navê yekta ji bo vê rolê...
     description: Danasînek ji bo vê rolê...
     fields:
@@ -1475,7 +1475,7 @@ field_options:
     children_note: Rolên zarok ên hiyerarşîk ku destûrên vê rolê werdigirin
     collections_name: Koleksiyon
     collections_addLabel: Koleksiyonê Zêde Bike...
-  directus_users:
+  axis_users:
     preferences_divider: Tercîhên Bikarhêner
     dropdown_auto: Otomatîk (Li gorî Pergalê)
     dropdown_light: Moda Ronî

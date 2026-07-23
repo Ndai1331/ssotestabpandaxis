@@ -36,7 +36,7 @@ beforeAll(async () => {
 			IMPORT_IP_DENY_LIST: '169.254.169.254',
 			RATE_LIMITER_MCP_OAUTH_POINTS: '1000',
 			RATE_LIMITER_MCP_OAUTH_DURATION: '60',
-			DB_FILENAME: `directus_test_${getUID()}.db`,
+			DB_FILENAME: `axis_test_${getUID()}.db`,
 		},
 		docker: {
 			suffix: getUID(),
@@ -339,7 +339,7 @@ describe('/mcp-oauth env gate', () => {
 				MCP_OAUTH_ENABLED: 'false',
 				RATE_LIMITER_MCP_OAUTH_POINTS: '1000',
 				RATE_LIMITER_MCP_OAUTH_DURATION: '60',
-				DB_FILENAME: `directus_test_env_${isolationId}.db`,
+				DB_FILENAME: `axis_test_env_${isolationId}.db`,
 			},
 			docker: {
 				suffix: isolationId,

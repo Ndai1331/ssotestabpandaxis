@@ -270,7 +270,7 @@ For content collections (blogs, products, pages), include these optional system 
 
 - `status` - Content workflow (draft/published/archived) with visual indicators
 - `sort` - Manual ordering capability (used with `sort_field` in collection meta)
-- `user_created`/`user_updated` - Track content authors and editors (requires relations to `directus_users`)
+- `user_created`/`user_updated` - Track content authors and editors (requires relations to `axis_users`)
 - `date_created`/`date_updated` - Automatic timestamps for content lifecycle tracking
 
 **Required Relations for User Fields:** After creating the collection, add relations for user tracking fields (use
@@ -283,7 +283,7 @@ For content collections (blogs, products, pages), include these optional system 
 	"data": {
 		"collection": "articles",
 		"field": "user_created",
-		"related_collection": "directus_users",
+		"related_collection": "axis_users",
 		"schema": {}
 	}
 }
@@ -294,7 +294,7 @@ For content collections (blogs, products, pages), include these optional system 
 	"data": {
 		"collection": "articles",
 		"field": "user_updated",
-		"related_collection": "directus_users",
+		"related_collection": "axis_users",
 		"schema": {}
 	}
 }

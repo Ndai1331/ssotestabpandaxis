@@ -14,7 +14,7 @@ describe('SingletonCollections', () => {
 
 	test('excludes core collections defined as singular custom-field types', () => {
 		// @ts-expect-error
-		assertType<SingletonCollections<TestSchema>>('directus_users');
+		assertType<SingletonCollections<TestSchema>>('axis_users');
 	});
 });
 
@@ -31,13 +31,13 @@ describe('RegularCollections', () => {
 
 describe('MergeCoreCollection', () => {
 	test('merges custom fields onto the builtin collection', () => {
-		type MergedUser = MergeCoreCollection<TestSchema, 'directus_users', { id: string; email: string | null }>;
+		type MergedUser = MergeCoreCollection<TestSchema, 'axis_users', { id: string; email: string | null }>;
 
 		assertType<MergedUser>({ id: '1', email: 'a@b.com', custom_field: true });
 	});
 
 	test('builtin fields cannot be overriden by custom core collection fields', () => {
-		type MergedUser = MergeCoreCollection<TestSchema, 'directus_users', { id: string; email: string | null }>;
+		type MergedUser = MergeCoreCollection<TestSchema, 'axis_users', { id: string; email: string | null }>;
 
 		expectTypeOf<MergedUser['id']>().toEqualTypeOf<string>();
 		expectTypeOf<MergedUser['custom_field']>().toEqualTypeOf<boolean | undefined>();
@@ -45,13 +45,13 @@ describe('MergeCoreCollection', () => {
 
 	test('custom fields absent when schema has no extension for that collection', () => {
 		type SchemaWithoutUsers = { articles: { id: number }[] };
-		type BaseUser = MergeCoreCollection<SchemaWithoutUsers, 'directus_users', { id: string; email: string | null }>;
+		type BaseUser = MergeCoreCollection<SchemaWithoutUsers, 'axis_users', { id: string; email: string | null }>;
 
 		assertType<BaseUser>({ id: '1', email: 'a@b.com' });
 	});
 
 	test('falls back to builtin type when schema is any', () => {
-		type AnyUser = MergeCoreCollection<any, 'directus_users', { id: string; email: string | null }>;
+		type AnyUser = MergeCoreCollection<any, 'axis_users', { id: string; email: string | null }>;
 
 		assertType<AnyUser>({ id: '1', email: null });
 	});

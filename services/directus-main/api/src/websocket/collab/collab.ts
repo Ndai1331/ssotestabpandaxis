@@ -99,7 +99,7 @@ export class CollabHandler {
 			this.eventQueue = this.eventQueue
 				.then(async () => {
 					if (
-						event.collection === 'directus_settings' &&
+						event.collection === 'axis_settings' &&
 						event.action === 'update' &&
 						'collaborative_editing_enabled' in event.payload
 					) {
@@ -148,11 +148,11 @@ export class CollabHandler {
 						const roomsToUpdate = Object.values(this.roomManager.rooms).filter((room) => {
 							// Versioned Rooms
 							if (room.version) {
-								return event.collection === 'directus_versions' && keys.some((key) => String(key) === room.version);
+								return event.collection === 'axis_versions' && keys.some((key) => String(key) === room.version);
 							}
 
 							// Skip non-matching collections and version events
-							if (room.collection !== event.collection || event.collection === 'directus_versions') return false;
+							if (room.collection !== event.collection || event.collection === 'axis_versions') return false;
 
 							// Match singleton
 							if (room.item === null) return true;
@@ -347,7 +347,7 @@ export class CollabHandler {
 					{
 						accountability: client.accountability!,
 						action: 'read',
-						collection: 'directus_versions',
+						collection: 'axis_versions',
 						primaryKeys: [message.version],
 					},
 					{ knex: db, schema },

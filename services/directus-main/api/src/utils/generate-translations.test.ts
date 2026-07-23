@@ -139,9 +139,9 @@ describe('generateTranslations', () => {
 		database = knex.default({ client: Client_PG });
 		tracker = createTracker(database);
 
-		// Default: return empty results for directus_fields queries (sort logic)
-		tracker.on.select('directus_fields').response([]);
-		tracker.on.update('directus_fields').response(0);
+		// Default: return empty results for axis_fields queries (sort logic)
+		tracker.on.select('axis_fields').response([]);
+		tracker.on.update('axis_fields').response(0);
 
 		sourceFieldsMap = {
 			title: {
@@ -1146,7 +1146,7 @@ describe('generateTranslations', () => {
 		tracker.reset();
 
 		// First select: parent collection fields with sort order
-		tracker.on.select('directus_fields').responseOnce([
+		tracker.on.select('axis_fields').responseOnce([
 			{ field: 'id', sort: 1 },
 			{ field: 'title', sort: 2 },
 			{ field: 'subtitle', sort: 3 },
@@ -1154,7 +1154,7 @@ describe('generateTranslations', () => {
 		]);
 
 		// Second select: existing translation collection fields
-		tracker.on.select('directus_fields').responseOnce([
+		tracker.on.select('axis_fields').responseOnce([
 			{ field: 'id', sort: 1 },
 			{ field: 'articles_id', sort: 2 },
 			{ field: 'languages_code', sort: 3 },
@@ -1162,7 +1162,7 @@ describe('generateTranslations', () => {
 		]);
 
 		// Updates for shifting existing fields
-		tracker.on.update('directus_fields').response(1);
+		tracker.on.update('axis_fields').response(1);
 
 		const createFieldSpy = vi.spyOn(FieldsService.prototype, 'createField').mockResolvedValue(undefined as any);
 
@@ -1215,7 +1215,7 @@ describe('generateTranslations', () => {
 		tracker.reset();
 
 		// Parent fields: subtitle (sort=2) comes before body (sort=3)
-		tracker.on.select('directus_fields').responseOnce([
+		tracker.on.select('axis_fields').responseOnce([
 			{ field: 'id', sort: 1 },
 			{ field: 'title', sort: 2 },
 			{ field: 'subtitle', sort: 3 },
@@ -1223,7 +1223,7 @@ describe('generateTranslations', () => {
 		]);
 
 		// Existing translation fields: body is at sort=4
-		tracker.on.select('directus_fields').responseOnce([
+		tracker.on.select('axis_fields').responseOnce([
 			{ field: 'id', sort: 1 },
 			{ field: 'articles_id', sort: 2 },
 			{ field: 'languages_code', sort: 3 },
@@ -1232,7 +1232,7 @@ describe('generateTranslations', () => {
 
 		const updateQueries: { field: string; sort: number }[] = [];
 
-		tracker.on.update('directus_fields').response((rawQuery: any) => {
+		tracker.on.update('axis_fields').response((rawQuery: any) => {
 			const bindings = rawQuery.bindings ?? [];
 
 			// knex update bindings: [newSortValue, collection, field]

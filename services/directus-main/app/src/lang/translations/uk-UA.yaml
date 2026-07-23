@@ -372,9 +372,9 @@ geometry:
 theme_auto: Автоматично (залежно від системи)
 theme_light: Світлий режим
 theme_dark: Темний режим
-theme_directus_default: Directus за замовчуванням
-theme_directus_minimal: Directus мінімальний
-theme_directus_colormatch: Directus збіг кольорів
+theme_axis_default: Directus за замовчуванням
+theme_axis_minimal: Directus мінімальний
+theme_axis_colormatch: Directus збіг кольорів
 not_available_for_type: Не доступно для цього типу
 create_translations: Створити переклади
 auto_refresh: Автооновлення
@@ -1244,35 +1244,35 @@ content: Вміст
 singleton: Об'єкт-одинак
 singleton_label: Вважати як один об'єкт
 system_fields_locked: Системні поля заблоковані і не можуть бути відредаговані
-directus_collection:
-  directus_access: Додатки до політики
-  directus_activity: Облікові записи для всіх подій
-  directus_collections: Додаткова конфігурація колекції та метадані
-  directus_comments: Коментарі до предметів
-  directus_dashboards: Панелі керування в межах модуля інсайтів
-  directus_fields: Додаткова конфігурація поля та метадані
-  directus_files: Метадані для всіх керованих файлів
-  directus_flows: Автоматизація процесів
-  directus_folders: Забезпечує віртуальні каталоги для файлів
-  directus_migrations: Яку версію бази даних ви використовуєте
-  directus_notifications: Сповіщення відіслано користувачам
-  directus_operations: Дії які виконуються Автоматизацією
-  directus_panels: Окремі панелі на панелях керування інсайтів
-  directus_permissions: Права доступу для кожної політики
-  directus_policies: Політики контролю доступу
-  directus_presets: Попередні налаштування для передустановок і закладок колекції
-  directus_relations: Конфігурація зв'язків і метадані
-  directus_revisions: Знімки даних для всіх видів діяльності
-  directus_roles: Групи дозволів для користувачів системи
-  directus_sessions: Інформація про сеанс користувача
-  directus_settings: Параметри конфігурації проекту
-  directus_shares: Відстежує зовнішні елементи
-  directus_users: Користувачі системи для платформи
-  directus_translations: Індивідуальні переклади
-  directus_versions: Версії вмісту для позицій
-  directus_extensions: Налаштування розширень
+axis_collection:
+  axis_access: Додатки до політики
+  axis_activity: Облікові записи для всіх подій
+  axis_collections: Додаткова конфігурація колекції та метадані
+  axis_comments: Коментарі до предметів
+  axis_dashboards: Панелі керування в межах модуля інсайтів
+  axis_fields: Додаткова конфігурація поля та метадані
+  axis_files: Метадані для всіх керованих файлів
+  axis_flows: Автоматизація процесів
+  axis_folders: Забезпечує віртуальні каталоги для файлів
+  axis_migrations: Яку версію бази даних ви використовуєте
+  axis_notifications: Сповіщення відіслано користувачам
+  axis_operations: Дії які виконуються Автоматизацією
+  axis_panels: Окремі панелі на панелях керування інсайтів
+  axis_permissions: Права доступу для кожної політики
+  axis_policies: Політики контролю доступу
+  axis_presets: Попередні налаштування для передустановок і закладок колекції
+  axis_relations: Конфігурація зв'язків і метадані
+  axis_revisions: Знімки даних для всіх видів діяльності
+  axis_roles: Групи дозволів для користувачів системи
+  axis_sessions: Інформація про сеанс користувача
+  axis_settings: Параметри конфігурації проекту
+  axis_shares: Відстежує зовнішні елементи
+  axis_users: Користувачі системи для платформи
+  axis_translations: Індивідуальні переклади
+  axis_versions: Версії вмісту для позицій
+  axis_extensions: Налаштування розширень
 fields:
-  directus_activity:
+  axis_activity:
     item: Первинний ключ елемента
     action: Дія
     collection: Колекція
@@ -1283,7 +1283,7 @@ fields:
     origin: Джерело
     ip: IP адреса
     revisions: Версії
-  directus_collections:
+  axis_collections:
     collection: Колекція
     icon: Іконка
     note: Примітка
@@ -1301,7 +1301,7 @@ fields:
     versioning: Керування версіями
     archive_field: Архівувати поле
     item_duplication_fields: Поля дублювання об'єктів
-  directus_files:
+  axis_files:
     $thumbnail: Мініатюра
     title: Заголовок
     description: Опис
@@ -1327,7 +1327,7 @@ fields:
     duration: Тривалість
     focal_point_x: X-координати
     focal_point_y: Y-координати
-  directus_users:
+  axis_users:
     first_name: Ім'я
     last_name: Прізвище
     email: Email
@@ -1361,7 +1361,7 @@ fields:
     theme_dark: Темна тема
     theme_light_overrides: Налаштування світлої теми
     theme_dark_overrides: Налаштування темної теми
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1432,7 +1432,7 @@ fields:
     mcp_system_prompt: Користувацький Системний рядок
     mcp_system_prompt_note: 'Спеціальний запит щодо заміни стандартної системи. Залиште порожнім, щоб використовувати стандартну (якщо вказано вище).'
     ai_header_name: Заголовок
-  directus_shares:
+  axis_shares:
     name: Назва
     role: Роль
     password: Пароль
@@ -1440,7 +1440,7 @@ fields:
     date_end: Дата завершення
     max_uses: Максимум використань
     times_used: Кількість використань
-  directus_fields:
+  axis_fields:
     collection: Назва колекції
     icon: Іконка колекції
     note: Примітка
@@ -1448,14 +1448,14 @@ fields:
     singleton: Об'єкт-одинак
     translation: Переклад назви поля
     display_template: Шаблон
-  directus_roles:
+  axis_roles:
     name: Назва ролі
     icon: Іконка ролі
     description: Опис
     users: Користувачі у ролі
     parent: Батьківська роль
     children: Дитячі ролі
-  directus_policies:
+  axis_policies:
     name: Назва політики
     description: Опис
     app_access: Доступ до програми
@@ -1463,7 +1463,7 @@ fields:
     ip_access: IP доступ
     enforce_tfa: Вимагати 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Мій проект...
     project_color_note: Фон входу та логотипу
     project_logo_note: Білий 40x40 SVG/PNG
@@ -1493,12 +1493,12 @@ field_options:
     basemaps_style: Стиль Mapbox
     files_divider_title: Файли та мініатюри
     overrides_divider_title: Перевизначення програми
-  directus_activity:
+  axis_activity:
     login: Увійти
     create: Створити
     update: Оновити
     delete: Видалити
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Відстежувати активність та ревізії
     only_track_activity: Лише відстежувати діяльність
     do_not_track_anything: Нічого не відслідковувати
@@ -1524,7 +1524,7 @@ field_options:
     preview_divider: Перегляд
     content_versioning_divider: Керування версіями вмісту
     enable_versioning: Дозволити керування версіями
-  directus_files:
+  axis_files:
     title: Унікальний заголовок...
     description: Опціональний опис...
     location: Опціональне розташування...
@@ -1532,13 +1532,13 @@ field_options:
     focal_point_divider: Фокус
     filename_disk: Назва на диску пам'яті...
     filename_download: Назва під час завантаження...
-  directus_policies:
+  axis_policies:
     name: Унікальна назва цієї політики...
     description: Опис цієї політики...
     ip_access: Додайте дозволені IP-адреси, IP-діапазони та блоки CIDR. Залиште порожнім, щоб дозволити всім...
     enforce_tfa: Застосувати двофакторну автентифікацію
     assigned_to: Призначено
-  directus_roles:
+  axis_roles:
     name: Унікальна назва для цієї ролі...
     description: Опис цієї ролі...
     fields:
@@ -1551,7 +1551,7 @@ field_options:
     children_note: Вкладені дочірні ролі, які успадковують дозволи цієї ролі
     collections_name: Колекції
     collections_addLabel: Додати колекцію...
-  directus_users:
+  axis_users:
     preferences_divider: Налаштування користувача
     dropdown_auto: Автоматичний вибір (основано на системі)
     dropdown_light: Світлий режим

@@ -291,7 +291,7 @@ describe('OAuth token isolation', () => {
 	test('OAuth access_token cannot access non-MCP endpoints', async () => {
 		const { tokens } = await createOAuthTokens();
 
-		const itemsResponse = await fetch(`${baseUrl}/items/directus_users`, {
+		const itemsResponse = await fetch(`${baseUrl}/items/axis_users`, {
 			headers: { Authorization: `Bearer ${tokens.access_token}` },
 		});
 

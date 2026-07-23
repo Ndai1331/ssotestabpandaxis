@@ -96,7 +96,7 @@ table.integer('age').unsigned().nullable();
 
 #### `setupSystemCollectionMocks(tracker)`
 
-Sets up default CRUD operation mocks for all Directus system collections (directus_collections, directus_fields, etc.).
+Sets up default CRUD operation mocks for all Directus system collections (axis_collections, axis_fields, etc.).
 
 **Parameters:**
 
@@ -1049,9 +1049,9 @@ describe('Service Tests', () => {
 		setupSystemCollectionMocks(tracker);
 	});
 
-	test('should query directus_fields', async () => {
+	test('should query axis_fields', async () => {
 		// Override the default empty response for specific tests
-		tracker.on.select('directus_fields').response([{ id: 1, collection: 'users', field: 'name' }]);
+		tracker.on.select('axis_fields').response([{ id: 1, collection: 'users', field: 'name' }]);
 
 		const service = new YourService({ knex: db, schema });
 		const fields = await service.getFields('users');

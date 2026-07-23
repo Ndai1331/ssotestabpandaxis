@@ -48,10 +48,10 @@ const brandStyleCss = computed(() => {
 
 useHead({
 	style: [{ textContent: brandStyleCss }],
-	title: 'Directus',
+	title: 'Axis',
 	titleTemplate: '%s · %projectName',
 	templateParams: {
-		projectName: computed(() => serverStore.info?.project?.project_name ?? 'Directus'),
+		projectName: computed(() => serverStore.info?.project?.project_name ?? 'Axis'),
 	},
 	htmlAttrs: computed(() => ({
 		lang: userStore.language,

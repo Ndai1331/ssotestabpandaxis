@@ -794,25 +794,25 @@ content: Content
 singleton: Singleton
 singleton_label: Treat as single object
 system_fields_locked: System fields are locked and can't be edited
-directus_collection:
-  directus_activity: Accountability logs for all events
-  directus_collections: Additional collection configuration and metadata
-  directus_dashboards: Dashboards within the Insights module
-  directus_fields: Additional field configuration and metadata
-  directus_files: Metadata for all managed file assets
-  directus_folders: Provides virtual directories for files
-  directus_migrations: What version of the database you're using
-  directus_notifications: Notifications sent to users
-  directus_panels: Individual panels within Insights dashboards
-  directus_presets: Presets for collection defaults and bookmarks
-  directus_relations: Relationship configuration and metadata
-  directus_revisions: Data snapshots for all activity
-  directus_roles: Permission groups for system users
-  directus_sessions: User session information
-  directus_settings: Project configuration options
-  directus_users: System users for the platform
+axis_collection:
+  axis_activity: Accountability logs for all events
+  axis_collections: Additional collection configuration and metadata
+  axis_dashboards: Dashboards within the Insights module
+  axis_fields: Additional field configuration and metadata
+  axis_files: Metadata for all managed file assets
+  axis_folders: Provides virtual directories for files
+  axis_migrations: What version of the database you're using
+  axis_notifications: Notifications sent to users
+  axis_panels: Individual panels within Insights dashboards
+  axis_presets: Presets for collection defaults and bookmarks
+  axis_relations: Relationship configuration and metadata
+  axis_revisions: Data snapshots for all activity
+  axis_roles: Permission groups for system users
+  axis_sessions: User session information
+  axis_settings: Project configuration options
+  axis_users: System users for the platform
 fields:
-  directus_activity:
+  axis_activity:
     item: Item Primary Key
     action: Action
     collection: Collection
@@ -822,7 +822,7 @@ fields:
     user_agent: User Agent
     ip: IP Address
     revisions: Revisions
-  directus_collections:
+  axis_collections:
     collection: Collection
     icon: Icon
     note: Note
@@ -839,7 +839,7 @@ fields:
     accountability: Activity & Revision Tracking
     archive_field: Archive Field
     item_duplication_fields: Item Duplication Fields
-  directus_files:
+  axis_files:
     $thumbnail: Thumbnail
     title: Title
     description: Description
@@ -863,7 +863,7 @@ fields:
     height: Height
     charset: Charset
     duration: Duration
-  directus_users:
+  axis_users:
     first_name: First Name
     last_name: Last Name
     email: Email
@@ -889,7 +889,7 @@ fields:
     external_identifier: External Identifier
     last_page: Last Page
     last_access: Last Access
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -927,7 +927,7 @@ fields:
     transformations_none: Disable transformations
     transformations_presets: Limit transformations to presets below
     ai_header_name: Header
-  directus_shares:
+  axis_shares:
     name: Name
     role: Role
     password: Password
@@ -935,7 +935,7 @@ fields:
     date_end: Date End
     max_uses: Max Uses
     times_used: Times Used
-  directus_fields:
+  axis_fields:
     collection: Collection Name
     icon: Collection Icon
     note: Note
@@ -943,15 +943,15 @@ fields:
     singleton: Singleton
     translation: Field Name Translations
     display_template: Template
-  directus_roles:
+  axis_roles:
     name: Role Name
     icon: Role Icon
     description: Description
     users: Users in Role
-  directus_policies:
+  axis_policies:
     description: Description
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: My project...
     project_color_note: Login & Logo Background
     public_note_placeholder: A short, public message that supports markdown formatting...
@@ -979,12 +979,12 @@ field_options:
     basemaps_style: Mapbox Style
     files_divider_title: Files & Thumbnails
     overrides_divider_title: App Overrides
-  directus_activity:
+  axis_activity:
     login: Login
     create: Create
     update: Update
     delete: Delete
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Track Activity & Revisions
     only_track_activity: Only Track Activity
     do_not_track_anything: Do Not Track Anything
@@ -1008,14 +1008,14 @@ field_options:
     accountability_divider: Accountability
     duplication_divider: Duplication
     preview_divider: Preview
-  directus_files:
+  axis_files:
     title: A unique title...
     description: An optional description...
     location: An optional location...
     storage_divider: File Naming
     filename_disk: Name on disk storage...
     filename_download: Name when downloading...
-  directus_roles:
+  axis_roles:
     name: The unique name for this role...
     description: A description of this role...
     fields:
@@ -1026,7 +1026,7 @@ field_options:
       link_placeholder: Relative or absolute URL...
     collections_name: Collections
     collections_addLabel: Add Collection...
-  directus_users:
+  axis_users:
     preferences_divider: User Preferences
     dropdown_auto: Automatic (Based on System)
     dropdown_light: Light Mode

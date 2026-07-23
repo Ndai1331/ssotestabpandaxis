@@ -235,7 +235,7 @@ describe('POST /licenses/pending-resolution', () => {
 		const policy = await api.request(createPolicy({ name: 'pr-policy' }));
 
 		await api.request(
-			createPermission({ policy: policy['id'], collection: 'directus_users', action: 'read', fields: ['first_name'] }),
+			createPermission({ policy: policy['id'], collection: 'axis_users', action: 'read', fields: ['first_name'] }),
 		);
 
 		try {

@@ -12,10 +12,10 @@ export async function _fetchPoliciesIpAccess(
 	accountability: Pick<Accountability, 'user' | 'roles'>,
 	knex: Knex,
 ): Promise<string[][]> {
-	const query = knex('directus_access')
-		.select({ ip_access: 'directus_policies.ip_access' })
-		.leftJoin('directus_policies', 'directus_access.policy', 'directus_policies.id')
-		.whereNotNull('directus_policies.ip_access');
+	const query = knex('axis_access')
+		.select({ ip_access: 'axis_policies.ip_access' })
+		.leftJoin('axis_policies', 'axis_access.policy', 'axis_policies.id')
+		.whereNotNull('axis_policies.ip_access');
 
 	// No roles and no user means unauthenticated request
 	if (accountability.roles.length === 0 && !accountability.user) {
@@ -26,10 +26,10 @@ export async function _fetchPoliciesIpAccess(
 	} else {
 		query.where(function () {
 			if (accountability.user) {
-				this.orWhere('directus_access.user', accountability.user);
+				this.orWhere('axis_access.user', accountability.user);
 			}
 
-			this.orWhereIn('directus_access.role', accountability.roles);
+			this.orWhereIn('axis_access.role', accountability.roles);
 		});
 	}
 

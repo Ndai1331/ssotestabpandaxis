@@ -190,7 +190,7 @@ describe('CollabHandler', () => {
 			await handler.onJoin(mockClient, { action: 'join', collection: 'articles', item: 1, version: 'v1' } as any);
 
 			expect(validateItemAccess).toHaveBeenCalledWith(
-				expect.objectContaining({ collection: 'directus_versions', primaryKeys: ['v1'] }),
+				expect.objectContaining({ collection: 'axis_versions', primaryKeys: ['v1'] }),
 				expect.anything(),
 			);
 
@@ -888,7 +888,7 @@ describe('CollabHandler', () => {
 			handler.roomManager.rooms['room2'] = mockRoom2 as any;
 
 			await busCallback({
-				collection: 'directus_versions',
+				collection: 'axis_versions',
 				action: 'update',
 				keys: ['v1'],
 			});
@@ -913,7 +913,7 @@ describe('CollabHandler', () => {
 			vi.useRealTimers();
 
 			await busCallback({
-				collection: 'directus_settings',
+				collection: 'axis_settings',
 				action: 'update',
 				payload: { collaborative_editing_enabled: false },
 			});
@@ -947,7 +947,7 @@ describe('CollabHandler', () => {
 			vi.useRealTimers();
 
 			await busCallback({
-				collection: 'directus_settings',
+				collection: 'axis_settings',
 				action: 'update',
 				payload: { collaborative_editing_enabled: true },
 			});
@@ -1064,7 +1064,7 @@ describe('CollabHandler', () => {
 			);
 
 			const event = {
-				collection: 'directus_settings',
+				collection: 'axis_settings',
 				action: 'update',
 				payload: { collaborative_editing_enabled: false },
 			};

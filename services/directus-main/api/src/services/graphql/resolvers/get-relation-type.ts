@@ -11,10 +11,10 @@ export function getRelationType(schemaComposer: SchemaComposer, schema: Schema, 
 	const prefix = action === 'read' ? '' : 'write_';
 
 	const Relation = schemaComposer.createObjectTC({
-		name: `${prefix}directus_relations`,
+		name: `${prefix}axis_relations`,
 	});
 
-	if ('directus_relations' in schema.read.collections === false) {
+	if ('axis_relations' in schema.read.collections === false) {
 		return Relation;
 	}
 
@@ -23,7 +23,7 @@ export function getRelationType(schemaComposer: SchemaComposer, schema: Schema, 
 		field: GraphQLString,
 		related_collection: GraphQLString,
 		schema: schemaComposer.createObjectTC({
-			name: `${prefix}directus_relations_schema`,
+			name: `${prefix}axis_relations_schema`,
 			fields: {
 				table: new GraphQLNonNull(GraphQLString),
 				column: new GraphQLNonNull(GraphQLString),
@@ -35,8 +35,8 @@ export function getRelationType(schemaComposer: SchemaComposer, schema: Schema, 
 			},
 		}),
 		meta: schemaComposer.createObjectTC({
-			name: `${prefix}directus_relations_meta`,
-			fields: Object.values(schema.read.collections['directus_relations']!.fields).reduce(
+			name: `${prefix}axis_relations_meta`,
+			fields: Object.values(schema.read.collections['axis_relations']!.fields).reduce(
 				(acc, field) => {
 					acc[field.field] = {
 						type: getGraphQLType(field.type, field.special),

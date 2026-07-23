@@ -8,14 +8,14 @@ import { getHelpers } from '../helpers/index.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export async function up(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_extensions', (table) => {
+	await knex.schema.alterTable('axis_extensions', (table) => {
 		table.uuid('id').nullable();
 		table.string('folder');
 		table.string('source');
 		table.uuid('bundle');
 	});
 
-	const installedExtensions = await knex.select('name').from('directus_extensions');
+	const installedExtensions = await knex.select('name').from('axis_extensions');
 
 	// name: id
 	const idMap = new Map<string, { id: string; source: 'local' | 'module' }>();
@@ -24,7 +24,7 @@ export async function up(knex: Knex): Promise<void> {
 		// Delete extension meta status that used the legacy `${name}:${type}` name syntax for
 		// extension-folder scoped extensions
 		if (name.includes(':')) {
-			await knex('directus_extensions').delete().where({ name });
+			await knex('axis_extensions').delete().where({ name });
 		} else {
 			const id = randomUUID();
 
@@ -39,7 +39,7 @@ export async function up(knex: Knex): Promise<void> {
 				source = 'local';
 			}
 
-			await knex('directus_extensions').update({ id, source, folder: name }).where({ name });
+			await knex('axis_extensions').update({ id, source, folder: name }).where({ name });
 			idMap.set(name, { id, source });
 		}
 	}
@@ -62,7 +62,7 @@ export async function up(knex: Knex): Promise<void> {
 
 		if (!bundleParent) continue;
 
-		await knex('directus_extensions')
+		await knex('axis_extensions')
 			.update({
 				bundle: bundleParent.id,
 				folder: name.substring(bundleParentName.length + 1),
@@ -71,16 +71,16 @@ export async function up(knex: Knex): Promise<void> {
 			.where({ folder: name });
 	}
 
-	await knex.schema.alterTable('directus_extensions', (table) => {
+	await knex.schema.alterTable('axis_extensions', (table) => {
 		table.uuid('id').alter().notNullable();
 	});
 
 	// knex does not bundle the drop + add PK, the transaction ensures they are apart of the same commit for databases that require it
 	await knex.transaction(async (trx) => {
-		await getHelpers(trx).schema.changePrimaryKey('directus_extensions', ['id']);
+		await getHelpers(trx).schema.changePrimaryKey('axis_extensions', ['id']);
 	});
 
-	await knex.schema.alterTable('directus_extensions', (table) => {
+	await knex.schema.alterTable('axis_extensions', (table) => {
 		table.dropColumn('name');
 		table.string('source').alter().notNullable();
 		table.string('folder').alter().notNullable();
@@ -93,17 +93,17 @@ export async function up(knex: Knex): Promise<void> {
  * But we still need to do the name convertion, in order for the migration to succeed.
  */
 export async function down(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_extensions', (table) => {
+	await knex.schema.alterTable('axis_extensions', (table) => {
 		table.string('name');
 	});
 
-	const installedExtensions = await knex.select(['id', 'folder', 'bundle', 'source']).from('directus_extensions');
+	const installedExtensions = await knex.select(['id', 'folder', 'bundle', 'source']).from('axis_extensions');
 
 	const idMap = new Map<string, string>(installedExtensions.map((extension) => [extension.id, extension.folder]));
 
 	for (const { id, folder, bundle, source } of installedExtensions) {
 		if (source === 'registry') {
-			await knex('directus_extensions').delete().where({ id });
+			await knex('axis_extensions').delete().where({ id });
 			continue;
 		}
 
@@ -115,14 +115,14 @@ export async function down(knex: Knex): Promise<void> {
 			name = `${bundleParentName}/${name}`;
 		}
 
-		await knex('directus_extensions').update({ name }).where({ id });
+		await knex('axis_extensions').update({ name }).where({ id });
 	}
 
 	await knex.transaction(async (trx) => {
-		await getHelpers(trx).schema.changePrimaryKey('directus_extensions', ['name']);
+		await getHelpers(trx).schema.changePrimaryKey('axis_extensions', ['name']);
 	});
 
-	await knex.schema.alterTable('directus_extensions', (table) => {
+	await knex.schema.alterTable('axis_extensions', (table) => {
 		table.dropColumns('id', 'folder', 'source', 'bundle');
 		table.string('name').alter().notNullable();
 	});

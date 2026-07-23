@@ -209,15 +209,15 @@ creating_in: 'Əlavə et: {collection}'
 editing_in: 'Redaktə et: {collection}'
 source_registry: Marketplace
 fields:
-  directus_activity:
+  axis_activity:
     revisions: Dəyişikliklər
-  directus_settings:
+  axis_settings:
     module_bar: Modul çərçivəsi
-  directus_fields:
+  axis_fields:
     translation: Sütun adlarının tərcüməsi
-  directus_roles:
+  axis_roles:
     name: Rol adı
-  directus_policies:
+  axis_policies:
     name:
 shares: Paylaşımlar
 ai:

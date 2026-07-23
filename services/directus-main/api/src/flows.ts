@@ -181,7 +181,7 @@ class FlowManager {
 								return toArray(flow.options['collections']).map((collection: string) => {
 									if (isSystemCollection(collection)) {
 										const action = scope.split('.')[1];
-										return collection.substring(9) + '.' + action;
+										return collection.substring(5) + '.' + action;
 									}
 
 									return `${collection}.${scope}`;
@@ -435,7 +435,7 @@ class FlowManager {
 			const activity = await activityService.createOne({
 				action: Action.RUN,
 				user: accountability?.user ?? null,
-				collection: 'directus_flows',
+				collection: 'axis_flows',
 				ip: accountability?.ip ?? null,
 				user_agent: accountability?.userAgent ?? null,
 				origin: accountability?.origin ?? null,
@@ -450,7 +450,7 @@ class FlowManager {
 
 				await revisionsService.createOne({
 					activity: activity,
-					collection: 'directus_flows',
+					collection: 'axis_flows',
 					item: flow.id,
 					data: {
 						steps: steps.map((step) => redactObject(step, { values: this.envs }, getRedactedString)),

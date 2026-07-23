@@ -242,7 +242,7 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_collections' in schema.read.collections) {
+	if ('axis_collections' in schema.read.collections) {
 		const Collection = getCollectionType(schemaComposer, schema, 'read');
 
 		schemaComposer.Query.addFields({
@@ -255,7 +255,7 @@ export function injectSystemResolvers(
 					});
 
 					return await collectionsService.readByQuery();
-				}, 'directus_collections'),
+				}, 'axis_collections'),
 			},
 
 			collections_by_name: {
@@ -275,7 +275,7 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_fields' in schema.read.collections) {
+	if ('axis_fields' in schema.read.collections) {
 		const Field = getFieldType(schemaComposer, schema, 'read');
 
 		schemaComposer.Query.addFields({
@@ -288,7 +288,7 @@ export function injectSystemResolvers(
 					});
 
 					return await service.readAll();
-				}, 'directus_fields'),
+				}, 'axis_fields'),
 			},
 			fields_in_collection: {
 				type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(Field.getType()))),
@@ -322,7 +322,7 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_relations' in schema.read.collections) {
+	if ('axis_relations' in schema.read.collections) {
 		const Relation = getRelationType(schemaComposer, schema, 'read');
 
 		schemaComposer.Query.addFields({
@@ -335,7 +335,7 @@ export function injectSystemResolvers(
 					});
 
 					return await service.readAll();
-				}, 'directus_relations'),
+				}, 'axis_relations'),
 			},
 			relations_in_collection: {
 				type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(Relation.getType()))),
@@ -371,10 +371,10 @@ export function injectSystemResolvers(
 
 	resolveSystemAdmin(gql, schema, schemaComposer);
 
-	if ('directus_users' in schema.read.collections) {
+	if ('axis_users' in schema.read.collections) {
 		schemaComposer.Query.addFields({
 			users_me: {
-				type: ReadCollectionTypes['directus_users']!,
+				type: ReadCollectionTypes['axis_users']!,
 				resolve: dedupeResolver(async (_, args, __, info) => {
 					if (!gql.accountability?.user) return null;
 					const service = new UsersService({ schema: gql.schema, accountability: gql.accountability });
@@ -387,7 +387,7 @@ export function injectSystemResolvers(
 						selections || [],
 						info.variableValues,
 						gql.accountability,
-						'directus_users',
+						'axis_users',
 					);
 
 					return await service.readOne(gql.accountability.user, query);
@@ -396,7 +396,7 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_permissions' in schema.read.collections) {
+	if ('axis_permissions' in schema.read.collections) {
 		schemaComposer.Query.addFields({
 			permissions_me: {
 				type: schemaComposer.createScalarTC<CollectionAccess>({
@@ -418,10 +418,10 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_roles' in schema.read.collections) {
+	if ('axis_roles' in schema.read.collections) {
 		schemaComposer.Query.addFields({
 			roles_me: {
-				type: ReadCollectionTypes['directus_roles']!.List,
+				type: ReadCollectionTypes['axis_roles']!.List,
 				resolve: dedupeResolver(async (_, args, __, info) => {
 					if (!gql.accountability?.user && !gql.accountability?.role) return null;
 
@@ -438,7 +438,7 @@ export function injectSystemResolvers(
 						selections || [],
 						info.variableValues,
 						gql.accountability,
-						'directus_roles',
+						'axis_roles',
 					);
 
 					query.limit = -1;
@@ -451,7 +451,7 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_policies' in schema.read.collections) {
+	if ('axis_policies' in schema.read.collections) {
 		schemaComposer.Query.addFields({
 			policies_me_globals: {
 				type: schemaComposer.createObjectTC({
@@ -476,12 +476,12 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_users' in schema.update.collections && gql.accountability?.user) {
+	if ('axis_users' in schema.update.collections && gql.accountability?.user) {
 		schemaComposer.Mutation.addFields({
 			update_users_me: {
-				type: ReadCollectionTypes['directus_users']!,
+				type: ReadCollectionTypes['axis_users']!,
 				args: {
-					data: toInputObjectType(UpdateCollectionTypes['directus_users']!),
+					data: toInputObjectType(UpdateCollectionTypes['axis_users']!),
 				},
 				resolve: async (_, args, __, info) => {
 					if (!gql.accountability?.user) return null;
@@ -493,7 +493,7 @@ export function injectSystemResolvers(
 
 					await service.updateOne(gql.accountability.user, args['data']);
 
-					if ('directus_users' in ReadCollectionTypes) {
+					if ('axis_users' in ReadCollectionTypes) {
 						const selections = replaceFragmentsInSelections(
 							info.fieldNodes[0]?.selectionSet?.selections,
 							info.fragments,
@@ -505,7 +505,7 @@ export function injectSystemResolvers(
 							selections || [],
 							info.variableValues,
 							gql.accountability,
-							'directus_users',
+							'axis_users',
 						);
 
 						return await service.readOne(gql.accountability.user, query);
@@ -517,13 +517,13 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_files' in schema.create.collections) {
+	if ('axis_files' in schema.create.collections) {
 		schemaComposer.Mutation.addFields({
 			import_file: {
-				type: ReadCollectionTypes['directus_files'] ?? GraphQLBoolean,
+				type: ReadCollectionTypes['axis_files'] ?? GraphQLBoolean,
 				args: {
 					url: new GraphQLNonNull(GraphQLString),
-					data: toInputObjectType(CreateCollectionTypes['directus_files']!).setTypeName('create_directus_files_input'),
+					data: toInputObjectType(CreateCollectionTypes['axis_files']!).setTypeName('create_axis_files_input'),
 				},
 				resolve: async (_, args, __, info) => {
 					const service = new FilesService({
@@ -533,7 +533,7 @@ export function injectSystemResolvers(
 
 					const primaryKey = await service.importOne(args['url'], args['data']);
 
-					if ('directus_files' in ReadCollectionTypes) {
+					if ('axis_files' in ReadCollectionTypes) {
 						const selections = replaceFragmentsInSelections(
 							info.fieldNodes[0]?.selectionSet?.selections,
 							info.fragments,
@@ -545,7 +545,7 @@ export function injectSystemResolvers(
 							selections || [],
 							info.variableValues,
 							gql.accountability,
-							'directus_files',
+							'axis_files',
 						);
 
 						return await service.readOne(primaryKey, query);
@@ -557,7 +557,7 @@ export function injectSystemResolvers(
 		});
 	}
 
-	if ('directus_users' in schema.create.collections) {
+	if ('axis_users' in schema.create.collections) {
 		schemaComposer.Mutation.addFields({
 			users_invite: {
 				type: GraphQLBoolean,

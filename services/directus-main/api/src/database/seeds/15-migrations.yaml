@@ -1,4 +1,4 @@
-table: directus_migrations
+table: axis_migrations
 
 columns:
   version:

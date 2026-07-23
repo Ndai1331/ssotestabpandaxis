@@ -33,7 +33,7 @@ const { primaryKey } = toRefs(props);
 const revisionsSidebarDetailRef = ref<InstanceType<typeof RevisionsSidebarDetail> | null>(null);
 
 const { edits, hasEdits, item, saving, loading, save, remove, deleting, validationErrors } = useItem<Policy>(
-	ref('directus_policies'),
+	ref('axis_policies'),
 	primaryKey,
 );
 
@@ -171,7 +171,7 @@ function discardAndStay() {
 		<div class="content">
 			<VForm
 				v-model="edits"
-				collection="directus_policies"
+				collection="axis_policies"
 				:primary-key="primaryKey"
 				:loading
 				:initial-values="item"
@@ -183,7 +183,7 @@ function discardAndStay() {
 			<PolicyInfoSidebarDetail :policy="item" />
 			<RevisionsSidebarDetail
 				ref="revisionsSidebarDetailRef"
-				collection="directus_policies"
+				collection="axis_policies"
 				:primary-key="primaryKey"
 			/>
 		</template>

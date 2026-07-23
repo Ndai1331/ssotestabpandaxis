@@ -56,7 +56,7 @@ const {
 	readAllowed: readVersionsAllowed,
 	updateAllowed: updateVersionsAllowed,
 	deleteAllowed: deleteVersionsAllowed,
-} = useCollectionPermissions('directus_versions');
+} = useCollectionPermissions('axis_versions');
 
 const { switchDialogActive, switchTarget, switchVersion } = useSwitchDialog();
 

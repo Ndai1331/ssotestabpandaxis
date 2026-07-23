@@ -5,20 +5,20 @@ import { getHelpers } from '../helpers/index.js';
 export async function up(knex: Knex): Promise<void> {
 	const helpers = getHelpers(knex);
 
-	await knex.schema.alterTable('directus_relations', (table) => {
+	await knex.schema.alterTable('axis_relations', (table) => {
 		table.string('sort_field', helpers.schema.getColumnNameMaxLength());
 	});
 
 	const fieldsWithSort = await knex
 		.select('collection', 'field', 'options')
-		.from('directus_fields')
+		.from('axis_fields')
 		.whereIn('interface', ['one-to-many', 'm2a-builder', 'many-to-many']);
 
 	for (const field of fieldsWithSort) {
 		const options = typeof field.options === 'string' ? parseJSON(field.options) : (field.options ?? {});
 
 		if ('sortField' in options) {
-			await knex('directus_relations')
+			await knex('axis_relations')
 				.update({
 					sort_field: options.sortField,
 				})
@@ -31,7 +31,7 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_relations', (table) => {
+	await knex.schema.alterTable('axis_relations', (table) => {
 		table.dropColumn('sort_field');
 	});
 }

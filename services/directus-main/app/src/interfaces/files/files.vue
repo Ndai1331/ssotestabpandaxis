@@ -236,7 +236,7 @@ function onSelect(selected: (string | number)[] | null) {
 }
 
 const downloadName = computed(() => {
-	if (relatedPrimaryKey.value === null || relationInfo.value?.relatedCollection.collection !== 'directus_files') return;
+	if (relatedPrimaryKey.value === null || relationInfo.value?.relatedCollection.collection !== 'axis_files') return;
 	const junctionField = relationInfo.value.junctionField.field;
 	const relationPkField = relationInfo.value.relatedPrimaryKeyField.field;
 
@@ -246,7 +246,7 @@ const downloadName = computed(() => {
 });
 
 const downloadUrl = computed(() => {
-	if (relatedPrimaryKey.value === null || relationInfo.value?.relatedCollection.collection !== 'directus_files') return;
+	if (relatedPrimaryKey.value === null || relationInfo.value?.relatedCollection.collection !== 'axis_files') return;
 	return getAssetUrl(String(relatedPrimaryKey.value), { isDownload: true });
 });
 
@@ -440,7 +440,7 @@ const menuActive = computed(() => editModalActive.value || selectModalActive.val
 		>
 			<template #actions>
 				<PrivateViewHeaderBarActionButton
-					v-if="currentlyEditing !== '+' && relationInfo.relatedCollection.collection === 'directus_files'"
+					v-if="currentlyEditing !== '+' && relationInfo.relatedCollection.collection === 'axis_files'"
 					icon="download"
 					variant="ghost"
 					:download="downloadName"

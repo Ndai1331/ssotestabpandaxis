@@ -862,7 +862,7 @@ collections: Danh mục
 content: Nội dung
 system_fields_locked: Trường hệ thống đang bị khoá và không thể chỉnh sửa được
 fields:
-  directus_activity:
+  axis_activity:
     item: Trường khoá chính định danh
     action: Hành động
     collection: Danh mục
@@ -872,7 +872,7 @@ fields:
     user_agent: Tài khoản người dùng
     ip: Địa chỉ IP
     revisions: Bản điều chỉnh
-  directus_collections:
+  axis_collections:
     collection: Danh mục
     icon: Biểu tượng
     note: Ghi chú
@@ -881,7 +881,7 @@ fields:
     display_template: Mẫu hiển thị
     hidden: Ẩn
     sort_field: Sắp xếp theo trường
-  directus_files:
+  axis_files:
     title: Tiêu đề
     description: Mô tả
     tags: Tags
@@ -902,7 +902,7 @@ fields:
     height: Độ dài
     charset: Bảng mã
     duration: Thời lượng
-  directus_users:
+  axis_users:
     first_name: Tên
     last_name: Họ
     email: Địa chỉ email
@@ -926,7 +926,7 @@ fields:
     last_page: Trang cuối
     last_access: Truy cập lần cuối
     email_notifications: Thông báo email
-  directus_settings:
+  axis_settings:
     project_name: Tên Dự Án
     auth_password_policy: Quy định về mật khẩu
     storage_default_folder: Thư mục mặc định
@@ -934,36 +934,36 @@ fields:
     module_bar: Thanh công cụ
     image_editor: Trình chỉnh sửa ảnh
     public_registration_role: Vai trò người dùng
-  directus_shares:
+  axis_shares:
     name: Tên
     role: Phân quyền
     password: Mật khẩu
     date_start: Ngày bắt đầu
     date_end: Ngày kết thúc
     times_used: Thời gian sử dụng
-  directus_fields:
+  axis_fields:
     icon: Biểu tượng của Danh mục
     note: Ghi chú
     hidden: Ẩn
     translation: Hiển thị Ngôn ngữ Khác
     display_template: Mẫu
-  directus_roles:
+  axis_roles:
     name: Tên Quyền
     description: Mô tả
-  directus_policies:
+  axis_policies:
     name: Tên chính sách
     description: Mô tả
 field_options:
-  directus_settings:
+  axis_settings:
     security_divider_title: Bảo mật
     auth_password_policy:
       none_text: Không có - Không khuyến nghị
-  directus_activity:
+  axis_activity:
     login: Đăng nhập
     create: Tạo
     update: Cập nhật
     delete: Xóa
-  directus_collections:
+  axis_collections:
     collection_setup: Cài đặt Bộ sưu tập
     language: Ngôn ngữ
     translation: Bản dịch
@@ -971,12 +971,12 @@ field_options:
     archive_field_placeholder: Chọn một trường...
     sort_divider: Sắp xếp
     sort_field: Chọn một trường...
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: Biểu tượng
       name_name: Tên
     collections_name: Danh mục
-  directus_users:
+  axis_users:
     preferences_divider: Tuỳ chọn người dùng
     dropdown_auto: Tự động (Dựa vào hệ thống)
     dropdown_light: Chế độ Sáng

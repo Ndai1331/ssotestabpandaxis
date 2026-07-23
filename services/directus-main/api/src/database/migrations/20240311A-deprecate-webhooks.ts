@@ -17,9 +17,9 @@ export type Webhook = {
 export type WebhookHeader = { header: string; value: string };
 
 // To avoid typos
-const TABLE_WEBHOOKS = 'directus_webhooks';
-const TABLE_FLOWS = 'directus_flows';
-const TABLE_OPERATIONS = 'directus_operations';
+const TABLE_WEBHOOKS = 'axis_webhooks';
+const TABLE_FLOWS = 'axis_flows';
+const TABLE_OPERATIONS = 'axis_operations';
 const NEW_COLUMN_WAS_ACTIVE = 'was_active_before_deprecation';
 const NEW_COLUMN_FLOW = 'migrated_flow';
 

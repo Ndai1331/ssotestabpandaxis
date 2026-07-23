@@ -39,7 +39,7 @@ const { primaryKey } = toRefs(props);
 const revisionsSidebarDetailRef = ref<InstanceType<typeof RevisionsSidebarDetail> | null>(null);
 
 const { edits, hasEdits, item, saving, loading, save, remove, deleting, validationErrors } = useItem<Role>(
-	ref('directus_roles'),
+	ref('axis_roles'),
 	primaryKey,
 	null,
 	{ deep: { users: { _limit: 0 } } },
@@ -195,7 +195,7 @@ function discardAndStay() {
 		<div class="content">
 			<VForm
 				v-model="edits"
-				collection="directus_roles"
+				collection="axis_roles"
 				:primary-key="primaryKey"
 				:loading
 				:initial-values="item"
@@ -205,7 +205,7 @@ function discardAndStay() {
 
 		<template #sidebar>
 			<RoleInfoSidebarDetail :role="item" />
-			<RevisionsSidebarDetail ref="revisionsSidebarDetailRef" collection="directus_roles" :primary-key="primaryKey" />
+			<RevisionsSidebarDetail ref="revisionsSidebarDetailRef" collection="axis_roles" :primary-key="primaryKey" />
 		</template>
 
 		<VDialog v-model="confirmLeave" @esc="confirmLeave = false" @apply="discardAndLeave">

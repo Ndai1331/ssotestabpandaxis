@@ -37,7 +37,7 @@ const { t } = useI18n();
 const { currentProject, providers } = useDeploymentNavigation();
 const { providerConfigs } = useProviderConfigs();
 
-const canCancel = usePermissionsStore().hasPermission('directus_deployment_runs', 'update');
+const canCancel = usePermissionsStore().hasPermission('axis_deployment_runs', 'update');
 
 const loading = ref(true);
 const canceling = ref(false);

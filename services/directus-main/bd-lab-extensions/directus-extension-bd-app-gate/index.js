@@ -1,9 +1,9 @@
 /**
- * BD lab: reject Keycloak OpenID login unless user has group bd-app-directus.
- * Mounted into Directus extensions via docker-compose.bd-lab.yml.
+ * BD lab: reject Keycloak OpenID login unless user has group bd-app-axis.
+ * Mounted into Axis extensions via docker-compose.bd-lab.yml.
  */
 export default ({ filter }, { logger }) => {
-	const APP_GROUP = 'bd-app-directus';
+	const APP_GROUP = 'bd-app-axis';
 	const PROVIDER = 'keycloak';
 
 	const extractGroups = (userInfo) => {
@@ -39,7 +39,7 @@ export default ({ filter }, { logger }) => {
 
 		if (!groups.some((g) => g.toLowerCase() === APP_GROUP)) {
 			logger?.warn?.(`[BD] Keycloak login denied: missing group ${APP_GROUP}`);
-			throw new Error(`Access denied: Keycloak group '${APP_GROUP}' is required for Directus.`);
+			throw new Error(`Access denied: Keycloak group '${APP_GROUP}' is required for Axis.`);
 		}
 	};
 

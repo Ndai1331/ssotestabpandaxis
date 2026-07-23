@@ -48,11 +48,11 @@ export class RelationsService {
 		this.schema = options.schema;
 		this.accountability = options.accountability || null;
 
-		this.relationsItemService = new ItemsService('directus_relations', {
+		this.relationsItemService = new ItemsService('axis_relations', {
 			knex: this.knex,
 			schema: this.schema,
 			// We don't set accountability here. If you have read access to certain fields, you are
-			// allowed to extract the relations regardless of permissions to directus_relations. This
+			// allowed to extract the relations regardless of permissions to axis_relations. This
 			// happens in `filterForbidden` down below
 		});
 
@@ -92,7 +92,7 @@ export class RelationsService {
 				{
 					accountability: this.accountability,
 					action: 'read',
-					collection: 'directus_relations',
+					collection: 'axis_relations',
 				},
 				{
 					knex: this.knex,
@@ -137,7 +137,7 @@ export class RelationsService {
 				{
 					accountability: this.accountability,
 					action: 'read',
-					collection: 'directus_relations',
+					collection: 'axis_relations',
 				},
 				{
 					schema: this.schema,
@@ -273,11 +273,11 @@ export class RelationsService {
 					});
 				}
 
-				const relationsItemService = new ItemsService('directus_relations', {
+				const relationsItemService = new ItemsService('axis_relations', {
 					knex: trx,
 					schema: this.schema,
 					// We don't set accountability here. If you have read access to certain fields, you are
-					// allowed to extract the relations regardless of permissions to directus_relations. This
+					// allowed to extract the relations regardless of permissions to axis_relations. This
 					// happens in `filterForbidden` down below
 				});
 
@@ -383,11 +383,11 @@ export class RelationsService {
 					});
 				}
 
-				const relationsItemService = new ItemsService('directus_relations', {
+				const relationsItemService = new ItemsService('axis_relations', {
 					knex: trx,
 					schema: this.schema,
 					// We don't set accountability here. If you have read access to certain fields, you are
-					// allowed to extract the relations regardless of permissions to directus_relations. This
+					// allowed to extract the relations regardless of permissions to axis_relations. This
 					// happens in `filterForbidden` down below
 				});
 
@@ -477,7 +477,7 @@ export class RelationsService {
 				}
 
 				if (existingRelation.meta) {
-					await trx('directus_relations').delete().where({ many_collection: collection, many_field: field });
+					await trx('axis_relations').delete().where({ many_collection: collection, many_field: field });
 				}
 
 				const actionEvent = {

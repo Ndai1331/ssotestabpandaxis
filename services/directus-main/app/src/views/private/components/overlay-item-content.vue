@@ -93,7 +93,7 @@ function useInitialValues() {
 
 function useFile() {
 	const isDirectusFiles = computed(() => {
-		return collection === 'directus_files' || relatedCollection === 'directus_files';
+		return collection === 'axis_files' || relatedCollection === 'axis_files';
 	});
 
 	const file = computed(() => {

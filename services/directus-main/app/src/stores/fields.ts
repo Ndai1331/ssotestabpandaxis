@@ -23,21 +23,21 @@ type HydrateOptions = {
 };
 
 /**
- * directus_files is a special case. For it to play nice with interfaces/layouts/displays, we need
+ * axis_files is a special case. For it to play nice with interfaces/layouts/displays, we need
  * to treat the actual image thumbnail as a separate available field, instead of part of the regular
  * item (normally all file related info is nested within a separate column). This allows layouts to
  * render out files as it if were a "normal" collection, where the actual file is a fake m2o to
  * itself.
  */
 const fakeFilesField: Field = {
-	collection: 'directus_files',
+	collection: 'axis_files',
 	field: '$thumbnail',
 	schema: null,
 	name: '$thumbnail',
 	type: 'integer',
 	meta: {
 		id: -1,
-		collection: 'directus_files',
+		collection: 'axis_files',
 		field: '$thumbnail',
 		sort: null,
 		special: null,

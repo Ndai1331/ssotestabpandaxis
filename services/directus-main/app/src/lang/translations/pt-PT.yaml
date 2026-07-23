@@ -350,9 +350,9 @@ geometry:
 theme_auto: Automático (baseado no sistema)
 theme_light: Modo Claro
 theme_dark: Modo Escuro
-theme_directus_default: Directus padrão
-theme_directus_minimal: Directus Mínimo
-theme_directus_colormatch: Correspondência de cor
+theme_axis_default: Directus padrão
+theme_axis_minimal: Directus Mínimo
+theme_axis_colormatch: Correspondência de cor
 not_available_for_type: Não disponível para este tipo
 create_translations: Criar traduções
 auto_refresh: Atualização Automática
@@ -991,7 +991,7 @@ source_registry: Mercado
 collection: Coleção
 content: Conteúdo
 fields:
-  directus_activity:
+  axis_activity:
     item: Chave primária
     action: Ação
     collection: Coleção
@@ -1001,14 +1001,14 @@ fields:
     user_agent: User Agent
     ip: Endereço IP
     revisions: Revisões
-  directus_collections:
+  axis_collections:
     collection: Coleção
     note: Nota
     status: Estado
     color: Cor
     display_template: Templates de Exibição
     sort_field: Campo de ordenação
-  directus_files:
+  axis_files:
     title: Título
     description: Descrição
     tags: Etiquetas
@@ -1022,7 +1022,7 @@ fields:
     uploaded_on: Carregado a
     charset: Codificação
     duration: Duração
-  directus_users:
+  axis_users:
     first_name: Primeiro Nome
     last_name: Apelido
     location: Localização
@@ -1037,7 +1037,7 @@ fields:
     token: Token
     last_page: Última página
     last_access: Último Acesso
-  directus_settings:
+  axis_settings:
     project_name: Nome do projeto
     project_descriptor: Descrição do Projeto
     project_url: URL do projeto
@@ -1048,30 +1048,30 @@ fields:
     public_note: Nota Pública
     custom_css: CSS Personalizado
     module_bar: Barra de Módulo
-  directus_shares:
+  axis_shares:
     name: Nome
     role: Perfil
-  directus_fields:
+  axis_fields:
     collection: Nome da coleção
     icon: Ícone da coleção
     note: Nota
     translation: Nome do campo para as traduções
-  directus_roles:
+  axis_roles:
     name: Nome do cargo
     description: Descrição
     users: Utilizadores na função
-  directus_policies:
+  axis_policies:
     name: Nome da política
     description: Descrição
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: O meu projeto...
     public_note_placeholder: Uma mensagem pública e curta que suporta a formatação markdown...
     security_divider_title: Segurança
-  directus_activity:
+  axis_activity:
     create: Criar
     update: Atualizar
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Rastrear Atividades e Revisões
     only_track_activity: Apenas rastrear Atividade
     do_not_track_anything: Não rastrear nada
@@ -1080,10 +1080,10 @@ field_options:
     collection_name: Nome da coleção
     archive_divider: Arquivar
     sort_divider: Ordenar
-  directus_roles:
+  axis_roles:
     fields:
       name_name: Nome
-  directus_users:
+  axis_users:
     dropdown_auto: Automático (baseado no sistema)
     dropdown_light: Modo Claro
     dropdown_dark: Modo Escuro

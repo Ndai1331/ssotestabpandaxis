@@ -105,7 +105,7 @@ export const useFieldDetailStore = defineStore({
 				) as DeepPartial<Relation> | undefined;
 
 				if (['files', 'm2m', 'translations', 'm2a'].includes(this.localType)) {
-					// These types rely on directus_relations fields being said, so meta should exist for these particular relations
+					// These types rely on axis_relations fields being said, so meta should exist for these particular relations
 					this.relations.m2o = relations.find((relation) => relation.meta?.id !== this.relations.o2m?.meta?.id) as
 						| DeepPartial<Relation>
 						| undefined;
@@ -168,7 +168,7 @@ export const useFieldDetailStore = defineStore({
 					const currentType = getCurrent('localType');
 					let targetType = currentType;
 
-					if (get(updates, 'relations.m2o.related_collection') === 'directus_files') {
+					if (get(updates, 'relations.m2o.related_collection') === 'axis_files') {
 						if (currentType === 'm2o') targetType = 'file';
 						if (currentType === 'm2m') targetType = 'files';
 					} else {

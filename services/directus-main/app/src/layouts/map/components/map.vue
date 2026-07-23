@@ -81,7 +81,7 @@ const fitDataControl = new ButtonControl('mapboxgl-ctrl-fitdata', () => {
 const boxSelectControl = new BoxSelectControl({
 	boxElementClass: 'map-selection-box',
 	selectButtonClass: 'mapboxgl-ctrl-select',
-	layers: ['__directus_polygons', '__directus_points', '__directus_lines'],
+	layers: ['__axis_polygons', '__axis_points', '__axis_lines'],
 });
 
 let geocoderControl: MapboxGeocoder | undefined;
@@ -138,7 +138,7 @@ function setupMap() {
 	map.on('load', () => {
 		watch(() => style.value, updateStyle);
 		watch(() => props.bounds, fitBounds);
-		const activeLayers = ['__directus_polygons', '__directus_points', '__directus_lines'];
+		const activeLayers = ['__axis_polygons', '__axis_points', '__axis_lines'];
 
 		for (const layer of activeLayers) {
 			map.on('click', layer, onFeatureClick);
@@ -147,9 +147,9 @@ function setupMap() {
 		}
 
 		map.on('move', updatePopupLocation);
-		map.on('click', '__directus_clusters', expandCluster);
-		map.on('mousemove', '__directus_clusters', hoverCluster);
-		map.on('mouseleave', '__directus_clusters', hoverCluster);
+		map.on('click', '__axis_clusters', expandCluster);
+		map.on('mousemove', '__axis_clusters', hoverCluster);
+		map.on('mouseleave', '__axis_clusters', hoverCluster);
 		map.on('select.enable', () => (selectMode.value = true));
 		map.on('select.disable', () => (selectMode.value = false));
 
@@ -274,7 +274,7 @@ function onFeatureClick(event: MapLayerMouseEvent) {
 
 function updatePopup(event: MapLayerMouseEvent) {
 	const feature = map.queryRenderedFeatures(event.point, {
-		layers: ['__directus_polygons', '__directus_points', '__directus_lines'],
+		layers: ['__axis_polygons', '__axis_points', '__axis_lines'],
 	})[0];
 
 	const previousId = hoveredFeature.value?.id;
@@ -316,7 +316,7 @@ function updatePopupLocation(event: MapLayerMouseEvent) {
 
 function expandCluster(event: MapLayerMouseEvent) {
 	const features = map.queryRenderedFeatures(event.point, {
-		layers: ['__directus_clusters'],
+		layers: ['__axis_clusters'],
 	});
 
 	const clusterId = features[0]?.properties?.cluster_id;

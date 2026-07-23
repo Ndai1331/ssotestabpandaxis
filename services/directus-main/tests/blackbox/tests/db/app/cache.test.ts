@@ -43,7 +43,7 @@ describe('App Caching Tests', () => {
 			envMem[vendor]['CACHE_ENABLED'] = 'true';
 			envMem[vendor]['CACHE_STATUS_HEADER'] = cacheStatusHeader;
 			envMem[vendor]['CACHE_AUTO_PURGE'] = 'false';
-			envMem[vendor]['CACHE_AUTO_PURGE_IGNORE_LIST'] = `directus_activity,directus_presets,${collectionIgnored}`;
+			envMem[vendor]['CACHE_AUTO_PURGE_IGNORE_LIST'] = `axis_activity,axis_presets,${collectionIgnored}`;
 			envMem[vendor]['CACHE_STORE'] = 'memory';
 			envMem[vendor]['CACHE_NAMESPACE'] = `${cacheNamespacePrefix}_mem`;
 

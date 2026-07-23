@@ -13,7 +13,7 @@ export async function up(knex: Knex): Promise<void> {
 
 	const relations = await knex
 		.select<RelationMeta[]>('id', 'many_collection', 'many_field', 'one_collection')
-		.from('directus_relations');
+		.from('axis_relations');
 
 	const constraintsToAdd = relations.filter((relation) => {
 		const exists = !!foreignKeys.find(
@@ -128,7 +128,7 @@ export async function up(knex: Knex): Promise<void> {
 
 	if (corruptedRelations.length > 0) {
 		logger.warn(
-			`Encountered one or more corrupted relationships. Please check the following rows in "directus_relations": ${corruptedRelations.join(
+			`Encountered one or more corrupted relationships. Please check the following rows in "axis_relations": ${corruptedRelations.join(
 				', ',
 			)}`,
 		);
@@ -140,7 +140,7 @@ export async function down(knex: Knex): Promise<void> {
 
 	const relations = await knex
 		.select<RelationMeta[]>('many_collection', 'many_field', 'one_collection')
-		.from('directus_relations');
+		.from('axis_relations');
 
 	for (const relation of relations) {
 		if (!relation.one_collection) continue;

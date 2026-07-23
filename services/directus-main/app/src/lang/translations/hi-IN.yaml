@@ -397,38 +397,38 @@ licensing:
   addon_update: Update
 settings_presets: पृष्टस्मृतियाँ
 fields:
-  directus_collections:
+  axis_collections:
     note: ध्यान दें
     color: Color
     sort_field: Sort Field
-  directus_files:
+  axis_files:
     title: शीर्षक
     modified_on: संशोधन का समय
     folder: फ़ोल्डर
     duration: अवधि
-  directus_users:
+  axis_users:
     title: शीर्षक
     language: भाषा
     role: भूमिका
-  directus_settings:
+  axis_settings:
     module_bar: मॉड्यूल बार
-  directus_shares:
+  axis_shares:
     name: नाम
     role: भूमिका
-  directus_fields:
+  axis_fields:
     note: ध्यान दें
     translation: फ़ील्ड नाम अनुवाद
-  directus_roles:
+  axis_roles:
     name: भूमिका नाम
 field_options:
-  directus_activity:
+  axis_activity:
     create: Create
     update: Update
-  directus_collections:
+  axis_collections:
     language: भाषा
     archive_divider: आर्काइव
     sort_divider: सॉर्ट
-  directus_roles:
+  axis_roles:
     fields:
       name_name: नाम
 live_preview:

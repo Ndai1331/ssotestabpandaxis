@@ -12,7 +12,7 @@ export class TFAService {
 
 	constructor(options: AbstractServiceOptions) {
 		this.knex = options.knex || getDatabase();
-		this.itemsService = new ItemsService('directus_users', options);
+		this.itemsService = new ItemsService('axis_users', options);
 	}
 
 	async verifyOTP(key: PrimaryKey, otp: string, secret?: string): Promise<boolean> {
@@ -20,7 +20,7 @@ export class TFAService {
 			return authenticator.check(otp, secret);
 		}
 
-		const user = await this.knex.select('tfa_secret').from('directus_users').where({ id: key }).first();
+		const user = await this.knex.select('tfa_secret').from('axis_users').where({ id: key }).first();
 
 		if (!user?.tfa_secret) {
 			throw new InvalidPayloadError({ reason: `User "${key}" doesn't have TFA enabled` });
@@ -32,7 +32,7 @@ export class TFAService {
 	async generateTFA(key: PrimaryKey, requiresPassword: boolean = true): Promise<Record<string, string>> {
 		const user = await this.knex
 			.select('email', 'tfa_secret', 'provider', 'external_identifier')
-			.from('directus_users')
+			.from('axis_users')
 			.where({ id: key })
 			.first();
 
@@ -50,19 +50,19 @@ export class TFAService {
 		}
 
 		const secret = authenticator.generateSecret();
-		const project = await this.knex.select('project_name').from('directus_settings').limit(1).first();
+		const project = await this.knex.select('project_name').from('axis_settings').limit(1).first();
 
 		// For OAuth users without email, use external_identifier as fallback
 		const accountName = user.email || user.external_identifier || `user_${key}`;
 
 		return {
 			secret,
-			url: authenticator.keyuri(accountName, project?.project_name || 'Directus', secret),
+			url: authenticator.keyuri(accountName, project?.project_name || 'Axis', secret),
 		};
 	}
 
 	async enableTFA(key: PrimaryKey, otp: string, secret: string): Promise<void> {
-		const user = await this.knex.select('tfa_secret', 'provider').from('directus_users').where({ id: key }).first();
+		const user = await this.knex.select('tfa_secret', 'provider').from('axis_users').where({ id: key }).first();
 
 		const requiresPassword = user?.['provider'] === DEFAULT_AUTH_PROVIDER;
 

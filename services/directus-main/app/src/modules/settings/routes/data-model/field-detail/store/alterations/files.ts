@@ -223,9 +223,9 @@ export function setDefaults(updates: StateUpdates, state: State, { getCurrent }:
 	set(updates, 'relations.o2m.collection', junctionName);
 	set(updates, 'relations.o2m.field', `${currentCollection}_${currentCollectionPrimaryKeyField}`);
 	set(updates, 'relations.m2o.collection', junctionName);
-	set(updates, 'relations.m2o.related_collection', 'directus_files');
+	set(updates, 'relations.m2o.related_collection', 'axis_files');
 
-	set(updates, 'relations.m2o.field', 'directus_files_id');
+	set(updates, 'relations.m2o.field', 'axis_files_id');
 }
 
 export function matchJunctionCollectionName(updates: StateUpdates) {

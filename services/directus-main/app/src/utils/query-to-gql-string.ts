@@ -25,7 +25,7 @@ export function queryToGqlString(queries: QueryInfo | QueryInfo[]): string | nul
 export function formatQuery({ collection, query }: QueryInfo): Record<string, any> {
 	const queryKeysInArguments: (keyof Query)[] = ['limit', 'sort', 'filter', 'offset', 'page', 'search'];
 
-	const alias = isSystemCollection(collection) ? collection.substring(9) : collection;
+	const alias = isSystemCollection(collection) ? collection.substring(5) : collection;
 
 	const formattedQuery: Record<string, any> = {
 		__args: omitBy(pick(query, ...queryKeysInArguments), isUndefined),

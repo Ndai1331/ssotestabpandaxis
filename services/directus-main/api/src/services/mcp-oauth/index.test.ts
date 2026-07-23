@@ -97,7 +97,7 @@ vi.mock('../../database/errors/translate.js', () => ({
 const consentKey = crypto.createHmac('sha256', TEST_SECRET).update('mcp-oauth-consent-v1').digest();
 
 const schema = new SchemaBuilder()
-	.collection('directus_oauth_clients', (c) => {
+	.collection('axis_oauth_clients', (c) => {
 		c.field('client_id').uuid().primary();
 	})
 	.build();
@@ -233,7 +233,7 @@ describe('McpOAuthService', () => {
 	}
 
 	function mockClientLookup(clientId: string, overrides: Record<string, unknown> = {}) {
-		tracker.on.select('directus_oauth_clients').response([
+		tracker.on.select('axis_oauth_clients').response([
 			{
 				client_id: clientId,
 				client_name: 'Test MCP Client',
@@ -291,7 +291,7 @@ describe('McpOAuthService', () => {
 
 		function mockSettings(overrides: Record<string, unknown> = {}) {
 			tracker.on
-				.select('directus_settings')
+				.select('axis_settings')
 				.response([{ mcp_oauth_dcr_enabled: true, mcp_oauth_cimd_enabled: false, ...overrides }]);
 		}
 
@@ -465,7 +465,7 @@ describe('McpOAuthService', () => {
 		let service: McpOAuthService;
 
 		function mockDcrSettings(overrides: Record<string, unknown> = {}) {
-			tracker.on.select('directus_settings').response([{ mcp_oauth_dcr_enabled: true, ...overrides }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_dcr_enabled: true, ...overrides }]);
 		}
 
 		beforeEach(() => {
@@ -475,8 +475,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('valid registration returns client_id and metadata', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient());
 
@@ -496,8 +496,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('omitted token_endpoint_auth_method defaults to client_secret_basic per RFC 7591', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient({ token_endpoint_auth_method: undefined }));
 
@@ -508,8 +508,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('explicit token_endpoint_auth_method=none accepted', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient({ token_endpoint_auth_method: 'none' }));
 
@@ -517,8 +517,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('client_secret_basic accepted and returns client_secret', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(
 				createTestClient({ token_endpoint_auth_method: 'client_secret_basic' }),
@@ -531,8 +531,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('client_secret_post accepted and returns client_secret', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(
 				createTestClient({ token_endpoint_auth_method: 'client_secret_post' }),
@@ -545,8 +545,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('auth_method=none does NOT return client_secret', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient({ token_endpoint_auth_method: 'none' }));
 
@@ -555,8 +555,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('public client registration stores null client_secret_hash', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			await service.registerClient(createTestClient({ token_endpoint_auth_method: 'none' }));
 
@@ -582,14 +582,14 @@ describe('McpOAuthService', () => {
 		});
 
 		it('stores SHA-256 hash of secret, not the raw secret', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(
 				createTestClient({ token_endpoint_auth_method: 'client_secret_basic' }),
 			);
 
-			const insertHistory = queryHistory('insert', 'directus_oauth_clients');
+			const insertHistory = queryHistory('insert', 'axis_oauth_clients');
 			expect(insertHistory.length).toBe(1);
 
 			const bindings = insertHistory[0]!.bindings;
@@ -607,8 +607,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('omitted grant_types defaults to authorization_code per RFC 7591', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient({ grant_types: undefined }));
 
@@ -656,8 +656,8 @@ describe('McpOAuthService', () => {
 			});
 
 			it('http://localhost:3000/callback accepted', async () => {
-				tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-				tracker.on.insert('directus_oauth_clients').response([]);
+				tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+				tracker.on.insert('axis_oauth_clients').response([]);
 
 				const result = await service.registerClient(
 					createTestClient({ redirect_uris: ['http://localhost:3000/callback'] }),
@@ -667,8 +667,8 @@ describe('McpOAuthService', () => {
 			});
 
 			it('http://[::1]:3000/callback accepted (IPv6 loopback)', async () => {
-				tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-				tracker.on.insert('directus_oauth_clients').response([]);
+				tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+				tracker.on.insert('axis_oauth_clients').response([]);
 
 				const result = await service.registerClient(
 					createTestClient({ redirect_uris: ['http://[::1]:3000/callback'] }),
@@ -708,8 +708,8 @@ describe('McpOAuthService', () => {
 				});
 
 				it('accepts exact domain match', async () => {
-					tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-					tracker.on.insert('directus_oauth_clients').response([]);
+					tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+					tracker.on.insert('axis_oauth_clients').response([]);
 
 					const result = await service.registerClient(
 						createTestClient({ redirect_uris: ['https://cursor.com/callback'] }),
@@ -719,8 +719,8 @@ describe('McpOAuthService', () => {
 				});
 
 				it('accepts wildcard domain match', async () => {
-					tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-					tracker.on.insert('directus_oauth_clients').response([]);
+					tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+					tracker.on.insert('axis_oauth_clients').response([]);
 
 					const result = await service.registerClient(
 						createTestClient({ redirect_uris: ['https://tools.anthropic.com/callback'] }),
@@ -737,8 +737,8 @@ describe('McpOAuthService', () => {
 				});
 
 				it('accepts localhost redirect even when allowlist is set (native OAuth clients)', async () => {
-					tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-					tracker.on.insert('directus_oauth_clients').response([]);
+					tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+					tracker.on.insert('axis_oauth_clients').response([]);
 
 					const result = await service.registerClient(
 						createTestClient({ redirect_uris: ['http://localhost:3000/callback'] }),
@@ -756,8 +756,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('unknown fields silently ignored', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient({ some_unknown_field: 'whatever', another: 123 }));
 
@@ -766,8 +766,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('response_types derived from grant_types if omitted', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient({ response_types: undefined }));
 
@@ -775,8 +775,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('explicit response_types=["code"] accepted', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient({ response_types: ['code'] }));
 
@@ -790,8 +790,8 @@ describe('McpOAuthService', () => {
 		});
 
 		it('response includes all registered metadata per RFC 7591 Section 3.2.1', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient());
 
@@ -807,7 +807,7 @@ describe('McpOAuthService', () => {
 		});
 
 		it('global cap (10000 clients) enforced by default', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 10000 }]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 10000 }]);
 
 			await assertOAuthError(() => service.registerClient(createTestClient()), { error: 'invalid_client_metadata' });
 		});
@@ -821,8 +821,8 @@ describe('McpOAuthService', () => {
 				MCP_OAUTH_DCR_ENABLED: true,
 			} as any);
 
-			tracker.on.select('directus_oauth_clients').response([{ count: 10000 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 10000 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient());
 
@@ -838,8 +838,8 @@ describe('McpOAuthService', () => {
 				MCP_OAUTH_DCR_ENABLED: true,
 			} as any);
 
-			tracker.on.select('directus_oauth_clients').response([{ count: 50000 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 50000 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(createTestClient());
 
@@ -865,19 +865,19 @@ describe('McpOAuthService', () => {
 		});
 
 		it('sets registration_type to dcr', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			await service.registerClient(createTestClient());
 
-			const insertHistory = queryHistory('insert', 'directus_oauth_clients');
+			const insertHistory = queryHistory('insert', 'axis_oauth_clients');
 			expect(insertHistory.length).toBe(1);
 			expect(insertHistory[0]!.bindings).toContain('dcr');
 		});
 
 		it('accepts optional client_uri, logo_uri, tos_uri, policy_uri', async () => {
-			tracker.on.select('directus_oauth_clients').response([{ count: 0 }]);
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([{ count: 0 }]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.registerClient(
 				createTestClient({
@@ -919,7 +919,7 @@ describe('McpOAuthService', () => {
 		it('DCR disabled in settings returns 404', async () => {
 			// Override the beforeEach settings mock
 			tracker.reset();
-			tracker.on.select('directus_settings').response([{ mcp_oauth_dcr_enabled: false }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_dcr_enabled: false }]);
 
 			await assertOAuthError(() => service.registerClient(createTestClient()), {
 				error: 'not_found',
@@ -980,7 +980,7 @@ describe('McpOAuthService', () => {
 		});
 
 		it('unknown client_id returns error (no redirect)', async () => {
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await assertOAuthError(() => service.validateAuthorization(validParams(), userId, sessionHash), {
 				error: 'invalid_request',
@@ -1248,7 +1248,7 @@ describe('McpOAuthService', () => {
 				{ error: 'invalid_request', redirectable: false },
 			);
 
-			expect(queryHistory('select', 'directus_oauth_clients')).toHaveLength(0);
+			expect(queryHistory('select', 'axis_oauth_clients')).toHaveLength(0);
 		});
 
 		it('missing redirect_uri returns non-redirectable invalid_request', async () => {
@@ -1295,10 +1295,10 @@ describe('McpOAuthService', () => {
 			} as any);
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// Existing CIMD client with fresh cache
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: cimdId,
 					client_name: 'CIMD Tool',
@@ -1365,11 +1365,11 @@ describe('McpOAuthService', () => {
 
 		it('valid approval generates code and returns redirect URL with code, state, iss', async () => {
 			mockClientLookup(clientId);
-			tracker.on.insert('directus_oauth_codes').response([]);
+			tracker.on.insert('axis_oauth_codes').response([]);
 
 			// Consent upsert
-			tracker.on.select('directus_oauth_consents').response([]);
-			tracker.on.insert('directus_oauth_consents').response([]);
+			tracker.on.select('axis_oauth_consents').response([]);
+			tracker.on.insert('axis_oauth_consents').response([]);
 
 			const signed = signConsent();
 			const url = await service.processDecision({ signed_params: signed, approved: true }, userId, sessionToken);
@@ -1384,9 +1384,9 @@ describe('McpOAuthService', () => {
 
 		it('accepts redirect_uris already deserialized by the database driver', async () => {
 			mockClientLookup(clientId, { redirect_uris: [TEST_REDIRECT_URI] });
-			tracker.on.insert('directus_oauth_codes').response([]);
-			tracker.on.select('directus_oauth_consents').response([]);
-			tracker.on.insert('directus_oauth_consents').response([]);
+			tracker.on.insert('axis_oauth_codes').response([]);
+			tracker.on.select('axis_oauth_consents').response([]);
+			tracker.on.insert('axis_oauth_consents').response([]);
 
 			const url = await service.processDecision({ signed_params: signConsent(), approved: true }, userId, sessionToken);
 			const parsed = new URL(url);
@@ -1402,9 +1402,9 @@ describe('McpOAuthService', () => {
 			'RFC 8252 Section 7.3: processDecision accepts $host redirect_uri with different port',
 			async ({ registered, requested }) => {
 				mockClientLookup(clientId, { redirect_uris: JSON.stringify([registered]) });
-				tracker.on.insert('directus_oauth_codes').response([]);
-				tracker.on.select('directus_oauth_consents').response([]);
-				tracker.on.insert('directus_oauth_consents').response([]);
+				tracker.on.insert('axis_oauth_codes').response([]);
+				tracker.on.select('axis_oauth_consents').response([]);
+				tracker.on.insert('axis_oauth_consents').response([]);
 
 				const signed = signConsent({ redirect_uri: requested });
 
@@ -1525,7 +1525,7 @@ describe('McpOAuthService', () => {
 
 		it('re-validates client against DB (stale registration caught)', async () => {
 			// Client no longer exists in DB
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			const signed = signConsent();
 
@@ -1549,46 +1549,46 @@ describe('McpOAuthService', () => {
 
 		it('consent record created/updated', async () => {
 			mockClientLookup(clientId);
-			tracker.on.insert('directus_oauth_codes').response([]);
+			tracker.on.insert('axis_oauth_codes').response([]);
 
-			tracker.on.select('directus_oauth_consents').response([]);
-			tracker.on.insert('directus_oauth_consents').response([]);
+			tracker.on.select('axis_oauth_consents').response([]);
+			tracker.on.insert('axis_oauth_consents').response([]);
 
 			const signed = signConsent();
 			await service.processDecision({ signed_params: signed, approved: true }, userId, sessionToken);
 
 			// Verify that a consent insert was made
-			const insertHistory = queryHistory('insert', 'directus_oauth_consents');
+			const insertHistory = queryHistory('insert', 'axis_oauth_consents');
 
 			expect(insertHistory.length).toBeGreaterThanOrEqual(1);
 		});
 
 		it('existing consent record updated (not inserted) on re-approval', async () => {
 			mockClientLookup(clientId);
-			tracker.on.insert('directus_oauth_codes').response([]);
+			tracker.on.insert('axis_oauth_codes').response([]);
 
 			// Existing consent found
-			tracker.on.select('directus_oauth_consents').response([{ id: crypto.randomUUID() }]);
-			tracker.on.update('directus_oauth_consents').response(1);
+			tracker.on.select('axis_oauth_consents').response([{ id: crypto.randomUUID() }]);
+			tracker.on.update('axis_oauth_consents').response(1);
 
 			const signed = signConsent();
 			await service.processDecision({ signed_params: signed, approved: true }, userId, sessionToken);
 
 			// Verify UPDATE was called (not INSERT) for consent
-			const updateHistory = queryHistory('update', 'directus_oauth_consents');
+			const updateHistory = queryHistory('update', 'axis_oauth_consents');
 			expect(updateHistory.length).toBe(1);
 
-			const consentInserts = queryHistory('insert', 'directus_oauth_consents');
+			const consentInserts = queryHistory('insert', 'axis_oauth_consents');
 			expect(consentInserts.length).toBe(0);
 		});
 
 		it('code stored with PKCE challenge, user, client, redirect_uri, resource', async () => {
 			mockClientLookup(clientId);
 
-			tracker.on.insert('directus_oauth_codes').response([]);
+			tracker.on.insert('axis_oauth_codes').response([]);
 
-			tracker.on.select('directus_oauth_consents').response([]);
-			tracker.on.insert('directus_oauth_consents').response([]);
+			tracker.on.select('axis_oauth_consents').response([]);
+			tracker.on.insert('axis_oauth_consents').response([]);
 
 			const signed = signConsent();
 			const url = await service.processDecision({ signed_params: signed, approved: true }, userId, sessionToken);
@@ -1601,7 +1601,7 @@ describe('McpOAuthService', () => {
 
 			// Verify the code_hash stored in DB is SHA256 of the raw code
 			const expectedHash = crypto.createHash('sha256').update(code).digest('hex');
-			const codeInserts = queryHistory('insert', 'directus_oauth_codes');
+			const codeInserts = queryHistory('insert', 'axis_oauth_codes');
 			expect(codeInserts.length).toBe(1);
 			// The bindings should include the hash
 			expect(codeInserts[0]!.bindings).toContain(expectedHash);
@@ -1609,10 +1609,10 @@ describe('McpOAuthService', () => {
 
 		it('code creation and consent upsert use one transaction boundary', async () => {
 			mockClientLookup(clientId);
-			tracker.on.insert('directus_oauth_codes').response([]);
+			tracker.on.insert('axis_oauth_codes').response([]);
 
-			tracker.on.select('directus_oauth_consents').response([]);
-			tracker.on.insert('directus_oauth_consents').response([]);
+			tracker.on.select('axis_oauth_consents').response([]);
+			tracker.on.insert('axis_oauth_consents').response([]);
 
 			const transactionSpy = vi.spyOn(db, 'transaction');
 
@@ -1622,8 +1622,8 @@ describe('McpOAuthService', () => {
 			expect(transactionSpy).toHaveBeenCalledOnce();
 
 			// Verify both writes still happened
-			const codeInserts = queryHistory('insert', 'directus_oauth_codes');
-			const consentInserts = queryHistory('insert', 'directus_oauth_consents');
+			const codeInserts = queryHistory('insert', 'axis_oauth_codes');
+			const consentInserts = queryHistory('insert', 'axis_oauth_consents');
 			expect(codeInserts.length).toBe(1);
 			expect(consentInserts.length).toBe(1);
 		});
@@ -1655,7 +1655,7 @@ describe('McpOAuthService', () => {
 		}
 
 		function mockCodeLookup(overrides: Record<string, unknown> = {}) {
-			tracker.on.select('directus_oauth_codes').response([
+			tracker.on.select('axis_oauth_codes').response([
 				{
 					id: codeId,
 					code_hash: codeHash,
@@ -1674,7 +1674,7 @@ describe('McpOAuthService', () => {
 		}
 
 		function mockUserLookup(overrides: Record<string, unknown> = {}) {
-			tracker.on.select('directus_users').response([createUserRow(overrides)]);
+			tracker.on.select('axis_users').response([createUserRow(overrides)]);
 		}
 
 		/** Set up all DB mocks for a successful exchange */
@@ -1684,15 +1684,15 @@ describe('McpOAuthService', () => {
 			// 1. Code lookup (read-only, outside transaction)
 			mockCodeLookup();
 			// 2. Atomic burn (inside transaction)
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 			// 3. User lookup for email + status (inside transaction)
 			mockUserLookup();
 			// 4. Existing grant lookup (none found)
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 			// 5. Insert session
-			tracker.on.insert('directus_sessions').response([]);
+			tracker.on.insert('axis_sessions').response([]);
 			// 6. Insert grant
-			tracker.on.insert('directus_oauth_tokens').response([]);
+			tracker.on.insert('axis_oauth_tokens').response([]);
 		}
 
 		beforeEach(() => {
@@ -1732,8 +1732,8 @@ describe('McpOAuthService', () => {
 			});
 
 			// Only client lookup query should have been made (pre-txn auth)
-			expect(queryHistory('select', 'directus_oauth_clients').length).toBe(1);
-			expect(queryHistory('select', 'directus_oauth_codes').length).toBe(0);
+			expect(queryHistory('select', 'axis_oauth_clients').length).toBe(1);
+			expect(queryHistory('select', 'axis_oauth_codes').length).toBe(0);
 		});
 
 		it('malformed code_verifier (too long) returns invalid_request after client auth', async () => {
@@ -1744,8 +1744,8 @@ describe('McpOAuthService', () => {
 				error: 'invalid_request',
 			});
 
-			expect(queryHistory('select', 'directus_oauth_clients').length).toBe(1);
-			expect(queryHistory('select', 'directus_oauth_codes').length).toBe(0);
+			expect(queryHistory('select', 'axis_oauth_clients').length).toBe(1);
+			expect(queryHistory('select', 'axis_oauth_codes').length).toBe(0);
 		});
 
 		it('malformed code_verifier (invalid charset) returns invalid_request after client auth', async () => {
@@ -1757,8 +1757,8 @@ describe('McpOAuthService', () => {
 				{ error: 'invalid_request' },
 			);
 
-			expect(queryHistory('select', 'directus_oauth_clients').length).toBe(1);
-			expect(queryHistory('select', 'directus_oauth_codes').length).toBe(0);
+			expect(queryHistory('select', 'axis_oauth_clients').length).toBe(1);
+			expect(queryHistory('select', 'axis_oauth_codes').length).toBe(0);
 		});
 
 		it('malformed code_verifier returns invalid_request even when code is valid (format check runs first)', async () => {
@@ -1769,8 +1769,8 @@ describe('McpOAuthService', () => {
 				error: 'invalid_request',
 			});
 
-			expect(queryHistory('select', 'directus_oauth_clients').length).toBe(1);
-			expect(queryHistory('select', 'directus_oauth_codes').length).toBe(0);
+			expect(queryHistory('select', 'axis_oauth_clients').length).toBe(1);
+			expect(queryHistory('select', 'axis_oauth_codes').length).toBe(0);
 		});
 
 		it('valid code exchange returns access_token, token_type=Bearer, refresh_token, scope, expires_in', async () => {
@@ -1798,7 +1798,7 @@ describe('McpOAuthService', () => {
 
 			await service.exchangeCode(validParams(), context);
 
-			const sessionInserts = queryHistory('insert', 'directus_sessions');
+			const sessionInserts = queryHistory('insert', 'axis_sessions');
 			expect(sessionInserts.length).toBe(1);
 			// 7 days in ms
 			const expectedExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
@@ -1833,7 +1833,7 @@ describe('McpOAuthService', () => {
 		it('wrong code_verifier returns invalid_grant', async () => {
 			mockClientLookup(clientId);
 			mockCodeLookup();
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 
 			// Valid format but wrong verifier
 			const wrongVerifier = 'x'.repeat(43);
@@ -1846,7 +1846,7 @@ describe('McpOAuthService', () => {
 		it('expired code returns invalid_grant', async () => {
 			mockClientLookup(clientId);
 			mockCodeLookup({ expires_at: new Date(Date.now() - 1000) }); // expired 1s ago
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 
 			await assertOAuthError(() => service.exchangeCode(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -1855,7 +1855,7 @@ describe('McpOAuthService', () => {
 			mockClientLookup(clientId);
 			const wrongClientId = crypto.randomUUID();
 			mockCodeLookup({ client: wrongClientId });
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 
 			await assertOAuthError(() => service.exchangeCode(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -1863,7 +1863,7 @@ describe('McpOAuthService', () => {
 		it('wrong redirect_uri returns invalid_grant', async () => {
 			mockClientLookup(clientId);
 			mockCodeLookup({ redirect_uri: 'https://other.example.com/callback' });
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 
 			await assertOAuthError(() => service.exchangeCode(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -1871,7 +1871,7 @@ describe('McpOAuthService', () => {
 		it('wrong resource returns invalid_target', async () => {
 			mockClientLookup(clientId);
 			mockCodeLookup({ resource: 'https://evil.com/mcp' });
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 
 			await assertOAuthError(() => service.exchangeCode(validParams(), context), { error: 'invalid_target' });
 		});
@@ -1887,13 +1887,13 @@ describe('McpOAuthService', () => {
 			mockClientLookup(clientId);
 			mockCodeLookup();
 			// Atomic update returns 0 = already used
-			tracker.on.update('directus_oauth_codes').response(0);
+			tracker.on.update('axis_oauth_codes').response(0);
 
 			await assertOAuthError(() => service.exchangeCode(validParams(), context), { error: 'invalid_grant' });
 
-			expect(queryHistory('select', 'directus_oauth_tokens')).toHaveLength(0);
-			expect(queryHistory('delete', 'directus_oauth_tokens')).toHaveLength(0);
-			expect(queryHistory('delete', 'directus_sessions')).toHaveLength(0);
+			expect(queryHistory('select', 'axis_oauth_tokens')).toHaveLength(0);
+			expect(queryHistory('delete', 'axis_oauth_tokens')).toHaveLength(0);
+			expect(queryHistory('delete', 'axis_sessions')).toHaveLength(0);
 		});
 
 		describe.each(confidentialMethods)('$label code replay', ({ method, makeAuthParams }) => {
@@ -1907,9 +1907,9 @@ describe('McpOAuthService', () => {
 				});
 
 				mockCodeLookup();
-				tracker.on.update('directus_oauth_codes').response(0);
+				tracker.on.update('axis_oauth_codes').response(0);
 
-				tracker.on.select('directus_oauth_tokens').response([
+				tracker.on.select('axis_oauth_tokens').response([
 					{
 						id: 'winner-grant',
 						client: clientId,
@@ -1918,17 +1918,17 @@ describe('McpOAuthService', () => {
 					},
 				]);
 
-				tracker.on.delete('directus_oauth_tokens').response(1);
-				tracker.on.delete('directus_sessions').response(1);
+				tracker.on.delete('axis_oauth_tokens').response(1);
+				tracker.on.delete('axis_sessions').response(1);
 
 				await assertOAuthError(
 					() => service.exchangeCode(validParams(makeAuthParams(clientId, clientSecret)), context),
 					{ error: 'invalid_grant' },
 				);
 
-				expect(queryHistory('select', 'directus_oauth_tokens')).toHaveLength(1);
-				expect(queryHistory('delete', 'directus_oauth_tokens')).toHaveLength(1);
-				expect(queryHistory('delete', 'directus_sessions')).toHaveLength(1);
+				expect(queryHistory('select', 'axis_oauth_tokens')).toHaveLength(1);
+				expect(queryHistory('delete', 'axis_oauth_tokens')).toHaveLength(1);
+				expect(queryHistory('delete', 'axis_sessions')).toHaveLength(1);
 			});
 		});
 
@@ -1936,7 +1936,7 @@ describe('McpOAuthService', () => {
 			mockClientLookup(clientId);
 			// First call: code found in SELECT, but UPDATE returns 0 (someone else used it first)
 			mockCodeLookup();
-			tracker.on.update('directus_oauth_codes').response(0);
+			tracker.on.update('axis_oauth_codes').response(0);
 
 			await assertOAuthError(() => service.exchangeCode(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -1956,12 +1956,12 @@ describe('McpOAuthService', () => {
 		it("JWT role claim is the user's own role, not the roles tree root", async () => {
 			mockClientLookup(clientId);
 			mockCodeLookup();
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 
 			mockUserLookup({ role: 'own-role' });
-			tracker.on.select('directus_oauth_tokens').response([]);
-			tracker.on.insert('directus_sessions').response([]);
-			tracker.on.insert('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
+			tracker.on.insert('axis_sessions').response([]);
+			tracker.on.insert('axis_oauth_tokens').response([]);
 
 			mockFetchRolesTree.mockResolvedValue(['root-role', 'parent-role', 'own-role']);
 
@@ -1973,13 +1973,13 @@ describe('McpOAuthService', () => {
 
 		it('refresh_token omitted if client did not register refresh_token grant type', async () => {
 			mockCodeLookup();
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 			// Client only has authorization_code, no refresh_token
 			mockClientLookup(clientId, { grant_types: JSON.stringify(['authorization_code']) });
 			mockUserLookup();
-			tracker.on.select('directus_oauth_tokens').response([]);
-			tracker.on.insert('directus_sessions').response([]);
-			tracker.on.insert('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
+			tracker.on.insert('axis_sessions').response([]);
+			tracker.on.insert('axis_oauth_tokens').response([]);
 
 			const result = await service.exchangeCode(validParams(), context);
 
@@ -1991,7 +1991,7 @@ describe('McpOAuthService', () => {
 
 			await service.exchangeCode(validParams(), context);
 
-			const sessionInserts = queryHistory('insert', 'directus_sessions');
+			const sessionInserts = queryHistory('insert', 'axis_sessions');
 			expect(sessionInserts.length).toBe(1);
 			expect(sessionInserts[0]!.bindings).toContain(clientId);
 		});
@@ -2001,7 +2001,7 @@ describe('McpOAuthService', () => {
 
 			await service.exchangeCode(validParams(), context);
 
-			const tokenInserts = queryHistory('insert', 'directus_oauth_tokens');
+			const tokenInserts = queryHistory('insert', 'axis_oauth_tokens');
 			expect(tokenInserts.length).toBe(1);
 			const bindings = tokenInserts[0]!.bindings;
 			expect(bindings).toContain(codeHash);
@@ -2011,23 +2011,23 @@ describe('McpOAuthService', () => {
 
 		it('existing grant for same (client, user) is deleted before new grant', async () => {
 			mockCodeLookup();
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 			mockClientLookup(clientId);
 			mockUserLookup();
 
 			// Existing grant found
 			tracker.on
-				.select('directus_oauth_tokens')
+				.select('axis_oauth_tokens')
 				.response([{ id: crypto.randomUUID(), client: clientId, user: userId, session: 'old-hash', resource, scope }]);
 
-			tracker.on.delete('directus_oauth_tokens').response(1);
-			tracker.on.delete('directus_sessions').response(1);
-			tracker.on.insert('directus_sessions').response([]);
-			tracker.on.insert('directus_oauth_tokens').response([]);
+			tracker.on.delete('axis_oauth_tokens').response(1);
+			tracker.on.delete('axis_sessions').response(1);
+			tracker.on.insert('axis_sessions').response([]);
+			tracker.on.insert('axis_oauth_tokens').response([]);
 
 			await service.exchangeCode(validParams(), context);
 
-			const deletes = queryHistory('delete', 'directus_oauth_tokens');
+			const deletes = queryHistory('delete', 'axis_oauth_tokens');
 			expect(deletes.length).toBe(1);
 			expect(deletes[0]!.bindings).toContain(clientId);
 			expect(deletes[0]!.bindings).toContain(userId);
@@ -2038,8 +2038,8 @@ describe('McpOAuthService', () => {
 
 			await service.exchangeCode(validParams(), context);
 
-			const codeUpdates = queryHistory('update', 'directus_oauth_codes');
-			const tokenInserts = queryHistory('insert', 'directus_oauth_tokens');
+			const codeUpdates = queryHistory('update', 'axis_oauth_codes');
+			const tokenInserts = queryHistory('insert', 'axis_oauth_tokens');
 			expect(codeUpdates.length).toBe(1);
 			expect(tokenInserts.length).toBe(1);
 		});
@@ -2074,7 +2074,7 @@ describe('McpOAuthService', () => {
 		it('nonexistent code returns invalid_grant', async () => {
 			mockClientLookup(clientId);
 			// No code found
-			tracker.on.select('directus_oauth_codes').response([]);
+			tracker.on.select('axis_oauth_codes').response([]);
 
 			await assertOAuthError(() => service.exchangeCode(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -2085,14 +2085,14 @@ describe('McpOAuthService', () => {
 			// 1. Code lookup
 			mockCodeLookup();
 			// 2. Atomic burn
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 			// 3. Client lookup
 			mockClientLookup(clientId);
 			// 4. User lookup
 			mockUserLookup({ status: 'active' });
 
 			// 5. Existing grant lookup (has old session)
-			tracker.on.select('directus_oauth_tokens').response([
+			tracker.on.select('axis_oauth_tokens').response([
 				{
 					id: crypto.randomUUID(),
 					client: clientId,
@@ -2104,17 +2104,17 @@ describe('McpOAuthService', () => {
 			]);
 
 			// 6. Delete existing grant
-			tracker.on.delete('directus_oauth_tokens').response(1);
+			tracker.on.delete('axis_oauth_tokens').response(1);
 			// 7. Delete old session
-			tracker.on.delete('directus_sessions').response(1);
+			tracker.on.delete('axis_sessions').response(1);
 			// 8. Insert new session
-			tracker.on.insert('directus_sessions').response([]);
+			tracker.on.insert('axis_sessions').response([]);
 			// 9. Insert new grant
-			tracker.on.insert('directus_oauth_tokens').response([]);
+			tracker.on.insert('axis_oauth_tokens').response([]);
 
 			await service.exchangeCode(validParams(), context);
 
-			const sessionDeletes = queryHistory('delete', 'directus_sessions');
+			const sessionDeletes = queryHistory('delete', 'axis_sessions');
 			expect(sessionDeletes.length).toBeGreaterThanOrEqual(1);
 			// Verify old session hash was in the delete bindings
 			expect(sessionDeletes[0]!.bindings).toContain(oldSessionHash);
@@ -2123,27 +2123,27 @@ describe('McpOAuthService', () => {
 		it('exchange replacing an existing grant burns, cleans up, and creates a new grant', async () => {
 			// Set up with existing grant to exercise all code paths
 			mockCodeLookup();
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 			mockClientLookup(clientId);
 			mockUserLookup();
 
 			// Existing grant found (triggers delete path)
 			tracker.on
-				.select('directus_oauth_tokens')
+				.select('axis_oauth_tokens')
 				.response([{ id: crypto.randomUUID(), client: clientId, user: userId, session: 'old-hash', resource, scope }]);
 
-			tracker.on.delete('directus_oauth_tokens').response(1);
-			tracker.on.delete('directus_sessions').response(1);
-			tracker.on.insert('directus_sessions').response([]);
-			tracker.on.insert('directus_oauth_tokens').response([]);
+			tracker.on.delete('axis_oauth_tokens').response(1);
+			tracker.on.delete('axis_sessions').response(1);
+			tracker.on.insert('axis_sessions').response([]);
+			tracker.on.insert('axis_oauth_tokens').response([]);
 
 			await service.exchangeCode(validParams(), context);
 
-			const codeUpdates = queryHistory('update', 'directus_oauth_codes');
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
-			const sessionDeletes = queryHistory('delete', 'directus_sessions');
-			const sessionInserts = queryHistory('insert', 'directus_sessions');
-			const tokenInserts = queryHistory('insert', 'directus_oauth_tokens');
+			const codeUpdates = queryHistory('update', 'axis_oauth_codes');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
+			const sessionDeletes = queryHistory('delete', 'axis_sessions');
+			const sessionInserts = queryHistory('insert', 'axis_sessions');
+			const tokenInserts = queryHistory('insert', 'axis_oauth_tokens');
 
 			expect(codeUpdates.length).toBe(1);
 			expect(tokenDeletes.length).toBe(1);
@@ -2155,7 +2155,7 @@ describe('McpOAuthService', () => {
 		it('client deleted between pre-txn auth and in-txn re-read rejects with invalid_grant', async () => {
 			let clientSelectCount = 0;
 
-			tracker.on.select('directus_oauth_clients').response(() => {
+			tracker.on.select('axis_oauth_clients').response(() => {
 				clientSelectCount++;
 
 				if (clientSelectCount === 1) {
@@ -2175,7 +2175,7 @@ describe('McpOAuthService', () => {
 			});
 
 			mockCodeLookup();
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 
 			await assertOAuthError(() => service.exchangeCode(validParams(), context), {
 				error: 'invalid_grant',
@@ -2185,7 +2185,7 @@ describe('McpOAuthService', () => {
 		it('inactive user returns invalid_grant', async () => {
 			mockClientLookup(clientId);
 			mockCodeLookup();
-			tracker.on.update('directus_oauth_codes').response(1);
+			tracker.on.update('axis_oauth_codes').response(1);
 			// User exists but is suspended
 			mockUserLookup({ status: 'suspended' });
 
@@ -2222,7 +2222,7 @@ describe('McpOAuthService', () => {
 						{ error: 'invalid_client', statusCode: 401 },
 					);
 
-					expect(queryHistory('select', 'directus_oauth_codes').length).toBe(0);
+					expect(queryHistory('select', 'axis_oauth_codes').length).toBe(0);
 				});
 			});
 
@@ -2239,8 +2239,8 @@ describe('McpOAuthService', () => {
 				});
 
 				// No code operations should have been attempted
-				expect(queryHistory('select', 'directus_oauth_codes').length).toBe(0);
-				expect(queryHistory('update', 'directus_oauth_codes').length).toBe(0);
+				expect(queryHistory('select', 'axis_oauth_codes').length).toBe(0);
+				expect(queryHistory('update', 'axis_oauth_codes').length).toBe(0);
 			});
 
 			it('none: still works unchanged', async () => {
@@ -2276,14 +2276,14 @@ describe('McpOAuthService', () => {
 
 		function mockGrantLookup(overrides: Record<string, unknown> = {}) {
 			tracker.on
-				.select('directus_oauth_tokens')
+				.select('axis_oauth_tokens')
 				.response([
 					createGrantRow({ id: grantId, client: clientId, user: userId, session: sessionHash, ...overrides }),
 				]);
 		}
 
 		function mockSessionConsumed() {
-			tracker.on.delete('directus_sessions').response(1);
+			tracker.on.delete('axis_sessions').response(1);
 		}
 
 		function mockSuccessfulRefresh(clientOverrides: Record<string, unknown> = {}) {
@@ -2292,13 +2292,13 @@ describe('McpOAuthService', () => {
 			// 2. Grant lookup by session
 			mockGrantLookup();
 			// 3. User status + email lookup
-			tracker.on.select('directus_users').response([createUserRow()]);
+			tracker.on.select('axis_users').response([createUserRow()]);
 			// 4. Consume the live backing session
 			mockSessionConsumed();
 			// 5. Atomic update (session rotation)
-			tracker.on.update('directus_oauth_tokens').response(1);
+			tracker.on.update('axis_oauth_tokens').response(1);
 			// 6. Insert new session
-			tracker.on.insert('directus_sessions').response([]);
+			tracker.on.insert('axis_sessions').response([]);
 		}
 
 		beforeEach(() => {
@@ -2382,18 +2382,18 @@ describe('McpOAuthService', () => {
 			const result = await service.refreshToken(validParams(), context);
 
 			// Old session deleted
-			const deletes = queryHistory('delete', 'directus_sessions');
+			const deletes = queryHistory('delete', 'axis_sessions');
 			expect(deletes.length).toBe(1);
 			expect(deletes[0]!.bindings).toContain(sessionHash);
 			expect(deletes[0]!.bindings).toContain(userId);
 			expect(deletes[0]!.bindings).toContain(clientId);
 
 			// New session created
-			const sessionInserts = queryHistory('insert', 'directus_sessions');
+			const sessionInserts = queryHistory('insert', 'axis_sessions');
 			expect(sessionInserts.length).toBe(1);
 
 			// Grant updated (atomic UPDATE WHERE session = old_hash)
-			const updates = queryHistory('update', 'directus_oauth_tokens');
+			const updates = queryHistory('update', 'axis_oauth_tokens');
 			expect(updates.length).toBe(1);
 			expect(updates[0]!.bindings).toContain(grantId);
 			expect(updates[0]!.bindings).toContain(sessionHash); // WHERE clause has old hash
@@ -2409,7 +2409,7 @@ describe('McpOAuthService', () => {
 
 			let tokenSelectCount = 0;
 
-			tracker.on.select('directus_oauth_tokens').response(() => {
+			tracker.on.select('axis_oauth_tokens').response(() => {
 				tokenSelectCount++;
 
 				if (tokenSelectCount === 1) {
@@ -2419,22 +2419,22 @@ describe('McpOAuthService', () => {
 				return [createGrantRow({ id: grantId, client: clientId, user: userId, session: sessionHash })];
 			});
 
-			tracker.on.select('directus_users').response([createUserRow()]);
-			tracker.on.delete('directus_sessions').response(0);
-			tracker.on.delete('directus_oauth_tokens').response(1);
+			tracker.on.select('axis_users').response([createUserRow()]);
+			tracker.on.delete('axis_sessions').response(0);
+			tracker.on.delete('axis_oauth_tokens').response(1);
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), {
 				error: 'invalid_grant',
 				statusCode: 400,
 			});
 
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
 			expect(tokenDeletes.length).toBe(1);
 			expect(tokenDeletes[0]!.bindings).toContain(grantId);
 			expect(tokenDeletes[0]!.bindings).toContain(sessionHash);
 			expect(tokenDeletes[0]!.bindings).toContain(clientId);
-			expect(queryHistory('update', 'directus_oauth_tokens').length).toBe(0);
-			expect(queryHistory('insert', 'directus_sessions').length).toBe(0);
+			expect(queryHistory('update', 'axis_oauth_tokens').length).toBe(0);
+			expect(queryHistory('insert', 'axis_sessions').length).toBe(0);
 			expect(mockFetchRolesTree).not.toHaveBeenCalled();
 			expect(mockActivityCreateOne).not.toHaveBeenCalled();
 		});
@@ -2444,7 +2444,7 @@ describe('McpOAuthService', () => {
 
 			await service.refreshToken(validParams(), context);
 
-			const updates = queryHistory('update', 'directus_oauth_tokens');
+			const updates = queryHistory('update', 'axis_oauth_tokens');
 			expect(updates.length).toBe(1);
 			// The update bindings should contain a new Date (expires_at) ~7 days from now
 			const dateBind = updates[0]!.bindings.find((b) => b instanceof Date) as Date;
@@ -2459,7 +2459,7 @@ describe('McpOAuthService', () => {
 			// Single handler: first select returns grant, second (reuse detection) returns empty
 			let tokenSelectCount = 0;
 
-			tracker.on.select('directus_oauth_tokens').response(() => {
+			tracker.on.select('axis_oauth_tokens').response(() => {
 				tokenSelectCount++;
 
 				if (tokenSelectCount === 1) {
@@ -2482,12 +2482,12 @@ describe('McpOAuthService', () => {
 			});
 
 			// User status check
-			tracker.on.select('directus_users').response([createUserRow()]);
+			tracker.on.select('axis_users').response([createUserRow()]);
 			// Consume the live backing session
 			mockSessionConsumed();
 
 			// Atomic update returns 0 = someone else already rotated
-			tracker.on.update('directus_oauth_tokens').response(0);
+			tracker.on.update('axis_oauth_tokens').response(0);
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -2498,7 +2498,7 @@ describe('McpOAuthService', () => {
 			// Use a single handler that sequences grant lookup -> reuse detection
 			let tokenSelectCount = 0;
 
-			tracker.on.select('directus_oauth_tokens').response(() => {
+			tracker.on.select('axis_oauth_tokens').response(() => {
 				tokenSelectCount++;
 
 				if (tokenSelectCount === 1) {
@@ -2523,15 +2523,15 @@ describe('McpOAuthService', () => {
 			});
 
 			// User status check
-			tracker.on.select('directus_users').response([createUserRow()]);
+			tracker.on.select('axis_users').response([createUserRow()]);
 			// Consume the live backing session
 			mockSessionConsumed();
 
 			// Atomic update returns 0 = someone else already rotated
-			tracker.on.update('directus_oauth_tokens').response(0);
+			tracker.on.update('axis_oauth_tokens').response(0);
 			// Revoke: delete grant + session
-			tracker.on.delete('directus_oauth_tokens').response(1);
-			tracker.on.delete('directus_sessions').response(1);
+			tracker.on.delete('axis_oauth_tokens').response(1);
+			tracker.on.delete('axis_sessions').response(1);
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -2542,7 +2542,7 @@ describe('McpOAuthService', () => {
 			// Use a single handler that sequences: not found -> reuse grant
 			let tokenSelectCount = 0;
 
-			tracker.on.select('directus_oauth_tokens').response(() => {
+			tracker.on.select('axis_oauth_tokens').response(() => {
 				tokenSelectCount++;
 
 				if (tokenSelectCount === 1) return []; // Primary lookup by session: not found
@@ -2551,19 +2551,19 @@ describe('McpOAuthService', () => {
 			});
 
 			// Revoke: delete grant + session
-			tracker.on.delete('directus_oauth_tokens').response(1);
-			tracker.on.delete('directus_sessions').response(1);
+			tracker.on.delete('axis_oauth_tokens').response(1);
+			tracker.on.delete('axis_sessions').response(1);
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), { error: 'invalid_grant' });
 
 			// Verify grant was deleted (revoked)
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
 			expect(tokenDeletes.length).toBe(1);
 			expect(tokenDeletes[0]!.bindings).toContain(grantId);
 			expect(tokenDeletes[0]!.bindings).toContain(sessionHash);
 			expect(tokenDeletes[0]!.bindings).toContain(clientId);
 
-			const sessionDeletes = queryHistory('delete', 'directus_sessions');
+			const sessionDeletes = queryHistory('delete', 'axis_sessions');
 			expect(sessionDeletes.length).toBe(1);
 			expect(sessionDeletes[0]!.bindings).toContain('new-hash');
 			expect(sessionDeletes[0]!.bindings).toContain(userId);
@@ -2575,7 +2575,7 @@ describe('McpOAuthService', () => {
 
 			let tokenSelectCount = 0;
 
-			tracker.on.select('directus_oauth_tokens').response(() => {
+			tracker.on.select('axis_oauth_tokens').response(() => {
 				tokenSelectCount++;
 
 				if (tokenSelectCount === 1) return [];
@@ -2585,13 +2585,13 @@ describe('McpOAuthService', () => {
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), { error: 'invalid_grant' });
 
-			const tokenSelects = queryHistory('select', 'directus_oauth_tokens');
+			const tokenSelects = queryHistory('select', 'axis_oauth_tokens');
 			expect(tokenSelects[1]!.sql).toContain('previous_session');
 			expect(tokenSelects[1]!.sql).toContain('client');
 			expect(tokenSelects[1]!.bindings).toContain(sessionHash);
 			expect(tokenSelects[1]!.bindings).toContain(clientId);
-			expect(queryHistory('delete', 'directus_oauth_tokens').length).toBe(0);
-			expect(queryHistory('delete', 'directus_sessions').length).toBe(0);
+			expect(queryHistory('delete', 'axis_oauth_tokens').length).toBe(0);
+			expect(queryHistory('delete', 'axis_sessions').length).toBe(0);
 		});
 
 		it('reuse detection deletes grant and session through one transaction boundary', async () => {
@@ -2600,15 +2600,15 @@ describe('McpOAuthService', () => {
 			// Sequence: primary lookup (not found) -> reuse detection (found)
 			let tokenSelectCount = 0;
 
-			tracker.on.select('directus_oauth_tokens').response(() => {
+			tracker.on.select('axis_oauth_tokens').response(() => {
 				tokenSelectCount++;
 
 				if (tokenSelectCount === 1) return []; // Primary lookup by session: not found
 				return [{ id: grantId, client: clientId, user: userId, session: 'new-hash', previous_session: sessionHash }];
 			});
 
-			tracker.on.delete('directus_oauth_tokens').response(1);
-			tracker.on.delete('directus_sessions').response(1);
+			tracker.on.delete('axis_oauth_tokens').response(1);
+			tracker.on.delete('axis_sessions').response(1);
 
 			const transactionSpy = vi.spyOn(db, 'transaction');
 
@@ -2618,8 +2618,8 @@ describe('McpOAuthService', () => {
 			expect(transactionSpy).toHaveBeenCalledOnce();
 
 			// Verify both deletes still happened
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
-			const sessionDeletes = queryHistory('delete', 'directus_sessions');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
+			const sessionDeletes = queryHistory('delete', 'axis_sessions');
 			expect(tokenDeletes.length).toBe(1);
 			expect(sessionDeletes.length).toBe(1);
 		});
@@ -2627,7 +2627,7 @@ describe('McpOAuthService', () => {
 		it('unknown token returns invalid_grant', async () => {
 			mockClientLookup(clientId);
 			// Both session and previous_session lookups return empty
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -2689,7 +2689,7 @@ describe('McpOAuthService', () => {
 		});
 
 		it('unknown client_id returns invalid_grant', async () => {
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), { error: 'invalid_grant' });
 		});
@@ -2698,7 +2698,7 @@ describe('McpOAuthService', () => {
 			mockClientLookup(clientId);
 			mockGrantLookup();
 			// User lookup returns suspended status
-			tracker.on.select('directus_users').response([createUserRow({ status: 'suspended' })]);
+			tracker.on.select('axis_users').response([createUserRow({ status: 'suspended' })]);
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), {
 				error: 'invalid_grant',
@@ -2710,7 +2710,7 @@ describe('McpOAuthService', () => {
 			mockClientLookup(clientId);
 			mockGrantLookup();
 			// User lookup returns empty (user deleted)
-			tracker.on.select('directus_users').response([]);
+			tracker.on.select('axis_users').response([]);
 
 			await assertOAuthError(() => service.refreshToken(validParams(), context), {
 				error: 'invalid_grant',
@@ -2722,7 +2722,7 @@ describe('McpOAuthService', () => {
 			const otherClientId = crypto.randomUUID();
 
 			// Client lookup for requesting client (otherClientId)
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: otherClientId,
 					client_name: 'Other Client',
@@ -2756,13 +2756,13 @@ describe('McpOAuthService', () => {
 					// 2. Grant lookup by session
 					mockGrantLookup();
 					// 3. User status + email lookup
-					tracker.on.select('directus_users').response([createUserRow()]);
+					tracker.on.select('axis_users').response([createUserRow()]);
 					// 4. Atomic update (session rotation)
-					tracker.on.update('directus_oauth_tokens').response(1);
+					tracker.on.update('axis_oauth_tokens').response(1);
 					// 5. Delete old session
-					tracker.on.delete('directus_sessions').response(1);
+					tracker.on.delete('axis_sessions').response(1);
 					// 6. Insert new session
-					tracker.on.insert('directus_sessions').response([]);
+					tracker.on.insert('axis_sessions').response([]);
 
 					const result = await service.refreshToken(validParams(makeAuthParams(clientId, clientSecret)), context);
 
@@ -2783,7 +2783,7 @@ describe('McpOAuthService', () => {
 					);
 
 					// No grant operations should have been attempted
-					expect(queryHistory('select', 'directus_oauth_tokens').length).toBe(0);
+					expect(queryHistory('select', 'axis_oauth_tokens').length).toBe(0);
 				});
 			});
 
@@ -2814,7 +2814,7 @@ describe('McpOAuthService', () => {
 
 		function mockGrantLookup(overrides: Record<string, unknown> = {}) {
 			tracker.on
-				.select('directus_oauth_tokens')
+				.select('axis_oauth_tokens')
 				.response([
 					createGrantRow({ id: grantId, client: clientId, user: userId, session: sessionHash, ...overrides }),
 				]);
@@ -2828,17 +2828,17 @@ describe('McpOAuthService', () => {
 			mockClientLookup(clientId);
 			mockGrantLookup();
 			// Delete grant
-			tracker.on.delete('directus_oauth_tokens').response(1);
+			tracker.on.delete('axis_oauth_tokens').response(1);
 			// Delete session
-			tracker.on.delete('directus_sessions').response(1);
+			tracker.on.delete('axis_sessions').response(1);
 			// User lookup for activity
-			tracker.on.select('directus_users').response([createUserRow()]);
+			tracker.on.select('axis_users').response([createUserRow()]);
 
 			await service.revokeToken(validParams());
 
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
 			expect(tokenDeletes.length).toBe(1);
-			const sessionDeletes = queryHistory('delete', 'directus_sessions');
+			const sessionDeletes = queryHistory('delete', 'axis_sessions');
 			expect(sessionDeletes.length).toBe(1);
 		});
 
@@ -2851,12 +2851,12 @@ describe('McpOAuthService', () => {
 			await service.revokeToken(validParams());
 
 			// Should NOT have deleted the grant
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
 			expect(tokenDeletes.length).toBe(0);
 		});
 
 		it('unknown client_id returns 401 invalid_client', async () => {
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await assertOAuthError(() => service.revokeToken(validParams()), {
 				error: 'invalid_client',
@@ -2866,7 +2866,7 @@ describe('McpOAuthService', () => {
 
 		it('unknown token returns 200', async () => {
 			mockClientLookup(clientId);
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 
 			await service.revokeToken(validParams());
 		});
@@ -2876,14 +2876,14 @@ describe('McpOAuthService', () => {
 			async (tokenTypeHint) => {
 				mockClientLookup(clientId);
 				mockGrantLookup();
-				tracker.on.delete('directus_oauth_tokens').response(1);
-				tracker.on.delete('directus_sessions').response(1);
-				tracker.on.select('directus_users').response([createUserRow()]);
+				tracker.on.delete('axis_oauth_tokens').response(1);
+				tracker.on.delete('axis_sessions').response(1);
+				tracker.on.select('axis_users').response([createUserRow()]);
 
 				await service.revokeToken({ ...validParams(), token_type_hint: tokenTypeHint });
 
-				expect(queryHistory('delete', 'directus_oauth_tokens')).toHaveLength(1);
-				expect(queryHistory('delete', 'directus_sessions')).toHaveLength(1);
+				expect(queryHistory('delete', 'axis_oauth_tokens')).toHaveLength(1);
+				expect(queryHistory('delete', 'axis_sessions')).toHaveLength(1);
 			},
 		);
 
@@ -2904,22 +2904,22 @@ describe('McpOAuthService', () => {
 		it('activity record created with action=logout on revocation', async () => {
 			mockClientLookup(clientId);
 			mockGrantLookup();
-			tracker.on.delete('directus_oauth_tokens').response(1);
-			tracker.on.delete('directus_sessions').response(1);
-			tracker.on.select('directus_users').response([createUserRow()]);
+			tracker.on.delete('axis_oauth_tokens').response(1);
+			tracker.on.delete('axis_sessions').response(1);
+			tracker.on.select('axis_users').response([createUserRow()]);
 
 			await service.revokeToken(validParams());
 
 			expect(mockActivityCreateOne).toHaveBeenCalledOnce();
 			const activityArg = mockActivityCreateOne.mock.calls[0]![0];
 			expect(activityArg.action).toBe('logout');
-			expect(activityArg.collection).toBe('directus_oauth_tokens');
+			expect(activityArg.collection).toBe('axis_oauth_tokens');
 		});
 
 		it('access token (JWT) submitted as token returns 200 (treated as unknown refresh token, no-op)', async () => {
 			mockClientLookup(clientId);
 			// A JWT hashed won't match any session
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 
 			const fakeJwt = jwt.sign({ foo: 'bar' }, 'secret');
 			await service.revokeToken({ ...validParams(), token: fakeJwt });
@@ -2928,9 +2928,9 @@ describe('McpOAuthService', () => {
 		it('revocation deletes grant and session through one transaction boundary', async () => {
 			mockClientLookup(clientId);
 			mockGrantLookup();
-			tracker.on.delete('directus_oauth_tokens').response(1);
-			tracker.on.delete('directus_sessions').response(1);
-			tracker.on.select('directus_users').response([createUserRow()]);
+			tracker.on.delete('axis_oauth_tokens').response(1);
+			tracker.on.delete('axis_sessions').response(1);
+			tracker.on.select('axis_users').response([createUserRow()]);
 
 			const transactionSpy = vi.spyOn(db, 'transaction');
 
@@ -2940,8 +2940,8 @@ describe('McpOAuthService', () => {
 			expect(transactionSpy).toHaveBeenCalledOnce();
 
 			// Verify both deletes still happened
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
-			const sessionDeletes = queryHistory('delete', 'directus_sessions');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
+			const sessionDeletes = queryHistory('delete', 'axis_sessions');
 			expect(tokenDeletes.length).toBe(1);
 			expect(sessionDeletes.length).toBe(1);
 		});
@@ -2967,7 +2967,7 @@ describe('McpOAuthService', () => {
 
 		function mockGrantLookup(overrides: Record<string, unknown> = {}) {
 			tracker.on
-				.select('directus_oauth_tokens')
+				.select('axis_oauth_tokens')
 				.response([
 					createGrantRow({ id: grantId, client: clientId, user: userId, session: sessionHash, ...overrides }),
 				]);
@@ -2985,15 +2985,15 @@ describe('McpOAuthService', () => {
 				});
 
 				mockGrantLookup();
-				tracker.on.delete('directus_oauth_tokens').response(1);
-				tracker.on.delete('directus_sessions').response(1);
-				tracker.on.select('directus_users').response([createUserRow()]);
+				tracker.on.delete('axis_oauth_tokens').response(1);
+				tracker.on.delete('axis_sessions').response(1);
+				tracker.on.select('axis_users').response([createUserRow()]);
 
 				await service.revokeToken(validParams(makeAuthParams(clientId, clientSecret)));
 
-				const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
+				const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
 				expect(tokenDeletes.length).toBe(1);
-				const sessionDeletes = queryHistory('delete', 'directus_sessions');
+				const sessionDeletes = queryHistory('delete', 'axis_sessions');
 				expect(sessionDeletes.length).toBe(1);
 			});
 
@@ -3009,7 +3009,7 @@ describe('McpOAuthService', () => {
 				});
 
 				// Grant should NOT have been revoked
-				const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
+				const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
 				expect(tokenDeletes.length).toBe(0);
 			});
 		});
@@ -3021,14 +3021,14 @@ describe('McpOAuthService', () => {
 			});
 
 			// No grant found
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 
 			// Should NOT throw -- silent 200 per RFC 7009
 			await service.revokeToken(validParams(confidentialMethods[0]!.makeAuthParams(clientId, clientSecret)));
 		});
 
 		it('unknown client_id returns 401', async () => {
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await assertOAuthError(() => service.revokeToken(validParams()), { error: 'invalid_client', statusCode: 401 });
 		});
@@ -3039,7 +3039,7 @@ describe('McpOAuthService', () => {
 				client_secret_hash: null,
 			});
 
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 
 			// Should NOT throw -- silent 200
 			await service.revokeToken(validParams());
@@ -3055,19 +3055,19 @@ describe('McpOAuthService', () => {
 
 		it('expired unused codes deleted', async () => {
 			// Step 1: delete expired unused codes
-			tracker.on.delete('directus_oauth_codes').response(3);
+			tracker.on.delete('axis_oauth_codes').response(3);
 			// Step 2: delete used codes older than 1 hour
-			tracker.on.delete('directus_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
 			// Step 3: expired grants lookup
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 			// Step 4: orphaned grants lookup
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 			// Step 5a: tier 1 - never-authorized clients
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await service.cleanup();
 
-			const codeDeletes = queryHistory('delete', 'directus_oauth_codes');
+			const codeDeletes = queryHistory('delete', 'axis_oauth_codes');
 			expect(codeDeletes.length).toBeGreaterThanOrEqual(1);
 
 			// First delete should target expired+unused
@@ -3077,19 +3077,19 @@ describe('McpOAuthService', () => {
 
 		it('used codes older than 1 hour deleted', async () => {
 			// Step 1: expired unused codes
-			tracker.on.delete('directus_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
 			// Step 2: used codes older than 1 hour
-			tracker.on.delete('directus_oauth_codes').response(2);
+			tracker.on.delete('axis_oauth_codes').response(2);
 			// Step 3: expired grants lookup
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 			// Step 4: orphaned grants lookup
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 			// Step 5a: tier 1 - never-authorized clients
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await service.cleanup();
 
-			const codeDeletes = queryHistory('delete', 'directus_oauth_codes');
+			const codeDeletes = queryHistory('delete', 'axis_oauth_codes');
 			expect(codeDeletes.length).toBeGreaterThanOrEqual(2);
 
 			// Second delete should target used+old
@@ -3102,45 +3102,45 @@ describe('McpOAuthService', () => {
 			const expiredSessionHash = 'expired-session-hash';
 
 			// Step 1: expired unused codes
-			tracker.on.delete('directus_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
 			// Step 2: used codes older than 1h
-			tracker.on.delete('directus_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
 			// Step 3: expired grants lookup
-			tracker.on.select('directus_oauth_tokens').responseOnce([{ id: expiredGrantId, session: expiredSessionHash }]);
-			tracker.on.delete('directus_sessions').response(1);
-			tracker.on.delete('directus_oauth_tokens').response(1);
+			tracker.on.select('axis_oauth_tokens').responseOnce([{ id: expiredGrantId, session: expiredSessionHash }]);
+			tracker.on.delete('axis_sessions').response(1);
+			tracker.on.delete('axis_oauth_tokens').response(1);
 			// Step 4: orphaned grants lookup
-			tracker.on.select('directus_oauth_tokens').response([]);
+			tracker.on.select('axis_oauth_tokens').response([]);
 			// Step 5a: tier 1 - never-authorized clients
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await service.cleanup();
 
-			const sessionDeletes = queryHistory('delete', 'directus_sessions');
+			const sessionDeletes = queryHistory('delete', 'axis_sessions');
 			expect(sessionDeletes.length).toBeGreaterThanOrEqual(1);
 
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
 			expect(tokenDeletes.length).toBeGreaterThanOrEqual(1);
 		});
 
-		it('orphaned grants (session not in directus_sessions) deleted', async () => {
+		it('orphaned grants (session not in axis_sessions) deleted', async () => {
 			const orphanedGrantId = crypto.randomUUID();
 
 			// Step 1: expired unused codes
-			tracker.on.delete('directus_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
 			// Step 2: used codes
-			tracker.on.delete('directus_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
 			// Step 3: expired grants (none)
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
 			// Step 4: orphaned grants lookup (left join)
-			tracker.on.select('directus_oauth_tokens').responseOnce([{ id: orphanedGrantId }]);
-			tracker.on.delete('directus_oauth_tokens').response(1);
+			tracker.on.select('axis_oauth_tokens').responseOnce([{ id: orphanedGrantId }]);
+			tracker.on.delete('axis_oauth_tokens').response(1);
 			// Step 5a: tier 1 - never-authorized clients
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await service.cleanup();
 
-			const tokenDeletes = queryHistory('delete', 'directus_oauth_tokens');
+			const tokenDeletes = queryHistory('delete', 'axis_oauth_tokens');
 			expect(tokenDeletes.length).toBeGreaterThanOrEqual(1);
 		});
 
@@ -3148,59 +3148,59 @@ describe('McpOAuthService', () => {
 			const unusedClientId = crypto.randomUUID();
 
 			// Steps 1-4 (codes + grants cleanup)
-			tracker.on.delete('directus_oauth_codes').response(0);
-			tracker.on.delete('directus_oauth_codes').response(0);
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
+			tracker.on.delete('axis_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
 			// Step 5a: tier 1 - never-authorized clients (no consents, no sessions, no tokens)
-			tracker.on.select('directus_oauth_clients').responseOnce([{ client_id: unusedClientId }]);
-			tracker.on.delete('directus_oauth_clients').response(1);
+			tracker.on.select('axis_oauth_clients').responseOnce([{ client_id: unusedClientId }]);
+			tracker.on.delete('axis_oauth_clients').response(1);
 
 			await service.cleanup();
 
-			const clientDeletes = queryHistory('delete', 'directus_oauth_clients');
+			const clientDeletes = queryHistory('delete', 'axis_oauth_clients');
 			expect(clientDeletes.length).toBe(1);
 
 			// Verify the select query joins on consents to exclude authorized clients
-			const clientSelects = queryHistory('select', 'directus_oauth_clients');
+			const clientSelects = queryHistory('select', 'axis_oauth_clients');
 			expect(clientSelects.length).toBeGreaterThanOrEqual(1);
-			expect(clientSelects[0]!.sql).toContain('directus_oauth_consents');
+			expect(clientSelects[0]!.sql).toContain('axis_oauth_consents');
 		});
 
 		it('never-authorized client cleanup query applies unused TTL cutoff', async () => {
 			// Steps 1-4
-			tracker.on.delete('directus_oauth_codes').response(0);
-			tracker.on.delete('directus_oauth_codes').response(0);
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
+			tracker.on.delete('axis_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
 			// Step 5a: tier 1 returns empty (client is too young, filtered by date_created)
-			tracker.on.select('directus_oauth_clients').responseOnce([]);
+			tracker.on.select('axis_oauth_clients').responseOnce([]);
 
 			await service.cleanup();
 
-			const clientDeletes = queryHistory('delete', 'directus_oauth_clients');
+			const clientDeletes = queryHistory('delete', 'axis_oauth_clients');
 			expect(clientDeletes.length).toBe(0);
 
-			const clientSelects = queryHistory('select', 'directus_oauth_clients');
+			const clientSelects = queryHistory('select', 'axis_oauth_clients');
 			expect(clientSelects[0]!.sql).toContain('date_created');
 		});
 
 		it('idle authorized client cleanup is skipped when idle TTL is disabled', async () => {
 			// Steps 1-4
-			tracker.on.delete('directus_oauth_codes').response(0);
-			tracker.on.delete('directus_oauth_codes').response(0);
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
+			tracker.on.delete('axis_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
 			// Step 5a: tier 1 returns empty (client has consents, so not matched)
-			tracker.on.select('directus_oauth_clients').responseOnce([]);
+			tracker.on.select('axis_oauth_clients').responseOnce([]);
 			// Step 5b: tier 2 is skipped because MCP_OAUTH_CLIENT_IDLE_TTL = '0'
 
 			await service.cleanup();
 
-			const clientDeletes = queryHistory('delete', 'directus_oauth_clients');
+			const clientDeletes = queryHistory('delete', 'axis_oauth_clients');
 			expect(clientDeletes.length).toBe(0);
 
-			const clientSelects = queryHistory('select', 'directus_oauth_clients');
+			const clientSelects = queryHistory('select', 'axis_oauth_clients');
 			expect(clientSelects).toHaveLength(1);
 		});
 
@@ -3214,22 +3214,22 @@ describe('McpOAuthService', () => {
 				const idleClientId = crypto.randomUUID();
 
 				// Steps 1-4
-				tracker.on.delete('directus_oauth_codes').response(0);
-				tracker.on.delete('directus_oauth_codes').response(0);
-				tracker.on.select('directus_oauth_tokens').responseOnce([]);
-				tracker.on.select('directus_oauth_tokens').responseOnce([]);
+				tracker.on.delete('axis_oauth_codes').response(0);
+				tracker.on.delete('axis_oauth_codes').response(0);
+				tracker.on.select('axis_oauth_tokens').responseOnce([]);
+				tracker.on.select('axis_oauth_tokens').responseOnce([]);
 				// Step 5a: tier 1 returns empty (client has consents)
-				tracker.on.select('directus_oauth_clients').responseOnce([]);
+				tracker.on.select('axis_oauth_clients').responseOnce([]);
 				// Step 5b: tier 2 - idle authorized client
-				tracker.on.select('directus_oauth_clients').responseOnce([{ client_id: idleClientId }]);
-				tracker.on.delete('directus_oauth_clients').response(1);
+				tracker.on.select('axis_oauth_clients').responseOnce([{ client_id: idleClientId }]);
+				tracker.on.delete('axis_oauth_clients').response(1);
 
 				await service.cleanup();
 
-				const clientDeletes = queryHistory('delete', 'directus_oauth_clients');
+				const clientDeletes = queryHistory('delete', 'axis_oauth_clients');
 				expect(clientDeletes.length).toBe(1);
 
-				const clientSelects = queryHistory('select', 'directus_oauth_clients');
+				const clientSelects = queryHistory('select', 'axis_oauth_clients');
 				expect(clientSelects[1]!.sql).toContain('date_created');
 			} finally {
 				env['MCP_OAUTH_CLIENT_IDLE_TTL'] = originalIdleTtl;
@@ -3244,21 +3244,21 @@ describe('McpOAuthService', () => {
 
 			try {
 				// Steps 1-4
-				tracker.on.delete('directus_oauth_codes').response(0);
-				tracker.on.delete('directus_oauth_codes').response(0);
-				tracker.on.select('directus_oauth_tokens').responseOnce([]);
-				tracker.on.select('directus_oauth_tokens').responseOnce([]);
+				tracker.on.delete('axis_oauth_codes').response(0);
+				tracker.on.delete('axis_oauth_codes').response(0);
+				tracker.on.select('axis_oauth_tokens').responseOnce([]);
+				tracker.on.select('axis_oauth_tokens').responseOnce([]);
 				// Step 5a: tier 1 returns empty
-				tracker.on.select('directus_oauth_clients').responseOnce([]);
+				tracker.on.select('axis_oauth_clients').responseOnce([]);
 				// Step 5b: tier 2 returns empty (client is younger than idle TTL)
-				tracker.on.select('directus_oauth_clients').responseOnce([]);
+				tracker.on.select('axis_oauth_clients').responseOnce([]);
 
 				await service.cleanup();
 
-				const clientDeletes = queryHistory('delete', 'directus_oauth_clients');
+				const clientDeletes = queryHistory('delete', 'axis_oauth_clients');
 				expect(clientDeletes.length).toBe(0);
 
-				const clientSelects = queryHistory('select', 'directus_oauth_clients');
+				const clientSelects = queryHistory('select', 'axis_oauth_clients');
 				expect(clientSelects[1]!.sql).toContain('date_created');
 			} finally {
 				env['MCP_OAUTH_CLIENT_IDLE_TTL'] = originalIdleTtl;
@@ -3267,21 +3267,21 @@ describe('McpOAuthService', () => {
 
 		it('client cleanup eligibility excludes clients with active sessions in the query', async () => {
 			// Simulate: no orphaned clients returned (query filters them out)
-			tracker.on.delete('directus_oauth_codes').response(0);
-			tracker.on.delete('directus_oauth_codes').response(0);
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
-			tracker.on.select('directus_oauth_tokens').responseOnce([]);
+			tracker.on.delete('axis_oauth_codes').response(0);
+			tracker.on.delete('axis_oauth_codes').response(0);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
+			tracker.on.select('axis_oauth_tokens').responseOnce([]);
 			// Tier 1 returns empty (sessions exist, filtered by left join)
-			tracker.on.select('directus_oauth_clients').responseOnce([]);
+			tracker.on.select('axis_oauth_clients').responseOnce([]);
 
 			await service.cleanup();
 
-			const clientDeletes = queryHistory('delete', 'directus_oauth_clients');
+			const clientDeletes = queryHistory('delete', 'axis_oauth_clients');
 			expect(clientDeletes.length).toBe(0);
 
-			const clientSelects = queryHistory('select', 'directus_oauth_clients');
-			expect(clientSelects[0]!.sql).toContain('directus_sessions');
-			expect(clientSelects[0]!.sql).toContain('directus_oauth_tokens');
+			const clientSelects = queryHistory('select', 'axis_oauth_clients');
+			expect(clientSelects[0]!.sql).toContain('axis_sessions');
+			expect(clientSelects[0]!.sql).toContain('axis_oauth_tokens');
 		});
 	});
 
@@ -3297,7 +3297,7 @@ describe('McpOAuthService', () => {
 		it('DCR UUID lookup returns client row', async () => {
 			mockDetectClientIdType.mockReturnValue('dcr');
 
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: dcrClientId,
 					client_name: 'Test DCR Client',
@@ -3314,7 +3314,7 @@ describe('McpOAuthService', () => {
 
 		it('DCR UUID not found throws error', async () => {
 			mockDetectClientIdType.mockReturnValue('dcr');
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			await assertOAuthError(() => service.resolveClientWithFetch(dcrClientId), {
 				error: 'invalid_request',
@@ -3333,10 +3333,10 @@ describe('McpOAuthService', () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// Existing client with future expiry
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: cimdClientId,
 					client_name: 'Cached CIMD Client',
@@ -3357,11 +3357,11 @@ describe('McpOAuthService', () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// No existing client, then max clients cap
-			tracker.on.select('directus_oauth_clients').responseOnce([]);
-			tracker.on.select('directus_oauth_clients').responseOnce([{ count: 0 }]);
+			tracker.on.select('axis_oauth_clients').responseOnce([]);
+			tracker.on.select('axis_oauth_clients').responseOnce([{ count: 0 }]);
 
 			// fetchCimdMetadata returns valid metadata
 			mockFetchCimdMetadata.mockResolvedValue({
@@ -3377,7 +3377,7 @@ describe('McpOAuthService', () => {
 				ttlMs: 3600_000,
 			});
 
-			tracker.on.insert('directus_oauth_clients').response([]);
+			tracker.on.insert('axis_oauth_clients').response([]);
 
 			const result = await service.resolveClientWithFetch(cimdClientId);
 			expect(result['client_id']).toBe(cimdClientId);
@@ -3390,10 +3390,10 @@ describe('McpOAuthService', () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// Existing client with past expiry (stale)
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: cimdClientId,
 					client_name: 'Stale Client',
@@ -3419,7 +3419,7 @@ describe('McpOAuthService', () => {
 				ttlMs: 3600_000,
 			});
 
-			tracker.on.update('directus_oauth_clients').response(1);
+			tracker.on.update('axis_oauth_clients').response(1);
 
 			const result = await service.resolveClientWithFetch(cimdClientId);
 			expect(result['client_name']).toBe('Updated Client');
@@ -3430,10 +3430,10 @@ describe('McpOAuthService', () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// Existing client with past expiry (stale)
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: cimdClientId,
 					client_name: 'Existing Client',
@@ -3451,7 +3451,7 @@ describe('McpOAuthService', () => {
 				ttlMs: 7200_000,
 			});
 
-			tracker.on.update('directus_oauth_clients').response(1);
+			tracker.on.update('axis_oauth_clients').response(1);
 
 			const result = await service.resolveClientWithFetch(cimdClientId);
 			// Name stays the same (304 = no content change)
@@ -3476,7 +3476,7 @@ describe('McpOAuthService', () => {
 		it('CIMD disabled in settings throws error', async () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: false }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: false }]);
 
 			await assertOAuthError(() => service.resolveClientWithFetch(cimdClientId), {
 				error: 'invalid_client',
@@ -3488,7 +3488,7 @@ describe('McpOAuthService', () => {
 			mockGetAllowedDomains.mockReturnValue(['allowed.com']);
 			mockIsDomainAllowed.mockReturnValue(false);
 
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			await assertOAuthError(() => service.resolveClientWithFetch(cimdClientId), {
 				error: 'invalid_client',
@@ -3499,11 +3499,11 @@ describe('McpOAuthService', () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// No existing client, then max clients reached
-			tracker.on.select('directus_oauth_clients').responseOnce([]);
-			tracker.on.select('directus_oauth_clients').responseOnce([{ count: 10000 }]);
+			tracker.on.select('axis_oauth_clients').responseOnce([]);
+			tracker.on.select('axis_oauth_clients').responseOnce([{ count: 10000 }]);
 
 			await assertOAuthError(() => service.resolveClientWithFetch(cimdClientId), {
 				error: 'invalid_client',
@@ -3514,10 +3514,10 @@ describe('McpOAuthService', () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// Existing client with past expiry (stale)
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: cimdClientId,
 					client_name: 'Stale Client',
@@ -3550,10 +3550,10 @@ describe('McpOAuthService', () => {
 			const prevTtl = expiresAt.getTime() - fetchedAt.getTime(); // 3600000
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// Existing client with past expiry (stale) and known previous TTL
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: cimdClientId,
 					client_name: 'Existing Client',
@@ -3571,7 +3571,7 @@ describe('McpOAuthService', () => {
 				ttlMs: null,
 			});
 
-			tracker.on.update('directus_oauth_clients').response(1);
+			tracker.on.update('axis_oauth_clients').response(1);
 
 			const result = await service.resolveClientWithFetch(cimdClientId);
 
@@ -3589,9 +3589,9 @@ describe('McpOAuthService', () => {
 			const fetchedAt = new Date(Date.now() - 3600_000);
 			const expiresAt = fetchedAt;
 
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: cimdClientId,
 					client_name: 'Existing Client',
@@ -3608,7 +3608,7 @@ describe('McpOAuthService', () => {
 				ttlMs: null,
 			});
 
-			tracker.on.update('directus_oauth_clients').response(1);
+			tracker.on.update('axis_oauth_clients').response(1);
 
 			const result = await service.resolveClientWithFetch(cimdClientId);
 
@@ -3622,11 +3622,11 @@ describe('McpOAuthService', () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// No existing client, then max clients cap
-			tracker.on.select('directus_oauth_clients').responseOnce([]);
-			tracker.on.select('directus_oauth_clients').responseOnce([{ count: 0 }]);
+			tracker.on.select('axis_oauth_clients').responseOnce([]);
+			tracker.on.select('axis_oauth_clients').responseOnce([{ count: 0 }]);
 
 			// fetchCimdMetadata returns 304 (unexpected on first contact)
 			mockFetchCimdMetadata.mockResolvedValue({
@@ -3648,11 +3648,11 @@ describe('McpOAuthService', () => {
 			mockDetectClientIdType.mockReturnValue('cimd');
 
 			// Settings gate
-			tracker.on.select('directus_settings').response([{ mcp_oauth_cimd_enabled: true }]);
+			tracker.on.select('axis_settings').response([{ mcp_oauth_cimd_enabled: true }]);
 
 			// No existing client, then max clients cap, then fallback SELECT after concurrent insert
-			tracker.on.select('directus_oauth_clients').responseOnce([]);
-			tracker.on.select('directus_oauth_clients').responseOnce([{ count: 0 }]);
+			tracker.on.select('axis_oauth_clients').responseOnce([]);
+			tracker.on.select('axis_oauth_clients').responseOnce([{ count: 0 }]);
 
 			mockFetchCimdMetadata.mockResolvedValue({
 				notModified: false,
@@ -3669,15 +3669,15 @@ describe('McpOAuthService', () => {
 
 			// INSERT throws unique constraint violation
 			const dbError = new Error('duplicate key value violates unique constraint');
-			tracker.on.insert('directus_oauth_clients').simulateError(dbError);
+			tracker.on.insert('axis_oauth_clients').simulateError(dbError);
 
 			// translateDatabaseError returns RecordNotUniqueError
 			mockTranslateDatabaseError.mockResolvedValue(
-				new RecordNotUniqueError({ collection: 'directus_oauth_clients', field: 'client_id' }),
+				new RecordNotUniqueError({ collection: 'axis_oauth_clients', field: 'client_id' }),
 			);
 
 			// Fallback SELECT after concurrent insert
-			tracker.on.select('directus_oauth_clients').response([
+			tracker.on.select('axis_oauth_clients').response([
 				{
 					client_id: cimdClientId,
 					client_name: 'CIMD Client',
@@ -3701,7 +3701,7 @@ describe('McpOAuthService', () => {
 			const clientId = crypto.randomUUID();
 
 			tracker.on
-				.select('directus_oauth_clients')
+				.select('axis_oauth_clients')
 				.response([{ client_id: clientId, client_name: 'Test', registration_type: 'dcr' }]);
 
 			const result = await service.resolveClientFromDb(clientId);
@@ -3710,7 +3710,7 @@ describe('McpOAuthService', () => {
 		});
 
 		it('returns undefined when not found', async () => {
-			tracker.on.select('directus_oauth_clients').response([]);
+			tracker.on.select('axis_oauth_clients').response([]);
 
 			const result = await service.resolveClientFromDb('nonexistent');
 			expect(result).toBeUndefined();
@@ -3719,7 +3719,7 @@ describe('McpOAuthService', () => {
 		it('does NOT gate on CIMD enabled (drain-naturally)', async () => {
 			const cimdClientId = 'https://tools.example.com/metadata';
 
-			tracker.on.select('directus_oauth_clients').response([{ client_id: cimdClientId, registration_type: 'cimd' }]);
+			tracker.on.select('axis_oauth_clients').response([{ client_id: cimdClientId, registration_type: 'cimd' }]);
 
 			// Even with CIMD disabled, resolveClientFromDb should still work
 			const { useEnv } = vi.mocked(await import('@directus/env'));

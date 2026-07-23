@@ -29,17 +29,17 @@ export async function getPayload(
 	};
 
 	switch (subscription.collection) {
-		case 'directus_collections':
+		case 'axis_collections':
 			result['data'] = await getCollectionPayload(subscription, accountability, schema, event);
 			break;
-		case 'directus_fields':
+		case 'axis_fields':
 			result['data'] = await getFieldsPayload(subscription, accountability, schema, event);
 			break;
-		case 'directus_relations':
+		case 'axis_relations':
 			result['data'] = event?.payload;
 			break;
-		case 'directus_extensions':
-			throw new InvalidPayloadError({ reason: '"directus_extensions" is currently not supported.' });
+		case 'axis_extensions':
+			throw new InvalidPayloadError({ reason: '"axis_extensions" is currently not supported.' });
 		default:
 			result['data'] = await getItemsPayload(subscription, accountability, schema, event);
 			break;

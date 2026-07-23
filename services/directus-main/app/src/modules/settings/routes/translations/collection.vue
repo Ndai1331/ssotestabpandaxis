@@ -34,14 +34,14 @@ const layoutRef = ref();
 const bookmarkID = computed(() => (props.bookmark ? +props.bookmark : null));
 
 const selection = ref<Item[]>([]);
-const { info: currentCollection } = useCollection('directus_translations');
+const { info: currentCollection } = useCollection('axis_translations');
 
 const addNewLink = computed<string>(() => {
 	return `/settings/translations/+`;
 });
 
 const { layout, layoutOptions, layoutQuery, filter, search, resetPreset, refreshInterval } = usePreset(
-	ref('directus_translations'),
+	ref('axis_translations'),
 	bookmarkID,
 );
 
@@ -113,7 +113,7 @@ function clearFilters() {
 		:filter-user="filter"
 		:filter="filter"
 		:search="search"
-		collection="directus_translations"
+		collection="axis_translations"
 		:reset-preset="resetPreset"
 		:clear-filters="clearFilters"
 	>
@@ -123,7 +123,7 @@ function clearFilters() {
 			</template>
 
 			<template #actions>
-				<SearchInput v-model="search" v-model:filter="filter" collection="directus_translations" small />
+				<SearchInput v-model="search" v-model:filter="filter" collection="axis_translations" small />
 
 				<VDialog v-if="selection.length > 0" v-model="confirmDelete" @esc="confirmDelete = false" @apply="batchDelete">
 					<template #activator="{ on }">
@@ -199,7 +199,7 @@ function clearFilters() {
 			<DrawerBatch
 				v-model:active="batchEditActive"
 				:primary-keys="selection"
-				collection="directus_translations"
+				collection="axis_translations"
 				@refresh="batchRefresh"
 			/>
 
@@ -210,7 +210,7 @@ function clearFilters() {
 				<component :is="`layout-sidebar-${layout || 'tabular'}`" v-bind="layoutState" />
 				<RefreshSidebarDetail v-model="refreshInterval" @refresh="refresh" />
 				<ExportSidebarDetail
-					collection="directus_translations"
+					collection="axis_translations"
 					:filter="filter"
 					:search="search"
 					:layout-query="layoutQuery"

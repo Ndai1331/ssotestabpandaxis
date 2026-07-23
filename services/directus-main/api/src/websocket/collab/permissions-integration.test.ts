@@ -45,7 +45,7 @@ describe('Permissions Integration', () => {
 						publish_date: { type: 'datetime' },
 					},
 				},
-				directus_users: { primary: 'id', fields: { id: { type: 'uuid' }, department: { type: 'uuid' } } },
+				axis_users: { primary: 'id', fields: { id: { type: 'uuid' }, department: { type: 'uuid' } } },
 				departments: { primary: 'id', fields: { id: { type: 'uuid' }, team: { type: 'uuid' } } },
 				teams: { primary: 'id', fields: { id: { type: 'uuid' }, name: { type: 'string' } } },
 				comments: { primary: 'id', fields: { id: { type: 'integer' }, article_id: { type: 'integer' } } },
@@ -56,8 +56,8 @@ describe('Permissions Integration', () => {
 				},
 			},
 			relations: [
-				{ collection: 'articles', field: 'author', related_collection: 'directus_users' },
-				{ collection: 'directus_users', field: 'department', related_collection: 'departments' },
+				{ collection: 'articles', field: 'author', related_collection: 'axis_users' },
+				{ collection: 'axis_users', field: 'department', related_collection: 'departments' },
 				{ collection: 'departments', field: 'team', related_collection: 'teams' },
 				{
 					collection: 'comments',
@@ -193,7 +193,7 @@ describe('Permissions Integration', () => {
 			permissions: [{ fields: ['*'], permissions: { team_id: { _eq: '$CURRENT_USER.department.team.id' } } }],
 			itemData: { id: 1 },
 			expectedFields: ['*'],
-			verifyTags: ['directus_users:user-uuid', 'departments', 'teams'],
+			verifyTags: ['axis_users:user-uuid', 'departments', 'teams'],
 		},
 		{
 			name: 'Dynamic variable $CURRENT_ROLES (Array)',
@@ -204,7 +204,7 @@ describe('Permissions Integration', () => {
 			permissions: [{ fields: ['*'], permissions: { allowed_roles: { _in: '$CURRENT_ROLES' } } }],
 			itemData: { id: 1 },
 			expectedFields: ['*'],
-			verifyTags: ['directus_roles'],
+			verifyTags: ['axis_roles'],
 		},
 		// Aggregations & Relations
 		{
@@ -434,7 +434,7 @@ describe('Permissions Integration', () => {
 		expect(permissionCache.get(accountability as any, collection, item, action)).toBeDefined();
 
 		const bus = useBus();
-		await bus.publish('websocket.event', { collection: 'directus_users', keys: ['user-abc'] });
+		await bus.publish('websocket.event', { collection: 'axis_users', keys: ['user-abc'] });
 
 		expect(permissionCache.get(accountability as any, collection, item, action)).toBeUndefined();
 	});
@@ -489,7 +489,7 @@ describe('Permissions Integration', () => {
 		expect(permissionCache.get(accountability as any, collection, item, action)).toBeDefined();
 
 		const bus = useBus();
-		await bus.publish('websocket.event', { collection: 'directus_permissions' });
+		await bus.publish('websocket.event', { collection: 'axis_permissions' });
 
 		expect(permissionCache.get(accountability as any, collection, item, action)).toBeUndefined();
 	});

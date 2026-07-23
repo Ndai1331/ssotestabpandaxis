@@ -13,7 +13,7 @@ const input = {
 			password: 'secret',
 		},
 		key: 'eb641950-fffa-4388-8606-aede594ae487',
-		collection: 'directus_users',
+		collection: 'axis_users',
 	},
 	exec_fm27u: {
 		$trigger: {
@@ -26,7 +26,7 @@ const input = {
 				secret: '^.+.*?^)(][}{|$',
 			},
 			key: 'eb641950-fffa-4388-8606-aede594ae487',
-			collection: 'directus_users',
+			collection: 'axis_users',
 		},
 		$last: {
 			event: 'users.create',
@@ -38,7 +38,7 @@ const input = {
 				secret: 'x)yMQt7ZNK3k',
 			},
 			key: 'eb641950-fffa-4388-8606-aede594ae487',
-			collection: 'directus_users',
+			collection: 'axis_users',
 		},
 	},
 };

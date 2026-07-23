@@ -8,7 +8,7 @@ import { ItemsService } from './items.js';
 
 export class PoliciesService extends ItemsService<Policy> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_policies', options);
+		super('axis_policies', options);
 	}
 
 	private async clearCaches(opts?: MutationOptions) {

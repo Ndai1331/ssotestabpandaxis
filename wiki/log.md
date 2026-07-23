@@ -6,8 +6,14 @@ updated: 2026-07-23
 
 # Wiki Log
 
+## 2026-07-23 — Axis rebrand Directus source
+- Prefix bảng/collection `directus_*` → `axis_*` (~5094 chỗ); display Directus→Axis (en-US + UI/API fallbacks)
+- `SYSTEM_COLLECTION_PREFIX` + `stripSystemCollectionPrefix`; wipe volume lab `bd_axis_*`; re-bootstrap KC
+- Caveat: compose vẫn `directus/directus:11.9.2` → runtime tables còn `directus_*` đến khi build image từ fork
+- Plan: `plans/260723-1617-axis-rebrand-directus/`
+
 ## 2026-07-23 — App access gate
-- Groups `bd-app-directus` / `bd-app-abp`; Directus hook + ABP AuthServer fail nếu thiếu
+- Groups `bd-app-axis` / `bd-app-hcs`; Directus hook + ABP AuthServer fail nếu thiếu
 - Plan: `plans/260723-1555-bd-app-access-gate/`
 - Docs: runbook + handoff + hot updated
 

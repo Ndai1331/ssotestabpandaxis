@@ -5,7 +5,7 @@ import type { DirectusUser } from './user.js';
 
 export type DirectusAccess<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_access',
+	'axis_access',
 	{
 		id: string; // uuid
 		role: string | DirectusRole<Schema>;

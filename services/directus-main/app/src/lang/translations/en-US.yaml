@@ -21,10 +21,10 @@
 # 'Proxy', 'Intl'
 
 about: About
-directus_mscl: Directus MSCL-1.0-GPL
+axis_mscl: Axis MSCL-1.0-GPL
 data_processing_agreement: Data Processing Agreement
 contact_support: contact support
-setup_welcome: Welcome to Directus
+setup_welcome: Welcome to Axis
 setup_info: Let's create your admin account and get your project up and running.
 setup_license_key_notice: >
   If have a license key enter it below to unlock your full plan. Qualifying businesses under $5M annual revenue may be
@@ -36,12 +36,12 @@ setup_license_invalid: >
 setup_license_invalid_format: Invalid license key format.
 setup_accept_license: I accept the terms of the {directusMscl} and {privacyPolicy}
 setup_marketing_emails: Send me product updates and release notes
-setup_launch: Launch Directus
+setup_launch: Launch Axis
 setup_license_title: Set up your license
 license_onboarding_title: Have a license key?
 license_onboarding_desc: >
   Enter it below to unlock your full plan. Qualifying businesses under $5M annual revenue may be eligible for our {oig}.
-project_usage: What are you using Directus for?
+project_usage: What are you using Axis for?
 project_usage_personal: Personal / Side project
 project_usage_commercial: Business / Commercial
 project_usage_community: Open Source / Community
@@ -461,9 +461,9 @@ geometry:
 theme_auto: Automatic (Based on System)
 theme_light: Light Mode
 theme_dark: Dark Mode
-theme_directus_default: Directus Default
-theme_directus_minimal: Directus Minimal
-theme_directus_colormatch: Directus Color Match
+theme_axis_default: Axis Default
+theme_axis_minimal: Axis Minimal
+theme_axis_colormatch: Axis Color Match
 not_available_for_type: Not Available for this Type
 create_translations: Create Translations
 auto_refresh: Auto Refresh
@@ -1002,7 +1002,7 @@ divider: Divider
 color: Color
 circle: Circle
 empty_item: Empty Item
-log_in_with: 'Log In with {provider}'
+log_in_with: 'Log in with {provider}'
 conditional_styles: Conditional Styles
 advanced_settings: Advanced Settings
 advanced_filter: Advanced Filter
@@ -1176,7 +1176,7 @@ deployment:
     overview: Overview
     providers: Providers
     configure: Configure
-    provider_description: Trigger {provider} deployments from within Directus
+    provider_description: Trigger {provider} deployments from within Axis
     projects: '{count} Project|{count} Projects'
   provider:
     setup_title: '{provider} Setup'
@@ -1186,14 +1186,14 @@ deployment:
     token:
       label: Personal Access Token
       placeholder: Enter your access token...
-      encrypted_notice: This token will be encrypted and stored securely in your Directus configuration
+      encrypted_notice: This token will be encrypted and stored securely in your Axis configuration
     settings:
       settings: '{provider} Configuration'
       edit_configuration: Edit Configuration
       delete: Delete Configuration
       delete_confirm: This action is permanent and can not be undone. Are you sure you would like to proceed?
       remove_projects_confirm:
-        Removing the project(s) ({projects}) will permanently delete all their deployment history from Directus. This
+        Removing the project(s) ({projects}) will permanently delete all their deployment history from Axis. This
         action cannot be undone. Are you sure you want to proceed?
     vercel:
       name: Vercel
@@ -1224,9 +1224,9 @@ deployment:
         placeholder: your-account-slug
     projects: Projects
     select_projects: Select Projects
-    select_projects_hint: Choose which projects you want to manage from Directus
+    select_projects_hint: Choose which projects you want to manage from Axis
     project:
-      not_deployable: Project not deployable by Directus. Please see documentation for more info.
+      not_deployable: Project not deployable by Axis. Please see documentation for more info.
     runs:
       runs: Deployment Runs
       id: Deployment ID
@@ -1477,7 +1477,7 @@ licensing:
   resolve_subtitle: If you need to update your license key, you can update it in your environment variable.
   resolve_notice_grace:
     Your project usage exceeds your plan limits. Resolve the breach before your grace period ends, otherwise your
-    project will be locked. Deactivated items will remained stored but locked in Directus, and custom access rules will
+    project will be locked. Deactivated items will remained stored but locked in Axis, and custom access rules will
     also be locked.
   resolve_countdown: '{days} day remaining (until {date}) | {days} days remaining (until {date})'
   resolve_notice_manual:
@@ -1491,7 +1491,7 @@ licensing:
     shown below.
   resolve_notice_no_resolution:
     Your license is no longer active and your project has been downgraded to the Core plan. Some features may no longer
-    be available, and items beyond the Core plan limits remain stored but locked in Directus. To restore full access,
+    be available, and items beyond the Core plan limits remain stored but locked in Axis. To restore full access,
     add a new license key.
   resolve_continue: Continue
   resolve_acknowledge: Acknowledge
@@ -1549,7 +1549,7 @@ licensing:
     display_powered_by: Display Powered By
     production_enabled: Production
   badge:
-    directus: Powered by Directus
+    directus: Powered by Axis
     oig: Open Innovation Grant
     non_prod: Non-Production
 danger_zone: Danger Zone
@@ -1656,8 +1656,8 @@ license:
     grace_days_left: '{days} day left | {days} days left'
     retrieve_license_key: Retrieve license key
     upgrade: Upgrade
-    oig_eligible: 'You might be eligible for our {oig}. Apply and get full access to Directus for free.'
-  locked_status_notice: 'Your Directus instance is locked. Manage license or {contactSupport} to resolve.'
+    oig_eligible: 'You might be eligible for our {oig}. Apply and get full access to Axis for free.'
+  locked_status_notice: 'Your Axis instance is locked. Manage license or {contactSupport} to resolve.'
   pinned_status_notice:
     grace_period_title: 'Grace Period ({days}d left)'
     grace_period_body: Manage your license key in Settings > License.
@@ -1681,39 +1681,39 @@ content: Content
 singleton: Singleton
 singleton_label: Treat as single object
 system_fields_locked: System fields are locked and can't be edited
-directus_collection:
-  directus_access: Policy attachments
-  directus_activity: Accountability logs for all events
-  directus_collections: Additional collection configuration and metadata
-  directus_comments: Comments for items
-  directus_dashboards: Dashboards within the Insights module
-  directus_fields: Additional field configuration and metadata
-  directus_files: Metadata for all managed file assets
-  directus_flows: Automation Flows
-  directus_folders: Provides virtual directories for files
-  directus_migrations: What version of the database you're using
-  directus_notifications: Notifications sent to users
-  directus_operations: Operations that run in Flows
-  directus_panels: Individual panels within Insights dashboards
-  directus_permissions: Access permissions for each policy
-  directus_policies: Access control policies
-  directus_presets: Presets for collection defaults and bookmarks
-  directus_relations: Relationship configuration and metadata
-  directus_revisions: Data snapshots for all activity
-  directus_roles: Permission groups for system users
-  directus_sessions: User session information
-  directus_settings: Project configuration options
-  directus_shares: Tracks externally shared items
-  directus_users: System users for the platform
-  directus_translations: Custom translations
-  directus_versions: Content Versions for items
-  directus_extensions: Configuration of extensions
-  directus_oauth_clients: Registered OAuth client applications
-  directus_oauth_codes: Authorization codes for OAuth flows
-  directus_oauth_consents: User consent grants for OAuth clients
-  directus_oauth_tokens: Access and refresh tokens for OAuth clients
+axis_collection:
+  axis_access: Policy attachments
+  axis_activity: Accountability logs for all events
+  axis_collections: Additional collection configuration and metadata
+  axis_comments: Comments for items
+  axis_dashboards: Dashboards within the Insights module
+  axis_fields: Additional field configuration and metadata
+  axis_files: Metadata for all managed file assets
+  axis_flows: Automation Flows
+  axis_folders: Provides virtual directories for files
+  axis_migrations: What version of the database you're using
+  axis_notifications: Notifications sent to users
+  axis_operations: Operations that run in Flows
+  axis_panels: Individual panels within Insights dashboards
+  axis_permissions: Access permissions for each policy
+  axis_policies: Access control policies
+  axis_presets: Presets for collection defaults and bookmarks
+  axis_relations: Relationship configuration and metadata
+  axis_revisions: Data snapshots for all activity
+  axis_roles: Permission groups for system users
+  axis_sessions: User session information
+  axis_settings: Project configuration options
+  axis_shares: Tracks externally shared items
+  axis_users: System users for the platform
+  axis_translations: Custom translations
+  axis_versions: Content Versions for items
+  axis_extensions: Configuration of extensions
+  axis_oauth_clients: Registered OAuth client applications
+  axis_oauth_codes: Authorization codes for OAuth flows
+  axis_oauth_consents: User consent grants for OAuth clients
+  axis_oauth_tokens: Access and refresh tokens for OAuth clients
 fields:
-  directus_activity:
+  axis_activity:
     item: Item Primary Key
     action: Action
     collection: Collection
@@ -1724,7 +1724,7 @@ fields:
     origin: Origin
     ip: IP Address
     revisions: Revisions
-  directus_collections:
+  axis_collections:
     collection: Collection
     icon: Icon
     note: Note
@@ -1743,7 +1743,7 @@ fields:
     autosave_revision_interval: Auto-save Revision Interval
     archive_field: Archive Field
     item_duplication_fields: Item Duplication Fields
-  directus_files:
+  axis_files:
     $thumbnail: Thumbnail
     title: Title
     description: Description
@@ -1769,7 +1769,7 @@ fields:
     duration: Duration
     focal_point_x: X-Coordinate
     focal_point_y: Y-Coordinate
-  directus_users:
+  axis_users:
     first_name: First Name
     last_name: Last Name
     email: Email
@@ -1804,7 +1804,7 @@ fields:
     theme_dark: Theme Dark
     theme_light_overrides: Light Theme Customization
     theme_dark_overrides: Dark Theme Customization
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1878,12 +1878,12 @@ fields:
       Assistant.</a>'
     mcp_enabled: MCP Server
     mcp_enabled_note:
-      'Connect AI/LLM tools to your Directus project via <a href="https://directus.com/docs/guides/ai/mcp"
+      'Connect AI/LLM tools to your Axis project via <a href="https://directus.com/docs/guides/ai/mcp"
       target="_blank">Model Context Protocol (MCP)</a>. This enables AI assistants to read and interact with your
-      Directus data securely.'
+      Axis data securely.'
     mcp_notice:
-      'Model Context Protocol is a standard for connecting LLMs to applications like Directus. Once enabled, the
-      Directus MCP server will be available at `/mcp`. <a href="https://directus.com/docs/guides/ai/mcp"
+      'Model Context Protocol is a standard for connecting LLMs to applications like Axis. Once enabled, the
+      Axis MCP server will be available at `/mcp`. <a href="https://directus.com/docs/guides/ai/mcp"
       target="_blank">Learn more about MCP and how to connect.</a>'
     mcp_allow_deletes: Allow Deletes
     mcp_allow_deletes_note:
@@ -1912,7 +1912,7 @@ fields:
     ai_translation_default_model_note:
       'Choose the default model used for AI translations. Only models enabled in the settings above are available here.'
     ai_glossary_term: Term
-    ai_glossary_term_placeholder: Directus Flows
+    ai_glossary_term_placeholder: Axis Flows
     ai_glossary_note: Translation Note
     ai_glossary_note_placeholder: Never translate, keep as-is
     ai_translation_glossary: Translation Glossary
@@ -1948,7 +1948,7 @@ fields:
     ai_provider_options_note: Provider-specific options passed to AI endpoints.
     ai_header_name: Header
 
-  directus_shares:
+  axis_shares:
     name: Name
     role: Role
     password: Password
@@ -1956,7 +1956,7 @@ fields:
     date_end: Date End
     max_uses: Max Uses
     times_used: Times Used
-  directus_fields:
+  axis_fields:
     collection: Collection Name
     icon: Collection Icon
     note: Note
@@ -1964,7 +1964,7 @@ fields:
     singleton: Singleton
     translation: Field Name Translations
     display_template: Template
-  directus_roles:
+  axis_roles:
     name: Role Name
     icon: Role Icon
     description: Description
@@ -1972,7 +1972,7 @@ fields:
     parent: Parent Role
     children: Child Roles
     policies: Policies
-  directus_policies:
+  axis_policies:
     name: Policy Name
     description: Description
     app_access: App Access
@@ -1980,7 +1980,7 @@ fields:
     ip_access: IP Access
     enforce_tfa: Require 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: My project...
     project_color_note: Login & Logo Background
     project_logo_note: White 40×40 SVG/PNG
@@ -2011,16 +2011,16 @@ field_options:
     basemaps_style: Mapbox Style
     files_divider_title: Files & Thumbnails
     overrides_divider_title: App Overrides
-  directus_activity:
+  axis_activity:
     login: Login
     logout: Logout
     create: Create
     update: Update
     delete: Delete
-  directus_oauth_clients:
+  axis_oauth_clients:
     registration_type_dcr: DCR
     registration_type_cimd: CIMD
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Track Activity & Revisions
     only_track_activity: Only Track Activity
     do_not_track_anything: Do Not Track Anything
@@ -2051,7 +2051,7 @@ field_options:
     enable_versioning: Enable Versioning
     interval_default: 'Default ({minutes} Minutes)'
     interval_default_seconds: 'Default ({seconds} Seconds)'
-  directus_files:
+  axis_files:
     title: A unique title...
     description: An optional description...
     location: An optional location...
@@ -2059,13 +2059,13 @@ field_options:
     focal_point_divider: Focal Point
     filename_disk: Name on disk storage...
     filename_download: Name when downloading...
-  directus_policies:
+  axis_policies:
     name: A unique name for this policy...
     description: A description of this policy...
     ip_access: Add allowed IP addresses, IP ranges and CIDR blocks. Leave empty to allow all...
     enforce_tfa: Enforce Two-Factor Authentication
     assigned_to: Assigned To
-  directus_roles:
+  axis_roles:
     name: The unique name for this role...
     description: A description of this role...
     fields:
@@ -2078,7 +2078,7 @@ field_options:
     children_note: Nested child roles that inherit this roles permissions
     collections_name: Collections
     collections_addLabel: Add Collection...
-  directus_users:
+  axis_users:
     preferences_divider: User Preferences
     dropdown_auto: Automatic (Based on System)
     dropdown_light: Light Mode
@@ -2243,7 +2243,7 @@ mcp_prompts_collection_schema:
   messages_role_assistant: Assistant
   messages_role_note: Who is speaking in this message.
   meta_prompts_notice:
-    'Prompts are reusable templates that you can use with LLMs through the Directus MCP server, Flows, or other AI
+    'Prompts are reusable templates that you can use with LLMs through the Axis MCP server, Flows, or other AI
     applications. <a href="https://directus.com/docs/guides/ai/mcp/prompts" target="_blank">Learn more about creating
     effective prompts.</a>'
 expired: Expired

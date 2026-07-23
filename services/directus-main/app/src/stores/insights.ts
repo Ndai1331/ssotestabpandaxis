@@ -107,7 +107,7 @@ export const useInsightsStore = defineStore('insightsStore', () => {
 	async function hydrate() {
 		const { hasPermission } = usePermissionsStore();
 
-		if (hasPermission('directus_dashboards', 'read') && hasPermission('directus_panels', 'read')) {
+		if (hasPermission('axis_dashboards', 'read') && hasPermission('axis_panels', 'read')) {
 			try {
 				const [dashboardsResponse, panelsResponse] = await Promise.all([
 					fetchAll<any>('/dashboards', { params: { fields: ['*'], sort: ['name'] } }),

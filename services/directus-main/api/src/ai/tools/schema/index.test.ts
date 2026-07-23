@@ -781,7 +781,7 @@ describe('schema tool', () => {
 								meta: {
 									one_field: 'images',
 									one_collection: 'posts',
-									junction_field: 'directus_files_id',
+									junction_field: 'axis_files_id',
 								},
 								schema: {
 									table: 'posts_files',
@@ -808,11 +808,11 @@ describe('schema tool', () => {
 										},
 										relation: {
 											type: 'm2m',
-											collection: 'directus_files',
+											collection: 'axis_files',
 											junction: {
 												collection: 'posts_files',
 												many_field: 'posts_id',
-												junction_field: 'directus_files_id',
+												junction_field: 'axis_files_id',
 											},
 										},
 										type: 'alias',

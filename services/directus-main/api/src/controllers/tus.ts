@@ -26,7 +26,7 @@ const checkFileAccess = asyncHandler(async (req, _res, next) => {
 
 		const validateAccessOptions: ValidateAccessOptions = {
 			action,
-			collection: 'directus_files',
+			collection: 'axis_files',
 			accountability: req.accountability,
 		};
 
@@ -52,7 +52,7 @@ const checkFileAccess = asyncHandler(async (req, _res, next) => {
 			// Validate permissions for any payload fields
 			const fields = [];
 
-			for (const field of Object.keys(req.schema.collections['directus_files']!.fields)) {
+			for (const field of Object.keys(req.schema.collections['axis_files']!.fields)) {
 				// PK is not mutable, access to record is already checked via `primaryKeys` for updates
 				if (field === 'id') {
 					continue;

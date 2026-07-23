@@ -107,7 +107,7 @@ export class AuthenticationService {
 			.select<
 				User & { tfa_secret: string | null }
 			>('id', 'first_name', 'last_name', 'email', 'password', 'status', 'role', 'tfa_secret', 'provider', 'external_identifier', 'auth_data')
-			.from('directus_users')
+			.from('axis_users')
 			.where('id', userId)
 			.first();
 
@@ -149,7 +149,7 @@ export class AuthenticationService {
 				await loginAttemptsLimiter.consume(user.id);
 			} catch (error) {
 				if (error instanceof RateLimiterRes && error.remainingPoints === 0) {
-					await this.knex('directus_users').update({ status: 'suspended' }).where({ id: user.id });
+					await this.knex('axis_users').update({ status: 'suspended' }).where({ id: user.id });
 					await getEntitlementManager().clearCache('sso_enabled', 'seats');
 
 					if (this.accountability) {
@@ -159,13 +159,13 @@ export class AuthenticationService {
 							ip: this.accountability.ip,
 							user_agent: this.accountability.userAgent,
 							origin: this.accountability.origin,
-							collection: 'directus_users',
+							collection: 'axis_users',
 							item: user.id,
 						});
 
 						const revisionsService = new RevisionsService({ knex: this.knex, schema: this.schema });
 
-						const payloadService = new PayloadService('directus_users', {
+						const payloadService = new PayloadService('axis_users', {
 							accountability: this.accountability,
 							knex: this.knex,
 							schema: this.schema,
@@ -173,7 +173,7 @@ export class AuthenticationService {
 
 						await revisionsService.createOne({
 							activity: activity,
-							collection: 'directus_users',
+							collection: 'axis_users',
 							item: user.id,
 							data: await payloadService.prepareDelta(user),
 							delta: { status: 'suspended' },
@@ -244,13 +244,13 @@ export class AuthenticationService {
 		if (!user.tfa_secret) {
 			// Check if user has role-based enforcement
 			const roleEnforcement = await this.knex
-				.select('directus_policies.enforce_tfa')
-				.from('directus_users')
-				.leftJoin('directus_roles', 'directus_users.role', 'directus_roles.id')
-				.leftJoin('directus_access', 'directus_roles.id', 'directus_access.role')
-				.leftJoin('directus_policies', 'directus_access.policy', 'directus_policies.id')
-				.where('directus_users.id', user.id)
-				.where('directus_policies.enforce_tfa', true)
+				.select('axis_policies.enforce_tfa')
+				.from('axis_users')
+				.leftJoin('axis_roles', 'axis_users.role', 'axis_roles.id')
+				.leftJoin('axis_access', 'axis_roles.id', 'axis_access.role')
+				.leftJoin('axis_policies', 'axis_access.policy', 'axis_policies.id')
+				.where('axis_users.id', user.id)
+				.where('axis_policies.enforce_tfa', true)
 				.first();
 
 			if (roleEnforcement) {
@@ -288,7 +288,7 @@ export class AuthenticationService {
 			issuer: 'directus',
 		});
 
-		await this.knex('directus_sessions').insert({
+		await this.knex('axis_sessions').insert({
 			token: refreshToken,
 			user: user.id,
 			expires: refreshTokenExpiration,
@@ -297,7 +297,7 @@ export class AuthenticationService {
 			origin: this.accountability?.origin,
 		});
 
-		await this.knex('directus_sessions').delete().where('expires', '<', new Date());
+		await this.knex('axis_sessions').delete().where('expires', '<', new Date());
 
 		if (this.accountability) {
 			await this.activityService.createOne({
@@ -306,12 +306,12 @@ export class AuthenticationService {
 				ip: this.accountability.ip,
 				user_agent: this.accountability.userAgent,
 				origin: this.accountability.origin,
-				collection: 'directus_users',
+				collection: 'axis_users',
 				item: user.id,
 			});
 		}
 
-		await this.knex('directus_users').update({ last_access: new Date() }).where({ id: user.id });
+		await this.knex('axis_users').update({ last_access: new Date() }).where({ id: user.id });
 
 		emitStatus('success', updatedPayload, user);
 
@@ -356,9 +356,9 @@ export class AuthenticationService {
 				share_start: 'd.date_start',
 				share_end: 'd.date_end',
 			})
-			.from('directus_sessions AS s')
-			.leftJoin('directus_users AS u', 's.user', 'u.id')
-			.leftJoin('directus_shares AS d', 's.share', 'd.id')
+			.from('axis_sessions AS s')
+			.leftJoin('axis_users AS u', 's.user', 'u.id')
+			.leftJoin('axis_shares AS d', 's.share', 'd.id')
 			.where('s.token', refreshToken)
 			.andWhere('s.expires', '>=', new Date())
 			.andWhere('s.oauth_client', null)
@@ -375,7 +375,7 @@ export class AuthenticationService {
 		}
 
 		if (record.user_id && record.user_status !== 'active') {
-			await this.knex('directus_sessions').where({ token: refreshToken }).del();
+			await this.knex('axis_sessions').where({ token: refreshToken }).del();
 
 			if (record.user_status === 'suspended') {
 				await stall(STALL_TIME, timeStart);
@@ -434,7 +434,7 @@ export class AuthenticationService {
 			tokenPayload.session = newRefreshToken;
 		} else {
 			// Original stateless token behavior
-			await this.knex('directus_sessions')
+			await this.knex('axis_sessions')
 				.update({
 					token: newRefreshToken,
 					expires: refreshTokenExpiration,
@@ -476,11 +476,11 @@ export class AuthenticationService {
 		});
 
 		if (record.user_id) {
-			await this.knex('directus_users').update({ last_access: new Date() }).where({ id: record.user_id });
+			await this.knex('axis_users').update({ last_access: new Date() }).where({ id: record.user_id });
 		}
 
 		// Clear expired sessions for the current user
-		await this.knex('directus_sessions')
+		await this.knex('axis_sessions')
 			.delete()
 			.where({
 				user: record.user_id,
@@ -505,7 +505,7 @@ export class AuthenticationService {
 		if (sessionRecord['session_next_token']) {
 			// The current session token was already refreshed and has a reference
 			// to the new session, update the new session timeout for the new refresh
-			await this.knex('directus_sessions')
+			await this.knex('axis_sessions')
 				.update({
 					expires: sessionExpiration,
 				})
@@ -519,7 +519,7 @@ export class AuthenticationService {
 
 		// Update the existing session record to have a short safety timeout
 		// before expiring, and add the reference to the new session token
-		const updatedSession = await this.knex('directus_sessions')
+		const updatedSession = await this.knex('axis_sessions')
 			.update(
 				{
 					next_token: newSessionToken,
@@ -531,7 +531,7 @@ export class AuthenticationService {
 
 		if (updatedSession.length === 0) {
 			// Don't create a new session record, we already have a "next_token" reference
-			const { next_token } = await this.knex('directus_sessions')
+			const { next_token } = await this.knex('axis_sessions')
 				.select('next_token')
 				.where({ token: oldSessionToken })
 				.first();
@@ -541,7 +541,7 @@ export class AuthenticationService {
 
 		// Instead of updating the current session record with a new token,
 		// create a new copy with the new token
-		await this.knex('directus_sessions').insert({
+		await this.knex('axis_sessions').insert({
 			token: newSessionToken,
 			user: sessionRecord['user_id'],
 			share: sessionRecord['share_id'],
@@ -560,8 +560,8 @@ export class AuthenticationService {
 			.select<
 				User & Session
 			>('u.id', 'u.first_name', 'u.last_name', 'u.email', 'u.password', 'u.status', 'u.role', 'u.provider', 'u.external_identifier', 'u.auth_data')
-			.from('directus_sessions as s')
-			.innerJoin('directus_users as u', 's.user', 'u.id')
+			.from('axis_sessions as s')
+			.innerJoin('axis_users as u', 's.user', 'u.id')
 			.where('s.token', refreshToken)
 			.andWhere('s.oauth_client', null)
 			.first();
@@ -579,12 +579,12 @@ export class AuthenticationService {
 					ip: this.accountability.ip,
 					user_agent: this.accountability.userAgent,
 					origin: this.accountability.origin,
-					collection: 'directus_users',
+					collection: 'axis_users',
 					item: user.id,
 				});
 			}
 
-			await this.knex.delete().from('directus_sessions').where('token', refreshToken);
+			await this.knex.delete().from('axis_sessions').where('token', refreshToken);
 		}
 	}
 
@@ -602,7 +602,7 @@ export class AuthenticationService {
 				'external_identifier',
 				'auth_data',
 			)
-			.from('directus_users')
+			.from('axis_users')
 			.where('id', userID)
 			.first();
 

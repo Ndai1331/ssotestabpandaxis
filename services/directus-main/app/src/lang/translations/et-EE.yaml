@@ -879,7 +879,7 @@ singleton: Üksik
 singleton_label: Käsitle üksiku objektina
 system_fields_locked: Süsteemsed välja on lukus ja neid ei saa muuta
 fields:
-  directus_activity:
+  axis_activity:
     item: Kirje peamine võti
     action: Tegevus
     collection: Kogud
@@ -890,7 +890,7 @@ fields:
     origin: Päritolu
     ip: IP aadress
     revisions: Versioonid
-  directus_collections:
+  axis_collections:
     collection: Kogud
     icon: Ikoon
     note: Märkus
@@ -905,7 +905,7 @@ fields:
     unarchive_value: Aktiveeri väärtus
     sort_field: Sorteerimisväli
     accountability: Tegevuste ja muudatuste jälgimine
-  directus_files:
+  axis_files:
     $thumbnail: Pisipilt
     title: Pealkiri
     description: Kirjeldus
@@ -929,7 +929,7 @@ fields:
     height: Kõrgus
     charset: Sümbolid
     duration: Kestus
-  directus_users:
+  axis_users:
     first_name: Eesnimi
     last_name: Perekonnanimi
     email: E-post
@@ -948,7 +948,7 @@ fields:
     token: Kontrollkood
     last_page: Viimane leht
     last_access: Viimati vaadatud
-  directus_settings:
+  axis_settings:
     project_name: Projekti nimi
     project_url: Projekti URL
     project_color: Projekti värv
@@ -960,11 +960,11 @@ fields:
     auth_login_attempts: Sisselogimise katseid
     custom_css: Kohandatud CSS
     module_bar: Mooduliriba
-  directus_shares:
+  axis_shares:
     name: Nimi
     role: Roll
     password: Parool
-  directus_fields:
+  axis_fields:
     collection: Andmekogu nimetus
     icon: Andmekogu pilt
     note: Märkus
@@ -972,21 +972,21 @@ fields:
     singleton: Üksik
     translation: Väljade Tõlked
     display_template: Mall
-  directus_roles:
+  axis_roles:
     name: Rolli Nimi
     icon: Rolli pilt
     description: Kirjeldus
     users: Kasutajad selles rollis
-  directus_policies:
+  axis_policies:
     description: Kirjeldus
 field_options:
-  directus_settings:
+  axis_settings:
     security_divider_title: Turvalisus
-  directus_activity:
+  axis_activity:
     create: Loo
     update: Uuenda
     delete: Kustuta
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Salvesta muudatuste statistika
     only_track_activity: Jälgi ainult aktiivsust
     do_not_track_anything: Ära jälgi midagi
@@ -998,13 +998,13 @@ field_options:
     archive_divider: Arhiiv
     sort_divider: Sorteeri
     preview_divider: Eelvaade
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: Ikoon
       name_name: Nimi
       name_placeholder: Sisesta pealkiri...
     collections_name: Kogud
-  directus_users:
+  axis_users:
     dropdown_light: Hele režiim
     dropdown_dark: Tume režiim
     status_dropdown_active: aktiivne

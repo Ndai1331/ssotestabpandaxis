@@ -4,7 +4,7 @@ export type DirectusCollection<Schema = any> = {
 	collection: string; // TODO keyof complete schema
 	meta: MergeCoreCollection<
 		Schema,
-		'directus_collections',
+		'axis_collections',
 		{
 			collection: string; // TODO keyof complete schema
 			icon: string | null;

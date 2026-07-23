@@ -26,7 +26,7 @@ const schema = new SchemaBuilder()
 		c.field('sort').integer().sort();
 		c.field('name').string();
 	})
-	.collection('directus_versions', (c) => {
+	.collection('axis_versions', (c) => {
 		c.field('id').id();
 		c.field('item').string();
 		c.field('collection').string();

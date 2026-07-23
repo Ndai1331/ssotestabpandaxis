@@ -6,7 +6,7 @@ import { getAuthProviders } from './get-auth-providers.js';
 // Dynamically populate auth providers field
 export function getSystemFieldRowsWithAuthProviders(): FieldMeta[] {
 	return systemFieldRows.map((systemField) => {
-		if (systemField.collection === 'directus_users' && systemField.field === 'provider') {
+		if (systemField.collection === 'axis_users' && systemField.field === 'provider') {
 			if (!systemField.options) systemField.options = {};
 
 			systemField.options['choices'] = getAuthProviders().map(({ name }) => ({

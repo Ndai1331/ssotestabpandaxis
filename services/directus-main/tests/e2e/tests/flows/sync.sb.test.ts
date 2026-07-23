@@ -16,7 +16,7 @@ test('syncronized flow logging', { timeout: 120_000 }, async () => {
 		env: {
 			SYNCHRONIZATION_STORE: 'redis',
 			SYNCHRONIZATION_NAMESPACE: `directus-${database}`,
-			DB_FILENAME: `directus_test_${getUID()}.db`,
+			DB_FILENAME: `axis_test_${getUID()}.db`,
 		},
 	});
 

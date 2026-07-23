@@ -54,7 +54,7 @@ test('Returns early when project owner is disabled', async () => {
 });
 
 test('Schedules synchronized job', async () => {
-	tracker.on.select('directus_settings').response([{ project_status: undefined }]);
+	tracker.on.select('axis_settings').response([{ project_status: undefined }]);
 
 	await projectSchedule();
 
@@ -62,7 +62,7 @@ test('Schedules synchronized job', async () => {
 });
 
 test('Doesnt send report if not pending', async () => {
-	tracker.on.select('directus_settings').response([{ project_status: undefined }]);
+	tracker.on.select('axis_settings').response([{ project_status: undefined }]);
 
 	await projectSchedule();
 
@@ -72,7 +72,7 @@ test('Doesnt send report if not pending', async () => {
 });
 
 test('Sends report when pending', async () => {
-	tracker.on.select('directus_settings').response([
+	tracker.on.select('axis_settings').response([
 		{
 			project_status: 'pending',
 		},
@@ -83,12 +83,12 @@ test('Sends report when pending', async () => {
 	await triggerCron();
 
 	expect(vi.mocked(sendReport)).toHaveBeenCalledOnce();
-	expect(tracker.history.all[1]?.sql).toEqual('update "directus_settings" set "project_status" = ?');
+	expect(tracker.history.all[1]?.sql).toEqual('update "axis_settings" set "project_status" = ?');
 	expect(tracker.history.all[1]?.bindings).toEqual(['']);
 });
 
 test('Doesnt reset project status when sending fails', async () => {
-	tracker.on.select('directus_settings').response([
+	tracker.on.select('axis_settings').response([
 		{
 			project_status: 'pending',
 		},

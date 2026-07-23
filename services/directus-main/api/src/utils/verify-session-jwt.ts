@@ -13,7 +13,7 @@ export async function verifySessionJWT(payload: DirectusTokenPayload): Promise<{
 
 	const session = await database
 		.select('oauth_client')
-		.from('directus_sessions')
+		.from('axis_sessions')
 		.where({
 			token: payload['session'],
 			user: payload['id'] || null,

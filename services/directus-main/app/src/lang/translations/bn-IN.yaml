@@ -120,14 +120,14 @@ uuid: ইউইউআইডি
 hash: হ্যাশ
 source_registry: মার্কেটপ্লেস
 fields:
-  directus_settings:
+  axis_settings:
     module_bar: মডিউল বার
-  directus_fields:
+  axis_fields:
     translation: ক্ষেত্রের নাম অনুবাদ
-  directus_roles:
+  axis_roles:
     name: নামভূমিকা
 field_options:
-  directus_collections:
+  axis_collections:
     archive_divider: সংরক্ষণাগার
 ai:
   unknown: অজানা

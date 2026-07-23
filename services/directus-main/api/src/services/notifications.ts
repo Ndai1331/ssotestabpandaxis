@@ -14,7 +14,7 @@ const logger = useLogger();
 
 export class NotificationsService extends ItemsService {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_notifications', options);
+		super('axis_notifications', options);
 	}
 
 	override async createOne(data: Partial<Notification>, opts?: MutationOptions): Promise<PrimaryKey> {

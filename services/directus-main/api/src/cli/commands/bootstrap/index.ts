@@ -26,7 +26,7 @@ export default async function bootstrap({ skipAdminInit }: { skipAdminInit?: boo
 	await waitForDatabase(database);
 
 	if ((await isInstalled()) === false) {
-		logger.info('Installing Directus system tables...');
+		logger.info('Installing Axis system tables...');
 
 		await installDatabase(database);
 

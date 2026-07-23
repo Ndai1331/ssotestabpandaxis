@@ -57,7 +57,7 @@ const selectedFolderObjects = computed(() => (folders.value ?? []).filter((f) =>
 
 const userStore = useUserStore();
 
-const { layout, layoutOptions, layoutQuery, filter, search, resetPreset } = usePreset(ref('directus_files'));
+const { layout, layoutOptions, layoutQuery, filter, search, resetPreset } = usePreset(ref('axis_files'));
 
 const confirmDelete = ref(false);
 const batchEditActive = ref(false);
@@ -128,10 +128,10 @@ const {
 	updateAllowed: batchEditAllowed,
 	deleteAllowed: batchDeleteAllowed,
 	createAllowed,
-} = useCollectionPermissions('directus_files');
+} = useCollectionPermissions('axis_files');
 
 const { createAllowed: createFolderAllowed, deleteAllowed: folderDeleteAllowed } =
-	useCollectionPermissions('directus_folders');
+	useCollectionPermissions('axis_folders');
 
 async function onFolderDeleteDone() {
 	try {
@@ -429,7 +429,7 @@ async function downloadFiles() {
 		:filter-user="filter"
 		:filter-system="folderFilter"
 		:search="search"
-		collection="directus_files"
+		collection="axis_files"
 		:select-mode="folderSelection.length > 0"
 		:reset-preset="resetPreset"
 	>
@@ -439,7 +439,7 @@ async function downloadFiles() {
 			</template>
 
 			<template #actions>
-				<SearchInput v-model="search" v-model:filter="filter" collection="directus_files" small />
+				<SearchInput v-model="search" v-model:filter="filter" collection="axis_files" small />
 
 				<AddFolder :parent="folder" :disabled="createFolderAllowed !== true" />
 
@@ -610,7 +610,7 @@ async function downloadFiles() {
 			<DrawerBatch
 				v-model:active="batchEditActive"
 				:primary-keys="selection"
-				collection="directus_files"
+				collection="axis_files"
 				@refresh="refresh"
 			/>
 
@@ -620,7 +620,7 @@ async function downloadFiles() {
 				</LayoutSidebarDetail>
 				<component :is="`layout-sidebar-${layout}`" v-bind="layoutState" />
 				<ExportSidebarDetail
-					collection="directus_files"
+					collection="axis_files"
 					:layout-query="layoutQuery"
 					:filter="mergeFilters(filter, folderFilter)"
 					:search="search"

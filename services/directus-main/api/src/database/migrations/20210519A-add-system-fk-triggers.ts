@@ -15,66 +15,66 @@ import { getDatabaseClient } from '../index.js';
 
 const updates = [
 	{
-		table: 'directus_files',
+		table: 'axis_files',
 		constraints: [
 			{
 				column: 'folder',
-				references: 'directus_folders.id',
+				references: 'axis_folders.id',
 				on_delete: 'SET NULL',
 			},
 		],
 	},
 	{
-		table: 'directus_permissions',
+		table: 'axis_permissions',
 		constraints: [
 			{
 				column: 'role',
-				references: 'directus_roles.id',
+				references: 'axis_roles.id',
 				on_delete: 'CASCADE',
 			},
 		],
 	},
 	{
-		table: 'directus_presets',
+		table: 'axis_presets',
 		constraints: [
 			{
 				column: 'user',
-				references: 'directus_users.id',
+				references: 'axis_users.id',
 				on_delete: 'CASCADE',
 			},
 			{
 				column: 'role',
-				references: 'directus_roles.id',
+				references: 'axis_roles.id',
 				on_delete: 'CASCADE',
 			},
 		],
 	},
 	{
-		table: 'directus_revisions',
+		table: 'axis_revisions',
 		constraints: [
 			{
 				column: 'activity',
-				references: 'directus_activity.id',
+				references: 'axis_activity.id',
 				on_delete: 'CASCADE',
 			},
 		],
 	},
 	{
-		table: 'directus_sessions',
+		table: 'axis_sessions',
 		constraints: [
 			{
 				column: 'user',
-				references: 'directus_users.id',
+				references: 'axis_users.id',
 				on_delete: 'CASCADE',
 			},
 		],
 	},
 	{
-		table: 'directus_users',
+		table: 'axis_users',
 		constraints: [
 			{
 				column: 'role',
-				references: 'directus_roles.id',
+				references: 'axis_roles.id',
 				on_delete: 'SET NULL',
 			},
 		],

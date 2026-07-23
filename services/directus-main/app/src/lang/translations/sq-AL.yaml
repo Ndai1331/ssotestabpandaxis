@@ -339,9 +339,9 @@ geometry:
 theme_auto: Automatik (Bazuar në Sistem)
 theme_light: Modaliteti i Ndriçimit
 theme_dark: Modaliteti i Errësirës
-theme_directus_default: Parazgjedhja e Directus
-theme_directus_minimal: Directus Minimal
-theme_directus_colormatch: Përshtatja e Ngjyrave të Directus
+theme_axis_default: Parazgjedhja e Directus
+theme_axis_minimal: Directus Minimal
+theme_axis_colormatch: Përshtatja e Ngjyrave të Directus
 not_available_for_type: Nuk është i Disponueshëm për këtë Lloj
 create_translations: Krijo përkthime
 auto_refresh: Rifreskim Automatik
@@ -1176,34 +1176,34 @@ content: Përmbajtje
 singleton: Singleton
 singleton_label: Trajto si objekt të vetëm
 system_fields_locked: Fushat e sistemit janë të bllokuara dhe nuk mund të redaktohen
-directus_collection:
-  directus_access: Bashkëngjitjet e Drejtimit
-  directus_activity: Regjistrat e përgjegjshëm për të gjitha eventet
-  directus_collections: Konfigurimi shtesë i koleksionit dhe metadata
-  directus_comments: Komente për artikujt​​​​​​​​​​​​​​​​
-  directus_dashboards: Dashboards brenda modulit të Insights
-  directus_fields: Konfigurimi shtesë i fushave dhe metadata
-  directus_files: Metadata për të gjitha asetet e menaxhuara të skedarëve
-  directus_folders: Ofron drejtoritë virtuale për skedarë
-  directus_migrations: Cila version i bazës së të dhënave që po përdorni
-  directus_notifications: Njoftimet e dërguara për përdoruesit
-  directus_operations: Operacionet që drejtohen në Flujot
-  directus_panels: Panelet individuale brenda kokpitëve të Insights
-  directus_permissions: Lejet e aksesit për çdo drejtim
-  directus_policies: Drejtimet e kontrollit të aksesit
-  directus_presets: Cilësimet e paracaktuara për parazgjedhjet e koleksionit dhe faqerojtësit
-  directus_relations: Konfigurimi i marrëdhënieve dhe metadata
-  directus_revisions: Instantanet e të dhënave për të gjithë aktivitetin
-  directus_roles: Grupet e lejeve për përdoruesit e sistemit
-  directus_sessions: Informacioni i sesioneve të përdoruesit
-  directus_settings: Opsionet e konfigurimit të projektit
-  directus_shares: Gjurmët e artikujve të ndarë jashtë
-  directus_users: Përdoruesit e sistemit për platformën
-  directus_translations: Përkthimet e personalizuara
-  directus_versions: Versionet e Përmbajtjes për artikujt
-  directus_extensions: Konfigurimi i zgjerimeve
+axis_collection:
+  axis_access: Bashkëngjitjet e Drejtimit
+  axis_activity: Regjistrat e përgjegjshëm për të gjitha eventet
+  axis_collections: Konfigurimi shtesë i koleksionit dhe metadata
+  axis_comments: Komente për artikujt​​​​​​​​​​​​​​​​
+  axis_dashboards: Dashboards brenda modulit të Insights
+  axis_fields: Konfigurimi shtesë i fushave dhe metadata
+  axis_files: Metadata për të gjitha asetet e menaxhuara të skedarëve
+  axis_folders: Ofron drejtoritë virtuale për skedarë
+  axis_migrations: Cila version i bazës së të dhënave që po përdorni
+  axis_notifications: Njoftimet e dërguara për përdoruesit
+  axis_operations: Operacionet që drejtohen në Flujot
+  axis_panels: Panelet individuale brenda kokpitëve të Insights
+  axis_permissions: Lejet e aksesit për çdo drejtim
+  axis_policies: Drejtimet e kontrollit të aksesit
+  axis_presets: Cilësimet e paracaktuara për parazgjedhjet e koleksionit dhe faqerojtësit
+  axis_relations: Konfigurimi i marrëdhënieve dhe metadata
+  axis_revisions: Instantanet e të dhënave për të gjithë aktivitetin
+  axis_roles: Grupet e lejeve për përdoruesit e sistemit
+  axis_sessions: Informacioni i sesioneve të përdoruesit
+  axis_settings: Opsionet e konfigurimit të projektit
+  axis_shares: Gjurmët e artikujve të ndarë jashtë
+  axis_users: Përdoruesit e sistemit për platformën
+  axis_translations: Përkthimet e personalizuara
+  axis_versions: Versionet e Përmbajtjes për artikujt
+  axis_extensions: Konfigurimi i zgjerimeve
 fields:
-  directus_activity:
+  axis_activity:
     item: Çelësi Kryesor i Artikullit
     action: Veprimi
     collection: Koleksion
@@ -1214,7 +1214,7 @@ fields:
     origin: Origjina
     ip: Adresa IP
     revisions: Rishikimet
-  directus_collections:
+  axis_collections:
     collection: Koleksion
     icon: Ikona
     note: Shënim
@@ -1232,7 +1232,7 @@ fields:
     versioning: Versionimi
     archive_field: Fusha e Arkivimit
     item_duplication_fields: Fushat e Duplikimit të Artikullit
-  directus_files:
+  axis_files:
     $thumbnail: Miniaturë
     title: Titulli
     description: Përshkrim
@@ -1258,7 +1258,7 @@ fields:
     duration: Kohëzgjatje
     focal_point_x: Koordinata-X
     focal_point_y: Koordinata-Y
-  directus_users:
+  axis_users:
     first_name: Emri
     last_name: Mbiemri
     email: Email
@@ -1291,7 +1291,7 @@ fields:
     theme_dark: Tema e Errët
     theme_light_overrides: Personalizimi i Temës së Ndritshme
     theme_dark_overrides: Personalizimi i Temës së Errët
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1348,7 +1348,7 @@ fields:
     public_registration_verify_email: Verifiko Email-in
     public_registration_verify_email_note: Dërgon një email përdoruesit që po regjistrohet duke kërkuar që të klikojnë në një lidhje verifikimi përpara se të mund të identifikohen.
     ai_header_name: Header
-  directus_shares:
+  axis_shares:
     name: Emri
     role: Roli
     password: Fjalëkalimi
@@ -1356,7 +1356,7 @@ fields:
     date_end: Data e Mbarimit
     max_uses: Përdorime Maksimale
     times_used: Herët e Përdorur
-  directus_fields:
+  axis_fields:
     collection: Emri i Koleksionit
     icon: Ikona e Koleksionit
     note: Shënim
@@ -1364,14 +1364,14 @@ fields:
     singleton: Singleton
     translation: Përkthimet e Emrit të Fushës
     display_template: Template
-  directus_roles:
+  axis_roles:
     name: Emri i Rolit
     icon: Ikona e Rolit
     description: Përshkrim
     users: Përdoruesit në Rol
     parent: Roli Prind
     children: Rolet Fëmijë
-  directus_policies:
+  axis_policies:
     name: Emri i drejtimit
     description: Përshkrim
     app_access: Aksesi në Aplikacion
@@ -1379,7 +1379,7 @@ fields:
     ip_access: Aksesi me IP
     enforce_tfa: Kërko 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Projekti im...
     project_color_note: Login & Mjedis i Logos
     project_logo_note: SVG/PNG i Bardhë 40×40
@@ -1409,12 +1409,12 @@ field_options:
     basemaps_style: Stili i Mapbox
     files_divider_title: Skedarët & Miniaturat
     overrides_divider_title: Anashkalimet e Aplikacionit
-  directus_activity:
+  axis_activity:
     login: Hyrje
     create: Krijo
     update: Përditëso
     delete: Fshij
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Gjurmë Aktiviteti & Rishikime
     only_track_activity: Gjurmë Vetëm Aktivitetin
     do_not_track_anything: Mos Gjurmë Asgjë
@@ -1440,7 +1440,7 @@ field_options:
     preview_divider: Parashikim
     content_versioning_divider: Versionimi i Përmbajtjes
     enable_versioning: Aktivizo Versionimin
-  directus_files:
+  axis_files:
     title: Një titull unik...
     description: Një përshkrim opsional...
     location: Një vendndodhje opsionale...
@@ -1448,13 +1448,13 @@ field_options:
     focal_point_divider: Pika Fokale
     filename_disk: Emri në ruajtjen disk...
     filename_download: Emri gjatë shkarkimit...
-  directus_policies:
+  axis_policies:
     name: Një emër unik për këtë drejtim...
     description: Një përshkrim për këtë drejtim...
     ip_access: Shto adresat IP të lejuara, rangjet IP dhe blloqet CIDR. Lëre bosh për të lejuar të gjitha...
     enforce_tfa: Zbato Autentifikimin me Dy Faktorë
     assigned_to: I Caktuar Tek
-  directus_roles:
+  axis_roles:
     name: Emri unik për këtë rol...
     description: Përshkrimi i këtij roli...
     fields:
@@ -1467,7 +1467,7 @@ field_options:
     children_note: Rolet fëmijë të mbivendosura që trashëgojnë lejet e këtij roli
     collections_name: Koleksione
     collections_addLabel: Shto Koleksion...
-  directus_users:
+  axis_users:
     preferences_divider: Preferencat e Përdoruesit
     dropdown_auto: Automatik (Bazuar në Sistem)
     dropdown_light: Modaliteti i Ndriçimit

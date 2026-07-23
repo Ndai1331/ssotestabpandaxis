@@ -80,7 +80,7 @@ function useBatch() {
 		:filter-user="filter"
 		:filter="filter"
 		:search="search"
-		collection="directus_oauth_clients"
+		collection="axis_oauth_clients"
 		:clear-filters="clearFilters"
 	>
 		<PrivateView :title="$t('mcp_oauth_clients')" icon="key" show-back back-to="/settings/ai">
@@ -98,7 +98,7 @@ function useBatch() {
 			</template>
 
 			<template #actions>
-				<SearchInput v-model="search" v-model:filter="filter" collection="directus_oauth_clients" small />
+				<SearchInput v-model="search" v-model:filter="filter" collection="axis_oauth_clients" small />
 
 				<VDialog v-if="selection.length > 0" v-model="confirmDelete" @esc="confirmDelete = false" @apply="batchDelete">
 					<template #activator="{ on }">

@@ -66,7 +66,7 @@ const logoURL = computed<string | null>(() => {
 					class="logo"
 					:style="info?.project?.project_color ? { backgroundColor: info.project.project_color } : {}"
 				>
-					<img src="./logo-light.svg" alt="Directus" class="directus-logo" />
+					<img src="./logo-light.svg" alt="Axis" class="directus-logo" />
 				</div>
 				<div class="title">
 					<h1 class="title-heading"><VTextOverflow :text="info?.project?.project_name ?? ''" placement="bottom" /></h1>

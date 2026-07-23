@@ -9,7 +9,7 @@ const api = createDirectus<Schema>(`http://localhost:${port}`).with(graphql()).w
 
 const { snapshot } = await useSnapshot<Schema>(api);
 
-// TODO: Oracle has a **STUPID** hard limit of VARCHAR(4000) on directus_revisions.data, so this currently fails to generate the scoped user
+// TODO: Oracle has a **STUPID** hard limit of VARCHAR(4000) on axis_revisions.data, so this currently fails to generate the scoped user
 if (database !== 'oracle')
 	test('graphql schema', async () => {
 		const { token } = await generateScopedUser(api, snapshot);

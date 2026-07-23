@@ -73,8 +73,8 @@ describe('TusDataStore.create', () => {
 		};
 
 		// No existing file with this name, and no default folder configured
-		tracker.on.select('directus_files').response([]);
-		tracker.on.select('directus_settings').response([]);
+		tracker.on.select('axis_files').response([]);
+		tracker.on.select('axis_settings').response([]);
 	});
 
 	afterEach(() => {
@@ -89,8 +89,8 @@ describe('TusDataStore.create', () => {
 
 	test('rejects a duplicate filename_disk and never writes', async () => {
 		tracker.reset();
-		tracker.on.select('directus_files').response([{ filename_disk: 'photo.jpg' }]);
-		tracker.on.select('directus_settings').response([]);
+		tracker.on.select('axis_files').response([{ filename_disk: 'photo.jpg' }]);
+		tracker.on.select('axis_settings').response([]);
 
 		const store = makeStore();
 

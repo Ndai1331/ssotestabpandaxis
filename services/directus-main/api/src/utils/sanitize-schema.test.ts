@@ -465,13 +465,13 @@ describe('sanitizeRelation', () => {
 describe('sanitizeSystemField', () => {
 	test('should only contain collection, field, and is_indexed properties', () => {
 		const testSystemField: Field = {
-			collection: 'directus_users',
+			collection: 'axis_users',
 			field: 'email',
 			name: 'email',
 			type: 'string',
 			meta: {
 				id: 1,
-				collection: 'directus_users',
+				collection: 'axis_users',
 				conditions: null,
 				display: null,
 				display_options: null,
@@ -492,7 +492,7 @@ describe('sanitizeSystemField', () => {
 			},
 			schema: {
 				name: 'email',
-				table: 'directus_users',
+				table: 'axis_users',
 				data_type: 'varchar',
 				default_value: null,
 				max_length: 128,
@@ -514,7 +514,7 @@ describe('sanitizeSystemField', () => {
 		const result = sanitizeSystemField(testSystemField);
 
 		expect(result).toEqual({
-			collection: 'directus_users',
+			collection: 'axis_users',
 			field: 'email',
 			schema: {
 				is_indexed: true,
@@ -524,7 +524,7 @@ describe('sanitizeSystemField', () => {
 
 	test('should handle system fields with index', () => {
 		const testSystemField = {
-			collection: 'directus_activity',
+			collection: 'axis_activity',
 			field: 'timestamp',
 			schema: {
 				is_indexed: true,

@@ -345,9 +345,9 @@ geometry:
 theme_auto: ავტომატური (სისტემის მიხედვით)
 theme_light: ნათელი რეჟიმი
 theme_dark: ბნელი რეჟიმი
-theme_directus_default: Directus-ის ნაგულისხმევი
-theme_directus_minimal: Directus-ის მინიმალური
-theme_directus_colormatch: Directus-ის ფერების შეხამება
+theme_axis_default: Directus-ის ნაგულისხმევი
+theme_axis_minimal: Directus-ის მინიმალური
+theme_axis_colormatch: Directus-ის ფერების შეხამება
 not_available_for_type: ამ ტიპისთვის ხელმისაწვდომი არ არის
 create_translations: თარგმანების შექმნა
 auto_refresh: ავტომატური განახლება
@@ -1197,34 +1197,34 @@ content: კონტენტი
 singleton: სინგლტონი
 singleton_label: ერთ ობიექტად განხილვა
 system_fields_locked: სისტემური ველები ჩაკეტილია და მათი რედაქტირება შეუძლებელია
-directus_collection:
-  directus_access: პოლიტიკის დანართები
-  directus_activity: ანგარიშვალდებულების ჟურნალები ყველა მოვლენისთვის
-  directus_collections: დამატებითი კოლექციის კონფიგურაცია და მეტამონაცემები
-  directus_comments: კომენტარები ჩანაწერებისთვის
-  directus_dashboards: დაფები ანალიტიკის მოდულში
-  directus_fields: დამატებითი ველის კონფიგურაცია და მეტამონაცემები
-  directus_files: მეტამონაცემები ყველა მართული ფაილური რესურსისთვის
-  directus_folders: უზრუნველყოფს ვირტუალურ დირექტორიებს ფაილებისთვის
-  directus_migrations: მონაცემთა ბაზის ვერსია, რომელსაც იყენებთ
-  directus_notifications: მომხმარებლებისთვის გაგზავნილი შეტყობინებები
-  directus_operations: ოპერაციები, რომლებიც მუშაობს ნაკადებში
-  directus_panels: ინდივიდუალური პანელები ანალიტიკის დაფებში
-  directus_permissions: წვდომის უფლებები თითოეული პოლიტიკისთვის
-  directus_policies: წვდომის კონტროლის პოლიტიკები
-  directus_presets: პრესეტები კოლექციის ნაგულისხმევი პარამეტრებისა და სანიშნებისთვის
-  directus_relations: დამოკიდებულების კონფიგურაცია და მეტამონაცემები
-  directus_revisions: მონაცემთა სნეპშოტები ყველა აქტივობისთვის
-  directus_roles: უფლებების ჯგუფები სისტემის მომხმარებლებისთვის
-  directus_sessions: მომხმარებლის სესიის ინფორმაცია
-  directus_settings: პროექტის კონფიგურაციის ოფციები
-  directus_shares: თვალყურს ადევნებს გარედან გაზიარებულ ჩანაწერებს
-  directus_users: სისტემის მომხმარებლები პლატფორმისთვის
-  directus_translations: მორგებული თარგმანები
-  directus_versions: კონტენტის ვერსიები ჩანაწერებისთვის
-  directus_extensions: გაფართოებების კონფიგურაცია
+axis_collection:
+  axis_access: პოლიტიკის დანართები
+  axis_activity: ანგარიშვალდებულების ჟურნალები ყველა მოვლენისთვის
+  axis_collections: დამატებითი კოლექციის კონფიგურაცია და მეტამონაცემები
+  axis_comments: კომენტარები ჩანაწერებისთვის
+  axis_dashboards: დაფები ანალიტიკის მოდულში
+  axis_fields: დამატებითი ველის კონფიგურაცია და მეტამონაცემები
+  axis_files: მეტამონაცემები ყველა მართული ფაილური რესურსისთვის
+  axis_folders: უზრუნველყოფს ვირტუალურ დირექტორიებს ფაილებისთვის
+  axis_migrations: მონაცემთა ბაზის ვერსია, რომელსაც იყენებთ
+  axis_notifications: მომხმარებლებისთვის გაგზავნილი შეტყობინებები
+  axis_operations: ოპერაციები, რომლებიც მუშაობს ნაკადებში
+  axis_panels: ინდივიდუალური პანელები ანალიტიკის დაფებში
+  axis_permissions: წვდომის უფლებები თითოეული პოლიტიკისთვის
+  axis_policies: წვდომის კონტროლის პოლიტიკები
+  axis_presets: პრესეტები კოლექციის ნაგულისხმევი პარამეტრებისა და სანიშნებისთვის
+  axis_relations: დამოკიდებულების კონფიგურაცია და მეტამონაცემები
+  axis_revisions: მონაცემთა სნეპშოტები ყველა აქტივობისთვის
+  axis_roles: უფლებების ჯგუფები სისტემის მომხმარებლებისთვის
+  axis_sessions: მომხმარებლის სესიის ინფორმაცია
+  axis_settings: პროექტის კონფიგურაციის ოფციები
+  axis_shares: თვალყურს ადევნებს გარედან გაზიარებულ ჩანაწერებს
+  axis_users: სისტემის მომხმარებლები პლატფორმისთვის
+  axis_translations: მორგებული თარგმანები
+  axis_versions: კონტენტის ვერსიები ჩანაწერებისთვის
+  axis_extensions: გაფართოებების კონფიგურაცია
 fields:
-  directus_activity:
+  axis_activity:
     item: ჩანაწერის პირველადი გასაღები
     action: მოქმედება
     collection: კოლექცია
@@ -1235,7 +1235,7 @@ fields:
     origin: წყარო
     ip: IP მისამართი
     revisions: რევიზიები
-  directus_collections:
+  axis_collections:
     collection: კოლექცია
     icon: ხატულა
     note: შენიშვნა
@@ -1253,7 +1253,7 @@ fields:
     versioning: ვერსიების კონტროლი
     archive_field: არქივის ველი
     item_duplication_fields: ჩანაწერის დუბლირების ველები
-  directus_files:
+  axis_files:
     $thumbnail: მინიატურა
     title: სათაური
     description: აღწერა
@@ -1279,7 +1279,7 @@ fields:
     duration: ხანგრძლივობა
     focal_point_x: X-კოორდინატი
     focal_point_y: Y-კოორდინატი
-  directus_users:
+  axis_users:
     first_name: სახელი
     last_name: გვარი
     email: ელ-ფოსტა
@@ -1312,7 +1312,7 @@ fields:
     theme_dark: ბნელი თემა
     theme_light_overrides: ნათელი თემის მორგება
     theme_dark_overrides: ბნელი თემის მორგება
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1370,7 +1370,7 @@ fields:
     public_registration_verify_email_note: აგზავნის ელფოსტას რეგისტრირებულ მომხმარებელთან და სთხოვს დააჭიროს დამადასტურებელ ბმულს, სანამ შეძლებს შესვლას.
     visual_editor_urls: ვიზუალური რედაქტორის URL-ები
     ai_header_name: სათაური
-  directus_shares:
+  axis_shares:
     name: სახელი
     role: როლი
     password: პაროლი
@@ -1378,7 +1378,7 @@ fields:
     date_end: დასრულების თარიღი
     max_uses: მაქს. გამოყენება
     times_used: გამოყენებულია ჯერ
-  directus_fields:
+  axis_fields:
     collection: კოლექციის სახელი
     icon: კოლექციის ხატულა
     note: შენიშვნა
@@ -1386,14 +1386,14 @@ fields:
     singleton: სინგლტონი
     translation: ველის სახელების თარგმანი
     display_template: შაბლონი
-  directus_roles:
+  axis_roles:
     name: როლის სახელი
     icon: როლის ხატულა
     description: აღწერა
     users: მომხმარებლები როლში
     parent: მშობელი როლი
     children: შვილობილი როლები
-  directus_policies:
+  axis_policies:
     name: პოლიტიკის სახელი
     description: აღწერა
     app_access: აპლიკაციაზე წვდომა
@@ -1401,7 +1401,7 @@ fields:
     ip_access: IP წვდომა
     enforce_tfa: 2FA-ს მოთხოვნა
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: ჩემი პროექტი...
     project_color_note: შესვლის და ლოგოს ფონი
     project_logo_note: თეთრი 40×40 SVG/PNG
@@ -1431,12 +1431,12 @@ field_options:
     basemaps_style: Mapbox სტილი
     files_divider_title: ფაილები და მინიატურები
     overrides_divider_title: აპლიკაციის გადაფარვები
-  directus_activity:
+  axis_activity:
     login: შესვლა
     create: შექმნა
     update: განახლება
     delete: წაშლა
-  directus_collections:
+  axis_collections:
     track_activity_revisions: აქტივობის და რევიზიების თვალყურის დევნება
     only_track_activity: მხოლოდ აქტივობის თვალყურის დევნება
     do_not_track_anything: არაფრის თვალყურის დევნება
@@ -1462,7 +1462,7 @@ field_options:
     preview_divider: გადახედვა
     content_versioning_divider: კონტენტის ვერსიების კონტროლი
     enable_versioning: ვერსიების კონტროლის ჩართვა
-  directus_files:
+  axis_files:
     title: უნიკალური სათაური...
     description: არჩევითი აღწერა...
     location: არჩევითი მდებარეობა...
@@ -1470,13 +1470,13 @@ field_options:
     focal_point_divider: ფოკუსური წერტილი
     filename_disk: სახელი დისკის საცავში...
     filename_download: სახელი გადმოწერისას...
-  directus_policies:
+  axis_policies:
     name: უნიკალური სახელი ამ პოლიტიკისთვის...
     description: ამ პოლიტიკის აღწერა...
     ip_access: დაამატეთ დაშვებული IP მისამართები, IP დიაპაზონები და CIDR ბლოკები. დატოვეთ ცარიელი ყველას დასაშვებად...
     enforce_tfa: ორფაქტორიანი ავთენტიფიკაციის მოთხოვნა
     assigned_to: მინიჭებულია
-  directus_roles:
+  axis_roles:
     name: უნიკალური სახელი ამ როლისთვის...
     description: ამ როლის აღწერა...
     fields:
@@ -1489,7 +1489,7 @@ field_options:
     children_note: ჩადგმული შვილობილი როლები, რომლებიც მემკვიდრეობით იღებენ ამ როლის უფლებებს
     collections_name: კოლექციები
     collections_addLabel: კოლექციის დამატება...
-  directus_users:
+  axis_users:
     preferences_divider: მომხმარებლის პარამეტრები
     dropdown_auto: ავტომატური (სისტემის მიხედვით)
     dropdown_light: ნათელი რეჟიმი

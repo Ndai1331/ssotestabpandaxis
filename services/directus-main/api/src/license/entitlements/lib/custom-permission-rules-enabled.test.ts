@@ -121,7 +121,7 @@ describe('checkCustomPermissionRules', () => {
 
 		await checkCustomPermissionRules();
 
-		expect(ItemsService).toHaveBeenCalledWith('directus_permissions', expect.any(Object));
+		expect(ItemsService).toHaveBeenCalledWith('axis_permissions', expect.any(Object));
 
 		expect(ItemsService.prototype.readByQuery).toHaveBeenCalledWith({
 			limit: -1,

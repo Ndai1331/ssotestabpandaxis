@@ -69,7 +69,7 @@ watch(tab, (newTab, oldTab) => {
 
 watch(notificationsDrawerOpen, (open) => {
 	// Load notifications only once the drawer is opened and reset when closed
-	collection.value = open ? 'directus_notifications' : null;
+	collection.value = open ? 'axis_notifications' : null;
 });
 
 const filterSystem = computed(
@@ -240,7 +240,7 @@ function clearFilters() {
 		</template>
 
 		<template #actions>
-			<SearchInput v-model="search" v-model:filter="filter" collection="directus_notifications" />
+			<SearchInput v-model="search" v-model:filter="filter" collection="axis_notifications" />
 
 			<VDialog
 				v-model="confirmDelete"

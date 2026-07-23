@@ -49,7 +49,7 @@ function uploadViaTus(
 }
 
 /**
- * Create a non-admin user whose policy grants the given directus_files
+ * Create a non-admin user whose policy grants the given axis_files
  * permissions, returning a static token to authenticate as them. Only the
  * fields that matter per test need to be passed; the rest are defaulted.
  */
@@ -72,7 +72,7 @@ async function createFilesUser(permissions: Partial<Permission>[]) {
 
 	await api.request(
 		updatePolicy(policy.id, {
-			permissions: permissions.map((perm) => ({ collection: 'directus_files', fields: ['*'], ...perm })) as any,
+			permissions: permissions.map((perm) => ({ collection: 'axis_files', fields: ['*'], ...perm })) as any,
 		}),
 	);
 
@@ -110,7 +110,7 @@ beforeAll(async () => {
 			TUS_ENABLED: 'true',
 			EXTENSIONS_PATH: './uploads/extensions',
 			TEMP_PATH: './uploads/temp',
-			DB_FILENAME: `directus_test_${getUID()}.db`,
+			DB_FILENAME: `axis_test_${getUID()}.db`,
 			LICENSE_KEY: LICENSE_KEYS.UNLIMITED,
 		},
 		extras: { license: true },

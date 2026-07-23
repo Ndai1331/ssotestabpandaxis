@@ -14,7 +14,7 @@ export async function fetchAccessRoles(options: FetchAccessRolesOptions, context
 	// Only fetch the roles that have a parent, as otherwise those roles should already be included in at least one of the input set
 	const allChildRoles = await context.knex
 		.select<{ id: string; parent: string }[]>('id', 'parent')
-		.from('directus_roles')
+		.from('axis_roles')
 		.whereNotNull('parent')
 		.whereNotIn('id', options.excludeRoles ?? []);
 

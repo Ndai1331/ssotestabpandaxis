@@ -563,7 +563,7 @@ describe('applyDiff', () => {
 				fields: [],
 				systemFields: [
 					{
-						collection: 'directus_users',
+						collection: 'axis_users',
 						field: 'id',
 						meta: {},
 						schema: { is_indexed: false },
@@ -577,7 +577,7 @@ describe('applyDiff', () => {
 				fields: [],
 				systemFields: [
 					{
-						collection: 'directus_users',
+						collection: 'axis_users',
 						field: 'id',
 						diff: [
 							{
@@ -599,7 +599,7 @@ describe('applyDiff', () => {
 			expect(updateFieldSpy).toHaveBeenCalledTimes(1);
 
 			expect(updateFieldSpy).toHaveBeenCalledWith(
-				'directus_users',
+				'axis_users',
 				expect.objectContaining({
 					schema: expect.objectContaining({ is_indexed: true }),
 				}),

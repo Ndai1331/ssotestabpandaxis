@@ -4,7 +4,7 @@ import type { DirectusPermission } from './permission.js';
 
 export type DirectusPolicy<Schema> = MergeCoreCollection<
 	Schema,
-	'directus_policies',
+	'axis_policies',
 	{
 		id: string; // uuid
 		name: string;

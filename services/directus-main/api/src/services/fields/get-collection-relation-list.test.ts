@@ -14,7 +14,7 @@ test('get empty list for tree without collection', () => {
 });
 
 test('get list for tree with collection and system collection', () => {
-	const list = getCollectionRelationList('collection', new Map([['collection', new Set(['A', 'directus_fields'])]]));
+	const list = getCollectionRelationList('collection', new Map([['collection', new Set(['A', 'axis_fields'])]]));
 
 	expect(list).toEqual(new Set(['A']));
 });

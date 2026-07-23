@@ -228,7 +228,7 @@ export function useItem<T extends Item>(
 		const fields = collectionInfo.value?.meta?.item_duplication_fields ?? [];
 
 		const { queryFields, m2aAliasMap } = getGraphqlQueryFields(fields, collection.value);
-		const alias = isSystemCollection(collection.value) ? collection.value.substring(9) : collection.value;
+		const alias = isSystemCollection(collection.value) ? collection.value.substring(5) : collection.value;
 
 		const query = jsonToGraphQLQuery({
 			query: {
@@ -561,8 +561,8 @@ export function useItem<T extends Item>(
 
 	function setItemValueToResponse(response: T) {
 		if (
-			(isSystemCollection(collection.value) && collection.value !== 'directus_collections') ||
-			(collection.value === 'directus_collections' && isSystemCollection(response.collection ?? ''))
+			(isSystemCollection(collection.value) && collection.value !== 'axis_collections') ||
+			(collection.value === 'axis_collections' && isSystemCollection(response.collection ?? ''))
 		) {
 			response = translate(response);
 		}

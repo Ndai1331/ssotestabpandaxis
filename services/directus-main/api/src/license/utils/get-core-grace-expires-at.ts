@@ -17,7 +17,7 @@ export const _cache: { migrations: { oldest: Item | undefined; v12: Item | undef
  */
 export async function getCoreGraceExpiresAt(): Promise<number | null> {
 	if (!_cache.migrations) {
-		const itemsService = new ItemsService('directus_migrations', {
+		const itemsService = new ItemsService('axis_migrations', {
 			schema: await getSchema(),
 		});
 

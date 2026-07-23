@@ -24,7 +24,7 @@ KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_r
 
 | Email | Role group | App groups (lab default) | App role |
 |-------|------------|--------------------------|----------|
-| admin@benhvien.vn | bd-admin | bd-app-directus + bd-app-abp | admin |
+| admin@benhvien.vn | bd-admin | bd-app-axis + bd-app-hcs | admin |
 | bacsi@benhvien.vn | bd-bacsi | cả 2 | bacsi |
 | lanhdao@benhvien.vn | bd-lanhdao | cả 2 | lanhdao |
 | nhanvien@benhvien.vn | bd-nhanvien | cả 2 | nhanvien |
@@ -33,11 +33,11 @@ KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_r
 
 | Group | Ý nghĩa |
 |-------|---------|
-| `bd-app-directus` | Được vào Directus (hook gate) |
-| `bd-app-abp` | Được vào ABP (AuthServer fail nếu thiếu) |
+| `bd-app-axis` | Được vào Directus (hook gate) |
+| `bd-app-hcs` | Được vào ABP (AuthServer fail nếu thiếu) |
 | `bd-admin` / `bd-bacsi` / `bd-lanhdao` / `bd-nhanvien` | Role *trong* app |
 
-Chỉ Directus: gán `bd-app-directus` + 1 role group, **bỏ** `bd-app-abp`.  
+Chỉ Directus: gán `bd-app-axis` + 1 role group, **bỏ** `bd-app-hcs`.  
 Chỉ ABP: ngược lại.  
 User mới không group → **không** vào app; có app group nhưng thiếu role → default **nhanvien**.
 
@@ -162,8 +162,8 @@ Seed: `AdministrationServiceDataSeeder.SeedBdRolePermissionsAsync`. Chỉnh thê
 | redirect_uri mismatch | Align KC client URIs with PUBLIC_URL / CallbackPath |
 | Keycloak button missing on ABP | Check `Keycloak:Authority` + `ClientId` in Development settings |
 | Logout rồi login lại vẫn user cũ (Directus/ABP) | SSO cookie KC còn sống — lab dùng `prompt=login` (Directus `AUTH_KEYCLOAK_PARAMS`, ABP AuthServer `options.Prompt`) |
-| Login Directus fail / Access denied group | User thiếu `bd-app-directus` — gán group trên KC hoặc re-bootstrap |
-| Login ABP Keycloak fail (entitlement) | User thiếu `bd-app-abp` — gán group trên KC; restart AuthServer nếu vừa đổi code |
+| Login Directus fail / Access denied group | User thiếu `bd-app-axis` — gán group trên KC hoặc re-bootstrap |
+| Login ABP Keycloak fail (entitlement) | User thiếu `bd-app-hcs` — gán group trên KC; restart AuthServer nếu vừa đổi code |
 | Discovery fail Directus exit | Ensure KC up before Directus start |
 
 ## Re-bootstrap

@@ -107,7 +107,7 @@ export function getTypes(
 
 					if (collection.primary === field.field && fieldIsInconsistent === false) {
 						// permissions IDs need to be nullable https://github.com/directus/directus/issues/20509
-						if (collection.collection === 'directus_permissions') {
+						if (collection.collection === 'axis_permissions') {
 							type = GraphQLID;
 						} else if (!field.defaultValue && !field.special.includes('uuid') && action === 'create') {
 							type = new GraphQLNonNull(GraphQLID);

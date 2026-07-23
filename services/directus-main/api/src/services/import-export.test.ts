@@ -746,7 +746,7 @@ describe('ImportService', () => {
 
 			const stream = Readable.from(['test']);
 
-			await expect(importService.import('directus_users', 'text/csv', stream)).rejects.toThrow(ForbiddenError);
+			await expect(importService.import('axis_users', 'text/csv', stream)).rejects.toThrow(ForbiddenError);
 		});
 
 		test('validates create and update permissions', async () => {

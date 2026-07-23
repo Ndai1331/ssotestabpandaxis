@@ -54,7 +54,7 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 		this.collection = collection;
 		this.knex = options.knex || getDatabase();
 		this.accountability = options.accountability || null;
-		this.eventScope = isSystemCollection(this.collection) ? this.collection.substring(9) : 'items';
+		this.eventScope = isSystemCollection(this.collection) ? this.collection.substring(5) : 'items';
 		this.schema = options.schema;
 		this.cache = getCache().cache;
 		this.nested = options.nested ?? [];
@@ -131,7 +131,7 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 			opts.mutationTracker.trackMutations(1);
 		}
 
-		if (this.collection === 'directus_users') {
+		if (this.collection === 'axis_users') {
 			opts.userIntegrityCheckFlags =
 				(opts.userIntegrityCheckFlags ?? UserIntegrityCheckFlag.None) | UserIntegrityCheckFlag.UserLimits;
 		}
@@ -444,7 +444,7 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 	async createMany(data: Partial<Item>[], opts: MutationOptions = {}): Promise<PrimaryKey[]> {
 		if (!opts.mutationTracker) opts.mutationTracker = this.createMutationTracker();
 
-		if (this.collection === 'directus_users') {
+		if (this.collection === 'axis_users') {
 			opts.userIntegrityCheckFlags =
 				(opts.userIntegrityCheckFlags ?? UserIntegrityCheckFlag.None) | UserIntegrityCheckFlag.UserLimits;
 		}
@@ -738,7 +738,7 @@ export class ItemsService<Item extends AnyItem = AnyItem, Collection extends str
 			opts.mutationTracker.trackMutations(keys.length);
 		}
 
-		if (this.collection === 'directus_users' && data['status'] === 'active') {
+		if (this.collection === 'axis_users' && data['status'] === 'active') {
 			opts.userIntegrityCheckFlags =
 				(opts.userIntegrityCheckFlags ?? UserIntegrityCheckFlag.None) | UserIntegrityCheckFlag.UserLimits;
 		}

@@ -20,7 +20,7 @@ vi.mock('../services/tus/server.js', () => ({
 }));
 
 const schema = new SchemaBuilder()
-	.collection('directus_files', (c) => {
+	.collection('axis_files', (c) => {
 		c.field('id').integer().primary();
 		c.field('title').string();
 		c.field('filename_download').string();
@@ -65,7 +65,7 @@ describe('tus controller', () => {
 			expect(validateAccess).toHaveBeenCalledWith(
 				{
 					action: 'create',
-					collection: 'directus_files',
+					collection: 'axis_files',
 					accountability,
 				},
 				{ schema: req.schema, knex: expect.anything() },
@@ -100,7 +100,7 @@ describe('tus controller', () => {
 			expect(validateAccess).toHaveBeenCalledWith(
 				{
 					action: 'create',
-					collection: 'directus_files',
+					collection: 'axis_files',
 					accountability,
 					fields: ['title', 'filename_download'],
 				},
@@ -137,7 +137,7 @@ describe('tus controller', () => {
 			expect(validateAccess).toHaveBeenCalledWith(
 				{
 					action: 'update',
-					collection: 'directus_files',
+					collection: 'axis_files',
 					accountability,
 					primaryKeys: ['existing-file-id'],
 					fields: ['title'],
@@ -246,7 +246,7 @@ describe('tus controller', () => {
 			expect(validateAccess).toHaveBeenCalledWith(
 				{
 					action: 'update',
-					collection: 'directus_files',
+					collection: 'axis_files',
 					accountability,
 				},
 				{ schema: req.schema, knex: expect.anything() },
@@ -273,7 +273,7 @@ describe('tus controller', () => {
 			expect(validateAccess).toHaveBeenCalledWith(
 				{
 					action: 'delete',
-					collection: 'directus_files',
+					collection: 'axis_files',
 					accountability,
 				},
 				{ schema: req.schema, knex: expect.anything() },
@@ -300,7 +300,7 @@ describe('tus controller', () => {
 			expect(validateAccess).toHaveBeenCalledWith(
 				{
 					action: 'read',
-					collection: 'directus_files',
+					collection: 'axis_files',
 					accountability,
 				},
 				{ schema: req.schema, knex: expect.anything() },
@@ -327,7 +327,7 @@ describe('tus controller', () => {
 			expect(validateAccess).toHaveBeenCalledWith(
 				{
 					action: 'read',
-					collection: 'directus_files',
+					collection: 'axis_files',
 					accountability,
 				},
 				{ schema: req.schema, knex: expect.anything() },

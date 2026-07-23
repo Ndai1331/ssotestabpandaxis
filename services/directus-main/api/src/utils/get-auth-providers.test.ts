@@ -23,14 +23,14 @@ const scenarios = [
 		input: {
 			AUTH_PROVIDERS: 'directus',
 			AUTH_DIRECTUS_DRIVER: 'openid',
-			AUTH_DIRECTUS_LABEL: 'Directus',
+			AUTH_DIRECTUS_LABEL: 'Axis',
 			AUTH_DIRECTUS_ICON: 'hare',
 		},
 		output: [
 			{
 				name: 'directus',
 				driver: 'openid',
-				label: 'Directus',
+				label: 'Axis',
 				icon: 'hare',
 			},
 		],
@@ -41,7 +41,7 @@ const scenarios = [
 		input: {
 			AUTH_PROVIDERS: 'directus,custom',
 			AUTH_DIRECTUS_DRIVER: 'openid',
-			AUTH_DIRECTUS_LABEL: 'Directus',
+			AUTH_DIRECTUS_LABEL: 'Axis',
 			AUTH_DIRECTUS_ICON: 'hare',
 			AUTH_CUSTOM_DRIVER: 'openid',
 			AUTH_CUSTOM_ICON: 'lock',
@@ -50,7 +50,7 @@ const scenarios = [
 			{
 				name: 'directus',
 				driver: 'openid',
-				label: 'Directus',
+				label: 'Axis',
 				icon: 'hare',
 			},
 			{

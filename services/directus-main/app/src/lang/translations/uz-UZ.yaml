@@ -453,29 +453,29 @@ licensing:
 settings_translations: Tarjimalar
 source_registry: Bozor
 fields:
-  directus_activity:
+  axis_activity:
     origin: Manba
-  directus_collections:
+  axis_collections:
     note: Izoh
-  directus_files:
+  axis_files:
     folder: Papka
-  directus_users:
+  axis_users:
     language: Til
     status_active: Faol
-  directus_settings:
+  axis_settings:
     module_bar: Modul paneli
-  directus_fields:
+  axis_fields:
     note: Izoh
     translation: Maydon nomi tarjimalari
-  directus_roles:
+  axis_roles:
     name: Rol nomi
-  directus_policies:
+  axis_policies:
     name: Siyosat nomi
 field_options:
-  directus_collections:
+  axis_collections:
     language: Til
     archive_divider: Arxivlash
-  directus_users:
+  axis_users:
     status_dropdown_active: Faol
 live_preview:
   new_window: Yangi oynada ochish

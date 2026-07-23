@@ -99,7 +99,7 @@ describe('App default favicon', () => {
 					serverStore: {
 						info: {
 							project: {
-								project_name: 'Directus',
+								project_name: 'Axis',
 								project_descriptor: null,
 								project_logo: null,
 								project_color: null,

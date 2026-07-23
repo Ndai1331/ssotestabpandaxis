@@ -44,7 +44,7 @@ export default defineModule({
 
 		if (admin) return true;
 
-		const access = permissions['directus_dashboards']?.['read']?.access;
+		const access = permissions['axis_dashboards']?.['read']?.access;
 		return access === 'partial' || access === 'full';
 	},
 });

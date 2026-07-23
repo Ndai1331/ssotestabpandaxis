@@ -3,7 +3,7 @@ import type { DirectusUser } from './user.js';
 
 export type DirectusNotification<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_notifications',
+	'axis_notifications',
 	{
 		id: string;
 		timestamp: 'datetime' | null;

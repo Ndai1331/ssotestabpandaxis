@@ -7,7 +7,7 @@ export async function up(knex: Knex): Promise<void> {
 	let hasMore = true;
 
 	while (hasMore) {
-		const missingDeltaVersions = await knex.select('id').from('directus_versions').whereNull('delta').limit(rowsLimit);
+		const missingDeltaVersions = await knex.select('id').from('axis_versions').whereNull('delta').limit(rowsLimit);
 
 		if (missingDeltaVersions.length === 0) {
 			hasMore = false;
@@ -18,7 +18,7 @@ export async function up(knex: Knex): Promise<void> {
 			for (const missingDeltaVersion of missingDeltaVersions) {
 				const revisions = await trx
 					.select('delta')
-					.from('directus_revisions')
+					.from('axis_revisions')
 					.where('version', '=', missingDeltaVersion.id)
 					.orderBy('id');
 
@@ -28,7 +28,7 @@ export async function up(knex: Knex): Promise<void> {
 
 				const consolidatedDelta = assign({}, ...deltas);
 
-				await trx('directus_versions')
+				await trx('axis_versions')
 					.update({
 						delta: JSON.stringify(consolidatedDelta),
 					})

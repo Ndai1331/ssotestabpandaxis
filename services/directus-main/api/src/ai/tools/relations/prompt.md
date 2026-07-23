@@ -5,7 +5,7 @@ Before creating relations:
 ✓ Collections must exist (use `collections` tool)
 ✓ Fields must be created with correct types (use `fields` tool)
 ✓ Junction collections must exist for M2M/M2A relationships
-✓ Optional system user fields (`user_created`/`user_updated`) require relations to `directus_users` (see `collections` tool `<system_fields>` section)
+✓ Optional system user fields (`user_created`/`user_updated`) require relations to `axis_users` (see `collections` tool `<system_fields>` section)
 </prerequisites>
 
 <actions>
@@ -23,7 +23,7 @@ Before creating relations:
 	"data": {
 		"collection": "articles",
 		"field": "author",
-		"related_collection": "directus_users",
+		"related_collection": "axis_users",
 		"meta": { "sort_field": null },
 		"schema": { "on_delete": "SET NULL" }
 	}
@@ -55,7 +55,7 @@ Multiple items in one collection relate to one item in another.
 	"data": {
 		"collection": "articles",
 		"field": "author",
-		"related_collection": "directus_users",
+		"related_collection": "axis_users",
 		"schema": { "on_delete": "SET NULL" }
 	}
 }
@@ -239,7 +239,7 @@ Items can relate to items from multiple different collections.
 	"data": {
 		"collection": "articles",
 		"field": "cover_image",
-		"related_collection": "directus_files",
+		"related_collection": "axis_files",
 		"schema": { "on_delete": "SET NULL" }
 	}
 }
@@ -254,7 +254,7 @@ Items can relate to items from multiple different collections.
 2. **Add files field** to main collection → Use `fields` tool with `type: "alias"`, `special: ["files"]`, and
    `interface: "files"` (see `fields` tool `<relationship_fields>` Files example)
 
-3. **Add junction fields** → Use `fields` tool to add hidden `article_id` and `directus_files_id` (both UUID) fields to
+3. **Add junction fields** → Use `fields` tool to add hidden `article_id` and `axis_files_id` (both UUID) fields to
    junction
 
 4. **Create relations** (use `relations` tool):
@@ -271,7 +271,7 @@ Items can relate to items from multiple different collections.
     "related_collection": "articles",
     "meta": {
       "one_field": "images",
-      "junction_field": "directus_files_id"
+      "junction_field": "axis_files_id"
     },
     "schema": {"on_delete": "CASCADE"}
   }
@@ -281,11 +281,11 @@ Items can relate to items from multiple different collections.
 {
   "action": "create",
   "collection": "article_images",
-  "field": "directus_files_id",
+  "field": "axis_files_id",
   "data": {
     "collection": "article_images",
-    "field": "directus_files_id",
-    "related_collection": "directus_files",
+    "field": "axis_files_id",
+    "related_collection": "axis_files",
     "meta": {
       "junction_field": "article_id"
     },
@@ -345,23 +345,23 @@ Special M2M relationship with `languages` collection.
 
 ### Blog System
 
-1. `articles` M2O `directus_users` (author)
+1. `articles` M2O `axis_users` (author)
 2. `articles` M2M `tags`
-3. `articles` M2O `directus_files` (cover_image)
-4. `articles` M2M `directus_files` (gallery)
+3. `articles` M2O `axis_files` (cover_image)
+4. `articles` M2M `axis_files` (gallery)
 5. `articles` O2M `comments`
-6. `comments` M2O `directus_users` (author)
+6. `comments` M2O `axis_users` (author)
 
 ### E-commerce
 
 1. `products` M2M `categories`
 2. `products` M2O `brands`
 3. `products` O2M `reviews`
-4. `products` M2M `directus_files` (gallery)
+4. `products` M2M `axis_files` (gallery)
 5. `orders` O2M `order_items`
 6. `order_items` M2O `products`
-7. `orders` M2O `directus_users` (customer)
-8. `reviews` M2O `directus_users` (reviewer)
+7. `orders` M2O `axis_users` (customer)
+8. `reviews` M2O `axis_users` (reviewer)
 
 ### Page Builder
 

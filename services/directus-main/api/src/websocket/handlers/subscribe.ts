@@ -65,7 +65,7 @@ export class SubscribeHandler {
 	subscribe(subscription: Subscription) {
 		const { collection } = subscription;
 
-		if ('item' in subscription && ['directus_fields', 'directus_relations'].includes(collection)) {
+		if ('item' in subscription && ['axis_fields', 'axis_relations'].includes(collection)) {
 			throw new InvalidPayloadError({ reason: `Cannot subscribe to a specific item in the ${collection} collection.` });
 		}
 

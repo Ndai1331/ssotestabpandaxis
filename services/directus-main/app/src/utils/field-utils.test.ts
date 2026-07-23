@@ -149,7 +149,7 @@ const fields: Field[] = [
 			is_primary_key: false,
 			has_auto_increment: false,
 			foreign_key_column: 'id',
-			foreign_key_table: 'directus_users',
+			foreign_key_table: 'axis_users',
 		},
 		meta: {
 			id: 193,
@@ -243,7 +243,7 @@ const fields: Field[] = [
 			is_primary_key: false,
 			has_auto_increment: false,
 			foreign_key_column: 'id',
-			foreign_key_table: 'directus_users',
+			foreign_key_table: 'axis_users',
 		},
 		meta: {
 			id: 195,

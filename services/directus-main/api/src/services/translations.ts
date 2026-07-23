@@ -5,7 +5,7 @@ import { ItemsService } from './items.js';
 
 export class TranslationsService extends ItemsService {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_translations', options);
+		super('axis_translations', options);
 
 		this.knex = options.knex || getDatabase();
 		this.accountability = options.accountability || null;

@@ -219,7 +219,7 @@ Add fields to existing collections:
 		"data_type": "uuid",
 		"is_nullable": true,
 		"foreign_key_schema": "public",
-		"foreign_key_table": "directus_files",
+		"foreign_key_table": "axis_files",
 		"foreign_key_column": "id"
 	},
 	"meta": {

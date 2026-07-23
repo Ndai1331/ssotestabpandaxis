@@ -109,7 +109,7 @@ vi.mock('../database/helpers/index.js', () => ({
 }));
 
 const schema = new SchemaBuilder()
-	.collection('directus_fields', (c) => {
+	.collection('axis_fields', (c) => {
 		c.field('id').integer().primary();
 		c.field('collection').string();
 		c.field('field').string();
@@ -233,7 +233,7 @@ describe('Integration Tests', () => {
 
 				service.schemaInspector.columnInfo = vi.fn().mockResolvedValue(mockColumns);
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 
 				const result = await service.readAll('test_collection');
 
@@ -252,7 +252,7 @@ describe('Integration Tests', () => {
 
 				service.schemaInspector.columnInfo = vi.fn().mockResolvedValue([]);
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 
 				await expect(service.readAll('test_collection')).rejects.toThrow(ForbiddenError);
 			});
@@ -276,7 +276,7 @@ describe('Integration Tests', () => {
 
 				service.schemaInspector.columnInfo = vi.fn().mockResolvedValue([mockColumn]);
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 
 				const result = await service.readOne('test_collection', 'name');
 
@@ -293,7 +293,7 @@ describe('Integration Tests', () => {
 
 				service.schemaInspector.columnInfo = vi.fn().mockRejectedValue(new Error('Column not found'));
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 
 				await expect(service.readOne('test_collection', 'nonexistent')).rejects.toThrow(ForbiddenError);
 			});
@@ -317,7 +317,7 @@ describe('Integration Tests', () => {
 					accountability: { role: 'test', admin: false } as Accountability,
 				});
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 
 				await expect(service.readOne('test_collection', 'name')).rejects.toThrow(ForbiddenError);
 			});
@@ -350,7 +350,7 @@ describe('Integration Tests', () => {
 					accountability: null,
 				});
 
-				tracker.on.select('directus_fields').response([{ id: 1 }]);
+				tracker.on.select('axis_fields').response([{ id: 1 }]);
 
 				const field = {
 					field: 'id',
@@ -367,7 +367,7 @@ describe('Integration Tests', () => {
 					accountability: null,
 				});
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 				tracker.on.select('max').response([{ max: 1 }]);
 				// Mock any DDL queries
 				tracker.on.any(/alter table/i).response([]);
@@ -415,7 +415,7 @@ describe('Integration Tests', () => {
 					accountability: null,
 				});
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 				tracker.on.select('max').response([{ max: 1 }]);
 
 				const alterTableSpy = vi.fn();
@@ -468,7 +468,7 @@ describe('Integration Tests', () => {
 					accountability: null,
 				});
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 				tracker.on.select('max').response([{ max: 1 }]);
 				// Mock any DDL queries
 				tracker.on.any(/alter table/i).response([]);
@@ -514,7 +514,7 @@ describe('Integration Tests', () => {
 					accountability: null,
 				});
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 
 				// Create schema with an alias field (no actual column)
 				const schemaWithAlias = {
@@ -573,7 +573,7 @@ describe('Integration Tests', () => {
 
 				service.schemaInspector.columnInfo = vi.fn().mockResolvedValue([mockColumn]);
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 
 				const field: RawField = {
 					field: 'id',
@@ -594,7 +594,7 @@ describe('Integration Tests', () => {
 					accountability: null,
 				});
 
-				tracker.on.select('directus_fields').response([{ id: 1, collection: 'test_collection', field: 'name' }]);
+				tracker.on.select('axis_fields').response([{ id: 1, collection: 'test_collection', field: 'name' }]);
 
 				const updateOneSpy = vi.spyOn(ItemsService.prototype, 'updateOne').mockResolvedValue('name');
 
@@ -635,7 +635,7 @@ describe('Integration Tests', () => {
 					accountability: null,
 				});
 
-				tracker.on.select('directus_fields').response([]);
+				tracker.on.select('axis_fields').response([]);
 
 				const createOneSpy = vi.spyOn(ItemsService.prototype, 'createOne').mockResolvedValue(1);
 
@@ -745,7 +745,7 @@ describe('Integration Tests', () => {
 				});
 
 				// Override default empty response with specific field data
-				tracker.on.select('directus_fields').response([{ collection: 'test_collection', field: 'name' }]);
+				tracker.on.select('axis_fields').response([{ collection: 'test_collection', field: 'name' }]);
 				// Mock any DDL queries
 				tracker.on.any(/alter table/i).response([]);
 
@@ -775,7 +775,7 @@ describe('Integration Tests', () => {
 				});
 
 				// Override default empty response with specific field data
-				tracker.on.select('directus_fields').response([{ collection: 'test_collection', field: 'name' }]);
+				tracker.on.select('axis_fields').response([{ collection: 'test_collection', field: 'name' }]);
 				// Mock any DDL queries
 				tracker.on.any(/alter table/i).response([]);
 

@@ -6,7 +6,7 @@ export interface FilesizeSum {
 
 export const getFilesizeSum = async (db: Knex): Promise<FilesizeSum> => {
 	const query = <{ total?: number | string } | undefined>(
-		await db.sum({ total: 'filesize' }).from('directus_files').first()
+		await db.sum({ total: 'filesize' }).from('axis_files').first()
 	);
 
 	return {

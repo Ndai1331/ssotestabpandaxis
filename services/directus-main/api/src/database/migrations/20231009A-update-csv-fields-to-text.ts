@@ -5,7 +5,7 @@ import { getHelpers } from '../helpers/index.js';
 export async function up(knex: Knex) {
 	const inspector = createInspector(knex);
 	const helper = getHelpers(knex).schema;
-	const csvFields = await knex.select('collection', 'field').from('directus_fields').where('special', '=', 'cast-csv');
+	const csvFields = await knex.select('collection', 'field').from('axis_fields').where('special', '=', 'cast-csv');
 
 	const updates: Promise<void>[] = [];
 
@@ -28,7 +28,7 @@ export async function up(knex: Knex) {
 export async function down(knex: Knex) {
 	const inspector = createInspector(knex);
 	const helper = getHelpers(knex).schema;
-	const csvFields = await knex.select('collection', 'field').from('directus_fields').where('special', '=', 'cast-csv');
+	const csvFields = await knex.select('collection', 'field').from('axis_fields').where('special', '=', 'cast-csv');
 
 	const updates: Promise<void>[] = [];
 

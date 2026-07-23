@@ -14,7 +14,7 @@ export function getAutomaticJunctionCollectionName(collectionA: string, field: s
 	function getName(index: number) {
 		let name = `${collectionA}_${field}`;
 
-		if (name.startsWith('directus_')) {
+		if (name.startsWith('axis_')) {
 			name = 'junction_' + name;
 		}
 

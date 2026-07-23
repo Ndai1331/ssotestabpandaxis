@@ -253,7 +253,7 @@ function useSelection() {
 function useVersion() {
 	const versionKeyQuery = useVersionQuery();
 	const isVersioned = computed(() => !!currentCollection.value?.meta?.versioning);
-	const { readAllowed: readVersionsAllowed } = useCollectionPermissions('directus_versions');
+	const { readAllowed: readVersionsAllowed } = useCollectionPermissions('axis_versions');
 	const version = computed(() => getValidVersion());
 	const versionName = computed(() => getVersionDisplayName(version.value ? { key: version.value, name: null } : null));
 	const isVersion = computed(() => !isNil(version.value));

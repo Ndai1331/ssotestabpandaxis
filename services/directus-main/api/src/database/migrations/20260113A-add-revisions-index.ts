@@ -7,7 +7,7 @@ import { getDatabaseClient } from '../index.js';
 
 const RETENTION_INDEXES = [
 	// MySQL and MariaDB are ignored because they already have an index on revisions.activity
-	{ collection: 'directus_revisions', field: 'activity', ignore: ['mysql', 'mariadb'] },
+	{ collection: 'axis_revisions', field: 'activity', ignore: ['mysql', 'mariadb'] },
 ];
 
 export async function up(knex: Knex): Promise<void> {

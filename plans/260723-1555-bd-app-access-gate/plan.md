@@ -11,10 +11,10 @@ Keycloak user có thể: chỉ Directus | chỉ ABP | cả 2. Default role vẫn
 
 | Layer | Mechanism |
 |-------|-----------|
-| KC groups | `bd-app-directus`, `bd-app-abp` + existing `bd-*` roles |
+| KC groups | `bd-app-axis`, `bd-app-hcs` + existing `bd-*` roles |
 | Bootstrap | Create app groups; lab users get **both** app groups + role group |
-| ABP | `OnTokenValidated`: thiếu `bd-app-abp` → `context.Fail` |
-| Directus | Hook extension: `auth.create`/`auth.update` reject nếu thiếu `bd-app-directus` |
+| ABP | `OnTokenValidated`: thiếu `bd-app-hcs` → `context.Fail` |
+| Directus | Hook extension: `auth.create`/`auth.update` reject nếu thiếu `bd-app-axis` |
 | Default role | Giữ nhanvien (compose DEFAULT + ABP mapper fallback) **chỉ khi đã qua app gate** |
 
 ## Done checklist

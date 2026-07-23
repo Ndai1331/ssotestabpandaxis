@@ -7,7 +7,7 @@ export class RevisionsService extends ItemsService {
 	private queryCache = new WeakMap<Query, Query>();
 
 	constructor(options: AbstractServiceOptions) {
-		super('directus_revisions', options);
+		super('axis_revisions', options);
 	}
 
 	async revert(pk: PrimaryKey): Promise<void> {

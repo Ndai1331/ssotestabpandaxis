@@ -6,7 +6,7 @@ export type DirectusField<Schema = any> = {
 	type: string;
 	meta: MergeCoreCollection<
 		Schema,
-		'directus_fields',
+		'axis_fields',
 		{
 			id: number;
 			collection: string; // TODO keyof complete schema

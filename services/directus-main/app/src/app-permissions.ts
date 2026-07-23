@@ -4,5 +4,5 @@ export const editablePermissionActions = ['create', 'read', 'update', 'delete', 
 export type EditablePermissionsAction = (typeof editablePermissionActions)[number];
 
 export const disabledActions: Record<string, EditablePermissionsAction[]> = {
-	directus_extensions: ['create', 'delete'],
+	axis_extensions: ['create', 'delete'],
 };

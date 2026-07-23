@@ -50,7 +50,7 @@ export class ServerService {
 	}
 
 	async isSetupCompleted(): Promise<boolean> {
-		return Boolean(await this.knex('directus_users').first());
+		return Boolean(await this.knex('axis_users').first());
 	}
 
 	async serverInfo(): Promise<Record<string, any>> {

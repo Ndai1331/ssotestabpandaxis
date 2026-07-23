@@ -6,7 +6,7 @@ import type { DirectusUser } from './user.js';
  */
 export type DirectusDeployment<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_deployments',
+	'axis_deployments',
 	{
 		id: string;
 		provider: string;
@@ -23,7 +23,7 @@ export type DirectusDeployment<Schema = any> = MergeCoreCollection<
  */
 export type DirectusDeploymentProject<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_deployment_projects',
+	'axis_deployment_projects',
 	{
 		id: string;
 		deployment: DirectusDeployment<Schema> | string;
@@ -39,7 +39,7 @@ export type DirectusDeploymentProject<Schema = any> = MergeCoreCollection<
  */
 export type DirectusDeploymentRun<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_deployment_runs',
+	'axis_deployment_runs',
 	{
 		id: string;
 		project: DirectusDeploymentProject<Schema> | string;

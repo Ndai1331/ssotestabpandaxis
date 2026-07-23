@@ -29,7 +29,7 @@ export interface DeploymentProject {
 
 export class DeploymentProjectsService extends ItemsService<DeploymentProject> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_deployment_projects', options);
+		super('axis_deployment_projects', options);
 	}
 
 	/**
@@ -170,7 +170,7 @@ export class DeploymentProjectsService extends ItemsService<DeploymentProject> {
 	 * Read deployment config by provider (null accountability for internal use).
 	 */
 	private async readConfig(provider: ProviderType): Promise<DeploymentConfig> {
-		const internalService = new ItemsService<DeploymentConfig>('directus_deployments', {
+		const internalService = new ItemsService<DeploymentConfig>('axis_deployments', {
 			knex: this.knex,
 			schema: this.schema,
 			accountability: null,

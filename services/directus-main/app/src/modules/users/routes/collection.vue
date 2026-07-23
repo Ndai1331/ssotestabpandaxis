@@ -43,7 +43,7 @@ const router = useRouter();
 const layoutRef = ref();
 const selection = ref<string[]>([]);
 
-const { layout, layoutOptions, layoutQuery, filter, search, resetPreset } = usePreset(ref('directus_users'));
+const { layout, layoutOptions, layoutQuery, filter, search, resetPreset } = usePreset(ref('axis_users'));
 const { addNewLink } = useLinks();
 
 const navigateToNewUser = () => router.push(addNewLink.value);
@@ -90,9 +90,9 @@ const {
 	createAllowed,
 	updateAllowed: batchEditAllowed,
 	deleteAllowed: batchDeleteAllowed,
-} = useCollectionPermissions('directus_users');
+} = useCollectionPermissions('axis_users');
 
-const { readAllowed: rolesReadAllowed } = useCollectionPermissions('directus_roles');
+const { readAllowed: rolesReadAllowed } = useCollectionPermissions('axis_roles');
 
 const canInviteUsers = computed(() => {
 	if (serverStore.auth.disableDefault === true) return false;
@@ -198,7 +198,7 @@ function clearFilters() {
 		:filter-user="filter"
 		:filter-system="combinedSystemFilter"
 		:search="search"
-		collection="directus_users"
+		collection="axis_users"
 		:reset-preset="resetPreset"
 	>
 		<PrivateView :title="title" icon="people_alt">
@@ -207,7 +207,7 @@ function clearFilters() {
 			</template>
 
 			<template #actions>
-				<SearchInput v-model="search" v-model:filter="filter" collection="directus_users" small />
+				<SearchInput v-model="search" v-model:filter="filter" collection="axis_users" small />
 
 				<VDialog v-if="selection.length > 0" v-model="confirmDelete" @esc="confirmDelete = false" @apply="batchDelete">
 					<template #activator="{ on }">
@@ -306,7 +306,7 @@ function clearFilters() {
 			<DrawerBatch
 				v-model:active="batchEditActive"
 				:primary-keys="selection"
-				collection="directus_users"
+				collection="axis_users"
 				@refresh="refresh"
 			/>
 
@@ -316,7 +316,7 @@ function clearFilters() {
 				</LayoutSidebarDetail>
 				<component :is="`layout-sidebar-${layout}`" v-bind="layoutState" />
 				<ExportSidebarDetail
-					collection="directus_users"
+					collection="axis_users"
 					:layout-query="layoutQuery"
 					:filter="mergeFilters(filter, combinedSystemFilter) ?? undefined"
 					:search="search ?? undefined"

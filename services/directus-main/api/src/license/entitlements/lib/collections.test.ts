@@ -55,14 +55,14 @@ describe('getActiveCollections', () => {
 	test('exclude system collections', async () => {
 		vi.mocked(CollectionsService.prototype.readByQuery).mockResolvedValue([
 			makeCollection('articles'),
-			makeCollection('directus_users'),
-			makeCollection('directus_files'),
-			makeCollection('directus_custom'),
+			makeCollection('axis_users'),
+			makeCollection('axis_files'),
+			makeCollection('axis_custom'),
 		]);
 
 		const result = await getActiveCollections();
 
-		expect(result).toEqual(['articles', 'directus_custom']);
+		expect(result).toEqual(['articles', 'axis_custom']);
 	});
 
 	test('exclude db-only collections (meta:null)', async () => {
@@ -106,7 +106,7 @@ describe('getActiveCollections', () => {
 		vi.mocked(CollectionsService.prototype.readByQuery).mockResolvedValue([
 			makeCollection('articles'),
 			makeCollection('authors'),
-			makeCollection('directus_users'),
+			makeCollection('axis_users'),
 			makeCollection('archived', { meta: { status: 'inactive' } }),
 			makeCollection('content_folder', { schema: null }),
 			makeCollection('legacy_table', { meta: null }),

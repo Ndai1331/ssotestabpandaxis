@@ -636,7 +636,7 @@ collections: Dastumadoù
 singleton_label: Ur singleton eo
 system_fields_locked: Prennet eo ar maeziennoù sistem ha ne c'hellont ket bezañ kemmet
 fields:
-  directus_activity:
+  axis_activity:
     item: Alc'hwez pennañ an elfenn
     action: Obererezh
     collection: Dastumad
@@ -646,7 +646,7 @@ fields:
     user_agent: Graer implijer
     ip: Chomlec'h IP
     revisions: Roll-istor
-  directus_collections:
+  axis_collections:
     collection: Dastumad
     icon: Arlun
     note: Evezhiadenn
@@ -660,7 +660,7 @@ fields:
     unarchive_value: Talvoud evit an diziellañ
     sort_field: Maezienn rummañ
     accountability: Enrollañ an obererezh hag ar roll-istor
-  directus_files:
+  axis_files:
     $thumbnail: Skeudennig
     title: Anv
     description: Deskrivadur
@@ -684,7 +684,7 @@ fields:
     height: Uhelder
     charset: Stropad arouezennoù
     duration: Hirder
-  directus_users:
+  axis_users:
     first_name: Anv bihan
     last_name: Anv
     email: Postel
@@ -700,7 +700,7 @@ fields:
     role: Roll
     last_page: Pajenn ziwezhañ
     last_access: Mont diwezhañ
-  directus_settings:
+  axis_settings:
     project_name: Anv ar raktres
     project_url: URL ar raktres
     project_color: Liv ar raktres
@@ -711,31 +711,31 @@ fields:
     auth_password_policy: Politikerezh ar gerioù-tremen
     auth_login_attempts: Taolioù kevreañ
     custom_css: Personelaat an CSS
-  directus_shares:
+  axis_shares:
     name: Anv
     role: Roll
     password: Ger-tremen
-  directus_fields:
+  axis_fields:
     collection: Anv an dastumad
     icon: Arlun an Dastumad
     note: Evezhiadenn
     hidden: Kuzhet
     translation: Troidigezhioù anv ar vaezienn
     display_template: Patrom
-  directus_roles:
+  axis_roles:
     name: Anv ar roll
     icon: Arlun ar roll
     description: Deskrivadur
     users: Izili gant ar roll
-  directus_policies:
+  axis_policies:
     description: Deskrivadur
 field_options:
-  directus_settings:
+  axis_settings:
     mapbox_placeholder: pk.eyJ1Ijo.....
-  directus_activity:
+  axis_activity:
     create: Krouiñ
     update: Hizivaat
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Enrollañ an obererezh hag ar roll-istor
     only_track_activity: Enrollañ an obererezh hepken
     do_not_track_anything: Enrollañ netra
@@ -746,13 +746,13 @@ field_options:
     collection_name: Anv an dastumad
     archive_divider: Diellañ
     sort_divider: Rummañ
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: Arlun
       name_name: Anv
       name_placeholder: Bizskrivit un titl...
     collections_name: Dastumadoù
-  directus_users:
+  axis_users:
     status_dropdown_active: Oberiat
 no_fields_in_collection: 'N''eus ket a vaezienn e "{collection}" evit poent'
 do_nothing: Ober netra

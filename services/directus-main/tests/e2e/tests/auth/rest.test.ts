@@ -114,7 +114,7 @@ test('cookie refresh and logout keep regular Directus refresh cookies working', 
 
 	expect(loginBody.data?.access_token).toEqual(expect.any(String));
 	expect(loginBody.data?.refresh_token).toBeUndefined();
-	expect(loginCookie).toContain('directus_refresh_token=');
+	expect(loginCookie).toContain('axis_refresh_token=');
 
 	const refreshResponse = await postAuth('/auth/refresh', {}, loginCookie);
 
@@ -126,7 +126,7 @@ test('cookie refresh and logout keep regular Directus refresh cookies working', 
 
 	expect(refreshBody.data?.access_token).toEqual(expect.any(String));
 	expect(refreshBody.data?.refresh_token).toBeUndefined();
-	expect(refreshCookie).toContain('directus_refresh_token=');
+	expect(refreshCookie).toContain('axis_refresh_token=');
 
 	const logoutResponse = await postAuth('/auth/logout', {}, refreshCookie);
 	expect(logoutResponse.status).toBe(204);
@@ -146,7 +146,7 @@ test('session refresh and logout keep regular Directus session cookies working',
 
 	expect(loginBody.data?.access_token).toBeUndefined();
 	expect(loginBody.data?.refresh_token).toBeUndefined();
-	expect(loginCookie).toContain('directus_session_token=');
+	expect(loginCookie).toContain('axis_session_token=');
 
 	const refreshResponse = await postAuth('/auth/refresh', { mode: 'session' }, loginCookie);
 
@@ -158,7 +158,7 @@ test('session refresh and logout keep regular Directus session cookies working',
 
 	expect(refreshBody.data?.access_token).toBeUndefined();
 	expect(refreshBody.data?.refresh_token).toBeUndefined();
-	expect(refreshCookie).toContain('directus_session_token=');
+	expect(refreshCookie).toContain('axis_session_token=');
 
 	await expectJsonResponse(await fetch(`${baseUrl}/users/me`, { headers: { Cookie: refreshCookie } }), 200);
 

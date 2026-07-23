@@ -1745,7 +1745,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 						it.each(vendors)(
 							'%s',
 							async (vendor) => {
-								// TODO: Fix Oracle exceeded directus_revisions limit of 4000
+								// TODO: Fix Oracle exceeded axis_revisions limit of 4000
 								if (vendor === 'oracle') {
 									expect(true).toBe(true);
 									return;

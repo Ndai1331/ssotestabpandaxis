@@ -12,7 +12,7 @@ import { sanitizeQuery } from '../utils/sanitize-query.js';
 
 const router = express.Router();
 
-router.use(useCollection('directus_versions'));
+router.use(useCollection('axis_versions'));
 
 router.post(
 	'/',

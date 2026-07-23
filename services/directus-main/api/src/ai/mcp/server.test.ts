@@ -18,7 +18,7 @@ vi.mock('@directus/env', () => ({
 		// Required by transitive module-level useEnv() calls:
 		EMAIL_TEMPLATES_PATH: './templates',
 		EXTENSIONS_PATH: './extensions',
-		SESSION_COOKIE_NAME: 'directus_session',
+		SESSION_COOKIE_NAME: 'axis_session',
 		REFRESH_TOKEN_COOKIE_DOMAIN: '',
 		REFRESH_TOKEN_TTL: '15m',
 		REFRESH_TOKEN_COOKIE_SECURE: false,

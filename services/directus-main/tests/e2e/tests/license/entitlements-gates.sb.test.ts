@@ -87,7 +87,7 @@ describe('entitlements gate restrictions', () => {
 					],
 				});
 			} finally {
-				await directus.knex!('directus_settings')
+				await directus.knex!('axis_settings')
 					.update({ project_name: 'Directus' })
 					.catch(() => {});
 			}
@@ -100,14 +100,14 @@ describe('entitlements gate restrictions', () => {
 				const settings = await api.request(updateSettings({ project_name: name } as any));
 				expect((settings as any)['project_name']).toBe(name);
 			} finally {
-				await directus.knex!('directus_settings')
+				await directus.knex!('axis_settings')
 					.update({ project_name: 'Directus' })
 					.catch(() => {});
 			}
 		});
 
 		test('GET /settings strips LLM fields', async () => {
-			await directus.knex!('directus_settings').update({ ai_openai_compatible_name: 'leaked' });
+			await directus.knex!('axis_settings').update({ ai_openai_compatible_name: 'leaked' });
 
 			try {
 				const settings = await api.request(readSettings());
@@ -115,7 +115,7 @@ describe('entitlements gate restrictions', () => {
 				expect(settings['ai_openai_compatible_name']).toBeNull();
 			} finally {
 				// Reset directly via knex (the API blocks the field).
-				await directus.knex!('directus_settings')
+				await directus.knex!('axis_settings')
 					.update({ ai_openai_compatible_name: null })
 					.catch(() => {});
 			}
@@ -159,7 +159,7 @@ describe('entitlements gate restrictions', () => {
 					api.request(
 						createPermission({
 							action: 'read',
-							collection: 'directus_users',
+							collection: 'axis_users',
 							policy: policy['id'],
 							fields: ['*'],
 						}),
@@ -177,7 +177,7 @@ describe('entitlements gate restrictions', () => {
 				await expect(
 					api.request(
 						createPermissions([
-							{ action: 'read', collection: 'directus_users', policy: policy['id'], fields: ['*'] },
+							{ action: 'read', collection: 'axis_users', policy: policy['id'], fields: ['*'] },
 							{ action: 'read', collection: 'articles', policy: policy['id'], fields: ['first_name'] },
 						] as any),
 					),
@@ -200,7 +200,7 @@ describe('entitlements gate restrictions', () => {
 			const tag = `articles_${randomUUID()}`;
 
 			// Seed directly via knex — the API create guard would reject the custom row.
-			await directus.knex!('directus_permissions').insert([
+			await directus.knex!('axis_permissions').insert([
 				{ collection: tag, action: 'read', fields: '*', policy: PUBLIC_POLICY_ID },
 				{ collection: tag, action: 'read', fields: 'first_name', policy: PUBLIC_POLICY_ID },
 			]);
@@ -211,7 +211,7 @@ describe('entitlements gate restrictions', () => {
 				expect(rows).toHaveLength(1);
 				expect(rows[0]!['fields']).toEqual(['*']);
 			} finally {
-				await directus.knex!('directus_permissions')
+				await directus.knex!('axis_permissions')
 					.where({ collection: tag })
 					.delete()
 					.catch(() => {});
@@ -223,7 +223,7 @@ describe('entitlements gate restrictions', () => {
 		test('GET /activity keeps rows up to the edge and excludes older ones', async () => {
 			const tag = `activity_${randomUUID()}`;
 
-			await directus.knex!('directus_activity').insert(
+			await directus.knex!('axis_activity').insert(
 				TIMEFRAME_SEED.map(({ item, daysAgo }) => ({
 					action: 'create',
 					user: null,
@@ -238,7 +238,7 @@ describe('entitlements gate restrictions', () => {
 
 				expect(rows.map((r) => r['item']).sort()).toEqual(TIMEFRAME_KEPT);
 			} finally {
-				await directus.knex!('directus_activity')
+				await directus.knex!('axis_activity')
 					.where({ collection: tag })
 					.delete()
 					.catch(() => {});
@@ -251,12 +251,12 @@ describe('entitlements gate restrictions', () => {
 			const tag = `revision_${randomUUID()}`;
 
 			for (const { item, daysAgo } of TIMEFRAME_SEED) {
-				const [activity] = await directus.knex!('directus_activity').insert(
+				const [activity] = await directus.knex!('axis_activity').insert(
 					{ action: 'create', user: null, timestamp: daysAgoTimestamp(daysAgo), collection: tag, item },
 					['id'],
 				);
 
-				await directus.knex!('directus_revisions').insert({
+				await directus.knex!('axis_revisions').insert({
 					activity: activity?.id ?? activity,
 					collection: tag,
 					item,
@@ -270,12 +270,12 @@ describe('entitlements gate restrictions', () => {
 
 				expect(rows.map((r) => r['item']).sort()).toEqual(TIMEFRAME_KEPT);
 			} finally {
-				await directus.knex!('directus_revisions')
+				await directus.knex!('axis_revisions')
 					.where({ collection: tag })
 					.delete()
 					.catch(() => {});
 
-				await directus.knex!('directus_activity')
+				await directus.knex!('axis_activity')
 					.where({ collection: tag })
 					.delete()
 					.catch(() => {});

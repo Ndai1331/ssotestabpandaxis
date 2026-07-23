@@ -42,7 +42,7 @@ const {
 	primaryKeyField,
 	isSingleton,
 	accountabilityScope,
-} = useCollection('directus_translations');
+} = useCollection('axis_translations');
 
 const {
 	isNew,
@@ -58,7 +58,7 @@ const {
 	saveAsCopy,
 	refresh,
 	validationErrors,
-} = useItem(ref('directus_translations'), primaryKey);
+} = useItem(ref('axis_translations'), primaryKey);
 
 const isSavable = computed(() => {
 	if (hasEdits.value === true) return true;
@@ -254,7 +254,7 @@ async function revert(values: Record<string, any>) {
 		</template>
 
 		<template #navigation>
-			<SettingsNavigation current-collection="directus_translations" />
+			<SettingsNavigation current-collection="axis_translations" />
 		</template>
 
 		<VForm
@@ -263,7 +263,7 @@ async function revert(values: Record<string, any>) {
 			:autofocus="isNew"
 			:loading="loading"
 			:initial-values="item"
-			collection="directus_translations"
+			collection="axis_translations"
 			:primary-key="internalPrimaryKey"
 			:validation-errors="validationErrors"
 		/>
@@ -286,12 +286,12 @@ async function revert(values: Record<string, any>) {
 				<RevisionsSidebarDetail
 					v-if="accountabilityScope === 'all'"
 					ref="revisionsSidebarDetailRef"
-					collection="directus_translations"
+					collection="axis_translations"
 					:primary-key="internalPrimaryKey"
 					:scope="accountabilityScope"
 					@revert="revert"
 				/>
-				<CommentsSidebarDetail collection="directus_translations" :primary-key="internalPrimaryKey" />
+				<CommentsSidebarDetail collection="axis_translations" :primary-key="internalPrimaryKey" />
 			</template>
 		</template>
 	</PrivateView>

@@ -21,7 +21,7 @@ export class CommentsService extends ItemsService {
 	usersService: UsersService;
 
 	constructor(options: AbstractServiceOptions) {
-		super('directus_comments', options);
+		super('axis_comments', options);
 		this.notificationsService = new NotificationsService({ schema: this.schema });
 		this.usersService = new UsersService({ schema: this.schema });
 	}

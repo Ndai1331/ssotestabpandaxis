@@ -77,12 +77,12 @@ months:
   november: నవంబర్
   december: డిసెంబర్
 fields:
-  directus_users:
+  axis_users:
     status_draft: డ్రాఫ్ట్
-  directus_settings:
+  axis_settings:
     default_language: డిఫాల్ట్ భాష
 field_options:
-  directus_users:
+  axis_users:
     status_dropdown_draft: డ్రాఫ్ట్
 interfaces:
   file-image:

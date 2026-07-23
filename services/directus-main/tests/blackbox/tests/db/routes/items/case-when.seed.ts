@@ -87,7 +87,7 @@ export const seedDBStructure = () => {
 					.send({
 						collection,
 						field: 'user_created',
-						related_collection: 'directus_users',
+						related_collection: 'axis_users',
 						schema: {},
 					});
 

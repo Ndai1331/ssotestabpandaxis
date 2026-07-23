@@ -22,7 +22,7 @@ describe('Empty query returns the primary key', () => {
 	test.each([true, false])(`System collection: %o`, (isSystemCollection) => {
 		const query: Query = {};
 
-		const collection = isSystemCollection ? `directus_${collectionName}` : collectionName;
+		const collection = isSystemCollection ? `axis_${collectionName}` : collectionName;
 		const formatted = formatQuery({ collection, key, query });
 
 		expect(formatted).toStrictEqual({
@@ -37,7 +37,7 @@ describe('Defined fields are requested', () => {
 	test.each([true, false])(`System collection: %o`, (isSystemCollection) => {
 		const query: Query = { fields: ['aaa', 'bbb', 'ccc'] };
 
-		const collection = isSystemCollection ? `directus_${collectionName}` : collectionName;
+		const collection = isSystemCollection ? `axis_${collectionName}` : collectionName;
 		const formatted = formatQuery({ collection, key, query });
 
 		expect(formatted).toStrictEqual({
@@ -54,7 +54,7 @@ describe('Aggregation query without group', () => {
 	test.each([true, false])(`System collection: %o`, (isSystemCollection) => {
 		const query: Query = { aggregate: { count: ['aaa'], sum: ['bbb', 'ccc'] } };
 
-		const collection = isSystemCollection ? `directus_${collectionName}` : collectionName;
+		const collection = isSystemCollection ? `axis_${collectionName}` : collectionName;
 		const formatted = formatQuery({ collection, key, query });
 
 		expect(formatted).toStrictEqual({
@@ -75,7 +75,7 @@ describe('Aggregation query with group', () => {
 	test.each([true, false])(`System collection: %o`, (isSystemCollection) => {
 		const query: Query = { aggregate: { count: ['aaa'], sum: ['bbb', 'ccc'] }, group: ['ddd', 'eee'] };
 
-		const collection = isSystemCollection ? `directus_${collectionName}` : collectionName;
+		const collection = isSystemCollection ? `axis_${collectionName}` : collectionName;
 		const formatted = formatQuery({ collection, key, query });
 
 		expect(formatted).toStrictEqual({
@@ -99,7 +99,7 @@ describe('Filter query without functions', () => {
 	test.each([true, false])(`System collection: %o`, (isSystemCollection) => {
 		const query: Query = { filter: { _and: [{ aaa: { _eq: '111' } }, { bbb: { ccc: { _eq: '222' } } }] } };
 
-		const collection = isSystemCollection ? `directus_${collectionName}` : collectionName;
+		const collection = isSystemCollection ? `axis_${collectionName}` : collectionName;
 		const formatted = formatQuery({ collection, key, query });
 
 		expect(formatted).toStrictEqual({
@@ -118,7 +118,7 @@ describe('Filter query with functions', () => {
 			filter: { _and: [{ 'count(aaa)': { _eq: '111' } }, { bbb: { 'sum(ccc)': { _eq: '222' } } }] },
 		};
 
-		const collection = isSystemCollection ? `directus_${collectionName}` : collectionName;
+		const collection = isSystemCollection ? `axis_${collectionName}` : collectionName;
 		const formatted = formatQuery({ collection, key, query });
 
 		expect(formatted).toStrictEqual({

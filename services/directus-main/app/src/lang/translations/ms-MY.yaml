@@ -152,7 +152,7 @@ cancel: Batal
 collection: Koleksi
 collections: Koleksi-koleksi
 fields:
-  directus_activity:
+  axis_activity:
     item: Kunci Utama Item
     action: Tindakan
     collection: Koleksi
@@ -160,11 +160,11 @@ fields:
     user: Tindakan Oleh
     comment: Komen
     ip: Alamat IP
-  directus_collections:
+  axis_collections:
     collection: Koleksi
     note: Nota
     status: Status
-  directus_files:
+  axis_files:
     title: Tajuk
     description: Penerangan
     tags: Tag
@@ -176,7 +176,7 @@ fields:
     uploaded_on: Dimuat naik pada
     height: Tinggi
     duration: Durasi
-  directus_users:
+  axis_users:
     first_name: Nama pertama
     email: Emel
     password: Katalaluan
@@ -187,26 +187,26 @@ fields:
     tags: Tag
     status: Status
     role: Peranan
-  directus_settings:
+  axis_settings:
     project_name: Nama Projek
     module_bar: Modul.bar
-  directus_shares:
+  axis_shares:
     name: Nama
     role: Peranan
     password: Katalaluan
-  directus_fields:
+  axis_fields:
     note: Nota
     translation: Terjemahan nama bidang
-  directus_roles:
+  axis_roles:
     name: Nama peranan
     description: Penerangan
-  directus_policies:
+  axis_policies:
     description: Penerangan
 field_options:
-  directus_activity:
+  axis_activity:
     create: Cipta
     update: Kemaskini
-  directus_roles:
+  axis_roles:
     fields:
       name_name: Nama
     collections_name: Koleksi-koleksi

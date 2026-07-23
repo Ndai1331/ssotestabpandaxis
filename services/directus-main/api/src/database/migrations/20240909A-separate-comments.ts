@@ -5,7 +5,7 @@ import { getHelpers } from '../helpers/index.js';
 export async function up(knex: Knex): Promise<void> {
 	const helpers = getHelpers(knex);
 
-	await knex.schema.createTable('directus_comments', (table) => {
+	await knex.schema.createTable('axis_comments', (table) => {
 		table.uuid('id').primary().notNullable();
 
 		table.string('collection', helpers.schema.getTableNameMaxLength()).notNullable();
@@ -15,9 +15,9 @@ export async function up(knex: Knex): Promise<void> {
 
 		table.timestamp('date_created').defaultTo(knex.fn.now());
 		table.timestamp('date_updated').defaultTo(knex.fn.now());
-		table.uuid('user_created').references('id').inTable('directus_users').onDelete('SET NULL');
+		table.uuid('user_created').references('id').inTable('axis_users').onDelete('SET NULL');
 		// Cannot have two constraints from/to the same table, handled on API side
-		table.uuid('user_updated').references('id').inTable('directus_users');
+		table.uuid('user_updated').references('id').inTable('axis_users');
 	});
 }
 
@@ -28,7 +28,7 @@ export async function down(knex: Knex): Promise<void> {
 	while (hasMore) {
 		const comments = await knex
 			.select('id', 'collection', 'item', 'comment', 'date_created', 'user_created')
-			.from('directus_comments')
+			.from('axis_comments')
 			.limit(rowsLimit);
 
 		if (comments.length === 0) {
@@ -38,15 +38,15 @@ export async function down(knex: Knex): Promise<void> {
 
 		await knex.transaction(async (trx) => {
 			for (const comment of comments) {
-				const migratedRecords = await trx('directus_activity')
+				const migratedRecords = await trx('axis_activity')
 					.select('id')
-					.where('collection', '=', 'directus_comments')
+					.where('collection', '=', 'axis_comments')
 					.andWhere('item', '=', comment.id)
 					.andWhere('action', '=', Action.CREATE)
 					.limit(1);
 
 				if (migratedRecords[0]) {
-					await trx('directus_activity')
+					await trx('axis_activity')
 						.update({
 							action: Action.COMMENT,
 							collection: comment.collection,
@@ -55,7 +55,7 @@ export async function down(knex: Knex): Promise<void> {
 						})
 						.where('id', '=', migratedRecords[0].id);
 				} else {
-					await trx('directus_activity').insert({
+					await trx('axis_activity').insert({
 						action: Action.COMMENT,
 						collection: comment.collection,
 						item: comment.item,
@@ -65,10 +65,10 @@ export async function down(knex: Knex): Promise<void> {
 					});
 				}
 
-				await trx('directus_comments').where('id', '=', comment.id).delete();
+				await trx('axis_comments').where('id', '=', comment.id).delete();
 			}
 		});
 	}
 
-	await knex.schema.dropTable('directus_comments');
+	await knex.schema.dropTable('axis_comments');
 }

@@ -4,7 +4,7 @@ import type { DirectusVersion } from './version.js';
 
 export type DirectusRevision<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_revisions',
+	'axis_revisions',
 	{
 		id: number;
 		activity: DirectusActivity<Schema> | number;

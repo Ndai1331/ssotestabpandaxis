@@ -12,7 +12,7 @@ export async function fetchAccountabilityPolicyGlobals(
 
 	const result = await context.knex
 		.select(1)
-		.from('directus_policies')
+		.from('axis_policies')
 		.whereIn('id', policies)
 		.where('enforce_tfa', true)
 		.first();

@@ -339,9 +339,9 @@ geometry:
 theme_auto: خۆکار (بەپێی سیستەم)
 theme_light: دۆخی ڕوناک
 theme_dark: دۆخی تاریک
-theme_directus_default: بنەڕەتی دایرێکتەس
-theme_directus_minimal: دایرێکتەسی سادە
-theme_directus_colormatch: گونجاندنی ڕەنگی دایرێکتەس
+theme_axis_default: بنەڕەتی دایرێکتەس
+theme_axis_minimal: دایرێکتەسی سادە
+theme_axis_colormatch: گونجاندنی ڕەنگی دایرێکتەس
 not_available_for_type: بەردەست نییە بۆ ئەم جۆرە
 create_translations: دروستکردنی وەرگێڕان
 auto_refresh: نوێبونەوەی خۆکاری
@@ -1184,34 +1184,34 @@ content: ناوەڕۆک
 singleton: تاکی
 singleton_label: وەک تاکە شت مامەڵەی لەگەڵ بکە
 system_fields_locked: خانەکانی سیستەم قوفلکراون و ناتوانرێت دەستکاری بکرێن
-directus_collection:
-  directus_access: دەسەڵاتی سیاسەتەکان
-  directus_activity: تۆماری بەرپرسیاری بۆ هەموو ڕوداوەکان
-  directus_collections: ڕێکخستن و مێتادەیتای زیادەی کۆمەڵە
-  directus_comments: لێدوانەکان بۆ مادەکان
-  directus_dashboards: داشبۆردەکان لە یەکەی تێڕوانینەکان
-  directus_fields: ڕێکخستن و مێتادەیتای زیادەی خانە
-  directus_files: مێتادەیتا بۆ هەموو پەڕگە بەڕێوەبراوەکان
-  directus_folders: دابینکردنی بەڕێوەبردنی خەیاڵی بۆ پەڕگەکان
-  directus_migrations: کام وەشانی بنکەدراو بەکاردەهێنیت
-  directus_notifications: ئاگادارکەرەوەکان نێردران بۆ بەکارهێنەران
-  directus_operations: کردارەکان کە لە لێشاوەکاندا جێبەجێدەبن
-  directus_panels: پانێڵی تاکەکەسی لە نێو داشبۆردی تێڕوانینەکان
-  directus_permissions: دەسەڵاتی دەستگەیشتن بۆ هەر سیاسەتێک
-  directus_policies: سیاسەتەکانی کۆنترۆڵی دەستگەیشتن
-  directus_presets: پێشسێت بۆ بنەڕەتی کۆمەڵە و نیشانکردنەکان
-  directus_relations: ڕێکخستنی پەیوەندی و مێتادەیتا
-  directus_revisions: خێراوێنەی داتا بۆ هەموو چالاکیەکان
-  directus_roles: دەستەی دەسەڵاتەکان بۆ بەکارهێنەرەکانی سیستەم
-  directus_sessions: زانیاری دەورەی بەکارهێنەر
-  directus_settings: بژاردەکانی ڕێکخستنی پڕۆژە
-  directus_shares: بەدواداچوونی ماددە هاوبەشیپێکراوە دەرەکیەکان
-  directus_users: بەکارهێنەرەکانی سیستەم بۆ سەکۆکە
-  directus_translations: وەرگێڕانە تایبەتەکان
-  directus_versions: وەشانەکانی ناوەڕۆک بۆ مادەکان
-  directus_extensions: ڕێکخستنی زیادکراوەکان
+axis_collection:
+  axis_access: دەسەڵاتی سیاسەتەکان
+  axis_activity: تۆماری بەرپرسیاری بۆ هەموو ڕوداوەکان
+  axis_collections: ڕێکخستن و مێتادەیتای زیادەی کۆمەڵە
+  axis_comments: لێدوانەکان بۆ مادەکان
+  axis_dashboards: داشبۆردەکان لە یەکەی تێڕوانینەکان
+  axis_fields: ڕێکخستن و مێتادەیتای زیادەی خانە
+  axis_files: مێتادەیتا بۆ هەموو پەڕگە بەڕێوەبراوەکان
+  axis_folders: دابینکردنی بەڕێوەبردنی خەیاڵی بۆ پەڕگەکان
+  axis_migrations: کام وەشانی بنکەدراو بەکاردەهێنیت
+  axis_notifications: ئاگادارکەرەوەکان نێردران بۆ بەکارهێنەران
+  axis_operations: کردارەکان کە لە لێشاوەکاندا جێبەجێدەبن
+  axis_panels: پانێڵی تاکەکەسی لە نێو داشبۆردی تێڕوانینەکان
+  axis_permissions: دەسەڵاتی دەستگەیشتن بۆ هەر سیاسەتێک
+  axis_policies: سیاسەتەکانی کۆنترۆڵی دەستگەیشتن
+  axis_presets: پێشسێت بۆ بنەڕەتی کۆمەڵە و نیشانکردنەکان
+  axis_relations: ڕێکخستنی پەیوەندی و مێتادەیتا
+  axis_revisions: خێراوێنەی داتا بۆ هەموو چالاکیەکان
+  axis_roles: دەستەی دەسەڵاتەکان بۆ بەکارهێنەرەکانی سیستەم
+  axis_sessions: زانیاری دەورەی بەکارهێنەر
+  axis_settings: بژاردەکانی ڕێکخستنی پڕۆژە
+  axis_shares: بەدواداچوونی ماددە هاوبەشیپێکراوە دەرەکیەکان
+  axis_users: بەکارهێنەرەکانی سیستەم بۆ سەکۆکە
+  axis_translations: وەرگێڕانە تایبەتەکان
+  axis_versions: وەشانەکانی ناوەڕۆک بۆ مادەکان
+  axis_extensions: ڕێکخستنی زیادکراوەکان
 fields:
-  directus_activity:
+  axis_activity:
     item: ماددەی کلیلی سەرەکی
     action: کردەوە
     collection: کۆمەڵە
@@ -1222,7 +1222,7 @@ fields:
     origin: ڕەسەن
     ip: ناونیشانی IP
     revisions: پێداچونەوەکان
-  directus_collections:
+  axis_collections:
     collection: کۆمەڵە
     icon: ئایکۆن
     note: تێبینی
@@ -1240,7 +1240,7 @@ fields:
     versioning: وەشانکردن
     archive_field: خانەی ئەرشیڤ
     item_duplication_fields: خانەی لەبەرگرتنەوەی ماددە
-  directus_files:
+  axis_files:
     $thumbnail: وێنەی بچوککراو
     title: ناونیشان
     description: وەسف
@@ -1266,7 +1266,7 @@ fields:
     duration: ماوە
     focal_point_x: نوختەی جەختکردنەوەی-ئێکس
     focal_point_y: نوختەی جەختکردنەوەی-وای
-  directus_users:
+  axis_users:
     first_name: ناوی یەکەم
     last_name: ناوی باوک
     email: ئیمەیڵ
@@ -1299,7 +1299,7 @@ fields:
     theme_dark: ڕووکاری تاریک
     theme_light_overrides: خوازراوکردنی ڕووکاری ڕووناک
     theme_dark_overrides: خوازراوکردنی ڕووکاری تاریک
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1357,7 +1357,7 @@ fields:
     public_registration_verify_email_note: ئیمەیڵێک دەنێردرێت بۆ بەکارهێنەری تۆمارکراو داوایان لێدەکات کرتە لە بەستەری پشتڕاستکردنەوە بکەن پێش ئەوەی بتوانن بچنە ژوورەوە.
     visual_editor_urls: بەستەرەکانی دەستکاریکەری بینراو
     ai_header_name: سەرپەڕە
-  directus_shares:
+  axis_shares:
     name: ناو
     role: پلە
     password: تێپەڕەوشە
@@ -1365,7 +1365,7 @@ fields:
     date_end: کۆتایی ڕێکەوت
     max_uses: ئەوپەڕی بەکارهێنان
     times_used: جاری بەکارهێنراو
-  directus_fields:
+  axis_fields:
     collection: ناوی کۆمەڵە
     icon: ئایکۆنی کۆمەڵە
     note: تێبینی
@@ -1373,14 +1373,14 @@ fields:
     singleton: تاکی
     translation: وەرگێڕانەکانی ناوی خانە
     display_template: قاڵب
-  directus_roles:
+  axis_roles:
     name: ناوی پلە
     icon: ئایکۆنی پلە
     description: وەسف
     users: بەکارهێنەران لە پلەی
     parent: پلەی سەرەکی
     children: پلە لقەکان
-  directus_policies:
+  axis_policies:
     name: ناوی سیاسەت
     description: وەسف
     app_access: دەستگەیشتن بە پێگە
@@ -1388,7 +1388,7 @@ fields:
     ip_access: دەستگەیشتنی IP
     enforce_tfa: داواکردنی دووهۆکاری
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: پڕۆژەکەم...
     project_color_note: چونەژوورەوە و لۆگی پاشبنەما
     project_logo_note: سپی 40×40 SVG/PNG
@@ -1418,12 +1418,12 @@ field_options:
     basemaps_style: شێوازی Mapbox
     files_divider_title: پەڕگەکان و وێنە بچوککراوەکان
     overrides_divider_title: سەپاندنەکانی پێگە
-  directus_activity:
+  axis_activity:
     login: چوونەژوورەوە
     create: دروستکردن
     update: نوێکردنەوە
     delete: سڕینەوە
-  directus_collections:
+  axis_collections:
     track_activity_revisions: بەدواداچوونی کردار و گەڕاندنەوەکان
     only_track_activity: تەنها بەدواداچوونی کردار
     do_not_track_anything: بەدواداچونی هیچ کردارێک مەکە
@@ -1449,7 +1449,7 @@ field_options:
     preview_divider: بینین
     content_versioning_divider: وەشانکردنی ناوەڕۆک
     enable_versioning: چالاککردنی وەشانکردن
-  directus_files:
+  axis_files:
     title: ناونیشانێکی بێ هاوتا...
     description: وەسفێکی بژاردەیی...
     location: شوێنێکی بژاردەیی...
@@ -1457,13 +1457,13 @@ field_options:
     focal_point_divider: Focal Point
     filename_disk: ناو لەسەر پەپکەی بیرگە...
     filename_download: ناو لەکاتی داگرتن...
-  directus_policies:
+  axis_policies:
     name: ناوێکی بێهاوتا بۆ ئەم سیاسەتە...
     description: وەسفێک بۆ ئەم سیاسەتە...
     ip_access: ناونیشانە ڕێگەپێدراوەکانی IP، مەوداکانی IP و بلۆکەکانی CIDR زیادبکە. بە بەتاڵی جێی بهێڵە بۆ ڕێگەدان بە هەموویان...
     enforce_tfa: سەپاندنی سەلمێنەری دوو-هۆکار
     assigned_to: دانراوە بۆ
-  directus_roles:
+  axis_roles:
     name: ناوێکی بێ هاوتا بۆ ئەم پلەیە...
     description: وەسفێک بۆ ئەم پلەیە...
     fields:
@@ -1476,7 +1476,7 @@ field_options:
     children_note: ئەو پلە وەچانەی کە دەسەڵاتەکانی ئەم پلەیە وەردەگرن
     collections_name: کۆمەڵەکان
     collections_addLabel: زیادکردنی کۆمەڵە...
-  directus_users:
+  axis_users:
     preferences_divider: هەڵبژاردنەکانی بەکارهێنەر
     dropdown_auto: خۆکار (بەپێی سیستەم)
     dropdown_light: دۆخی ڕوناک

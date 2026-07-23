@@ -16,7 +16,7 @@ beforeEach(() => {
 							name: 'admin',
 						},
 						// Custom nested user field
-						org: { name: 'Directus' },
+						org: { name: 'Axis' },
 					},
 				},
 			},
@@ -35,7 +35,7 @@ describe('parse-preset', () => {
 
 		expect(parsedPreset).toEqual({
 			role: '1',
-			orgName: 'Directus',
+			orgName: 'Axis',
 		});
 	});
 });

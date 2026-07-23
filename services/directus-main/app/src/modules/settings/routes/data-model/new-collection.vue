@@ -338,7 +338,7 @@ function getSystemRelations() {
 		relations.push({
 			collection: collectionName.value!,
 			field: systemFields.userCreated.name,
-			related_collection: 'directus_users',
+			related_collection: 'axis_users',
 			schema: {},
 		});
 	}
@@ -347,7 +347,7 @@ function getSystemRelations() {
 		relations.push({
 			collection: collectionName.value!,
 			field: systemFields.userUpdated.name,
-			related_collection: 'directus_users',
+			related_collection: 'axis_users',
 			schema: {},
 		});
 	}

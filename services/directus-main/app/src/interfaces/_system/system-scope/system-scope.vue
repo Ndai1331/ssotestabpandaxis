@@ -40,11 +40,11 @@ const options = computed(() => {
 		},
 		{
 			text: t('user') + ': ' + t('select'),
-			value: 'directus_users',
+			value: 'axis_users',
 		},
 		{
 			text: t('role') + ': ' + t('select'),
-			value: 'directus_roles',
+			value: 'axis_roles',
 		},
 	];
 
@@ -74,8 +74,8 @@ function onSelect(value: string) {
 }
 
 function onSelectItem(value: (string | number)[] | null) {
-	if (collection.value === 'directus_users') return emit('input', 'user_' + value![0]);
-	if (collection.value === 'directus_roles') return emit('input', 'role_' + value![0]);
+	if (collection.value === 'axis_users') return emit('input', 'user_' + value![0]);
+	if (collection.value === 'axis_roles') return emit('input', 'role_' + value![0]);
 }
 
 async function loadItemName() {

@@ -329,9 +329,9 @@ geometry:
 theme_auto: Автоматично (въз основа на системата)
 theme_light: Светъл режим
 theme_dark: Тъмен режим
-theme_directus_default: Directus по подразбиране
-theme_directus_minimal: Directus минимално
-theme_directus_colormatch: Directus Съвпадение на цветовете
+theme_axis_default: Directus по подразбиране
+theme_axis_minimal: Directus минимално
+theme_axis_colormatch: Directus Съвпадение на цветовете
 not_available_for_type: Не е налично за типът
 create_translations: Създаване на преводи
 auto_refresh: Автоматично опресняване
@@ -1125,30 +1125,30 @@ content: Съдържание
 singleton: Сек
 singleton_label: Третиране, като единствен обект
 system_fields_locked: Системните полета са заключени и не могат да бъдат променяни
-directus_collection:
-  directus_activity: Профилирани логове за всички събития
-  directus_collections: Допълнителна кофигурация и данни
-  directus_dashboards: Табла в модула за задълбочен анализ
-  directus_fields: Допълнителна кофигурация и данни
-  directus_files: Мета данни за всички файлове
-  directus_folders: Виртуални директории за файловете
-  directus_migrations: Версия на базата данни която се използва
-  directus_notifications: Известия, изпратени до потребителите
-  directus_operations: Задачи които се изпълняват в автоматизиран процес
-  directus_panels: Панели в таблото на задълбочения анализ
-  directus_presets: Заготовки на началните стойности и отметките за колекциите
-  directus_relations: Релационни настройки и мета данни
-  directus_revisions: Моментни данни за цялата активност
-  directus_roles: Групи от позволения за системните потребители
-  directus_sessions: Потребителски сесии
-  directus_settings: Настройки за проекти
-  directus_shares: Проследяване на външно споделените записи
-  directus_users: Системни потребители за платформата
-  directus_translations: Преводи по поръчка
-  directus_versions: Версии на съдържанието за елементи
-  directus_extensions: Конфигуриране на разширения
+axis_collection:
+  axis_activity: Профилирани логове за всички събития
+  axis_collections: Допълнителна кофигурация и данни
+  axis_dashboards: Табла в модула за задълбочен анализ
+  axis_fields: Допълнителна кофигурация и данни
+  axis_files: Мета данни за всички файлове
+  axis_folders: Виртуални директории за файловете
+  axis_migrations: Версия на базата данни която се използва
+  axis_notifications: Известия, изпратени до потребителите
+  axis_operations: Задачи които се изпълняват в автоматизиран процес
+  axis_panels: Панели в таблото на задълбочения анализ
+  axis_presets: Заготовки на началните стойности и отметките за колекциите
+  axis_relations: Релационни настройки и мета данни
+  axis_revisions: Моментни данни за цялата активност
+  axis_roles: Групи от позволения за системните потребители
+  axis_sessions: Потребителски сесии
+  axis_settings: Настройки за проекти
+  axis_shares: Проследяване на външно споделените записи
+  axis_users: Системни потребители за платформата
+  axis_translations: Преводи по поръчка
+  axis_versions: Версии на съдържанието за елементи
+  axis_extensions: Конфигуриране на разширения
 fields:
-  directus_activity:
+  axis_activity:
     item: Първичен ключ на записа
     action: Действие
     collection: Колекция
@@ -1159,7 +1159,7 @@ fields:
     origin: Произход
     ip: IP адрес
     revisions: Ревизии
-  directus_collections:
+  axis_collections:
     collection: Колекция
     icon: Икона
     note: Бележка
@@ -1177,7 +1177,7 @@ fields:
     versioning: Версиониране
     archive_field: Поле за архивен статус
     item_duplication_fields: Дублиране на полета при създаване на нов от стар запис
-  directus_files:
+  axis_files:
     $thumbnail: Умалена картинка
     title: Заглавие
     description: Описание
@@ -1203,7 +1203,7 @@ fields:
     duration: Продължителност
     focal_point_x: Координата по X
     focal_point_y: Координата по Y
-  directus_users:
+  axis_users:
     first_name: Име
     last_name: Фамилия
     email: Имейл
@@ -1235,7 +1235,7 @@ fields:
     theme_dark: Тъмна тема
     theme_light_overrides: Персонализиране на светла тема
     theme_dark_overrides: Персонализиране на тъмна тема
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1284,7 +1284,7 @@ fields:
     theme_light_overrides: Персонализиране на светла тема
     theme_dark_overrides: Персонализиране на тъмна тема
     ai_header_name: Хедър
-  directus_shares:
+  axis_shares:
     name: Име
     role: Роля
     password: Парола
@@ -1292,7 +1292,7 @@ fields:
     date_end: Крайна дата
     max_uses: Максимален брой ползвания
     times_used: Брой ползвания
-  directus_fields:
+  axis_fields:
     collection: Име на колекцията
     icon: Икона на колекцията
     note: Бележка
@@ -1300,15 +1300,15 @@ fields:
     singleton: Сек
     translation: Превод на името на полето
     display_template: Шаблон
-  directus_roles:
+  axis_roles:
     name: Име на ролята
     icon: Икона на ролята
     description: Описание
     users: Потребители към ролята
-  directus_policies:
+  axis_policies:
     description: Описание
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Моят проект...
     project_color_note: Фон на логото и вход-а
     project_logo_note: Бялa 40x40 SVG/PNG
@@ -1338,12 +1338,12 @@ field_options:
     basemaps_style: Mapbox стил
     files_divider_title: Файлове и картинки
     overrides_divider_title: Преопределяне в приложението
-  directus_activity:
+  axis_activity:
     login: Вход
     create: Създаване
     update: Обновяване
     delete: Изтриване
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Проследяване на активността и ревизиите
     only_track_activity: Проследяване само на активността
     do_not_track_anything: Без следене
@@ -1369,7 +1369,7 @@ field_options:
     preview_divider: Преглед
     content_versioning_divider: Версии на съдържанието
     enable_versioning: Активирайте управлението на версии
-  directus_files:
+  axis_files:
     title: Уникално заглавие...
     description: Незадължително описание...
     location: Незадължително местоположение...
@@ -1377,7 +1377,7 @@ field_options:
     focal_point_divider: Фокусна точка
     filename_disk: Име при запис...
     filename_download: Име при изтегляне...
-  directus_roles:
+  axis_roles:
     name: Уникално име за ролята...
     description: Описание на ролята...
     fields:
@@ -1388,7 +1388,7 @@ field_options:
       link_placeholder: Релативен или абсолютен URL...
     collections_name: Колекции
     collections_addLabel: Добавяне на колекция...
-  directus_users:
+  axis_users:
     preferences_divider: Потребителски настройки
     dropdown_auto: Автоматична (според системата)
     dropdown_light: Светъл режим

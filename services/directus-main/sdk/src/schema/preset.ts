@@ -4,7 +4,7 @@ import type { DirectusUser } from './user.js';
 
 export type DirectusPreset<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_presets',
+	'axis_presets',
 	{
 		id: number;
 		bookmark: string | null;

@@ -135,13 +135,13 @@ async function save() {
 							},
 							{
 								field: 'translation',
-								name: $t('field_options.directus_collections.collection_name'),
+								name: $t('field_options.axis_collections.collection_name'),
 								type: 'string',
 								meta: {
 									interface: 'input',
 									width: 'half',
 									options: {
-										placeholder: '$t:field_options.directus_collections.translation_placeholder',
+										placeholder: '$t:field_options.axis_collections.translation_placeholder',
 									},
 								},
 							},

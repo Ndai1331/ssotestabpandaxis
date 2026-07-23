@@ -18,7 +18,7 @@ beforeEach(() => {
 						},
 						roles: [{ id: '1' }, { id: '2' }],
 						// Custom nested user field
-						org: { name: 'Directus' },
+						org: { name: 'Axis' },
 					},
 				},
 			},
@@ -44,7 +44,7 @@ describe('parse-filter', () => {
 				{ user: { _eq: 'Kay' } },
 				{ role: { _in: ['1', '2'] } },
 				{ roles: { _in: ['1', '2'] } },
-				{ orgName: { _eq: 'Directus' } },
+				{ orgName: { _eq: 'Axis' } },
 			],
 		});
 	});

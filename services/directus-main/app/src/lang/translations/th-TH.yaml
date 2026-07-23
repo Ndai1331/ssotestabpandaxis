@@ -792,7 +792,7 @@ singleton: Singleton
 singleton_label: ทำเสมือนว่ามีออปเจ็คเดียว
 system_fields_locked: ฟิลด์ระบบถูกล็อคและไม่สามารถแก้ไขได้
 fields:
-  directus_activity:
+  axis_activity:
     item: คีย์หลัก
     action: ดำเนินการ
     collection: คอลเลกชัน
@@ -802,7 +802,7 @@ fields:
     user_agent: ตัวแทนของผู้ใช้
     ip: หมายเลขไอพี
     revisions: ประวัติการปรับปรุง
-  directus_collections:
+  axis_collections:
     collection: คอลเลกชัน
     icon: ไอคอน
     note: หมายเหตุ
@@ -817,7 +817,7 @@ fields:
     unarchive_value: ยกเลิกการเก็บค่า
     sort_field: เรียงฟิลด์
     accountability: การติดตามกิจกรรมและการแก้ไข
-  directus_files:
+  axis_files:
     $thumbnail: รูปขนาดย่อ
     title: ตำแหน่ง
     description: รายละเอียด
@@ -841,7 +841,7 @@ fields:
     height: สูง
     charset: 'ชุดอักขระ:'
     duration: ระยะเวลา
-  directus_users:
+  axis_users:
     first_name: ชื่อ
     last_name: นามสกุล
     email: อีเมล
@@ -864,7 +864,7 @@ fields:
     provider: ผู้ให้บริการ
     last_page: หน้าสุดท้าย
     last_access: การเข้าถึงล่าสุด
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -883,11 +883,11 @@ fields:
     custom_css: CSS ที่กำหนดเอง
     module_bar: โมดูลบาร์
     ai_header_name: เฮดเดอร์
-  directus_shares:
+  axis_shares:
     name: ชื่อ
     role: บทบาท
     password: รหัสผ่าน
-  directus_fields:
+  axis_fields:
     collection: ชื่อคอลเลกชัน
     icon: ไอคอนของคอลเลกชัน
     note: หมายเหตุ
@@ -895,22 +895,22 @@ fields:
     singleton: Singleton
     translation: คำแปลชื่อฟิลด์
     display_template: แม่แบบ
-  directus_roles:
+  axis_roles:
     name: ชื่อบทบาท
     icon: ไอคอนของบทบาท
     description: รายละเอียด
     users: ผู้ใช้ในบทบาทนี้
-  directus_policies:
+  axis_policies:
     description: รายละเอียด
 field_options:
-  directus_settings:
+  axis_settings:
     security_divider_title: ความปลอดภัย
-  directus_activity:
+  axis_activity:
     login: เข้าสู่ระบบ
     create: สร้าง
     update: แก้ไข
     delete: ลบ
-  directus_collections:
+  axis_collections:
     track_activity_revisions: ติดตามกิจกรรมและการแก้ไข
     only_track_activity: ติดตามกิจกรรมเท่านั้น
     do_not_track_anything: อย่าติดตามอะไรเลย
@@ -924,14 +924,14 @@ field_options:
     archive_field_placeholder: เลือกฟิลด์
     sort_divider: เรียง
     preview_divider: ดูตัวอย่าง
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: ไอคอน
       name_name: ชื่อ
       name_placeholder: ป้อนชื่อเรื่อง
     collections_name: คอลเลกชัน
     collections_addLabel: เพิ่มคอลเลกชัน
-  directus_users:
+  axis_users:
     preferences_divider: การตั้งค่าผู้ใช้
     status_dropdown_draft: ฉบับร่าง
     status_dropdown_active: เปิดใช้งาน

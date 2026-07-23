@@ -33,55 +33,55 @@ import {
  */
 export function getService(collection: string, opts: AbstractServiceOptions): ItemsService {
 	switch (collection) {
-		case 'directus_access':
+		case 'axis_access':
 			return new AccessService(opts);
-		case 'directus_activity':
+		case 'axis_activity':
 			return new ActivityService(opts);
-		case 'directus_comments':
+		case 'axis_comments':
 			return new CommentsService(opts);
-		case 'directus_dashboards':
+		case 'axis_dashboards':
 			return new DashboardsService(opts);
-		case 'directus_files':
+		case 'axis_files':
 			return new FilesService(opts);
-		case 'directus_flows':
+		case 'axis_flows':
 			return new FlowsService(opts);
-		case 'directus_folders':
+		case 'axis_folders':
 			return new FoldersService(opts);
-		case 'directus_notifications':
+		case 'axis_notifications':
 			return new NotificationsService(opts);
-		case 'directus_operations':
+		case 'axis_operations':
 			return new OperationsService(opts);
-		case 'directus_panels':
+		case 'axis_panels':
 			return new PanelsService(opts);
-		case 'directus_permissions':
+		case 'axis_permissions':
 			return new PermissionsService(opts);
-		case 'directus_presets':
+		case 'axis_presets':
 			return new PresetsService(opts);
-		case 'directus_policies':
+		case 'axis_policies':
 			return new PoliciesService(opts);
-		case 'directus_revisions':
+		case 'axis_revisions':
 			return new RevisionsService(opts);
-		case 'directus_roles':
+		case 'axis_roles':
 			return new RolesService(opts);
-		case 'directus_settings':
+		case 'axis_settings':
 			return new SettingsService(opts);
-		case 'directus_shares':
+		case 'axis_shares':
 			return new SharesService(opts);
-		case 'directus_translations':
+		case 'axis_translations':
 			return new TranslationsService(opts);
-		case 'directus_users':
+		case 'axis_users':
 			return new UsersService(opts);
-		case 'directus_versions':
+		case 'axis_versions':
 			return new VersionsService(opts);
-		case 'directus_deployments':
+		case 'axis_deployments':
 			return new DeploymentService(opts);
-		case 'directus_deployment_projects':
+		case 'axis_deployment_projects':
 			return new DeploymentProjectsService(opts);
-		case 'directus_deployment_runs':
+		case 'axis_deployment_runs':
 			return new DeploymentRunsService(opts);
 		default:
 			// Deny usage of other system collections via ItemsService
-			if (collection.startsWith('directus_')) throw new ForbiddenError();
+			if (collection.startsWith('axis_')) throw new ForbiddenError();
 
 			return new ItemsService(collection, opts);
 	}

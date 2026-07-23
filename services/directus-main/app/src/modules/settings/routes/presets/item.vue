@@ -322,7 +322,7 @@ function usePreset() {
 }
 
 function useForm() {
-	const systemCollectionWhiteList = ['directus_users', 'directus_files', 'directus_activity'];
+	const systemCollectionWhiteList = ['axis_users', 'axis_files', 'axis_activity'];
 
 	const fields = computed<DeepPartial<Field>[]>(() => [
 		{

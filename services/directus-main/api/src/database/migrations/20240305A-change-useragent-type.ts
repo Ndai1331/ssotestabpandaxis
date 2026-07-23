@@ -5,8 +5,8 @@ export async function up(knex: Knex): Promise<void> {
 	const helper = getHelpers(knex).schema;
 
 	await Promise.all([
-		helper.changeToType('directus_activity', 'user_agent', 'text'),
-		helper.changeToType('directus_sessions', 'user_agent', 'text'),
+		helper.changeToType('axis_activity', 'user_agent', 'text'),
+		helper.changeToType('axis_sessions', 'user_agent', 'text'),
 	]);
 }
 
@@ -19,7 +19,7 @@ export async function down(knex: Knex): Promise<void> {
 	};
 
 	await Promise.all([
-		helper.changeToType('directus_activity', 'user_agent', 'string', opts),
-		helper.changeToType('directus_sessions', 'user_agent', 'string', opts),
+		helper.changeToType('axis_activity', 'user_agent', 'string', opts),
+		helper.changeToType('axis_sessions', 'user_agent', 'string', opts),
 	]);
 }

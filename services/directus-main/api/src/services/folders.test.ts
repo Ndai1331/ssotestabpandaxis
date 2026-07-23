@@ -144,7 +144,7 @@ describe('FoldersService', () => {
 
 				expect(vi.mocked(validateAccess)).toHaveBeenCalledWith(
 					{
-						collection: 'directus_folders',
+						collection: 'axis_folders',
 						accountability,
 						action: 'read',
 						primaryKeys: ['root-1'],

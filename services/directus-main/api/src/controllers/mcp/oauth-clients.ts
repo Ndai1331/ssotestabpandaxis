@@ -10,7 +10,7 @@ import { sanitizeQuery } from '../../utils/sanitize-query.js';
 
 const router = Router();
 
-router.use(useCollection('directus_oauth_clients'));
+router.use(useCollection('axis_oauth_clients'));
 
 // Explicit admin guard -- defense in depth on top of ItemsService permissions
 router.use((req, _res, next) => {
@@ -22,7 +22,7 @@ router.use((req, _res, next) => {
 });
 
 const readHandler = asyncHandler(async (req, res, next) => {
-	const service = new ItemsService('directus_oauth_clients', {
+	const service = new ItemsService('axis_oauth_clients', {
 		accountability: req.accountability,
 		schema: req.schema,
 	});
@@ -33,7 +33,7 @@ const readHandler = asyncHandler(async (req, res, next) => {
 	});
 
 	const records = await service.readByQuery(req.sanitizedQuery);
-	const meta = await metaService.getMetaForQuery('directus_oauth_clients', req.sanitizedQuery);
+	const meta = await metaService.getMetaForQuery('axis_oauth_clients', req.sanitizedQuery);
 
 	res.locals['payload'] = { data: records || null, meta };
 	return next();
@@ -46,7 +46,7 @@ router.search('/', validateBatch('read'), readHandler, respond);
 router.get(
 	'/:id',
 	asyncHandler(async (req, res, next) => {
-		const service = new ItemsService('directus_oauth_clients', {
+		const service = new ItemsService('axis_oauth_clients', {
 			accountability: req.accountability,
 			schema: req.schema,
 		});
@@ -63,7 +63,7 @@ router.delete(
 	'/',
 	validateBatch('delete'),
 	asyncHandler(async (req, _res, next) => {
-		const service = new ItemsService('directus_oauth_clients', {
+		const service = new ItemsService('axis_oauth_clients', {
 			accountability: req.accountability,
 			schema: req.schema,
 		});
@@ -86,7 +86,7 @@ router.delete(
 router.delete(
 	'/:id',
 	asyncHandler(async (req, _res, next) => {
-		const service = new ItemsService('directus_oauth_clients', {
+		const service = new ItemsService('axis_oauth_clients', {
 			accountability: req.accountability,
 			schema: req.schema,
 		});

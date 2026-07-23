@@ -28,15 +28,15 @@ export const DIRECTUS_LOGO = `
  * These are the system endpoints that don't have full/regular CRUD operations available.
  */
 export const COLLECTIONS_DENY_LIST = [
-	'directus_activity',
-	'directus_collections',
-	'directus_extensions',
-	'directus_fields',
-	'directus_migrations',
-	'directus_relations',
-	'directus_revisions',
-	'directus_sessions',
-	'directus_settings',
+	'axis_activity',
+	'axis_collections',
+	'axis_extensions',
+	'axis_fields',
+	'axis_migrations',
+	'axis_relations',
+	'axis_revisions',
+	'axis_sessions',
+	'axis_settings',
 ];
 
 export const MODULE_BAR_DEFAULT: (SettingsModuleBarLink | SettingsModuleBarModule)[] = [

@@ -23,7 +23,7 @@ export class UtilsService {
 
 	async sort(collection: string, { item, to }: { item: PrimaryKey; to: PrimaryKey }): Promise<void> {
 		const sortFieldResponse =
-			(await this.knex.select('sort_field').from('directus_collections').where({ collection }).first()) ||
+			(await this.knex.select('sort_field').from('axis_collections').where({ collection }).first()) ||
 			systemCollectionRows;
 
 		const sortField = sortFieldResponse?.sort_field;

@@ -214,14 +214,14 @@ export class AssetsService {
 
 		const publicSettings = await this.knex
 			.select('project_logo', 'public_background', 'public_foreground', 'public_favicon')
-			.from('directus_settings')
+			.from('axis_settings')
 			.first();
 
 		const systemPublicKeys: string[] = Object.values(publicSettings || {});
 
 		/**
 		 * This is a little annoying. Postgres will error out if you're trying to search in `where`
-		 * with a wrong type. In case of directus_files where id is a uuid, we'll have to verify the
+		 * with a wrong type. In case of axis_files where id is a uuid, we'll have to verify the
 		 * validity of the uuid ahead of time.
 		 */
 		if (!isValidUuid(id)) throw new ForbiddenError();
@@ -234,7 +234,7 @@ export class AssetsService {
 				{
 					accountability: this.accountability,
 					action: 'read',
-					collection: 'directus_files',
+					collection: 'axis_files',
 					primaryKeys: [id],
 					returnAllowedRootFields: true,
 				},
@@ -243,7 +243,7 @@ export class AssetsService {
 
 			if (!accessAllowed) {
 				throw new ForbiddenError({
-					reason: `You don't have permission to perform "read" for collection "directus_files" or it does not exist.`,
+					reason: `You don't have permission to perform "read" for collection "axis_files" or it does not exist.`,
 				});
 			}
 

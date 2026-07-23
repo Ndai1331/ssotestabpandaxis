@@ -15,7 +15,7 @@ import { sanitizeQuery } from '../utils/sanitize-query.js';
 const router = express.Router();
 const env = useEnv();
 
-router.use(useCollection('directus_shares'));
+router.use(useCollection('axis_shares'));
 
 const sharedLoginSchema = Joi.object({
 	share: Joi.string().required(),

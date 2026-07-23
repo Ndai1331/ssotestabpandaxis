@@ -30,7 +30,7 @@ vi.mock('@directus/env', () => ({
 	useEnv: vi.fn().mockReturnValue({
 		SECRET: 'test',
 		EXTENSIONS_PATH: './extensions',
-		SESSION_COOKIE_NAME: 'directus_session',
+		SESSION_COOKIE_NAME: 'axis_session',
 		// needed for constants.ts top level mocking
 		REFRESH_TOKEN_COOKIE_DOMAIN: '',
 		REFRESH_TOKEN_TTL: 0,
@@ -270,7 +270,7 @@ test('Invalid session token responds with error and clears the cookie', async ()
 		socket: { remoteAddress: '127.0.0.1' },
 		headers: {},
 		cookies: {
-			directus_session: 'session-token',
+			axis_session: 'session-token',
 		},
 		get: vi.fn(reqGetImplementation),
 		token: 'session-token',
@@ -300,7 +300,7 @@ test('Invalid query token responds with error but does not clear the session coo
 		socket: { remoteAddress: '127.0.0.1' },
 		headers: {},
 		cookies: {
-			directus_session: 'session-token',
+			axis_session: 'session-token',
 		},
 		get: vi.fn(reqGetImplementation),
 		token: 'static-token',

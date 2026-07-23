@@ -58,7 +58,7 @@ const {
 	refresh,
 	getItem,
 	validationErrors,
-} = useItem<File>(ref('directus_files'), primaryKey);
+} = useItem<File>(ref('axis_files'), primaryKey);
 
 const {
 	users: collabUsers,
@@ -70,7 +70,7 @@ const {
 	discard: discardCollab,
 	focused,
 	connectionId,
-} = useCollab(ref('directus_files'), primaryKey, ref(null), item, edits, getItem);
+} = useCollab(ref('axis_files'), primaryKey, ref(null), item, edits, getItem);
 
 const {
 	collectionPermissions: { createAllowed, revisionsAllowed },
@@ -450,7 +450,7 @@ function revert(values: Record<string, any>) {
 		<ComparisonModal
 			:model-value="collabCollision !== undefined"
 			mode="collab"
-			collection="directus_files"
+			collection="axis_files"
 			:primary-key="primaryKey"
 			:current-collab="collabCollision"
 			:collab-context="collabContext"
@@ -463,11 +463,11 @@ function revert(values: Record<string, any>) {
 			<RevisionsSidebarDetail
 				v-if="isNew === false && revisionsAllowed"
 				ref="revisionsSidebarDetailRef"
-				collection="directus_files"
+				collection="axis_files"
 				:primary-key="primaryKey"
 				@revert="revert"
 			/>
-			<CommentsSidebarDetail v-if="isNew === false" collection="directus_files" :primary-key="primaryKey" />
+			<CommentsSidebarDetail v-if="isNew === false" collection="axis_files" :primary-key="primaryKey" />
 		</template>
 	</PrivateView>
 </template>

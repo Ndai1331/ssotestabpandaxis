@@ -4,7 +4,7 @@ import type { DirectusUser } from './user.js';
 
 export type DirectusComment<Schema> = MergeCoreCollection<
 	Schema,
-	'directus_comments',
+	'axis_comments',
 	{
 		id: string;
 		collection: DirectusCollection<Schema> | string;

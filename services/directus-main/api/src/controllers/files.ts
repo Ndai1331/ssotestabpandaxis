@@ -21,7 +21,7 @@ import { sanitizeQuery } from '../utils/sanitize-query.js';
 const router = express.Router();
 const env = useEnv();
 
-router.use(useCollection('directus_files'));
+router.use(useCollection('axis_files'));
 router.use(checkIsLocked('files'));
 
 export const multipartHandler: RequestHandler = (req, res, next) => {
@@ -54,7 +54,7 @@ export const multipartHandler: RequestHandler = (req, res, next) => {
 	/**
 	 * The order of the fields in multipart/form-data is important. We require that all fields
 	 * are provided _before_ the files. This allows us to set the storage location, and create
-	 * the row in directus_files async during the upload of the actual file.
+	 * the row in axis_files async during the upload of the actual file.
 	 */
 
 	let payload: any = {};
@@ -234,7 +234,7 @@ const readHandler = asyncHandler(async (req, res, next) => {
 		result = await service.readByQuery(req.sanitizedQuery);
 	}
 
-	const meta = await metaService.getMetaForQuery('directus_files', req.sanitizedQuery);
+	const meta = await metaService.getMetaForQuery('axis_files', req.sanitizedQuery);
 
 	res.locals['payload'] = { data: result, meta };
 	return next();

@@ -43,7 +43,7 @@ const props = defineProps<{
 const router = useRouter();
 const { t } = useI18n();
 const { currentProject } = useDeploymentNavigation();
-const canDeploy = usePermissionsStore().hasPermission('directus_deployment_runs', 'create');
+const canDeploy = usePermissionsStore().hasPermission('axis_deployment_runs', 'create');
 
 const loading = ref(true);
 const deploying = ref(false);

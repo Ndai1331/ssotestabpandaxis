@@ -57,7 +57,7 @@ export async function createTusServer(context: Context): Promise<[Server, () => 
 		async onUploadFinish(_req: any, upload) {
 			const schema = await getSchema();
 
-			const service = new ItemsService<File>('directus_files', {
+			const service = new ItemsService<File>('axis_files', {
 				schema,
 			});
 
@@ -102,7 +102,7 @@ export async function createTusServer(context: Context): Promise<[Server, () => 
 				{
 					payload: fileData,
 					key: fileData.id,
-					collection: 'directus_files',
+					collection: 'axis_files',
 				},
 				{
 					schema,

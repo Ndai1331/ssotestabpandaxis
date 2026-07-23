@@ -448,7 +448,7 @@ function onEsc() {
 
 			<DrawerItem
 				v-model:active="userDrawerActive"
-				collection="directus_users"
+				collection="axis_users"
 				:primary-key="editingUserId || '+'"
 				:selected-fields="[
 					'first_name',

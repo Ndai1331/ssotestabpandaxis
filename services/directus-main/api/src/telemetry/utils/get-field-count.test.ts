@@ -30,7 +30,7 @@ describe('getFieldCount', () => {
 
 		expect(mockDb.max).toHaveBeenCalledWith({ max: 'field_count' });
 		expect(mockDb.sum).toHaveBeenCalledWith({ total: 'field_count' });
-		expect(mockDb.from).toHaveBeenCalledWith('directus_fields');
+		expect(mockDb.from).toHaveBeenCalledWith('axis_fields');
 		expect(mockDb.select).toHaveBeenCalledWith('collection');
 		expect(mockDb.count).toHaveBeenCalledWith('* as field_count');
 		expect(mockDb.from).toHaveBeenCalledWith(mockDb);

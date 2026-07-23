@@ -88,16 +88,16 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 								);
 
 								const appAccessPermissions = [
-									'directus_activity',
-									'directus_collections',
-									'directus_fields',
-									'directus_notifications',
-									'directus_presets',
-									'directus_relations',
-									'directus_roles',
-									'directus_settings',
-									'directus_shares',
-									'directus_users',
+									'axis_activity',
+									'axis_collections',
+									'axis_fields',
+									'axis_notifications',
+									'axis_presets',
+									'axis_relations',
+									'axis_roles',
+									'axis_settings',
+									'axis_shares',
+									'axis_users',
 								];
 
 								expect(response.statusCode).toBe(200);
@@ -248,11 +248,11 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 			afterEach(async () => {
 				const db = databases.get(currentVendor)!;
 
-				await db('directus_fields')
+				await db('axis_fields')
 					.update({ note: null })
 					.where({ collection: TEST_COLLECTION_NAME, field: TEST_FIELD_NAME });
 
-				await db('directus_fields')
+				await db('axis_fields')
 					.update({ note: null })
 					.where({ collection: TEST_COLLECTION_NAME, field: TEST_ALIAS_FIELD_NAME });
 			});
@@ -343,11 +343,11 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 			afterEach(async () => {
 				const db = databases.get(currentVendor)!;
 
-				await db('directus_fields')
+				await db('axis_fields')
 					.update({ note: null })
 					.where({ collection: TEST_COLLECTION_NAME, field: TEST_FIELD_NAME });
 
-				await db('directus_fields')
+				await db('axis_fields')
 					.update({ note: null })
 					.where({ collection: TEST_COLLECTION_NAME, field: TEST_ALIAS_FIELD_NAME });
 			});

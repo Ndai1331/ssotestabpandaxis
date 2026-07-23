@@ -2,10 +2,10 @@ import type { MergeCoreCollection } from '../index.js';
 import type { DirectusFolder } from './folder.js';
 import type { DirectusUser } from './user.js';
 
-// Base type for directus_files
+// Base type for axis_files
 export type DirectusFile<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_files',
+	'axis_files',
 	{
 		id: string;
 		storage: string;

@@ -30,7 +30,7 @@ Browser
 | D2 | User source POC | Keycloak local users (Zimbra = Phase 2) |
 | D3 | Host | `localhost` ports only |
 | D4 | Roles | 4: admin / bác sĩ / lãnh đạo / nhân viên |
-| D5 | KC mapping | **Groups** + claim `groups` (không realm roles). App gate: `bd-app-directus` / `bd-app-abp` |
+| D5 | KC mapping | **Groups** + claim `groups` (không realm roles). App gate: `bd-app-axis` / `bd-app-hcs` |
 | D6 | Lab logout UX | `prompt=login` (ép form KC; chưa SLO) |
 
 ---
@@ -56,12 +56,12 @@ Browser
 
 | Email | Role group | App groups | Directus role UUID | ABP role |
 |-------|------------|------------|--------------------|----------|
-| admin@benhvien.vn | bd-admin | bd-app-directus + bd-app-abp | `654b7314-9b60-4eec-945c-f0a647ea2509` | admin |
+| admin@benhvien.vn | bd-admin | bd-app-axis + bd-app-hcs | `654b7314-9b60-4eec-945c-f0a647ea2509` | admin |
 | bacsi@benhvien.vn | bd-bacsi | cả 2 | `0054b4bc-aef2-4cbd-afcd-49066c2fb50a` | bacsi |
 | lanhdao@benhvien.vn | bd-lanhdao | cả 2 | `1304ca0a-dd80-4ab9-a191-07bf9b46dd1d` | lanhdao |
 | nhanvien@benhvien.vn | bd-nhanvien | cả 2 | `753294b4-2591-4793-a5dd-929edbaec5d0` | nhanvien |
 
-**App gate:** thiếu `bd-app-directus` → Directus reject (hook); thiếu `bd-app-abp` → AuthServer `context.Fail`.  
+**App gate:** thiếu `bd-app-axis` → Directus reject (hook); thiếu `bd-app-hcs` → AuthServer `context.Fail`.  
 Default role khi *đã có* app group nhưng thiếu role group = **nhanvien**.  
 Priority multi-group: **admin > lanhdao > bacsi > nhanvien**.
 
@@ -120,20 +120,20 @@ dotnet run --project apps/blazor/abptestwithsso.Blazor
 ### Keycloak
 - [x] Realm `bd`, RS256, login email
 - [x] Groups + 4 users + clients + mapper claim `groups`
-- [x] App entitlement groups `bd-app-directus` / `bd-app-abp` (lab users có cả 2)
+- [x] App entitlement groups `bd-app-axis` / `bd-app-hcs` (lab users có cả 2)
 - [x] Hostname lab: `KC_HOSTNAME=http://localhost:5110`, bind `127.0.0.1:5110`, `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`
 - [x] Directus discovery nội bộ: `http://keycloak:5110/...` (token backchannel); browser auth = `localhost:5110`
 
 ### Directus
 - [x] OpenID provider `keycloak` trong `docker-compose.bd-lab.yml`
 - [x] `ROLE_MAPPING` UUID 4 roles + `DEFAULT_ROLE_ID` nhanvien
-- [x] Hook `bd-lab-extensions/directus-extension-bd-app-gate` — require `bd-app-directus`
+- [x] Hook `bd-lab-extensions/directus-extension-bd-app-gate` — require `bd-app-axis`
 - [x] `AUTH_KEYCLOAK_PARAMS: json:{"prompt":"login"}` — tránh silent SSO sau logout
 
 ### ABP
 - [x] External OIDC Keycloak trên AuthServer
 - [x] Map `groups` → roles Identity; seed roles `bacsi|lanhdao|nhanvien`
-- [x] Gate `bd-app-abp` trong `KeycloakOpenIdConnectEvents` (fail nếu thiếu)
+- [x] Gate `bd-app-hcs` trong `KeycloakOpenIdConnectEvents` (fail nếu thiếu)
 - [x] Permission grants mẫu cho 3 role (admin = full)
 - [x] `options.Prompt = "login"` + event redirect — cùng lý do Directus
 - [x] Cert `openiddict.pfx` + `abp install-libs` (Node 24)

@@ -377,9 +377,9 @@ geometry:
 theme_auto: 自動（システム設定に合わせる）
 theme_light: ライトモード
 theme_dark: ダークモード
-theme_directus_default: Directus デフォルト
-theme_directus_minimal: Directus ミニマル
-theme_directus_colormatch: Directus カラーマッチ
+theme_axis_default: Directus デフォルト
+theme_axis_minimal: Directus ミニマル
+theme_axis_colormatch: Directus カラーマッチ
 not_available_for_type: このタイプでは利用できません
 create_translations: 翻訳を作成
 auto_refresh: 自動更新
@@ -1255,35 +1255,35 @@ content: コンテンツ
 singleton: シングルトン
 singleton_label: シングルオブジェクトに設定する
 system_fields_locked: システムフィールドはロックされているため編集できません。
-directus_collection:
-  directus_access: ポリシーの割り当て
-  directus_activity: 全イベントの監査ログ
-  directus_collections: コレクションの追加設定とメタデータ
-  directus_comments: アイテムのコメント
-  directus_dashboards: インサイトモジュールのダッシュボード
-  directus_fields: フィールドの追加設定とメタデータ
-  directus_files: 全ファイルアセットのメタデータ
-  directus_flows: オートメーションフロー
-  directus_folders: ファイルを整理するための仮想ディレクトリを提供します
-  directus_migrations: 使用中のデータベースのバージョン
-  directus_notifications: ユーザーに送信された通知
-  directus_operations: フローで実行されるオペレーション
-  directus_panels: インサイトダッシュボード内の各パネル
-  directus_permissions: 各ポリシーのアクセス権限
-  directus_policies: アクセス制御ポリシー
-  directus_presets: コレクションのデフォルトとブックマークのプリセット
-  directus_relations: リレーション設定とメタデータ
-  directus_revisions: すべてのアクティビティのスナップショット
-  directus_roles: システムユーザーの権限グループ
-  directus_sessions: ユーザーセッション情報
-  directus_settings: プロジェクトの設定オプション
-  directus_shares: 外部共有アイテムを追跡
-  directus_users: プラットフォームのシステムユーザー
-  directus_translations: カスタム翻訳
-  directus_versions: アイテムのコンテンツバージョン
-  directus_extensions: 拡張機能の設定
+axis_collection:
+  axis_access: ポリシーの割り当て
+  axis_activity: 全イベントの監査ログ
+  axis_collections: コレクションの追加設定とメタデータ
+  axis_comments: アイテムのコメント
+  axis_dashboards: インサイトモジュールのダッシュボード
+  axis_fields: フィールドの追加設定とメタデータ
+  axis_files: 全ファイルアセットのメタデータ
+  axis_flows: オートメーションフロー
+  axis_folders: ファイルを整理するための仮想ディレクトリを提供します
+  axis_migrations: 使用中のデータベースのバージョン
+  axis_notifications: ユーザーに送信された通知
+  axis_operations: フローで実行されるオペレーション
+  axis_panels: インサイトダッシュボード内の各パネル
+  axis_permissions: 各ポリシーのアクセス権限
+  axis_policies: アクセス制御ポリシー
+  axis_presets: コレクションのデフォルトとブックマークのプリセット
+  axis_relations: リレーション設定とメタデータ
+  axis_revisions: すべてのアクティビティのスナップショット
+  axis_roles: システムユーザーの権限グループ
+  axis_sessions: ユーザーセッション情報
+  axis_settings: プロジェクトの設定オプション
+  axis_shares: 外部共有アイテムを追跡
+  axis_users: プラットフォームのシステムユーザー
+  axis_translations: カスタム翻訳
+  axis_versions: アイテムのコンテンツバージョン
+  axis_extensions: 拡張機能の設定
 fields:
-  directus_activity:
+  axis_activity:
     item: アイテムのプライマリーキー
     action: アクション
     collection: コレクション
@@ -1294,7 +1294,7 @@ fields:
     origin: オリジン
     ip: IPアドレス
     revisions: 履歴
-  directus_collections:
+  axis_collections:
     collection: コレクション
     icon: アイコン
     note: 備考
@@ -1312,7 +1312,7 @@ fields:
     versioning: バージョン管理
     archive_field: アーカイブフィールド
     item_duplication_fields: アイテム複製のフィールド
-  directus_files:
+  axis_files:
     $thumbnail: サムネイル
     title: タイトル
     description: 説明
@@ -1338,7 +1338,7 @@ fields:
     duration: 長さ
     focal_point_x: X 軸の座標
     focal_point_y: Y 軸の座標
-  directus_users:
+  axis_users:
     first_name: 名
     last_name: 姓
     email: メールアドレス
@@ -1372,7 +1372,7 @@ fields:
     theme_dark: ダークテーマ
     theme_light_overrides: ライトテーマのカスタマイズ
     theme_dark_overrides: ダークテーマのカスタマイズ
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1465,7 +1465,7 @@ fields:
     ai_provider_options: プロバイダーオプション
     ai_provider_options_note: AI エンドポイントに渡されるプロバイダー固有のオプションです。
     ai_header_name: ヘッダー
-  directus_shares:
+  axis_shares:
     name: 名前
     role: 権限グループ
     password: パスワード
@@ -1473,7 +1473,7 @@ fields:
     date_end: 終了日
     max_uses: 最大使用回数
     times_used: 使用回数
-  directus_fields:
+  axis_fields:
     collection: コレクション名
     icon: コレクションアイコン
     note: 備考
@@ -1481,14 +1481,14 @@ fields:
     singleton: シングルトン
     translation: 項目名の翻訳を追加する
     display_template: テンプレート
-  directus_roles:
+  axis_roles:
     name: 権限名
     icon: 権限グループアイコン
     description: 説明
     users: 権限グループ内のユーザー
     parent: 親権限グループ
     children: 子権限グループ
-  directus_policies:
+  axis_policies:
     name: ポリシー名
     description: 説明
     app_access: 管理画面へのアクセス
@@ -1496,7 +1496,7 @@ fields:
     ip_access: IP アクセス制限
     enforce_tfa: 2段階認証を必須にする
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: マイプロジェクト…
     project_color_note: ログインとロゴの背景
     project_logo_note: 40×40（白色）SVG / PNG
@@ -1526,12 +1526,12 @@ field_options:
     basemaps_style: Mapbox スタイル
     files_divider_title: ファイルとサムネイル画像
     overrides_divider_title: アプリの上書き設定
-  directus_activity:
+  axis_activity:
     login: ログイン
     create: 作成
     update: 更新
     delete: 削除
-  directus_collections:
+  axis_collections:
     track_activity_revisions: アクティビティとリビジョンの記録
     only_track_activity: アクティビティのみ記録
     do_not_track_anything: 何も記録しない
@@ -1557,7 +1557,7 @@ field_options:
     preview_divider: プレビュー
     content_versioning_divider: コンテンツのバージョン管理
     enable_versioning: バージョン管理を有効化
-  directus_files:
+  axis_files:
     title: 一意のタイトル...
     description: 任意の説明...
     location: 任意の場所...
@@ -1565,13 +1565,13 @@ field_options:
     focal_point_divider: フォーカルポイント
     filename_disk: ストレージ上の保存名...
     filename_download: ダウンロード時のファイル名...
-  directus_policies:
+  axis_policies:
     name: このポリシーを識別するための固有の名前を入力してください...
     description: このポリシーの説明を入力してください...
     ip_access: 許可する IP アドレス、IP 範囲、CIDR ブロックを追加してください。すべての接続を許可する場合は、空欄のままにします。
     enforce_tfa: 2段階認証を強制する
     assigned_to: 担当者
-  directus_roles:
+  axis_roles:
     name: この権限グループの一意の名前...
     description: この権限グループの説明...
     fields:
@@ -1584,7 +1584,7 @@ field_options:
     children_note: この権限グループの権限を継承する子ロール
     collections_name: コレクション
     collections_addLabel: コレクションを追加…
-  directus_users:
+  axis_users:
     preferences_divider: ユーザー設定
     dropdown_auto: 自動 (システム設定に従う)
     dropdown_light: ライトモード

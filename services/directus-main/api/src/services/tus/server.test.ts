@@ -156,7 +156,7 @@ describe('createTusServer', () => {
 						height: 200,
 					}),
 					key: 'new-file-id',
-					collection: 'directus_files',
+					collection: 'axis_files',
 				},
 				expect.anything(),
 			);
@@ -248,7 +248,7 @@ describe('createTusServer', () => {
 						height: 300,
 					}),
 					key: 'original-file-id',
-					collection: 'directus_files',
+					collection: 'axis_files',
 				},
 				expect.anything(),
 			);
@@ -321,7 +321,7 @@ describe('createTusServer', () => {
 						tus_data: null,
 					},
 					key: 'test-file-id',
-					collection: 'directus_files',
+					collection: 'axis_files',
 				},
 				{
 					schema: mockSchema,
@@ -368,7 +368,7 @@ describe('createTusServer', () => {
 						tus_data: null,
 					},
 					key: 'test-file-id',
-					collection: 'directus_files',
+					collection: 'axis_files',
 				},
 				{
 					schema: mockSchema,

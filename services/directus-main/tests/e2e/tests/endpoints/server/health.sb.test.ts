@@ -9,7 +9,7 @@ describe('health check configuration', () => {
 		const directus = await sandbox(database, {
 			env: {
 				HEALTHCHECK_ENABLED: 'false',
-				DB_FILENAME: `directus_test_${getUID()}.db`,
+				DB_FILENAME: `axis_test_${getUID()}.db`,
 			},
 		});
 
@@ -32,7 +32,7 @@ describe('health check configuration', () => {
 			env: {
 				HEALTHCHECK_SERVICES: 'database',
 				HEALTHCHECK_CACHE_TTL: '0',
-				DB_FILENAME: `directus_test_${getUID()}.db`,
+				DB_FILENAME: `axis_test_${getUID()}.db`,
 			},
 		});
 
@@ -68,7 +68,7 @@ describe('health check configuration', () => {
 			env: {
 				EMAIL_VERIFY_SETUP: 'false',
 				HEALTHCHECK_CACHE_TTL: '0',
-				DB_FILENAME: `directus_test_${getUID()}.db`,
+				DB_FILENAME: `axis_test_${getUID()}.db`,
 			},
 		});
 

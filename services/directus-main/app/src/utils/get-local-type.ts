@@ -26,7 +26,7 @@ export function getLocalTypeForField(collection: string, field: string): LocalTy
 
 	if (relations.length === 1) {
 		const relation = relations[0]!;
-		if (relation.related_collection === 'directus_files' && relation.related_collection !== collection) return 'file';
+		if (relation.related_collection === 'axis_files' && relation.related_collection !== collection) return 'file';
 		if (relation.collection === collection && relation.field === field) return 'm2o';
 		return 'o2m';
 	}
@@ -47,10 +47,10 @@ export function getLocalTypeForField(collection: string, field: string): LocalTy
 		}
 
 		const directusFilesRelationsCount = relations.filter(
-			(relation) => relation.related_collection === 'directus_files',
+			(relation) => relation.related_collection === 'axis_files',
 		).length;
 
-		const isRelationToDirectusFiles = collection !== 'directus_files' && directusFilesRelationsCount === 1;
+		const isRelationToDirectusFiles = collection !== 'axis_files' && directusFilesRelationsCount === 1;
 		const isSelfRelationToDirectusFiles = directusFilesRelationsCount === 2;
 
 		if (isRelationToDirectusFiles || isSelfRelationToDirectusFiles) {

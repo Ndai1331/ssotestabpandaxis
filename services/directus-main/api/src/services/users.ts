@@ -39,7 +39,7 @@ const logger = useLogger();
 
 export class UsersService extends ItemsService {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_users', options);
+		super('axis_users', options);
 
 		this.knex = options.knex || getDatabase();
 		this.accountability = options.accountability || null;
@@ -57,7 +57,7 @@ export class UsersService extends ItemsService {
 
 		if (duplicates.length) {
 			throw new RecordNotUniqueError({
-				collection: 'directus_users',
+				collection: 'axis_users',
 				field: 'email',
 				value: '[' + String(duplicates) + ']',
 			});
@@ -65,7 +65,7 @@ export class UsersService extends ItemsService {
 
 		const query = this.knex
 			.select('email')
-			.from('directus_users')
+			.from('axis_users')
 			.whereRaw(`LOWER(??) IN (${emails.map(() => '?')})`, ['email', ...emails]);
 
 		if (excludeKey) {
@@ -76,7 +76,7 @@ export class UsersService extends ItemsService {
 
 		if (results.length) {
 			throw new RecordNotUniqueError({
-				collection: 'directus_users',
+				collection: 'axis_users',
 				field: 'email',
 				value: '[' + String(emails) + ']',
 			});
@@ -85,7 +85,7 @@ export class UsersService extends ItemsService {
 
 	/**
 	 * Check if the provided password matches the strictness as configured in
-	 * directus_settings.auth_password_policy
+	 * axis_settings.auth_password_policy
 	 */
 	private async checkPasswordPolicy(passwords: string[]): Promise<void> {
 		const settingsService = new SettingsService({
@@ -126,12 +126,12 @@ export class UsersService extends ItemsService {
 	private async clearUserSessions(userKeys: PrimaryKey[], excludeSession?: string): Promise<void> {
 		if (excludeSession) {
 			await this.knex
-				.from('directus_sessions')
+				.from('axis_sessions')
 				.whereIn('user', userKeys)
 				.andWhereNot('token', '=', excludeSession)
 				.delete();
 		} else {
-			await this.knex.from('directus_sessions').whereIn('user', userKeys).delete();
+			await this.knex.from('axis_sessions').whereIn('user', userKeys).delete();
 		}
 	}
 
@@ -145,7 +145,7 @@ export class UsersService extends ItemsService {
 	> {
 		return this.knex
 			.select('id', 'role', 'status', 'password', 'email', 'provider')
-			.from('directus_users')
+			.from('axis_users')
 			.whereRaw(`LOWER(??) = ?`, ['email', email.toLowerCase()])
 			.first();
 	}
@@ -291,7 +291,7 @@ export class UsersService extends ItemsService {
 			if (data['email']) {
 				if (keys.length > 1) {
 					throw new RecordNotUniqueError({
-						collection: 'directus_users',
+						collection: 'axis_users',
 						field: 'email',
 						value: data['email'],
 					});
@@ -372,7 +372,7 @@ export class UsersService extends ItemsService {
 		if (this.accountability) {
 			await validateAccess(
 				{
-					collection: 'directus_users',
+					collection: 'axis_users',
 					action: 'delete',
 					accountability: this.accountability,
 					primaryKeys: keys,
@@ -392,9 +392,9 @@ export class UsersService extends ItemsService {
 		}
 
 		// Manual constraint, see https://github.com/directus/directus/pull/19912
-		await this.knex('directus_comments').update({ user_updated: null }).whereIn('user_updated', keys);
-		await this.knex('directus_notifications').update({ sender: null }).whereIn('sender', keys);
-		await this.knex('directus_versions').update({ user_updated: null }).whereIn('user_updated', keys);
+		await this.knex('axis_comments').update({ user_updated: null }).whereIn('user_updated', keys);
+		await this.knex('axis_notifications').update({ sender: null }).whereIn('sender', keys);
+		await this.knex('axis_versions').update({ user_updated: null }).whereIn('user_updated', keys);
 
 		await super.deleteMany(keys, opts);
 		await this.clearUserSessions(keys);

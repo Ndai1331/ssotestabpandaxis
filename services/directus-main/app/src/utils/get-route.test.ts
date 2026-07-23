@@ -9,13 +9,13 @@ describe('getSystemCollectionRoute', () => {
 	});
 
 	it('Returns an empty string when collection is not an accessible system collection', () => {
-		const collection = 'directus_fields';
+		const collection = 'axis_fields';
 
 		expect(getSystemCollectionRoute(collection)).toBe('');
 	});
 
 	it('Returns the expected route for an accessible system collection', () => {
-		const collection = 'directus_users';
+		const collection = 'axis_users';
 
 		expect(getSystemCollectionRoute(collection)).toBe('/users');
 	});
@@ -33,7 +33,7 @@ describe('getCollectionRoute', () => {
 	});
 
 	it('Returns the expected route for system collection', () => {
-		const systemCollection = 'directus_users';
+		const systemCollection = 'axis_users';
 
 		expect(getCollectionRoute(systemCollection)).toBe(`/users`);
 	});
@@ -75,7 +75,7 @@ describe('getItemRoute', async () => {
 	});
 
 	it('Returns the route with ignored primary key for singleton system collection', () => {
-		const collection = 'directus_settings';
+		const collection = 'axis_settings';
 		const primaryKey = 123;
 
 		expect(getItemRoute(collection, primaryKey)).toBe('/settings/project');

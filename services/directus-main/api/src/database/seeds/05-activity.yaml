@@ -1,4 +1,4 @@
-table: directus_activity
+table: axis_activity
 
 columns:
   id:
@@ -25,7 +25,7 @@ columns:
     length: 'MAX_TABLE_NAME_LENGTH'
     nullable: false
     references:
-      table: directus_collections
+      table: axis_collections
       column: collection
   item:
     type: string

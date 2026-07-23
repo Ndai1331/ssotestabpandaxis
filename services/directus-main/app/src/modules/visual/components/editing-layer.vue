@@ -89,7 +89,7 @@ function useWebsiteFrame({ onClickEdit }: { onClickEdit: (data: unknown) => void
 		readAllowed: readVersionsAllowed,
 		createAllowed: createVersionsAllowed,
 		updateAllowed: updateVersionsAllowed,
-	} = useCollectionPermissions('directus_versions');
+	} = useCollectionPermissions('axis_versions');
 
 	useEventListener('message', (event) => {
 		if (!sameOrigin(event.origin, frameSrc)) {

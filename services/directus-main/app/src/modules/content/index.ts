@@ -110,7 +110,7 @@ export const stripVersionWithoutReadAccess = (to: RouteLocationNormalized) => {
 	if (!to.query.version && !to.query.versionId) return;
 
 	const permissionsStore = usePermissionsStore();
-	if (permissionsStore.hasPermission('directus_versions', 'read')) return;
+	if (permissionsStore.hasPermission('axis_versions', 'read')) return;
 
 	const target = removeQueryFromPath(to.fullPath, 'version', 'versionId');
 	if (target === to.fullPath) return;

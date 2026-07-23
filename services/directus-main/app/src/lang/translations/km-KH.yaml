@@ -33,10 +33,10 @@ field_o2m: O2M Relationship
 field_m2m: M2M Relationship
 field_translations: ការបកប្រែ
 fields:
-  directus_roles:
+  axis_roles:
     name: ឈ្មោះតួនាទី
 field_options:
-  directus_collections:
+  axis_collections:
     archive_divider: Archive
 triggers:
   webhook:

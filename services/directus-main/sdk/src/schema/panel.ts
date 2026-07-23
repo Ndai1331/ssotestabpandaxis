@@ -4,7 +4,7 @@ import type { DirectusUser } from './user.js';
 
 export type DirectusPanel<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_panels',
+	'axis_panels',
 	{
 		id: string;
 		dashboard: DirectusDashboard<Schema> | string;

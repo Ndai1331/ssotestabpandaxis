@@ -100,7 +100,7 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 						.send({
 							collection: localCollectionCountries,
 							field: fieldName,
-							related_collection: 'directus_files',
+							related_collection: 'axis_files',
 							meta: { sort_field: null },
 							schema: { on_delete: 'SET NULL' },
 						})
@@ -162,7 +162,7 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 				describe('can create new field in system collection', () => {
 					it.each(vendors)('%s', async (vendor) => {
 						// Setup
-						const systemUsersCollection = 'directus_users';
+						const systemUsersCollection = 'axis_users';
 						const fieldName = 'user_field_test';
 
 						// Action
@@ -310,7 +310,7 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 				describe('can update user created field on system collection', () => {
 					it.each(vendors)('%s', async (vendor) => {
 						// Setup
-						const systemUsersCollection = 'directus_users';
+						const systemUsersCollection = 'axis_users';
 						const fieldName = 'user_field_test';
 						const updatedValue = 'Updated';
 
@@ -352,7 +352,7 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 				describe('can update system field index', () => {
 					it.each(vendors)('%s', async (vendor) => {
 						// Setup
-						const systemUsersCollection = 'directus_users';
+						const systemUsersCollection = 'axis_users';
 						const fieldName = 'first_name';
 						const updatedValue = true;
 
@@ -390,7 +390,7 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 				describe('can update system field index concurrently', () => {
 					it.each(vendors)('%s', async (vendor) => {
 						// Setup
-						const systemUsersCollection = 'directus_users';
+						const systemUsersCollection = 'axis_users';
 						const fieldName = 'first_name';
 						const updatedValue = true;
 
@@ -428,7 +428,7 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 				describe('errors for invalid updates to system field', () => {
 					it.each(vendors)('%s', async (vendor) => {
 						// Setup
-						const systemUsersCollection = 'directus_users';
+						const systemUsersCollection = 'axis_users';
 						const fieldName = 'first_name';
 
 						// Action
@@ -494,7 +494,7 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 				describe('can delete user created field on system collection', () => {
 					it.each(vendors)('%s', async (vendor) => {
 						// Setup
-						const systemUsersCollection = 'directus_users';
+						const systemUsersCollection = 'axis_users';
 						const fieldName = 'user_field_test';
 
 						// Action
@@ -520,7 +520,7 @@ describe.each(PRIMARY_KEY_TYPES)('/fields', (pkType) => {
 				describe('cannot delete system field', () => {
 					it.each(vendors)('%s', async (vendor) => {
 						// Setup
-						const systemUsersCollection = 'directus_users';
+						const systemUsersCollection = 'axis_users';
 						const fieldName = 'description';
 
 						// Action

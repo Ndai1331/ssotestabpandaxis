@@ -37,7 +37,7 @@ const showFailedOnly = ref(false);
 
 const { revisionsByDate, getRevisions, revisionsCount, getRevisionsCount, loading, loadingCount, pagesCount, refresh } =
 	useRevisions(
-		ref('directus_flows'),
+		ref('axis_flows'),
 		computed(() => unref(flow).id),
 		ref(null),
 		{

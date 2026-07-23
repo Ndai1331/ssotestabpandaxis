@@ -27,16 +27,16 @@ async function fetchRoleAccess(roles: string[], context: { knex: Knex }) {
 	};
 
 	const accessRows = await context
-		.knex('directus_access')
+		.knex('axis_access')
 		.select(
-			'directus_policies.id',
-			'directus_policies.admin_access',
-			'directus_policies.app_access',
-			'directus_policies.ip_access',
-			'directus_policies.enforce_tfa',
+			'axis_policies.id',
+			'axis_policies.admin_access',
+			'axis_policies.app_access',
+			'axis_policies.ip_access',
+			'axis_policies.enforce_tfa',
 		)
 		.where('role', 'in', roles)
-		.leftJoin('directus_policies', 'directus_policies.id', 'directus_access.policy');
+		.leftJoin('axis_policies', 'axis_policies.id', 'axis_access.policy');
 
 	const ipAccess = new Set();
 
@@ -68,14 +68,14 @@ export async function up(knex: Knex) {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// If the policies table already exists the migration has already run
-	if (await knex.schema.hasTable('directus_policies')) {
+	if (await knex.schema.hasTable('axis_policies')) {
 		return;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Create new policies table that mirrors previous Roles
 
-	await knex.schema.createTable('directus_policies', (table) => {
+	await knex.schema.createTable('axis_policies', (table) => {
 		table.uuid('id').primary();
 		table.string('name', 100).notNullable();
 		table.string('icon', 64).notNullable().defaultTo('badge');
@@ -91,11 +91,11 @@ export async function up(knex: Knex) {
 
 	const roles = await knex
 		.select('id', 'name', 'icon', 'description', 'ip_access', 'enforce_tfa', 'admin_access', 'app_access')
-		.from('directus_roles');
+		.from('axis_roles');
 
 	if (roles.length > 0) {
 		await processChunk(roles, 100, async (chunk) => {
-			await knex('directus_policies').insert(chunk);
+			await knex('axis_policies').insert(chunk);
 		});
 	}
 
@@ -107,10 +107,10 @@ export async function up(knex: Knex) {
 			description: '$t:public_description',
 			app_access: false,
 		})
-		.into('directus_policies');
+		.into('axis_policies');
 
 	// Change the admin policy description to $t:admin_policy_description
-	await knex('directus_policies')
+	await knex('axis_policies')
 		.update({
 			description: '$t:admin_policy_description',
 		})
@@ -119,52 +119,52 @@ export async function up(knex: Knex) {
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Remove access control + add nesting to roles
 
-	await knex.schema.alterTable('directus_roles', (table) => {
+	await knex.schema.alterTable('axis_roles', (table) => {
 		table.dropColumn('ip_access');
 		table.dropColumn('enforce_tfa');
 		table.dropColumn('admin_access');
 		table.dropColumn('app_access');
 
-		table.uuid('parent').references('directus_roles.id');
+		table.uuid('parent').references('axis_roles.id');
 	});
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Link permissions to policies instead of roles
 
-	await knex.schema.alterTable('directus_permissions', (table) => {
+	await knex.schema.alterTable('axis_permissions', (table) => {
 		table.uuid('policy');
 	});
 
 	try {
 		const inspector = await getSchemaInspector(knex);
-		const foreignKeys = await inspector.foreignKeys('directus_permissions');
+		const foreignKeys = await inspector.foreignKeys('axis_permissions');
 
 		const foreignConstraint =
-			foreignKeys.find((foreign) => foreign.foreign_key_table === 'directus_roles' && foreign.column === 'role')
+			foreignKeys.find((foreign) => foreign.foreign_key_table === 'axis_roles' && foreign.column === 'role')
 				?.constraint_name || undefined;
 
-		await knex.schema.alterTable('directus_permissions', (table) => {
+		await knex.schema.alterTable('axis_permissions', (table) => {
 			// Drop the foreign key constraint here in order to update `null` role to public policy ID
 			table.dropForeign('role', foreignConstraint);
 		});
 	} catch {
-		logger.warn('Failed to drop foreign key constraint on `role` column in `directus_permissions` table');
+		logger.warn('Failed to drop foreign key constraint on `role` column in `axis_permissions` table');
 	}
 
-	await knex('directus_permissions')
+	await knex('axis_permissions')
 		.update({
 			role: PUBLIC_POLICY_ID,
 		})
 		.whereNull('role');
 
-	await knex('directus_permissions').update({
+	await knex('axis_permissions').update({
 		policy: knex.ref('role'),
 	});
 
-	await knex.schema.alterTable('directus_permissions', (table) => {
+	await knex.schema.alterTable('axis_permissions', (table) => {
 		table.dropColumns('role');
 		table.dropNullable('policy');
-		table.foreign('policy').references('directus_policies.id').onDelete('CASCADE');
+		table.foreign('policy').references('axis_policies.id').onDelete('CASCADE');
 	});
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -176,11 +176,11 @@ export async function up(knex: Knex) {
 	// Shouldn't be the end of the world here, as we know we're only attaching policies to two other
 	// collections.
 
-	await knex.schema.createTable('directus_access', (table) => {
+	await knex.schema.createTable('axis_access', (table) => {
 		table.uuid('id').primary();
-		table.uuid('role').references('directus_roles.id').nullable().onDelete('CASCADE');
-		table.uuid('user').references('directus_users.id').nullable().onDelete('CASCADE');
-		table.uuid('policy').references('directus_policies.id').notNullable().onDelete('CASCADE');
+		table.uuid('role').references('axis_roles.id').nullable().onDelete('CASCADE');
+		table.uuid('user').references('axis_users.id').nullable().onDelete('CASCADE');
+		table.uuid('policy').references('axis_policies.id').notNullable().onDelete('CASCADE');
 		table.integer('sort');
 	});
 
@@ -196,10 +196,10 @@ export async function up(knex: Knex) {
 	}));
 
 	await processChunk(policyAttachments, 100, async (chunk) => {
-		await knex('directus_access').insert(chunk);
+		await knex('axis_access').insert(chunk);
 	});
 
-	await knex('directus_access').insert({
+	await knex('axis_access').insert({
 		id: randomUUID(),
 		role: null,
 		user: null,
@@ -212,7 +212,7 @@ export async function down(knex: Knex) {
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Reinstate access control fields on directus roles
 
-	await knex.schema.alterTable('directus_roles', (table) => {
+	await knex.schema.alterTable('axis_roles', (table) => {
 		table.text('ip_access');
 		table.boolean('enforce_tfa').defaultTo(false).notNullable();
 		table.boolean('admin_access').defaultTo(false).notNullable();
@@ -224,10 +224,10 @@ export async function down(knex: Knex) {
 
 	const originalPermissions = await knex
 		.select('id')
-		.from('directus_permissions')
+		.from('axis_permissions')
 		.whereNot({ policy: PUBLIC_POLICY_ID });
 
-	await knex.schema.alterTable('directus_permissions', (table) => {
+	await knex.schema.alterTable('axis_permissions', (table) => {
 		table.uuid('role').nullable();
 		table.setNullable('policy');
 	});
@@ -235,7 +235,7 @@ export async function down(knex: Knex) {
 	const context = { knex, schema: await getSchema() };
 
 	// fetch all roles
-	const roles: Array<{ id: string | null }> = await knex.select('id').from('directus_roles');
+	const roles: Array<{ id: string | null }> = await knex.select('id').from('axis_roles');
 
 	// simulate Public Role
 	roles.push({ id: null });
@@ -250,7 +250,7 @@ export async function down(knex: Knex) {
 
 		if (role.id !== null) {
 			roleAccess = await fetchRoleAccess(roleTree, context);
-			await knex('directus_roles').update(roleAccess).where({ id: role.id });
+			await knex('axis_roles').update(roleAccess).where({ id: role.id });
 		}
 
 		if (roleAccess === null || !roleAccess.admin_access) {
@@ -304,7 +304,7 @@ export async function down(knex: Knex) {
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Remove role nesting support
 
-	await knex.schema.alterTable('directus_roles', (table) => {
+	await knex.schema.alterTable('axis_roles', (table) => {
 		table.dropForeign('parent');
 		table.dropColumn('parent');
 	});
@@ -314,17 +314,17 @@ export async function down(knex: Knex) {
 
 	// TODO query all policies that are attached to a user and delete their permissions,
 	//  since we don't know were to put them now and it'll cause a foreign key problem
-	//  as soon as we reference directus_roles in directus_permissions again
+	//  as soon as we reference axis_roles in axis_permissions again
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Drop policy attachments
 
-	await knex.schema.dropTable('directus_access');
+	await knex.schema.dropTable('axis_access');
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Reattach permissions to roles instead of policies
 
-	await knex('directus_permissions')
+	await knex('axis_permissions')
 		.update({
 			role: null,
 		})
@@ -332,16 +332,16 @@ export async function down(knex: Knex) {
 
 	// remove all v11 permissions
 	await processChunk(originalPermissions, 100, async (chunk) => {
-		await knex('directus_permissions').delete(chunk);
+		await knex('axis_permissions').delete(chunk);
 	});
 
 	// insert all v10 permissions
 	await processChunk(rolePermissions, 100, async (chunk) => {
-		await knex('directus_permissions').insert(chunk);
+		await knex('axis_permissions').insert(chunk);
 	});
 
-	await knex.schema.alterTable('directus_permissions', (table) => {
-		table.uuid('role').references('directus_roles.id').alter();
+	await knex.schema.alterTable('axis_permissions', (table) => {
+		table.uuid('role').references('axis_roles.id').alter();
 		table.dropForeign('policy');
 		table.dropColumn('policy');
 	});
@@ -349,5 +349,5 @@ export async function down(knex: Knex) {
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Drop policies table
 
-	await knex.schema.dropTable('directus_policies');
+	await knex.schema.dropTable('axis_policies');
 }

@@ -71,7 +71,7 @@ const VListStub = defineComponent({
 function mountComponent(props: Record<string, unknown> = {}) {
 	return shallowMount(VFieldList, {
 		props: {
-			collection: 'directus_files',
+			collection: 'axis_files',
 			...props,
 		},
 		global: {

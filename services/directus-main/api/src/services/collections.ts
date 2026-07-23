@@ -73,8 +73,8 @@ export class CollectionsService {
 			throw new InvalidPayloadError({ reason: `"collection" must be a non-empty string` });
 		}
 
-		if (payload.collection.startsWith('directus_')) {
-			throw new InvalidPayloadError({ reason: `Collections can't start with "directus_"` });
+		if (payload.collection.startsWith('axis_')) {
+			throw new InvalidPayloadError({ reason: `Collections can't start with "axis_"` });
 		}
 
 		if (payload.collection.includes('/')) {
@@ -91,7 +91,7 @@ export class CollectionsService {
 
 		try {
 			const existingCollections: string[] = [
-				...((await this.knex.select('collection').from('directus_collections'))?.map(({ collection }) => collection) ??
+				...((await this.knex.select('collection').from('axis_collections'))?.map(({ collection }) => collection) ??
 					[]),
 				...Object.keys(this.schema.collections),
 			];
@@ -171,7 +171,7 @@ export class CollectionsService {
 						}
 					});
 
-					const fieldItemsService = new ItemsService('directus_fields', {
+					const fieldItemsService = new ItemsService('axis_fields', {
 						knex: trx,
 						accountability: this.accountability,
 						schema: this.schema,
@@ -210,7 +210,7 @@ export class CollectionsService {
 				}
 
 				if (payload.meta) {
-					const collectionsItemsService = new ItemsService('directus_collections', {
+					const collectionsItemsService = new ItemsService('axis_collections', {
 						knex: trx,
 						accountability: this.accountability,
 						schema: this.schema,
@@ -324,7 +324,7 @@ export class CollectionsService {
 	async readByQuery(): Promise<Collection[]> {
 		const env = useEnv();
 
-		const collectionsItemsService = new ItemsService('directus_collections', {
+		const collectionsItemsService = new ItemsService('axis_collections', {
 			knex: this.knex,
 			schema: this.schema,
 			accountability: this.accountability,
@@ -457,7 +457,7 @@ export class CollectionsService {
 		const nestedActionEvents: ActionEventParams[] = [];
 
 		try {
-			const collectionsItemsService = new ItemsService('directus_collections', {
+			const collectionsItemsService = new ItemsService('axis_collections', {
 				knex: this.knex,
 				accountability: this.accountability,
 				schema: this.schema,
@@ -473,7 +473,7 @@ export class CollectionsService {
 
 			const exists = !!(await this.knex
 				.select('collection')
-				.from('directus_collections')
+				.from('axis_collections')
 				.where({ collection: collectionKey })
 				.first());
 
@@ -653,10 +653,10 @@ export class CollectionsService {
 				}
 
 				// Make sure this collection isn't used as a group in any other collections
-				await trx('directus_collections').update({ group: null }).where({ group: collectionKey });
+				await trx('axis_collections').update({ group: null }).where({ group: collectionKey });
 
 				if (collectionToBeDeleted!.meta) {
-					const collectionsItemsService = new ItemsService('directus_collections', {
+					const collectionsItemsService = new ItemsService('axis_collections', {
 						knex: trx,
 						accountability: this.accountability,
 						schema: this.schema,
@@ -675,7 +675,7 @@ export class CollectionsService {
 						schema: this.schema,
 					});
 
-					const fieldItemsService = new ItemsService('directus_fields', {
+					const fieldItemsService = new ItemsService('axis_fields', {
 						knex: trx,
 						accountability: this.accountability,
 						schema: this.schema,
@@ -693,11 +693,11 @@ export class CollectionsService {
 						},
 					);
 
-					await trx('directus_presets').delete().where('collection', '=', collectionKey);
+					await trx('axis_presets').delete().where('collection', '=', collectionKey);
 
 					const revisionsToDelete = await trx
 						.select('id')
-						.from('directus_revisions')
+						.from('axis_revisions')
 						.where({ collection: collectionKey });
 
 					if (revisionsToDelete.length > 0) {
@@ -707,15 +707,15 @@ export class CollectionsService {
 						);
 
 						for (const keys of chunks) {
-							await trx('directus_revisions').update({ parent: null }).whereIn('parent', keys);
+							await trx('axis_revisions').update({ parent: null }).whereIn('parent', keys);
 						}
 					}
 
-					await trx('directus_revisions').delete().where('collection', '=', collectionKey);
+					await trx('axis_revisions').delete().where('collection', '=', collectionKey);
 
-					await trx('directus_activity').delete().where('collection', '=', collectionKey);
-					await trx('directus_permissions').delete().where('collection', '=', collectionKey);
-					await trx('directus_relations').delete().where({ many_collection: collectionKey });
+					await trx('axis_activity').delete().where('collection', '=', collectionKey);
+					await trx('axis_permissions').delete().where('collection', '=', collectionKey);
+					await trx('axis_relations').delete().where({ many_collection: collectionKey });
 
 					const { collectionRelationTree, fieldToCollectionList } = await buildCollectionAndFieldRelations(
 						this.schema.relations,
@@ -727,7 +727,7 @@ export class CollectionsService {
 					if (collectionRelationList.size !== 0) {
 						const collectionMetas = await trx
 							.select('collection', 'archive_field', 'sort_field', 'item_duplication_fields')
-							.from('directus_collections')
+							.from('axis_collections')
 							.whereIn('collection', Array.from(collectionRelationList))
 							.whereNotNull('item_duplication_fields');
 
@@ -742,7 +742,7 @@ export class CollectionsService {
 								);
 
 								for (const meta of collectionMetaUpdates) {
-									await trx('directus_collections').update(meta.updates).where({ collection: meta.collection });
+									await trx('axis_collections').update(meta.updates).where({ collection: meta.collection });
 								}
 							}),
 						);
@@ -783,7 +783,7 @@ export class CollectionsService {
 							.meta!.one_allowed_collections!.filter((collection) => collectionKey !== collection)
 							.join(',');
 
-						await trx('directus_relations')
+						await trx('axis_relations')
 							.update({ one_allowed_collections: newAllowedCollections })
 							.where({ id: relation.meta!.id });
 					}

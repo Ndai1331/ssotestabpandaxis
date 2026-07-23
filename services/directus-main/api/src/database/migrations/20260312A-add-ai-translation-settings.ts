@@ -1,7 +1,7 @@
 import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_settings', (table) => {
+	await knex.schema.alterTable('axis_settings', (table) => {
 		table.text('ai_translation_default_model').nullable();
 		table.json('ai_translation_glossary').nullable();
 		table.text('ai_translation_style_guide').nullable();
@@ -9,7 +9,7 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
-	await knex.schema.alterTable('directus_settings', (table) => {
+	await knex.schema.alterTable('axis_settings', (table) => {
 		table.dropColumn('ai_translation_default_model');
 		table.dropColumn('ai_translation_glossary');
 		table.dropColumn('ai_translation_style_guide');

@@ -344,7 +344,7 @@ describe('getPermissionsForShare', () => {
 const basePermissions = [
 	{
 		action: 'read',
-		collection: 'directus_collections',
+		collection: 'axis_collections',
 		fields: ['*'],
 		permissions: {},
 		policy: null,
@@ -354,7 +354,7 @@ const basePermissions = [
 	},
 	{
 		action: 'read',
-		collection: 'directus_fields',
+		collection: 'axis_fields',
 		fields: ['*'],
 		permissions: {},
 		policy: null,
@@ -364,7 +364,7 @@ const basePermissions = [
 	},
 	{
 		action: 'read',
-		collection: 'directus_relations',
+		collection: 'axis_relations',
 		fields: ['*'],
 		permissions: {},
 		policy: null,
@@ -374,7 +374,7 @@ const basePermissions = [
 	},
 	{
 		action: 'read',
-		collection: 'directus_translations',
+		collection: 'axis_translations',
 		fields: ['*'],
 		permissions: {},
 		policy: null,

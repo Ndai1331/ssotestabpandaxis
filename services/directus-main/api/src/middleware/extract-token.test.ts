@@ -4,7 +4,7 @@ import extractToken from './extract-token.js';
 import '../types/express.d.ts';
 
 vi.mock('@directus/env', () => ({
-	useEnv: vi.fn().mockReturnValue({ SESSION_COOKIE_NAME: 'directus_session_token' }),
+	useEnv: vi.fn().mockReturnValue({ SESSION_COOKIE_NAME: 'axis_session_token' }),
 }));
 
 let mockRequest: Partial<Request & { token?: string; tokenSource?: string | null }>;
@@ -85,14 +85,14 @@ describe('tokenSource', () => {
 	});
 
 	test('is "cookie" when session cookie present and no header/query', () => {
-		mockRequest = { cookies: { directus_session_token: 'test' } };
+		mockRequest = { cookies: { axis_session_token: 'test' } };
 		extractToken(mockRequest as Request, mockResponse as Response, nextFunction);
 		expect(mockRequest.tokenSource).toBe('cookie');
 	});
 
 	test('header bearer token takes precedence over session cookie', () => {
 		mockRequest = {
-			cookies: { directus_session_token: 'cookie-token' },
+			cookies: { axis_session_token: 'cookie-token' },
 			headers: { authorization: 'Bearer header-token' },
 		};
 
@@ -104,7 +104,7 @@ describe('tokenSource', () => {
 
 	test('query access_token takes precedence over session cookie', () => {
 		mockRequest = {
-			cookies: { directus_session_token: 'cookie-token' },
+			cookies: { axis_session_token: 'cookie-token' },
 			query: { access_token: 'query-token' },
 		};
 

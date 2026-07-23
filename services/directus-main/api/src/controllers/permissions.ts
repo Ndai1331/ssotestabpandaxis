@@ -13,7 +13,7 @@ import { sanitizeQuery } from '../utils/sanitize-query.js';
 
 const router = express.Router();
 
-router.use(useCollection('directus_permissions'));
+router.use(useCollection('axis_permissions'));
 
 router.post(
 	'/',
@@ -79,7 +79,7 @@ const readHandler = asyncHandler(async (req, res, next) => {
 		result = await service.readByQuery(temporaryQuery);
 	}
 
-	const meta = await metaService.getMetaForQuery('directus_permissions', temporaryQuery);
+	const meta = await metaService.getMetaForQuery('axis_permissions', temporaryQuery);
 
 	res.locals['payload'] = { data: result, meta };
 	return next();

@@ -24,7 +24,7 @@ describe('getFilesizeSum', () => {
 		const res = await getFilesizeSum(mockDb);
 
 		expect(mockDb.sum).toHaveBeenCalledWith({ total: 'filesize' });
-		expect(mockDb.from).toHaveBeenCalledWith('directus_files');
+		expect(mockDb.from).toHaveBeenCalledWith('axis_files');
 		expect(mockDb.first).toHaveBeenCalled();
 
 		expect(res).toEqual({ total: 10 });

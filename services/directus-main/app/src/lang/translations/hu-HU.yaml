@@ -371,9 +371,9 @@ geometry:
 theme_auto: Automatikus (rendszertől függően)
 theme_light: Világos mód
 theme_dark: Sötét mód
-theme_directus_default: Directus alapértelmezett
-theme_directus_minimal: Directus minimális
-theme_directus_colormatch: Directus színegyezés
+theme_axis_default: Directus alapértelmezett
+theme_axis_minimal: Directus minimális
+theme_axis_colormatch: Directus színegyezés
 not_available_for_type: Ehhez a típushoz nem elérhető
 create_translations: Fordítás létrehozása
 auto_refresh: Automatikus frissítés
@@ -1110,27 +1110,27 @@ content: Ügyvitel
 singleton: Egyedüli
 singleton_label: Egyetlen objektumként kezelendő
 system_fields_locked: A rendszermezők zároltak és nem szerkeszthetők
-directus_collection:
-  directus_activity: Az összes esemény elszámoltathatósági naplója
-  directus_collections: Gyűjtemény további konfigurációja és metaadatok
-  directus_dashboards: Irányítópultok az Insights modulon belül
-  directus_fields: Mező további konfigurációja és metaadatok
-  directus_files: Metaadatok az összes kezelt fájleszközhöz
-  directus_folders: Virtuális könyvtárakat biztosít a fájlok számára
-  directus_migrations: Az adatbázis melyik verzióját használja
-  directus_notifications: A felhasználóknak küldött értesítések
-  directus_operations: A folyamatok műveletei
-  directus_panels: Egyedi panelek a kimutatások irányítópultjain belül
-  directus_presets: Gyűjtemény és könyvjelzők alapértelmezései
-  directus_relations: Reláció konfigurációja és metaadatok
-  directus_revisions: Pillanatkép minden tevékenységhez
-  directus_roles: Jogosultsági csoportok rendszerfelhasználók számára
-  directus_sessions: Felhasználói munkamenet-információk
-  directus_settings: Projekt konfigurációs lehetőségek
-  directus_shares: Követi a külsőleg megosztott elemeket
-  directus_users: A platform rendszerhasználói
+axis_collection:
+  axis_activity: Az összes esemény elszámoltathatósági naplója
+  axis_collections: Gyűjtemény további konfigurációja és metaadatok
+  axis_dashboards: Irányítópultok az Insights modulon belül
+  axis_fields: Mező további konfigurációja és metaadatok
+  axis_files: Metaadatok az összes kezelt fájleszközhöz
+  axis_folders: Virtuális könyvtárakat biztosít a fájlok számára
+  axis_migrations: Az adatbázis melyik verzióját használja
+  axis_notifications: A felhasználóknak küldött értesítések
+  axis_operations: A folyamatok műveletei
+  axis_panels: Egyedi panelek a kimutatások irányítópultjain belül
+  axis_presets: Gyűjtemény és könyvjelzők alapértelmezései
+  axis_relations: Reláció konfigurációja és metaadatok
+  axis_revisions: Pillanatkép minden tevékenységhez
+  axis_roles: Jogosultsági csoportok rendszerfelhasználók számára
+  axis_sessions: Felhasználói munkamenet-információk
+  axis_settings: Projekt konfigurációs lehetőségek
+  axis_shares: Követi a külsőleg megosztott elemeket
+  axis_users: A platform rendszerhasználói
 fields:
-  directus_activity:
+  axis_activity:
     item: Elem elsődleges kulcsa
     action: Művelet
     collection: Gyűjtemény
@@ -1141,7 +1141,7 @@ fields:
     origin: Származás
     ip: IP cím
     revisions: Változatok
-  directus_collections:
+  axis_collections:
     collection: Gyűjtemény
     icon: Ikon
     note: Jegyzet
@@ -1158,7 +1158,7 @@ fields:
     accountability: Tevékenység és revízió nyomkövetése
     archive_field: Archívum
     item_duplication_fields: Elemkettőzési mezők
-  directus_files:
+  axis_files:
     $thumbnail: Miniatűr
     title: Cím
     description: Leírás
@@ -1182,7 +1182,7 @@ fields:
     height: Magasság
     charset: Karakterkészlet
     duration: Időtartam
-  directus_users:
+  axis_users:
     first_name: Keresztnév
     last_name: Vezetéknév
     email: Email
@@ -1209,7 +1209,7 @@ fields:
     last_page: Utolsó oldal
     last_access: Utolsó hozzáférés
     email_notifications: Email értesítések
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1249,7 +1249,7 @@ fields:
     image_editor: Képszerkesztő
     custom_aspect_ratios: Egyedi képarányok
     ai_header_name: Fejléc
-  directus_shares:
+  axis_shares:
     name: Név
     role: Szerepkör
     password: Jelszó
@@ -1257,7 +1257,7 @@ fields:
     date_end: Befejezés dátuma
     max_uses: Maximális felhasználás
     times_used: Használat ideje
-  directus_fields:
+  axis_fields:
     collection: Gyűjtemény neve
     icon: Gyűjtemény ikonja
     note: Jegyzet
@@ -1265,16 +1265,16 @@ fields:
     singleton: Egyedüli
     translation: Lefordított mezőnevek
     display_template: Sablon
-  directus_roles:
+  axis_roles:
     name: Szerepkör neve
     icon: Szerep ikonja
     description: Leírás
     users: Felhasználók a szerepkörben
-  directus_policies:
+  axis_policies:
     name: Szabályzat neve
     description: Leírás
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Saját projektem...
     project_color_note: Bejelentkezés és logó háttér
     public_note_placeholder: Egy rövid, nyilvános üzenet, mely támogatja a markdown formázást...
@@ -1302,12 +1302,12 @@ field_options:
     basemaps_style: Mapbox stílus
     files_divider_title: Fájlok és miniatűrök
     overrides_divider_title: Alkalmazás felülbírálások
-  directus_activity:
+  axis_activity:
     login: Bejelentkezés
     create: Létrehozás
     update: Frissítés
     delete: Törlés
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Tevékenységek és módosítások nyomon követése
     only_track_activity: Csak a tevékenység nyomon követése
     do_not_track_anything: Minden nyomkövetés tiltása
@@ -1331,14 +1331,14 @@ field_options:
     accountability_divider: Elszámoltathatóság
     duplication_divider: Duplikálás
     preview_divider: Előnézet
-  directus_files:
+  axis_files:
     title: Egy egyedi cím...
     description: Egy opcionális leírás...
     location: Egy opcionális helyszín...
     storage_divider: Fájl elnevezése
     filename_disk: Név a lemeztáron...
     filename_download: Elnevezés letöltés esetén...
-  directus_roles:
+  axis_roles:
     name: E szerepkör egyedi neve...
     description: A szerepkör leírása...
     fields:
@@ -1349,7 +1349,7 @@ field_options:
       link_placeholder: Relatív vagy abszolút URL...
     collections_name: Gyűjtemények
     collections_addLabel: Gyűjtemény hozzáadása...
-  directus_users:
+  axis_users:
     preferences_divider: Felhasználói beállítások
     dropdown_auto: Automatikus (A rendszeren alapuló)
     dropdown_light: Világos mód

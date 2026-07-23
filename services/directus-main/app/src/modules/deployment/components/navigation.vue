@@ -17,7 +17,7 @@ import { useUserStore } from '@/stores/user';
 
 const route = useRoute();
 const isAdmin = useUserStore().isAdmin;
-const canReadRuns = usePermissionsStore().hasPermission('directus_deployment_runs', 'read');
+const canReadRuns = usePermissionsStore().hasPermission('axis_deployment_runs', 'read');
 const { providers, loading, openProviders, fetch, currentProviderKey, currentProjectId } = useDeploymentNavigation();
 
 const isSettingsPage = computed(() => route.name === 'deployments-provider-settings');

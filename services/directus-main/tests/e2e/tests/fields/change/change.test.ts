@@ -105,7 +105,7 @@ describe('/fields', () => {
 				createRelation({
 					collection: collections.country,
 					field: fieldName,
-					related_collection: 'directus_files',
+					related_collection: 'axis_files',
 					meta: { sort_field: null },
 					schema: { on_delete: 'SET NULL' },
 				}),
@@ -146,7 +146,7 @@ describe('/fields', () => {
 		// Skip if oracle as CI option lacks spatial support
 		test.skipIf(database === 'oracle')('SQL injection via geometry subtype does not execute', async () => {
 			// The injection embeds a SELECT against a non-existent table which will error if executed
-			const subtype = `Point, 4326)); SELECT * FROM "directus_geom_injection_canary"; --`;
+			const subtype = `Point, 4326)); SELECT * FROM "axis_geom_injection_canary"; --`;
 
 			await api.request(
 				createCollection({

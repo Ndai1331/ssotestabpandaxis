@@ -339,9 +339,9 @@ geometry:
 theme_auto: Automatski (na temelju sustava)
 theme_light: Svijetli Način
 theme_dark: Tamni Način
-theme_directus_default: Directus Zadano
-theme_directus_minimal: Directus Minimal
-theme_directus_colormatch: Directus Podudaranje Boja
+theme_axis_default: Directus Zadano
+theme_axis_minimal: Directus Minimal
+theme_axis_colormatch: Directus Podudaranje Boja
 not_available_for_type: Nije dostupno za ovu vrstu
 create_translations: Dodaj prijevod
 auto_refresh: Automatsko osvježavanje
@@ -1174,30 +1174,30 @@ content: Sadržaj
 singleton: Singleton
 singleton_label: Tretiraj kao jedan objekt
 system_fields_locked: Polja sustava su zaključana i ne mogu se uređivati
-directus_collection:
-  directus_activity: Dnevnici odgovornosti za sve događaje
-  directus_collections: Dodatna konfiguracija zbirke i metapodaci
-  directus_dashboards: Nadzorne ploče unutar modula s uvidima
-  directus_fields: Dodatna konfiguracija polja i metapodaci
-  directus_files: Metapodaci za sva upravljana datotečna sredstva
-  directus_folders: Pruža virtualne direktorije za datoteke
-  directus_migrations: Koju verziju baze podataka koristite
-  directus_notifications: Obavijesti poslane korisnicima
-  directus_operations: Operacije koje se izvode u tokovima
-  directus_panels: Pojedinačne ploče unutar nadzornih ploča s uvidima
-  directus_presets: Unaprijed postavljene postavke za zbirke i oznake
-  directus_relations: Konfiguracija odnosa i metapodaci
-  directus_revisions: Snimke podataka za sve aktivnosti
-  directus_roles: Grupe dopuštenja za korisnike sustava
-  directus_sessions: Informacije o sesiji korisnika
-  directus_settings: Opcije konfiguracije projekta
-  directus_shares: Prati vanjske dijeljene stavke
-  directus_users: Korisnici sustava za platformu
-  directus_translations: Prilagođeni prijevodi
-  directus_versions: Verzije sadržaja za stavke
-  directus_extensions: Konfiguracija Proširenja
+axis_collection:
+  axis_activity: Dnevnici odgovornosti za sve događaje
+  axis_collections: Dodatna konfiguracija zbirke i metapodaci
+  axis_dashboards: Nadzorne ploče unutar modula s uvidima
+  axis_fields: Dodatna konfiguracija polja i metapodaci
+  axis_files: Metapodaci za sva upravljana datotečna sredstva
+  axis_folders: Pruža virtualne direktorije za datoteke
+  axis_migrations: Koju verziju baze podataka koristite
+  axis_notifications: Obavijesti poslane korisnicima
+  axis_operations: Operacije koje se izvode u tokovima
+  axis_panels: Pojedinačne ploče unutar nadzornih ploča s uvidima
+  axis_presets: Unaprijed postavljene postavke za zbirke i oznake
+  axis_relations: Konfiguracija odnosa i metapodaci
+  axis_revisions: Snimke podataka za sve aktivnosti
+  axis_roles: Grupe dopuštenja za korisnike sustava
+  axis_sessions: Informacije o sesiji korisnika
+  axis_settings: Opcije konfiguracije projekta
+  axis_shares: Prati vanjske dijeljene stavke
+  axis_users: Korisnici sustava za platformu
+  axis_translations: Prilagođeni prijevodi
+  axis_versions: Verzije sadržaja za stavke
+  axis_extensions: Konfiguracija Proširenja
 fields:
-  directus_activity:
+  axis_activity:
     item: Primarni ključ stavke
     action: Radnja
     collection: Zbirka
@@ -1208,7 +1208,7 @@ fields:
     origin: Podrijetlo
     ip: IP Adresa
     revisions: Revizije
-  directus_collections:
+  axis_collections:
     collection: Zbirke
     icon: Ikona
     note: Napomena
@@ -1226,7 +1226,7 @@ fields:
     versioning: Verzioniranje
     archive_field: Arhivsko polje
     item_duplication_fields: Polje za dupliciranje stavke
-  directus_files:
+  axis_files:
     $thumbnail: Minijatura
     title: Naslov
     description: Opis
@@ -1250,7 +1250,7 @@ fields:
     height: Visina
     charset: Skup znakova
     duration: Trajanje
-  directus_users:
+  axis_users:
     first_name: Ime
     last_name: Prezime
     email: E-mail
@@ -1282,7 +1282,7 @@ fields:
     theme_dark: Tamna Tema
     theme_light_overrides: Prilagodba Svijetle Teme
     theme_dark_overrides: Prilagodba Tamne Teme
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1333,7 +1333,7 @@ fields:
     public_registration: Registracija korisnika
     public_registration_verify_email: Potvrdi adresu e-pošte
     ai_header_name: Zaglavlje
-  directus_shares:
+  axis_shares:
     name: Ime
     role: Uloge
     password: Lozinka
@@ -1341,7 +1341,7 @@ fields:
     date_end: Završni datum
     max_uses: Maksimalno upotreba
     times_used: Upotrijebljeno puta
-  directus_fields:
+  axis_fields:
     collection: Ime zbirke
     icon: Ikona zbirke
     note: Napomena
@@ -1349,16 +1349,16 @@ fields:
     singleton: Singleton
     translation: Prijevodi naziva polja
     display_template: Predložak
-  directus_roles:
+  axis_roles:
     name: Naziv uloge
     icon: Ikona uloge
     description: Opis
     users: Korisnici s ulogom
-  directus_policies:
+  axis_policies:
     name: Naziv Pravila
     description: Opis
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Moj projekt...
     project_color_note: Pozadina i logotip za prijavu
     project_logo_note: Bijela 40x40 SVG/PNG
@@ -1388,12 +1388,12 @@ field_options:
     basemaps_style: Mapbox stil
     files_divider_title: Datoteke i minijature
     overrides_divider_title: Aplikacija nadjačava
-  directus_activity:
+  axis_activity:
     login: Prijava
     create: Kreiraj
     update: Ažuriraj
     delete: Obriši
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Praćenje aktivnost i revizija
     only_track_activity: Prati samo aktivnost
     do_not_track_anything: Nemoj pratiti ništa
@@ -1419,7 +1419,7 @@ field_options:
     preview_divider: Pretpregled
     content_versioning_divider: Verzioniranje Sadržaja
     enable_versioning: Omogući Verzioniranje
-  directus_files:
+  axis_files:
     title: Jedinstven naslov...
     description: Neobavezan opis...
     location: Neobavezna lokacija...
@@ -1427,7 +1427,7 @@ field_options:
     focal_point_divider: Fokusna Točka
     filename_disk: Naziv na disku...
     filename_download: Naziv prilikom preuzimanja...
-  directus_roles:
+  axis_roles:
     name: Jedinstveni naziv za ovu ulogu...
     description: Opis uloge...
     fields:
@@ -1438,7 +1438,7 @@ field_options:
       link_placeholder: Relativni ili apsolutni URL...
     collections_name: Zbirke
     collections_addLabel: Dodaj zbirku...
-  directus_users:
+  axis_users:
     preferences_divider: Preferencije korisnika
     dropdown_auto: Automatski (na temelju sustava)
     dropdown_light: Svijetli način

@@ -131,11 +131,11 @@ test('Returns environment information', async () => {
 
 test('Runs and returns basic counts', async () => {
 	const mockItemCount = {
-		directus_dashboards: 15,
-		directus_files: 45,
-		directus_flows: 60,
-		directus_roles: 75,
-		directus_shares: 90,
+		axis_dashboards: 15,
+		axis_files: 45,
+		axis_flows: 60,
+		axis_roles: 75,
+		axis_shares: 90,
 	};
 
 	vi.mocked(getItemCount).mockResolvedValue(mockItemCount);
@@ -143,18 +143,18 @@ test('Runs and returns basic counts', async () => {
 	const report = await getReport();
 
 	expect(getItemCount).toHaveBeenCalledWith(mockDb, [
-		{ collection: 'directus_dashboards' },
-		{ collection: 'directus_files' },
-		{ collection: 'directus_flows', where: ['status', '=', 'active'] },
-		{ collection: 'directus_roles' },
-		{ collection: 'directus_shares' },
+		{ collection: 'axis_dashboards' },
+		{ collection: 'axis_files' },
+		{ collection: 'axis_flows', where: ['status', '=', 'active'] },
+		{ collection: 'axis_roles' },
+		{ collection: 'axis_shares' },
 	]);
 
-	expect(report.dashboards).toBe(mockItemCount.directus_dashboards);
-	expect(report.files).toBe(mockItemCount.directus_files);
-	expect(report.flows).toBe(mockItemCount.directus_flows);
-	expect(report.roles).toBe(mockItemCount.directus_roles);
-	expect(report.shares).toBe(mockItemCount.directus_shares);
+	expect(report.dashboards).toBe(mockItemCount.axis_dashboards);
+	expect(report.files).toBe(mockItemCount.axis_files);
+	expect(report.flows).toBe(mockItemCount.axis_flows);
+	expect(report.roles).toBe(mockItemCount.axis_roles);
+	expect(report.shares).toBe(mockItemCount.axis_shares);
 });
 
 test('Runs and returns user counts', async () => {

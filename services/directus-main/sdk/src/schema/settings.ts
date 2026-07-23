@@ -3,7 +3,7 @@ import type { DirectusFolder } from './folder.js';
 
 export type DirectusSettings<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_settings',
+	'axis_settings',
 	{
 		id: 1;
 		project_name: string;

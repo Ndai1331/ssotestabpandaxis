@@ -15,16 +15,16 @@ export function registerWebSocketEvents() {
 			.filter(
 				(collection) =>
 					![
-						'directus_migrations',
+						'axis_migrations',
 						// manually registered below
-						'directus_fields',
-						'directus_relations',
-						'directus_files',
+						'axis_fields',
+						'axis_relations',
+						'axis_files',
 						// excluded for security reasons
-						'directus_sessions',
+						'axis_sessions',
 					].includes(collection),
 			)
-			.map((collection) => collection.replace('directus_', '')),
+			.map((collection) => collection.replace('axis_', '')),
 	]);
 
 	registerFieldsHooks();
@@ -60,23 +60,23 @@ function registerActionHooks(modules: string[]) {
 }
 
 function registerFieldsHooks() {
-	// exception for field hooks that don't report `directus_fields` as being the collection
+	// exception for field hooks that don't report `axis_fields` as being the collection
 	registerAction('fields.create', ({ key, payload = {} }) => ({
-		collection: 'directus_fields',
+		collection: 'axis_fields',
 		action: 'create',
 		key,
 		payload,
 	}));
 
 	registerAction('fields.update', ({ keys, payload = {} }) => ({
-		collection: 'directus_fields',
+		collection: 'axis_fields',
 		action: 'update',
 		keys,
 		payload,
 	}));
 
 	registerAction('fields.delete', ({ keys, payload = [] }) => ({
-		collection: 'directus_fields',
+		collection: 'axis_fields',
 		action: 'delete',
 		keys,
 		payload,
@@ -108,23 +108,23 @@ function registerFilesHooks() {
 }
 
 function registerRelationsHooks() {
-	// exception for relation hooks that don't report `directus_relations` as being the collection
+	// exception for relation hooks that don't report `axis_relations` as being the collection
 	registerAction('relations.create', ({ key, payload = {} }) => ({
-		collection: 'directus_relations',
+		collection: 'axis_relations',
 		action: 'create',
 		key,
 		payload: { ...payload, key },
 	}));
 
 	registerAction('relations.update', ({ keys, payload = {} }) => ({
-		collection: 'directus_relations',
+		collection: 'axis_relations',
 		action: 'update',
 		keys,
 		payload,
 	}));
 
 	registerAction('relations.delete', ({ collection, payload = [] }) => ({
-		collection: 'directus_relations',
+		collection: 'axis_relations',
 		action: 'delete',
 		keys: payload,
 		payload: { collection, fields: payload },

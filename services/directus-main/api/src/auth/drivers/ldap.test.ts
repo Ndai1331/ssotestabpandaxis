@@ -75,8 +75,8 @@ vi.mock('ldapts', () => {
 
 vi.mock('@directus/env', () => ({
 	useEnv: vi.fn().mockReturnValue({
-		REFRESH_TOKEN_COOKIE_NAME: 'directus_refresh_token',
-		SESSION_COOKIE_NAME: 'directus_session_token',
+		REFRESH_TOKEN_COOKIE_NAME: 'axis_refresh_token',
+		SESSION_COOKIE_NAME: 'axis_session_token',
 		EMAIL_TEMPLATES_PATH: './templates',
 	}),
 }));
@@ -809,7 +809,7 @@ describe('LDAP Auth Driver', () => {
 
 			mockKnexInstance.firstMock.mockResolvedValueOnce(undefined);
 
-			const recordNotUniqueError = new RecordNotUniqueError({ collection: 'directus_users', field: 'email' });
+			const recordNotUniqueError = new RecordNotUniqueError({ collection: 'axis_users', field: 'email' });
 
 			mockCreateOne.mockRejectedValueOnce(recordNotUniqueError);
 
@@ -1122,7 +1122,7 @@ describe('LDAP Auth Driver', () => {
 
 			await handler(mockReq, mockRes, mockNext);
 
-			expect(mockRes.cookie).toHaveBeenCalledWith('directus_refresh_token', 'test-refresh-token', expect.any(Object));
+			expect(mockRes.cookie).toHaveBeenCalledWith('axis_refresh_token', 'test-refresh-token', expect.any(Object));
 		});
 
 		it('should set session cookie in session mode', async () => {
@@ -1157,7 +1157,7 @@ describe('LDAP Auth Driver', () => {
 
 			await handler(mockReq, mockRes, mockNext);
 
-			expect(mockRes.cookie).toHaveBeenCalledWith('directus_session_token', 'test-access-token', expect.any(Object));
+			expect(mockRes.cookie).toHaveBeenCalledWith('axis_session_token', 'test-access-token', expect.any(Object));
 		});
 
 		it('should throw InvalidPayloadError for invalid request body', async () => {

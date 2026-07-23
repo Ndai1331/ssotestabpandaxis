@@ -892,7 +892,7 @@ Your export of ${collection} is ready. <a href="${href}">Click here to view.</a>
 					sender: this.accountability.user,
 					subject: `Your export of ${collection} is ready`,
 					message,
-					collection: `directus_files`,
+					collection: `axis_files`,
 					item: savedFile,
 				});
 			}

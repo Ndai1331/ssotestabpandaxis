@@ -73,7 +73,7 @@ const InterfaceSystemFieldsStub = defineComponent({
 function mountComponent(props: Record<string, unknown> = {}) {
 	return shallowMount(ExportSidebarDetail, {
 		props: {
-			collection: 'directus_files',
+			collection: 'axis_files',
 			...props,
 		},
 		global: {

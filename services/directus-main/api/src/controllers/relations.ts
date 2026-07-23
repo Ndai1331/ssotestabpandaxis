@@ -10,7 +10,7 @@ import asyncHandler from '../utils/async-handler.js';
 
 const router = express.Router();
 
-router.use(useCollection('directus_relations'));
+router.use(useCollection('axis_relations'));
 
 router.get(
 	'/',

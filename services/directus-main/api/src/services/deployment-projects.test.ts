@@ -21,13 +21,13 @@ vi.mock('../../src/database/index', async () => {
 });
 
 const schema = new SchemaBuilder()
-	.collection('directus_deployments', (c) => {
+	.collection('axis_deployments', (c) => {
 		c.field('id').uuid().primary();
 		c.field('provider').string();
 		c.field('credentials').text();
 		c.field('options').text();
 	})
-	.collection('directus_deployment_projects', (c) => {
+	.collection('axis_deployment_projects', (c) => {
 		c.field('id').uuid().primary();
 		c.field('deployment').uuid();
 		c.field('external_id').string();
@@ -60,7 +60,7 @@ describe('DeploymentProjectsService', () => {
 				schema,
 			});
 
-			tracker.on.select('directus_deployments').response([vercelConfig]);
+			tracker.on.select('axis_deployments').response([vercelConfig]);
 		});
 
 		it('should skip validation when projectsToCreate is empty', async () => {

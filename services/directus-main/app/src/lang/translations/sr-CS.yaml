@@ -685,7 +685,7 @@ singleton: Singleton
 singleton_label: Tretiraj kao jedinstven objekat
 system_fields_locked: Sistemska polja su zaključana i ne mogu se uređivati
 fields:
-  directus_activity:
+  axis_activity:
     item: Primarni Ključ Stavke
     action: Akcija
     collection: Kolekcija
@@ -695,7 +695,7 @@ fields:
     user_agent: Korisnički Agent
     ip: IP adresa
     revisions: Revizije
-  directus_collections:
+  axis_collections:
     collection: Kolekcija
     icon: Ikonica
     note: Napomena
@@ -710,7 +710,7 @@ fields:
     unarchive_value: Poništi arhiviranje vrijednosti
     sort_field: Polje za Sortiranje
     accountability: Aktivnost & Praćenje Revizija
-  directus_files:
+  axis_files:
     $thumbnail: Sličica
     title: Naslov
     description: Opis
@@ -734,7 +734,7 @@ fields:
     height: Visina
     charset: Set karaktera
     duration: Trajanje
-  directus_users:
+  axis_users:
     first_name: Ime
     last_name: Prezime
     email: Email adresa
@@ -752,7 +752,7 @@ fields:
     token: Token
     last_page: Posljednja Stranica
     last_access: Posljednji Pristup
-  directus_settings:
+  axis_settings:
     project_name: Ime Projekta
     project_url: URL projekta
     project_color: Boja Projekta
@@ -764,11 +764,11 @@ fields:
     auth_login_attempts: Broj pokušaja prijave
     custom_css: Prilagođeni CSS
     module_bar: Modul Bar
-  directus_shares:
+  axis_shares:
     name: Ime
     role: Uloga
     password: Lozinka
-  directus_fields:
+  axis_fields:
     collection: Ime Kolekcije
     icon: Ikonica Kolekcije
     note: Napomena
@@ -776,18 +776,18 @@ fields:
     singleton: Singleton
     translation: Prevodi Polja
     display_template: Šablon
-  directus_roles:
+  axis_roles:
     name: Naziv uloge
     icon: Ikonica Uloge
     description: Opis
     users: Svi korisnici ove Uloge
-  directus_policies:
+  axis_policies:
     description: Opis
 field_options:
-  directus_activity:
+  axis_activity:
     create: Kreiraj
     update: Ažuriranje
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Prati Aktivnost & Revizije
     only_track_activity: Samo Prati Aktivnost
     do_not_track_anything: Bez praćenja
@@ -798,13 +798,13 @@ field_options:
     collection_name: Ime Kolekcije
     archive_divider: Arhiviraj
     sort_divider: Sortiranje
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: Ikonica
       name_name: Ime
       name_placeholder: Unesi naslov...
     collections_name: Kolekcije
-  directus_users:
+  axis_users:
     status_dropdown_active: Aktivan
 no_fields_in_collection: 'Trenutno ne postoji nijedno polje u "{collection}" kolekciji'
 do_nothing: Ne radi ništa

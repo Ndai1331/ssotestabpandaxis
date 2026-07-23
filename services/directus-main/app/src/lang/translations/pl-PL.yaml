@@ -339,9 +339,9 @@ geometry:
 theme_auto: Automatyczne (Oparte na systemie)
 theme_light: Tryb jasny
 theme_dark: Tryb ciemny
-theme_directus_default: Domyślny Directus
-theme_directus_minimal: Minimalny Directus
-theme_directus_colormatch: Dopasowanie kolorów Directus
+theme_axis_default: Domyślny Directus
+theme_axis_minimal: Minimalny Directus
+theme_axis_colormatch: Dopasowanie kolorów Directus
 not_available_for_type: Niedostępne dla tego typu
 create_translations: Utwórz tłumaczenia
 auto_refresh: Automatyczne odświeżanie
@@ -1165,30 +1165,30 @@ content: Zawartość
 singleton: Singleton
 singleton_label: Traktuj jako pojedynczy obiekt
 system_fields_locked: Pola systemowe są zablokowane i nie można ich edytować
-directus_collection:
-  directus_activity: Dzienniki rozliczalności dla wszystkich wydarzeń
-  directus_collections: Dodatkowa konfiguracja kolekcji i metadane
-  directus_dashboards: Panel główny w module Insights
-  directus_fields: Dodatkowa konfiguracja pola i metadane
-  directus_files: Metadane dla wszystkich zarządzanych zasobów plików
-  directus_folders: Dostarcza wirtualne katalogi dla plików
-  directus_migrations: Jaką wersję bazy danych używasz
-  directus_notifications: Powiadomienia wysłane do użytkowników
-  directus_operations: Operacje prowadzone w przepływach
-  directus_panels: Pojedyncze panele w panelu Insights
-  directus_presets: Ustawienia domyślne kolekcji i zakładek
-  directus_relations: Konfiguracja relacji i metadane
-  directus_revisions: Zrzuty danych dla wszystkich działań
-  directus_roles: Grupy uprawnień dla użytkowników systemu
-  directus_sessions: Informacje o sesji użytkownika
-  directus_settings: Opcje konfiguracji projektu
-  directus_shares: Śledzenie elementów współdzielonych na zewnątrz
-  directus_users: Użytkownicy systemu dla platformy
-  directus_translations: Własne tłumaczenia
-  directus_versions: Wersje zawartości dla elementów
-  directus_extensions: Konfiguracja rozszerzeń
+axis_collection:
+  axis_activity: Dzienniki rozliczalności dla wszystkich wydarzeń
+  axis_collections: Dodatkowa konfiguracja kolekcji i metadane
+  axis_dashboards: Panel główny w module Insights
+  axis_fields: Dodatkowa konfiguracja pola i metadane
+  axis_files: Metadane dla wszystkich zarządzanych zasobów plików
+  axis_folders: Dostarcza wirtualne katalogi dla plików
+  axis_migrations: Jaką wersję bazy danych używasz
+  axis_notifications: Powiadomienia wysłane do użytkowników
+  axis_operations: Operacje prowadzone w przepływach
+  axis_panels: Pojedyncze panele w panelu Insights
+  axis_presets: Ustawienia domyślne kolekcji i zakładek
+  axis_relations: Konfiguracja relacji i metadane
+  axis_revisions: Zrzuty danych dla wszystkich działań
+  axis_roles: Grupy uprawnień dla użytkowników systemu
+  axis_sessions: Informacje o sesji użytkownika
+  axis_settings: Opcje konfiguracji projektu
+  axis_shares: Śledzenie elementów współdzielonych na zewnątrz
+  axis_users: Użytkownicy systemu dla platformy
+  axis_translations: Własne tłumaczenia
+  axis_versions: Wersje zawartości dla elementów
+  axis_extensions: Konfiguracja rozszerzeń
 fields:
-  directus_activity:
+  axis_activity:
     item: Klucz główny produktu
     action: Czynność
     collection: Kolekcja
@@ -1199,7 +1199,7 @@ fields:
     origin: Pochodzenie
     ip: Adres IP
     revisions: Wersje
-  directus_collections:
+  axis_collections:
     collection: Kolekcja
     icon: Ikona
     note: Notatka
@@ -1217,7 +1217,7 @@ fields:
     versioning: Wersjonowanie
     archive_field: Pole archiwum
     item_duplication_fields: Pola Duplikacji Produktu
-  directus_files:
+  axis_files:
     $thumbnail: Miniaturka
     title: Tytuł
     description: Opis
@@ -1241,7 +1241,7 @@ fields:
     height: Wysokość
     charset: Zestaw znaków
     duration: Czas trwania
-  directus_users:
+  axis_users:
     first_name: Imię
     last_name: Nazwisko
     email: E-Mail
@@ -1274,7 +1274,7 @@ fields:
     theme_dark: Motyw ciemny
     theme_light_overrides: Dostosowanie jasnego motywu
     theme_dark_overrides: Dostosowanie ciemnego motywu
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1331,7 +1331,7 @@ fields:
     public_registration_verify_email: Potwierdź e-mail
     public_registration_verify_email_note: Wysyła e-mail do użytkownika rejestrującego z prośbą o kliknięcie na link weryfikacyjny zanim będzie mógł się zalogować.
     ai_header_name: Nagłówek
-  directus_shares:
+  axis_shares:
     name: Nazwa
     role: Rola
     password: Hasło
@@ -1339,7 +1339,7 @@ fields:
     date_end: Data zakończenia
     max_uses: Maksymalna ilość użyć
     times_used: Czas użyć
-  directus_fields:
+  axis_fields:
     collection: Nazwa kolekcji
     icon: Ikona kolekcji
     note: Notatka
@@ -1347,16 +1347,16 @@ fields:
     singleton: Singleton
     translation: Tłumaczenie nazwy pola
     display_template: Szablon
-  directus_roles:
+  axis_roles:
     name: Nazwa roli
     icon: Ikona roli
     description: Opis
     users: Użytkownicy w roli
-  directus_policies:
+  axis_policies:
     name: Nazwa polityki
     description: Opis
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Mój projekt...
     project_color_note: Tło logowania i logo
     project_logo_note: Biały 40×40 SVG/PNG
@@ -1386,12 +1386,12 @@ field_options:
     basemaps_style: Styl Mapbox
     files_divider_title: Pliki i miniatury
     overrides_divider_title: Nadpisywanie aplikacji
-  directus_activity:
+  axis_activity:
     login: Logowanie
     create: Stwórz
     update: Zaktualizuj
     delete: Usuń
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Śledź aktywność i rewizje
     only_track_activity: Tylko Śledź Aktywność
     do_not_track_anything: Nie śledź niczego
@@ -1417,7 +1417,7 @@ field_options:
     preview_divider: Podgląd
     content_versioning_divider: Wersja treści
     enable_versioning: Włącz wersjonowanie
-  directus_files:
+  axis_files:
     title: Unikalny tytuł...
     description: Opcjonalny opis...
     location: Opcjonalna lokalizacja...
@@ -1425,12 +1425,12 @@ field_options:
     focal_point_divider: Punkt ogniskowy
     filename_disk: Nazwa na dysku...
     filename_download: Nazwa podczas pobierania...
-  directus_policies:
+  axis_policies:
     name: Unikalna nazwa dla tej polityki...
     description: Opis tej polityki...
     ip_access: Dodaj dozwolone adresy IP, zakresy IP i bloki CIDR. Pozostaw puste, aby zezwolić na wszystkie...
     enforce_tfa: Wymuś uwierzytelnianie dwuetapowe
-  directus_roles:
+  axis_roles:
     name: Unikalna nazwa dla tej roli...
     description: Opis tej roli...
     fields:
@@ -1441,7 +1441,7 @@ field_options:
       link_placeholder: Względny lub bezwzględny URL...
     collections_name: Kolekcje
     collections_addLabel: Dodaj kolekcję...
-  directus_users:
+  axis_users:
     preferences_divider: Ustawienia użytkownika
     dropdown_auto: Automatyczne (Oparte na systemie)
     dropdown_light: Tryb jasny

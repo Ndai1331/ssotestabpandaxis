@@ -38,15 +38,15 @@ export type CollectionTypes = {
  * These should be ignored in the context of GraphQL, and/or are replaced by a custom resolver (for non-standard structures)
  */
 export const SYSTEM_DENY_LIST = [
-	'directus_collections',
-	'directus_fields',
-	'directus_relations',
-	'directus_migrations',
-	'directus_sessions',
-	'directus_extensions',
+	'axis_collections',
+	'axis_fields',
+	'axis_relations',
+	'axis_migrations',
+	'axis_sessions',
+	'axis_extensions',
 ];
 
-export const READ_ONLY = ['directus_activity', 'directus_revisions'];
+export const READ_ONLY = ['axis_activity', 'axis_revisions'];
 
 const env = useEnv();
 const semaphore = new Semaphore((env['GRAPHQL_SCHEMA_GENERATION_MAX_CONCURRENT'] as number) ?? 5);
@@ -204,7 +204,7 @@ export async function generateSchema(
 			schemaComposer.Query.addFields(
 				readableCollections.reduce(
 					(acc, collection) => {
-						const collectionName = gql.scope === 'items' ? collection.collection : collection.collection.substring(9);
+						const collectionName = gql.scope === 'items' ? collection.collection : collection.collection.substring(5);
 						acc[collectionName] = ReadCollectionTypes[collection.collection]!.getResolver(collection.collection);
 
 						if (gql.schema.collections[collection.collection]!.singleton === false) {
@@ -245,7 +245,7 @@ export async function generateSchema(
 					.filter((collection) => READ_ONLY.includes(collection.collection) === false)
 					.reduce(
 						(acc, collection) => {
-							const collectionName = gql.scope === 'items' ? collection.collection : collection.collection.substring(9);
+							const collectionName = gql.scope === 'items' ? collection.collection : collection.collection.substring(5);
 
 							acc[`create_${collectionName}_items`] = CreateCollectionTypes[collection.collection]!.getResolver(
 								`create_${collection.collection}_items`,
@@ -270,7 +270,7 @@ export async function generateSchema(
 					.filter((collection) => READ_ONLY.includes(collection.collection) === false)
 					.reduce(
 						(acc, collection) => {
-							const collectionName = gql.scope === 'items' ? collection.collection : collection.collection.substring(9);
+							const collectionName = gql.scope === 'items' ? collection.collection : collection.collection.substring(5);
 
 							if (collection.singleton) {
 								acc[`update_${collectionName}`] = UpdateCollectionTypes[collection.collection]!.getResolver(
@@ -305,7 +305,7 @@ export async function generateSchema(
 					.filter((collection) => READ_ONLY.includes(collection.collection) === false)
 					.reduce(
 						(acc, collection) => {
-							const collectionName = gql.scope === 'items' ? collection.collection : collection.collection.substring(9);
+							const collectionName = gql.scope === 'items' ? collection.collection : collection.collection.substring(5);
 
 							acc[`delete_${collectionName}_items`] = DeleteCollectionTypes['many']!.getResolver(
 								`delete_${collection.collection}_items`,

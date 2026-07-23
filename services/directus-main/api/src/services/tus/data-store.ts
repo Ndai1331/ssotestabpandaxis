@@ -55,7 +55,7 @@ export class TusDataStore extends DataStore {
 		const logger = useLogger();
 		const knex = getDatabase();
 
-		const filesItemsService = new ItemsService<File>('directus_files', {
+		const filesItemsService = new ItemsService<File>('axis_files', {
 			accountability: this.accountability,
 			schema: this.schema,
 			knex,
@@ -86,7 +86,7 @@ export class TusDataStore extends DataStore {
 
 		// If the payload contains a primary key, we'll check if the file already exists for replacement
 		if (upload.metadata['id']) {
-			existingFile = await knex.select('tus_id').from('directus_files').andWhere({ id: upload.metadata['id'] }).first();
+			existingFile = await knex.select('tus_id').from('axis_files').andWhere({ id: upload.metadata['id'] }).first();
 
 			if (existingFile && existingFile['tus_id'] !== null) {
 				throw ERRORS.INVALID_METADATA;
@@ -109,7 +109,7 @@ export class TusDataStore extends DataStore {
 
 		// If no folder is specified, we'll use the default folder from the settings if it exists
 		if ('folder' in fileData === false) {
-			const settings = await knex.select('storage_default_folder').from('directus_settings').first();
+			const settings = await knex.select('storage_default_folder').from('axis_settings').first();
 
 			if (settings?.storage_default_folder) {
 				fileData.folder = settings.storage_default_folder;
@@ -157,7 +157,7 @@ export class TusDataStore extends DataStore {
 		const fileData = await this.getFileById(tus_id);
 		const filePath = fileData.filename_disk!;
 
-		const sudoFilesItemsService = new ItemsService<File>('directus_files', {
+		const sudoFilesItemsService = new ItemsService<File>('axis_files', {
 			schema: this.schema,
 		});
 
@@ -214,7 +214,7 @@ export class TusDataStore extends DataStore {
 	}
 
 	override async remove(tus_id: string): Promise<void> {
-		const sudoFilesItemsService = new ItemsService<File>('directus_files', {
+		const sudoFilesItemsService = new ItemsService<File>('axis_files', {
 			schema: this.schema,
 		});
 
@@ -224,7 +224,7 @@ export class TusDataStore extends DataStore {
 	}
 
 	override async deleteExpired(): Promise<number> {
-		const sudoFilesItemsService = new ItemsService<File>('directus_files', {
+		const sudoFilesItemsService = new ItemsService<File>('axis_files', {
 			schema: this.schema,
 		});
 
@@ -270,7 +270,7 @@ export class TusDataStore extends DataStore {
 	}
 
 	protected async getFileById(tus_id: string) {
-		const sudoFilesItemsService = new ItemsService<File>('directus_files', {
+		const sudoFilesItemsService = new ItemsService<File>('axis_files', {
 			schema: this.schema,
 		});
 

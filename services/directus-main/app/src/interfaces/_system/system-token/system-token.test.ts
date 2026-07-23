@@ -51,7 +51,7 @@ function mountComponent(props: Record<string, unknown> = {}, provide: Record<str
 		},
 		props: {
 			value: null,
-			collection: 'directus_users',
+			collection: 'axis_users',
 			...props,
 		},
 	});

@@ -1,4 +1,4 @@
-table: directus_webhooks
+table: axis_webhooks
 
 columns:
   id:

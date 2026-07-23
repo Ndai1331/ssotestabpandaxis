@@ -190,7 +190,7 @@ export async function generateTranslations(
 
 					// Update relation meta to restore one_field (use ItemsService directly to
 					// avoid RelationsService.updateOne which triggers alterTable/alterType)
-					const relationsItemService = new ItemsService('directus_relations', {
+					const relationsItemService = new ItemsService('axis_relations', {
 						knex: trx,
 						schema: currentSchema,
 					});
@@ -279,14 +279,14 @@ export async function generateTranslations(
 				// Rebuild sort order so new fields are interleaved with existing fields
 				// in the same relative order as the parent collection
 				const allParentFields: { field: string; sort: number | null }[] = await trx
-					.from('directus_fields')
+					.from('axis_fields')
 					.where({ collection })
 					.select('field', 'sort');
 
 				const parentSortMap = new Map(allParentFields.map((f) => [f.field, f.sort ?? Infinity]));
 
 				const existingTransFields: { field: string; sort: number | null }[] = await trx
-					.from('directus_fields')
+					.from('axis_fields')
 					.where({ collection: translationsCollection })
 					.select('field', 'sort');
 
@@ -317,7 +317,7 @@ export async function generateTranslations(
 					const newSort = sortAssignments.get(existing.field);
 
 					if (newSort !== undefined && newSort !== existing.sort) {
-						await trx('directus_fields')
+						await trx('axis_fields')
 							.where({ collection: translationsCollection, field: existing.field })
 							.update({ sort: newSort });
 					}

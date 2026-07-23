@@ -1086,8 +1086,8 @@ describe('room', () => {
 	test('broadcasts save action for system collections', async () => {
 		const clientA = mockWebSocketClient({ uid: 'abc' });
 		const item = getTestItem();
-		const uid = getRoomHash('directus_users', item, null);
-		const room = new Room(uid, 'directus_users', item, null, {}, mockMessenger);
+		const uid = getRoomHash('axis_users', item, null);
+		const room = new Room(uid, 'axis_users', item, null, {}, mockMessenger);
 		await room.ensureInitialized();
 
 		await room.join(clientA);
@@ -1095,7 +1095,7 @@ describe('room', () => {
 		const mockService = { readOne: vi.fn().mockResolvedValue({ id: item, title: 'Updated' }) };
 		vi.mocked(getService).mockReturnValue(mockService as any);
 
-		await room.onUpdateHandler({ keys: [item], collection: 'directus_users' }, {
+		await room.onUpdateHandler({ keys: [item], collection: 'axis_users' }, {
 			accountability: { user: 'external-user' },
 		} as any);
 
@@ -1529,7 +1529,7 @@ describe('versioned room', () => {
 
 		vi.mocked(mockMessenger.sendClient).mockClear();
 
-		await room.onDeleteHandler({ keys: [versionId], collection: 'directus_versions' }, {} as any);
+		await room.onDeleteHandler({ keys: [versionId], collection: 'axis_versions' }, {} as any);
 
 		expect(mockMessenger.sendClient).toHaveBeenCalledWith(
 			'abc',

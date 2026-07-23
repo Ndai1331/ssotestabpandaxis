@@ -347,9 +347,9 @@ geometry:
 theme_auto: Automático (basado en el sistema)
 theme_light: Modo Claro
 theme_dark: Modo Oscuro
-theme_directus_default: Directus Por Defecto
-theme_directus_minimal: Directus Minimal
-theme_directus_colormatch: Directus coincidencia de color
+theme_axis_default: Directus Por Defecto
+theme_axis_minimal: Directus Minimal
+theme_axis_colormatch: Directus coincidencia de color
 not_available_for_type: No disponible para este Tipo
 create_translations: Crear Traducciones
 auto_refresh: Actualización automática
@@ -1199,34 +1199,34 @@ content: Contenido
 singleton: Singleton
 singleton_label: Tratar como un sólo objeto
 system_fields_locked: Los campos del sistema están bloqueados y no pueden ser editados
-directus_collection:
-  directus_access: Adjuntos de regla
-  directus_activity: Registros de contabilidad para todos los eventos
-  directus_collections: Configuración adicional de colección y metadatos
-  directus_comments: Comentarios para ítems
-  directus_dashboards: Panel de control dentro del módulo Insights
-  directus_fields: Configuración adicional de campos y metadatos
-  directus_files: Metadatos para todos los archivos gestionados
-  directus_folders: Proporciona directorios virtuales para archivos
-  directus_migrations: Qué versión de la base de datos estás usando
-  directus_notifications: Notificaciones enviadas a usuarios
-  directus_operations: Operaciones que funcionan en flujos
-  directus_panels: Paneles individuales dentro de los paneles de Individual
-  directus_permissions: Permisos de acceso por cada regla
-  directus_policies: Reglas de control de acceso
-  directus_presets: Preajustes para la colección por defecto y marcadores
-  directus_relations: Configuración de relaciones y metadatos
-  directus_revisions: Capturas de datos para toda la actividad
-  directus_roles: Grupos de permisos para usuarios del sistema
-  directus_sessions: Información de sesión de usuario
-  directus_settings: Opciones de configuración del proyecto
-  directus_shares: Rastrear elementos compartidos externamente
-  directus_users: Usuarios del sistema para la plataforma
-  directus_translations: Traducciones personalizadas
-  directus_versions: Versiones de contenido para elementos
-  directus_extensions: Configuración de extensiones
+axis_collection:
+  axis_access: Adjuntos de regla
+  axis_activity: Registros de contabilidad para todos los eventos
+  axis_collections: Configuración adicional de colección y metadatos
+  axis_comments: Comentarios para ítems
+  axis_dashboards: Panel de control dentro del módulo Insights
+  axis_fields: Configuración adicional de campos y metadatos
+  axis_files: Metadatos para todos los archivos gestionados
+  axis_folders: Proporciona directorios virtuales para archivos
+  axis_migrations: Qué versión de la base de datos estás usando
+  axis_notifications: Notificaciones enviadas a usuarios
+  axis_operations: Operaciones que funcionan en flujos
+  axis_panels: Paneles individuales dentro de los paneles de Individual
+  axis_permissions: Permisos de acceso por cada regla
+  axis_policies: Reglas de control de acceso
+  axis_presets: Preajustes para la colección por defecto y marcadores
+  axis_relations: Configuración de relaciones y metadatos
+  axis_revisions: Capturas de datos para toda la actividad
+  axis_roles: Grupos de permisos para usuarios del sistema
+  axis_sessions: Información de sesión de usuario
+  axis_settings: Opciones de configuración del proyecto
+  axis_shares: Rastrear elementos compartidos externamente
+  axis_users: Usuarios del sistema para la plataforma
+  axis_translations: Traducciones personalizadas
+  axis_versions: Versiones de contenido para elementos
+  axis_extensions: Configuración de extensiones
 fields:
-  directus_activity:
+  axis_activity:
     item: Clave primaria del ítem
     action: Acción
     collection: Colección
@@ -1237,7 +1237,7 @@ fields:
     origin: Origen
     ip: Dirección IP
     revisions: Revisiones
-  directus_collections:
+  axis_collections:
     collection: Colección
     icon: Icono
     note: Nota
@@ -1255,7 +1255,7 @@ fields:
     versioning: Versionado
     archive_field: Campo de archivo
     item_duplication_fields: Campos de duplicación de elementos
-  directus_files:
+  axis_files:
     $thumbnail: Miniatura
     title: Título
     description: Descripción
@@ -1281,7 +1281,7 @@ fields:
     duration: Duración
     focal_point_x: Coordenada X
     focal_point_y: Coordenada Y
-  directus_users:
+  axis_users:
     first_name: Primer nombre
     last_name: Apellido
     email: Correo electrónico
@@ -1315,7 +1315,7 @@ fields:
     theme_dark: Tema Oscuro
     theme_light_overrides: Personalización de tema claro
     theme_dark_overrides: Personalización del tema oscuro
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1373,7 +1373,7 @@ fields:
     public_registration_verify_email_note: Envía un correo electrónico al usuario registrado pidiéndole que haga clic en un enlace de verificación antes de poder iniciar sesión.
     visual_editor_urls: URLs del editor visual
     ai_header_name: Encabezado
-  directus_shares:
+  axis_shares:
     name: Nombre
     role: Rol
     password: Contraseña
@@ -1381,7 +1381,7 @@ fields:
     date_end: Fecha Fin
     max_uses: Usos máximos
     times_used: Veces usado
-  directus_fields:
+  axis_fields:
     collection: Nombre de Colección
     icon: Ícono de Colección
     note: Nota
@@ -1389,14 +1389,14 @@ fields:
     singleton: Singleton
     translation: Traducción de campos
     display_template: Plantilla
-  directus_roles:
+  axis_roles:
     name: Nombre de rol
     icon: Ícono del Rol
     description: Descripción
     users: Usuarios en el Rol
     parent: Rol padre
     children: Roles hijos
-  directus_policies:
+  axis_policies:
     name: Nombre de la Directiva
     description: Descripción
     app_access: Acceso a la aplicación
@@ -1404,7 +1404,7 @@ fields:
     ip_access: Acceso IP
     enforce_tfa: Requiere 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Mi proyecto...
     project_color_note: Inicio de sesión y fondo de Logo
     project_logo_note: Blanco 40x40 SVG/PNG
@@ -1434,12 +1434,12 @@ field_options:
     basemaps_style: Estilo Mapbox
     files_divider_title: Archivos y miniaturas
     overrides_divider_title: Reemplazos de la aplicación
-  directus_activity:
+  axis_activity:
     login: Iniciar sesión
     create: Crear
     update: Actualizar
     delete: Eliminar
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Rastrear actividad y revisiones
     only_track_activity: Sólo seguimiento de actividad
     do_not_track_anything: No realizar seguimiento
@@ -1465,7 +1465,7 @@ field_options:
     preview_divider: Vista previa
     content_versioning_divider: Contenido Versionado
     enable_versioning: Habilitar versiones
-  directus_files:
+  axis_files:
     title: Un título único...
     description: Una descripción opcional...
     location: Una ubicación opcional...
@@ -1473,13 +1473,13 @@ field_options:
     focal_point_divider: Punto focal
     filename_disk: Nombre en el almacenamiento de disco...
     filename_download: Nombre al descargar...
-  directus_policies:
+  axis_policies:
     name: Un nombre único para esta regla...
     description: Una descripción para esta regla...
     ip_access: Agregue direcciones IP permitidas, rangos de IP y bloques CIDR. Déjelo vacío para permitir todo...
     enforce_tfa: Forzar la autenticación de dos factores
     assigned_to: Asignado a
-  directus_roles:
+  axis_roles:
     name: El nombre único para este rol...
     description: Una descripción de este rol...
     fields:
@@ -1492,7 +1492,7 @@ field_options:
     children_note: Roles secundarios anidados que heredan los permisos de estos roles
     collections_name: Colecciones
     collections_addLabel: Añadir Colección...
-  directus_users:
+  axis_users:
     preferences_divider: Preferencias de usuario
     dropdown_auto: Automático (basado en el sistema)
     dropdown_light: Modo luz

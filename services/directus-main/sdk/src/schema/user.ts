@@ -4,11 +4,11 @@ import type { DirectusFile } from './file.js';
 import type { DirectusRole } from './role.js';
 
 /**
- * directus_users type
+ * axis_users type
  */
 export type DirectusUser<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_users',
+	'axis_users',
 	{
 		id: string; // uuid
 		first_name: string | null;

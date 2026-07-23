@@ -228,7 +228,7 @@ const newTranslationDefaults = computed(() => {
 
 		<DrawerItem
 			v-model:active="isCustomTranslationDrawerOpen"
-			collection="directus_translations"
+			collection="axis_translations"
 			primary-key="+"
 			:edits="newTranslationDefaults"
 			@input="create"

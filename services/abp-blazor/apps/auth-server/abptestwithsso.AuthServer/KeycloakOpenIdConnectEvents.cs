@@ -5,7 +5,7 @@ using Volo.Abp.Security.Claims;
 namespace abptestwithsso.AuthServer;
 
 /// <summary>
-/// On Keycloak OIDC token validation: require bd-app-abp, then map groups → roles.
+/// On Keycloak OIDC token validation: require bd-app-hcs, then map groups → roles.
 /// </summary>
 public static class KeycloakOpenIdConnectEvents
 {

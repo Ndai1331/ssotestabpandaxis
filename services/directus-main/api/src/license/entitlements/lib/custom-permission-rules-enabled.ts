@@ -37,7 +37,7 @@ export async function checkCustomPermissionRules(opts?: { knex?: Knex | undefine
 	const knex = opts?.knex ?? getDatabase();
 	const schema = await getSchema({ database: knex });
 
-	const permissionService = new ItemsService('directus_permissions', {
+	const permissionService = new ItemsService('axis_permissions', {
 		schema,
 		knex,
 	});

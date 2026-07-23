@@ -94,13 +94,13 @@ async function generateCollection() {
 			{
 				collection,
 				field: 'user_created',
-				related_collection: 'directus_users',
+				related_collection: 'axis_users',
 				schema: {},
 			},
 			{
 				collection,
 				field: 'user_updated',
-				related_collection: 'directus_users',
+				related_collection: 'axis_users',
 				schema: {},
 			},
 		];

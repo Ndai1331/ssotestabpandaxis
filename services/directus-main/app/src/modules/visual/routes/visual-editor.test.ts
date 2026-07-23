@@ -115,7 +115,7 @@ describe('Version selector', () => {
 		expect(wrapper.find('.version-chip').exists()).toBe(false);
 	});
 
-	it('is not rendered when user lacks read permission on directus_versions', () => {
+	it('is not rendered when user lacks read permission on axis_versions', () => {
 		mockSettingsUrls(['https://example.com/?version={{$version}}']);
 
 		const wrapper = mount(VisualEditor, {

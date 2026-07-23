@@ -26,7 +26,7 @@ export const useFlowsStore = defineStore('flowsStore', () => {
 	async function hydrate() {
 		const { hasPermission } = usePermissionsStore();
 
-		if (!hasPermission('directus_flows', 'read')) {
+		if (!hasPermission('axis_flows', 'read')) {
 			flows.value = [];
 		} else {
 			try {

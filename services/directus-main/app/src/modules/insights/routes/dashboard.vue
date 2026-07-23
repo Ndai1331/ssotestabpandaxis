@@ -47,7 +47,7 @@ const { loading, errors, data, saving, hasEdits, refreshIntervals, variables } =
 
 const zoomToFit = ref(false);
 
-const { updateAllowed } = useItemPermissions('directus_panels', props.primaryKey, false);
+const { updateAllowed } = useItemPermissions('axis_panels', props.primaryKey, false);
 
 const now = new Date();
 
@@ -259,7 +259,7 @@ const refreshInterval = computed({
 		</template>
 
 		<template #sidebar>
-			<CommentsSidebarDetail :key="primaryKey" collection="directus_dashboards" :primary-key="primaryKey" />
+			<CommentsSidebarDetail :key="primaryKey" collection="axis_dashboards" :primary-key="primaryKey" />
 
 			<RefreshSidebarDetail v-model="refreshInterval" @refresh="insightsStore.refresh(primaryKey)" />
 		</template>

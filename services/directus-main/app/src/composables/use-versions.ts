@@ -23,7 +23,7 @@ export function useVersions(collection: Ref<string>, isSingleton: Ref<boolean>, 
 	const validationErrors = ref<any[]>([]);
 
 	const { createAllowed: createVersionsAllowed, readAllowed: readVersionsAllowed } =
-		useCollectionPermissions('directus_versions');
+		useCollectionPermissions('axis_versions');
 
 	const queryVersionId = useRouteQuery<PrimaryKey | null>('versionId', null, {
 		transform: (value) => (Array.isArray(value) ? value[0] : value),

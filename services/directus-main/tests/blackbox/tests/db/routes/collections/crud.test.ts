@@ -84,16 +84,16 @@ describe.each(PRIMARY_KEY_TYPES)('/collections', (pkType) => {
 									.sort();
 
 								const appAccessPermissions = [
-									'directus_activity',
-									'directus_collections',
-									'directus_fields',
-									'directus_notifications',
-									'directus_presets',
-									'directus_relations',
-									'directus_roles',
-									'directus_settings',
-									'directus_shares',
-									'directus_users',
+									'axis_activity',
+									'axis_collections',
+									'axis_fields',
+									'axis_notifications',
+									'axis_presets',
+									'axis_relations',
+									'axis_roles',
+									'axis_settings',
+									'axis_shares',
+									'axis_users',
 								];
 
 								expect(response.statusCode).toBe(200);
@@ -128,7 +128,7 @@ describe.each(PRIMARY_KEY_TYPES)('/collections', (pkType) => {
 			afterEach(async () => {
 				const db = databases.get(currentVendor)!;
 				await db.schema.dropTableIfExists(TEST_COLLECTION_NAME);
-				await db('directus_collections').del().where({ collection: TEST_COLLECTION_NAME });
+				await db('axis_collections').del().where({ collection: TEST_COLLECTION_NAME });
 			});
 
 			describe('Creates a new regular collection', () => {
@@ -456,7 +456,7 @@ describe.each(PRIMARY_KEY_TYPES)('/collections', (pkType) => {
 
 				for (const collection of collectionNames) {
 					await db.schema.dropTableIfExists(collection);
-					await db('directus_collections').del().where({ collection });
+					await db('axis_collections').del().where({ collection });
 				}
 			});
 
@@ -526,7 +526,7 @@ describe.each(PRIMARY_KEY_TYPES)('/collections', (pkType) => {
 			afterEach(async () => {
 				const db = databases.get(currentVendor)!;
 				await db.schema.dropTableIfExists(TEST_COLLECTION_NAME);
-				await db('directus_collections').del().where({ collection: TEST_COLLECTION_NAME });
+				await db('axis_collections').del().where({ collection: TEST_COLLECTION_NAME });
 			});
 
 			describe('Deletes a regular collection', () => {
@@ -578,7 +578,7 @@ describe.each(PRIMARY_KEY_TYPES)('/collections', (pkType) => {
 								.set('Authorization', `Bearer ${USER[userKey].TOKEN}`);
 
 							if (userKey === USER.ADMIN.KEY) {
-								expect(await db('directus_collections').select().where({ collection: TEST_FOLDER_NAME })).toHaveLength(
+								expect(await db('axis_collections').select().where({ collection: TEST_FOLDER_NAME })).toHaveLength(
 									1,
 								);
 							}
@@ -593,7 +593,7 @@ describe.each(PRIMARY_KEY_TYPES)('/collections', (pkType) => {
 								expect(response.statusCode).toBe(204);
 								expect(response.body).toEqual({});
 
-								expect(await db('directus_collections').select().where({ collection: TEST_FOLDER_NAME })).toHaveLength(
+								expect(await db('axis_collections').select().where({ collection: TEST_FOLDER_NAME })).toHaveLength(
 									0,
 								);
 							} else {

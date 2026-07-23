@@ -10,7 +10,7 @@ export const getFieldCount = async (db: Knex): Promise<FieldCount> => {
 		await db
 			.max({ max: 'field_count' })
 			.sum({ total: 'field_count' })
-			.from(db.select('collection').count('* as field_count').from('directus_fields').groupBy('collection').as('inner'))
+			.from(db.select('collection').count('* as field_count').from('axis_fields').groupBy('collection').as('inner'))
 			.first()
 	);
 

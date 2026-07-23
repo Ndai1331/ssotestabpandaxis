@@ -25,7 +25,7 @@ defineEmits<{
 
 const { t } = useI18n();
 
-const { updateAllowed, deleteAllowed } = useItemPermissions('directus_shares', props.share.id, false);
+const { updateAllowed, deleteAllowed } = useItemPermissions('axis_shares', props.share.id, false);
 
 const usesLeft = computed(() => {
 	if (props.share.max_uses === null) return null;

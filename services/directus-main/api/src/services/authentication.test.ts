@@ -97,7 +97,7 @@ vi.mock('nanoid', () => ({
 }));
 
 const schema = new SchemaBuilder()
-	.collection('directus_users', (c) => {
+	.collection('axis_users', (c) => {
 		c.field('id').uuid().primary();
 	})
 	.build();
@@ -152,11 +152,11 @@ describe('Integration Tests', () => {
 		});
 
 		const setupHappyPathTracker = () => {
-			tracker.on.select('directus_users').responseOnce([mockUser]);
-			tracker.on.select('directus_users').responseOnce([]);
-			tracker.on.insert('directus_sessions').response([1]);
-			tracker.on.delete('directus_sessions').response(1);
-			tracker.on.update('directus_users').response([1]);
+			tracker.on.select('axis_users').responseOnce([mockUser]);
+			tracker.on.select('axis_users').responseOnce([]);
+			tracker.on.insert('axis_sessions').response([1]);
+			tracker.on.delete('axis_sessions').response(1);
+			tracker.on.update('axis_users').response([1]);
 		};
 
 		describe('login', () => {
@@ -219,7 +219,7 @@ describe('Integration Tests', () => {
 			});
 
 			it('should throw InvalidCredentialsError when user status is not active', async () => {
-				tracker.on.select('directus_users').responseOnce([{ ...mockUser, status: 'inactive' }]);
+				tracker.on.select('axis_users').responseOnce([{ ...mockUser, status: 'inactive' }]);
 
 				await expect(
 					service.login('default', { email: 'john@example.com', password: 'password' }),
@@ -227,7 +227,7 @@ describe('Integration Tests', () => {
 			});
 
 			it('should emit auth.login fail action when user status is not active', async () => {
-				tracker.on.select('directus_users').responseOnce([{ ...mockUser, status: 'inactive' }]);
+				tracker.on.select('axis_users').responseOnce([{ ...mockUser, status: 'inactive' }]);
 
 				await expect(service.login('default', { email: 'john@example.com', password: 'password' })).rejects.toThrow();
 
@@ -239,7 +239,7 @@ describe('Integration Tests', () => {
 			});
 
 			it('should throw InvalidCredentialsError when user provider does not match', async () => {
-				tracker.on.select('directus_users').responseOnce([{ ...mockUser, provider: 'ldap' }]);
+				tracker.on.select('axis_users').responseOnce([{ ...mockUser, provider: 'ldap' }]);
 
 				await expect(
 					service.login('default', { email: 'john@example.com', password: 'password' }),
@@ -247,7 +247,7 @@ describe('Integration Tests', () => {
 			});
 
 			it('should throw ServiceUnavailableError when rate limiter is unreachable', async () => {
-				tracker.on.select('directus_users').responseOnce([mockUser]);
+				tracker.on.select('axis_users').responseOnce([mockUser]);
 
 				vi.spyOn(SettingsService.prototype, 'readSingleton').mockResolvedValue({
 					auth_login_attempts: 5,
@@ -261,8 +261,8 @@ describe('Integration Tests', () => {
 			});
 
 			it('should suspend user and reset rate limiter when login attempts are exhausted', async () => {
-				tracker.on.select('directus_users').responseOnce([mockUser]);
-				tracker.on.update('directus_users').responseOnce([1]);
+				tracker.on.select('axis_users').responseOnce([mockUser]);
+				tracker.on.update('axis_users').responseOnce([1]);
 
 				vi.spyOn(SettingsService.prototype, 'readSingleton').mockResolvedValue({
 					auth_login_attempts: 5,
@@ -280,11 +280,11 @@ describe('Integration Tests', () => {
 				expect(mockRateLimiter.set).toHaveBeenCalledWith(mockUser.id, 0, 0);
 
 				const updateHistory = tracker.history.update;
-				expect(updateHistory[0]?.sql).toMatch(/directus_users/);
+				expect(updateHistory[0]?.sql).toMatch(/axis_users/);
 			});
 
 			it('should emit auth.login fail action and rethrow when provider.login throws', async () => {
-				tracker.on.select('directus_users').responseOnce([mockUser]);
+				tracker.on.select('axis_users').responseOnce([mockUser]);
 
 				const providerError = new Error('Provider login failed');
 				mockProvider.login.mockRejectedValueOnce(providerError);
@@ -301,7 +301,7 @@ describe('Integration Tests', () => {
 			});
 
 			it('should throw InvalidOtpError when TFA is configured but no OTP is provided', async () => {
-				tracker.on.select('directus_users').responseOnce([{ ...mockUser, tfa_secret: 'some-secret' }]);
+				tracker.on.select('axis_users').responseOnce([{ ...mockUser, tfa_secret: 'some-secret' }]);
 
 				await expect(
 					service.login('default', { email: 'john@example.com', password: 'password' }),
@@ -309,7 +309,7 @@ describe('Integration Tests', () => {
 			});
 
 			it('should throw InvalidOtpError when TFA OTP is invalid', async () => {
-				tracker.on.select('directus_users').responseOnce([{ ...mockUser, tfa_secret: 'some-secret' }]);
+				tracker.on.select('axis_users').responseOnce([{ ...mockUser, tfa_secret: 'some-secret' }]);
 
 				vi.spyOn(TFAService.prototype, 'verifyOTP').mockResolvedValueOnce(false);
 
@@ -319,11 +319,11 @@ describe('Integration Tests', () => {
 			});
 
 			it('should login successfully when TFA OTP is valid', async () => {
-				tracker.on.select('directus_users').responseOnce([{ ...mockUser, tfa_secret: 'some-secret' }]);
-				tracker.on.select('directus_users').responseOnce([]);
-				tracker.on.insert('directus_sessions').response([1]);
-				tracker.on.delete('directus_sessions').response(1);
-				tracker.on.update('directus_users').response([1]);
+				tracker.on.select('axis_users').responseOnce([{ ...mockUser, tfa_secret: 'some-secret' }]);
+				tracker.on.select('axis_users').responseOnce([]);
+				tracker.on.insert('axis_sessions').response([1]);
+				tracker.on.delete('axis_sessions').response(1);
+				tracker.on.update('axis_users').response([1]);
 
 				vi.spyOn(TFAService.prototype, 'verifyOTP').mockResolvedValueOnce(true);
 
@@ -405,10 +405,10 @@ describe('Integration Tests', () => {
 			});
 
 			it('should succeed with a regular session token (oauth_client is null)', async () => {
-				tracker.on.select('directus_sessions').responseOnce([{ ...mockSessionRecord, oauth_client: null }]);
-				tracker.on.update('directus_sessions').responseOnce([1]);
-				tracker.on.update('directus_users').responseOnce([1]);
-				tracker.on.delete('directus_sessions').responseOnce(1);
+				tracker.on.select('axis_sessions').responseOnce([{ ...mockSessionRecord, oauth_client: null }]);
+				tracker.on.update('axis_sessions').responseOnce([1]);
+				tracker.on.update('axis_users').responseOnce([1]);
+				tracker.on.delete('axis_sessions').responseOnce(1);
 
 				const result = await service.refresh('regular-token');
 
@@ -420,11 +420,11 @@ describe('Integration Tests', () => {
 			});
 
 			it('should reject refresh tokens from OAuth sessions', async () => {
-				tracker.on.select('directus_sessions').responseOnce([]);
+				tracker.on.select('axis_sessions').responseOnce([]);
 
 				await expect(service.refresh('oauth-session-token')).rejects.toBeInstanceOf(InvalidCredentialsError);
 
-				const selectQuery = tracker.history.select.find((q) => q.sql.includes('directus_sessions'));
+				const selectQuery = tracker.history.select.find((q) => q.sql.includes('axis_sessions'));
 				expect(selectQuery?.sql).toContain('"s"."oauth_client" is null');
 				expect(mockRefreshProvider.refresh).not.toHaveBeenCalled();
 				expect(tracker.history.update).toHaveLength(0);
@@ -463,8 +463,8 @@ describe('Integration Tests', () => {
 			});
 
 			it('should logout successfully with a regular session', async () => {
-				tracker.on.select('directus_sessions').responseOnce([{ ...mockSessionUser, oauth_client: null }]);
-				tracker.on.delete('directus_sessions').responseOnce(1);
+				tracker.on.select('axis_sessions').responseOnce([{ ...mockSessionUser, oauth_client: null }]);
+				tracker.on.delete('axis_sessions').responseOnce(1);
 
 				await service.logout('regular-token');
 
@@ -472,14 +472,14 @@ describe('Integration Tests', () => {
 			});
 
 			it('should ignore logout requests for OAuth sessions', async () => {
-				tracker.on.select('directus_sessions').responseOnce([]);
+				tracker.on.select('axis_sessions').responseOnce([]);
 
 				await service.logout('oauth-session-token');
 
 				expect(mockLogoutProvider.logout).not.toHaveBeenCalled();
 				expect(tracker.history.delete).toHaveLength(0);
 
-				const selectQuery = tracker.history.select.find((q) => q.sql.includes('directus_sessions'));
+				const selectQuery = tracker.history.select.find((q) => q.sql.includes('axis_sessions'));
 				expect(selectQuery?.sql).toContain('"s"."oauth_client" is null');
 			});
 		});

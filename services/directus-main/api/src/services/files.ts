@@ -44,7 +44,7 @@ const logger = useLogger();
 
 export class FilesService extends ItemsService<File> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_files', options);
+		super('axis_files', options);
 	}
 
 	/**
@@ -66,7 +66,7 @@ export class FilesService extends ItemsService<File> {
 			existingFile =
 				(await this.knex
 					.select('folder', 'filename_download', 'filename_disk', 'title', 'description', 'metadata', 'storage')
-					.from('directus_files')
+					.from('axis_files')
 					.where({ id: primaryKey })
 					.first()) ?? null;
 		}
@@ -82,7 +82,7 @@ export class FilesService extends ItemsService<File> {
 
 		// If no folder is specified, we'll use the default folder from the settings if it exists
 		if ('folder' in payload === false) {
-			const settings = await this.knex.select('storage_default_folder').from('directus_settings').first();
+			const settings = await this.knex.select('storage_default_folder').from('axis_settings').first();
 
 			if (settings?.storage_default_folder) {
 				payload.folder = settings.storage_default_folder;
@@ -197,7 +197,7 @@ export class FilesService extends ItemsService<File> {
 
 		// We do this in a service without accountability. Even if you don't have update permissions to the file,
 		// we still want to be able to set the extracted values from the file on create
-		const sudoFilesItemsService = new ItemsService('directus_files', {
+		const sudoFilesItemsService = new ItemsService('axis_files', {
 			knex: this.knex,
 			schema: this.schema,
 		});
@@ -240,7 +240,7 @@ export class FilesService extends ItemsService<File> {
 				{
 					accountability: this.accountability,
 					action: 'create',
-					collection: 'directus_files',
+					collection: 'axis_files',
 				},
 				{
 					knex: this.knex,

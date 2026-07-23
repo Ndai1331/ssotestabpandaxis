@@ -22,39 +22,39 @@ export interface FetchAccessLookupOptions {
 export async function fetchAccessLookup(options: FetchAccessLookupOptions): Promise<AccessLookup[]> {
 	let query = options.knex
 		.select(
-			'directus_access.role',
-			'directus_access.user',
-			'directus_policies.app_access',
-			'directus_policies.admin_access',
-			'directus_users.status as user_status',
-			'directus_users.role as user_role',
+			'axis_access.role',
+			'axis_access.user',
+			'axis_policies.app_access',
+			'axis_policies.admin_access',
+			'axis_users.status as user_status',
+			'axis_users.role as user_role',
 		)
-		.from('directus_access')
-		.leftJoin('directus_policies', 'directus_access.policy', 'directus_policies.id')
-		.leftJoin('directus_users', 'directus_access.user', 'directus_users.id');
+		.from('axis_access')
+		.leftJoin('axis_policies', 'axis_access.policy', 'axis_policies.id')
+		.leftJoin('axis_users', 'axis_access.user', 'axis_users.id');
 
 	if (options.excludeAccessRows && options.excludeAccessRows.length > 0) {
-		query = query.whereNotIn('directus_access.id', options.excludeAccessRows);
+		query = query.whereNotIn('axis_access.id', options.excludeAccessRows);
 	}
 
 	if (options.excludePolicies && options.excludePolicies.length > 0) {
-		query = query.whereNotIn('directus_access.policy', options.excludePolicies);
+		query = query.whereNotIn('axis_access.policy', options.excludePolicies);
 	}
 
 	if (options.excludeUsers && options.excludeUsers.length > 0) {
 		query = query.where((q) =>
-			q.whereNotIn('directus_access.user', options.excludeUsers!).orWhereNull('directus_access.user'),
+			q.whereNotIn('axis_access.user', options.excludeUsers!).orWhereNull('axis_access.user'),
 		);
 	}
 
 	if (options.excludeRoles && options.excludeRoles.length > 0) {
 		query = query.where((q) =>
-			q.whereNotIn('directus_access.role', options.excludeRoles!).orWhereNull('directus_access.role'),
+			q.whereNotIn('axis_access.role', options.excludeRoles!).orWhereNull('axis_access.role'),
 		);
 	}
 
 	if (options.adminOnly) {
-		query = query.where('directus_policies.admin_access', 1);
+		query = query.where('axis_policies.admin_access', 1);
 	}
 
 	return query;

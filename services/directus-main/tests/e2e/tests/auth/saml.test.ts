@@ -168,7 +168,7 @@ if (options.extras?.saml) {
 			// 		const cookies = acsResponse.headers.get('set-cookie')!;
 
 			// 		// Assert
-			// 		expect(cookies).toMatch(/directus_session_token/);
+			// 		expect(cookies).toMatch(/axis_session_token/);
 			// 	});
 			// });
 

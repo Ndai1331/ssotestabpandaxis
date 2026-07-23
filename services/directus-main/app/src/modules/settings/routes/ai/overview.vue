@@ -42,7 +42,7 @@ const aiTranslationInputs = new Set([
 	'ai_translation_style_guide',
 ]);
 
-const { fields: allFields } = useCollection('directus_settings');
+const { fields: allFields } = useCollection('axis_settings');
 
 const initialValues = ref(clone(settingsStore.settings));
 

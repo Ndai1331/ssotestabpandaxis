@@ -314,17 +314,17 @@ none: Ekkert
 cancel: Hætta við
 content: Efni
 fields:
-  directus_activity:
+  axis_activity:
     comment: Athugasemd
     origin: Uppruni
-  directus_collections:
+  axis_collections:
     collection: Safn
     icon: Íkon
     note: Minnispunktur
     status: Staða
     color: Litur
     hidden: Falið
-  directus_files:
+  axis_files:
     title: Titill
     description: Lýsing
     tags: Merki
@@ -339,7 +339,7 @@ fields:
     uploaded_on: Upphlaðið Þann
     height: Hæð
     duration: Tímalengd
-  directus_users:
+  axis_users:
     first_name: Fornafn
     last_name: Eftirnafn
     email: Tölvupóstur
@@ -358,44 +358,44 @@ fields:
     role: Hlutverk
     last_page: Síðasta Síða
     last_access: Síðasta Aðgengi
-  directus_settings:
+  axis_settings:
     project_name: Verkefni Nafn
     custom_css: Sérsniðið CSS
     ai_header_name: Haus
-  directus_shares:
+  axis_shares:
     name: Nafn
     role: Hlutverk
     password: Lykilorð
-  directus_fields:
+  axis_fields:
     note: Minnispunktur
     display_template: Sniðmát
-  directus_roles:
+  axis_roles:
     name: Hlutverks Nafn
     description: Lýsing
-  directus_policies:
+  axis_policies:
     description: Lýsing
 field_options:
-  directus_settings:
+  axis_settings:
     security_divider_title: Öryggi
-  directus_activity:
+  axis_activity:
     login: Skrá inn
     create: Búa til
     update: Uppfæra
     delete: Eyða
-  directus_collections:
+  axis_collections:
     collection_setup: Safn Uppstilling
     language: Tungumál
     collection_name: Safn Nafn
     archive_divider: Geymsla
     sort_divider: Flokka
     preview_divider: Forskoða
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: Íkon
       name_name: Nafn
       name_placeholder: Skráðu titil...
       link_name: Hlekkur
-  directus_users:
+  axis_users:
     preferences_divider: Notandi Stillingar
     status_dropdown_draft: Drög
     status_dropdown_active: Virkt

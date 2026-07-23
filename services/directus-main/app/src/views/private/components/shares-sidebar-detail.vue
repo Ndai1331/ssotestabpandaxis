@@ -297,7 +297,7 @@ async function copy(id: string) {
 		</template>
 
 		<DrawerItem
-			collection="directus_shares"
+			collection="axis_shares"
 			:primary-key="shareToEdit"
 			:active="!!shareToEdit"
 			@update:active="unselect"

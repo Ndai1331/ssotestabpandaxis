@@ -653,7 +653,7 @@ collections: Kolektoj
 content: Enhavo
 system_fields_locked: Sistemaj valoroj estas ŝlositaj kaj ne povas esti redaktitaj
 fields:
-  directus_activity:
+  axis_activity:
     item: Ĉefa ŝlosilo de la ero
     action: Ago
     collection: Kolekto
@@ -664,7 +664,7 @@ fields:
     origin: Origino
     ip: IP-adreso
     revisions: Versioj
-  directus_collections:
+  axis_collections:
     collection: Kolekto
     icon: Emblemo
     note: Noto
@@ -674,7 +674,7 @@ fields:
     archive_value: Arĥivi la valoron
     unarchive_value: Malarĥivi la valoron
     archive_field: Arĥivi la kampon
-  directus_files:
+  axis_files:
     $thumbnail: Bildeto
     title: Titolo
     description: Priskribo
@@ -693,7 +693,7 @@ fields:
     height: Alto
     charset: Signaro
     duration: Daŭro
-  directus_users:
+  axis_users:
     first_name: Pesona nomo
     last_name: Familia nomo
     email: Retpoŝtadreso
@@ -717,7 +717,7 @@ fields:
     external_identifier: Ekstera identigilo
     last_page: Lasta paĝo
     appearance: Aspekto
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -743,23 +743,23 @@ fields:
     module_bar: Modula breto
     transformations_all: Permesi ĉiujn transformojn
     transformations_none: Malŝalti transformojn
-  directus_shares:
+  axis_shares:
     name: Nomo
     role: Rolo
     password: Pasvorto
-  directus_fields:
+  axis_fields:
     icon: Emblemo de la kolekto
     note: Noto
     hidden: Kaŝita
     display_template: Ŝablono
-  directus_roles:
+  axis_roles:
     name: Nomo de la rolo
     icon: Emblemo de la rolo
     description: Priskribo
-  directus_policies:
+  axis_policies:
     description: Priskribo
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Mia projekto...
     security_divider_title: Sekureco
     auth_password_policy:
@@ -772,11 +772,11 @@ field_options:
     basemaps_name_placeholder: Entajpu la nomon de la bazmapo...
     basemaps_style: Mapbox-stilo
     files_divider_title: Dosieroj kaj bildetoj
-  directus_activity:
+  axis_activity:
     login: Ensaluti
     create: Krei
     delete: Forigi
-  directus_collections:
+  axis_collections:
     note_placeholder: Priskribo de la kolekto...
     language: Lingvo
     translation: Traduko
@@ -787,11 +787,11 @@ field_options:
     archive_field_placeholder: Elekti kampon...
     sort_divider: Ordigi
     sort_field: Elekti kampon...
-  directus_files:
+  axis_files:
     title: Unika titolo...
     description: Nedeviga priskribo...
     location: Nedeviga loko...
-  directus_roles:
+  axis_roles:
     fields:
       icon_name: Emblemo
       name_name: Nomo
@@ -800,7 +800,7 @@ field_options:
       link_placeholder: Relativa aŭ absoluta URL...
     collections_name: Kolektoj
     collections_addLabel: Aldoni kolekton...
-  directus_users:
+  axis_users:
     dropdown_auto: Aŭtomata (bazita je la sistemo)
     dropdown_light: Hela reĝimo
     dropdown_dark: Malhela reĝimo

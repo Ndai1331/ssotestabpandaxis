@@ -60,7 +60,7 @@ const readHandler = asyncHandler(async (req, res, next) => {
 		result = await collectionsService.readByQuery();
 	}
 
-	const meta = await metaService.getMetaForQuery('directus_collections', {});
+	const meta = await metaService.getMetaForQuery('axis_collections', {});
 
 	res.locals['payload'] = { data: result, meta };
 	return next();

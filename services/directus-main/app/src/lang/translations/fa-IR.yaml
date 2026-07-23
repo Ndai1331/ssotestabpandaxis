@@ -401,9 +401,9 @@ geometry:
 theme_auto: خودکار (بر اساس سیستم)
 theme_light: حالت روشن
 theme_dark: حالت تاریک
-theme_directus_default: دایرکتوس پیش‌فرض
-theme_directus_minimal: دایرکتوس مینیمال
-theme_directus_colormatch: دایرکتوس هم‌رنگ
+theme_axis_default: دایرکتوس پیش‌فرض
+theme_axis_minimal: دایرکتوس مینیمال
+theme_axis_colormatch: دایرکتوس هم‌رنگ
 not_available_for_type: برای این نوع در دسترس نیست
 create_translations: ایجاد ترجمه
 auto_refresh: تازه نمودن خودکار
@@ -1419,35 +1419,35 @@ content: محتوا
 singleton: تک کالکشن یا Singleton
 singleton_label: به عنوان یک شی واحد رفتار کند
 system_fields_locked: فیلدهای سیستم قفل هستند و قابل ویرایش نیستند
-directus_collection:
-  directus_access: پیوست‌های سیاست
-  directus_activity: گزارش های مسئولیت پذیری برای همه رویدادها
-  directus_collections: پیکربندی مجموعه اضافی و ابرداده
-  directus_comments: نظرات برای موارد
-  directus_dashboards: داشبوردهای درون ماژول Insights
-  directus_fields: پیکربندی فیلد اضافی و ابرداده
-  directus_files: فراداده برای همه Assets های فایل مدیریت شده
-  directus_flows: جریان‌های خودکارسازی
-  directus_folders: دایرکتوری های مجازی برای فایل ها فراهم می کند
-  directus_migrations: از چه نسخه ای از پایگاه داده استفاده می کنید
-  directus_notifications: اعلانهای ارسالی به کاربر
-  directus_operations: عملیاتی که در جریان‌ها اجرا می شوند
-  directus_panels: پنل‌های مجزا در داشبوردها
-  directus_permissions: مجوزهای دسترسی برای هر سیاست
-  directus_policies: سیاست‌های کنترل دسترسی
-  directus_presets: تنظیمات پیش‌فرض برای مجموعه و نشانک‌ها
-  directus_relations: پیکربندی رابطه و داده متا
-  directus_revisions: لحظه‌نگارهای داده برای همه فعالیت‌ها
-  directus_roles: گروههای اجازه برای کاربران سیستم
-  directus_sessions: اطلاعات نشست کاربر
-  directus_settings: گزینه های پیکربندی پروژه
-  directus_shares: موارد به اشتراک گذاشته شده خارجی را ردیابی می کند
-  directus_users: کاربران سیستمی برای پلتفرم
-  directus_translations: ترجمه های سفارشی
-  directus_versions: نسخه‌های محتوا برای موارد
-  directus_extensions: تنظیمات افزونه‌ها
+axis_collection:
+  axis_access: پیوست‌های سیاست
+  axis_activity: گزارش های مسئولیت پذیری برای همه رویدادها
+  axis_collections: پیکربندی مجموعه اضافی و ابرداده
+  axis_comments: نظرات برای موارد
+  axis_dashboards: داشبوردهای درون ماژول Insights
+  axis_fields: پیکربندی فیلد اضافی و ابرداده
+  axis_files: فراداده برای همه Assets های فایل مدیریت شده
+  axis_flows: جریان‌های خودکارسازی
+  axis_folders: دایرکتوری های مجازی برای فایل ها فراهم می کند
+  axis_migrations: از چه نسخه ای از پایگاه داده استفاده می کنید
+  axis_notifications: اعلانهای ارسالی به کاربر
+  axis_operations: عملیاتی که در جریان‌ها اجرا می شوند
+  axis_panels: پنل‌های مجزا در داشبوردها
+  axis_permissions: مجوزهای دسترسی برای هر سیاست
+  axis_policies: سیاست‌های کنترل دسترسی
+  axis_presets: تنظیمات پیش‌فرض برای مجموعه و نشانک‌ها
+  axis_relations: پیکربندی رابطه و داده متا
+  axis_revisions: لحظه‌نگارهای داده برای همه فعالیت‌ها
+  axis_roles: گروههای اجازه برای کاربران سیستم
+  axis_sessions: اطلاعات نشست کاربر
+  axis_settings: گزینه های پیکربندی پروژه
+  axis_shares: موارد به اشتراک گذاشته شده خارجی را ردیابی می کند
+  axis_users: کاربران سیستمی برای پلتفرم
+  axis_translations: ترجمه های سفارشی
+  axis_versions: نسخه‌های محتوا برای موارد
+  axis_extensions: تنظیمات افزونه‌ها
 fields:
-  directus_activity:
+  axis_activity:
     item: کلید اصلی مورد
     action: فعالیت
     collection: مجموعه
@@ -1458,7 +1458,7 @@ fields:
     origin: مبدأ
     ip: آدرس IP
     revisions: بازنگری‌ها
-  directus_collections:
+  axis_collections:
     collection: کالکشن یا مجموعه
     icon: آیکن
     note: شرح
@@ -1476,7 +1476,7 @@ fields:
     versioning: نسخه‌بندی
     archive_field: فیلد بایگانی
     item_duplication_fields: فیلدهای تکراری
-  directus_files:
+  axis_files:
     $thumbnail: تصویر کوچک
     title: عنوان
     description: توضیحات
@@ -1502,7 +1502,7 @@ fields:
     duration: مدت زمان
     focal_point_x: مختصات افقی
     focal_point_y: مختصات عمودی
-  directus_users:
+  axis_users:
     first_name: نام
     last_name: نام خانوادگی
     email: ایمیل
@@ -1536,7 +1536,7 @@ fields:
     theme_dark: پوسته تیره
     theme_light_overrides: سفارشی‌سازی پوسته روشن
     theme_dark_overrides: سفارشی‌سازی پوسته تیره
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1636,7 +1636,7 @@ fields:
     ai_provider_options: گزینه‌های ارائه‌دهنده
     ai_provider_options_note: گزینه‌های مخصوص ارائه‌دهنده که به نقاط پایانی هوش مصنوعی فرستاده می‌شود.
     ai_header_name: سربرگ
-  directus_shares:
+  axis_shares:
     name: نام
     role: نقش
     password: رمز عبور
@@ -1644,7 +1644,7 @@ fields:
     date_end: تاریخ پایان
     max_uses: حدأکثر استفاده
     times_used: بار استفاده شده
-  directus_fields:
+  axis_fields:
     collection: نام مجموعه
     icon: آیکن مجموعه
     note: شرح
@@ -1652,7 +1652,7 @@ fields:
     singleton: تک کالکشن یا Singleton
     translation: ترجمه‌های نام فیلد
     display_template: پوسته
-  directus_roles:
+  axis_roles:
     name: نام نقش
     icon: آیکن نقش
     description: توضیحات
@@ -1660,7 +1660,7 @@ fields:
     parent: نقش والد
     children: نقش‌های فرزند
     policies: سیاست‌ها
-  directus_policies:
+  axis_policies:
     name: نام خط مشی
     description: توضیحات
     app_access: دسترسی به برنامه
@@ -1668,7 +1668,7 @@ fields:
     ip_access: محدودیت IP
     enforce_tfa: اجبار به احراز هویت دو عاملی
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: پروژه من...
     project_color_note: نماد برگه ورود
     project_logo_note: White 40x40 SVG/PNG
@@ -1698,13 +1698,13 @@ field_options:
     basemaps_style: سبک مپ‌باکس
     files_divider_title: فایلها و تصاویر کوچک
     overrides_divider_title: لغو برنامه
-  directus_activity:
+  axis_activity:
     login: ورود به سیستم
     logout: خروج
     create: ایجاد
     update: بروزرسانی
     delete: حذف
-  directus_collections:
+  axis_collections:
     track_activity_revisions: مشاهده فعالیت ها و لاگ ها
     only_track_activity: فقط مشاهده فعالیت ها
     do_not_track_anything: هیچ چیز را پیگیری نکن
@@ -1732,7 +1732,7 @@ field_options:
     content_translations_divider: ترجمه‌های محتوا
     content_versioning_divider: نسخه‌بندی محتوا
     enable_versioning: فعال‌سازی نسخه‌بندی
-  directus_files:
+  axis_files:
     title: یک عنوان منحصر به فرد
     description: توضیحات اختیاری...
     location: موقعیت اختیاری...
@@ -1740,13 +1740,13 @@ field_options:
     focal_point_divider: نقطه کانونی
     filename_disk: نام برروی دیسک...
     filename_download: نام فایل به هنگام دانلود...
-  directus_policies:
+  axis_policies:
     name: نامی یکتا برای این سیاست...
     description: توضیحاتی برای این سیاست...
     ip_access: نشانی IP ها، بازه‌های IP و قطعات CIDR مجاز را اضافه کنید. برای اجازه دادن به همه، خالی بگذارید...
     enforce_tfa: اجبار به احراز هویت دو عاملی
     assigned_to: منتسب به
-  directus_roles:
+  axis_roles:
     name: نامی یکتا برای این نقش...
     description: توضیحات مربوط به این نقش...
     fields:
@@ -1759,7 +1759,7 @@ field_options:
     children_note: نقش‌های فرزند تو در تو که از دسترسی‌های این نقش ارث‌بری می‌کنند
     collections_name: مجموعه‌ها
     collections_addLabel: مجموعه جدید...
-  directus_users:
+  axis_users:
     preferences_divider: تنظیمات مربوط به کاربر
     dropdown_auto: انتخاب خودکار پوسته (توسط سیستم)
     dropdown_light: تم روشن

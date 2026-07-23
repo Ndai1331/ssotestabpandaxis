@@ -47,13 +47,13 @@ export class PermissionCache {
 		// System Invalidation (Roles, Permissions, Policies, Schema)
 		if (
 			[
-				'directus_roles',
-				'directus_permissions',
-				'directus_policies',
-				'directus_access',
-				'directus_fields',
-				'directus_relations',
-				'directus_collections',
+				'axis_roles',
+				'axis_permissions',
+				'axis_policies',
+				'axis_access',
+				'axis_fields',
+				'axis_relations',
+				'axis_collections',
 			].includes(collection)
 		) {
 			this.clear();

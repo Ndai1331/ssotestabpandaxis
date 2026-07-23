@@ -4,7 +4,7 @@ import type { DirectusUser } from './user.js';
 
 export type DirectusFlow<Schema = any> = MergeCoreCollection<
 	Schema,
-	'directus_flows',
+	'axis_flows',
 	{
 		id: string;
 		name: string;

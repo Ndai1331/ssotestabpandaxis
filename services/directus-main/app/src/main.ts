@@ -28,7 +28,7 @@ async function init() {
 		`Hey! Interested in helping build this open-source data management platform?\nIf so, join our growing team of contributors at: https://directus.chat`,
 	);
 
-	console.info(`%c🐰 Starting Directus...`, 'color:Green');
+	console.info(`%c🐰 Starting Axis...`, 'color:Green');
 
 	console.time('🕓 Application Loaded');
 

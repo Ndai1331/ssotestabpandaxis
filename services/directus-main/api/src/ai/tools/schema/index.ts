@@ -74,7 +74,7 @@ export const schema = defineTool<z.infer<typeof SchemaValidateSchema>>({
 	name: 'schema',
 	description: requireText(resolve(__dirname, './prompt.md')),
 	annotations: {
-		title: 'Directus - Schema',
+		title: 'Axis - Schema',
 	},
 	inputSchema: SchemaInputSchema,
 	validateSchema: SchemaValidateSchema,
@@ -386,7 +386,7 @@ function buildManyToManyRelation(field: Field, snapshot: SchemaToolSnapshot) {
 		(r) => r.collection === junctionRelation.collection && r.field === junctionRelation.meta?.junction_field,
 	);
 
-	const targetCollection = targetRelation?.related_collection || 'directus_files';
+	const targetCollection = targetRelation?.related_collection || 'axis_files';
 
 	const result: any = {
 		type: 'm2m',

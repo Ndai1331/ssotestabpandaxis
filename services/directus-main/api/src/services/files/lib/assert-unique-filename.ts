@@ -12,7 +12,7 @@ import type { Knex } from 'knex';
  *
  */
 export async function assertUniqueFilename(knex: Knex, filename: string, excludeId?: PrimaryKey | null): Promise<void> {
-	const query = knex.select('filename_disk').from('directus_files').where({ filename_disk: filename });
+	const query = knex.select('filename_disk').from('axis_files').where({ filename_disk: filename });
 
 	if (excludeId) {
 		query.whereNot('id', excludeId);

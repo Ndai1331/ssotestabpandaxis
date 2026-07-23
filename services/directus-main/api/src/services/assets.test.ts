@@ -75,7 +75,7 @@ describe('AssetsService', () => {
 	});
 
 	beforeEach(() => {
-		tracker.on.select(/directus_settings/).response([{}]);
+		tracker.on.select(/axis_settings/).response([{}]);
 	});
 
 	afterEach(() => {
@@ -214,7 +214,7 @@ describe('AssetsService', () => {
 				});
 
 				tracker.reset();
-				tracker.on.select(/directus_settings/).response([{ project_logo: logoFileId }]);
+				tracker.on.select(/axis_settings/).response([{ project_logo: logoFileId }]);
 
 				const logoFile = { ...mockFile, id: logoFileId } as any;
 				vi.mocked(FilesService.prototype.readOne).mockResolvedValue(logoFile);
@@ -257,7 +257,7 @@ describe('AssetsService', () => {
 					{
 						accountability,
 						action: 'read',
-						collection: 'directus_files',
+						collection: 'axis_files',
 						primaryKeys: [mockFileId],
 						returnAllowedRootFields: true,
 					},

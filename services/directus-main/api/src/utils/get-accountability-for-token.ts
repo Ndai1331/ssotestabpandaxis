@@ -61,10 +61,10 @@ export async function getAccountabilityForToken(
 			accountability.app = app;
 		} else {
 			const user = await database
-				.select('directus_users.id', 'directus_users.role')
-				.from('directus_users')
+				.select('axis_users.id', 'axis_users.role')
+				.from('axis_users')
 				.where({
-					'directus_users.token': token,
+					'axis_users.token': token,
 					status: 'active',
 				})
 				.first();

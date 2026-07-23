@@ -184,11 +184,11 @@ function useOnCreate() {
 				},
 			];
 
-			if (localType.value === 'm2o' && relations.value.m2o?.related_collection === 'directus_users') {
+			if (localType.value === 'm2o' && relations.value.m2o?.related_collection === 'axis_users') {
 				return options.filter(({ value }) => [null, 'user-created'].includes(value));
 			}
 
-			if (localType.value === 'm2o' && relations.value.m2o?.related_collection === 'directus_roles') {
+			if (localType.value === 'm2o' && relations.value.m2o?.related_collection === 'axis_roles') {
 				return options.filter(({ value }) => [null, 'role-created'].includes(value));
 			}
 
@@ -263,11 +263,11 @@ function useOnUpdate() {
 				},
 			];
 
-			if (localType.value === 'm2o' && relations.value.m2o?.related_collection === 'directus_users') {
+			if (localType.value === 'm2o' && relations.value.m2o?.related_collection === 'axis_users') {
 				return options.filter(({ value }) => [null, 'user-updated'].includes(value));
 			}
 
-			if (localType.value === 'm2o' && relations.value.m2o?.related_collection === 'directus_roles') {
+			if (localType.value === 'm2o' && relations.value.m2o?.related_collection === 'axis_roles') {
 				return options.filter(({ value }) => [null, 'role-updated'].includes(value));
 			}
 

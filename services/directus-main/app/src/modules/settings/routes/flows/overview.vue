@@ -36,7 +36,7 @@ import MaxCapacityAlert from '@/views/private/components/license/max-capacity-al
 
 const { t } = useI18n();
 
-const { createAllowed } = useCollectionPermissions('directus_flows');
+const { createAllowed } = useCollectionPermissions('axis_flows');
 const licenseStore = useLicenseStore();
 
 const confirmDelete = ref<FlowRaw | null>(null);

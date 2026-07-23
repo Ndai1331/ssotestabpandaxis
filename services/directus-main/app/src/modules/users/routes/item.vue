@@ -74,7 +74,7 @@ async function saveAsInactive() {
 }
 
 const { primaryKey } = toRefs(props);
-const { info: collectionInfo } = useCollection('directus_users');
+const { info: collectionInfo } = useCollection('axis_users');
 
 const revisionsSidebarDetail = ref<InstanceType<typeof RevisionsSidebarDetail> | null>(null);
 
@@ -97,7 +97,7 @@ const {
 	refresh,
 	getItem,
 } = useItem<User>(
-	ref('directus_users'),
+	ref('axis_users'),
 	primaryKey,
 	null,
 	computed(() => false),
@@ -126,7 +126,7 @@ const {
 	discard: discardCollab,
 	focused,
 	connectionId,
-} = useCollab(ref('directus_users'), primaryKey, ref(null), item, edits, getItem);
+} = useCollab(ref('axis_users'), primaryKey, ref(null), item, edits, getItem);
 
 const {
 	collectionPermissions: { createAllowed, revisionsAllowed },
@@ -523,7 +523,7 @@ function revert(values: Record<string, any>) {
 		<ComparisonModal
 			:model-value="collabCollision !== undefined"
 			mode="collab"
-			collection="directus_users"
+			collection="axis_users"
 			:primary-key="primaryKey"
 			:current-collab="collabCollision"
 			:collab-context="collabContext"
@@ -536,11 +536,11 @@ function revert(values: Record<string, any>) {
 			<RevisionsSidebarDetail
 				v-if="isNew === false && revisionsAllowed"
 				ref="revisionsSidebarDetail"
-				collection="directus_users"
+				collection="axis_users"
 				:primary-key="primaryKey"
 				@revert="revert"
 			/>
-			<CommentsSidebarDetail v-if="isNew === false" collection="directus_users" :primary-key="primaryKey" />
+			<CommentsSidebarDetail v-if="isNew === false" collection="axis_users" :primary-key="primaryKey" />
 		</template>
 
 		<EntitlementLimitModal

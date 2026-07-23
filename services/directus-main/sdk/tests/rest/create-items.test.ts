@@ -17,7 +17,7 @@ describe('createItem', () => {
 	});
 
 	test('throws when using core collections', () => {
-		expect(() => createItem<TestSchema, 'directus_users', any>('directus_users', { custom_field: false })()).toThrow(
+		expect(() => createItem<TestSchema, 'axis_users', any>('axis_users', { custom_field: false })()).toThrow(
 			'Cannot use createItem for core collections',
 		);
 	});
@@ -42,7 +42,7 @@ describe('createItems', () => {
 	});
 
 	test('throws when using core collections', () => {
-		expect(() => createItems<TestSchema, 'directus_users', any>('directus_users', [{ custom_field: false }])()).toThrow(
+		expect(() => createItems<TestSchema, 'axis_users', any>('axis_users', [{ custom_field: false }])()).toThrow(
 			'Cannot use createItems for core collections',
 		);
 	});

@@ -224,7 +224,7 @@ export class Room {
 
 				const result = await (async () => {
 					if (this.version) {
-						const service = getService('directus_versions', { schema });
+						const service = getService('axis_versions', { schema });
 						const versionData = await service.readOne(this.version);
 						return versionData['delta'] ?? {};
 					}
@@ -285,7 +285,7 @@ export class Room {
 
 				// Skip deletions for different versions
 				const isVersionMatch =
-					this.version && eventCollection === 'directus_versions' && keys.some((key) => String(key) === this.version);
+					this.version && eventCollection === 'axis_versions' && keys.some((key) => String(key) === this.version);
 
 				// Skip deletions for different items (singletons have item=null)
 				const isItemMatch =

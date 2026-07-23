@@ -82,8 +82,8 @@ export class FieldsService {
 		this.helpers = getHelpers(this.knex);
 		this.schemaInspector = options.knex ? createInspector(options.knex) : getSchemaInspector();
 		this.accountability = options.accountability || null;
-		this.itemsService = new ItemsService('directus_fields', options);
-		this.payloadService = new PayloadService('directus_fields', options);
+		this.itemsService = new ItemsService('axis_fields', options);
+		this.payloadService = new PayloadService('axis_fields', options);
 		this.schema = options.schema;
 
 		const { cache, systemCache, localSchemaCache } = getCache();
@@ -131,7 +131,7 @@ export class FieldsService {
 				{
 					accountability: this.accountability,
 					action: 'read',
-					collection: 'directus_fields',
+					collection: 'axis_fields',
 				},
 				{
 					schema: this.schema,
@@ -140,7 +140,7 @@ export class FieldsService {
 			);
 		}
 
-		const nonAuthorizedItemsService = new ItemsService<FieldMeta, 'directus_fields'>('directus_fields', {
+		const nonAuthorizedItemsService = new ItemsService<FieldMeta, 'axis_fields'>('axis_fields', {
 			knex: this.knex,
 			schema: this.schema,
 		});
@@ -184,7 +184,7 @@ export class FieldsService {
 			return data as Field;
 		});
 
-		const aliasQuery = this.knex.select<any[]>('*').from('directus_fields');
+		const aliasQuery = this.knex.select<any[]>('*').from('axis_fields');
 
 		if (collection) {
 			aliasQuery.andWhere('collection', collection);
@@ -318,7 +318,7 @@ export class FieldsService {
 		}
 
 		let column = undefined;
-		let fieldInfo = await this.knex.select('*').from('directus_fields').where({ collection, field }).first();
+		let fieldInfo = await this.knex.select('*').from('axis_fields').where({ collection, field }).first();
 
 		if (fieldInfo) {
 			fieldInfo = (await this.payloadService.processValues('read', fieldInfo)) as FieldMeta[];
@@ -373,10 +373,10 @@ export class FieldsService {
 			const exists =
 				field.field in this.schema.collections[collection]!.fields ||
 				isNil(
-					await this.knex.select('id').from('directus_fields').where({ collection, field: field.field }).first(),
+					await this.knex.select('id').from('axis_fields').where({ collection, field: field.field }).first(),
 				) === false;
 
-			// Check if field already exists, either as a column, or as a row in directus_fields
+			// Check if field already exists, either as a column, or as a row in axis_fields
 			if (exists) {
 				throw new InvalidPayloadError({
 					reason: `Field "${field.field}" already exists in collection "${collection}"`,
@@ -394,7 +394,7 @@ export class FieldsService {
 			const attemptConcurrentIndex = Boolean(opts?.attemptConcurrentIndex);
 
 			await transaction(this.knex, async (trx) => {
-				const itemsService = new ItemsService('directus_fields', {
+				const itemsService = new ItemsService('axis_fields', {
 					knex: trx,
 					accountability: this.accountability,
 					schema: this.schema,
@@ -432,7 +432,7 @@ export class FieldsService {
 
 				if (hookAdjustedField.meta) {
 					const existingSortRecord: Record<'max', number | null> | undefined = await trx
-						.from('directus_fields')
+						.from('axis_fields')
 						.where(hookAdjustedField.meta?.group ? { collection, group: hookAdjustedField.meta.group } : { collection })
 						.max('sort', { as: 'max' })
 						.first();
@@ -533,7 +533,7 @@ export class FieldsService {
 					: field;
 
 			const record = field.meta
-				? await this.knex.select('id').from('directus_fields').where({ collection, field: field.field }).first()
+				? await this.knex.select('id').from('axis_fields').where({ collection, field: field.field }).first()
 				: null;
 
 			if (
@@ -761,7 +761,7 @@ export class FieldsService {
 
 					// If the current field is a o2m, just delete the one field config from the relation
 					if (!isM2O && relation.meta?.one_field) {
-						await trx('directus_relations')
+						await trx('axis_relations')
 							.update({ one_field: null })
 							.where({ many_collection: relation.collection, many_field: relation.field });
 					}
@@ -787,7 +787,7 @@ export class FieldsService {
 				const collectionMetaQuery = trx
 					.queryBuilder()
 					.select('collection', 'archive_field', 'sort_field', 'item_duplication_fields')
-					.from('directus_collections')
+					.from('axis_collections')
 					.where({ collection });
 
 				if (collectionRelationList.size !== 0) {
@@ -807,24 +807,24 @@ export class FieldsService {
 				);
 
 				for (const meta of collectionMetaUpdates) {
-					await trx('directus_collections').update(meta.updates).where({ collection: meta.collection });
+					await trx('axis_collections').update(meta.updates).where({ collection: meta.collection });
 				}
 
-				// Cleanup directus_fields
+				// Cleanup axis_fields
 				const metaRow = await trx
 					.select('collection', 'field')
-					.from('directus_fields')
+					.from('axis_fields')
 					.where({ collection, field })
 					.first();
 
 				if (metaRow) {
 					// Handle recursive FK constraints
-					await trx('directus_fields')
+					await trx('axis_fields')
 						.update({ group: null })
 						.where({ group: metaRow.field, collection: metaRow.collection });
 				}
 
-				const itemsService = new ItemsService('directus_fields', {
+				const itemsService = new ItemsService('axis_fields', {
 					knex: trx,
 					accountability: this.accountability,
 					schema: this.schema,
@@ -843,7 +843,7 @@ export class FieldsService {
 				// cleanup permissions for deleted field
 				const permissionRows: { id: number; collection: string; fields: string }[] = await trx
 					.select('id', 'collection', 'fields')
-					.from('directus_permissions')
+					.from('axis_permissions')
 					.whereRaw('?? = ? AND ?? LIKE ?', ['collection', collection, 'fields', '%' + field + '%']);
 
 				if (permissionRows.length > 0) {
@@ -853,7 +853,7 @@ export class FieldsService {
 							.filter((v) => v !== field)
 							.join(',');
 
-						await trx('directus_permissions')
+						await trx('axis_permissions')
 							.update('fields', newFields.length > 0 ? newFields : null)
 							.where('id', '=', permissionRow['id']);
 					}

@@ -53,7 +53,7 @@ export default defineModule({
 	preRegisterCheck(user, permissions) {
 		if (user.admin_access) return true;
 
-		const access = permissions['directus_deployments']?.['read']?.access;
+		const access = permissions['axis_deployments']?.['read']?.access;
 
 		return access === 'partial' || access === 'full';
 	},

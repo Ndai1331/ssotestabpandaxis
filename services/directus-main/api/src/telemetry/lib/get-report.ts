@@ -15,14 +15,14 @@ import { getSettings } from '../utils/get-settings.js';
 import { getUserItemCount } from '../utils/get-user-item-count.js';
 
 const basicCountTasks = [
-	{ collection: 'directus_dashboards' },
-	{ collection: 'directus_files' },
+	{ collection: 'axis_dashboards' },
+	{ collection: 'axis_files' },
 	{
-		collection: 'directus_flows',
+		collection: 'axis_flows',
 		where: ['status', '=', 'active'],
 	},
-	{ collection: 'directus_roles' },
-	{ collection: 'directus_shares' },
+	{ collection: 'axis_roles' },
+	{ collection: 'axis_shares' },
 ] as const;
 
 /**
@@ -61,11 +61,11 @@ export const getReport = async (): Promise<TelemetryReport> => {
 		version: version,
 		database: getDatabaseClient(),
 
-		dashboards: basicCounts.directus_dashboards,
-		files: basicCounts.directus_files,
-		flows: basicCounts.directus_flows,
-		roles: basicCounts.directus_roles,
-		shares: basicCounts.directus_shares,
+		dashboards: basicCounts.axis_dashboards,
+		files: basicCounts.axis_files,
+		flows: basicCounts.axis_flows,
+		roles: basicCounts.axis_roles,
+		shares: basicCounts.axis_shares,
 
 		admin_users: userCounts.admin,
 		app_users: userCounts.app,

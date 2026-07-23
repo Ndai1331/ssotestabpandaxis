@@ -1628,7 +1628,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 
 		describe('Relational trigger ON DESELECT ACTION are applied irrespective of QUERY_LIMIT_MAX', () => {
 			it.each(vendors)('%s', async (vendor) => {
-				// TODO: Fix ORA-12899: value too large for column on directus_revisions. Limit of 4000
+				// TODO: Fix ORA-12899: value too large for column on axis_revisions. Limit of 4000
 				if (vendor === 'oracle') {
 					expect(true).toBe(true);
 					return;
@@ -1987,7 +1987,7 @@ describe.each(PRIMARY_KEY_TYPES)('/items', (pkType) => {
 					it.each(vendors)(
 						'%s',
 						async (vendor) => {
-							// TODO: Fix Oracle exceeded directus_revisions limit of 4000
+							// TODO: Fix Oracle exceeded axis_revisions limit of 4000
 							if (vendor === 'oracle') {
 								expect(true).toBe(true);
 								return;

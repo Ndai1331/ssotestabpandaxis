@@ -1,7 +1,7 @@
 import type { Knex } from 'knex';
 
 export async function up(knex: Knex) {
-	const panels = await knex('directus_panels').where('type', '=', 'metric').select();
+	const panels = await knex('axis_panels').where('type', '=', 'metric').select();
 
 	const updates: Promise<number>[] = [];
 
@@ -42,7 +42,7 @@ export async function up(knex: Knex) {
 				options = JSON.stringify(options);
 			}
 
-			updates.push(knex('directus_panels').update({ options }).where('id', panel.id));
+			updates.push(knex('axis_panels').update({ options }).where('id', panel.id));
 		}
 	}
 
@@ -50,7 +50,7 @@ export async function up(knex: Knex) {
 }
 
 export async function down(knex: Knex) {
-	const panels = await knex('directus_panels').where('type', '=', 'metric').select();
+	const panels = await knex('axis_panels').where('type', '=', 'metric').select();
 
 	const updates: Promise<number>[] = [];
 
@@ -94,7 +94,7 @@ export async function down(knex: Knex) {
 				options = JSON.stringify(options);
 			}
 
-			updates.push(knex('directus_panels').update({ options }).where('id', panel.id));
+			updates.push(knex('axis_panels').update({ options }).where('id', panel.id));
 		}
 	}
 

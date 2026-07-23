@@ -34,7 +34,7 @@ const api = useApi();
 const router = useRouter();
 
 const fieldsStore = useFieldsStore();
-const policiesField = cloneDeep(fieldsStore.getField('directus_roles', 'policies'));
+const policiesField = cloneDeep(fieldsStore.getField('axis_roles', 'policies'));
 
 // Add filter in order to correctly display the policies of the public role
 policiesField!.meta!.options = {
@@ -47,7 +47,7 @@ policiesField!.meta!.options = {
 	// Needed for filtering the policies that can be selected, as the list-m2m field applies the same filter, but with
 	// _eq: null, which does not work correctly
 	filter: {
-		'$FOLLOW(directus_access,policy)': {
+		'$FOLLOW(axis_access,policy)': {
 			_none: {
 				_and: [
 					{

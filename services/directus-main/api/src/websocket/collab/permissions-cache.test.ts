@@ -110,11 +110,11 @@ describe('PermissionCache', () => {
 
 		test('dependency invalidation', () => {
 			// Cache post 1 dependent on author 123
-			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['directus_users:123']);
+			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['axis_users:123']);
 
 			// Invalidate author 123
 			busHandler({
-				collection: 'directus_users',
+				collection: 'axis_users',
 				keys: ['123'],
 			});
 
@@ -136,14 +136,14 @@ describe('PermissionCache', () => {
 			cache.set(mockAccountability, 'posts', '1', 'read', ['A']);
 
 			// Invalidate permissions
-			busHandler({ collection: 'directus_permissions' });
+			busHandler({ collection: 'axis_permissions' });
 
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
 		});
 
 		test('system collection invalidation increments invalidationCount', () => {
 			const initial = cache.getInvalidationCount();
-			busHandler({ collection: 'directus_permissions' });
+			busHandler({ collection: 'axis_permissions' });
 			expect(cache.getInvalidationCount()).toBe(initial + 1);
 		});
 
@@ -167,10 +167,10 @@ describe('PermissionCache', () => {
 
 		test('wildcard dependency invalidation (no keys provided)', () => {
 			// Cache depends on specific user
-			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['directus_users:123']);
+			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['axis_users:123']);
 
-			// Invalidate directus_users without keys (e.g. from Flow)
-			busHandler({ collection: 'directus_users' });
+			// Invalidate axis_users without keys (e.g. from Flow)
+			busHandler({ collection: 'axis_users' });
 
 			// Should clear posts/1 because it depends on a specific user, and we don't know which one changed
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
@@ -178,12 +178,12 @@ describe('PermissionCache', () => {
 
 		test('specific dependency invalidation does NOT invalidate unrelated specific dependencies', () => {
 			// Cache depends on user 123
-			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['directus_users:123']);
+			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['axis_users:123']);
 			// Cache depends on user 456
-			cache.set(mockAccountability, 'posts', '2', 'read', ['B'], ['directus_users:456']);
+			cache.set(mockAccountability, 'posts', '2', 'read', ['B'], ['axis_users:456']);
 
 			// Invalidate user 456
-			busHandler({ collection: 'directus_users', keys: ['456'] });
+			busHandler({ collection: 'axis_users', keys: ['456'] });
 
 			// Should clear posts/2
 			expect(cache.get(mockAccountability, 'posts', '2', 'read')).toBeUndefined();
@@ -201,43 +201,43 @@ describe('PermissionCache', () => {
 		});
 
 		test('deeply nested mapping tags correctly (user update clears user dependency but not others)', () => {
-			cache.set(mockAccountability, 'articles', '1', 'read', ['*'], ['directus_users:user-1']);
+			cache.set(mockAccountability, 'articles', '1', 'read', ['*'], ['axis_users:user-1']);
 			const accountB = { ...mockAccountability, user: 'user-2' };
-			cache.set(accountB, 'articles', '2', 'read', ['*'], ['directus_users:user-2']);
+			cache.set(accountB, 'articles', '2', 'read', ['*'], ['axis_users:user-2']);
 
-			busHandler({ collection: 'directus_users', keys: ['user-2'] });
+			busHandler({ collection: 'axis_users', keys: ['user-2'] });
 
 			expect(cache.get(accountB, 'articles', '2', 'read')).toBeUndefined();
 			expect(cache.get(mockAccountability, 'articles', '1', 'read')).toBeDefined();
 		});
 
 		test('dynamic variable $CURRENT_ROLE invalidation', () => {
-			cache.set(mockAccountability, 'posts', '1', 'read', ['*'], ['directus_roles:role-1']);
+			cache.set(mockAccountability, 'posts', '1', 'read', ['*'], ['axis_roles:role-1']);
 
-			busHandler({ collection: 'directus_roles', keys: ['role-1'] });
+			busHandler({ collection: 'axis_roles', keys: ['role-1'] });
 
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
 		});
 
 		test('dynamic variable $CURRENT_ROLES invalidation', () => {
 			const accMultiRole = { ...mockAccountability, roles: ['role-A', 'role-B'] };
-			cache.set(accMultiRole, 'posts', '1', 'read', ['*'], ['directus_roles:role-A', 'directus_roles:role-B']);
+			cache.set(accMultiRole, 'posts', '1', 'read', ['*'], ['axis_roles:role-A', 'axis_roles:role-B']);
 
-			busHandler({ collection: 'directus_roles', keys: ['role-B'] });
+			busHandler({ collection: 'axis_roles', keys: ['role-B'] });
 
 			expect(cache.get(accMultiRole, 'posts', '1', 'read')).toBeUndefined();
 		});
 
 		test('deeply nested dynamic path invalidation ($CURRENT_USER.dept.team)', () => {
-			cache.set(mockAccountability, 'articles', '1', 'read', ['*'], ['directus_users:user-1', 'departments', 'teams']);
+			cache.set(mockAccountability, 'articles', '1', 'read', ['*'], ['axis_users:user-1', 'departments', 'teams']);
 
 			// User update clears it
 			expect(cache.get(mockAccountability, 'articles', '1', 'read')).toBeDefined();
-			busHandler({ collection: 'directus_users', keys: ['user-1'] });
+			busHandler({ collection: 'axis_users', keys: ['user-1'] });
 			expect(cache.get(mockAccountability, 'articles', '1', 'read')).toBeUndefined();
 
 			// Department record update clears it
-			cache.set(mockAccountability, 'articles', '1', 'read', ['*'], ['directus_users:user-1', 'departments', 'teams']);
+			cache.set(mockAccountability, 'articles', '1', 'read', ['*'], ['axis_users:user-1', 'departments', 'teams']);
 			busHandler({ collection: 'departments', keys: ['dept-123'] });
 			expect(cache.get(mockAccountability, 'articles', '1', 'read')).toBeUndefined();
 		});
@@ -245,33 +245,33 @@ describe('PermissionCache', () => {
 
 	describe('Security & Edge Cases', () => {
 		test('item dependent on multiple sources invalidates if ANY source changes', () => {
-			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['directus_users:A', 'directus_files:B']);
+			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['axis_users:A', 'axis_files:B']);
 
 			// Invalidate User A -> Cache should clear
-			busHandler({ collection: 'directus_users', keys: ['A'] });
+			busHandler({ collection: 'axis_users', keys: ['A'] });
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
 
-			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['directus_users:A', 'directus_files:B']);
+			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['axis_users:A', 'axis_files:B']);
 
 			// Invalidate File B -> Cache should clear
-			busHandler({ collection: 'directus_files', keys: ['B'] });
+			busHandler({ collection: 'axis_files', keys: ['B'] });
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
 		});
 
 		test('overlapping dependencies: multiple items depend on same source', () => {
-			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['directus_users:X']);
-			cache.set(mockAccountability, 'posts', '2', 'read', ['B'], ['directus_users:X']);
+			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['axis_users:X']);
+			cache.set(mockAccountability, 'posts', '2', 'read', ['B'], ['axis_users:X']);
 
-			busHandler({ collection: 'directus_users', keys: ['X'] });
+			busHandler({ collection: 'axis_users', keys: ['X'] });
 
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
 			expect(cache.get(mockAccountability, 'posts', '2', 'read')).toBeUndefined();
 		});
 
 		test('handles empty keys array same as missing keys (generic invalidation)', () => {
-			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['directus_users:X']);
+			cache.set(mockAccountability, 'posts', '1', 'read', ['A'], ['axis_users:X']);
 
-			busHandler({ collection: 'directus_users', keys: [] });
+			busHandler({ collection: 'axis_users', keys: [] });
 
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
 		});
@@ -281,7 +281,7 @@ describe('PermissionCache', () => {
 			cache.set(mockAccountability, 'comments', '2', 'read', ['B']);
 			cache.set(mockAccountability, 'users', '3', 'read', ['C']);
 
-			busHandler({ collection: 'directus_roles' });
+			busHandler({ collection: 'axis_roles' });
 
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
 			expect(cache.get(mockAccountability, 'comments', '2', 'read')).toBeUndefined();
@@ -291,7 +291,7 @@ describe('PermissionCache', () => {
 		test('system collection invalidation ignores keys and wipes everything anyway', () => {
 			cache.set(mockAccountability, 'posts', '1', 'read', ['A']);
 
-			busHandler({ collection: 'directus_permissions', keys: ['some-id'] });
+			busHandler({ collection: 'axis_permissions', keys: ['some-id'] });
 
 			expect(cache.get(mockAccountability, 'posts', '1', 'read')).toBeUndefined();
 		});

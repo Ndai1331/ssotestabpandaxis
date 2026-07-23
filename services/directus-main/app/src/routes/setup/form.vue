@@ -137,7 +137,7 @@ const mergedErrors = computed<DirectusValidationError[]>(() => {
 						:href="getDirectusUrlWithUtm(DIRECTUS_MSCL_URL, info.version, `${utmLocation}_mscl_1.0_gpl_link`)"
 						target="_blank"
 					>
-						{{ $t('directus_mscl') }}
+						{{ $t('axis_mscl') }}
 					</a>
 				</template>
 				<template #privacyPolicy>
@@ -153,7 +153,7 @@ const mergedErrors = computed<DirectusValidationError[]>(() => {
 				<I18nT keypath="setup_accept_license" tag="span">
 					<template #directusMscl>
 						<a :href="getDirectusUrlWithUtm(DIRECTUS_MSCL_URL, info.version, 'mscl_1.0_gpl_link')" target="_blank">
-							{{ $t('directus_mscl') }}
+							{{ $t('axis_mscl') }}
 						</a>
 					</template>
 					<template #privacyPolicy>

@@ -211,8 +211,8 @@ describe('Alterations', () => {
 			expect(fieldDetailStore.editing).toEqual(testValue.field);
 			expect(fieldDetailStore.relations.o2m?.collection).toEqual('collection_a_files');
 			expect(fieldDetailStore.relations.o2m?.field).toEqual('collection_a_id');
-			expect(fieldDetailStore.relations.m2o?.related_collection).toEqual('directus_files');
-			expect(fieldDetailStore.relations.m2o?.field).toEqual('directus_files_id');
+			expect(fieldDetailStore.relations.m2o?.related_collection).toEqual('axis_files');
+			expect(fieldDetailStore.relations.m2o?.field).toEqual('axis_files_id');
 
 			fieldDetailStore.update({ autoGenerateJunctionRelation: false });
 
@@ -228,8 +228,8 @@ describe('Alterations', () => {
 
 			expect(fieldDetailStore.relations.o2m?.collection).toEqual('collection_a_files');
 			expect(fieldDetailStore.relations.o2m?.field).toEqual('collection_a_id');
-			expect(fieldDetailStore.relations.m2o?.related_collection).toEqual('directus_files');
-			expect(fieldDetailStore.relations.m2o?.field).toEqual('directus_files_id');
+			expect(fieldDetailStore.relations.m2o?.related_collection).toEqual('axis_files');
+			expect(fieldDetailStore.relations.m2o?.field).toEqual('axis_files_id');
 		});
 	});
 

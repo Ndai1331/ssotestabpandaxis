@@ -56,7 +56,7 @@ vi.mock('../utils/jwt.js', () => ({
 const testRoleId = '4ccdb196-14b3-4ed1-b9da-c1978be07ca2';
 
 const schema = new SchemaBuilder()
-	.collection('directus_users', (c) => {
+	.collection('axis_users', (c) => {
 		c.field('id').uuid().primary().options({
 			nullable: false,
 		});
@@ -305,7 +305,7 @@ describe('Integration Tests', () => {
 
 				expect(opts.preMutationError).toStrictEqual(
 					new RecordNotUniqueError({
-						collection: 'directus_users',
+						collection: 'axis_users',
 						field: 'email',
 						value: 'test@example.com',
 					}),
@@ -405,11 +405,11 @@ describe('Integration Tests', () => {
 
 			it('should validate remaining admin users', async () => {
 				// mock notifications update query in deleteOne/deleteMany/deleteByQuery methods
-				tracker.on.update('directus_notifications').response({});
+				tracker.on.update('axis_notifications').response({});
 				// mock versions update query in deleteOne/deleteMany/deleteByQuery methods
-				tracker.on.update('directus_versions').response({});
+				tracker.on.update('axis_versions').response({});
 				// mock comments update query in deleteOne/deleteMany/deleteByQuery methods
-				tracker.on.update('directus_comments').response({});
+				tracker.on.update('axis_comments').response({});
 
 				const service = new UsersService({
 					knex: db,
@@ -426,7 +426,7 @@ describe('Integration Tests', () => {
 
 		describe('requestPasswordReset', () => {
 			it('should throw ForbiddenError for external provider users', async () => {
-				tracker.on.select('directus_users').response({
+				tracker.on.select('axis_users').response({
 					id: 'user-id-ext',
 					role: 'role-id',
 					status: 'active',
@@ -448,7 +448,7 @@ describe('Integration Tests', () => {
 			});
 
 			it('should send reset email for default provider users', async () => {
-				tracker.on.select('directus_users').response({
+				tracker.on.select('axis_users').response({
 					id: 'user-id-def',
 					role: 'role-id',
 					status: 'active',

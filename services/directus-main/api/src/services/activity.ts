@@ -6,7 +6,7 @@ export class ActivityService extends ItemsService {
 	private queryCache = new WeakMap<Query, Query>();
 
 	constructor(options: AbstractServiceOptions) {
-		super('directus_activity', options);
+		super('axis_activity', options);
 	}
 
 	override async readByQuery(query: Query, opts?: QueryOptions) {

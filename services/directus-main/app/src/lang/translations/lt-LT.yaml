@@ -339,9 +339,9 @@ geometry:
 theme_auto: Automatinė tema (pagal sistemos nustatymus)
 theme_light: Šviesi tema
 theme_dark: Tamsi tema
-theme_directus_default: Directus numatytoji tema
-theme_directus_minimal: Direktus minimalistinė tema
-theme_directus_colormatch: Direktus suderintų spalvų tema
+theme_axis_default: Directus numatytoji tema
+theme_axis_minimal: Direktus minimalistinė tema
+theme_axis_colormatch: Direktus suderintų spalvų tema
 not_available_for_type: Šiam tipui neprieinama
 create_translations: Sukurti vertimus
 auto_refresh: Automatinis atnaujinimas
@@ -1178,34 +1178,34 @@ content: Turinys
 singleton: Singleton objektas
 singleton_label: Laikyti vienu objektu
 system_fields_locked: Sisteminiai laukai yra užrakinti ir negali būti redaguojami
-directus_collection:
-  directus_access: Poliso dokumentai
-  directus_activity: Visų įvykių atskaitomybės žurnalai
-  directus_collections: Papildomi kolekcijos nustatymai ir metaduomenys
-  directus_comments: Įrašų komentarai
-  directus_dashboards: Prietaisų skydeliai įžvalgų modulyje
-  directus_fields: Papildomi lauko nustatymai ir metaduomenys
-  directus_files: Visų tvarkomų failų metaduomenys
-  directus_folders: Pateikia virtualius katalogus failams
-  directus_migrations: Naudojama duomenų bazės versija
-  directus_notifications: Pranešimai išsiųsti naudotojams
-  directus_operations: Operacijos, kurios vykdomos procesuose
-  directus_panels: Individualūs skydeliai įžvalgų modulyje
-  directus_permissions: Polisų prieigos teisės
-  directus_policies: Prieigos teisės
-  directus_presets: Kolekcijų ir žymų numatytieji šablonai
-  directus_relations: Sąryšių nustatymai ir metaduomenys
-  directus_revisions: Duomenų visų įvykių snapshot
-  directus_roles: Teisių grupės sisteminiams naudotojams
-  directus_sessions: Naudotojo sesijos informacija
-  directus_settings: Projekto nustatymų parinktys
-  directus_shares: Išoriškai pasidalintų įrašų sekimas
-  directus_users: Sisteminiai platformos naudotojai
-  directus_translations: Pasirinktiniai vertimai
-  directus_versions: Įrašų turinio versijos
-  directus_extensions: Plėtinių nustatymai
+axis_collection:
+  axis_access: Poliso dokumentai
+  axis_activity: Visų įvykių atskaitomybės žurnalai
+  axis_collections: Papildomi kolekcijos nustatymai ir metaduomenys
+  axis_comments: Įrašų komentarai
+  axis_dashboards: Prietaisų skydeliai įžvalgų modulyje
+  axis_fields: Papildomi lauko nustatymai ir metaduomenys
+  axis_files: Visų tvarkomų failų metaduomenys
+  axis_folders: Pateikia virtualius katalogus failams
+  axis_migrations: Naudojama duomenų bazės versija
+  axis_notifications: Pranešimai išsiųsti naudotojams
+  axis_operations: Operacijos, kurios vykdomos procesuose
+  axis_panels: Individualūs skydeliai įžvalgų modulyje
+  axis_permissions: Polisų prieigos teisės
+  axis_policies: Prieigos teisės
+  axis_presets: Kolekcijų ir žymų numatytieji šablonai
+  axis_relations: Sąryšių nustatymai ir metaduomenys
+  axis_revisions: Duomenų visų įvykių snapshot
+  axis_roles: Teisių grupės sisteminiams naudotojams
+  axis_sessions: Naudotojo sesijos informacija
+  axis_settings: Projekto nustatymų parinktys
+  axis_shares: Išoriškai pasidalintų įrašų sekimas
+  axis_users: Sisteminiai platformos naudotojai
+  axis_translations: Pasirinktiniai vertimai
+  axis_versions: Įrašų turinio versijos
+  axis_extensions: Plėtinių nustatymai
 fields:
-  directus_activity:
+  axis_activity:
     item: Įrašo Pirminis Raktas
     action: Veiksmas
     collection: Rinkinys
@@ -1216,7 +1216,7 @@ fields:
     origin: Šaltinis
     ip: IP adresas
     revisions: Pakeitimai
-  directus_collections:
+  axis_collections:
     collection: Rinkinys
     icon: Ikona
     note: Pastaba
@@ -1234,7 +1234,7 @@ fields:
     versioning: Versijavimas
     archive_field: Archyvuoti lauką
     item_duplication_fields: Įrašo dublikuojami laukai
-  directus_files:
+  axis_files:
     $thumbnail: Thumbnail
     title: Pavadinmas
     description: Aprašymas
@@ -1260,7 +1260,7 @@ fields:
     duration: Trukmė
     focal_point_x: X Koordinatė
     focal_point_y: Y Koordinatė
-  directus_users:
+  axis_users:
     first_name: Vardas
     last_name: Pavardė
     email: El. paštas
@@ -1293,7 +1293,7 @@ fields:
     theme_dark: Tamsi tema
     theme_light_overrides: Šviesios temos nustatymai
     theme_dark_overrides: Tamsios temos nustatymai
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1350,7 +1350,7 @@ fields:
     public_registration_verify_email: El. pašto patvirtinimas
     public_registration_verify_email_note: Naudotojui bus išsiųstas el. laiškas su patvirtinimo nuoroda.
     ai_header_name: Header
-  directus_shares:
+  axis_shares:
     name: Pavadinimas
     role: Vaidmuo
     password: Slaptažodis
@@ -1358,7 +1358,7 @@ fields:
     date_end: Pabaigos data
     max_uses: Maksimalus panaudos skaičius
     times_used: Kartų panaudota
-  directus_fields:
+  axis_fields:
     collection: Kolekcijos pavadinimas
     icon: Kolekcijos ikonėlė
     note: Pastaba
@@ -1366,14 +1366,14 @@ fields:
     singleton: Singleton objektas
     translation: Laukų pavadinimų vertimai
     display_template: Šablonas
-  directus_roles:
+  axis_roles:
     name: Vaidmens pavadinimas
     icon: Grupės ikonėlė
     description: Aprašymas
     users: Vartotojai grupėje
     parent: Tėvinė rolė
     children: Vaikinės rolės
-  directus_policies:
+  axis_policies:
     name: Poliso pavadinimas
     description: Aprašymas
     app_access: Prieiga prie aplikacijos
@@ -1381,7 +1381,7 @@ fields:
     ip_access: IP adresų filtras
     enforce_tfa: Reikalauti 2FA
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: Projektas...
     project_color_note: Prisijungimo puslapis
     project_logo_note: White 40×40 SVG/PNG
@@ -1411,12 +1411,12 @@ field_options:
     basemaps_style: Mapbox Style
     files_divider_title: Failai ir miniatiūros
     overrides_divider_title: App Overrides
-  directus_activity:
+  axis_activity:
     login: Prisijungimas
     create: Kurti
     update: Atnaujinti
     delete: Pašalinimas
-  directus_collections:
+  axis_collections:
     track_activity_revisions: Sekti įvykius ir pakeitimus
     only_track_activity: Sekti tik įvykius
     do_not_track_anything: Nesekti jokių įvykių
@@ -1442,7 +1442,7 @@ field_options:
     preview_divider: Įrašų peržiūra
     content_versioning_divider: Įrašų versijavimas
     enable_versioning: Įjungti versijavimą
-  directus_files:
+  axis_files:
     title: Unikali antraštė...
     description: Aprašymas...
     location: Vietovė...
@@ -1450,13 +1450,13 @@ field_options:
     focal_point_divider: Atvaizdavimo taškas
     filename_disk: Pavadinimas failų saugykloje...
     filename_download: Pavadinimas atsisiuntimo metu...
-  directus_policies:
+  axis_policies:
     name: Poliso unikalus pavadinimas...
     description: Poliso aprašymas...
     ip_access: Pridėti leistinus IP adresus, IP adresų rėžius ar CIDR blokus. Tuščia reikšmė leidžia visus...
     enforce_tfa: Privaloma dviejų faktorių autentifikacija
     assigned_to: Priskirta
-  directus_roles:
+  axis_roles:
     name: Rolės unikalus pavadinimas...
     description: Rolės aprašymas...
     fields:
@@ -1469,7 +1469,7 @@ field_options:
     children_note: Vaikinės rolės kurios paveldės šios rolės teises
     collections_name: Kolekcijos
     collections_addLabel: Pridėti kolekciją...
-  directus_users:
+  axis_users:
     preferences_divider: Naudotojo nustatymai
     dropdown_auto: Automatinė tema (pagal sistemos nustatymus)
     dropdown_light: Šviesi tema

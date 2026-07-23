@@ -29,7 +29,7 @@ describe('resolveQuery', () => {
 		vi.restoreAllMocks();
 	});
 
-	test('system scope prefixes collection with directus_', async () => {
+	test('system scope prefixes collection with axis_', async () => {
 		mockReplaceFragments.mockReturnValue([{}]);
 		mockParseArgs.mockReturnValue({});
 
@@ -56,7 +56,7 @@ describe('resolveQuery', () => {
 		expect(mockGetQuery).toHaveBeenCalled();
 		const lastCallArgs = mockGetQuery.mock.calls[mockGetQuery.mock.calls.length - 1];
 		const collectionArg = lastCallArgs?.[lastCallArgs.length - 1];
-		expect(collectionArg).toBe('directus_users');
+		expect(collectionArg).toBe('axis_users');
 	});
 
 	test('returns null when selections are missing', async () => {

@@ -1,5 +1,5 @@
 export async function seed(knex) {
-	await knex('directus_settings').update({
+	await knex('axis_settings').update({
 		collaborative_editing_enabled: true,
 	});
 }

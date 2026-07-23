@@ -44,7 +44,7 @@ export class SAMLAuthDriver extends LocalAuthDriver {
 	async fetchUserID(identifier: string) {
 		const user = await this.knex
 			.select('id')
-			.from('directus_users')
+			.from('axis_users')
 			.whereRaw('LOWER(??) = ?', ['external_identifier', identifier.toLowerCase()])
 			.first();
 

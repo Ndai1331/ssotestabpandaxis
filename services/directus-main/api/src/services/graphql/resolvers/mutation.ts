@@ -13,7 +13,7 @@ export async function resolveMutation(
 ): Promise<Partial<Item> | boolean | undefined> {
 	const action = info.fieldName.split('_')[0] as 'create' | 'update' | 'delete';
 	let collection = info.fieldName.substring(action.length + 1);
-	if (gql.scope === 'system') collection = `directus_${collection}`;
+	if (gql.scope === 'system') collection = `axis_${collection}`;
 
 	const selections = replaceFragmentsInSelections(info.fieldNodes[0]?.selectionSet?.selections, info.fragments);
 	const query = await getQuery(args, gql.schema, selections || [], info.variableValues, gql.accountability, collection);

@@ -23,7 +23,7 @@ const router = useRouter();
 const settingsStore = useSettingsStore();
 const serverStore = useServerStore();
 
-const { fields: allFields } = useCollection('directus_settings');
+const { fields: allFields } = useCollection('axis_settings');
 
 const EXCLUDED_GROUPS = ['theming_group', 'ai_group', 'mcp_group'] as const;
 

@@ -24,7 +24,7 @@ export function createMetrics() {
 	const logger = useLogger();
 
 	const services: MetricService[] = (env['METRICS_SERVICES'] as MetricService[] | undefined) ?? [];
-	const metricNamePrefix = env['METRICS_NAME_PREFIX'] ?? 'directus_';
+	const metricNamePrefix = env['METRICS_NAME_PREFIX'] ?? 'axis_';
 	const metricsHealthCheckPrefix = env['METRICS_HEALTH_CHECK_PREFIX'] as string;
 	const aggregates = new Map();
 

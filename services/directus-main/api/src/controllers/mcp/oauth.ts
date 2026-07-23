@@ -159,7 +159,7 @@ function relaxFormAction(res: Response) {
 
 /**
  * Convert OAuthError to RFC 6749/7591 JSON error format (`{ error, error_description }`).
- * Non-OAuthError instances fall through to the default Directus error handler.
+ * Non-OAuthError instances fall through to the default Axis error handler.
  */
 function oauthErrorHandler(err: unknown, _req: Request, res: Response, next: NextFunction) {
 	if (err instanceof OAuthError) {
@@ -230,14 +230,14 @@ async function loadOAuthPageOpts(
 			fields: ['project_name', 'project_color', 'project_logo', 'default_appearance'],
 		}),
 		authenticatedUserId
-			? getDatabase()('directus_users').where('id', authenticatedUserId).select('appearance').first()
+			? getDatabase()('axis_users').where('id', authenticatedUserId).select('appearance').first()
 			: null,
 	]);
 
 	const projectLogo = settings?.project_logo;
 
 	return {
-		projectName: settings?.project_name ?? 'Directus',
+		projectName: settings?.project_name ?? 'Axis',
 		projectColor: settings?.project_color ?? '#6644ff',
 		logoUrl: projectLogo ? new Url(env['PUBLIC_URL'] as string).addPath('assets', projectLogo).toString() : null,
 		appearance: (user?.appearance ?? settings?.default_appearance ?? 'auto') as string,

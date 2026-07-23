@@ -125,7 +125,7 @@ async function getDatabaseSchema(database: Knex, schemaInspector: SchemaInspecto
 
 	const schemaOverview = await schemaInspector.overview();
 
-	const allCollections = await database.select('*').from('directus_collections');
+	const allCollections = await database.select('*').from('axis_collections');
 
 	const collections = [
 		...allCollections
@@ -192,7 +192,7 @@ async function getDatabaseSchema(database: Knex, schemaInspector: SchemaInspecto
 					searchable: boolean;
 				}[]
 			>('id', 'collection', 'field', 'special', 'note', 'validation', 'searchable')
-			.from('directus_fields')),
+			.from('axis_fields')),
 		...systemFieldRows,
 	].filter((field) => (field.special ? toArray(field.special) : []).includes('no-data') === false);
 

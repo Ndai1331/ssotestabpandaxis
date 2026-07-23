@@ -1,17 +1,17 @@
 import { isSystemCollection } from '@directus/system-data';
 
 const accessibleSystemCollections = {
-	directus_users: { route: '/users' },
-	directus_files: { route: '/files' },
-	directus_dashboards: { route: '/insights' },
-	directus_activity: { route: '/activity' },
-	directus_settings: { route: '/settings/project', singleton: true },
-	directus_collections: { route: '/settings/data-model' },
-	directus_roles: { route: '/settings/roles' },
-	directus_presets: { route: '/settings/presets' },
-	directus_translations: { route: '/settings/translations' },
-	directus_flows: { route: '/settings/flows' },
-	directus_oauth_clients: { route: '/settings/mcp-oauth-clients' },
+	axis_users: { route: '/users' },
+	axis_files: { route: '/files' },
+	axis_dashboards: { route: '/insights' },
+	axis_activity: { route: '/activity' },
+	axis_settings: { route: '/settings/project', singleton: true },
+	axis_collections: { route: '/settings/data-model' },
+	axis_roles: { route: '/settings/roles' },
+	axis_presets: { route: '/settings/presets' },
+	axis_translations: { route: '/settings/translations' },
+	axis_flows: { route: '/settings/flows' },
+	axis_oauth_clients: { route: '/settings/mcp-oauth-clients' },
 } as const;
 
 function isAccessibleSystemCollection(collection: string): collection is keyof typeof accessibleSystemCollections {

@@ -3,10 +3,10 @@ import type { Accountability, SchemaOverview } from '@directus/types';
 import { adjustDate } from '@directus/utils';
 
 export const DYNAMIC_VARIABLE_MAP: Record<string, string> = {
-	$CURRENT_USER: 'directus_users',
-	$CURRENT_ROLE: 'directus_roles',
-	$CURRENT_ROLES: 'directus_roles',
-	$CURRENT_POLICIES: 'directus_policies',
+	$CURRENT_USER: 'axis_users',
+	$CURRENT_ROLE: 'axis_roles',
+	$CURRENT_ROLES: 'axis_roles',
+	$CURRENT_POLICIES: 'axis_policies',
 };
 
 /**

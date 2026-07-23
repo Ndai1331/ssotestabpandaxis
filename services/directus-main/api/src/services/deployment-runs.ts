@@ -16,7 +16,7 @@ export interface DeploymentRun {
 
 export class DeploymentRunsService extends ItemsService<DeploymentRun> {
 	constructor(options: AbstractServiceOptions) {
-		super('directus_deployment_runs', options);
+		super('axis_deployment_runs', options);
 	}
 
 	/**

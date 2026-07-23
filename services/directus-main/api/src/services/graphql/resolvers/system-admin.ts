@@ -260,19 +260,19 @@ export function resolveSystemAdmin(
 	});
 
 	const Extension = schemaComposer.createObjectTC({
-		name: 'directus_extensions',
+		name: 'axis_extensions',
 		fields: {
 			bundle: GraphQLString,
 			name: new GraphQLNonNull(GraphQLString),
 			schema: schemaComposer.createObjectTC({
-				name: 'directus_extensions_schema',
+				name: 'axis_extensions_schema',
 				fields: {
 					type: GraphQLString,
 					local: GraphQLBoolean,
 				},
 			}),
 			meta: schemaComposer.createObjectTC({
-				name: 'directus_extensions_meta',
+				name: 'axis_extensions_meta',
 				fields: {
 					enabled: GraphQLBoolean,
 				},
@@ -301,10 +301,10 @@ export function resolveSystemAdmin(
 				id: GraphQLID,
 				data: toInputObjectType(
 					schemaComposer.createObjectTC({
-						name: 'update_directus_extensions_input',
+						name: 'update_axis_extensions_input',
 						fields: {
 							meta: schemaComposer.createObjectTC({
-								name: 'update_directus_extensions_input_meta',
+								name: 'update_axis_extensions_input_meta',
 								fields: {
 									enabled: GraphQLBoolean,
 								},

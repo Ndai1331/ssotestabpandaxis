@@ -45,7 +45,7 @@ const search = ref<string | null>(null);
 
 const createDialogActive = ref(false);
 
-const { createAllowed, updateAllowed, deleteAllowed } = useCollectionPermissions('directus_dashboards');
+const { createAllowed, updateAllowed, deleteAllowed } = useCollectionPermissions('axis_dashboards');
 const batchDeleteAllowed = deleteAllowed;
 
 const internalSort = ref<Sort>({ by: 'name', desc: false });
@@ -129,7 +129,7 @@ async function duplicateDashboard(id: string, toggle: () => void) {
 }
 
 function exportDashboard(ids: string[]) {
-	const endpoint = getEndpoint('directus_dashboards');
+	const endpoint = getEndpoint('axis_dashboards');
 
 	// usually getEndpoint contains leading slash, but here we need to remove it
 	const url = getPublicURL() + endpoint.substring(1);
@@ -282,7 +282,7 @@ async function batchDelete() {
 		</template>
 
 		<template #sidebar>
-			<BasicImportSidebarDetail collection="directus_dashboards" @refresh="refresh" />
+			<BasicImportSidebarDetail collection="axis_dashboards" @refresh="refresh" />
 		</template>
 
 		<VTable

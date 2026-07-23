@@ -85,7 +85,7 @@ describe('Service / Files', () => {
 
 		test('should throw ForbiddenError deferred when filename_disk is not unique', async () => {
 			tracker.on
-				.select('select "filename_disk" from "directus_files" where "filename_disk" = ?')
+				.select('select "filename_disk" from "axis_files" where "filename_disk" = ?')
 				.response([{ filename_disk: 'existing-file.jpg' }]);
 
 			await service.createOne({
@@ -114,7 +114,7 @@ describe('Service / Files', () => {
 		});
 
 		test('should normalize filename_disk path', async () => {
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			await service.createOne({
 				type: 'application/octet-stream',
@@ -154,7 +154,7 @@ describe('Service / Files', () => {
 			mockStorage = createMockStorage(mockDriver);
 			vi.mocked(getStorage).mockResolvedValue(mockStorage);
 
-			tracker.on.select('select "storage_default_folder" from "directus_settings"').response([]);
+			tracker.on.select('select "storage_default_folder" from "axis_settings"').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'createOne').mockResolvedValue(sample.id);
 			superUpdateOne = vi.spyOn(ItemsService.prototype, 'updateOne').mockResolvedValue(sample.id);
@@ -191,7 +191,7 @@ describe('Service / Files', () => {
 		test('should set the `uploaded_on` field to the current date', async () => {
 			tracker.on
 				.select(
-					'select "folder", "filename_download", "filename_disk", "title", "description", "metadata" from "directus_files" where "id" = ?',
+					'select "folder", "filename_download", "filename_disk", "title", "description", "metadata" from "axis_files" where "id" = ?',
 				)
 				.response(null);
 
@@ -222,7 +222,7 @@ describe('Service / Files', () => {
 		test('should update the `filename_disk` extension to the correct mimetype', async () => {
 			tracker.on
 				.select(
-					'select "folder", "filename_download", "filename_disk", "title", "description", "metadata" from "directus_files" where "id" = ?',
+					'select "folder", "filename_download", "filename_disk", "title", "description", "metadata" from "axis_files" where "id" = ?',
 				)
 				.response(null);
 
@@ -275,7 +275,7 @@ describe('Service / Files', () => {
 
 				tracker.on
 					.select(
-						'select "folder", "filename_download", "filename_disk", "title", "description", "metadata", "storage" from "directus_files" where "id" = ?',
+						'select "folder", "filename_download", "filename_disk", "title", "description", "metadata", "storage" from "axis_files" where "id" = ?',
 					)
 					.response(null);
 
@@ -298,7 +298,7 @@ describe('Service / Files', () => {
 
 				tracker.on
 					.select(
-						'select "folder", "filename_download", "filename_disk", "title", "description", "metadata", "storage" from "directus_files" where "id" = ?',
+						'select "folder", "filename_download", "filename_disk", "title", "description", "metadata", "storage" from "axis_files" where "id" = ?',
 					)
 					.response(null);
 
@@ -322,7 +322,7 @@ describe('Service / Files', () => {
 
 				tracker.on
 					.select(
-						'select "folder", "filename_download", "filename_disk", "title", "description", "metadata", "storage" from "directus_files" where "id" = ?',
+						'select "folder", "filename_download", "filename_disk", "title", "description", "metadata", "storage" from "axis_files" where "id" = ?',
 					)
 					.response({ storage: 's3', filename_disk: 'existing.jpg' });
 
@@ -349,7 +349,7 @@ describe('Service / Files', () => {
 
 				tracker.on
 					.select(
-						'select "folder", "filename_download", "filename_disk", "title", "description", "metadata", "storage" from "directus_files" where "id" = ?',
+						'select "folder", "filename_download", "filename_disk", "title", "description", "metadata", "storage" from "axis_files" where "id" = ?',
 					)
 					.response({ storage: 's3', filename_disk: 'existing.jpg' });
 
@@ -413,7 +413,7 @@ describe('Service / Files', () => {
 
 		test('should throw ForbiddenError deferred when filename_disk is not unique', async () => {
 			tracker.on
-				.select('select "filename_disk" from "directus_files" where "filename_disk" = ?')
+				.select('select "filename_disk" from "axis_files" where "filename_disk" = ?')
 				.response([{ filename_disk: 'existing-file.jpg' }]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
@@ -455,7 +455,7 @@ describe('Service / Files', () => {
 			};
 
 			tracker.on
-				.select(`select "filename_disk" from "directus_files" where "filename_disk" = ? and not "id" = ?`)
+				.select(`select "filename_disk" from "axis_files" where "filename_disk" = ? and not "id" = ?`)
 				.response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
@@ -474,7 +474,7 @@ describe('Service / Files', () => {
 		});
 
 		test('should normalize filename_disk path', async () => {
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
 				{ id: 1, storage: 'local', filename_disk: 'old-file.jpg' },
@@ -494,7 +494,7 @@ describe('Service / Files', () => {
 		});
 
 		test('should move file when filename_disk changes', async () => {
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
 				{
@@ -520,7 +520,7 @@ describe('Service / Files', () => {
 		});
 
 		test('should not move file when filename_disk has not changed', async () => {
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
 				{ id: 1, storage: 'local', filename_disk: 'same-file.jpg' },
@@ -553,7 +553,7 @@ describe('Service / Files', () => {
 				schema: { collections: {}, relations: [] },
 			});
 
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
 				{ id: 1, storage: 'local', filename_disk: 'old-file.jpg' },
@@ -587,7 +587,7 @@ describe('Service / Files', () => {
 				schema: { collections: {}, relations: [] },
 			});
 
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
 				{ id: 1, storage: 'local', filename_disk: 'old-file.jpg' },
@@ -610,7 +610,7 @@ describe('Service / Files', () => {
 		});
 
 		test('should delete generated assets (thumbnails) when moving file', async () => {
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
 				{ id: 1, storage: 'local', filename_disk: 'old-file.jpg' },
@@ -634,7 +634,7 @@ describe('Service / Files', () => {
 		});
 
 		test('should handle files in subdirectories', async () => {
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
 				{ id: 1, storage: 'local', filename_disk: 'folder/old-file.jpg' },
@@ -666,7 +666,7 @@ describe('Service / Files', () => {
 		});
 
 		test('should skip file operations when file record has no filename_disk', async () => {
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			vi.spyOn(ItemsService.prototype, 'readMany').mockResolvedValue([
 				{ id: 1, storage: 'local', filename_disk: null },
@@ -681,7 +681,7 @@ describe('Service / Files', () => {
 		});
 
 		test('should skip file operations when file record is not found in updatedFiles map', async () => {
-			tracker.on.select('select "filename_disk" from "directus_files" where "filename_disk" = ?').response([]);
+			tracker.on.select('select "filename_disk" from "axis_files" where "filename_disk" = ?').response([]);
 
 			await service.updateMany([1], {
 				filename_disk: 'new-file.jpg',

@@ -28,7 +28,7 @@ import { handleRegistryError } from './utils/handle-registry-error.js';
 const router = express.Router();
 const env = useEnv();
 
-router.use(useCollection('directus_extensions'));
+router.use(useCollection('axis_extensions'));
 
 router.get(
 	'/',

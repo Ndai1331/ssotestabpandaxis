@@ -339,9 +339,9 @@ geometry:
 theme_auto: ऍटोमिक
 theme_light: लाईट मोड
 theme_dark: डार्क मोड
-theme_directus_default: डायरेक्टस डिफॉल्ट
-theme_directus_minimal: थेट किमान
-theme_directus_colormatch: Directus कलर मॅच
+theme_axis_default: डायरेक्टस डिफॉल्ट
+theme_axis_minimal: थेट किमान
+theme_axis_colormatch: Directus कलर मॅच
 not_available_for_type: या प्रकारासाठी उपलब्ध नाही
 create_translations: भाषांतरे करा
 auto_refresh: ऑटो रिफ्रेश
@@ -1176,34 +1176,34 @@ content: कन्टेन्ट
 singleton: सिंगलटन
 singleton_label: सिंगल ऑब्जेक्ट म्हणून हाताळा
 system_fields_locked: सिस्टम फील्ड लॉक केलेले आहेत आणि संपादित केले जाऊ शकत नाहीत
-directus_collection:
-  directus_access: पॉलिसी संलग्नक
-  directus_activity: सर्व कार्यक्रमांसाठी उत्तरदायित्व नोंदी
-  directus_collections: अतिरिक्त संकलन कॉन्फिगरेशन आणि मेटाडेटा
-  directus_comments: आयटमसाठी टिप्पण्या
-  directus_dashboards: इनसाइट्स मॉड्यूलमधील डॅशबोर्ड
-  directus_fields: अतिरिक्त फील्ड कॉन्फिगरेशन आणि मेटाडेटा
-  directus_files: सर्व व्यवस्थापित फाइल मालमत्तेसाठी मेटाडेटा
-  directus_folders: फायलींसाठी आभासी निर्देशिका प्रदान करते
-  directus_migrations: तुम्ही डेटाबेसची कोणती आवृत्ती वापरत आहात
-  directus_notifications: वापरकर्त्यांना सूचना पाठवल्या
-  directus_operations: फ्लोमध्ये चालणारी ऑपरेशन्स
-  directus_panels: इनसाइट्स डॅशबोर्डमधील वैयक्तिक पॅनेल
-  directus_permissions: प्रत्येक पॉलिसीसाठी प्रवेश परवानग्या
-  directus_policies: प्रवेश नियंत्रण धोरणे
-  directus_presets: कलेक्शन डीफॉल्ट आणि बुकमार्कसाठी प्रीसेट
-  directus_relations: रिलेशनशिप कॉन्फिगरेशन आणि मेटाडेटा
-  directus_revisions: सर्व क्रियाकलापांसाठी डेटा स्नॅपशॉट
-  directus_roles: सिस्टम वापरकर्त्यासाठी परवानगी गट
-  directus_sessions: वापरकर्ता सत्र माहिती
-  directus_settings: प्रोजेक्ट कॉन्फिगरेशन पर्याय
-  directus_shares: बाह्यरित्या सामायिक केलेल्या आयटमचा मागोवा घेतो
-  directus_users: प्लॅटफॉर्मसाठी सिस्टम वापरकर्ते
-  directus_translations: कस्टम भाषांतरे
-  directus_versions: आयटमसाठी सामग्री आवृत्त्या
-  directus_extensions: विस्तारांचे कॉन्फिगरेशन
+axis_collection:
+  axis_access: पॉलिसी संलग्नक
+  axis_activity: सर्व कार्यक्रमांसाठी उत्तरदायित्व नोंदी
+  axis_collections: अतिरिक्त संकलन कॉन्फिगरेशन आणि मेटाडेटा
+  axis_comments: आयटमसाठी टिप्पण्या
+  axis_dashboards: इनसाइट्स मॉड्यूलमधील डॅशबोर्ड
+  axis_fields: अतिरिक्त फील्ड कॉन्फिगरेशन आणि मेटाडेटा
+  axis_files: सर्व व्यवस्थापित फाइल मालमत्तेसाठी मेटाडेटा
+  axis_folders: फायलींसाठी आभासी निर्देशिका प्रदान करते
+  axis_migrations: तुम्ही डेटाबेसची कोणती आवृत्ती वापरत आहात
+  axis_notifications: वापरकर्त्यांना सूचना पाठवल्या
+  axis_operations: फ्लोमध्ये चालणारी ऑपरेशन्स
+  axis_panels: इनसाइट्स डॅशबोर्डमधील वैयक्तिक पॅनेल
+  axis_permissions: प्रत्येक पॉलिसीसाठी प्रवेश परवानग्या
+  axis_policies: प्रवेश नियंत्रण धोरणे
+  axis_presets: कलेक्शन डीफॉल्ट आणि बुकमार्कसाठी प्रीसेट
+  axis_relations: रिलेशनशिप कॉन्फिगरेशन आणि मेटाडेटा
+  axis_revisions: सर्व क्रियाकलापांसाठी डेटा स्नॅपशॉट
+  axis_roles: सिस्टम वापरकर्त्यासाठी परवानगी गट
+  axis_sessions: वापरकर्ता सत्र माहिती
+  axis_settings: प्रोजेक्ट कॉन्फिगरेशन पर्याय
+  axis_shares: बाह्यरित्या सामायिक केलेल्या आयटमचा मागोवा घेतो
+  axis_users: प्लॅटफॉर्मसाठी सिस्टम वापरकर्ते
+  axis_translations: कस्टम भाषांतरे
+  axis_versions: आयटमसाठी सामग्री आवृत्त्या
+  axis_extensions: विस्तारांचे कॉन्फिगरेशन
 fields:
-  directus_activity:
+  axis_activity:
     item: आयटम प्राथमिक की
     action: कृती
     collection: कलेक्शन
@@ -1214,7 +1214,7 @@ fields:
     origin: मूळ
     ip: IP ऍड्रेस
     revisions: उजळणी
-  directus_collections:
+  axis_collections:
     collection: कलेक्शन
     icon: आयकॉन
     note: नोट
@@ -1232,7 +1232,7 @@ fields:
     versioning: आवृत्ती तयार करणे
     archive_field: संग्रहण फील्ड
     item_duplication_fields: आयटम डुप्लिकेशन फील्ड
-  directus_files:
+  axis_files:
     $thumbnail: थम्बनेल
     title: टायटल
     description: डिस्क्रिप्सशन
@@ -1258,7 +1258,7 @@ fields:
     duration: कालावधी
     focal_point_x: X- को ओर्डीनेट
     focal_point_y: Y- को ओर्डीनेट
-  directus_users:
+  axis_users:
     first_name: पहिले नाव
     last_name: आडनाव
     email: ईमेल
@@ -1291,7 +1291,7 @@ fields:
     theme_dark: थीम डार्क
     theme_light_overrides: लाइट थीम कस्टमायझेशन
     theme_dark_overrides: डार्क थीम कस्टमायझेशन
-  directus_settings:
+  axis_settings:
     jpg: JPEG
     png: PNG
     webP: WebP
@@ -1348,7 +1348,7 @@ fields:
     public_registration_verify_email: ईमेल सत्यापित करा
     public_registration_verify_email_note: नोंदणी करणाऱ्या वापरकर्त्याला ते साइन इन करण्यापूर्वी त्यांना सत्यापन लिंकवर क्लिक करण्यास सांगणारा ईमेल पाठवते.
     ai_header_name: हेडर
-  directus_shares:
+  axis_shares:
     name: नाव
     role: रोल
     password: पासवर्ड
@@ -1356,7 +1356,7 @@ fields:
     date_end: डेटा बंद
     max_uses: कमाल वापर
     times_used: वापरलेल्या वेळा
-  directus_fields:
+  axis_fields:
     collection: कलेक्शन नाव
     icon: कलेक्शन आयकॉन
     note: नोट
@@ -1364,14 +1364,14 @@ fields:
     singleton: सिंगलटन
     translation: फील्ड नाव भाषांतरे
     display_template: टेम्प्लेट
-  directus_roles:
+  axis_roles:
     name: रोलचे नाव
     icon: रोल आयकॉन
     description: डिस्क्रिपशन
     users: रोल मधील यूजर
     parent: पॅरेन्ट रोल
     children: चाईल्ड रोल
-  directus_policies:
+  axis_policies:
     name: पॉलिसीचे नाव
     description: डिस्क्रिपशन
     app_access: app प्रवेश
@@ -1379,7 +1379,7 @@ fields:
     ip_access: IP प्रवेश
     enforce_tfa: 2FA आवश्यक आहे
 field_options:
-  directus_settings:
+  axis_settings:
     project_name_placeholder: माझे प्रोजेक्ट
     project_color_note: लॉगिन आणि लोगो पार्श्वभूमी
     project_logo_note: White 40×40 SVG/PNG
@@ -1409,12 +1409,12 @@ field_options:
     basemaps_style: मॅपबॉक्स शैली
     files_divider_title: फाइल्स आणि लघुप्रतिमा
     overrides_divider_title: ॲप ओव्हरराइड करते
-  directus_activity:
+  axis_activity:
     login: लॉगिन करा
     create: तयार करा
     update: अपडेट करा
     delete: हटवा
-  directus_collections:
+  axis_collections:
     track_activity_revisions: ऍक्शन आणि पुनरावृत्तींचा मागोवा घ्या
     only_track_activity: फक्त ऍक्शन ट्रॅक करा
     do_not_track_anything: काहीही ट्रॅक करू नका
@@ -1440,7 +1440,7 @@ field_options:
     preview_divider: पूर्वावलोकन
     content_versioning_divider: सामग्री आवृत्ती
     enable_versioning: आवृत्ती सक्षम करा
-  directus_files:
+  axis_files:
     title: एक अनोखे शीर्षक...
     description: पर्यायी वर्णन...
     location: एक पर्यायी स्थान...
@@ -1448,13 +1448,13 @@ field_options:
     focal_point_divider: फोकल पॉइंट
     filename_disk: डिस्क स्टोरेजवर नाव...
     filename_download: डाउनलोड करताना नाव..
-  directus_policies:
+  axis_policies:
     name: या धोरणासाठी एक अद्वितीय नाव..
     description: या धोरणाचे वर्णन...
     ip_access: अनुमत IP पत्ते, IP श्रेणी आणि CIDR ब्लॉक्स जोडा. सर्वांना परवानगी देण्यासाठी रिकामे सोडा...
     enforce_tfa: टू-फॅक्टर ऑथेंटिकेशन लागू करा
     assigned_to: यांना नियुक्त केले
-  directus_roles:
+  axis_roles:
     name: या भूमिकेचे अनोखे नाव...
     description: या भूमिकेचे वर्णन...
     fields:
@@ -1467,7 +1467,7 @@ field_options:
     children_note: नेस्टेड चाइल्ड रोल ज्यांना या भूमिकांच्या परवानग्या मिळतात
     collections_name: कलेक्शन
     collections_addLabel: ऍड कलेक्शन
-  directus_users:
+  axis_users:
     preferences_divider: वापरकर्ता प्राधान्ये
     dropdown_auto: ऍटोमिक
     dropdown_light: लाईट मोड

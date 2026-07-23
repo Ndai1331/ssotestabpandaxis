@@ -73,7 +73,7 @@ test(
 				WEBSOCKETS_REST_ENABLED: 'true',
 				WEBSOCKETS_REST_AUTH: 'public',
 				WEBSOCKETS_REST_PATH: '/websocket',
-				DB_FILENAME: `directus_test_${getUID()}.db`,
+				DB_FILENAME: `axis_test_${getUID()}.db`,
 			},
 		});
 
