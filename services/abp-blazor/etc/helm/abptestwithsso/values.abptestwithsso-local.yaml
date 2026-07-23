@@ -1,0 +1,21 @@
+global:
+  hosts:
+    authserver: "[RELEASE_NAME]-authserver"
+    webgateway: "[RELEASE_NAME]-webgateway"
+    kibana: "[RELEASE_NAME]-kibana"
+    grafana: "[RELEASE_NAME]-grafana"
+    prometheus: "[RELEASE_NAME]-prometheus"
+    blazorwebapp: "[RELEASE_NAME]-blazorwebapp"
+  connectionStrings:
+    administration: "Host=[RELEASE_NAME]-postgresql;Port=5432;Database=abptestwithsso_Administration;User ID=postgres;Password=myPassword;Timeout=240;"
+    blobStoring: "Host=[RELEASE_NAME]-postgresql;Port=5432;Database=abptestwithsso_BlobStoring;User ID=postgres;Password=myPassword;Timeout=240;"
+    identity: "Host=[RELEASE_NAME]-postgresql;Port=5432;Database=abptestwithsso_Identity;User ID=postgres;Password=myPassword;Timeout=240;"
+    auditLogging: "Host=[RELEASE_NAME]-postgresql;Port=5432;Database=abptestwithsso_AuditLogging;User ID=postgres;Password=myPassword;Timeout=240;"
+    gdpr: "Host=[RELEASE_NAME]-postgresql;Port=5432;Database=abptestwithsso_Gdpr;User ID=postgres;Password=myPassword;Timeout=240;"
+    aimanagement: "Host=[RELEASE_NAME]-postgresql;Port=5432;Database=abptestwithsso_AIManagement;User ID=postgres;Password=myPassword;Timeout=240;"
+    language: "Host=[RELEASE_NAME]-postgresql;Port=5432;Database=abptestwithsso_Language;User ID=postgres;Password=myPassword;Timeout=240;"
+  dotnetEnvironment: "Staging"
+  enablePII: "true"
+  stringEncryptionDefaultPassPhrase: "TSUF1eP9nPuNEgwi"
+  abpStudioClient:
+    isLinkEnabled: "true"

@@ -1,0 +1,9 @@
+./build-image.ps1 -ProjectPath "../../services/administration/abptestwithsso.AdministrationService/abptestwithsso.AdministrationService.csproj" -ImageName abptestwithsso/administration
+./build-image.ps1 -ProjectPath "../../services/identity/abptestwithsso.IdentityService/abptestwithsso.IdentityService.csproj" -ImageName abptestwithsso/identity
+./build-image.ps1 -ProjectPath "../../services/audit-logging/abptestwithsso.AuditLoggingService/abptestwithsso.AuditLoggingService.csproj" -ImageName abptestwithsso/auditlogging
+./build-image.ps1 -ProjectPath "../../services/gdpr/abptestwithsso.GdprService/abptestwithsso.GdprService.csproj" -ImageName abptestwithsso/gdpr
+./build-image.ps1 -ProjectPath "../../services/ai-management/abptestwithsso.AIManagementService/abptestwithsso.AIManagementService.csproj" -ImageName abptestwithsso/aimanagement
+./build-image.ps1 -ProjectPath "../../services/language/abptestwithsso.LanguageService/abptestwithsso.LanguageService.csproj" -ImageName abptestwithsso/language
+./build-image.ps1 -ProjectPath "../../gateways/web/abptestwithsso.WebGateway/abptestwithsso.WebGateway.csproj" -ImageName abptestwithsso/webgateway
+./build-image.ps1 -ProjectPath "../../apps/auth-server/abptestwithsso.AuthServer/abptestwithsso.AuthServer.csproj" -ImageName abptestwithsso/authserver
+./build-image.ps1 -ProjectPath "../../apps/blazor/abptestwithsso.Blazor/abptestwithsso.Blazor.csproj" -ImageName abptestwithsso/blazorwebapp

@@ -1,0 +1,6 @@
+image:
+  repository: "abptestwithsso/aimanagement"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+swagger:
+  isEnabled: "true"

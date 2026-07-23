@@ -1,0 +1,6 @@
+image:
+  repository: "abptestwithsso/blazorwebapp"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+authServer:
+  clientSecret: "1q2w3e*"

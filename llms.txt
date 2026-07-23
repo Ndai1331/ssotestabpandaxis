@@ -1,0 +1,27 @@
+# BD Workspace — Bình Dương SSO Lab
+
+> Local lab: Zimbra mail login for Directus + ABP Framework via Keycloak (OIDC/OAuth2). No GitHub/CI yet.
+
+## Architecture
+
+- [Workspace Architecture](docs/workspace-architecture.md): SSO model, services, local ports, role mapping. Source of truth.
+- [Project Overview / PDR](docs/project-overview-pdr.md): Goals, scope, non-goals for the BD lab.
+- [System Architecture](docs/system-architecture.md): Component view of Zimbra → Keycloak → apps.
+- [README](README.md): Workspace layout and local quick start.
+- [CLAUDE.md](CLAUDE.md): AI agent rules (Vietnamese).
+- [SSO Guideline Diagram](system-sso-guideline.png): Official login-flow diagram.
+
+## Services
+
+- [Directus](services/directus-main/readme.md): Clinical data management. OIDC client of Keycloak. Docker compose includes Keycloak on port 5110.
+- [ABP Blazor Microservice](services/abp-blazor/README.md): Digital administration (docs, approvals). AuthServer (OpenIddict) + Blazor UI + microservices; integrate Keycloak as external IdP.
+- Keycloak (Docker): Identity provider — user federation from Zimbra LDAP/AD, realm clients for Directus and ABP.
+
+## Local defaults
+
+- Keycloak: http://localhost:5110 (admin / secret) via `services/directus-main/docker-compose.yml`
+- Directus / ABP: follow each service README for run ports and env
+
+## Out of scope (legacy Task9)
+
+Task9 UI/API/worker/n8n/metabase stacks and their docs/plans are archived history only — not authoritative for BD.

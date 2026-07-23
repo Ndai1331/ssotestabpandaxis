@@ -1,0 +1,7 @@
+{
+  "packages": {
+    "abptestwithsso.WebGateway": {
+      "path": "abptestwithsso.WebGateway/abptestwithsso.WebGateway.abppkg"
+    }
+  }
+}

@@ -1,0 +1,236 @@
+{
+  "folders": {
+    "items": {
+      "services": {
+        "execution": {
+          "order": 2
+        }
+      },
+      "apps": {
+        "execution": {
+          "order": 0
+        }
+      },
+      "gateways": {
+        "execution": {
+          "order": 1
+        }
+      }
+    }
+  },
+  "applications": {
+    "abptestwithsso.AuthServer": {
+      "type": "dotnet-project",
+      "path": "../../../apps/auth-server/abptestwithsso.AuthServer/abptestwithsso.AuthServer.csproj",
+      "launchUrl": "http://localhost:44372",
+      "kubernetesService": ".*-authserver$",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "folder": "apps",
+      "execution": {
+        "order": 3
+      }
+    },
+    "abptestwithsso.AuditLoggingService": {
+      "type": "dotnet-project",
+      "path": "../../../services/audit-logging/abptestwithsso.AuditLoggingService/abptestwithsso.AuditLoggingService.csproj",
+      "launchUrl": "http://localhost:44302",
+      "folder": "services",
+      "kubernetesService": ".*-auditlogging$",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "execution": {
+        "order": 0
+      }
+    },
+    "abptestwithsso.GdprService": {
+      "type": "dotnet-project",
+      "path": "../../../services/gdpr/abptestwithsso.GdprService/abptestwithsso.GdprService.csproj",
+      "launchUrl": "http://localhost:44348",
+      "folder": "services",
+      "kubernetesService": ".*-gdpr$",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "execution": {
+        "order": 1
+      }
+    },
+    "abptestwithsso.AIManagementService": {
+      "type": "dotnet-project",
+      "path": "../../../services/ai-management/abptestwithsso.AIManagementService/abptestwithsso.AIManagementService.csproj",
+      "launchUrl": "http://localhost:44318",
+      "folder": "services",
+      "kubernetesService": ".*-aimanagement",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "execution": {
+        "order": 2
+      }
+    },
+    "abptestwithsso.LanguageService": {
+      "type": "dotnet-project",
+      "path": "../../../services/language/abptestwithsso.LanguageService/abptestwithsso.LanguageService.csproj",
+      "launchUrl": "http://localhost:44391",
+      "folder": "services",
+      "kubernetesService": ".*-language",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "execution": {
+        "order": 3
+      }
+    },
+    "abptestwithsso.WebGateway": {
+      "type": "dotnet-project",
+      "path": "../../../gateways/web/abptestwithsso.WebGateway/abptestwithsso.WebGateway.csproj",
+      "launchUrl": "http://localhost:44398",
+      "kubernetesService": ".*-webgateway$",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "folder": "gateways",
+      "execution": {
+        "order": 2
+      }
+    },
+    "abptestwithsso.Blazor": {
+      "type": "dotnet-project",
+      "launchUrl": "http://localhost:44306",
+      "path": "../../../apps/blazor/abptestwithsso.Blazor/abptestwithsso.Blazor.csproj",
+      "healthCheckEndpoint": "/",
+      "kubernetesService": ".*-blazorwebapp$",
+      "folder": "apps",
+      "execution": {
+        "order": 2
+      }
+    },
+    "abptestwithsso.AdministrationService": {
+      "type": "dotnet-project",
+      "path": "../../../services/administration/abptestwithsso.AdministrationService/abptestwithsso.AdministrationService.csproj",
+      "launchUrl": "http://localhost:44323",
+      "kubernetesService": ".*-administration$",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "folder": "services",
+      "execution": {
+        "order": 6
+      }
+    },
+    "abptestwithsso.IdentityService": {
+      "type": "dotnet-project",
+      "path": "../../../services/identity/abptestwithsso.IdentityService/abptestwithsso.IdentityService.csproj",
+      "launchUrl": "http://localhost:44392",
+      "kubernetesService": ".*-identity$",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "folder": "services",
+      "execution": {
+        "order": 5
+      }
+    }
+  },
+  "containers":{
+    "serviceName": "abptestwithsso-Containers",
+    "files": {
+      "../../docker/containers/elasticsearch.yml": {
+      },
+      "../../docker/containers/grafana.yml": {
+      },
+      "../../docker/containers/kibana.yml": {
+      },
+    "../../docker/containers/postgresql.yml": {
+    },
+      "../../docker/containers/prometheus.yml": {
+      },
+      "../../docker/containers/rabbitmq.yml": {
+      },
+      "../../docker/containers/redis.yml": {
+      },
+      "../../docker/containers/ollama.yml": {
+      },
+      "../../docker/containers/pgvector.yml": {
+      }    }
+  },
+  "tools": {
+    "grafana": {
+      "url": "http://localhost:3001",
+      "relatedContainer": "grafana",
+      "relatedKubernetesService": ".*-grafana$"
+    },
+    "kibana": {
+      "url": "http://localhost:5601",
+      "relatedContainer": "kibana",
+      "relatedKubernetesService": ".*-kibana$"
+    },
+    "prometheus": {
+      "url": "http://localhost:9090",
+      "relatedContainer": "prometheus",
+      "relatedKubernetesService": ".*-prometheus$"
+    },
+    "rabbitmq": {
+      "url": "http://localhost:15672",
+      "relatedContainer": "rabbitmq",
+      "relatedKubernetesService": ".*-rabbitmq$",
+      "relatedKubernetesServicePort": 15672
+    }
+  }, 
+  "tasks": {
+      "Initialize Solution":{
+        "behaviour": 2,
+        "startCommand": "./initialize-solution.ps1",
+        "workingDirectory": "../../scripts",
+        "shortDescription": "Prepares the solution for development."
+      }
+    },
+  "workflows": {
+    "d3b2a1c4-e5f6-4890-abcd-ef1234567890": {
+      "Id": "d3b2a1c4-e5f6-4890-abcd-ef1234567890",
+      "Name": "Default",
+      "Description": "Stops applications, builds, migrates, and starts applications",
+      "IsShared": true,
+      "BeforeTasks": [],
+      "AfterTasks": [
+        {
+          "ActionType": "Build",
+          "Targets": [],
+          "AllTargets": true,
+          "ModuleTargets": [],
+          "PackageTargets": [],
+          "FolderTargets": [],
+          "ApplicationTargets": [],
+          "ContainerTargets": []
+        },
+        {
+          "ActionType": "AddMigration",
+          "Targets": [],
+          "AllTargets": false,
+          "ModuleTargets": [],
+          "PackageTargets": [],
+          "FolderTargets": [],
+          "ApplicationTargets": [],
+          "ContainerTargets": []
+        },
+        {
+          "ActionType": "RunTask",
+          "Targets": [
+            "Migrate Database"
+          ],
+          "AllTargets": false,
+          "ModuleTargets": [],
+          "PackageTargets": [],
+          "FolderTargets": [],
+          "ApplicationTargets": [],
+          "ContainerTargets": []
+        },
+        {
+          "ActionType": "StartApplication",
+          "Targets": [],
+          "AllTargets": true,
+          "ModuleTargets": [],
+          "PackageTargets": [],
+          "FolderTargets": [],
+          "ApplicationTargets": [],
+          "ContainerTargets": []
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <Project Path="abptestwithsso.Blazor/abptestwithsso.Blazor.csproj" />
+  <Project Path="abptestwithsso.Blazor.Client/abptestwithsso.Blazor.Client.csproj" />
+</Solution>
+

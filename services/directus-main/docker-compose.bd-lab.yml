@@ -1,0 +1,123 @@
+# BD SSO lab: Directus + Postgres + Redis + Keycloak (same network)
+#
+# Start:
+#   cd services/directus-main
+#   docker compose -f docker-compose.bd-lab.yml up -d
+#   KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_realm.py
+#
+# URLs:
+#   Directus  http://localhost:8055     admin@local.dev / admin123456
+#   Keycloak  http://localhost:5110     admin / secret
+
+services:
+  database:
+    image: postgres:16-alpine
+    platform: linux/arm64
+    environment:
+      POSTGRES_USER: directus
+      POSTGRES_PASSWORD: directus
+      POSTGRES_DB: directus
+    volumes:
+      - bd_directus_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U directus -h localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5120:5432"
+
+  cache:
+    image: redis:6-alpine
+    ports:
+      - "5121:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: secret
+      # Browser URLs = localhost. Backchannel (Directus→KC) uses request Host.
+      KC_HOSTNAME: http://localhost:5110
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      # Bind loopback so KC treats traffic as local (avoids "HTTPS required")
+      - "127.0.0.1:5110:5110"
+    command:
+      - start-dev
+      - --http-port=5110
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/5110"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  directus:
+    image: directus/directus:11.9.2
+    ports:
+      - "8055:8055"
+    volumes:
+      - bd_directus_uploads:/directus/uploads
+      - bd_directus_extensions:/directus/extensions
+      # App-access gate: require Keycloak group bd-app-directus
+      - ./bd-lab-extensions/directus-extension-bd-app-gate:/directus/extensions/directus-extension-bd-app-gate
+    depends_on:
+      database:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    environment:
+      SECRET: "bd-directus-lab-secret-change-me"
+      PUBLIC_URL: "http://localhost:8055"
+
+      DB_CLIENT: "pg"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_DATABASE: "directus"
+      DB_USER: "directus"
+      DB_PASSWORD: "directus"
+
+      CACHE_ENABLED: "true"
+      CACHE_AUTO_PURGE: "true"
+      CACHE_STORE: "redis"
+      REDIS: "redis://cache:6379"
+
+      ADMIN_EMAIL: "admin@local.dev"
+      ADMIN_PASSWORD: "admin123456"
+
+      AUTH_PROVIDERS: "keycloak"
+      AUTH_KEYCLOAK_DRIVER: "openid"
+      AUTH_KEYCLOAK_CLIENT_ID: "directus"
+      AUTH_KEYCLOAK_CLIENT_SECRET: "bd-directus-lab-secret"
+      # Same compose network DNS; frontend redirects still use localhost via KC_HOSTNAME
+      AUTH_KEYCLOAK_ISSUER_URL: "http://keycloak:5110/realms/bd/.well-known/openid-configuration"
+      AUTH_KEYCLOAK_IDENTIFIER_KEY: "email"
+      AUTH_KEYCLOAK_ALLOW_PUBLIC_REGISTRATION: "true"
+      AUTH_KEYCLOAK_REQUIRE_VERIFIED_EMAIL: "false"
+      AUTH_KEYCLOAK_SCOPE: "openid profile email"
+      # Always show KC login form (logout Directus does not end KC SSO session)
+      AUTH_KEYCLOAK_PARAMS: 'json:{"prompt":"login"}'
+      AUTH_KEYCLOAK_GROUP_CLAIM_NAME: "groups"
+      AUTH_KEYCLOAK_ISSUER_DISCOVERY_MUST_SUCCEED: "false"
+      AUTH_KEYCLOAK_DEFAULT_ROLE_ID: "753294b4-2591-4793-a5dd-929edbaec5d0"
+      AUTH_KEYCLOAK_ROLE_MAPPING: 'json:{"bd-admin":"654b7314-9b60-4eec-945c-f0a647ea2509","bd-bacsi":"0054b4bc-aef2-4cbd-afcd-49066c2fb50a","bd-lanhdao":"1304ca0a-dd80-4ab9-a191-07bf9b46dd1d","bd-nhanvien":"753294b4-2591-4793-a5dd-929edbaec5d0"}'
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8055/server/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  bd_directus_pg:
+  bd_directus_uploads:
+  bd_directus_extensions:

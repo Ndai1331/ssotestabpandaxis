@@ -1,0 +1,40 @@
+{
+  "packages": {
+    "abptestwithsso.AuditLoggingService": {
+      "path": "abptestwithsso.AuditLoggingService/abptestwithsso.AuditLoggingService.abppkg"
+    },
+    "abptestwithsso.AuditLoggingService.Contracts": {
+      "path": "abptestwithsso.AuditLoggingService.Contracts/abptestwithsso.AuditLoggingService.Contracts.abppkg"
+    },
+    "abptestwithsso.AuditLoggingService.Tests": {
+      "path": "abptestwithsso.AuditLoggingService.Tests/abptestwithsso.AuditLoggingService.Tests.abppkg"
+    }
+  },
+  "imports": {
+    "Volo.Abp.PermissionManagement": {
+      "version": "10.5.0",
+      "isInstalled": true,
+      "creationTime": "07/23/2026 04:06:50 +00:00"
+    },
+    "Volo.Abp.FeatureManagement": {
+      "version": "10.5.0",
+      "isInstalled": true,
+      "creationTime": "07/23/2026 04:06:50 +00:00"
+    },
+    "Volo.Abp.SettingManagement": {
+      "version": "10.5.0",
+      "isInstalled": true,
+      "creationTime": "07/23/2026 04:06:50 +00:00"
+    },
+    "Volo.Abp.BlobStoring.Database": {
+      "version": "10.5.0",
+      "isInstalled": true,
+      "creationTime": "07/23/2026 04:06:50 +00:00"
+    },
+    "Volo.Abp.LanguageManagement": {
+      "version": "10.5.0",
+      "isInstalled": true,
+      "creationTime": "07/23/2026 04:06:50 +00:00"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "config": {
+    "context": "docker-desktop",
+    "namespace": "abptestwithsso-local"
+  },
+  "metadata": {
+    "dotnetEnvironment": "Staging"
+  },
+  "services": {
+    "abptestwithsso-local-identity": {
+    },
+    "abptestwithsso-local-web": {
+    }
+  }
+}

@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+
+  <Project Path="abptestwithsso.GdprService/abptestwithsso.GdprService.csproj" />
+  <Project Path="abptestwithsso.GdprService.Contracts/abptestwithsso.GdprService.Contracts.csproj" />
+  <Project Path="abptestwithsso.GdprService.Tests/abptestwithsso.GdprService.Tests.csproj" />
+</Solution>

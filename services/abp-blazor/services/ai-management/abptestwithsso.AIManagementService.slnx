@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+
+  <Project Path="abptestwithsso.AIManagementService/abptestwithsso.AIManagementService.csproj" />
+  <Project Path="abptestwithsso.AIManagementService.Contracts/abptestwithsso.AIManagementService.Contracts.csproj" />
+  <Project Path="abptestwithsso.AIManagementService.Tests/abptestwithsso.AIManagementService.Tests.csproj" />
+</Solution>

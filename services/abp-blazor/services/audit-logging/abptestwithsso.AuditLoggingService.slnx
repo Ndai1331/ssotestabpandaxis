@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+
+  <Project Path="abptestwithsso.AuditLoggingService/abptestwithsso.AuditLoggingService.csproj" />
+  <Project Path="abptestwithsso.AuditLoggingService.Contracts/abptestwithsso.AuditLoggingService.Contracts.csproj" />
+  <Project Path="abptestwithsso.AuditLoggingService.Tests/abptestwithsso.AuditLoggingService.Tests.csproj" />
+</Solution>

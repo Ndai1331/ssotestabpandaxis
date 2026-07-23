@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <Project Path="abptestwithsso.LanguageService.Contracts/abptestwithsso.LanguageService.Contracts.csproj" />
+  <Project Path="abptestwithsso.LanguageService.Tests/abptestwithsso.LanguageService.Tests.csproj" />
+  <Project Path="abptestwithsso.LanguageService/abptestwithsso.LanguageService.csproj" />
+</Solution>

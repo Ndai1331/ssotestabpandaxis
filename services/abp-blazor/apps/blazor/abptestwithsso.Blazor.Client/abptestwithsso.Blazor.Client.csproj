@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <Import Project="..\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
+    <RootNamespace>abptestwithsso.Blazor.Client</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" Version="9.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Volo.Abp.Autofac.WebAssembly" Version="10.5.0" />
+    <PackageReference Include="Volo.Abp.SettingManagement.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <EmbeddedResource Include="Localization\abptestwithsso\*.json" />
+      <Content Remove="Localization\abptestwithsso\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Volo.Abp.AspNetCore.Components.WebAssembly.MudBlazorLeptonXTheme" Version="5.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Volo.Abp.Account.Pro.Admin.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <PackageReference Include="Volo.Abp.Account.Pro.Public.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <PackageReference Include="Volo.Abp.Identity.Pro.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <ProjectReference Include="../../../services/ai-management/abptestwithsso.AIManagementService.Contracts/abptestwithsso.AIManagementService.Contracts.csproj" />
+    <PackageReference Include="Volo.AIManagement.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <PackageReference Include="Volo.AIManagement.Client.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <PackageReference Include="Volo.Abp.TextTemplateManagement.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <ProjectReference Include="../../../services/audit-logging/abptestwithsso.AuditLoggingService.Contracts/abptestwithsso.AuditLoggingService.Contracts.csproj" />
+    <PackageReference Include="Volo.Abp.AuditLogging.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <ProjectReference Include="../../../services/language/abptestwithsso.LanguageService.Contracts/abptestwithsso.LanguageService.Contracts.csproj" />
+    <PackageReference Include="Volo.Abp.LanguageManagement.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <PackageReference Include="Volo.Abp.OpenIddict.Pro.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <ProjectReference Include="../../../services/gdpr/abptestwithsso.GdprService.Contracts/abptestwithsso.GdprService.Contracts.csproj" />
+    <PackageReference Include="Volo.Abp.Gdpr.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
+    <ProjectReference Include="../../../services/identity/abptestwithsso.IdentityService.Contracts/abptestwithsso.IdentityService.Contracts.csproj" />
+    <ProjectReference Include="../../../services/administration/abptestwithsso.AdministrationService.Contracts/abptestwithsso.AdministrationService.Contracts.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+      <EmbeddedResource Include="**\*generate-proxy.json"/>
+      <Content Remove="**\*generate-proxy.json"/>
+  </ItemGroup>
+</Project>
