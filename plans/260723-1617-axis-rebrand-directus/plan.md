@@ -87,7 +87,7 @@ UI không còn chữ Directus (trong scope).
 - [x] App title / welcome / powered-by (en-US) hiện **Axis**
 - [x] Wipe volume lab + restart compose + re-bootstrap KC
 - [x] Không đổi `@directus/*` package names
-- [ ] **Runtime docker image** vẫn `directus/directus:11.9.2` upstream → DB container vẫn bảng `directus_*` cho đến khi build image từ fork local
+- [x] **Runtime docker image** build local `bd-axis:local` → DB có **33** bảng `axis_*`, **0** `directus_*`
 
 ## Notes (2026-07-23 implement)
 

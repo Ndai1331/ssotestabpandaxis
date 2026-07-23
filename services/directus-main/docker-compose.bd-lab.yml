@@ -101,6 +101,8 @@ services:
       ADMIN_EMAIL: "admin@local.dev"
       ADMIN_PASSWORD: "admin123456"
       PROJECT_NAME: "Axis"
+      # Core license blocks SSO; enable Keycloak OpenID for BD lab
+      BD_LAB_ALLOW_SSO: "true"
 
       AUTH_PROVIDERS: "keycloak"
       AUTH_KEYCLOAK_DRIVER: "openid"

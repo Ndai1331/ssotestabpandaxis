@@ -1,4 +1,5 @@
 import { LimitExceededError, ResourceRestrictedError } from '@directus/errors';
+import { useEnv } from '@directus/env';
 import type {
 	AppEntitlements,
 	CountableEntitlementKey,
@@ -14,6 +15,7 @@ import type {
 } from '@directus/license';
 import { CORE_LICENSE, COUNTABLE_ENTITLEMENT_KEYS, FEATURE_FLAG_ENTITLEMENT_KEYS } from '@directus/license';
 import type { Accountability } from '@directus/types';
+import { toBoolean } from '@directus/utils';
 import type { Knex } from 'knex';
 import { useBus } from '../../bus/index.js';
 import { countActiveCollections, resolveCollections } from './lib/collections.js';
@@ -141,6 +143,11 @@ export class EntitlementManager {
 	 * present and falling back to `default` otherwise.
 	 */
 	isEntitled(key: FeatureFlagEntitlementKey): boolean {
+		// BD lab: Core license hides SSO; allow OpenID/Keycloak when explicitly enabled.
+		if (key === 'sso_enabled' && toBoolean(useEnv()['BD_LAB_ALLOW_SSO'])) {
+			return true;
+		}
+
 		const entitlement = this.entitlements[key];
 		return entitlement.override ?? entitlement.default;
 	}
