@@ -1,23 +1,23 @@
 volumes:
-  abptestwithsso_ollama:
+  hanhchinhso_ollama:
 networks:
-  abptestwithsso:
+  hanhchinhso:
     external: true
 
 services:
   ollama:
-    container_name: abptestwithsso-ollama
+    container_name: hanhchinhso-ollama
     image: ollama/ollama:latest
     volumes:
-      - abptestwithsso_ollama:/root/.ollama
+      - hanhchinhso_ollama:/root/.ollama
     networks:
-      - abptestwithsso
+      - hanhchinhso
     ports:
       - "11434:11434"
     restart: unless-stopped
 
   ollama-init:
-    container_name: abptestwithsso-ollama-init
+    container_name: hanhchinhso-ollama-init
     image: ollama/ollama:latest
     depends_on:
       - ollama
@@ -36,5 +36,5 @@ services:
         echo 'Model pulled successfully!';
       "
     networks:
-      - abptestwithsso
+      - hanhchinhso
     restart: "no"

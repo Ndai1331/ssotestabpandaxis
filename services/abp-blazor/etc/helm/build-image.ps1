@@ -40,7 +40,7 @@ try
     $subChartName = $splitImageName[1]
 
     # Full path of the values.localdev.yaml file
-    $localDevFilePath = Join-Path $PSScriptRoot "abptestwithsso/values.localdev.yaml"
+    $localDevFilePath = Join-Path $PSScriptRoot "hanhchinhso/values.localdev.yaml"
 
     # If the values.localdev.yaml file does not exist, create it first
     if (!(Test-Path $localDevFilePath)) {

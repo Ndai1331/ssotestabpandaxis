@@ -1,0 +1,6 @@
+image:
+  repository: "hanhchinhso/aimanagement"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+swagger:
+  isEnabled: "true"

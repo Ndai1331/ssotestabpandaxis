@@ -7,4 +7,5 @@ docker-compose -f containers/redis.yml down
 docker-compose -f containers/ollama.yml down
 docker-compose -f containers/pgvector.yml down
 docker-compose -f containers/postgresql.yml down
+docker-compose -f containers/minio.yml down
 exit $LASTEXITCODE

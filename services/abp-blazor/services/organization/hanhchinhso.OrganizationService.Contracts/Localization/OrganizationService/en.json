@@ -1,0 +1,15 @@
+{
+  "culture": "en",
+  "texts": {
+    "Menu:Home": "Home",
+    "Login": "Login",
+    "Menu:Dashboard": "Dashboard",
+    "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information visit",
+    "Welcome": "Welcome",
+    "Permission:Organization": "Organization",
+    "Permission:MasterData": "Master data",
+    "Permission:Create": "Create",
+    "Permission:Update": "Update",
+    "Permission:Delete": "Delete"
+  }
+}

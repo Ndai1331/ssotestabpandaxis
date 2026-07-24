@@ -74,7 +74,7 @@ Priority multi-group: **admin > lanhdao > bacsi > nhanvien**.
 | Compose lab (Directus+KC+PG+Redis) | `services/directus-main/docker-compose.bd-lab.yml` |
 | Bootstrap realm | `scripts/keycloak_bootstrap_bd_realm.py` |
 | ABP Keycloak config | `services/abp-blazor/apps/auth-server/.../appsettings.Development.json` |
-| ABP OIDC wire-up | `.../abptestwithssoAuthServerModule.cs` (`AddOpenIdConnect`) |
+| ABP OIDC wire-up | `.../hanhchinhsoAuthServerModule.cs` (`AddOpenIdConnect`) |
 | Group→role mapper | `.../KeycloakGroupRoleMapper.cs`, `KeycloakOpenIdConnectEvents.cs` |
 | ABP role seed | `.../IdentityServiceDataSeeder.cs` |
 | ABP permission seed BD | `.../AdministrationServiceDataSeeder.cs` (`SeedBdRolePermissionsAsync`) |
@@ -97,18 +97,18 @@ KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_r
 
 # ABP infra
 cd ../abp-blazor/etc/docker
-docker network create abptestwithsso 2>/dev/null || true
+docker network create hanhchinhso 2>/dev/null || true
 docker compose -f containers/postgresql.yml up -d
 docker compose -f containers/redis.yml up -d
 docker compose -f containers/rabbitmq.yml up -d
 
 # ABP apps (terminal riêng)
 cd ../..   # services/abp-blazor
-dotnet run --project services/identity/abptestwithsso.IdentityService
-dotnet run --project services/administration/abptestwithsso.AdministrationService
-dotnet run --project apps/auth-server/abptestwithsso.AuthServer
-dotnet run --project gateways/web/abptestwithsso.WebGateway
-dotnet run --project apps/blazor/abptestwithsso.Blazor
+dotnet run --project services/identity/hanhchinhso.IdentityService
+dotnet run --project services/administration/hanhchinhso.AdministrationService
+dotnet run --project apps/auth-server/hanhchinhso.AuthServer
+dotnet run --project gateways/web/hanhchinhso.WebGateway
+dotnet run --project apps/blazor/hanhchinhso.Blazor
 ```
 
 > Keycloak `start-dev` mất realm khi recreate container → **luôn re-run bootstrap**.

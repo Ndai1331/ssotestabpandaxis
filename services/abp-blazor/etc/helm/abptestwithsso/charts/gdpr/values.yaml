@@ -1,6 +1,0 @@
-image:
-  repository: "abptestwithsso/gdpr"
-  tag: "latest"
-  pullPolicy: IfNotPresent
-swagger:
-  isEnabled: "true"

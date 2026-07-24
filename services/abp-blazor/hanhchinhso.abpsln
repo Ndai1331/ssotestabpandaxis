@@ -1,0 +1,346 @@
+{
+  "id": "d5aff72d-6c6e-4e6d-9d0c-6d0ac313f5c5",
+  "template": "microservice",
+  "versions": {
+    "LeptonX": "5.5.0",
+    "AbpFramework": "10.5.0",
+    "AbpCommercial": "10.5.0",
+    "AbpStudio": "3.0.7",
+    "TargetDotnetFramework": "net10.0"
+  },
+  "folders": {
+    "items": {
+      "services": {},
+      "apps": {},
+      "gateways": {},
+
+    }
+  },
+  "defaultRunProfile": "Default",
+  "runProfiles": {
+    "Default": {
+      "path": "etc/abp-studio/run-profiles/Default.abprun.json"
+    },
+  },
+  "modules": {
+    "hanhchinhso.AdministrationService": {
+      "path": "services/administration/hanhchinhso.AdministrationService.abpmdl",
+      "folder": "services"
+    },
+    "hanhchinhso.IdentityService": {
+      "path": "services/identity/hanhchinhso.IdentityService.abpmdl",
+      "folder": "services"
+    },
+    "hanhchinhso.AuditLoggingService": {
+      "path": "services/audit-logging/hanhchinhso.AuditLoggingService.abpmdl",
+      "folder": "services"
+    },
+    "hanhchinhso.GdprService": {
+      "path": "services/gdpr/hanhchinhso.GdprService.abpmdl",
+      "folder": "services"
+    },
+    "hanhchinhso.AIManagementService": {
+      "path": "services/ai-management/hanhchinhso.AIManagementService.abpmdl",
+      "folder": "services"
+    },
+    "hanhchinhso.LanguageService": {
+      "path": "services/language/hanhchinhso.LanguageService.abpmdl",
+      "folder": "services"
+    },
+    "hanhchinhso.OrganizationService": {
+      "path": "services/organization/hanhchinhso.OrganizationService.abpmdl",
+      "folder": "services"
+    },
+    "hanhchinhso.WorkflowService": {
+      "path": "services/workflow-service/hanhchinhso.WorkflowService.abpmdl",
+      "folder": "services"
+    },
+    "hanhchinhso.Blazor": {
+      "path": "apps/blazor/hanhchinhso.Blazor.abpmdl",
+      "folder": "apps"
+    },
+    "hanhchinhso.AuthServer": {
+      "path": "apps/auth-server/hanhchinhso.AuthServer.abpmdl",
+      "folder": "apps"
+    },
+    "hanhchinhso.WebGateway": {
+      "path": "gateways/web/hanhchinhso.WebGateway.abpmdl",
+      "folder": "gateways"
+    },
+  },
+  "k8sProfiles": {
+    "local": {
+      "path": "etc/abp-studio/k8s-profiles/local.abpk8s.json"
+    }
+  },
+  "commands": {
+    "helmBuildDotnetImage": {
+      "triggerTargets": [
+        "HELM_CHARTS_ROOT",
+        "HELM_MAIN_CHART",
+        "HELM_SUB_CHART"
+      ],
+      "executionTargets": [
+        "HELM_MAIN_CHART",
+        "HELM_SUB_CHART"
+      ],
+      "displayName": "Build Docker Image(s)",
+      "description": "Builds Docker image(s) for the selected Helm chart(s) using the build-image.ps1 script. This prepares the microservice for Kubernetes deployment by containerizing the .NET or Angular projects.",
+      "workingDirectory": "etc/helm",
+      "terminalCommand": "./build-image.ps1 -ProjectPath {{metadata.projectPath}} -ImageName {{metadata.imageName}} -ProjectType {{metadata.projectType}}",
+      "condition": "{{metadata.projectPath != null && metadata.imageName != null && metadata.projectType != null}}"
+    },
+    "helmInstallChart": {
+      "triggerTargets": [
+        "HELM_CHARTS_ROOT",
+        "HELM_MAIN_CHART"
+      ],
+      "executionTargets": [
+        "HELM_MAIN_CHART"
+      ],
+      "displayName": "Install Chart(s)",
+      "description": "Deploys the selected Helm chart(s) to the Kubernetes cluster using helm install. This creates or updates the Kubernetes resources (pods, services, configmaps, etc.) defined in the chart.",
+      "workingDirectory": "etc/helm",
+      "terminalCommand": "./install.ps1 -ChartName {{chart.name}} -Namespace {{profile.namespace}} -ReleaseName {{chart.name}}-{{profile.name}} -DotnetEnvironment {{metadata.dotnetEnvironment}} {{~if metadata.k8ssuffix}} -User {{metadata.k8ssuffix}}{{end}}",
+      "requireConfirmation": "true",
+      "confirmationText": "Are you sure to install the chart(s) for the profile {{ profile.name }}?"
+    },
+    "helmUninstallChart": {
+      "triggerTargets": [
+        "HELM_CHARTS_ROOT",
+        "HELM_MAIN_CHART"
+      ],
+      "executionTargets": [
+        "HELM_MAIN_CHART"
+      ],
+      "displayName": "Uninstall Chart(s)",
+      "description": "Removes the selected Helm chart(s) from the Kubernetes cluster using helm uninstall. This deletes all Kubernetes resources (pods, services, configmaps, etc.) associated with the release.",
+      "workingDirectory": "etc/helm",
+      "terminalCommand": "./uninstall.ps1 -Namespace {{profile.namespace}} -ReleaseName {{chart.name}}-{{profile.name}} {{~if metadata.k8ssuffix}} -User {{metadata.k8ssuffix}}{{end}}",
+      "requireConfirmation": "true",
+      "confirmationText": "Are you sure to uninstall the chart(s) for the profile {{profile.name}}?"
+    },
+    "kubernetesRedeploy": {
+      "triggerTargets": [
+        "KUBERNETES_SERVICE"
+      ],
+      "executionTargets": [
+        "KUBERNETES_SERVICE"
+      ],
+      "displayName": "Redeploy",
+      "description": "Rebuilds the Docker image for the microservice and redeploys it to Kubernetes in one step. This is a convenient shortcut that combines 'Build Docker Image' and 'Install Chart' operations for quick iterative development.",
+      "workingDirectory": "etc/helm",
+      "terminalCommand": "./build-image.ps1 -ProjectPath {{chart.metadata.projectPath}} -ImageName {{chart.metadata.imageName}} -ProjectType {{chart.metadata.projectType}} &&& ./install.ps1 -ChartName {{mainChart.name}} -Namespace {{profile.namespace}} -ReleaseName {{mainChart.name}}-{{profile.name}} -DotnetEnvironment {{mainChart.metadata.dotnetEnvironment}} {{~if metadata.k8ssuffix}} -User {{metadata.k8ssuffix}}{{end}}",
+      "requireConfirmation": "true",
+      "confirmationText": "Are you sure to redeploy the related chart '{{chart.name}}' for the service '{{name}}'?",
+      "condition": "{{chart != null && chart.metadata.projectPath != null && chart.metadata.imageName != null && chart.metadata.projectType != null}}"
+    },
+    "createTlsSecret": {
+      "triggerTargets": [
+        "HELM_CHARTS_ROOT"
+      ],
+      "executionTargets": [
+        "HELM_CHARTS_ROOT"
+      ],
+      "displayName": "Create Self-Signed TLS secret",
+      "description": "Creates a self-signed TLS certificate and stores it as a Kubernetes secret. This is required for HTTPS endpoints in the local development Kubernetes environment.",
+      "workingDirectory": "etc/helm",
+      "terminalCommand": "./create-tls-secrets.ps1 -Namespace {{profile.namespace}} {{~if metadata.k8ssuffix}} -User {{metadata.k8ssuffix}}{{end}}"
+    }
+  },
+  "helm": {
+    "charts": {
+      "hanhchinhso": {
+        "name": "hanhchinhso",
+        "path": "etc/helm/hanhchinhso",
+        "charts": {
+          "administration": {
+            "name": "administration",
+            "path": "etc/helm/hanhchinhso/charts/administration",
+            "metadata": {
+              "projectPath": "../../services/administration/hanhchinhso.AdministrationService/hanhchinhso.AdministrationService.csproj",
+              "imageName": "hanhchinhso/administration",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-administration$"
+            ]
+          },
+          "aimanagement": {
+            "name": "aimanagement",
+            "path": "etc/helm/hanhchinhso/charts/aimanagement",
+            "metadata": {
+              "projectPath": "../../services/audit-logging/hanhchinhso.AIManagementService/hanhchinhso.AIManagementService.csproj",
+              "imageName": "hanhchinhso/aimanagement",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-aimanagement$"
+            ]
+          },          
+          "auditlogging": {
+            "name": "auditlogging",
+            "path": "etc/helm/hanhchinhso/charts/auditlogging",
+            "metadata": {
+              "projectPath": "../../services/audit-logging/hanhchinhso.AuditLoggingService/hanhchinhso.AuditLoggingService.csproj",
+              "imageName": "hanhchinhso/auditlogging",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-auditlogging$"
+            ]
+          },
+          "authserver": {
+            "name": "authserver",
+            "path": "etc/helm/hanhchinhso/charts/authserver",
+            "metadata": {
+              "projectPath": "../../apps/auth-server/hanhchinhso.AuthServer/hanhchinhso.AuthServer.csproj",
+              "imageName": "hanhchinhso/authserver",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-authserver$"
+            ]
+          },
+          "blazor": {
+            "name": "blazor",
+            "path": "etc/helm/hanhchinhso/charts/blazorwebapp",
+            "metadata": {
+              "projectPath": "../../apps/blazor/hanhchinhso.Blazor/hanhchinhso.Blazor.csproj",
+              "imageName": "hanhchinhso/blazorwebapp",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-blazorwebapp$"
+            ]
+          },
+          "elasticsearch": {
+            "name": "elasticsearch",
+            "path": "etc/helm/hanhchinhso/charts/elasticsearch",
+            "metadata": {}
+          },
+          "language": {
+            "name": "language",
+            "path": "etc/helm/hanhchinhso/charts/language",
+            "metadata": {
+              "projectPath": "../../services/language/hanhchinhso.LanguageService/hanhchinhso.LanguageService.csproj",
+              "imageName": "hanhchinhso/language",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-language"
+            ]
+          },
+          "gdpr": {
+            "name": "gdpr",
+            "path": "etc/helm/hanhchinhso/charts/gdpr",
+            "metadata": {
+              "projectPath": "../../services/gdpr/hanhchinhso.GdprService/hanhchinhso.GdprService.csproj",
+              "imageName": "hanhchinhso/gdpr",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-gdpr$"
+            ]
+          },
+          "grafana": {
+            "name": "grafana",
+            "path": "etc/helm/hanhchinhso/charts/grafana",
+            "metadata": {},
+            "services": [
+              ".*-grafana$"
+            ]
+          },
+          "identity": {
+            "name": "identity",
+            "path": "etc/helm/hanhchinhso/charts/identity",
+            "metadata": {
+              "projectPath": "../../services/identity/hanhchinhso.IdentityService/hanhchinhso.IdentityService.csproj",
+              "imageName": "hanhchinhso/identity",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-identity$"
+            ]
+          },
+          "kibana": {
+            "name": "kibana",
+            "path": "etc/helm/hanhchinhso/charts/kibana",
+            "metadata": {},
+            "services": [
+              ".*-kibana$"
+            ]
+          },
+          "postgresql": {
+            "name": "postgresql",
+            "path": "etc/helm/hanhchinhso/charts/postgresql"
+          },
+          "prometheus": {
+            "name": "prometheus",
+            "path": "etc/helm/hanhchinhso/charts/prometheus",
+            "metadata": {}
+          },
+          "rabbitmq": {
+            "name": "rabbitmq",
+            "path": "etc/helm/hanhchinhso/charts/rabbitmq"
+          },
+          "redis": {
+            "name": "redis",
+            "path": "etc/helm/hanhchinhso/charts/redis"
+          },
+          "webgateway": {
+            "name": "webgateway",
+            "path": "etc/helm/hanhchinhso/charts/webgateway",
+            "metadata": {
+              "projectPath": "../../gateways/web/hanhchinhso.WebGateway/hanhchinhso.WebGateway.csproj",
+              "imageName": "hanhchinhso/webgateway",
+              "projectType": "dotnet"
+            },
+            "services": [
+              ".*-webgateway$"
+            ]
+          }
+        },
+        "metadata": {}
+      }
+    }
+  },
+  "options": {
+    "httpRequests": {
+      "ignoredUrls": [
+      
+      ]
+    }
+  },
+  "creatingStudioConfiguration": {
+    "template": "microservice",
+    "createdAbpStudioVersion": "3.0.7",
+    "creationTool": "ABP Studio UI",    
+    "uiFramework": "blazor-webapp",
+    "blazorUiLibrary": "mudblazor",
+    "runInstallLibs": "",
+    "useLocalReferences": "false",
+    "multiTenancy": "false",
+    "includeTests": "true",
+    "dynamicLocalization": "true",
+    "kubernetesConfiguration": "true",
+    "grafanaDashboard": "true",
+    "databaseProvider": "ef",
+    "databaseManagementSystem": "postgresql",
+    "theme": "leptonx",
+    "themeStyle": "light",
+    "themeMenuPlacement": "side",
+    "mobileFramework": "none",
+    "publicWebsite": "false",
+    "optionalModules": "GDPR TextTemplateManagement AuditLogging OpenIddictAdmin",
+    "socialLogin": "true",
+    "selectedLanguages": ["Vietnamese", "English", ],
+    "aspire": "false",
+    "defaultLanguage": "Vietnamese",
+    "aiManagementEnabled": true,
+    "selectedAiProviders": ["Ollama", "OpenAI", ],
+    "selectedRagVectorStores": ["Pgvector", ],
+    "createCommand": "abp new hanhchinhso -t microservice --ui-framework blazor-webapp --blazor-ui-library mudblazor --database-provider ef --database-management-system postgresql --theme leptonx --skip-migration  --skip-migrator  --without-cms-kit --dont-run-install-libs --dont-run-bundling -no-file-management -no-language-management"
+   
+  }
+}

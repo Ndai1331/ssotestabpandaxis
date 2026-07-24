@@ -1,6 +1,0 @@
-image:
-  repository: "abptestwithsso/webgateway"
-  tag: "latest"
-  pullPolicy: "IfNotPresent"
-swagger:
-  isEnabled: "true"

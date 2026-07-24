@@ -1,7 +1,7 @@
 volumes:
-  abptestwithsso_elasticdata:
+  hanhchinhso_elasticdata:
 networks:
-  abptestwithsso:
+  hanhchinhso:
     external: true
 
 services:
@@ -9,9 +9,9 @@ services:
     container_name: elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
     volumes:
-      - abptestwithsso_elasticdata:/usr/share/elasticsearch/data
+      - hanhchinhso_elasticdata:/usr/share/elasticsearch/data
     networks:
-      - abptestwithsso
+      - hanhchinhso
     environment:
       - xpack.watcher.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"

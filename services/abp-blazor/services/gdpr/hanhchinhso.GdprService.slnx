@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+
+  <Project Path="hanhchinhso.GdprService/hanhchinhso.GdprService.csproj" />
+  <Project Path="hanhchinhso.GdprService.Contracts/hanhchinhso.GdprService.Contracts.csproj" />
+  <Project Path="hanhchinhso.GdprService.Tests/hanhchinhso.GdprService.Tests.csproj" />
+</Solution>

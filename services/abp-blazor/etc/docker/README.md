@@ -11,3 +11,16 @@ Run the `up.ps1` file in a PowerShell terminal to run all the dependencies, so y
 ## Down
 
 Use `down.ps1` to remove all the containers from your computer.
+
+## MinIO
+
+The HCS migration uses `containers/minio.yml` for document object storage.
+
+- S3 API: `http://localhost:9000`
+- Console: `http://localhost:9001`
+- Container endpoint: `minio:9000`
+- Default local credentials: `hcsadmin` / `hcsadminpassword`
+
+Override `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` in the shell or local
+environment before starting the compose file. Do not commit production
+credentials. The default values are for the local lab only.

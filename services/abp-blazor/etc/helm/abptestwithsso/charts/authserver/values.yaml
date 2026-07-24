@@ -1,4 +1,0 @@
-image:
-  repository: "abptestwithsso/authserver"
-  tag: "latest"
-  pullPolicy: IfNotPresent

@@ -1,6 +1,0 @@
-image:
-  repository: "abptestwithsso/language"
-  tag: "latest"
-  pullPolicy: IfNotPresent
-swagger:
-  isEnabled: "true"

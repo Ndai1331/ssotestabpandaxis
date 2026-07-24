@@ -1,7 +1,7 @@
 volumes:
-  abptestwithsso_rabbitmq:
+  hanhchinhso_rabbitmq:
 networks:
-  abptestwithsso:
+  hanhchinhso:
     external: true
 
 services:
@@ -9,9 +9,9 @@ services:
     container_name: rabbitmq
     image: rabbitmq:3.12.7-management-alpine
     volumes:
-      - abptestwithsso_rabbitmq:/var/lib/rabbitmq
+      - hanhchinhso_rabbitmq:/var/lib/rabbitmq
     networks:
-      - abptestwithsso
+      - hanhchinhso
     ports:
       - "15672:15672"
       - "5672:5672"

@@ -32,7 +32,7 @@ AuthServer đã có transitive `Microsoft.AspNetCore.Authentication.OpenIdConnec
 
 ### 3. Configure external provider
 
-File: `services/abp-blazor/apps/auth-server/abptestwithsso.AuthServer/abptestwithssoAuthServerModule.cs`  
+File: `services/abp-blazor/apps/auth-server/hanhchinhso.AuthServer/hanhchinhsoAuthServerModule.cs`  
 Method: `ConfigureExternalProviders`
 
 Thêm (pattern cạnh Google):
@@ -100,7 +100,7 @@ Lặp 3 user còn lại.
 
 | File | Change |
 |------|--------|
-| `abptestwithssoAuthServerModule.cs` | AddOpenIdConnect |
+| `hanhchinhsoAuthServerModule.cs` | AddOpenIdConnect |
 | `appsettings.Development.json` / user-secrets | Keycloak section |
 | New: role mapper helper / event | Map groups → roles |
 | Identity seed (optional) | 4 roles |

@@ -47,16 +47,16 @@ Run `install.ps1` to install or upgrade the helm charts to the Kubernetes cluste
 Ensure that the following entries are added to the `C:\Windows\System32\drivers\etc\hosts` file:
 
 ```
-127.0.0.1 abptestwithsso-local-web
-127.0.0.1 abptestwithsso-local-webgateway
-127.0.0.1 abptestwithsso-local-authserver
+127.0.0.1 hanhchinhso-local-web
+127.0.0.1 hanhchinhso-local-webgateway
+127.0.0.1 hanhchinhso-local-authserver
 ```
 
 > Note that ABP Studio automatically adds these entries to your `hosts` file when you *Connect* to your Kubernetes cluster using ABP Studio's Kubernetes integration.
 
 ## Browse
 
-Now, you can browse the URL: `https://abptestwithsso-local-web`
+Now, you can browse the URL: `https://hanhchinhso-local-web`
 
 ## Uninstall Charts
 

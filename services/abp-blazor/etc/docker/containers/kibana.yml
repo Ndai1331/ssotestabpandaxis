@@ -1,5 +1,5 @@
 networks:
-  abptestwithsso:
+  hanhchinhso:
     external: true
 
 services:
@@ -7,7 +7,7 @@ services:
     container_name: kibana
     image: docker.elastic.co/kibana/kibana:8.10.4
     networks:
-      - abptestwithsso
+      - hanhchinhso
     environment:
       - ELASTICSEARCH_URL=http://host.docker.internal:9200
     ports:

@@ -72,7 +72,7 @@ Prod names (docs only): `axis` / `hanhchinhso` / `sso`.benhvien.vn → map sau k
 - Tạo 4 Directus roles + UUID đưa vào ROLE_MAPPING
 
 ### ABP
-- `abptestwithssoAuthServerModule.ConfigureExternalProviders`: thêm `AddOpenIdConnect("Keycloak", …)`
+- `hanhchinhsoAuthServerModule.ConfigureExternalProviders`: thêm `AddOpenIdConnect("Keycloak", …)`
 - Authority = `http://localhost:5110/realms/bd`
 - Redirect URI khớp client `abp-auth`
 - Auto-provision IdentityUser; map groups → roles (permission seed tối thiểu)

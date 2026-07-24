@@ -1,0 +1,6 @@
+image:
+  repository: "hanhchinhso/webgateway"
+  tag: "latest"
+  pullPolicy: "IfNotPresent"
+swagger:
+  isEnabled: "true"

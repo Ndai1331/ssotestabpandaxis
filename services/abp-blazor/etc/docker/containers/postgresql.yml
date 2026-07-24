@@ -1,5 +1,5 @@
 networks:
-  abptestwithsso:
+  hanhchinhso:
     external: true
 
 services:

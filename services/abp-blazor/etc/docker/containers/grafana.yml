@@ -1,5 +1,5 @@
 networks:
-  abptestwithsso:
+  hanhchinhso:
     external: true
 
 services:
@@ -12,7 +12,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards
       - ./grafana/config/provisioning:/etc/grafana/provisioning
     networks:
-      - abptestwithsso
+      - hanhchinhso
     ports:
       - "3001:3000"
     environment:

@@ -6,6 +6,18 @@ updated: 2026-07-23
 
 # Wiki Log
 
+## 2026-07-24 — HCS→MS full roadmap plan
+- Created `plans/260724-1555-hcs-layered-to-microservice/` (8 phases)
+- DocumentService `:44380` ≠ Elsa WorkflowService `:44395`
+- Red team: pass-with-fixes; cook per phase / Phase3 slices
+- Brainstorm source: `plans/reports/brainstorm-260724-1549-hcs-layered-to-microservice.md`
+
+## 2026-07-24 — HCS layered → microservice brainstorm
+- Approach C approved: fat-core rồi peel; Doc+WF+Sign = 1 service; shared DB; tiến KC; mobile/REMOTE_CA Phase 2
+- Report: `plans/reports/brainstorm-260724-1549-hcs-layered-to-microservice.md`
+- Decision: [[HCS Layered to Microservice Approach C]]
+- Next: `/ck:plan` Phase 0+1 (khuyến nghị)
+
 ## 2026-07-23 — Axis rebrand Directus source
 - Prefix bảng/collection `directus_*` → `axis_*` (~5094 chỗ); display Directus→Axis (en-US + UI/API fallbacks)
 - `SYSTEM_COLLECTION_PREFIX` + `stripSystemCollectionPrefix`; wipe volume lab `bd_axis_*`; re-bootstrap KC

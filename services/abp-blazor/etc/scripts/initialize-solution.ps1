@@ -15,7 +15,7 @@ $jobs += Start-Job -Name "InstallLibs" -ScriptBlock {
 
 $jobs += Start-Job -Name "DevCert" -ScriptBlock {
     $ErrorActionPreference = "Stop"
-    Set-Location (Join-Path $using:scriptRoot "../../apps/auth-server/abptestwithsso.AuthServer")
+    Set-Location (Join-Path $using:scriptRoot "../../apps/auth-server/hanhchinhso.AuthServer")
     dotnet dev-certs https -v -ep openiddict.pfx -p 5ffe2f0a-090d-41f0-9d0b-07859aacfaea
 
     if ($LASTEXITCODE -ne 0) {

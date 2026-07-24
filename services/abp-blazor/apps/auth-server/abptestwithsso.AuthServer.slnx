@@ -1,7 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-  </Configurations>
-
-  <Project Path="abptestwithsso.AuthServer/abptestwithsso.AuthServer.csproj" />
-</Solution>

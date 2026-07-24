@@ -1,5 +1,5 @@
 ﻿param (
-    $Namespace="abptestwithsso-local",
+    $Namespace="hanhchinhso-local",
     $User = ""
 )
 

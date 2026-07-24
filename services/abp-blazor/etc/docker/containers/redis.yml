@@ -1,5 +1,5 @@
 networks:
-  abptestwithsso:
+  hanhchinhso:
     external: true
 
 services:
@@ -7,6 +7,6 @@ services:
     container_name: redis
     image: redis:7.2.2-alpine
     networks:
-      - abptestwithsso
+      - hanhchinhso
     ports:
       - "6379:6379"

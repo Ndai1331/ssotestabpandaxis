@@ -7,7 +7,7 @@ updated: 2026-07-23
 # Codebase — ABP Blazor
 
 Path: `services/abp-blazor/`  
-Template: `abptestwithsso` (ABP microservice)
+Template: `hanhchinhso` (ABP microservice)
 
 ## Layout
 - `apps/auth-server` — OpenIddict AuthServer  

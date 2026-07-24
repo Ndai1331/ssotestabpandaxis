@@ -1,6 +1,0 @@
-apiVersion: v2
-name: webgateway
-appVersion: "1.0"
-description: abptestwithsso Web API Gateway
-version: 1.0.0
-type: application

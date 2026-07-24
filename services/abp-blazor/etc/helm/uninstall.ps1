@@ -1,6 +1,6 @@
 param (
-    $Namespace = "abptestwithsso-local",
-    $ReleaseName = "abptestwithsso-local",
+    $Namespace = "hanhchinhso-local",
+    $ReleaseName = "hanhchinhso-local",
     $User = ""
 )
 
