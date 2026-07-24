@@ -1,4 +1,4 @@
-# abptestwithsso
+# hanhchinhso
 
 ## About this solution
 
@@ -34,6 +34,19 @@ The solution uses the Backend for Frontend (BFF) pattern with dedicated gateways
 * `identity`: User and role management service.
 * `text-template-management`: Text template management service.
 
+## Running locally (CLI — recommended)
+
+One-command Aspire AppHost (no ABP Studio required):
+
+```bash
+./aspire/run.sh          # light profile (core SSO + Blazor)
+./aspire/run.sh full     # all microservices + Elsa Studio
+```
+
+Details, ports, and Keycloak notes: [aspire/README.md](./aspire/README.md).
+
+ABP Studio Solution Runner (`Default.abprun.json`) still works for GUI workflows.
+
 ## Before Running the Solution
 
 ### Generate Signing-Certificate for AuthServer 
@@ -48,7 +61,7 @@ mkcert -install
 
 #### Generate Signing-Certificate
 
-Navigate to `/apps/auth-server/abptestwithsso.AuthServer` folder and run:
+Navigate to `/apps/auth-server/hanhchinhso.AuthServer` folder and run:
 
 ```bash
 dotnet dev-certs https -v -ep ./openiddict.pfx -p 5ffe2f0a-090d-41f0-9d0b-07859aacfaea

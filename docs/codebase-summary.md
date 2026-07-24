@@ -1,6 +1,6 @@
 # Codebase Summary — BD Workspace
 
-> Updated: 2026-07-23. Local SSO lab only.
+> Updated: 2026-07-24. Local SSO lab only.
 
 ## Meta repo
 
@@ -18,10 +18,11 @@
 
 ## ABP solution highlights
 
-- Solution name pattern: `abptestwithsso`  
-- Apps: AuthServer (OpenIddict), Blazor  
-- Services: identity, administration, audit-logging, gdpr, language, ai-management, …  
+- Solution name pattern: `hanhchinhso`  
+- Apps: AuthServer (OpenIddict), Blazor, Elsa Studio WASM (:44396)  
+- Services: identity, administration, audit-logging, gdpr, language, ai-management, **workflow-service** (Elsa Pro 3.5, :44395), …  
 - Gateways: web BFF  
+- **Local runner:** Aspire AppHost (`.NET 13.4.6`); `./aspire/run.sh [light|full]` — see [`aspire/README.md`](../services/abp-blazor/aspire/README.md)  
 
 ## Auth target state
 

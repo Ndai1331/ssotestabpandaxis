@@ -19,9 +19,9 @@
     }
   },
   "applications": {
-    "abptestwithsso.AuthServer": {
+    "hanhchinhso.AuthServer": {
       "type": "dotnet-project",
-      "path": "../../../apps/auth-server/abptestwithsso.AuthServer/abptestwithsso.AuthServer.csproj",
+      "path": "../../../apps/auth-server/hanhchinhso.AuthServer/hanhchinhso.AuthServer.csproj",
       "launchUrl": "http://localhost:44372",
       "kubernetesService": ".*-authserver$",
       "healthCheckEndpoint": "/health-status",
@@ -31,9 +31,9 @@
         "order": 3
       }
     },
-    "abptestwithsso.AuditLoggingService": {
+    "hanhchinhso.AuditLoggingService": {
       "type": "dotnet-project",
-      "path": "../../../services/audit-logging/abptestwithsso.AuditLoggingService/abptestwithsso.AuditLoggingService.csproj",
+      "path": "../../../services/audit-logging/hanhchinhso.AuditLoggingService/hanhchinhso.AuditLoggingService.csproj",
       "launchUrl": "http://localhost:44302",
       "folder": "services",
       "kubernetesService": ".*-auditlogging$",
@@ -43,9 +43,9 @@
         "order": 0
       }
     },
-    "abptestwithsso.GdprService": {
+    "hanhchinhso.GdprService": {
       "type": "dotnet-project",
-      "path": "../../../services/gdpr/abptestwithsso.GdprService/abptestwithsso.GdprService.csproj",
+      "path": "../../../services/gdpr/hanhchinhso.GdprService/hanhchinhso.GdprService.csproj",
       "launchUrl": "http://localhost:44348",
       "folder": "services",
       "kubernetesService": ".*-gdpr$",
@@ -55,9 +55,9 @@
         "order": 1
       }
     },
-    "abptestwithsso.AIManagementService": {
+    "hanhchinhso.AIManagementService": {
       "type": "dotnet-project",
-      "path": "../../../services/ai-management/abptestwithsso.AIManagementService/abptestwithsso.AIManagementService.csproj",
+      "path": "../../../services/ai-management/hanhchinhso.AIManagementService/hanhchinhso.AIManagementService.csproj",
       "launchUrl": "http://localhost:44318",
       "folder": "services",
       "kubernetesService": ".*-aimanagement",
@@ -67,9 +67,9 @@
         "order": 2
       }
     },
-    "abptestwithsso.LanguageService": {
+    "hanhchinhso.LanguageService": {
       "type": "dotnet-project",
-      "path": "../../../services/language/abptestwithsso.LanguageService/abptestwithsso.LanguageService.csproj",
+      "path": "../../../services/language/hanhchinhso.LanguageService/hanhchinhso.LanguageService.csproj",
       "launchUrl": "http://localhost:44391",
       "folder": "services",
       "kubernetesService": ".*-language",
@@ -79,9 +79,33 @@
         "order": 3
       }
     },
-    "abptestwithsso.WebGateway": {
+    "hanhchinhso.OrganizationService": {
       "type": "dotnet-project",
-      "path": "../../../gateways/web/abptestwithsso.WebGateway/abptestwithsso.WebGateway.csproj",
+      "path": "../../../services/organization/hanhchinhso.OrganizationService/hanhchinhso.OrganizationService.csproj",
+      "launchUrl": "http://localhost:44370",
+      "folder": "services",
+      "kubernetesService": ".*-organization",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "execution": {
+        "order": 4
+      }
+    },
+    "hanhchinhso.WorkflowService": {
+      "type": "dotnet-project",
+      "path": "../../../services/workflow-service/hanhchinhso.WorkflowService/hanhchinhso.WorkflowService.csproj",
+      "launchUrl": "http://localhost:44395",
+      "folder": "services",
+      "kubernetesService": ".*-workflow",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "execution": {
+        "order": 4
+      }
+    },
+    "hanhchinhso.WebGateway": {
+      "type": "dotnet-project",
+      "path": "../../../gateways/web/hanhchinhso.WebGateway/hanhchinhso.WebGateway.csproj",
       "launchUrl": "http://localhost:44398",
       "kubernetesService": ".*-webgateway$",
       "healthCheckEndpoint": "/health-status",
@@ -91,10 +115,10 @@
         "order": 2
       }
     },
-    "abptestwithsso.Blazor": {
+    "hanhchinhso.Blazor": {
       "type": "dotnet-project",
       "launchUrl": "http://localhost:44306",
-      "path": "../../../apps/blazor/abptestwithsso.Blazor/abptestwithsso.Blazor.csproj",
+      "path": "../../../apps/blazor/hanhchinhso.Blazor/hanhchinhso.Blazor.csproj",
       "healthCheckEndpoint": "/",
       "kubernetesService": ".*-blazorwebapp$",
       "folder": "apps",
@@ -102,9 +126,9 @@
         "order": 2
       }
     },
-    "abptestwithsso.AdministrationService": {
+    "hanhchinhso.AdministrationService": {
       "type": "dotnet-project",
-      "path": "../../../services/administration/abptestwithsso.AdministrationService/abptestwithsso.AdministrationService.csproj",
+      "path": "../../../services/administration/hanhchinhso.AdministrationService/hanhchinhso.AdministrationService.csproj",
       "launchUrl": "http://localhost:44323",
       "kubernetesService": ".*-administration$",
       "healthCheckEndpoint": "/health-status",
@@ -114,9 +138,9 @@
         "order": 6
       }
     },
-    "abptestwithsso.IdentityService": {
+    "hanhchinhso.IdentityService": {
       "type": "dotnet-project",
-      "path": "../../../services/identity/abptestwithsso.IdentityService/abptestwithsso.IdentityService.csproj",
+      "path": "../../../services/identity/hanhchinhso.IdentityService/hanhchinhso.IdentityService.csproj",
       "launchUrl": "http://localhost:44392",
       "kubernetesService": ".*-identity$",
       "healthCheckEndpoint": "/health-status",
@@ -125,29 +149,32 @@
       "execution": {
         "order": 5
       }
+    },
+    "HanhChinhSo.ElsaStudio": {
+      "type": "dotnet-project",
+      "path": "../../../apps/elsa-studio/HanhChinhSo.ElsaStudio/HanhChinhSo.ElsaStudio.csproj",
+      "launchUrl": "http://localhost:44396",
+      "folder": "apps",
+      "healthCheckEndpoint": "/",
+      "execution": {
+        "order": 5
+      }
     }
   },
-  "containers":{
-    "serviceName": "abptestwithsso-Containers",
+  "containers": {
+    "serviceName": "hanhchinhso-Containers",
     "files": {
-      "../../docker/containers/elasticsearch.yml": {
-      },
-      "../../docker/containers/grafana.yml": {
-      },
-      "../../docker/containers/kibana.yml": {
-      },
-    "../../docker/containers/postgresql.yml": {
-    },
-      "../../docker/containers/prometheus.yml": {
-      },
-      "../../docker/containers/rabbitmq.yml": {
-      },
-      "../../docker/containers/redis.yml": {
-      },
-      "../../docker/containers/ollama.yml": {
-      },
-      "../../docker/containers/pgvector.yml": {
-      }    }
+      "../../docker/containers/elasticsearch.yml": {},
+      "../../docker/containers/grafana.yml": {},
+      "../../docker/containers/kibana.yml": {},
+      "../../docker/containers/postgresql.yml": {},
+      "../../docker/containers/prometheus.yml": {},
+      "../../docker/containers/rabbitmq.yml": {},
+      "../../docker/containers/redis.yml": {},
+      "../../docker/containers/ollama.yml": {},
+      "../../docker/containers/pgvector.yml": {},
+      "../../docker/containers/minio.yml": {}
+    }
   },
   "tools": {
     "grafana": {
@@ -171,15 +198,15 @@
       "relatedKubernetesService": ".*-rabbitmq$",
       "relatedKubernetesServicePort": 15672
     }
-  }, 
+  },
   "tasks": {
-      "Initialize Solution":{
-        "behaviour": 2,
-        "startCommand": "./initialize-solution.ps1",
-        "workingDirectory": "../../scripts",
-        "shortDescription": "Prepares the solution for development."
-      }
-    },
+    "Initialize Solution": {
+      "behaviour": 2,
+      "startCommand": "./initialize-solution.ps1",
+      "workingDirectory": "../../scripts",
+      "shortDescription": "Prepares the solution for development."
+    }
+  },
   "workflows": {
     "d3b2a1c4-e5f6-4890-abcd-ef1234567890": {
       "Id": "d3b2a1c4-e5f6-4890-abcd-ef1234567890",
