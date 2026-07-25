@@ -7,9 +7,3 @@ public interface IUnitAppService :
 
 public interface IPositionAppService :
     ICrudAppService<PositionDto, Guid, PositionListInput, CreateUpdatePositionDto>;
-
-public interface IDepartmentAppService :
-    ICrudAppService<DepartmentDto, Guid, DepartmentListInput, CreateUpdateDepartmentDto>;
-
-public interface IUserDepartmentAppService :
-    ICrudAppService<UserDepartmentDto, Guid, UserDepartmentListInput, CreateUpdateUserDepartmentDto>;

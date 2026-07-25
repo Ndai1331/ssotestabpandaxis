@@ -13,7 +13,7 @@ Lab thử nghiệm **một lần đăng nhập bằng mail Zimbra** cho hai hệ
 
 || Hệ thống | Vai trò nghiệp vụ | Code |
 |----------|-------------------|------|
-|| **Directus** | Quản lý dữ liệu lâm sàng (Clinical Data Management) | `services/directus-main/` |
+|| **Directus** | Quản lý dữ liệu lâm sàng (Clinical Data Management) | `services/directus-main-v11/` (lab SoT; v12 `directus-main` = archive) |
 || **ABP Framework** | Hành chính số — văn bản, phê duyệt | `services/abp-blazor/` |
 
 **Keycloak** là Identity Provider trung tâm (OIDC/OAuth2).  
@@ -28,7 +28,8 @@ Giai đoạn: **local only** — chưa CI/CD, chưa remote deploy.
 ```
 bd-workspace/
 ├── services/
-│   ├── directus-main/          ← Directus monorepo + docker-compose (Keycloak :5110)
+│   ├── directus-main-v11/      ← Lab SoT Directus (v11) + docker-compose.bd-lab (Keycloak :5110)
+│   ├── directus-main/          ← Archive v12 (MSCL) — không dùng cho SSO lab
 │   └── abp-blazor/             ← ABP microservice template (hanhchinhso)
 ├── docs/                       ← Architecture & PDR
 ├── wiki/                       ← Second brain BD
@@ -113,7 +114,7 @@ Mỗi app tự quản lý authorization nội bộ sau khi nhận claims từ to
 || Port | **5110** → container 8080 |
 || Admin | `admin` / `secret` |
 || Mode | `start-dev` |
-|| File | `services/directus-main/docker-compose.yml` service `keycloak` |
+|| File | `services/directus-main-v11/docker-compose.bd-lab.yml` service `keycloak` |
 || Bootstrap | `python3 scripts/keycloak_bootstrap_bd_realm.py` → realm `bd` |
 || Runbook | `docs/runbooks/local-sso-lab.md` |
 
@@ -129,15 +130,16 @@ Lab secrets (local only): `directus`/`bd-directus-lab-secret`, `abp-auth`/`bd-ab
 Còn lại:
 
 - User Federation (LDAP Zimbra) — phase 2  
-- Directus ROLE_MAPPING UUID sau khi tạo roles trong Studio  
 
 ### 4.2 Directus
 
-- Path: `services/directus-main/`  
+- Path (lab SoT): `services/directus-main-v11/` (11.13.4 — không runtime license SSO gate)
+- Archive: `services/directus-main/` (v12 / MSCL — không chạy lab)
 - Vai trò: OIDC client của Keycloak  
-- Infra debug compose: Postgres `:5100`, Redis `:5105`, Keycloak `:5110`, …  
-- Env mẫu: `services/directus-main/.env.sso.example`  
-- Việc cần làm: copy env SSO, tạo 4 roles Studio, điền UUID vào `ROLE_MAPPING`  
+- Compose lab: `docker-compose.bd-lab.yml` (PG `:5120`, Redis `:5121`, Keycloak `:5110`, Axis `:8055`)
+- Env mẫu: `services/directus-main-v11/.env.sso.example`  
+- App gate: `bd-lab-extensions/directus-extension-bd-app-gate` (`bd-app-axis`)
+- ROLE_MAPPING UUID đã fill trong compose lab sau bootstrap roles Studio 
 
 ### 4.3 ABP Framework (`hanhchinhso`)
 

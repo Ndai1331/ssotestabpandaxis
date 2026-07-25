@@ -91,6 +91,18 @@
         "order": 4
       }
     },
+    "hanhchinhso.DocumentService": {
+      "type": "dotnet-project",
+      "path": "../../../services/document/hanhchinhso.DocumentService/hanhchinhso.DocumentService.csproj",
+      "launchUrl": "http://localhost:44380",
+      "folder": "services",
+      "kubernetesService": ".*-document",
+      "healthCheckEndpoint": "/health-status",
+      "healthUiEndpoint": "/health-ui",
+      "execution": {
+        "order": 5
+      }
+    },
     "hanhchinhso.WorkflowService": {
       "type": "dotnet-project",
       "path": "../../../services/workflow-service/hanhchinhso.WorkflowService/hanhchinhso.WorkflowService.csproj",

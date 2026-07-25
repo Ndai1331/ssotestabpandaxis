@@ -189,6 +189,7 @@ public class hanhchinhsoWebGatewayModule : AbpModule
             "AIManagementService",
             "LanguageService",
             "OrganizationService",
+            "DocumentService",
             "IdentityService"
         );
     }

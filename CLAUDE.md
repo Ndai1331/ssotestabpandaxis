@@ -12,7 +12,7 @@
 1. **ĐỌC** `README.md` — tổng quan workspace
 2. **ĐỌC** `docs/workspace-architecture.md` — kiến trúc SSO SoT
 3. **ĐỌC** `system-sso-guideline.png` — mô hình Zimbra → Keycloak → Directus/ABP
-4. **ĐỌC** `CLAUDE.md` / README của service đang làm (`services/directus-main`, `services/abp-blazor`) nếu có
+4. **ĐỌC** `CLAUDE.md` / README của service đang làm (`services/directus-main-v11`, `services/abp-blazor`) nếu có
 5. Khi cần context thêm: `wiki/hot.md` → `wiki/index.md` → drill page
 
 > **KHÔNG** dùng wiki/plans Task9 cũ làm nguồn sự thật cho BD (archive lịch sử).
@@ -47,8 +47,8 @@ Sau khi học/sửa điều mới đáng nhớ về SSO BD → cập nhật `wik
 | Thành phần | Path / nơi chạy | Vai trò |
 |------------|-----------------|---------|
 | Zimbra Mail | External (LDAP/AD) | Nguồn account + xác thực password |
-| Keycloak | Docker `services/directus-main` → `:5110` | SSO IdP — federation, roles, OIDC tokens |
-| Directus | `services/directus-main/` | Hệ thống 1 — Clinical Data Management (OIDC client) |
+| Keycloak | Docker `services/directus-main-v11` compose lab → `:5110` | SSO IdP — federation, roles, OIDC tokens |
+| Directus | `services/directus-main-v11/` | Hệ thống 1 — Clinical Data Management (OIDC client; v12 `directus-main` = archive) |
 | ABP | `services/abp-blazor/` | Hệ thống 2 — Digital Administration (OIDC client) |
 
 ---
@@ -58,7 +58,8 @@ Sau khi học/sửa điều mới đáng nhớ về SSO BD → cập nhật `wik
 ```
 bd-workspace/
 ├── services/
-│   ├── directus-main/     ← Directus + docker-compose (Keycloak :5110, DBs, Redis…)
+│   ├── directus-main-v11/ ← Lab SoT Directus + docker-compose.bd-lab (Keycloak :5110)
+│   ├── directus-main/     ← Archive v12 (không lab SSO)
 │   └── abp-blazor/        ← ABP microservice (AuthServer, Blazor, gateways, services)
 ├── docs/                  ← Architecture & PDR
 ├── wiki/                  ← BD second brain
@@ -76,7 +77,7 @@ bd-workspace/
 
 | Loại | Path | Cách chạy |
 |------|------|-----------|
-| **Directus** | `services/directus-main` | pnpm/node theo upstream README; infra qua `docker compose` |
+| **Directus** | `services/directus-main-v11` | Compose lab: `docker compose -f docker-compose.bd-lab.yml`; hoặc pnpm theo AGENTS.md |
 | **ABP** | `services/abp-blazor` | .NET 10 + ABP Studio / `etc/docker` cho dependencies |
 | **Keycloak** | compose trong Directus | `docker compose up -d keycloak` → http://localhost:5110 |
 
@@ -129,8 +130,8 @@ Tham chiếu: `system-sso-guideline.png` + `docs/workspace-architecture.md`.
 
 | Muốn sửa... | Đến đâu |
 |-------------|---------|
-| Directus core / packages | `services/directus-main/` |
-| Directus docker + Keycloak local | `services/directus-main/docker-compose.yml` |
+| Directus core / packages | `services/directus-main-v11/` |
+| Directus docker lab + Keycloak | `services/directus-main-v11/docker-compose.bd-lab.yml` |
 | ABP Blazor UI | `services/abp-blazor/apps/blazor/` |
 | ABP AuthServer | `services/abp-blazor/apps/auth-server/` |
 | ABP microservices | `services/abp-blazor/services/` |

@@ -66,6 +66,7 @@
   <ItemGroup>    
     <ProjectReference Include="../hanhchinhso.AdministrationService.Contracts/hanhchinhso.AdministrationService.Contracts.csproj" />
     <ProjectReference Include="../../organization/hanhchinhso.OrganizationService.Contracts/hanhchinhso.OrganizationService.Contracts.csproj" />
+    <ProjectReference Include="../../document/hanhchinhso.DocumentService.Contracts/hanhchinhso.DocumentService.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Logs\**" />

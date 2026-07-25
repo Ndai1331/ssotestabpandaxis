@@ -10,16 +10,14 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
     <MudText Typo="Typo.h4" GutterBottom="true">Danh mục tổ chức</MudText>
 
-    <AuthorizeView Policy="@OrganizationServicePermissions.Create">
-        <Authorized>
             <MudPaper Class="pa-4 mb-4">
                 <MudForm @ref="_form">
                     <MudGrid>
                         <MudItem xs="12" md="3">
-                            <MudTextField @bind-Value="_input.Type" Label="Loại" Required="true" MaxLength="64" />
+                            <MudTextField @bind-Value="_input.Type" Label="Loại" Required="true" MaxLength="50" />
                         </MudItem>
                         <MudItem xs="12" md="3">
-                            <MudTextField @bind-Value="_input.Code" Label="Mã" Required="true" MaxLength="64" />
+                            <MudTextField @bind-Value="_input.Code" Label="Mã" Required="true" MaxLength="50" />
                         </MudItem>
                         <MudItem xs="12" md="4">
                             <MudTextField @bind-Value="_input.Name" Label="Tên" Required="true" MaxLength="256" />
@@ -27,13 +25,22 @@
                         <MudItem xs="12" md="2">
                             <MudNumericField @bind-Value="_input.SortOrder" Label="Thứ tự" Min="0" Max="10000" />
                         </MudItem>
+                        <MudItem xs="12" md="2">
+                            <MudSwitch @bind-Value="_input.IsActive" Label="Hoạt động" />
+                        </MudItem>
                         <MudItem xs="12" md="2" Class="d-flex align-center">
-                            <MudButton Color="Color.Primary"
-                                       Variant="Variant.Filled"
-                                       Disabled="_saving"
-                                       OnClick="CreateAsync">
-                                @(_editingId.HasValue ? "Lưu" : "Thêm")
-                            </MudButton>
+                            @if (_editingId.HasValue)
+                            {
+                                <AuthorizeView Policy="@OrganizationServicePermissions.Update">
+                                    <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_saving" OnClick="CreateAsync">Lưu</MudButton>
+                                </AuthorizeView>
+                            }
+                            else
+                            {
+                                <AuthorizeView Policy="@OrganizationServicePermissions.Create">
+                                    <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_saving" OnClick="CreateAsync">Thêm</MudButton>
+                                </AuthorizeView>
+                            }
                             @if (_editingId.HasValue)
                             {
                                 <MudButton Class="ml-2" OnClick="CancelEdit">Hủy</MudButton>
@@ -42,8 +49,6 @@
                     </MudGrid>
                 </MudForm>
             </MudPaper>
-        </Authorized>
-    </AuthorizeView>
 
     <MudTable Items="_items" Loading="_loading" Hover="true" Striped="true">
         <HeaderContent>
@@ -63,7 +68,9 @@
                 <MudCheckBox T="bool" Value="context.IsActive" ReadOnly="true" />
             </MudTd>
             <MudTd>
-                <MudButton Size="Size.Small" OnClick="@(() => Edit(context))">Sửa</MudButton>
+                <AuthorizeView Policy="@OrganizationServicePermissions.Update" Context="updateAuthorization">
+                    <MudButton Size="Size.Small" OnClick="@(() => Edit(context))">Sửa</MudButton>
+                </AuthorizeView>
                 <AuthorizeView Policy="@OrganizationServicePermissions.Delete" Context="deleteAuthorization">
                     <MudButton Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context.Id))">Xóa</MudButton>
                 </AuthorizeView>
@@ -90,9 +97,15 @@
         _loading = true;
         try
         {
-            var result = await MasterDataService.GetListAsync(
-                new MasterDataListInput { MaxResultCount = 100 });
-            _items = result.Items.ToList();
+            _items.Clear();
+            const int pageSize = 100;
+            for (var skip = 0; ; skip += pageSize)
+            {
+                var result = await MasterDataService.GetListAsync(
+                    new MasterDataListInput { SkipCount = skip, MaxResultCount = pageSize });
+                _items.AddRange(result.Items);
+                if (_items.Count >= result.TotalCount || result.Items.Count == 0) break;
+            }
         }
         finally
         {
@@ -144,7 +157,8 @@
         _input = new CreateUpdateMasterDataItemDto
         {
             Type = item.Type, Code = item.Code, Name = item.Name,
-            SortOrder = item.SortOrder, IsActive = item.IsActive
+            SortOrder = item.SortOrder, IsActive = item.IsActive,
+            ConcurrencyStamp = item.ConcurrencyStamp
         };
     }
 

@@ -77,6 +77,7 @@
     <PackageReference Include="Volo.Abp.OpenIddict.Pro.HttpApi.Client" Version="10.5.0" />
     <ProjectReference Include="../../../services/language/hanhchinhso.LanguageService.Contracts/hanhchinhso.LanguageService.Contracts.csproj" />
     <ProjectReference Include="../../../services/organization/hanhchinhso.OrganizationService.Contracts/hanhchinhso.OrganizationService.Contracts.csproj" />
+    <ProjectReference Include="../../../services/document/hanhchinhso.DocumentService.Contracts/hanhchinhso.DocumentService.Contracts.csproj" />
     <PackageReference Include="Volo.Abp.LanguageManagement.Blazor.MudBlazor.Server" Version="10.5.0" />
     <PackageReference Include="Volo.Abp.LanguageManagement.HttpApi.Client" Version="10.5.0" />
     <PackageReference Include="Volo.Abp.TextTemplateManagement.Blazor.MudBlazor.Server" Version="10.5.0" />

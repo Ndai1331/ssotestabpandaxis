@@ -1,10 +1,32 @@
 ---
 type: meta
 title: "Wiki Log"
-updated: 2026-07-23
+updated: 2026-07-25
 ---
 
 # Wiki Log
+
+## 2026-07-25 — Directus v11 SSO lab cook COMPLETED
+- Plan: `plans/260725-1726-directus-v11-sso-lab/` DONE ✅ (4 phases, ~5h cook)
+- Evidence: Phase 1 (artifacts ported), Phase 2 (image+stack+roles), Phase 3 (OIDC login OK + gate deny log), Phase 4 (docs updated)
+- Status: All success criteria met; runbook/docs point v11 only; v12 marked archive
+- Next: Any remaining Zimbra LDAP federation → Phase 2
+
+## 2026-07-25 — Directus lab → v11 plan
+- Plan: `plans/260725-1726-directus-v11-sso-lab/` (4 phases, ~5h, P1, pending)
+- Brainstorm: `plans/reports/brainstorm-260725-1721-directus-v11-sso-keycloak.md`
+- Journals: `docs/journals/260725-directus-v11-sso-brainstorm.md`, `docs/journals/260725-directus-v11-sso-plan.md`
+- Next: `/ck:cook --auto` plan.md
+
+## 2026-07-25 — Directus lab SoT → v11 (brainstorm)
+- APPROVED: thay lab Directus `directus-main` (v12) bằng `directus-main-v11` (11.13.4)
+- Lý do chính: v11 không license-gate SSO; OpenID + ROLE_MAPPING sẵn; port compose + `bd-app-axis` gate
+- Report: `plans/reports/brainstorm-260725-1721-directus-v11-sso-keycloak.md`
+- Journal: `docs/journals/260725-directus-v11-sso-brainstorm.md`
+
+## 2026-07-24 — ABP production deploy runbook
+- Added `docs/runbooks/deploy-abp-production.md` (Ubuntu 24+, Docker+Nginx / K8s+Helm)
+- Linked from `services/abp-blazor/README.md`; indexed in `wiki/index.md` + `wiki/hot.md`
 
 ## 2026-07-24 — HCS→MS full roadmap plan
 - Created `plans/260724-1555-hcs-layered-to-microservice/` (8 phases)

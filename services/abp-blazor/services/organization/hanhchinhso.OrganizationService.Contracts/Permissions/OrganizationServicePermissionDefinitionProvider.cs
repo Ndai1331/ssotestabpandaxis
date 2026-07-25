@@ -20,10 +20,6 @@ public class OrganizationServicePermissionDefinitionProvider : PermissionDefinit
             OrganizationServicePermissions.Units.Update, OrganizationServicePermissions.Units.Delete, "Permission:Units");
         AddCrud(group, OrganizationServicePermissions.Positions.Default, OrganizationServicePermissions.Positions.Create,
             OrganizationServicePermissions.Positions.Update, OrganizationServicePermissions.Positions.Delete, "Permission:Positions");
-        AddCrud(group, OrganizationServicePermissions.Departments.Default, OrganizationServicePermissions.Departments.Create,
-            OrganizationServicePermissions.Departments.Update, OrganizationServicePermissions.Departments.Delete, "Permission:Departments");
-        AddCrud(group, OrganizationServicePermissions.UserDepartments.Default, OrganizationServicePermissions.UserDepartments.Create,
-            OrganizationServicePermissions.UserDepartments.Update, OrganizationServicePermissions.UserDepartments.Delete, "Permission:UserDepartments");
     }
 
     private static void AddCrud(PermissionGroupDefinition group, string name, string create, string update,

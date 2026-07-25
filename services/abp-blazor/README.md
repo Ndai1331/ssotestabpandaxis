@@ -100,6 +100,11 @@ Also, make sure to review the [pre-requirements](./etc/helm/README.md#Pre-requir
 
 Deploying an ABP application follows the same process as deploying any .NET or ASP.NET Core application. However, there are important considerations to keep in mind. For detailed guidance, refer to ABP's [deployment documentation](https://abp.io/docs/latest/deployment/distributed-microservice).
 
+**BD production runbook (Ubuntu 24+, Docker+Nginx hoặc Kubernetes/Helm):**  
+[`docs/runbooks/deploy-abp-production.md`](../../docs/runbooks/deploy-abp-production.md)
+
+**Compose + Nginx templates:** [`etc/docker-prod/`](./etc/docker-prod/) (`.env.example`, `docker-compose.prod.yml`, nginx sample).
+
 ### Additional resources
 
 #### Internal Resources

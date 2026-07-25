@@ -1,0 +1,80 @@
+@page "/organization/positions"
+@using hanhchinhso.OrganizationService.Organization
+@using hanhchinhso.OrganizationService.Permissions
+@attribute [Authorize(OrganizationServicePermissions.Positions.Default)]
+@inject IPositionAppService Service
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Chức vụ</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+    <MudText Typo="Typo.h4">Chức vụ</MudText>
+    <MudTextField @bind-Value="_filter" Label="Tìm theo mã hoặc tên" Immediate="true"
+                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Class="mt-4" />
+    <MudButton Class="mb-4" OnClick="LoadAsync">Tìm kiếm</MudButton>
+        <MudPaper Class="pa-4 mb-4"><MudGrid>
+            <MudItem xs="12" md="3"><MudTextField @bind-Value="_input.Code" Label="Mã" Required MaxLength="50" /></MudItem>
+            <MudItem xs="12" md="4"><MudTextField @bind-Value="_input.Name" Label="Tên" Required MaxLength="256" /></MudItem>
+            <MudItem xs="6" md="2"><MudNumericField @bind-Value="_input.SignOrder" Label="Thứ tự ký" Min="0" Max="100" /></MudItem>
+            <MudItem xs="6" md="1"><MudSwitch @bind-Value="_input.IsActive" Label="Hoạt động" /></MudItem>
+            <MudItem xs="12" md="2" Class="d-flex align-center">
+                @if (_editingId.HasValue)
+                {
+                    <AuthorizeView Policy="@OrganizationServicePermissions.Positions.Update"><MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_saving">Lưu</MudButton></AuthorizeView>
+                }
+                else
+                {
+                    <AuthorizeView Policy="@OrganizationServicePermissions.Positions.Create"><MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_saving">Thêm</MudButton></AuthorizeView>
+                }
+                @if (_editingId.HasValue) { <MudButton Class="ml-2" OnClick="CancelEdit">Hủy</MudButton> }
+            </MudItem>
+        </MudGrid></MudPaper>
+    <MudTable Items="_items" Loading="_loading" Hover Striped Breakpoint="Breakpoint.Sm">
+        <HeaderContent><MudTh>Mã</MudTh><MudTh>Tên</MudTh><MudTh>Thứ tự ký</MudTh><MudTh>Trạng thái</MudTh><MudTh></MudTh></HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Mã">@context.Code</MudTd><MudTd DataLabel="Tên">@context.Name</MudTd>
+            <MudTd DataLabel="Thứ tự ký">@context.SignOrder</MudTd><MudTd DataLabel="Trạng thái">@(context.IsActive ? "Hoạt động" : "Ngừng")</MudTd>
+            <MudTd>
+                <AuthorizeView Policy="@OrganizationServicePermissions.Positions.Update" Context="updateAuth"><MudIconButton Icon="@Icons.Material.Filled.Edit" aria-label="Sửa chức vụ" OnClick="@(() => Edit(context))" /></AuthorizeView>
+                <AuthorizeView Policy="@OrganizationServicePermissions.Positions.Delete" Context="deleteAuth"><MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Xóa chức vụ" OnClick="@(() => DeleteAsync(context))" /></AuthorizeView>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent><MudText>Chưa có dữ liệu.</MudText></NoRecordsContent>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private readonly List<PositionDto> _items = [];
+    private CreateUpdatePositionDto _input = new();
+    private Guid? _editingId; private string? _filter; private bool _loading; private bool _saving;
+    protected override Task OnInitializedAsync() => LoadAsync();
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _items.Clear();
+            const int pageSize = 100;
+            for (var skip = 0; ; skip += pageSize)
+            {
+                var r = await Service.GetListAsync(new PositionListInput { FilterText = _filter, SkipCount = skip, MaxResultCount = pageSize });
+                _items.AddRange(r.Items);
+                if (_items.Count >= r.TotalCount || r.Items.Count == 0) break;
+            }
+        }
+        finally { _loading = false; }
+    }
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try { if (_editingId.HasValue) await Service.UpdateAsync(_editingId.Value, _input); else await Service.CreateAsync(_input); CancelEdit(); await LoadAsync(); Snackbar.Add("Đã lưu chức vụ.", Severity.Success); }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); } finally { _saving = false; }
+    }
+    private void Edit(PositionDto x) { _editingId = x.Id; _input = new() { Code = x.Code, Name = x.Name, SignOrder = x.SignOrder, IsActive = x.IsActive, ConcurrencyStamp = x.ConcurrencyStamp }; }
+    private void CancelEdit() { _editingId = null; _input = new(); }
+    private async Task DeleteAsync(PositionDto x)
+    {
+        if (await DialogService.ShowMessageBoxAsync("Xác nhận", $"Xóa chức vụ “{x.Name}”?", yesText: "Xóa", cancelText: "Hủy") != true) return;
+        await Service.DeleteAsync(x.Id); await LoadAsync(); Snackbar.Add("Đã xóa chức vụ.", Severity.Success);
+    }
+}

@@ -17,10 +17,12 @@
 ## 1. Start Keycloak + bootstrap realm
 
 ```bash
-cd services/directus-main
+cd services/directus-main-v11
 docker compose -f docker-compose.bd-lab.yml up -d
 KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_realm.py
 ```
+
+> Lab SoT Directus = **v11** (`services/directus-main-v11`). `services/directus-main` (v12) = archive — không chạy song song (port conflict).
 
 **Test users** (password `Passw0rd!`):
 
@@ -56,7 +58,8 @@ Discovery: http://localhost:5110/realms/bd/.well-known/openid-configuration
 Dùng **một** compose lab (đã gồm Keycloak + Directus):
 
 ```bash
-cd services/directus-main
+cd services/directus-main-v11
+docker compose -f docker-compose.bd-lab.yml build directus   # lần đầu / sau đổi source
 docker compose -f docker-compose.bd-lab.yml up -d
 # Chờ KC sẵn sàng (~15s) rồi bootstrap realm
 KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_realm.py
@@ -67,16 +70,20 @@ KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_r
 || Studio | http://localhost:8055 |
 || Local admin | `admin@local.dev` / `admin123456` |
 || Keycloak | **http://localhost:5110** (admin / secret) |
+|| Image | `bd-axis-v11:local` (build từ Dockerfile fork — bảng `axis_*`) |
 
-> Không cần `/etc/hosts`. Không mở `host.docker.internal` / `keycloak` trên browser — chỉ `localhost:5110`.
+> Không cần `/etc/hosts`. Không mở `host.docker.internal` / `keycloak` trên browser — chỉ `localhost:5110`.  
+> v11 **không** cần `BD_LAB_ALLOW_SSO` (không có runtime license SSO gate).
 
-Role UUID đã map sẵn trong `docker-compose.bd-lab.yml` (`AUTH_KEYCLOAK_ROLE_MAPPING`).
+Role UUID đã map sẵn trong `docker-compose.bd-lab.yml` (`AUTH_KEYCLOAK_ROLE_MAPPING`) cho volume lab hiện tại.  
+**Sau khi wipe volume PG** (`bd_axis_v11_pg`): tạo lại 4 roles Studio → paste UUID mới vào compose → recreate Directus.  
+App gate: extension `bd-lab-extensions/directus-extension-bd-app-gate` (require group `bd-app-axis`).
 
 Callback: `http://localhost:8055/auth/login/keycloak/callback`
 
 ### Alt: monorepo pnpm (upstream)
 
-Xem `services/directus-main/AGENTS.md` — `pnpm install && pnpm build`, rồi `cd api && pnpm dev` (:8055).
+> Xem `services/directus-main-v11/BD-LAB.md` và `AGENTS.md` (nếu có) — `pnpm install && pnpm build`, rồi `cd api && pnpm dev` (:8055). Env mẫu: `.env.sso.example`.
 
 ## 3. ABP AuthServer → Keycloak (Approach A)
 

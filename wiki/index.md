@@ -1,7 +1,7 @@
 ---
 type: meta
 title: "Wiki Index — BD Second Brain"
-updated: 2026-07-24
+updated: 2026-07-25
 ---
 
 > Đọc thứ tự tối ưu token: `hot.md` → `index.md` → drill page qua wikilink.
@@ -13,7 +13,7 @@ updated: 2026-07-24
 - [[BD SSO Architecture]] — Luồng login, federation, role mapping, DB tách biệt
 
 ## Codebase
-- [[Codebase — Directus]] — `services/directus-main`, compose Keycloak `:5110`
+- [[Codebase — Directus]] — lab target `services/directus-main-v11` (v12 `directus-main` = archive sau cook); KC `:5110`
 - [[Codebase — ABP Blazor]] — `services/abp-blazor`, AuthServer + Blazor + microservices
 
 ## Concepts
@@ -23,6 +23,7 @@ updated: 2026-07-24
 ## Decisions
 - [[SSO Phase 1 Approach A]] — AuthServer federate KC; 4 roles; localhost POC
 - [[SSO Phase 1 Complete]] — Phase 1 DONE; handoff `docs/handoff/phase1-sso-context.md`
+- Directus lab → v11 SSO — brainstorm APPROVED `plans/reports/brainstorm-260725-1721-directus-v11-sso-keycloak.md`
 - [[HCS Layered to Microservice Approach C]] — Fat-core peel; Doc+WF+Sign chung 1 service; Mud theo phase
 - [[Local-Only Phase]] — Chưa GitHub/CI/deploy; sunset Task9 rules
 
@@ -32,7 +33,8 @@ updated: 2026-07-24
 ## Sources
 - [[workspace-architecture.md]] — SoT kiến trúc (docs/) — mirror ý trong domains
 - `docs/handoff/phase1-sso-context.md` — **AI prompt context Phase 1**
-- `docs/runbooks/local-sso-lab.md` — Runbook vận hành
+- `docs/runbooks/local-sso-lab.md` — Runbook vận hành lab SSO
+- `docs/runbooks/deploy-abp-production.md` — Deploy ABP prod (Docker+Nginx / K8s)
 - `system-sso-guideline.png` — Diagram gốc SSO
 
 ## Active Plans

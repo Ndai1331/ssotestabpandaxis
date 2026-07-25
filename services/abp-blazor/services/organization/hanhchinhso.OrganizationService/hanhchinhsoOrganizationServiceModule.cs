@@ -36,7 +36,9 @@ using Volo.Abp.EntityFrameworkCore.DistributedEvents;
 using hanhchinhso.OrganizationService.HealthChecks;
 using Volo.Abp.Application;
 using Volo.Abp.PermissionManagement;
-using Volo.Abp.Identity;
+using Volo.Abp.Http.Client;
+using Volo.Abp.Http.Client.Web;
+using Volo.Abp.Http.Client.IdentityModel.Web;
 
 namespace hanhchinhso.OrganizationService;
 
@@ -53,7 +55,8 @@ namespace hanhchinhso.OrganizationService;
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(AbpDistributedLockingModule),
     typeof(AbpPermissionManagementHttpApiClientModule),
-    typeof(AbpIdentityHttpApiClientModule),
+    typeof(AbpHttpClientWebModule),
+    typeof(AbpHttpClientIdentityModelWebModule),
     typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
     typeof(AbpStudioClientAspNetCoreModule)
     )]
@@ -63,7 +66,10 @@ public class hanhchinhsoOrganizationServiceModule : AbpModule
     {
         PreConfigure<WebRemoteDynamicClaimsPrincipalContributorOptions>(options =>
         {
-            options.IsEnabled = true;
+            // Permission grants are resolved live from AdministrationService by
+            // RemotePermissionStore. Refreshing claims here can replace the JWT
+            // principal with an empty cache entry in an isolated service.
+            options.IsEnabled = false;
         });
     }
 
@@ -124,7 +130,6 @@ public class hanhchinhsoOrganizationServiceModule : AbpModule
         app.UseAbpSerilogEnrichers();
         app.UseAuditing();
         app.UseUnitOfWork();
-        app.UseDynamicClaims();
         app.UseConfiguredEndpoints(endpoints =>
         {
             endpoints.MapMetrics();
@@ -372,7 +377,7 @@ public class hanhchinhsoOrganizationServiceModule : AbpModule
     {
         context.Services.Configure<AbpClaimsPrincipalFactoryOptions>(options =>
         {
-            options.IsDynamicClaimsEnabled = true;
+            options.IsDynamicClaimsEnabled = false;
         });
     }
 

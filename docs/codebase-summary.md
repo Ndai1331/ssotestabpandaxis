@@ -8,7 +8,8 @@
 
 | Path | Stack | Role |
 |------|-------|------|
-| `services/directus-main` | Directus (Node monorepo) | Clinical data app + compose Keycloak |
+| `services/directus-main-v11` | Directus v11 lab SoT (Node monorepo) | Clinical data + compose Keycloak SSO |
+| `services/directus-main` | Directus v12 archive | Không dùng cho SSO lab |
 | `services/abp-blazor` | ABP .NET 10 microservice | Digital admin app (Blazor + AuthServer + services) |
 
 ## Notable local infra

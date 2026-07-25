@@ -76,6 +76,7 @@ using Volo.Abp.LanguageManagement.Blazor.MudBlazor.Server;
 using hanhchinhso.LanguageService;
 using hanhchinhso.LanguageService.Localization;
 using hanhchinhso.OrganizationService;
+using hanhchinhso.DocumentService;
 using Volo.Abp.OpenIddict;
 using Volo.Abp.OpenIddict.Pro;
 using Volo.Abp.OpenIddict.Pro.Blazor.MudBlazor.Server;
@@ -123,6 +124,7 @@ namespace hanhchinhso.Blazor;
     typeof(LanguageManagementHttpApiClientModule),
     typeof(hanhchinhsoLanguageServiceContractsModule),
     typeof(hanhchinhsoOrganizationServiceContractsModule),
+    typeof(hanhchinhsoDocumentServiceContractsModule),
     typeof(hanhchinhsoAIManagementServiceContractsModule),
     typeof(AIManagementBlazorMudBlazorServerModule),
     typeof(AIManagementClientBlazorMudBlazorServerModule),
@@ -170,6 +172,9 @@ public class hanhchinhsoBlazorModule : AbpModule
         context.Services.AddHttpClientProxies(
             typeof(hanhchinhsoOrganizationServiceContractsModule).Assembly,
             "OrganizationService");
+        context.Services.AddHttpClientProxies(
+            typeof(hanhchinhsoDocumentServiceContractsModule).Assembly,
+            "DocumentService");
 
         if (!configuration.GetValue<bool>("App:DisablePII"))
         {
@@ -340,6 +345,7 @@ public class hanhchinhsoBlazorModule : AbpModule
                 options.Scope.Add("GdprService");
                 options.Scope.Add("LanguageService");
                 options.Scope.Add("OrganizationService");
+                options.Scope.Add("DocumentService");
                 options.Scope.Add("AIManagementService");
             });
 

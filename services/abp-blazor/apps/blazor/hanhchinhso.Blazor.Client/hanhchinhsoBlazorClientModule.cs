@@ -43,6 +43,7 @@ using hanhchinhso.AIManagementService;
 using hanhchinhso.IdentityService;
 using hanhchinhso.AdministrationService;
 using hanhchinhso.OrganizationService;
+using hanhchinhso.DocumentService;
 using Volo.Abp.Http.Client;
 
 namespace hanhchinhso.Blazor.Client;
@@ -64,6 +65,7 @@ namespace hanhchinhso.Blazor.Client;
     typeof(LanguageManagementBlazorMudBlazorWebAssemblyModule),
     typeof(hanhchinhsoLanguageServiceContractsModule),
     typeof(hanhchinhsoOrganizationServiceContractsModule),
+    typeof(hanhchinhsoDocumentServiceContractsModule),
     typeof(AbpHttpClientModule),
     typeof(AbpAspNetCoreComponentsWebAssemblyMudBlazorLeptonXThemeModule),
     typeof(AbpAutofacWebAssemblyModule),
@@ -92,6 +94,9 @@ public class hanhchinhsoBlazorClientModule : AbpModule
         context.Services.AddHttpClientProxies(
             typeof(hanhchinhsoOrganizationServiceContractsModule).Assembly,
             "OrganizationService");
+        context.Services.AddHttpClientProxies(
+            typeof(hanhchinhsoDocumentServiceContractsModule).Assembly,
+            "DocumentService");
         ConfigureBlazorise(context);
         ConfigureRouter(context);
         ConfigureMenu(context);

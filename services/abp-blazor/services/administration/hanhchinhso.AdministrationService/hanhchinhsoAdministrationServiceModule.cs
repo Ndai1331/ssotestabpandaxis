@@ -57,6 +57,7 @@ using Volo.Abp.BlobStoring.Database.EntityFrameworkCore;
 using Volo.Abp.OpenIddict;
 using hanhchinhso.AdministrationService.HealthChecks;
 using hanhchinhso.OrganizationService;
+using hanhchinhso.DocumentService;
 
 namespace hanhchinhso.AdministrationService;
 
@@ -75,6 +76,7 @@ namespace hanhchinhso.AdministrationService;
     typeof(TextTemplateManagementHttpApiModule),
     typeof(hanhchinhsoAdministrationServiceContractsModule),
     typeof(hanhchinhsoOrganizationServiceContractsModule),
+    typeof(hanhchinhsoDocumentServiceContractsModule),
     typeof(AbpPermissionManagementApplicationModule),
     typeof(AbpPermissionManagementHttpApiModule),
     typeof(AbpPermissionManagementDomainIdentityModule),

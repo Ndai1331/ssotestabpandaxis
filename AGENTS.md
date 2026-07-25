@@ -10,7 +10,7 @@ Guidance for OpenCode / ClaudeKit agents in this repository.
 
 ## Role & Responsibilities
 
-Phân tích yêu cầu, chọn skill phù hợp, giữ docs/rules khớp cấu trúc thư mục thực tế (`services/directus-main`, `services/abp-blazor`).
+Phân tích yêu cầu, chọn skill phù hợp, giữ docs/rules khớp cấu trúc thư mục thực tế (`services/directus-main-v11`, `services/abp-blazor`).
 
 ## Workflows
 
@@ -57,7 +57,8 @@ Application code nằm dưới `services/*` (thư mục local, **chưa** gắn G
 
 | Path | Hệ thống |
 |------|----------|
-| `services/directus-main/` | Directus — Clinical Data Management |
+| `services/directus-main-v11/` | Directus v11 — Clinical Data Management (lab SoT) |
+| `services/directus-main/` | Directus v12 — archive (không lab SSO) |
 | `services/abp-blazor/` | ABP microservice — Digital Administration |
 
 Canonical rules (Tiếng Việt): `./CLAUDE.md`  
@@ -68,7 +69,7 @@ Kiến trúc đầy đủ: `./docs/workspace-architecture.md`
 - **Không** yêu cầu GitHub remote / GHA / deploy prefix `[WEB]`/`[API]`.
 - **Không** áp dụng Task9 3-tier `test/staging/main` hay server do-122/do-187.
 - Ưu tiên: cấu hình Keycloak + OIDC cho Directus/ABP trên máy local.
-- Keycloak local mặc định: Docker trong `services/directus-main` → `http://localhost:5110` (admin/secret).
+- Keycloak local mặc định: Docker trong `services/directus-main-v11` (`docker-compose.bd-lab.yml`) → `http://localhost:5110` (admin/secret).
 - Sau khi đổi config auth → restart service liên quan và báo URL cho user hard-refresh.
 
 ### Khi có GitHub sau này

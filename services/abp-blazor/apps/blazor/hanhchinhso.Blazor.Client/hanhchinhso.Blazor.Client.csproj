@@ -42,6 +42,7 @@
     <PackageReference Include="Volo.Abp.AuditLogging.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
     <ProjectReference Include="../../../services/language/hanhchinhso.LanguageService.Contracts/hanhchinhso.LanguageService.Contracts.csproj" />
     <ProjectReference Include="../../../services/organization/hanhchinhso.OrganizationService.Contracts/hanhchinhso.OrganizationService.Contracts.csproj" />
+    <ProjectReference Include="../../../services/document/hanhchinhso.DocumentService.Contracts/hanhchinhso.DocumentService.Contracts.csproj" />
     <PackageReference Include="Volo.Abp.Http.Client" Version="10.5.0" />
     <PackageReference Include="Volo.Abp.LanguageManagement.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />
     <PackageReference Include="Volo.Abp.OpenIddict.Pro.Blazor.MudBlazor.WebAssembly" Version="10.5.0" />

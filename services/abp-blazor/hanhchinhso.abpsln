@@ -51,6 +51,10 @@
       "path": "services/organization/hanhchinhso.OrganizationService.abpmdl",
       "folder": "services"
     },
+    "hanhchinhso.DocumentService": {
+      "path": "services/document/hanhchinhso.DocumentService.abpmdl",
+      "folder": "services"
+    },
     "hanhchinhso.WorkflowService": {
       "path": "services/workflow-service/hanhchinhso.WorkflowService.abpmdl",
       "folder": "services"

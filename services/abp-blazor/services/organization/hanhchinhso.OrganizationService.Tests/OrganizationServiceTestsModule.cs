@@ -17,7 +17,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Volo.Abp.EntityFrameworkCore.Sqlite;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using hanhchinhso.OrganizationService.Organization;
 
 namespace hanhchinhso.OrganizationService.Tests;
 
@@ -58,7 +57,6 @@ public class OrganizationServiceTestsModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         
         ConfigureAuthorization(context);
-        context.Services.Replace(ServiceDescriptor.Singleton<IIdentityReferenceValidator, TestIdentityReferenceValidator>());
         ConfigureDatabase(context);
         ConfigureDatabaseTransactions(context);
         ConfigureBackgroundJobs();
@@ -149,9 +147,4 @@ public class OrganizationServiceTestsModule : AbpModule
         
         return connection;
     }
-}
-
-public class TestIdentityReferenceValidator : IIdentityReferenceValidator
-{
-    public Task EnsureUserExistsAsync(Guid userId) => Task.CompletedTask;
 }

@@ -1,0 +1,8 @@
+.env
+certs/*.pfx
+certs/*.key
+data/
+*.pem
+*.crt
+!nginx/*.example
+!.env.example

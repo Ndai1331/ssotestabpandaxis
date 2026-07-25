@@ -69,15 +69,25 @@ public class hanhchinhsoMenuContributor : IMenuContributor
             ).RequireAuthenticated()
         );
 
-        context.Menu.AddItem(
-            new ApplicationMenuItem(
-                "HanhChinhSo.Organization.MasterData",
-                "Danh mục tổ chức",
-                "/organization/master-data",
-                icon: "fa fa-sitemap",
-                order: 2
-            ).RequirePermissions(OrganizationServicePermissions.MasterData)
-        );
+        var organization = new ApplicationMenuItem(
+            "HanhChinhSo.Organization",
+            "Tổ chức",
+            icon: "fa fa-sitemap",
+            order: 2
+        ).RequireAuthenticated();
+        organization.AddItem(new ApplicationMenuItem(
+            "HanhChinhSo.Organization.OrganizationUnits", "Phòng ban & nhân sự",
+            "/identity/organization-units").RequirePermissions("AbpIdentity.OrganizationUnits"));
+        organization.AddItem(new ApplicationMenuItem(
+            "HanhChinhSo.Organization.Units", "Cơ quan, đơn vị",
+            "/organization/units").RequirePermissions(OrganizationServicePermissions.Units.Default));
+        organization.AddItem(new ApplicationMenuItem(
+            "HanhChinhSo.Organization.Positions", "Chức vụ",
+            "/organization/positions").RequirePermissions(OrganizationServicePermissions.Positions.Default));
+        organization.AddItem(new ApplicationMenuItem(
+            "HanhChinhSo.Organization.MasterData", "Danh mục dùng chung",
+            "/organization/master-data").RequirePermissions(OrganizationServicePermissions.MasterData));
+        context.Menu.AddItem(organization);
 
         //HostDashboard
         context.Menu.AddItem(

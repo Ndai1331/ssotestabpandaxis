@@ -11,13 +11,13 @@
     {
       "name": "abp-auth-server",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "services/abp-blazor/apps/auth-server/abptestwithsso.AuthServer/abptestwithsso.AuthServer.csproj"],
+      "runtimeArgs": ["run", "--project", "services/abp-blazor/apps/auth-server/hanhchinhso.AuthServer/hanhchinhso.AuthServer.csproj"],
       "autoPort": true
     },
     {
       "name": "abp-blazor",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "services/abp-blazor/apps/blazor/abptestwithsso.Blazor/abptestwithsso.Blazor.csproj"],
+      "runtimeArgs": ["run", "--project", "services/abp-blazor/apps/blazor/hanhchinhso.Blazor/hanhchinhso.Blazor.csproj"],
       "autoPort": true
     }
   ]

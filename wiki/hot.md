@@ -1,12 +1,15 @@
 ---
 type: meta
 title: "Hot Cache"
-updated: 2026-07-24T16:30:00
+updated: 2026-07-25T17:21:00
 ---
 
 # Hot Cache — BD Second Brain
 
 ## Last Updated
+2026-07-25 — **Directus lab SoT = v11 DONE:** cook `plans/260725-1726-directus-v11-sso-lab/`. Compose + `bd-app-gate` + ROLE_MAPPING; smoke OIDC + gate deny OK. Archive: `services/directus-main/ARCHIVE.md`. Runbook → `directus-main-v11`.
+2026-07-25 — **Directus lab → v11 plan ready:** `plans/260725-1726-directus-v11-sso-lab/` (4 phases, ~5h). Brainstorm: `plans/reports/brainstorm-260725-1721-directus-v11-sso-keycloak.md`. Cook: `/ck:cook --auto` plan.md. Chưa implement.
+2026-07-24 — **ABP prod deploy runbook:** `docs/runbooks/deploy-abp-production.md` — Ubuntu 24+ Docker+Nginx hoặc K8s/Helm; templates Compose tại `services/abp-blazor/etc/docker-prod/`.
 2026-07-24 — **ABP AppHost CLI runner:** Aspire 13.4.6 (`./aspire/run.sh light|full`) replaces manual ABP Studio for local dev — see [`services/abp-blazor/aspire/README.md`](../services/abp-blazor/aspire/README.md).
 2026-07-24 — **Elsa WorkflowService DONE:** Plan `plans/260724-1542-elsa-workflow-service/` completed. WorkflowService `:44395` (Elsa Pro 3.5 + Contracts + Tests), Elsa Studio WASM `:44396`, menu link in Blazor, Keycloak auth via AuthServer OpenIddict, permission seed `Elsa.*`. All 8 phases done; smoke verify checklist complete.
 2026-07-24 — **Plan HCS→MS full roadmap:** `plans/260724-1555-hcs-layered-to-microservice/` (8 phases, ~20–28w). DocumentService `:44380` ≠ Elsa WorkflowService `:44395`. Cook từng phase; Phase 3 slices 3a–3h. Active plan set.
@@ -19,10 +22,12 @@ updated: 2026-07-24T16:30:00
 2026-07-23 — Reset workspace Task9 → BD SSO Lab.
 
 ## Code Structure Cheatsheet
-- **Directus** `services/directus-main` + `docker-compose.bd-lab.yml` (Directus+PG+Redis+KC)
+- **Directus lab SoT:** `services/directus-main-v11` + `docker-compose.bd-lab.yml` (PG+Redis+KC+Axis)
+- **Directus v12 archive:** `services/directus-main/ARCHIVE.md` — không chạy lab
 - **ABP** `services/abp-blazor` — AuthServer `:44372` federate KC; Blazor `:44306`
 - **Bootstrap** `scripts/keycloak_bootstrap_bd_realm.py` (re-run after KC recreate)
 - **Handoff** `docs/handoff/phase1-sso-context.md` ← dán vào prompt chat mới
+- **Plan SSO v11:** `plans/260725-1726-directus-v11-sso-lab/`
 
 ## Key Recent Facts
 - Approach A; realm `bd`; role groups `bd-admin|bacsi|lanhdao|nhanvien`; app groups `bd-app-axis|bd-app-hcs`

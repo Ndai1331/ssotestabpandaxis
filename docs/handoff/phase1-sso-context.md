@@ -2,8 +2,9 @@
 
 > **Dán file này (hoặc đường dẫn) vào prompt chat mới** để AI hiểu ngữ cảnh Phase 1 đã xong.  
 > Workspace: `/Users/user/Documents/bd-workspace`  
-> Ngày hoàn thành lab: **2026-07-23**  
-> Runbook vận hành: [`docs/runbooks/local-sso-lab.md`](../runbooks/local-sso-lab.md)
+> Ngày hoàn thành lab: **2026-07-23** · Directus lab SoT chuyển **v11** (cook 2026-07-25): `services/directus-main-v11`  
+> Runbook vận hành: [`docs/runbooks/local-sso-lab.md`](../runbooks/local-sso-lab.md)  
+> v12 archive: `services/directus-main/ARCHIVE.md`
 
 ---
 
@@ -54,12 +55,12 @@ Browser
 
 **KC test users** (password `Passw0rd!`):
 
-| Email | Role group | App groups | Directus role UUID | ABP role |
-|-------|------------|------------|--------------------|----------|
-| admin@benhvien.vn | bd-admin | bd-app-axis + bd-app-hcs | `654b7314-9b60-4eec-945c-f0a647ea2509` | admin |
-| bacsi@benhvien.vn | bd-bacsi | cả 2 | `0054b4bc-aef2-4cbd-afcd-49066c2fb50a` | bacsi |
-| lanhdao@benhvien.vn | bd-lanhdao | cả 2 | `1304ca0a-dd80-4ab9-a191-07bf9b46dd1d` | lanhdao |
-| nhanvien@benhvien.vn | bd-nhanvien | cả 2 | `753294b4-2591-4793-a5dd-929edbaec5d0` | nhanvien |
+| Email | Role group | App groups | Directus role UUID (v11 lab volume) | ABP role |
+|-------|------------|------------|--------------------------------------|----------|
+| admin@benhvien.vn | bd-admin | bd-app-axis + bd-app-hcs | `56cb789a-2e27-4bb9-b737-bf12d3923191` | admin |
+| bacsi@benhvien.vn | bd-bacsi | cả 2 | `4183c3a9-2882-4714-9449-e7ba9e9c5085` | bacsi |
+| lanhdao@benhvien.vn | bd-lanhdao | cả 2 | `ca499eb5-8931-4158-8c26-a49a6164302a` | lanhdao |
+| nhanvien@benhvien.vn | bd-nhanvien | cả 2 | `41457ca6-1bf6-4eaf-a796-1cafafe2dfe3` | nhanvien |
 
 **App gate:** thiếu `bd-app-axis` → Directus reject (hook); thiếu `bd-app-hcs` → AuthServer `context.Fail`.  
 Default role khi *đã có* app group nhưng thiếu role group = **nhanvien**.  
@@ -71,7 +72,9 @@ Priority multi-group: **admin > lanhdao > bacsi > nhanvien**.
 
 | Mục | Path |
 |-----|------|
-| Compose lab (Directus+KC+PG+Redis) | `services/directus-main/docker-compose.bd-lab.yml` |
+| Compose lab (Directus v11+KC+PG+Redis) | `services/directus-main-v11/docker-compose.bd-lab.yml` |
+| App gate extension | `services/directus-main-v11/bd-lab-extensions/directus-extension-bd-app-gate/` |
+| Env SSO example | `services/directus-main-v11/.env.sso.example` |
 | Bootstrap realm | `scripts/keycloak_bootstrap_bd_realm.py` |
 | ABP Keycloak config | `services/abp-blazor/apps/auth-server/.../appsettings.Development.json` |
 | ABP OIDC wire-up | `.../hanhchinhsoAuthServerModule.cs` (`AddOpenIdConnect`) |
@@ -90,8 +93,8 @@ Priority multi-group: **admin > lanhdao > bacsi > nhanvien**.
 ## 5. Cold start (nhanh)
 
 ```bash
-# Directus + Keycloak
-cd services/directus-main
+# Directus v11 + Keycloak (lab SoT)
+cd services/directus-main-v11
 docker compose -f docker-compose.bd-lab.yml up -d
 KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_realm.py
 

@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+
+  <Project Path="hanhchinhso.DocumentService.Contracts/hanhchinhso.DocumentService.Contracts.csproj" />
+  <Project Path="hanhchinhso.DocumentService.Tests/hanhchinhso.DocumentService.Tests.csproj" />
+  <Project Path="hanhchinhso.DocumentService/hanhchinhso.DocumentService.csproj" />
+</Solution>
