@@ -1,8 +1,10 @@
 using hanhchinhso.DocumentService.Data;
 using hanhchinhso.DocumentService.Documents;
 using hanhchinhso.DocumentService.Permissions;
+using hanhchinhso.DocumentService.Signing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Authorization;
 
@@ -232,6 +234,56 @@ public class MobileWorkflowQueryAppService :
             Files = files
         };
     }
+
+    public async Task<ListResultDto<UserSignatureDto>> GetEligibleSignaturesAsync(
+        MobileEligibleSignatureListInput input)
+    {
+        var userId = CurrentUser.Id ??
+            throw new AbpAuthorizationException();
+        var now = Clock.Now.ToUniversalTime();
+        var signatureType = input.SignatureType;
+        var isElectronic = signatureType == SignatureType.Electronic;
+        var rows = await (
+            from signature in _db.UserSignatures.AsNoTracking()
+            join setting in _db.SignatureSettings.AsNoTracking()
+                on signature.SignatureSettingId equals setting.Id
+            where signature.IdentityUserId == userId &&
+                  signature.IsActive &&
+                  signature.SignatureType == signatureType &&
+                  setting.IsActive &&
+                  setting.ProviderCode == signature.ProviderCode &&
+                  (isElectronic
+                      ? setting.AllowElectronicSign
+                      : setting.AllowDigitalSign) &&
+                  (signature.ValidFromUtc == null ||
+                   signature.ValidFromUtc <= now) &&
+                  (signature.ValidToUtc == null ||
+                   signature.ValidToUtc >= now)
+            orderby signature.CreationTime descending, signature.Id
+            select signature).ToListAsync();
+        return new ListResultDto<UserSignatureDto>(
+            rows.Select(MapSignature).ToList());
+    }
+
+    private static UserSignatureDto MapSignature(UserSignature x) =>
+        new()
+        {
+            Id = x.Id,
+            SignatureSettingId = x.SignatureSettingId,
+            IdentityUserId = x.IdentityUserId,
+            SignatureType = x.SignatureType,
+            ProviderCode = x.ProviderCode,
+            TokenReference = x.TokenReference,
+            HasSecret = x.HasSecret,
+            SealAssetId = x.SealAssetId,
+            SignatureAssetId = x.SignatureAssetId,
+            ValidFromUtc = x.ValidFromUtc,
+            ValidToUtc = x.ValidToUtc,
+            IsActive = x.IsActive,
+            CreationTime = x.CreationTime,
+            LastModificationTime = x.LastModificationTime,
+            ConcurrencyStamp = x.ConcurrencyStamp
+        };
 
     private IQueryable<DocumentWorkflowInstance> ApplyFilters(
         IQueryable<DocumentWorkflowInstance> query,

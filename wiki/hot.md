@@ -7,6 +7,7 @@ updated: 2026-07-25T17:21:00
 # Hot Cache — BD Second Brain
 
 ## Last Updated
+2026-07-25 — **HCS→MS Phase 3e2 DONE:** mobile APPROVE/RETURN/REJECT/ELECTRONIC/DIGITAL + eligible signatures; lineage audit migration; DocumentService tests 83/83. Next: 3e3 submit/resubmit + native upload. Plan: `plans/260724-1555-hcs-layered-to-microservice/`.
 2026-07-25 — **Directus lab SoT = v11 DONE:** cook `plans/260725-1726-directus-v11-sso-lab/`. Compose + `bd-app-gate` + ROLE_MAPPING; smoke OIDC + gate deny OK. Archive: `services/directus-main/ARCHIVE.md`. Runbook → `directus-main-v11`.
 2026-07-25 — **Directus lab → v11 plan ready:** `plans/260725-1726-directus-v11-sso-lab/` (4 phases, ~5h). Brainstorm: `plans/reports/brainstorm-260725-1721-directus-v11-sso-keycloak.md`. Cook: `/ck:cook --auto` plan.md. Chưa implement.
 2026-07-24 — **ABP prod deploy runbook:** `docs/runbooks/deploy-abp-production.md` — Ubuntu 24+ Docker+Nginx hoặc K8s/Helm; templates Compose tại `services/abp-blazor/etc/docker-prod/`.

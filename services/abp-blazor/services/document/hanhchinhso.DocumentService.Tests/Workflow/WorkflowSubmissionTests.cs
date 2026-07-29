@@ -11,6 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Shouldly;
 using Volo.Abp;
+using Volo.Abp.Authorization;
+using Volo.Abp.Data;
 using Volo.Abp.Security.Claims;
 using Volo.Abp.BlobStoring;
 using Volo.Abp.Uow;
@@ -99,6 +101,464 @@ public class WorkflowSubmissionTests : DocumentServiceIntegrationTestBase
                         setup.SourceFileId,
                         detail.Files.Single().ConcurrencyStamp));
         }
+    }
+
+    [Fact]
+    public async Task Should_Process_Mobile_Approve_Return_And_Reject_Stale_Stamp()
+    {
+        var initiatorId = Guid.NewGuid();
+        using var principal = ChangeUser(initiatorId);
+        var setup = await CreateSetupAsync(
+            WorkflowSignMode.Sequential,
+            allowReturn: true,
+            secondStepType: WorkflowStepType.Process);
+        ConfigureResolution();
+        var instance = await SubmitSetupAsync(setup);
+        var first = await GetAssignmentAsync(instance.Id, setup.FirstUserId);
+        var mobile = GetRequiredService<IMobileWorkflowActionAppService>();
+
+        using (ChangeUser(setup.FirstUserId))
+        {
+            await Should.ThrowAsync<AbpDbConcurrencyException>(() =>
+                mobile.ProcessAsync(new()
+                {
+                    AssignmentId = first.Id,
+                    Action = MobileWorkflowAction.APPROVE,
+                    AssignmentConcurrencyStamp = "stale-stamp"
+                }));
+        }
+
+        var returnSetup = await CreateSetupAsync(
+            WorkflowSignMode.Sequential,
+            allowReturn: true,
+            secondStepType: WorkflowStepType.Process);
+        ConfigureResolution();
+        var returnInstance = await SubmitSetupAsync(returnSetup);
+        var returnFirst = await GetAssignmentAsync(
+            returnInstance.Id, returnSetup.FirstUserId);
+        using (ChangeUser(returnSetup.FirstUserId))
+        {
+            var returned = await mobile.ProcessAsync(new()
+            {
+                AssignmentId = returnFirst.Id,
+                Action = MobileWorkflowAction.RETURN,
+                AssignmentConcurrencyStamp =
+                    returnFirst.ConcurrencyStamp,
+                Comment = "fix"
+            });
+            returned.Instance.Status.ShouldBe(
+                DocumentWorkflowStatus.Returned);
+            returned.SigningAttempt.ShouldBeNull();
+        }
+
+        var approveSetup = await CreateSetupAsync(
+            WorkflowSignMode.Sequential,
+            secondStepType: WorkflowStepType.Process);
+        ConfigureResolution();
+        var approveInstance = await SubmitSetupAsync(approveSetup);
+        var approveFirst = await GetAssignmentAsync(
+            approveInstance.Id, approveSetup.FirstUserId);
+        using (ChangeUser(approveSetup.FirstUserId))
+        {
+            var approved = await mobile.ProcessAsync(new()
+            {
+                AssignmentId = approveFirst.Id,
+                Action = MobileWorkflowAction.APPROVE,
+                AssignmentConcurrencyStamp =
+                    approveFirst.ConcurrencyStamp,
+                Comment = "ok"
+            });
+            approved.Instance.Status.ShouldBe(
+                DocumentWorkflowStatus.InProgress);
+        }
+
+        var rejectSetup = await CreateSetupAsync(
+            WorkflowSignMode.Sequential,
+            secondStepType: WorkflowStepType.Process);
+        ConfigureResolution();
+        var rejectInstance = await SubmitSetupAsync(rejectSetup);
+        var rejectFirst = await GetAssignmentAsync(
+            rejectInstance.Id, rejectSetup.FirstUserId);
+        using (ChangeUser(rejectSetup.FirstUserId))
+        {
+            var rejected = await mobile.ProcessAsync(new()
+            {
+                AssignmentId = rejectFirst.Id,
+                Action = MobileWorkflowAction.REJECT,
+                AssignmentConcurrencyStamp =
+                    rejectFirst.ConcurrencyStamp
+            });
+            rejected.Instance.Status.ShouldBe(
+                DocumentWorkflowStatus.Rejected);
+        }
+    }
+
+    [Fact]
+    public async Task Should_Execute_Mobile_Electronic_Sign_With_Retry_And_Eligible_Lookup()
+    {
+        var initiatorId = Guid.NewGuid();
+        using var principal = ChangeUser(initiatorId);
+        var setup = await CreateSetupAsync(WorkflowSignMode.Sequential);
+        ConfigureResolution();
+        var instance = await SubmitSetupAsync(setup);
+        var first = await GetAssignmentAsync(instance.Id, setup.FirstUserId);
+        using (ChangeUser(setup.FirstUserId))
+        {
+            await GetRequiredService<IMobileWorkflowActionAppService>()
+                .ProcessAsync(new()
+                {
+                    AssignmentId = first.Id,
+                    Action = MobileWorkflowAction.APPROVE,
+                    AssignmentConcurrencyStamp = first.ConcurrencyStamp
+                });
+        }
+
+        var pdfBytes = CreatePdfWithPlaceholder("<<Sign02>>");
+        var imageBytes = await CreatePngAsync();
+        var documentBlobs = GetRequiredService<
+            IBlobContainer<DocumentBlobContainer>>();
+        documentBlobs.GetAsync(
+                setup.SourceBlobName,
+                Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult<Stream>(
+                new MemoryStream(pdfBytes, writable: false)));
+        documentBlobs.SaveAsync(
+                Arg.Any<string>(),
+                Arg.Any<Stream>(),
+                false,
+                Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var signingBlobs = GetRequiredService<
+            IBlobContainer<SigningBlobContainer>>();
+        var assetId = Guid.NewGuid();
+        var assetBlobName = $"host/signatureimage/{assetId:N}.png";
+        signingBlobs.GetAsync(
+                assetBlobName,
+                Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult<Stream>(
+                new MemoryStream(imageBytes, writable: false)));
+        await WithUnitOfWorkAsync(async () =>
+        {
+            var db = GetRequiredService<DocumentServiceDbContext>();
+            db.SigningAssets.Add(new SigningAsset(
+                assetId,
+                null,
+                SigningAssetKind.SignatureImage,
+                setup.SignUserId,
+                "signature.png",
+                assetBlobName,
+                "image/png",
+                imageBytes.LongLength,
+                Hash(imageBytes)));
+            await db.SaveChangesAsync();
+        });
+
+        using var signer = ChangeUser(setup.SignUserId);
+        var setting = await GetRequiredService<ISignatureSettingAppService>()
+            .CreateAsync(new()
+            {
+                ProviderCode = $"mobile-el-{Guid.NewGuid():N}",
+                ProviderType = SignatureProviderType.RemoteCa,
+                ApiEndpoint = "https://sign.example.test/api",
+                DefaultSignatureType = SignatureType.Electronic,
+                AllowElectronicSign = true,
+                AllowDigitalSign = false,
+                SignWidth = 120,
+                SignHeight = 60,
+                SignedFileSuffix = "-signed",
+                IsActive = true
+            });
+        var active = await GetRequiredService<IUserSignatureAppService>()
+            .CreateAsync(new()
+            {
+                SignatureType = SignatureType.Electronic,
+                ProviderCode = setting.ProviderCode,
+                SignatureAssetId = assetId,
+                IsActive = true
+            });
+        var expired = await GetRequiredService<IUserSignatureAppService>()
+            .CreateAsync(new()
+            {
+                SignatureType = SignatureType.Electronic,
+                ProviderCode = setting.ProviderCode,
+                SignatureAssetId = assetId,
+                ValidToUtc = DateTime.UtcNow.AddMinutes(-5),
+                IsActive = true
+            });
+        var query = GetRequiredService<IMobileWorkflowQueryAppService>();
+        var eligible = await query.GetEligibleSignaturesAsync(new()
+        {
+            SignatureType = SignatureType.Electronic
+        });
+        eligible.Items.Select(x => x.Id).ShouldContain(active.Id);
+        eligible.Items.Select(x => x.Id).ShouldNotContain(expired.Id);
+        eligible.Items.ShouldAllBe(x =>
+            x.IdentityUserId == setup.SignUserId &&
+            x.HasSecret == false);
+        var json = System.Text.Json.JsonSerializer.Serialize(eligible.Items);
+        json.ShouldNotContain("ProtectedSecret");
+        json.ShouldNotContain("\"Secret\"");
+
+        var assignment = await GetAssignmentAsync(
+            instance.Id, setup.SignUserId);
+        var mobile = GetRequiredService<IMobileWorkflowActionAppService>();
+        await Should.ThrowAsync<BusinessException>(() =>
+            mobile.ProcessAsync(new()
+            {
+                AssignmentId = assignment.Id,
+                Action = MobileWorkflowAction.ELECTRONIC,
+                AssignmentConcurrencyStamp =
+                    assignment.ConcurrencyStamp
+            }));
+
+        var completed = await mobile.ProcessAsync(new()
+        {
+            AssignmentId = assignment.Id,
+            Action = MobileWorkflowAction.ELECTRONIC,
+            AssignmentConcurrencyStamp =
+                assignment.ConcurrencyStamp,
+            UserSignatureId = active.Id,
+            Comment = "signed"
+        });
+        completed.SigningAttempt.ShouldNotBeNull();
+        completed.SigningAttempt!.Status.ShouldBe(
+            SigningAttemptStatus.Succeeded);
+        completed.Instance.Status.ShouldBe(
+            DocumentWorkflowStatus.Completed);
+
+        var replay = await mobile.ProcessAsync(new()
+        {
+            AssignmentId = assignment.Id,
+            Action = MobileWorkflowAction.ELECTRONIC,
+            AssignmentConcurrencyStamp =
+                assignment.ConcurrencyStamp,
+            UserSignatureId = active.Id
+        });
+        replay.SigningAttempt!.Id.ShouldBe(
+            completed.SigningAttempt.Id);
+    }
+
+    [Fact]
+    public async Task Should_Reject_Mobile_Cross_User_Assignment_And_Signature()
+    {
+        var initiatorId = Guid.NewGuid();
+        using var principal = ChangeUser(initiatorId);
+        var setup = await CreateSetupAsync(WorkflowSignMode.Sequential);
+        ConfigureResolution();
+        var instance = await SubmitSetupAsync(setup);
+        var first = await GetAssignmentAsync(instance.Id, setup.FirstUserId);
+        using (ChangeUser(setup.FirstUserId))
+        {
+            await GetRequiredService<IMobileWorkflowActionAppService>()
+                .ProcessAsync(new()
+                {
+                    AssignmentId = first.Id,
+                    Action = MobileWorkflowAction.APPROVE,
+                    AssignmentConcurrencyStamp = first.ConcurrencyStamp
+                });
+        }
+
+        var imageBytes = await CreatePngAsync();
+        var assetId = Guid.NewGuid();
+        var assetBlobName = $"host/signatureimage/{assetId:N}.png";
+        GetRequiredService<IBlobContainer<SigningBlobContainer>>()
+            .GetAsync(assetBlobName, Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult<Stream>(
+                new MemoryStream(imageBytes, writable: false)));
+        await WithUnitOfWorkAsync(async () =>
+        {
+            var db = GetRequiredService<DocumentServiceDbContext>();
+            db.SigningAssets.Add(new SigningAsset(
+                assetId,
+                null,
+                SigningAssetKind.SignatureImage,
+                setup.SignUserId,
+                "signature.png",
+                assetBlobName,
+                "image/png",
+                imageBytes.LongLength,
+                Hash(imageBytes)));
+            await db.SaveChangesAsync();
+        });
+
+        using var signer = ChangeUser(setup.SignUserId);
+        var setting = await GetRequiredService<ISignatureSettingAppService>()
+            .CreateAsync(new()
+            {
+                ProviderCode = $"mobile-idor-{Guid.NewGuid():N}",
+                ProviderType = SignatureProviderType.RemoteCa,
+                ApiEndpoint = "https://sign.example.test/api",
+                DefaultSignatureType = SignatureType.Electronic,
+                AllowElectronicSign = true,
+                AllowDigitalSign = false,
+                SignWidth = 120,
+                SignHeight = 60,
+                SignedFileSuffix = "-signed",
+                IsActive = true
+            });
+        var ownerSignature = await GetRequiredService<IUserSignatureAppService>()
+            .CreateAsync(new()
+            {
+                SignatureType = SignatureType.Electronic,
+                ProviderCode = setting.ProviderCode,
+                SignatureAssetId = assetId,
+                IsActive = true
+            });
+        var assignment = await GetAssignmentAsync(
+            instance.Id, setup.SignUserId);
+        var mobile = GetRequiredService<IMobileWorkflowActionAppService>();
+
+        using (ChangeUser(Guid.NewGuid()))
+        {
+            await Should.ThrowAsync<AbpAuthorizationException>(() =>
+                mobile.ProcessAsync(new()
+                {
+                    AssignmentId = assignment.Id,
+                    Action = MobileWorkflowAction.APPROVE,
+                    AssignmentConcurrencyStamp =
+                        assignment.ConcurrencyStamp
+                }));
+            await Should.ThrowAsync<AbpAuthorizationException>(() =>
+                mobile.ProcessAsync(new()
+                {
+                    AssignmentId = assignment.Id,
+                    Action = MobileWorkflowAction.ELECTRONIC,
+                    AssignmentConcurrencyStamp =
+                        assignment.ConcurrencyStamp,
+                    UserSignatureId = ownerSignature.Id
+                }));
+            (await GetRequiredService<IMobileWorkflowQueryAppService>()
+                .GetEligibleSignaturesAsync(new()
+                {
+                    SignatureType = SignatureType.Electronic
+                })).Items.ShouldBeEmpty();
+        }
+    }
+
+    [Fact]
+    public async Task Should_Execute_Mobile_Digital_Sign_With_Stale_Stamp_Rejected()
+    {
+        var initiatorId = Guid.NewGuid();
+        using var principal = ChangeUser(initiatorId);
+        var setup = await CreateSetupAsync(WorkflowSignMode.Sequential);
+        ConfigureResolution();
+        var instance = await SubmitSetupAsync(setup);
+        var first = await GetAssignmentAsync(instance.Id, setup.FirstUserId);
+        using (ChangeUser(setup.FirstUserId))
+        {
+            await GetRequiredService<IMobileWorkflowActionAppService>()
+                .ProcessAsync(new()
+                {
+                    AssignmentId = first.Id,
+                    Action = MobileWorkflowAction.APPROVE,
+                    AssignmentConcurrencyStamp = first.ConcurrencyStamp
+                });
+        }
+
+        var pdfBytes = CreatePdfWithPlaceholder("<<Sign02>>");
+        var imageBytes = await CreatePngAsync();
+        var documentBlobs = GetRequiredService<
+            IBlobContainer<DocumentBlobContainer>>();
+        documentBlobs.GetAsync(
+                setup.SourceBlobName,
+                Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult<Stream>(
+                new MemoryStream(pdfBytes, writable: false)));
+        documentBlobs.SaveAsync(
+                Arg.Any<string>(),
+                Arg.Any<Stream>(),
+                false,
+                Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var signingBlobs = GetRequiredService<
+            IBlobContainer<SigningBlobContainer>>();
+        var assetId = Guid.NewGuid();
+        var assetBlobName = $"host/signatureimage/{assetId:N}.png";
+        signingBlobs.GetAsync(
+                assetBlobName,
+                Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult<Stream>(
+                new MemoryStream(imageBytes, writable: false)));
+        await WithUnitOfWorkAsync(async () =>
+        {
+            var db = GetRequiredService<DocumentServiceDbContext>();
+            db.SigningAssets.Add(new SigningAsset(
+                assetId,
+                null,
+                SigningAssetKind.SignatureImage,
+                setup.SignUserId,
+                "signature.png",
+                assetBlobName,
+                "image/png",
+                imageBytes.LongLength,
+                Hash(imageBytes)));
+            await db.SaveChangesAsync();
+        });
+
+        using var signer = ChangeUser(setup.SignUserId);
+        var setting = await GetRequiredService<ISignatureSettingAppService>()
+            .CreateAsync(new()
+            {
+                ProviderCode = $"mobile-dig-{Guid.NewGuid():N}",
+                ProviderType = SignatureProviderType.RemoteCa,
+                ApiEndpoint = "https://sign.example.test/api",
+                DefaultSignatureType = SignatureType.Digital,
+                AllowElectronicSign = false,
+                AllowDigitalSign = true,
+                SignWidth = 120,
+                SignHeight = 60,
+                SignedFileSuffix = "-signed",
+                IsActive = true
+            });
+        var signature = await GetRequiredService<IUserSignatureAppService>()
+            .CreateAsync(new()
+            {
+                SignatureType = SignatureType.Digital,
+                ProviderCode = setting.ProviderCode,
+                SignatureAssetId = assetId,
+                TokenReference = "api-key",
+                Secret = "MDEyMzQ1Njc4OWFiY2RlZg==",
+                IsActive = true
+            });
+        GetRequiredService<IRemoteCaSigningProvider>()
+            .SignAsync(
+                Arg.Any<RemoteCaSigningCommand>(),
+                Arg.Any<CancellationToken>())
+            .Returns(_ => CreatePdfWithPlaceholder("REMOTE-SIGNED"));
+
+        var assignment = await GetAssignmentAsync(
+            instance.Id, setup.SignUserId);
+        var mobile = GetRequiredService<IMobileWorkflowActionAppService>();
+        await Should.ThrowAsync<AbpDbConcurrencyException>(() =>
+            mobile.ProcessAsync(new()
+            {
+                AssignmentId = assignment.Id,
+                Action = MobileWorkflowAction.DIGITAL,
+                AssignmentConcurrencyStamp = "stale-stamp",
+                UserSignatureId = signature.Id
+            }));
+
+        var completed = await mobile.ProcessAsync(new()
+        {
+            AssignmentId = assignment.Id,
+            Action = MobileWorkflowAction.DIGITAL,
+            AssignmentConcurrencyStamp = assignment.ConcurrencyStamp,
+            UserSignatureId = signature.Id
+        });
+        completed.SigningAttempt.ShouldNotBeNull();
+        completed.SigningAttempt!.Status.ShouldBe(
+            SigningAttemptStatus.Succeeded);
+        completed.Instance.Status.ShouldBe(
+            DocumentWorkflowStatus.Completed);
+        var eligible = await GetRequiredService<IMobileWorkflowQueryAppService>()
+            .GetEligibleSignaturesAsync(new()
+            {
+                SignatureType = SignatureType.Digital
+            });
+        eligible.Items.ShouldContain(x =>
+            x.Id == signature.Id && x.HasSecret);
+        System.Text.Json.JsonSerializer.Serialize(eligible.Items)
+            .ShouldNotContain("ProtectedSecret");
     }
 
     [Fact]

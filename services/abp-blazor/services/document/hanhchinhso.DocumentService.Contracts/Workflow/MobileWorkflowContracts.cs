@@ -1,5 +1,7 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using hanhchinhso.DocumentService.Documents;
+using hanhchinhso.DocumentService.Signing;
 using Volo.Abp.Application.Dtos;
 
 namespace hanhchinhso.DocumentService.Workflows;
@@ -13,7 +15,20 @@ public enum MobileSigningFilterMode
     Following = 3
 }
 
+[JsonConverter(typeof(StrictMobileWorkflowActionJsonConverter))]
+public enum MobileWorkflowAction
+{
+    APPROVE = 0,
+    RETURN = 1,
+    REJECT = 2,
+    ELECTRONIC = 3,
+    DIGITAL = 4
+}
+
 public sealed class StrictMobileSigningFilterModeJsonConverter() :
+    JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false);
+
+public sealed class StrictMobileWorkflowActionJsonConverter() :
     JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false);
 
 public class MobileSigningListInput : PagedAndSortedResultRequestDto
@@ -86,9 +101,39 @@ public class MobileWorkflowDetailDto
     public List<DocumentFileDto> Files { get; set; } = [];
 }
 
+public class MobileEligibleSignatureListInput
+{
+    public SignatureType SignatureType { get; set; }
+}
+
+public class MobileWorkflowActionInput
+{
+    public Guid AssignmentId { get; set; }
+    public MobileWorkflowAction Action { get; set; }
+    [Required]
+    public string AssignmentConcurrencyStamp { get; set; } = string.Empty;
+    public Guid? UserSignatureId { get; set; }
+    [StringLength(2000)]
+    public string? Comment { get; set; }
+}
+
+public class MobileWorkflowActionResultDto
+{
+    public DocumentWorkflowInstanceDto Instance { get; set; } = new();
+    public SigningAttemptDto? SigningAttempt { get; set; }
+}
+
 public interface IMobileWorkflowQueryAppService
 {
     Task<MobileSigningPageResultDto> GetSigningListAsync(
         MobileSigningListInput input);
     Task<MobileWorkflowDetailDto> GetDetailAsync(Guid instanceId);
+    Task<ListResultDto<UserSignatureDto>> GetEligibleSignaturesAsync(
+        MobileEligibleSignatureListInput input);
+}
+
+public interface IMobileWorkflowActionAppService
+{
+    Task<MobileWorkflowActionResultDto> ProcessAsync(
+        MobileWorkflowActionInput input);
 }

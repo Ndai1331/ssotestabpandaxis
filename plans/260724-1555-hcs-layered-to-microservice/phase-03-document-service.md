@@ -645,7 +645,7 @@ services/abp-blazor/services/document/
 | Slice | Scope | Status |
 |-------|-------|--------|
 | 3e1 | Mobile signing inbox + aggregated workflow detail/timeline | ✅ Complete |
-| 3e2 | Mobile workflow actions + eligible signature selection | Pending |
+| 3e2 | Mobile workflow actions + eligible signature selection | ✅ Complete |
 | 3e3 | Submit/resubmit compatibility over preview-token flow + native file upload | Pending |
 | 3e4 | Authenticated Gateway E2E and HCS parity checklist | Pending |
 
@@ -714,12 +714,30 @@ services/abp-blazor/services/document/
   file ID. Signature/seal asset upload reuses the typed signing-asset
   controller; no path-based blob API is introduced.
 
+### Slice 3e2 completion notes (2026-07-25)
+
+- `IMobileWorkflowActionAppService.ProcessAsync` facades
+  `APPROVE`/`RETURN`/`REJECT`/`ELECTRONIC`/`DIGITAL` onto
+  `IWorkflowActionAppService` + `ISigningExecutionAppService`. Source PDF is
+  resolved server-side (`CurrentSignedFileId ?? SourceFileId`); replay reuses
+  the succeeded attempt source so retries do not chain onto their own output.
+- Eligible-signature lookup on `IMobileWorkflowQueryAppService` scopes to the
+  current user and filters active + validity window + type + provider
+  capability; DTO exposes `HasSecret` only.
+- Lineage migrations fail-fast when the earliest signing attempt points at a
+  missing/wrong-document file, then re-validate ownership.
+  `20260725113000_AuditWorkflowSourceFileLineage` applied locally (Postgres).
+- Root `.gitignore` now un-ignores ABP `services/*/*/Data/` so EF migrations
+  can be tracked.
+- Focused mobile suite 5/5; full DocumentService 83/83 (two independent runs).
+  EF: no pending model changes. Build: 0 errors.
+
 ### Slice 3e gates
 
-- [ ] Inbox modes, stable paging/filtering and tenant/user isolation tests.
-- [ ] Detail authorization, locked OU scope redaction, timeline/log/history and
+- [x] Inbox modes, stable paging/filtering and tenant/user isolation tests.
+- [x] Detail authorization, locked OU scope redaction, timeline/log/history and
   opaque-file tests.
-- [ ] Electronic/digital mobile action E2E, stale concurrency, retry and
+- [x] Electronic/digital mobile action E2E, stale concurrency, retry and
   eligible-signature redaction tests.
 - [ ] Preview-token submit/resubmit plus native upload/download integration
   tests.

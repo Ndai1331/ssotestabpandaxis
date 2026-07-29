@@ -75,7 +75,7 @@ Rewrite toàn bộ nghiệp vụ `services/HCS_web` (ABP layered + Blazorise) sa
 |-------|------|--------|
 | 1 | [Foundation & conventions](./phase-01-foundation-conventions.md) | Completed |
 | 2 | [Organization service](./phase-02-organization-service.md) | Completed — custom Department removed; ABP OU is canonical |
-| 3 | [Document service (fat + mobile + sign)](./phase-03-document-service.md) | In progress (slices 3a–3c4 implemented) |
+| 3 | [Document service (fat + mobile + sign)](./phase-03-document-service.md) | In progress (slices 3a–3e2 implemented) |
 | 4 | [Project service](./phase-04-project-service.md) | Pending |
 | 5 | [Calendar + Survey](./phase-05-calendar-survey.md) | Pending |
 | 6 | [Collaboration (Chat/Notify/Push)](./phase-06-collaboration.md) | Pending |
