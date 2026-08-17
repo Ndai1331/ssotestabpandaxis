@@ -1,0 +1,135 @@
+# BD SSO lab: Axis (Directus fork) + Postgres + Redis + Keycloak
+#
+# Start (build fork local — tạo bảng axis_*):
+#   cd services/directus-main
+#   docker compose -f docker-compose.bd-lab.yml build directus
+#   docker compose -f docker-compose.bd-lab.yml up -d
+#   KEYCLOAK_URL=http://127.0.0.1:5110 python3 ../../scripts/keycloak_bootstrap_bd_realm.py
+#
+# URLs:
+#   Axis      http://localhost:8055     admin@local.dev / admin123456
+#   Keycloak  http://localhost:5110     admin / secret
+#
+# Brand: PROJECT_NAME=Axis, AUTH_KEYCLOAK_LABEL=SSO
+# Optional logo: bd-lab-assets/axis-logo.svg via Studio/API
+
+services:
+  database:
+    image: postgres:16-alpine
+    platform: linux/arm64
+    environment:
+      POSTGRES_USER: directus
+      POSTGRES_PASSWORD: directus
+      POSTGRES_DB: directus
+    volumes:
+      - bd_axis_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U directus -h localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5120:5432"
+
+  cache:
+    image: redis:6-alpine
+    ports:
+      - "5121:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: secret
+      # Browser URLs = localhost. Backchannel (Axis→KC) uses request Host.
+      KC_HOSTNAME: http://localhost:5110
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      # Bind loopback so KC treats traffic as local (avoids "HTTPS required")
+      - "127.0.0.1:5110:5110"
+    command:
+      - start-dev
+      - --http-port=5110
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/5110"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  directus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bd-axis:local
+    ports:
+      - "8055:8055"
+    volumes:
+      - bd_axis_uploads:/directus/uploads
+      - bd_axis_extensions:/directus/extensions
+      # App-access gate: require Keycloak group bd-app-directus
+      - ./bd-lab-extensions/directus-extension-bd-app-gate:/directus/extensions/directus-extension-bd-app-gate
+    depends_on:
+      database:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    environment:
+      SECRET: "bd-directus-lab-secret-change-me"
+      PUBLIC_URL: "http://localhost:8055"
+
+      DB_CLIENT: "pg"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      DB_DATABASE: "directus"
+      DB_USER: "directus"
+      DB_PASSWORD: "directus"
+
+      CACHE_ENABLED: "true"
+      CACHE_AUTO_PURGE: "true"
+      CACHE_STORE: "redis"
+      REDIS: "redis://cache:6379"
+
+      ADMIN_EMAIL: "admin@local.dev"
+      ADMIN_PASSWORD: "admin123456"
+      PROJECT_NAME: "Axis"
+      # Core license blocks SSO; enable Keycloak OpenID for BD lab
+      BD_LAB_ALLOW_SSO: "true"
+
+      AUTH_PROVIDERS: "keycloak"
+      AUTH_KEYCLOAK_DRIVER: "openid"
+      AUTH_KEYCLOAK_CLIENT_ID: "directus"
+      AUTH_KEYCLOAK_CLIENT_SECRET: "bd-directus-lab-secret"
+      AUTH_KEYCLOAK_LABEL: "SSO"
+      # Same compose network DNS; frontend redirects still use localhost via KC_HOSTNAME
+      AUTH_KEYCLOAK_ISSUER_URL: "http://keycloak:5110/realms/bd/.well-known/openid-configuration"
+      AUTH_KEYCLOAK_IDENTIFIER_KEY: "email"
+      AUTH_KEYCLOAK_ALLOW_PUBLIC_REGISTRATION: "true"
+      AUTH_KEYCLOAK_REQUIRE_VERIFIED_EMAIL: "false"
+      AUTH_KEYCLOAK_SCOPE: "openid profile email"
+      # Always show KC login form (logout does not end KC SSO session)
+      AUTH_KEYCLOAK_PARAMS: 'json:{"prompt":"login"}'
+      AUTH_KEYCLOAK_GROUP_CLAIM_NAME: "groups"
+      AUTH_KEYCLOAK_ISSUER_DISCOVERY_MUST_SUCCEED: "false"
+      # Placeholder — sync real UUIDs from axis_roles after bootstrap
+      AUTH_KEYCLOAK_DEFAULT_ROLE_ID: "72e03574-1f32-4741-8a3e-a0b4aa3429dd"
+      AUTH_KEYCLOAK_ROLE_MAPPING: 'json:{"bd-admin":"1195d9aa-457a-4be2-98b2-3f9507d63135","bd-bacsi":"e3bea878-7384-443f-9d6b-74dbc53efb34","bd-lanhdao":"24719228-fe10-4bdd-991c-6dc5f1b8c73e","bd-nhanvien":"72e03574-1f32-4741-8a3e-a0b4aa3429dd"}'
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8055/server/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 90s
+
+volumes:
+  bd_axis_pg:
+  bd_axis_uploads:
+  bd_axis_extensions:
