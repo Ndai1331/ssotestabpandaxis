@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+
+  <Project Path="hanhchinhso.IdentityService/hanhchinhso.IdentityService.csproj" />
+  <Project Path="hanhchinhso.IdentityService.Contracts/hanhchinhso.IdentityService.Contracts.csproj" />
+  <Project Path="hanhchinhso.IdentityService.Tests/hanhchinhso.IdentityService.Tests.csproj" />
+</Solution>

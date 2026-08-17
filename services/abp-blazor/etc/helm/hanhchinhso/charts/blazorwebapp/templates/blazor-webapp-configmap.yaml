@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-{{ .Chart.Name }}-configmap
+data:
+  appsettings.json: |-
+    {
+    "App": {
+        "SelfUrl": "{{ include "hanhchinhso.hosts.blazorwebapp" . }}"
+    },
+    "AuthServer": {
+        "Authority": "{{ include "hanhchinhso.hosts.authserver" . }}"
+    },
+    "RemoteServices": {
+        "Default": {
+          "BaseUrl": "{{ include "hanhchinhso.hosts.webgateway" . }}"
+        },
+        "AbpAccountPublic": {
+          "BaseUrl": "{{ include "hanhchinhso.hosts.authserver" . }}"
+        }
+    }
+    }

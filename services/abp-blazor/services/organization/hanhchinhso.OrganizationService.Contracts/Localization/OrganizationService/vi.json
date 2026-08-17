@@ -1,0 +1,15 @@
+{
+  "Culture": "vi",
+  "texts": {
+    "Menu:Home": "Home",
+    "Login": "Login",
+    "Menu:Dashboard": "Dashboard",
+    "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information visit",
+    "Welcome": "Welcome",
+    "Permission:Organization": "Tổ chức",
+    "Permission:MasterData": "Danh mục",
+    "Permission:Create": "Tạo",
+    "Permission:Update": "Cập nhật",
+    "Permission:Delete": "Xóa"
+  }
+}

@@ -1,0 +1,15 @@
+networks:
+  hanhchinhso:
+    external: true
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:14-alpine
+    volumes:
+      - ~/apps/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=myPassword
+      - POSTGRES_USER=postgres
+    ports:
+      - "5432:5432"

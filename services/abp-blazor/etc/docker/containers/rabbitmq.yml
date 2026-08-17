@@ -1,0 +1,17 @@
+volumes:
+  hanhchinhso_rabbitmq:
+networks:
+  hanhchinhso:
+    external: true
+
+services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.12.7-management-alpine
+    volumes:
+      - hanhchinhso_rabbitmq:/var/lib/rabbitmq
+    networks:
+      - hanhchinhso
+    ports:
+      - "15672:15672"
+      - "5672:5672"

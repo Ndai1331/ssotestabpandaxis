@@ -1,0 +1,18 @@
+{
+  "Culture": "vi",
+  "texts": {
+    "Menu:Home": "Home",
+    "Login": "Login",
+    "Menu:Dashboard": "Dashboard",
+    "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information visit",
+    "Welcome": "Welcome",
+    "Permission:Document": "Văn bản",
+    "Permission:Documents": "Hồ sơ văn bản",
+    "Permission:DocumentFiles": "Tệp văn bản",
+    "Permission:Upload": "Tải lên",
+    "Permission:Download": "Tải xuống",
+    "Permission:Create": "Tạo",
+    "Permission:Update": "Cập nhật",
+    "Permission:Delete": "Xóa"
+  }
+}

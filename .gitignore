@@ -1,0 +1,59 @@
+# BD workspace — root .gitignore
+
+# Secrets & local env
+.env
+.env.*
+!.env.example
+**/*.pfx
+**/secrets.json
+**/appsettings.secrets.json
+**/appsettings.*.local.json
+
+# Dependencies & build
+**/node_modules/
+**/bin/
+**/obj/
+**/.vs/
+**/TestResults/
+**/*.user
+**/*.suo
+**/dist/
+**/build/
+**/.next/
+**/.turbo/
+**/.pnpm-store/
+
+# .NET / NuGet
+**/packages/
+*.nupkg
+
+# Python
+**/__pycache__/
+**/.venv/
+**/venv/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+
+# Logs & caches
+*.log
+**/.cache/
+coverage/
+.nyc_output/
+
+# Docker / local data (named volumes live outside; ignore bind data if any)
+**/data/
+# Keep ABP microservice EF Core Data/ (DbContext + migrations) in git
+!services/abp-blazor/services/*/
+!services/abp-blazor/services/*/*/
+!services/abp-blazor/services/*/*/Data/
+!services/abp-blazor/services/*/*/Data/**
+**/uploads/
+
+# Cursor / Claude local (keep skills in repo; ignore heavy caches)
+.cursor/
+**/agent-transcripts/

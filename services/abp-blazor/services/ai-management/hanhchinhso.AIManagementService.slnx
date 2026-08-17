@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+
+  <Project Path="hanhchinhso.AIManagementService/hanhchinhso.AIManagementService.csproj" />
+  <Project Path="hanhchinhso.AIManagementService.Contracts/hanhchinhso.AIManagementService.Contracts.csproj" />
+  <Project Path="hanhchinhso.AIManagementService.Tests/hanhchinhso.AIManagementService.Tests.csproj" />
+</Solution>

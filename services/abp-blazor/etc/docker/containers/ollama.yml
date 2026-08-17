@@ -1,0 +1,40 @@
+volumes:
+  hanhchinhso_ollama:
+networks:
+  hanhchinhso:
+    external: true
+
+services:
+  ollama:
+    container_name: hanhchinhso-ollama
+    image: ollama/ollama:latest
+    volumes:
+      - hanhchinhso_ollama:/root/.ollama
+    networks:
+      - hanhchinhso
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  ollama-init:
+    container_name: hanhchinhso-ollama-init
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for Ollama to be ready...';
+        until curl -sf http://ollama:11434/api/tags > /dev/null 2>&1; do
+          sleep 2;
+        done;
+        echo 'Pulling llama3.2...';
+        ollama pull 'llama3.2';
+        echo 'RAG enabled, pulling embedding model nomic-embed-text...';
+        ollama pull 'nomic-embed-text';
+        echo 'Model pulled successfully!';
+      "
+    networks:
+      - hanhchinhso
+    restart: "no"

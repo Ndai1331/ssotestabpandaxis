@@ -1,0 +1,6 @@
+apiVersion: v2
+name: blazorwebapp
+appVersion: "1.0"
+description: hanhchinhso Blazor WebApp Application
+version: 1.0.0
+type: application

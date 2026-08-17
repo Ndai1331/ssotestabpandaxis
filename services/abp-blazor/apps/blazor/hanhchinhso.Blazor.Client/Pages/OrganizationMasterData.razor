@@ -1,0 +1,177 @@
+@page "/organization/master-data"
+@using hanhchinhso.OrganizationService.MasterData
+@using hanhchinhso.OrganizationService.Permissions
+@attribute [Authorize(OrganizationServicePermissions.MasterData)]
+@inject IMasterDataAppService MasterDataService
+@inject ISnackbar Snackbar
+
+<PageTitle>Danh mục tổ chức</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+    <MudText Typo="Typo.h4" GutterBottom="true">Danh mục tổ chức</MudText>
+
+            <MudPaper Class="pa-4 mb-4">
+                <MudForm @ref="_form">
+                    <MudGrid>
+                        <MudItem xs="12" md="3">
+                            <MudTextField @bind-Value="_input.Type" Label="Loại" Required="true" MaxLength="50" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudTextField @bind-Value="_input.Code" Label="Mã" Required="true" MaxLength="50" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudTextField @bind-Value="_input.Name" Label="Tên" Required="true" MaxLength="256" />
+                        </MudItem>
+                        <MudItem xs="12" md="2">
+                            <MudNumericField @bind-Value="_input.SortOrder" Label="Thứ tự" Min="0" Max="10000" />
+                        </MudItem>
+                        <MudItem xs="12" md="2">
+                            <MudSwitch @bind-Value="_input.IsActive" Label="Hoạt động" />
+                        </MudItem>
+                        <MudItem xs="12" md="2" Class="d-flex align-center">
+                            @if (_editingId.HasValue)
+                            {
+                                <AuthorizeView Policy="@OrganizationServicePermissions.Update">
+                                    <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_saving" OnClick="CreateAsync">Lưu</MudButton>
+                                </AuthorizeView>
+                            }
+                            else
+                            {
+                                <AuthorizeView Policy="@OrganizationServicePermissions.Create">
+                                    <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_saving" OnClick="CreateAsync">Thêm</MudButton>
+                                </AuthorizeView>
+                            }
+                            @if (_editingId.HasValue)
+                            {
+                                <MudButton Class="ml-2" OnClick="CancelEdit">Hủy</MudButton>
+                            }
+                        </MudItem>
+                    </MudGrid>
+                </MudForm>
+            </MudPaper>
+
+    <MudTable Items="_items" Loading="_loading" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Loại</MudTh>
+            <MudTh>Mã</MudTh>
+            <MudTh>Tên</MudTh>
+            <MudTh>Thứ tự</MudTh>
+            <MudTh>Hoạt động</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Loại">@context.Type</MudTd>
+            <MudTd DataLabel="Mã">@context.Code</MudTd>
+            <MudTd DataLabel="Tên">@context.Name</MudTd>
+            <MudTd DataLabel="Thứ tự">@context.SortOrder</MudTd>
+            <MudTd DataLabel="Hoạt động">
+                <MudCheckBox T="bool" Value="context.IsActive" ReadOnly="true" />
+            </MudTd>
+            <MudTd>
+                <AuthorizeView Policy="@OrganizationServicePermissions.Update" Context="updateAuthorization">
+                    <MudButton Size="Size.Small" OnClick="@(() => Edit(context))">Sửa</MudButton>
+                </AuthorizeView>
+                <AuthorizeView Policy="@OrganizationServicePermissions.Delete" Context="deleteAuthorization">
+                    <MudButton Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteAsync(context.Id))">Xóa</MudButton>
+                </AuthorizeView>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>Chưa có dữ liệu.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private MudForm? _form;
+    private bool _loading;
+    private bool _saving;
+    private List<MasterDataItemDto> _items = [];
+    private CreateUpdateMasterDataItemDto _input = new();
+    private Guid? _editingId;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _items.Clear();
+            const int pageSize = 100;
+            for (var skip = 0; ; skip += pageSize)
+            {
+                var result = await MasterDataService.GetListAsync(
+                    new MasterDataListInput { SkipCount = skip, MaxResultCount = pageSize });
+                _items.AddRange(result.Items);
+                if (_items.Count >= result.TotalCount || result.Items.Count == 0) break;
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_editingId.HasValue)
+            {
+                await MasterDataService.UpdateAsync(_editingId.Value, _input);
+            }
+            else
+            {
+                await MasterDataService.CreateAsync(_input);
+            }
+            CancelEdit();
+            Snackbar.Add("Đã lưu danh mục.", Severity.Success);
+            await LoadAsync();
+        }
+        catch
+        {
+            Snackbar.Add("Không thể thêm danh mục. Vui lòng thử lại.", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Edit(MasterDataItemDto item)
+    {
+        _editingId = item.Id;
+        _input = new CreateUpdateMasterDataItemDto
+        {
+            Type = item.Type, Code = item.Code, Name = item.Name,
+            SortOrder = item.SortOrder, IsActive = item.IsActive,
+            ConcurrencyStamp = item.ConcurrencyStamp
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _input = new CreateUpdateMasterDataItemDto();
+    }
+
+    private async Task DeleteAsync(Guid id)
+    {
+        await MasterDataService.DeleteAsync(id);
+        Snackbar.Add("Đã xóa danh mục.", Severity.Success);
+        await LoadAsync();
+    }
+}

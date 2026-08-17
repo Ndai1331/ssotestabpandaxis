@@ -1,0 +1,6 @@
+image:
+  repository: "hanhchinhso/auditlogging"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+swagger:
+  isEnabled: "true"

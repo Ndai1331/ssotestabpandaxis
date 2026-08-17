@@ -1,0 +1,6 @@
+image:
+  repository: "hanhchinhso/gdpr"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+swagger:
+  isEnabled: "true"

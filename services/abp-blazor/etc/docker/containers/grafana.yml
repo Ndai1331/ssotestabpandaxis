@@ -1,0 +1,21 @@
+networks:
+  hanhchinhso:
+    external: true
+
+services:
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:10.2.0
+    volumes:
+      - ./grafana/storage:/var/lib/grafana
+      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/config/provisioning:/etc/grafana/provisioning
+    networks:
+      - hanhchinhso
+    ports:
+      - "3001:3000"
+    environment:
+      - PROMETHEUS_ENDPOINT=http://prometheus:9090
+      - GF_PROVISIONING_DASHBOARDS_ENABLED=true
+      - GF_DASHBOARDS_JSON_ENABLED=true
