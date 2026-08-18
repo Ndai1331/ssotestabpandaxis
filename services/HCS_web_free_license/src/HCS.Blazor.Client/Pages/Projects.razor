@@ -126,13 +126,11 @@
                     </Select>
                 </Field>
                 <Field><FieldLabel>@L["Catalog:Department"]</FieldLabel>
-                    <Select TValue="Guid?" @bind-Value="form.OwnerDepartmentId">
-                        <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
-                        @foreach (var department in departments)
-                        {
-                            <SelectItem TValue="Guid?" Value="department.Id">@($"{department.Code} — {department.Name}")</SelectItem>
-                        }
-                    </Select>
+                    <CatalogSelect2 Value="form.OwnerDepartmentId"
+                                    ValueChanged="value => form.OwnerDepartmentId = value"
+                                    Placeholder="@L["Catalog:SearchPlaceholder"]"
+                                    SelectedText="@DepartmentSelectText(form.OwnerDepartmentId)"
+                                    Search="SearchDepartmentsAsync" />
                 </Field>
             </div>
         </ModalBody>
@@ -174,14 +172,13 @@
             items.Clear(); items.AddRange(result.Items);
             totalCount = (int)result.TotalCount;
         }
-        catch (BffApiException ex) { error = MapError(ex); }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
     }
 
     private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
     private Task ResetSearchAsync() { filter = status = null; showFilters = false; currentPage = 1; return LoadAsync(); }
-    private async Task OpenCreate() { editingId = null; form.Reset(); if (modal is not null) await modal.Show(); }
+    private async Task OpenCreate() => Navigation.NavigateTo("/project-detail");
     private async Task Edit(ProjectDto item)
     {
         editingId = item.Id;
@@ -204,8 +201,7 @@
             if (modal is not null) await modal.Hide();
             await LoadAsync();
         }
-        catch (BffApiException ex) { error = MapError(ex); }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
         finally { isSaving = false; }
     }
 
@@ -213,8 +209,7 @@
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
         try { await Work.DeleteProjectAsync(item.Id); success = L["Catalog:Deleted"]; await LoadAsync(); }
-        catch (BffApiException ex) { error = MapError(ex); }
-        catch { error = L["Catalog:DeleteError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
 
     private async Task ExportAsync()
@@ -229,15 +224,23 @@
         catch { await UiMessage.Error(L["Catalog:ExportError"]); }
     }
 
-    private string DepartmentName(Guid? id) => departments.FirstOrDefault(x => x.Id == id)?.Name ?? "—";
-    private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    private string MapError(BffApiException ex) => ex.StatusCode switch
+    private string DepartmentName(Guid? id)
     {
-        System.Net.HttpStatusCode.Unauthorized => L["Catalog:Unauthorized"],
-        System.Net.HttpStatusCode.Forbidden => L["Catalog:ForbiddenDescription"],
-        System.Net.HttpStatusCode.Conflict => L["Catalog:Conflict"],
-        _ => L["Catalog:SaveError"]
-    };
+        var text = DepartmentSelectText(id);
+        return string.IsNullOrWhiteSpace(text) ? "—" : text;
+    }
+
+    private string DepartmentSelectText(Guid? id) =>
+        CatalogSelect2Cache.TextFor(departments, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+
+    private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
+    {
+        var skip = Math.Max(page - 1, 0) * 20;
+        var result = await Catalog.SearchDepartmentsAsync(term, skip, 20);
+        return CatalogSelect2Cache.Merge(departments, result.Items, x => x.Id,
+            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+    }
+    private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private sealed class ProjectForm
     {

@@ -2,6 +2,7 @@
 @attribute [Authorize(Policy = "WorkManagement.ProjectTasks")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
+@inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
 @inject IJSRuntime JsRuntime
@@ -42,10 +43,11 @@
             <div class="hcs-catalog-advanced-filter">
                 <Field>
                     <FieldLabel>@L["Feature:Project"]</FieldLabel>
-                    <Select TValue="Guid?" @bind-Value="projectFilter">
-                        <SelectItem TValue="Guid?" Value="null">@L["Feature:AllProjects"]</SelectItem>
-                        @foreach (var project in projects) { <SelectItem TValue="Guid?" Value="project.Id">@($"{project.Code} — {project.Name}")</SelectItem> }
-                    </Select>
+                    <CatalogSelect2 Value="projectFilter"
+                                    ValueChanged="async value => { projectFilter = value; await SearchAsync(); }"
+                                    Placeholder="@L["Catalog:SearchPlaceholder"]"
+                                    SelectedText="@ProjectSelectText(projectFilter)"
+                                    Search="SearchProjectsAsync" />
                 </Field>
                 <Field>
                     <FieldLabel>@L["Catalog:Status"]</FieldLabel>
@@ -150,10 +152,11 @@
     <ModalBody Class="hcs-catalog-modal__body">
         <div class="hcs-catalog-form">
             <Field><FieldLabel>@L["Feature:Project"]</FieldLabel>
-                <Select TValue="Guid?" @bind-Value="form.ProjectId" Disabled="@(editingId is not null)">
-                    <SelectItem TValue="Guid?" Value="null">@L["Feature:ChooseProject"]</SelectItem>
-                    @foreach (var project in projects) { <SelectItem TValue="Guid?" Value="project.Id">@($"{project.Code} — {project.Name}")</SelectItem> }
-                </Select>
+                <CatalogSelect2 Value="form.ProjectId"
+                                ValueChanged="value => form.ProjectId = value"
+                                Placeholder="@L["Feature:ChooseProject"]"
+                                SelectedText="@ProjectSelectText(form.ProjectId)"
+                                Search="SearchProjectsAsync" />
             </Field>
             <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editingId is not null)" /></Field>
             <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><TextInput @bind-Value="form.Title" /></Field>
@@ -177,6 +180,16 @@
                 </Select>
             </Field>
             <Field><FieldLabel>@L["Feature:Progress"]</FieldLabel><NumericPicker TValue="int" @bind-Value="form.ProgressPercent" Min="0" Max="100" /></Field>
+            @if (editingId is null)
+            {
+                <Field><FieldLabel>@L["Feature:Assignments"]</FieldLabel>
+                    <CatalogSelect2 Value="form.AssigneeUserId"
+                                    ValueChanged="value => form.AssigneeUserId = value"
+                                    Placeholder="@L["Chat:SelectContacts"]"
+                                    SelectedText="@AssigneeText(form.AssigneeUserId)"
+                                    Search="SearchAssigneesAsync" />
+                </Field>
+            }
         </div>
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
@@ -189,6 +202,8 @@
     private readonly List<ProjectDto> projects = [];
     private readonly List<ProjectTaskDto> tasks = [];
     private readonly List<ProjectTaskDto> pagedTasks = [];
+    private readonly List<ProjectMemberDto> projectMembers = [];
+    private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
     private readonly TaskForm form = new();
     private Modal? modal;
     private Guid? editingId, projectFilter;
@@ -221,7 +236,7 @@
             totalCount = (int)taskPage.TotalCount;
             pagedTasks.Clear(); pagedTasks.AddRange(taskPage.Items);
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
     }
 
@@ -239,25 +254,38 @@
     private async Task SaveAsync()
     {
         if (form.ProjectId is not { } projectId) { error = L["Feature:ChooseProject"]; return; }
+        if (editingId is null && form.AssigneeUserId is null) { error = L["Feature:RequireAssignee"]; return; }
         isSaving = true;
+        Guid? createdId = null;
         try
         {
             if (editingId is { } id)
                 await Work.UpdateTaskAsync(id, new UpdateProjectTaskRequest(form.Title.Trim(), null, form.StartDate, form.DueDate, form.Priority, form.Status, form.ProgressPercent));
             else
-                await Work.CreateTaskAsync(new CreateProjectTaskRequest(projectId, form.ParentTaskId, form.Code.Trim(), form.Title.Trim(), null, form.StartDate, form.DueDate, form.Priority, form.Status, form.ProgressPercent));
+            {
+                var created = await Work.CreateTaskAsync(new CreateProjectTaskRequest(projectId, form.ParentTaskId, form.Code.Trim(), form.Title.Trim(), null, form.StartDate, form.DueDate, form.Priority, form.Status, form.ProgressPercent));
+                createdId = created.Id;
+                await Work.AddAssignmentAsync(created.Id, new AddTaskAssignmentRequest(form.AssigneeUserId!.Value, "Assignee"));
+            }
             success = editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"];
             if (modal is not null) await modal.Hide();
             await LoadAsync();
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex)
+        {
+            if (createdId is { } id)
+            {
+                try { await Work.DeleteTaskAsync(id); } catch { /* rollback best-effort */ }
+            }
+            error = MapBffError(ex, BffErrorKind.Save);
+        }
         finally { isSaving = false; }
     }
     private async Task DeleteAsync(ProjectTaskDto task)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], task.Title))) return;
         try { await Work.DeleteTaskAsync(task.Id); success = L["Catalog:Deleted"]; await LoadAsync(); }
-        catch { error = L["Catalog:DeleteError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
     }
     private async Task DropAsync(string status)
     {
@@ -267,7 +295,7 @@
             await Work.UpdateTaskAsync(dragging.Id, new UpdateProjectTaskRequest(dragging.Title, dragging.Description, dragging.StartDate, dragging.DueDate, dragging.Priority, status, dragging.ProgressPercent));
             dragging = null; dragOver = null; await LoadAsync();
         }
-        catch { error = L["Catalog:SaveError"]; dragOver = null; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); dragOver = null; }
     }
     private async Task ExportAsync()
     {
@@ -281,7 +309,51 @@
         catch { await UiMessage.Error(L["Catalog:ExportError"]); }
     }
     private string ProjectName(Guid projectId) => projects.FirstOrDefault(x => x.Id == projectId)?.Name ?? "—";
+    private string ProjectSelectText(Guid? id) =>
+        CatalogSelect2Cache.TextFor(projects, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+    private async Task<CatalogSelect2SearchResponse> SearchProjectsAsync(string term, int page)
+    {
+        var skip = Math.Max(page - 1, 0) * 20;
+        var result = await Work.GetProjectsAsync(new WorkListQuery(term, null, skip, 20));
+        return CatalogSelect2Cache.Merge(projects, result.Items, x => x.Id,
+            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+    }
     private string ParentTitle(Guid parentId) => tasks.FirstOrDefault(x => x.Id == parentId)?.Title ?? "—";
+    private string MemberName(Guid userId) => contacts.FirstOrDefault(x => x.Id == userId)?.DisplayName ?? userId.ToString("N")[..8];
+    private string AssigneeText(Guid? id) =>
+        id is { } userId && (contacts.Any(x => x.Id == userId) || projectMembers.Any(x => x.UserId == userId))
+            ? MemberName(userId)
+            : "";
+    private async Task<CatalogSelect2SearchResponse> SearchAssigneesAsync(string term, int page)
+    {
+        await RefreshProjectMembersAsync();
+        if (projectMembers.Count == 0)
+        {
+            var found = await Chat.GetContactsAsync(term, 50);
+            return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false);
+        }
+        if (contacts.Count == 0)
+        {
+            // Members only carry user ids; chat contacts provide the display names.
+            try { contacts.AddRange(await Chat.GetContactsAsync(term, 50)); } catch { /* fall back to short ids */ }
+        }
+        var items = projectMembers
+            .Select(member => new CatalogSelect2Item(member.UserId.ToString(), MemberName(member.UserId)))
+            .Where(item => string.IsNullOrWhiteSpace(term) || item.Text.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        return new(items, false);
+    }
+    private async Task RefreshProjectMembersAsync()
+    {
+        if (form.ProjectId is not { } projectId) return;
+        try
+        {
+            var detail = await Work.GetProjectAsync(projectId);
+            projectMembers.Clear();
+            projectMembers.AddRange(detail.Members.Where(x => x.IsActive));
+        }
+        catch { /* fall back to chat contacts */ }
+    }
     private sealed class TaskForm
     {
         public Guid? ProjectId { get; set; }
@@ -293,6 +365,7 @@
         public string Priority { get; set; } = "Normal";
         public string Status { get; set; } = "New";
         public int ProgressPercent { get; set; }
-        public void Reset() { ProjectId = ParentTaskId = null; Code = Title = ""; StartDate = DateTime.Today; DueDate = DateTime.Today.AddDays(7); Priority = "Normal"; Status = "New"; ProgressPercent = 0; }
+        public Guid? AssigneeUserId { get; set; }
+        public void Reset() { ProjectId = ParentTaskId = AssigneeUserId = null; Code = Title = ""; StartDate = DateTime.Today; DueDate = DateTime.Today.AddDays(7); Priority = "Normal"; Status = "New"; ProgressPercent = 0; }
     }
 }

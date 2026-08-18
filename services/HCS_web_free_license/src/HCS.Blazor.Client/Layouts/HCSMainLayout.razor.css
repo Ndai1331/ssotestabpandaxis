@@ -549,7 +549,7 @@
     margin: 0 auto;
     max-width: 1540px;
     min-height: calc(100dvh - var(--hcs-header-h));
-    /* padding: 1.5rem clamp(.9rem, 3vw, 2.5rem); */
+    padding: 1.5rem clamp(.9rem, 3vw, 2.5rem);
 }
 
 /* ——— Compact desktop / laptop: avoid horizontal scroll ——— */
@@ -740,7 +740,7 @@
 
     .hcs-main-content {
         min-height: calc(100dvh - var(--hcs-header-h));
-        /* padding: 1rem .85rem 1.5rem; */
+        padding: 1rem .85rem 1.5rem;
     }
 }
 

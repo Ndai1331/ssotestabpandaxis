@@ -10,13 +10,13 @@
 @inject NavigationManager Navigation
 @implements IDisposable
 
-<PageTitle>@(IsMine ? L["Menu:MyDocuments"] : L["Menu:DocumentList"]) · HCS</PageTitle>
+<PageTitle>@PageTitle · HCS</PageTitle>
 <section class="hcs-catalog-page">
     <header class="hcs-catalog-titlebar">
-        <div><p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p><h1>@(IsMine ? L["Menu:MyDocuments"] : L["Feature:DocumentTitle"])</h1></div>
+        <div><p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p><h1>@PageTitle</h1></div>
         <div class="hcs-catalog-page__actions">
             <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
-            @if (!IsMine) { <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button> }
+            @if (SourceType == 0) { <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button> }
         </div>
     </header>
     @if (error is not null) { <div class="alert alert-warning">@error</div> }
@@ -72,28 +72,24 @@
         <Field><FieldLabel>@L["Feature:DocumentTitleField"]</FieldLabel><TextInput @bind-Value="form.Title" /></Field>
         <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
         <Field><FieldLabel>@L["Menu:DocumentTypes"]</FieldLabel>
-            <Select TValue="Guid?" @bind-Value="form.DocumentTypeId">
-                <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
-                @foreach (var item in documentTypes) { <SelectItem TValue="Guid?" Value="@item.Id">@item.Name</SelectItem> }
-            </Select>
+            <CatalogSelect2 Value="form.DocumentTypeId" ValueChanged="value => form.DocumentTypeId = value"
+                            Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(documentTypes, form.DocumentTypeId)"
+                            Search="SearchDocumentTypesAsync" />
         </Field>
         <Field><FieldLabel>@L["Menu:Sectors"]</FieldLabel>
-            <Select TValue="Guid?" @bind-Value="form.SectorId">
-                <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
-                @foreach (var item in sectors) { <SelectItem TValue="Guid?" Value="@item.Id">@item.Name</SelectItem> }
-            </Select>
+            <CatalogSelect2 Value="form.SectorId" ValueChanged="value => form.SectorId = value"
+                            Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(sectors, form.SectorId)"
+                            Search="SearchSectorsAsync" />
         </Field>
         <Field><FieldLabel>@L["Menu:UrgencyLevels"]</FieldLabel>
-            <Select TValue="Guid?" @bind-Value="form.UrgencyId">
-                <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
-                @foreach (var item in urgencies) { <SelectItem TValue="Guid?" Value="@item.Id">@item.Name</SelectItem> }
-            </Select>
+            <CatalogSelect2 Value="form.UrgencyId" ValueChanged="value => form.UrgencyId = value"
+                            Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(urgencies, form.UrgencyId)"
+                            Search="SearchUrgenciesAsync" />
         </Field>
         <Field><FieldLabel>@L["Menu:ConfidentialityLevels"]</FieldLabel>
-            <Select TValue="Guid?" @bind-Value="form.ConfidentialityId">
-                <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
-                @foreach (var item in confidentialities) { <SelectItem TValue="Guid?" Value="@item.Id">@item.Name</SelectItem> }
-            </Select>
+            <CatalogSelect2 Value="form.ConfidentialityId" ValueChanged="value => form.ConfidentialityId = value"
+                            Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(confidentialities, form.ConfidentialityId)"
+                            Search="SearchConfidentialitiesAsync" />
         </Field>
     </ModalBody>
     <ModalFooter>
@@ -113,7 +109,29 @@
     private string status = "";
     private bool isLoading;
     private string? error, success;
-    private bool IsMine => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Contains("my-documents", StringComparison.OrdinalIgnoreCase);
+    private int SourceType
+    {
+        get
+        {
+            var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+            if (relative.Contains("my-documents", StringComparison.OrdinalIgnoreCase)) return 1;
+            var query = relative.Contains('?') ? relative[(relative.IndexOf('?') + 1)..] : "";
+            foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var pair = part.Split('=', 2);
+                if (pair.Length == 2 && pair[0].Equals("sourceType", StringComparison.OrdinalIgnoreCase)
+                    && int.TryParse(pair[1], out var value) && value is >= 0 and <= 2)
+                    return value;
+            }
+            return 0;
+        }
+    }
+    private string PageTitle => SourceType switch
+    {
+        1 => L["Menu:MyDocuments"],
+        2 => L["Menu:DocumentsSentToMe"],
+        _ => L["Menu:DocumentList"]
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -141,10 +159,10 @@
         isLoading = true; error = null;
         try
         {
-            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(string.IsNullOrWhiteSpace(filter) ? null : filter, string.IsNullOrWhiteSpace(status) ? null : status, IsMine, 0, 20));
+            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(string.IsNullOrWhiteSpace(filter) ? null : filter, string.IsNullOrWhiteSpace(status) ? null : status, SourceType == 1, 0, 20, SourceType));
             items.Clear(); items.AddRange(page.Items);
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
     }
     private async Task OpenCreate() { form.Reset(); if (modal is not null) await modal.Show(); }
@@ -156,8 +174,21 @@
             if (modal is not null) await modal.Hide();
             success = L["Catalog:Created"]; await LoadAsync();
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
+    private static string MasterText(IEnumerable<MasterDataCatalogDto> items, Guid? id) =>
+        CatalogSelect2Cache.TextFor(items, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+    private async Task<CatalogSelect2SearchResponse> SearchMasterAsync(string type, List<MasterDataCatalogDto> cache, string term, int page)
+    {
+        var skip = Math.Max(page - 1, 0) * 20;
+        var result = await Catalog.SearchMasterDataAsync(type, term, skip, 20);
+        return CatalogSelect2Cache.Merge(cache, result.Items, x => x.Id,
+            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+    }
+    private Task<CatalogSelect2SearchResponse> SearchDocumentTypesAsync(string term, int page) => SearchMasterAsync("DocumentType", documentTypes, term, page);
+    private Task<CatalogSelect2SearchResponse> SearchSectorsAsync(string term, int page) => SearchMasterAsync("Sector", sectors, term, page);
+    private Task<CatalogSelect2SearchResponse> SearchUrgenciesAsync(string term, int page) => SearchMasterAsync("UrgencyLevel", urgencies, term, page);
+    private Task<CatalogSelect2SearchResponse> SearchConfidentialitiesAsync(string term, int page) => SearchMasterAsync("ConfidentialityLevel", confidentialities, term, page);
     private sealed class DocumentForm
     {
         public string Number { get; set; } = ""; public string Title { get; set; } = ""; public string Description { get; set; } = "";

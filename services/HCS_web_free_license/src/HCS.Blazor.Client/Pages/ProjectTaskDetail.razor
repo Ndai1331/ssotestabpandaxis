@@ -26,7 +26,10 @@
                 <CardBody>
                     <Select TValue="Guid?" @bind-Value="assigneeId">
                         <SelectItem TValue="Guid?" Value="null">@L["Chat:SelectContacts"]</SelectItem>
-                        @foreach (var contact in contacts) { <SelectItem TValue="Guid?" Value="contact.Id">@contact.DisplayName</SelectItem> }
+                        @foreach (var member in AssigneeOptions)
+                        {
+                            <SelectItem TValue="Guid?" Value="@member.Id">@member.Name</SelectItem>
+                        }
                     </Select>
                     <Button Color="Color.Primary" Class="mt-2" Clicked="AddAssignmentAsync">@L["Feature:Assign"]</Button>
                     <ul class="list-group mt-3">
@@ -66,10 +69,16 @@
     [Parameter] public Guid TaskId { get; set; }
     private ProjectTaskDetailDto? detail;
     private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
+    private readonly List<ProjectMemberDto> projectMembers = [];
     private readonly List<DocumentDto> documents = [];
     private Guid? assigneeId, documentId;
     private bool isLoading;
     private string? error;
+    // Prefer project members; fall back to the chat directory when the project exposes none.
+    private IEnumerable<(Guid Id, string Name)> AssigneeOptions =>
+        projectMembers.Count > 0
+            ? projectMembers.Select(member => (member.UserId, Name(member.UserId)))
+            : contacts.Select(contact => (contact.Id, contact.DisplayName));
 
     protected override async Task OnParametersSetAsync()
     {
@@ -77,6 +86,7 @@
         try
         {
             detail = await Work.GetTaskAsync(TaskId);
+            await LoadProjectMembersAsync(detail.Task.ProjectId);
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
             if (documents.Count == 0)
             {
@@ -84,34 +94,45 @@
                 documents.AddRange(page.Items);
             }
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
+    }
+
+    private async Task LoadProjectMembersAsync(Guid projectId)
+    {
+        projectMembers.Clear();
+        try
+        {
+            var project = await Work.GetProjectAsync(projectId);
+            projectMembers.AddRange(project.Members.Where(x => x.IsActive));
+        }
+        catch { /* fall back to chat contacts */ }
     }
 
     private async Task AddAssignmentAsync()
     {
         if (assigneeId is not { } userId) return;
         try { await Work.AddAssignmentAsync(TaskId, new AddTaskAssignmentRequest(userId, "Assignee")); detail = await Work.GetTaskAsync(TaskId); }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task RemoveAssignmentAsync(TaskAssignmentDto assignment)
     {
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
         try { await Work.RemoveAssignmentAsync(TaskId, assignment.Id); detail = await Work.GetTaskAsync(TaskId); }
-        catch { error = L["Catalog:DeleteError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
     }
     private async Task AddDocumentAsync()
     {
         if (documentId is not { } id) return;
         var document = documents.FirstOrDefault(x => x.Id == id);
         try { await Work.AddTaskDocumentAsync(TaskId, new AddTaskDocumentRequest(id, document?.Number)); detail = await Work.GetTaskAsync(TaskId); }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task RemoveDocumentAsync(TaskDocumentReferenceDto reference)
     {
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
         try { await Work.RemoveTaskDocumentAsync(TaskId, reference.Id); detail = await Work.GetTaskAsync(TaskId); }
-        catch { error = L["Catalog:DeleteError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
     }
     private string Name(Guid id) => contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.ToString("N")[..8];
 }

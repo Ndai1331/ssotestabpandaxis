@@ -31,12 +31,12 @@
                     <tr>
                     @foreach (var day in week)
                     {
-                        var daily = events.Where(x => x.StartTime.Date == day.Date).ToList();
+                        var daily = events.Where(x => x.StartTime.ToLocalTime().Date == day.Date).ToList();
                         <td class="@(day.Month == month.Month ? null : "text-muted")" style="min-width:8rem;height:7rem;vertical-align:top">
                             <div><strong>@day.Day</strong></div>
                             @foreach (var item in daily.Take(3))
                             {
-                                <div><a href="@($"/calendar-event-detail/{item.Id}")">@item.Title</a></div>
+                                <div><a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@item.Title</a></div>
                             }
                         </td>
                     }
@@ -51,7 +51,7 @@
             @foreach (var item in events)
             {
                 <tr>
-                    <td><a href="@($"/calendar-event-detail/{item.Id}")"><strong>@item.Title</strong></a><br /><small>@item.EventType</small></td>
+                    <td><a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)"><strong>@item.Title</strong></a><br /><small>@item.EventType</small></td>
                     <td>@item.StartTime.ToLocalTime().ToString("dd/MM HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")</td>
                     <td>@item.Visibility</td>
                     <td><Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteAsync(item)">@L["Catalog:Delete"]</Button></td>
@@ -82,12 +82,21 @@
             </Select>
         </Field>
         <Field><FieldLabel>@L["Feature:RelatedType"]</FieldLabel>
-            <Select TValue="string" @bind-Value="form.RelatedType">
+            <Select TValue="string" Value="form.RelatedType" ValueChanged="OnRelatedTypeChanged">
                 <SelectItem Value="@("NONE")">NONE</SelectItem>
                 <SelectItem Value="@("PROJECT")">PROJECT</SelectItem>
                 <SelectItem Value="@("TASK")">TASK</SelectItem>
             </Select>
         </Field>
+        @if (form.RelatedType is "PROJECT" or "TASK")
+        {
+            <Field><FieldLabel>@L["Work:RelatedEntity"]</FieldLabel>
+                <CatalogSelect2 Value="form.RelatedId"
+                                ValueChanged="value => form.RelatedId = value"
+                                Placeholder="@L["Catalog:SearchPlaceholder"]"
+                                Search="SearchRelatedAsync" />
+            </Field>
+        }
         <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
             @foreach (var contact in contacts)
             {
@@ -127,13 +136,18 @@
             }
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
     }
 
     private Task PreviousMonth() { month = month.AddMonths(-1); return LoadAsync(); }
     private Task NextMonth() { month = month.AddMonths(1); return LoadAsync(); }
     private async Task OpenCreate() { form.Reset(); if (modal is not null) await modal.Show(); }
+    private void OnRelatedTypeChanged(string value)
+    {
+        if (!string.Equals(form.RelatedType, value, StringComparison.Ordinal)) form.RelatedId = null;
+        form.RelatedType = value;
+    }
     private IEnumerable<List<DateTime>> Weeks()
     {
         var start = month.AddDays(-(((int)month.DayOfWeek + 6) % 7));
@@ -147,17 +161,32 @@
     {
         try
         {
-            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, null, form.RelatedType, null, form.Visibility, form.Participants.ToList()));
+            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, null, form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
             if (modal is not null) await modal.Hide();
             await LoadAsync();
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync(CalendarEventDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Title))) return;
         try { await Work.DeleteCalendarEventAsync(item.Id); await LoadAsync(); }
-        catch { error = L["Catalog:DeleteError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+    }
+    private async Task<CatalogSelect2SearchResponse> SearchRelatedAsync(string term, int page)
+    {
+        var skip = Math.Max(page - 1, 0) * 20;
+        if (form.RelatedType == "TASK")
+        {
+            var tasks = await Work.GetTasksAsync(null, new WorkListQuery(term, null, skip, 20));
+            return new(
+                tasks.Items.Select(x => new CatalogSelect2Item(x.Id.ToString(), CatalogSelect2Text.CodeName(x.Code, x.Title))).ToList(),
+                skip + tasks.Items.Count < tasks.TotalCount);
+        }
+        var projects = await Work.GetProjectsAsync(new WorkListQuery(term, null, skip, 20));
+        return new(
+            projects.Items.Select(x => new CatalogSelect2Item(x.Id.ToString(), CatalogSelect2Text.CodeName(x.Code, x.Name))).ToList(),
+            skip + projects.Items.Count < projects.TotalCount);
     }
     private sealed class EventForm
     {
@@ -168,7 +197,8 @@
         public string EventType { get; set; } = "Meeting";
         public string Visibility { get; set; } = "Private";
         public string RelatedType { get; set; } = "NONE";
+        public Guid? RelatedId { get; set; }
         public HashSet<Guid> Participants { get; } = [];
-        public void Reset() { Title = Description = ""; Start = DateTime.Now; End = DateTime.Now.AddHours(1); EventType = "Meeting"; Visibility = "Private"; RelatedType = "NONE"; Participants.Clear(); }
+        public void Reset() { Title = Description = ""; Start = DateTime.Now; End = DateTime.Now.AddHours(1); EventType = "Meeting"; Visibility = "Private"; RelatedType = "NONE"; RelatedId = null; Participants.Clear(); }
     }
 }

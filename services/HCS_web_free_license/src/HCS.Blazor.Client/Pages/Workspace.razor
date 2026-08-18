@@ -11,8 +11,13 @@
     <div class="hcs-ws-filter">
         <span class="hcs-ws-filter-label"><i class="fa fa-calendar-day" aria-hidden="true"></i> @L["Work:FilterByDateRange"]</span>
         <div class="hcs-ws-filter-dates">
-            <DatePicker TValue="DateTime" @bind-Value="fromDate" InputMode="DateInputMode.Date" />
-            <DatePicker TValue="DateTime" @bind-Value="toDate" InputMode="DateInputMode.Date" />
+            <DatePicker TValue="DateTime?"
+                        InputMode="DateInputMode.Date"
+                        SelectionMode="DateInputSelectionMode.Range"
+                        Dates="@selectedDates"
+                        DatesChanged="OnRangeChanged"
+                        DisplayFormat="dd/MM/yyyy"
+                        Placeholder="@L["Work:SelectDateRange"]" />
         </div>
         <button type="button" class="hcs-ws-search" @onclick="LoadAsync" disabled="@isLoading">
             <i class="fa fa-search" aria-hidden="true"></i> @L["Catalog:SearchButton"]
@@ -62,7 +67,7 @@
                                     <div class="hcs-ws-ev-name">@item.Title</div>
                                     <div class="hcs-ws-ev-meta"><i class="fa fa-clock me-1"></i>@item.StartTime.ToLocalTime().ToString("HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")@ProjectLabel(item)</div>
                                 </div>
-                                <a class="hcs-ws-view" href="@($"/calendar-event-detail/{item.Id}")">@L["Work:View"]</a>
+                                <a class="hcs-ws-view" href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@L["Work:View"]</a>
                             </div>
                         }
                     </div>
@@ -289,11 +294,12 @@
     private readonly List<NotificationDto> notifications = [];
     private DateTime fromDate = DateTime.Today;
     private DateTime toDate = DateTime.Today.AddMonths(3);
+    private IReadOnlyList<DateTime?> selectedDates = [DateTime.Today, DateTime.Today.AddMonths(3)];
     private DateTime selectedDay = DateTime.Today;
     private bool isLoading;
     private string? error;
 
-    private IEnumerable<DateTime> week => Enumerable.Range(0, 7).Select(offset => DateTime.Today.AddDays(offset));
+    private IEnumerable<DateTime> week => Enumerable.Range(0, 7).Select(offset => fromDate.Date.AddDays(offset));
     private List<CalendarEventDto> selectedDayEvents => events.Where(x => x.StartTime.ToLocalTime().Date == selectedDay.Date).ToList();
     private List<ProjectTaskDto> myTasks => tasks.Where(x => x.Status is not "Completed" and not "Cancelled").ToList();
     private IReadOnlyList<(string Label, int Count, int Percent, string Color)> workflowGroups
@@ -312,6 +318,19 @@
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
+    private Task OnRangeChanged(IReadOnlyList<DateTime?> dates)
+    {
+        selectedDates = dates;
+        if (dates.Count >= 2 && dates[0] is { } start && dates[1] is { } end)
+        {
+            fromDate = (start <= end ? start : end).Date;
+            toDate = (start <= end ? end : start).Date;
+            if (selectedDay.Date < fromDate || selectedDay.Date > toDate) selectedDay = fromDate;
+            return LoadAsync();
+        }
+        return Task.CompletedTask;
+    }
+
     private async Task LoadAsync()
     {
         isLoading = true; error = null;
@@ -320,14 +339,16 @@
             var from = fromDate.Date;
             var to = toDate.Date.AddDays(1).AddTicks(-1);
             events.Clear(); events.AddRange((await Work.GetCalendarAsync(from, to)).Where(x => x.StartTime.ToLocalTime() >= from && x.StartTime.ToLocalTime() <= to));
-            projects.Clear(); projects.AddRange((await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100))).Items);
-            tasks.Clear(); tasks.AddRange((await Work.GetTasksAsync(null, new WorkListQuery(null, null, 0, 100))).Items);
+            projects.Clear(); projects.AddRange((await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100))).Items
+                .Where(x => x.EndDate >= from && x.StartDate <= to));
+            tasks.Clear(); tasks.AddRange((await Work.GetTasksAsync(null, new WorkListQuery(null, null, 0, 100))).Items
+                .Where(x => x.DueDate >= from && x.StartDate <= to));
             try { documents.Clear(); documents.AddRange((await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 20))).Items); } catch { documents.Clear(); }
             try { workflows.Clear(); workflows.AddRange(await Documents.GetInstancesAsync()); } catch { workflows.Clear(); }
             try { notifications.Clear(); notifications.AddRange(await Chat.GetNotificationsAsync()); } catch { notifications.Clear(); }
             if (!week.Contains(selectedDay.Date)) selectedDay = DateTime.Today;
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
     }
 

@@ -72,6 +72,46 @@ public sealed class WorkflowTests
     }
 
     [Fact]
+    public void Sign_step_copies_assignee_onto_approval_task()
+    {
+        var assignee = Guid.NewGuid();
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "sign", "Sign", new[]
+        {
+            new WorkflowStepInput("sign", "Sign", 1, "Documents.Approve", "SIGN", assignee)
+        }, Now);
+        var step = definition.Steps.Single();
+        Assert.Equal(WorkflowStepTypes.Sign, step.Type);
+        Assert.Equal(assignee, step.AssigneeUserId);
+        var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-sign", Now);
+        Assert.Equal(assignee, instance.Tasks.Single().AssigneeUserId);
+    }
+
+    [Fact]
+    public void Step_type_must_be_known()
+    {
+        Assert.Equal(WorkflowStepTypes.Process, WorkflowStepTypes.Normalize(null));
+        Assert.Throws<ArgumentException>(() => WorkflowStepTypes.Normalize("FOO"));
+        Assert.Throws<ArgumentException>(() => new WorkflowDefinition(Guid.NewGuid(), "bad", "Bad", new[]
+        {
+            new WorkflowStepInput("x", "X", 1, "Documents.Approve", "UNKNOWN")
+        }, Now));
+    }
+
+    [Fact]
+    public void Template_attaches_pdf_and_word_files()
+    {
+        var template = new WorkflowTemplate(Guid.NewGuid(), "incoming", "Incoming", Guid.NewGuid(), 1, "{}", Now);
+        var pdfId = Guid.NewGuid();
+        var wordId = Guid.NewGuid();
+        template.AttachPdf(pdfId, "form.pdf", "application/pdf", "wf/pdf");
+        template.AttachWord(wordId, "form.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "wf/word");
+        Assert.Equal(pdfId, template.PdfFileId);
+        Assert.Equal("form.pdf", template.PdfFileName);
+        Assert.Equal(wordId, template.WordFileId);
+        Assert.Equal("form.docx", template.WordFileName);
+    }
+
+    [Fact]
     public void Completed_single_step_workflow_accepts_same_decision_retry()
     {
         var definition = new WorkflowDefinition(Guid.NewGuid(), "one", "One", new[]

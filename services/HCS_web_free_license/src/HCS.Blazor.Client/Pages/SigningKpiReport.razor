@@ -59,6 +59,6 @@
                 catch { /* skip documents without signing access */ }
             }
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
     }
 }

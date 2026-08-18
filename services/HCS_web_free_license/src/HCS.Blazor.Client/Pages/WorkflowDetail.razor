@@ -1,0 +1,262 @@
+@page "/workflow-detail"
+@page "/workflow-detail/{Id:guid}"
+@attribute [Authorize(Policy = "Documents.Workflow.View")]
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+@inject CollaborationClient Chat
+@inject IUiMessageService UiMessage
+@inject NavigationManager Navigation
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<PageTitle>@L["Feature:WorkflowDetail"] · HCS</PageTitle>
+<section class="hcs-document-page">
+    <header class="hcs-document-page__header">
+        <div>
+            <p class="hcs-document-page__eyebrow">@L["Menu:Workflows"]</p>
+            <h1>@(string.IsNullOrWhiteSpace(form.Name) ? L["Feature:WorkflowDetail"] : form.Name)</h1>
+        </div>
+        <a class="btn btn-outline-primary" href="/workflow-lists">@L["Feature:BackToList"]</a>
+    </header>
+    @if (error is not null) { <div class="alert alert-warning">@error</div> }
+    @if (success is not null) { <div class="alert alert-success">@success</div> }
+
+    <Steps SelectedStep="@selectedStep" SelectedStepChanged="OnStepChanged">
+        <Items>
+            <Step Name="step1" Completed="Id.HasValue"><Marker><Icon Name="IconName.FileAlt" /></Marker><Caption>@L["Work:CreateWorkflow"]</Caption></Step>
+            <Step Name="step2" Completed="template is not null"><Marker><Icon Name="IconName.File" /></Marker><Caption>@L["Work:CreateTemplate"]</Caption></Step>
+            <Step Name="step3" Completed="form.Steps.Count > 0"><Marker><Icon Name="IconName.List" /></Marker><Caption>@L["Work:CreateSteps"]</Caption></Step>
+        </Items>
+        <Content>
+            <StepPanel Name="step1">
+                <Card><CardBody>
+                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(Id.HasValue)" /></Field>
+                    <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><TextInput @bind-Value="form.Name" /></Field>
+                    <Button Color="Color.Primary" Clicked="SaveWorkflowAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+                </CardBody></Card>
+            </StepPanel>
+            <StepPanel Name="step2">
+                @if (Id is null)
+                {
+                    <Alert Color="Color.Warning" Visible="true"><AlertMessage>@L["Work:SaveWorkflowFirst"]</AlertMessage></Alert>
+                }
+                else
+                {
+                    <Card><CardBody>
+                        <p class="text-muted">@L["Work:PreviewPdfOnly"]</p>
+                        <Field><FieldLabel>@L["Work:UploadWord"]</FieldLabel><InputFile OnChange="UploadWordAsync" accept=".docx" /></Field>
+                        <Field><FieldLabel>@L["Work:UploadPdf"]</FieldLabel><InputFile OnChange="UploadPdfAsync" accept=".pdf,application/pdf" /></Field>
+                        @if (template is not null)
+                        {
+                            <p>@template.Name · v@(template.Version)
+                                @if (!string.IsNullOrWhiteSpace(template.WordFileName)) { <span> · @template.WordFileName</span> }
+                                @if (!string.IsNullOrWhiteSpace(template.PdfFileName)) { <span> · @template.PdfFileName</span> }
+                            </p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(pdfUrl))
+                        {
+                            <h3 class="h6">@L["Work:PdfPreview"]</h3>
+                            <iframe src="@pdfUrl" title="@L["Work:PdfPreview"]" style="width:100%;min-height:28rem;border:1px solid #d7e2e8;border-radius:.5rem;"></iframe>
+                        }
+                    </CardBody></Card>
+                }
+            </StepPanel>
+            <StepPanel Name="step3">
+                @if (Id is null)
+                {
+                    <Alert Color="Color.Warning" Visible="true"><AlertMessage>@L["Work:SaveWorkflowFirst"]</AlertMessage></Alert>
+                }
+                else
+                {
+                    <Card><CardBody>
+                        @for (var i = 0; i < form.Steps.Count; i++)
+                        {
+                            var index = i;
+                            var step = form.Steps[index];
+                            <div class="border rounded p-3 mb-3" @key="step.Key">
+                                <Field><FieldLabel>@L["Feature:StepCode"]</FieldLabel><TextInput @bind-Value="step.Code" /></Field>
+                                <Field><FieldLabel>@L["Feature:StepName"]</FieldLabel><TextInput @bind-Value="step.Name" /></Field>
+                                <Field><FieldLabel>@L["Work:StepType"]</FieldLabel>
+                                    <Select TValue="string" @bind-Value="step.Type">
+                                        <SelectItem Value="@("PROCESS")">@L["Work:StepType.PROCESS"]</SelectItem>
+                                        <SelectItem Value="@("SIGN")">@L["Work:StepType.SIGN"]</SelectItem>
+                                        <SelectItem Value="@("VIEW")">@L["Work:StepType.VIEW"]</SelectItem>
+                                    </Select>
+                                </Field>
+                                <Field><FieldLabel>@L["Feature:RequiredPermission"]</FieldLabel><TextInput @bind-Value="step.RequiredPermission" /></Field>
+                                <Field><FieldLabel>@L["Work:Assignee"]</FieldLabel>
+                                    <CatalogSelect2 Value="step.AssigneeUserId"
+                                                    ValueChanged="value => step.AssigneeUserId = value"
+                                                    Placeholder="@L["Chat:SelectContacts"]"
+                                                    SelectedText="@ContactName(step.AssigneeUserId)"
+                                                    Search="SearchContactsAsync" />
+                                </Field>
+                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveStep(index)" Disabled="@(form.Steps.Count <= 1)">@L["Catalog:Delete"]</Button>
+                            </div>
+                        }
+                        <Button Color="Color.Light" Clicked="AddStep">@L["Feature:AddStep"]</Button>
+                        <Button Color="Color.Primary" Class="ms-2" Clicked="SaveStepsAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+                    </CardBody></Card>
+                }
+            </StepPanel>
+        </Content>
+    </Steps>
+</section>
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    private readonly WorkflowForm form = new();
+    private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
+    private WorkflowTemplateDto? template;
+    private string selectedStep = "step1";
+    private string? pdfUrl, error, success;
+    private bool isSaving, loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        error = null;
+        try
+        {
+            if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+            if (Id is { } id)
+            {
+                var definition = await Documents.GetDefinitionAsync(id);
+                form.Code = definition.Code; form.Name = definition.Name;
+                form.Steps.Clear();
+                foreach (var step in definition.Steps.OrderBy(x => x.Order))
+                    form.Steps.Add(new StepDraft(step.Code, step.Name, step.Type, step.RequiredPermission, step.AssigneeUserId));
+                var templates = await Documents.GetTemplatesAsync();
+                template = templates.Where(x => x.DefinitionId == id).OrderByDescending(x => x.Version).FirstOrDefault();
+                await LoadPdfAsync();
+            }
+            else if (loaded)
+            {
+                form.Reset();
+                template = null;
+                if (!string.IsNullOrWhiteSpace(pdfUrl))
+                {
+                    try { await Js.InvokeVoidAsync("hcsRevokeObjectUrl", pdfUrl); } catch { }
+                    pdfUrl = null;
+                }
+            }
+            loaded = true;
+        }
+        catch (Exception ex) { error = MapBffError(ex); }
+    }
+
+    private void OnStepChanged(string name) => selectedStep = name;
+
+    private async Task SaveWorkflowAsync()
+    {
+        isSaving = true; error = null;
+        try
+        {
+            var steps = MapSteps();
+            if (Id is { } id)
+            {
+                await Documents.UpdateDefinitionAsync(id, new UpdateWorkflowDefinitionRequest(form.Name.Trim(), steps));
+                success = L["Catalog:Updated"];
+            }
+            else
+            {
+                var created = await Documents.CreateDefinitionAsync(new CreateWorkflowDefinitionRequest(form.Code.Trim(), form.Name.Trim(), steps));
+                Navigation.NavigateTo($"/workflow-detail/{created}", forceLoad: true);
+            }
+        }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        finally { isSaving = false; }
+    }
+
+    private async Task SaveStepsAsync()
+    {
+        if (Id is not { } id) return;
+        isSaving = true; error = null;
+        try
+        {
+            await Documents.UpdateDefinitionAsync(id, new UpdateWorkflowDefinitionRequest(form.Name.Trim(), MapSteps()));
+            success = L["Catalog:Updated"];
+        }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        finally { isSaving = false; }
+    }
+
+    private async Task EnsureTemplateAsync()
+    {
+        if (Id is not { } id) return;
+        if (template is not null) return;
+        template = await Documents.CreateTemplateAsync(new CreateWorkflowTemplateRequest($"{form.Code}-tpl", form.Name, id, 1, "{}"));
+    }
+
+    private Task UploadWordAsync(InputFileChangeEventArgs args) => UploadTemplateFileAsync("word", args.File);
+
+    private Task UploadPdfAsync(InputFileChangeEventArgs args) => UploadTemplateFileAsync("pdf", args.File, refreshPreview: true);
+
+    private async Task UploadTemplateFileAsync(string kind, IBrowserFile file, bool refreshPreview = false)
+    {
+        if (Id is null) return;
+        try
+        {
+            await EnsureTemplateAsync();
+            template = await Documents.UploadTemplateFileAsync(template!.Id, kind, file);
+            if (refreshPreview) await LoadPdfAsync();
+            success = L["Catalog:Updated"];
+        }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+    }
+
+    private async Task LoadPdfAsync()
+    {
+        if (template?.PdfFileId is null) return;
+        try
+        {
+            var bytes = await Documents.GetTemplateFileAsync(template.Id, "pdf");
+            await RevokePdfAsync();
+            pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", "application/pdf", bytes);
+        }
+        catch { pdfUrl = null; }
+    }
+
+    private async Task RevokePdfAsync()
+    {
+        if (string.IsNullOrWhiteSpace(pdfUrl)) return;
+        await Js.InvokeVoidAsync("hcsRevokeObjectUrl", pdfUrl);
+    }
+
+    private void AddStep() => form.Steps.Add(new StepDraft($"step{form.Steps.Count + 1}", L["Feature:StepName"], "PROCESS", "Documents.Workflow.Decide", null));
+    private void RemoveStep(int index) { if (form.Steps.Count > 1) form.Steps.RemoveAt(index); }
+    private List<WorkflowStepInput> MapSteps() => form.Steps.Select((step, index) =>
+        new WorkflowStepInput(step.Code.Trim(), step.Name.Trim(), index + 1, step.RequiredPermission.Trim(), step.Type, step.AssigneeUserId)).ToList();
+    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
+    {
+        var found = await Chat.GetContactsAsync(term, 50);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // JS interop can already be unavailable while tearing down; the browser reclaims the URL anyway.
+        try { await RevokePdfAsync(); } catch { }
+    }
+
+    private sealed class StepDraft(string code, string name, string type, string permission, Guid? assignee)
+    {
+        public Guid Key { get; } = Guid.NewGuid();
+        public string Code { get; set; } = code;
+        public string Name { get; set; } = name;
+        public string Type { get; set; } = type;
+        public string RequiredPermission { get; set; } = permission;
+        public Guid? AssigneeUserId { get; set; } = assignee;
+    }
+    private sealed class WorkflowForm
+    {
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public List<StepDraft> Steps { get; } = [new("review", "Review", "PROCESS", "Documents.Workflow.Decide", null)];
+        public void Reset()
+        {
+            Code = Name = "";
+            Steps.Clear();
+            Steps.Add(new("review", "Review", "PROCESS", "Documents.Workflow.Decide", null));
+        }
+    }
+}

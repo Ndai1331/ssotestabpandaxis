@@ -239,6 +239,8 @@
     margin: 0;
 }
 
+.hcs-user-modal ::deep .modal-dialog,
+.hcs-permission-modal ::deep .modal-dialog,
 .hcs-user-modal .modal-dialog,
 .hcs-permission-modal .modal-dialog {
     max-width: min(94vw, 1180px);
@@ -310,6 +312,41 @@
 .hcs-user-tabs button.is-active {
     border-bottom-color: #f42583;
     color: #f42583;
+}
+
+.hcs-user-signing {
+    display: grid;
+    gap: 1rem;
+}
+
+.hcs-user-signing__title {
+    margin: .35rem 0 0;
+    color: #0e304c;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.hcs-user-signature-list {
+    display: grid;
+    gap: .65rem;
+    margin: 0 0 .4rem;
+    padding: 0;
+    list-style: none;
+}
+
+.hcs-user-signature-list li {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .75rem 1rem;
+    border: 1px solid #e1eaf0;
+    border-radius: .75rem;
+}
+
+.hcs-user-signature-list small {
+    display: block;
+    color: #7990a0;
 }
 
 .hcs-user-form-grid {

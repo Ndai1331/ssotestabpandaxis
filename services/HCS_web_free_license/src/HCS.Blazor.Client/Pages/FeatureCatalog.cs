@@ -18,9 +18,10 @@ internal static class FeatureCatalog
         {
             "workspace" => F("Không gian làm việc", "Tổng quan công việc, văn bản và hoạt động cần xử lý.", "/api/dashboard", "fa fa-gauge-high"),
             "manage-documents" or "my-documents" or "document-assignments" or "document-files" or "document-histories" => F("Quản lý văn bản", "Tra cứu, theo dõi luân chuyển, tệp và lịch sử văn bản.", "/api/documents", "fa fa-folder-open"),
-            "document-signing" => F("Văn bản chờ ký", "Ký điện tử, ký số và kiểm tra toàn vẹn tài liệu.", "/api/signing", "fa fa-file-signature"),
-            "workflow-definitions" => F("Định nghĩa quy trình", "Thiết kế các bước xử lý và phân quyền phê duyệt.", "/api/workflows/definitions", "fa fa-diagram-project"),
-            "workflow-lists" or "document-workflow-instances" or "workflow-instances" => F("Hồ sơ quy trình", "Theo dõi trạng thái và nhiệm vụ phê duyệt.", "/api/workflows/instances", "fa fa-code-branch"),
+            "document-signing" => F("Ký duyệt", "Hàng đợi ký điện tử và ký số.", "/api/signing", "fa fa-file-signature"),
+            "workflow-definitions" => F("Loại quy trình", "Danh mục loại quy trình.", "/api/workflows/definitions", "fa fa-diagram-project"),
+            "workflow-lists" or "workflow-detail" => F("Quy trình", "Thiết kế các bước xử lý và tệp mẫu.", "/api/workflows/definitions", "fa fa-code-branch"),
+            "document-workflow-instances" or "workflow-instances" => F("Hồ sơ quy trình", "Theo dõi trạng thái và nhiệm vụ phê duyệt.", "/api/workflows/instances", "fa fa-folder-open"),
             "projects" or "project-detail" => F("Dự án", "Quản lý tiến độ, thành viên và phạm vi dự án.", "/api/projects", "fa fa-diagram-project"),
             "tasks" or "project-task-detail" => F("Công việc", "Theo dõi phân công, ưu tiên và tiến độ thực hiện.", "/api/project-tasks", "fa fa-list-check"),
             "calendar-events" or "calendar-event-detail" => F("Lịch công tác", "Lịch cá nhân, đơn vị và các mốc liên quan công việc.", "/api/calendar", "fa fa-calendar-days"),
@@ -45,8 +46,12 @@ internal static class FeatureCatalog
             "reports" or "report-web-frame" => F("Báo cáo", "Các mô hình đọc tổng hợp từ dữ liệu nghiệp vụ.", "/api/reports", "fa fa-chart-column"),
             "notifications" or "notification-receivers" => F("Thông báo", "Thông báo nghiệp vụ và trạng thái đã đọc.", "/api/notifications", "fa fa-bell", false),
             "chat" or "chat1" => F("Trao đổi", "Trao đổi trực tiếp, nhóm, dự án và công việc theo thời gian thực.", "/api/chat", "fa fa-comments", false),
-            _ when path.StartsWith("workflow-lists/") =>
-                F("Hồ sơ quy trình", "Theo dõi trạng thái và nhiệm vụ phê duyệt.", "/api/workflows/instances", "fa fa-code-branch"),
+            _ when path.StartsWith("workflow-detail/") =>
+                F("Chi tiết quy trình", "Cấu hình bước xử lý, tệp mẫu và người thực hiện.", "/api/workflows/definitions", "fa fa-diagram-project"),
+            _ when path.StartsWith("document-workflow-instances/") =>
+                F("Hồ sơ quy trình", "Theo dõi trạng thái và nhiệm vụ phê duyệt.", "/api/workflows/instances", "fa fa-folder-open"),
+            _ when path.StartsWith("project-detail/") =>
+                F("Chi tiết dự án", "Thành viên, công việc và phạm vi dự án.", "/api/projects", "fa fa-diagram-project"),
             _ when path.StartsWith("survey-collections/") =>
                 F("Thu thập khảo sát", "Ghi nhận kết quả theo tiêu chí cho địa điểm đang chọn.", "/api/surveys/sessions", "fa fa-square-poll-vertical"),
             _ when path.StartsWith("document-detail/") || path.StartsWith("view-document-detail/") =>

@@ -44,14 +44,28 @@
                 <i class="fa fa-magnifying-glass" aria-hidden="true"></i>
                 <input @bind="conversationSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" />
             </label>
+            <nav class="hcs-chat__tabs" role="tablist">
+                <button class="@(leftTab == LeftTab.Conversations ? "is-active" : null)" type="button" role="tab" @onclick="() => leftTab = LeftTab.Conversations">@T("Chat:ConversationsTab")</button>
+                <button class="@(leftTab == LeftTab.Contacts ? "is-active" : null)" type="button" role="tab" @onclick="ShowContactsTabAsync">@T("Chat:ContactsTab")</button>
+            </nav>
 
-            @if (showNewConversation)
+            @* The contact picker backs both the "new conversation" panel and the contacts tab. *@
+            @if (showNewConversation || leftTab == LeftTab.Contacts)
             {
-                <section class="hcs-chat__new" aria-labelledby="new-conversation-title">
-                    <div class="hcs-chat__new-heading">
-                        <h2 id="new-conversation-title">@T("Chat:NewConversation")</h2>
-                        <button class="hcs-chat__close" type="button" @onclick="CloseNewConversation" aria-label="@T("Chat:Cancel")"><i class="fa fa-xmark" aria-hidden="true"></i></button>
-                    </div>
+                var contactListRole = showNewConversation ? "group" : "list";
+                var contactListLabel = showNewConversation ? T("Chat:SelectContacts") : T("Chat:Directory");
+                <section class="hcs-chat__new" aria-labelledby="contact-picker-title">
+                    @if (showNewConversation)
+                    {
+                        <div class="hcs-chat__new-heading">
+                            <h2 id="contact-picker-title">@T("Chat:NewConversation")</h2>
+                            <button class="hcs-chat__close" type="button" @onclick="CloseNewConversation" aria-label="@T("Chat:Cancel")"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+                        </div>
+                    }
+                    else
+                    {
+                        <h2 id="contact-picker-title" class="visually-hidden">@T("Chat:ContactsTab")</h2>
+                    }
                     <input class="hcs-chat__contact-filter" @bind="contactSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" />
                     @if (contactsLoading)
                     {
@@ -67,7 +81,7 @@
                     }
                     else
                     {
-                        <div class="hcs-chat__contacts" role="group" aria-label="@T("Chat:SelectContacts")">
+                        <div class="hcs-chat__contacts" role="@contactListRole" aria-label="@contactListLabel">
                             @foreach (var contact in FilteredContacts)
                             {
                                 <label class="hcs-chat__contact">
@@ -89,42 +103,45 @@
                 </section>
             }
 
-            @if (isLoadingConversations)
+            @if (leftTab == LeftTab.Conversations)
             {
-                <p class="hcs-chat__state" role="status">@T("Chat:Loading")</p>
-            }
-            else if (conversationError is not null)
-            {
-                <div class="hcs-chat__state hcs-chat__state--error" role="alert"><p>@conversationError</p><button class="btn btn-light btn-sm" type="button" @onclick="LoadConversationsAsync">@T("Chat:Retry")</button></div>
-            }
-            else if (!FilteredConversations.Any())
-            {
-                <p class="hcs-chat__state">@T("Chat:EmptyConversations")</p>
-            }
-            else
-            {
-                <nav class="hcs-chat__conversation-list">
-                    @foreach (var conversation in FilteredConversations)
-                    {
-                        <button class="hcs-chat__conversation @(selected?.Id == conversation.Id ? "active" : null)" type="button" @onclick="() => SelectAsync(conversation)">
-                            <span class="hcs-chat__avatar" aria-hidden="true">@ConversationInitials(conversation)</span>
-                            <span class="hcs-chat__conversation-copy">
-                                <strong>@ConversationTitle(conversation)</strong>
-                                <small>@(string.IsNullOrWhiteSpace(conversation.LastMessage) ? T("Chat:NoMessages") : conversation.LastMessage)</small>
-                            </span>
-                            <span class="hcs-chat__conversation-meta">
-                                @if (conversation.IsPinned)
-                                {
-                                    <i class="fa fa-thumbtack" aria-label="@T("Chat:Pin")"></i>
-                                }
-                                @if (conversation.UnreadCount > 0)
-                                {
-                                    <em aria-label="@conversation.UnreadCount @T("Chat:Unread")">@conversation.UnreadCount</em>
-                                }
-                            </span>
-                        </button>
-                    }
-                </nav>
+                @if (isLoadingConversations)
+                {
+                    <p class="hcs-chat__state" role="status">@T("Chat:Loading")</p>
+                }
+                else if (conversationError is not null)
+                {
+                    <div class="hcs-chat__state hcs-chat__state--error" role="alert"><p>@conversationError</p><button class="btn btn-light btn-sm" type="button" @onclick="LoadConversationsAsync">@T("Chat:Retry")</button></div>
+                }
+                else if (!FilteredConversations.Any())
+                {
+                    <p class="hcs-chat__state">@T("Chat:EmptyConversations")</p>
+                }
+                else
+                {
+                    <nav class="hcs-chat__conversation-list">
+                        @foreach (var conversation in FilteredConversations)
+                        {
+                            <button class="hcs-chat__conversation @(selected?.Id == conversation.Id ? "active" : null)" type="button" @onclick="() => SelectAsync(conversation)">
+                                <span class="hcs-chat__avatar" aria-hidden="true">@ConversationInitials(conversation)</span>
+                                <span class="hcs-chat__conversation-copy">
+                                    <strong>@ConversationTitle(conversation)</strong>
+                                    <small>@(string.IsNullOrWhiteSpace(conversation.LastMessage) ? T("Chat:NoMessages") : conversation.LastMessage)</small>
+                                </span>
+                                <span class="hcs-chat__conversation-meta">
+                                    @if (conversation.IsPinned)
+                                    {
+                                        <i class="fa fa-thumbtack" aria-label="@T("Chat:Pin")"></i>
+                                    }
+                                    @if (conversation.UnreadCount > 0)
+                                    {
+                                        <em aria-label="@conversation.UnreadCount @T("Chat:Unread")">@conversation.UnreadCount</em>
+                                    }
+                                </span>
+                            </button>
+                        }
+                    </nav>
+                }
             }
         </aside>
 
@@ -312,6 +329,7 @@
     private bool isAddingMembers;
     private bool isLeaving;
     private bool showNewConversation;
+    private LeftTab leftTab = LeftTab.Conversations;
     private bool realtimeUnavailable;
     private int messageSkip;
     private long totalMessageCount;
@@ -379,15 +397,9 @@
                 selected = current;
             }
         }
-        catch (CollaborationApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
-        {
-            LogChatError(exception, "load conversations");
-            conversationError = T("Chat:NoPermission");
-        }
         catch (Exception exception)
         {
-            LogChatError(exception, "load conversations");
-            conversationError = T("Chat:LoadError");
+            conversationError = MapChatError(exception, "Chat:LoadError");
         }
         finally
         {
@@ -403,15 +415,9 @@
         {
             contacts = await Client.GetContactsAsync(string.Empty);
         }
-        catch (CollaborationApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
-        {
-            LogChatError(exception, "load contacts");
-            contactsError = T("Chat:NoPermission");
-        }
         catch (Exception exception)
         {
-            LogChatError(exception, "load contacts");
-            contactsError = T("Chat:ContactsError");
+            contactsError = MapChatError(exception, "Chat:ContactsError");
         }
         finally
         {
@@ -439,15 +445,9 @@
             await Client.MarkReadAsync(value.Id);
             await LoadConversationsAsync();
         }
-        catch (CollaborationApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
-        {
-            LogChatError(exception, "select conversation");
-            messageError = T("Chat:NoPermission");
-        }
         catch (Exception exception)
         {
-            LogChatError(exception, "select conversation");
-            messageError = T("Chat:MessagesError");
+            messageError = MapChatError(exception, "Chat:MessagesError");
         }
     }
 
@@ -476,8 +476,7 @@
         }
         catch (Exception exception)
         {
-            LogChatError(exception, "load messages");
-            messageError = T("Chat:MessagesError");
+            messageError = MapChatError(exception, "Chat:MessagesError");
         }
         finally
         {
@@ -526,8 +525,7 @@
         }
         catch (Exception exception)
         {
-            LogChatError(exception, "send message");
-            messageError = T("Chat:SendError");
+            messageError = MapChatError(exception, "Chat:SendError");
         }
         finally
         {
@@ -556,6 +554,7 @@
                 MemberUserIds = [userId, .. contactIds]
             });
             showNewConversation = false;
+            leftTab = LeftTab.Conversations;
             selectedContactIds.Clear();
             groupName = string.Empty;
             await LoadConversationsAsync();
@@ -563,8 +562,7 @@
         }
         catch (Exception exception)
         {
-            LogChatError(exception, "create conversation");
-            conversationError = T("Chat:LoadError");
+            conversationError = MapChatError(exception, "Chat:LoadError");
         }
         finally
         {
@@ -587,8 +585,7 @@
         }
         catch (Exception exception)
         {
-            LogChatError(exception, "toggle conversation pin");
-            messageError = T("Chat:LoadError");
+            messageError = MapChatError(exception, "Chat:LoadError");
         }
     }
 
@@ -608,8 +605,7 @@
         }
         catch (Exception exception)
         {
-            LogChatError(exception, "rename conversation");
-            messageError = T("Chat:LoadError");
+            messageError = MapChatError(exception, "Chat:LoadError");
         }
         finally
         {
@@ -635,8 +631,7 @@
         }
         catch (Exception exception)
         {
-            LogChatError(exception, "add conversation members");
-            messageError = T("Chat:LoadError");
+            messageError = MapChatError(exception, "Chat:LoadError");
         }
         finally
         {
@@ -663,8 +658,7 @@
         }
         catch (Exception exception)
         {
-            LogChatError(exception, "leave conversation");
-            messageError = T("Chat:LoadError");
+            messageError = MapChatError(exception, "Chat:LoadError");
         }
         finally
         {
@@ -716,6 +710,7 @@
 
     private void OpenNewConversation()
     {
+        leftTab = LeftTab.Contacts;
         showNewConversation = true;
         contactSearch = string.Empty;
         selectedContactIds.Clear();
@@ -725,6 +720,13 @@
     {
         showNewConversation = false;
         selectedContactIds.Clear();
+    }
+
+    private Task ShowContactsTabAsync()
+    {
+        leftTab = LeftTab.Contacts;
+        showNewConversation = false;
+        return contacts.Count == 0 ? LoadContactsAsync() : Task.CompletedTask;
     }
 
     private void ShowList() => mobileView = MobileView.List;
@@ -806,6 +808,19 @@
     private static string AttachmentUrl(Guid id) => $"/api/chat/attachments/{id:D}";
     private string T(string key) => Localizer[key];
 
+    private string MapChatError(Exception exception, string fallbackKey)
+    {
+        LogChatError(exception, fallbackKey);
+        if (exception is CollaborationApiException api)
+        {
+            if (api.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                return T("Chat:NoPermission");
+            if (api.StatusCode is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout)
+                return T("Catalog:ServiceUnavailable");
+        }
+        return T(fallbackKey);
+    }
+
     private void LogChatError(Exception exception, string operation)
     {
         var statusCode = exception is CollaborationApiException apiException
@@ -831,5 +846,11 @@
         List,
         Thread,
         Info
+    }
+
+    private enum LeftTab
+    {
+        Conversations,
+        Contacts
     }
 }

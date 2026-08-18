@@ -65,6 +65,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         var project = new Project(Guid.NewGuid(), input.Code, input.Name, input.StartDate, input.EndDate,
             input.Status, input.OwnerDepartmentId, access.UserId, input.Description);
         db.Projects.Add(project);
+        await WorkCalendarLinker.SyncProjectAsync(db, project, ct);
         AddEvent(new ProjectChangedEto(Guid.NewGuid(), DateTime.UtcNow, project.Id, "Created", project.Status));
         AddAccessEvent(project.Id, null, false, [project.OwnerUserId]);
         await db.SaveChangesAsync(ct);
@@ -77,6 +78,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         var project = await db.Projects.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(Project), id);
         project.Change(input.Name, input.Description, input.StartDate, input.EndDate, input.Status);
+        await WorkCalendarLinker.SyncProjectAsync(db, project, ct);
         AddEvent(new ProjectChangedEto(Guid.NewGuid(), DateTime.UtcNow, project.Id, "Updated", project.Status));
         await db.SaveChangesAsync(ct);
         return Map(project);
@@ -88,6 +90,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         var project = await db.Projects.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(Project), id);
         if (await db.ProjectTasks.AnyAsync(x => x.ProjectId == id, ct)) throw new BusinessException("Work:ProjectHasTasks");
+        await WorkCalendarLinker.DeleteRelatedAsync(db, WorkCalendarSync.ProjectRelatedType, id, ct);
         db.Projects.Remove(project);
         AddEvent(new ProjectChangedEto(Guid.NewGuid(), DateTime.UtcNow, id, "Deleted", project.Status));
         AddAccessEvent(project.Id, null, true, []);
@@ -103,6 +106,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         var member = new ProjectMember(Guid.NewGuid(), projectId, input.UserId, input.Role);
         db.ProjectMembers.Add(member);
         var users = await AuthorizedUsers(projectId, ct); users.Add(input.UserId);
+        await WorkCalendarLinker.ReplaceParticipantsAsync(db, WorkCalendarSync.ProjectRelatedType, projectId, users, ct);
         AddAccessEvent(projectId, null, false, users.Distinct().ToArray());
         var tasks = await db.ProjectTasks.Where(x => x.ProjectId == projectId).Select(x => x.Id).ToListAsync(ct);
         var taskAssignments = await db.ProjectTaskAssignments.Where(x => tasks.Contains(x.ProjectTaskId))
@@ -123,7 +127,9 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         var member = await db.ProjectMembers.SingleOrDefaultAsync(x => x.Id == memberId && x.ProjectId == projectId, ct)
             ?? throw new EntityNotFoundException(typeof(ProjectMember), memberId);
         db.ProjectMembers.Remove(member);
-        var users = await AuthorizedUsers(projectId, ct);
+        var users = (await AuthorizedUsers(projectId, ct)).Where(x => x != member.UserId).ToList();
+        users.Add(await OwnerUserId(projectId, ct));
+        await WorkCalendarLinker.ReplaceParticipantsAsync(db, WorkCalendarSync.ProjectRelatedType, projectId, users, ct);
         AddAccessEvent(projectId, null, false, users.Distinct().ToArray());
         await db.SaveChangesAsync(ct);
     }
@@ -134,10 +140,12 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
             Correlation(), taskId.HasValue ? "Task" : "Project", projectId, taskId, deleted, users), Correlation()));
     private async Task<List<Guid>> AuthorizedUsers(Guid projectId, CancellationToken ct)
     {
-        var owner = await db.Projects.Where(x => x.Id == projectId).Select(x => x.OwnerUserId).SingleAsync(ct);
+        var owner = await OwnerUserId(projectId, ct);
         var users = await db.ProjectMembers.Where(x => x.ProjectId == projectId && x.IsActive).Select(x => x.UserId).ToListAsync(ct);
         users.Add(owner); return users;
     }
+    private Task<Guid> OwnerUserId(Guid projectId, CancellationToken ct) =>
+        db.Projects.Where(x => x.Id == projectId).Select(x => x.OwnerUserId).SingleAsync(ct);
     private static ProjectDto Map(Project x, int memberCount = 0, int taskCount = 0) =>
         new(x.Id, x.Code, x.Name, x.Description, x.StartDate, x.EndDate, x.Status, x.OwnerDepartmentId, x.OwnerUserId, memberCount, taskCount);
     private static ProjectTaskDto MapTask(ProjectTask x) => new(x.Id, x.ProjectId, x.ParentTaskId, x.Code, x.Title,
@@ -189,6 +197,7 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         var task = new ProjectTask(Guid.NewGuid(), input.ProjectId, input.ParentTaskId, input.Code, input.Title,
             input.Description, input.StartDate, input.DueDate, input.Priority, input.Status, input.ProgressPercent);
         db.ProjectTasks.Add(task); AddEvent(task, "Created", []);
+        await WorkCalendarLinker.SyncTaskAsync(db, task, await OwnerUserId(task.ProjectId, ct), ct);
         await AddAccessEvent(task, false, [], ct); await db.SaveChangesAsync(ct); return Map(task);
     }
 
@@ -198,6 +207,7 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         var task = await db.ProjectTasks.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(ProjectTask), id);
         task.Change(input.Title, input.Description, input.StartDate, input.DueDate, input.Priority, input.Status, input.ProgressPercent);
+        await WorkCalendarLinker.SyncTaskAsync(db, task, await OwnerUserId(task.ProjectId, ct), ct);
         var users = await db.ProjectTaskAssignments.Where(x => x.ProjectTaskId == id).Select(x => x.UserId).Distinct().ToListAsync(ct);
         AddEvent(task, "Updated", users); await db.SaveChangesAsync(ct); return Map(task);
     }
@@ -210,7 +220,9 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         if (await db.ProjectTasks.AnyAsync(x => x.ParentTaskId == id, ct)) throw new BusinessException("Work:TaskHasChildren");
         var assignments = await db.ProjectTaskAssignments.Where(x => x.ProjectTaskId == id).ToListAsync(ct);
         var documents = await db.ProjectTaskDocuments.Where(x => x.ProjectTaskId == id).ToListAsync(ct);
-        db.ProjectTaskAssignments.RemoveRange(assignments); db.ProjectTaskDocuments.RemoveRange(documents); db.ProjectTasks.Remove(task);
+        db.ProjectTaskAssignments.RemoveRange(assignments); db.ProjectTaskDocuments.RemoveRange(documents);
+        await WorkCalendarLinker.DeleteRelatedAsync(db, WorkCalendarSync.TaskRelatedType, id, ct);
+        db.ProjectTasks.Remove(task);
         AddEvent(task, "Deleted", assignments.Select(x => x.UserId).Distinct().ToList());
         await AddAccessEvent(task, true, [], ct); await db.SaveChangesAsync(ct);
     }
@@ -224,6 +236,9 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
             throw new BusinessException("Work:DuplicateTaskAssignment");
         var assignment = new ProjectTaskAssignment(Guid.NewGuid(), taskId, input.UserId, input.AssignmentType);
         db.ProjectTaskAssignments.Add(assignment); AddEvent(task, "AssignmentChanged", [input.UserId]);
+        var users = await db.ProjectTaskAssignments.Where(x => x.ProjectTaskId == taskId).Select(x => x.UserId).ToListAsync(ct);
+        users.Add(input.UserId);
+        await WorkCalendarLinker.ReplaceParticipantsAsync(db, WorkCalendarSync.TaskRelatedType, taskId, users, ct);
         await AddAccessEvent(task, false, [input.UserId], ct); await db.SaveChangesAsync(ct);
         return new(assignment.Id, assignment.ProjectTaskId, assignment.UserId, assignment.AssignmentType);
     }
@@ -247,6 +262,9 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         var task = await db.ProjectTasks.SingleAsync(x => x.Id == taskId, ct);
         db.ProjectTaskAssignments.Remove(assignment);
         AddEvent(task, "AssignmentChanged", [assignment.UserId]);
+        var users = await db.ProjectTaskAssignments.Where(x => x.ProjectTaskId == taskId && x.Id != assignmentId)
+            .Select(x => x.UserId).ToListAsync(ct);
+        await WorkCalendarLinker.ReplaceParticipantsAsync(db, WorkCalendarSync.TaskRelatedType, taskId, users, ct);
         await AddAccessEvent(task, false, [], ct);
         await db.SaveChangesAsync(ct);
     }
@@ -266,12 +284,14 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
     private async Task AddAccessEvent(ProjectTask task, bool deleted, IReadOnlyCollection<Guid> additionalUsers, CancellationToken ct)
     {
         var users = await db.ProjectMembers.Where(x => x.ProjectId == task.ProjectId && x.IsActive).Select(x => x.UserId).ToListAsync(ct);
-        users.Add(await db.Projects.Where(x => x.Id == task.ProjectId).Select(x => x.OwnerUserId).SingleAsync(ct));
+        users.Add(await OwnerUserId(task.ProjectId, ct));
         users.AddRange(await db.ProjectTaskAssignments.Where(x => x.ProjectTaskId == task.Id).Select(x => x.UserId).ToListAsync(ct));
         users.AddRange(additionalUsers);
         db.OutboxMessages.Add(WorkOutbox.CreateCanonical(new WorkSubjectAccessChangedEto(Guid.NewGuid(), DateTimeOffset.UtcNow,
             Correlation(), "Task", task.ProjectId, task.Id, deleted, users.Distinct().ToArray()), Correlation()));
     }
+    private Task<Guid> OwnerUserId(Guid projectId, CancellationToken ct) =>
+        db.Projects.Where(x => x.Id == projectId).Select(x => x.OwnerUserId).SingleAsync(ct);
     private static ProjectTaskDto Map(ProjectTask x) => new(x.Id, x.ProjectId, x.ParentTaskId, x.Code, x.Title,
         x.Description, x.StartDate, x.DueDate, x.Priority, x.Status, x.ProgressPercent);
     private static string Correlation() => System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
@@ -305,6 +325,7 @@ public sealed class CalendarAppService(WorkManagementDbContext db, WorkRecordAut
 
     public async Task<CalendarEventDto> CreateAsync(CreateCalendarEventDto input, CancellationToken ct)
     {
+        await EnsureSyncedRelatedAvailableAsync(input.EventType, input.RelatedType, input.RelatedId, null, ct);
         var item = new CalendarEvent(Guid.NewGuid(), input.Title, input.Description, input.StartTime, input.EndTime,
             input.AllDay, input.EventType, input.Location, input.RelatedType, input.RelatedId, input.Visibility, access.UserId);
         var users = (input.ParticipantUserIds ?? []).Distinct().Take(501).ToList();
@@ -318,6 +339,7 @@ public sealed class CalendarAppService(WorkManagementDbContext db, WorkRecordAut
     public async Task<CalendarEventDto> UpdateAsync(Guid id, UpdateCalendarEventDto input, CancellationToken ct)
     {
         await DemandCalendarOwnerAsync(id, ct);
+        await EnsureSyncedRelatedAvailableAsync(input.EventType, input.RelatedType, input.RelatedId, id, ct);
         var item = await db.CalendarEvents.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(CalendarEvent), id);
         item.Change(input.Title, input.Description, input.StartTime, input.EndTime, input.AllDay, input.EventType,
@@ -342,6 +364,15 @@ public sealed class CalendarAppService(WorkManagementDbContext db, WorkRecordAut
         db.OutboxMessages.Add(WorkOutbox.Create(new CalendarEventChangedEto(Guid.NewGuid(), DateTime.UtcNow, id, "Deleted", people.Select(x => x.UserId).ToList()), Correlation()));
         await db.SaveChangesAsync(ct);
     }
+    private async Task EnsureSyncedRelatedAvailableAsync(string eventType, string relatedType, string? relatedId, Guid? exceptId, CancellationToken ct)
+    {
+        if (!WorkCalendarSync.IsSyncedEventType(eventType) || string.IsNullOrWhiteSpace(relatedId)) return;
+        var taken = await db.CalendarEvents.AnyAsync(x =>
+            x.EventType == eventType && x.RelatedType == relatedType && x.RelatedId == relatedId &&
+            (!exceptId.HasValue || x.Id != exceptId), ct);
+        if (taken) throw new BusinessException("Work:DuplicateRelatedCalendar");
+    }
+
     private async Task DemandCalendarOwnerAsync(Guid id, CancellationToken ct)
     {
         if (!access.IsAdministrator && !await db.CalendarEvents.AnyAsync(x => x.Id == id && x.OwnerUserId == access.UserId, ct))

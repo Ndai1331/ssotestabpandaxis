@@ -43,6 +43,21 @@ public sealed class OrganizationCatalogClient(IHttpClientFactory httpClientFacto
         CancellationToken cancellationToken = default) =>
         GetLookupAsync<DepartmentCatalogDto>(OrganizationCatalogKind.Department, cancellationToken);
 
+    public Task<OrganizationPagedResponse<DepartmentCatalogDto>> SearchDepartmentsAsync(
+        string? filter,
+        int skipCount,
+        int maxResultCount,
+        CancellationToken cancellationToken = default) =>
+        GetDepartmentsAsync(new OrganizationCatalogQuery(filter, true, skipCount, maxResultCount), cancellationToken);
+
+    public Task<OrganizationPagedResponse<MasterDataCatalogDto>> SearchMasterDataAsync(
+        string masterType,
+        string? filter,
+        int skipCount,
+        int maxResultCount,
+        CancellationToken cancellationToken = default) =>
+        GetMasterDataAsync(masterType, new OrganizationCatalogQuery(filter, true, skipCount, maxResultCount), cancellationToken);
+
     public Task<DepartmentCatalogDto> CreateDepartmentAsync(
         DepartmentUpsertRequest request,
         CancellationToken cancellationToken = default) =>

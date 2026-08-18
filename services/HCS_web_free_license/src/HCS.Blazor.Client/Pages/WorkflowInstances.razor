@@ -1,7 +1,6 @@
 @page "/workflow-instances"
-@page "/workflow-lists"
 @page "/document-workflow-instances"
-@page "/workflow-lists/{InstanceId:guid}"
+@page "/document-workflow-instances/{InstanceId:guid}"
 @attribute [Authorize(Policy = "Documents.Workflow.View")]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
@@ -41,7 +40,7 @@
                         <td><span class="hcs-status-badge hcs-status-badge--planning">@instance.Status</span></td>
                         <td>@instance.CurrentStep / @instance.Tasks.Count</td>
                         <td>
-                            <a class="btn btn-sm btn-outline-primary hcs-action-button" href="@($"/workflow-lists/{instance.Id}")">@L["Work:View"]</a>
+                            <a class="btn btn-sm btn-outline-primary hcs-action-button" href="@($"/document-workflow-instances/{instance.Id}")">@L["Work:View"]</a>
                         </td>
                     </tr>
                 }
@@ -130,7 +129,7 @@
                 ? await Documents.GetInstanceAsync(id)
                 : null;
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
     }
     private async Task StartAsync()
@@ -143,7 +142,7 @@
             if (startModal is not null) await startModal.Hide();
             form.DocumentId = form.DefinitionId = ""; success = L["Catalog:Created"]; await LoadAsync();
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task DecideAsync(Guid taskId, bool approve)
     {
@@ -153,7 +152,7 @@
             decisionComment = ""; success = approve ? L["Feature:Approve"] : L["Feature:Reject"];
             instances.Clear(); instances.AddRange(await Documents.GetInstancesAsync());
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private string DocumentName(Guid id) => documents.FirstOrDefault(x => x.Id == id) is { } d ? $"{d.Number} · {d.Title}" : id.ToString("N")[..8];
     private sealed class StartForm { public string DocumentId { get; set; } = ""; public string DefinitionId { get; set; } = ""; }

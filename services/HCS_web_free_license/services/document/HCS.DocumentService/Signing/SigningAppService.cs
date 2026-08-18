@@ -17,29 +17,27 @@ public sealed class SigningAppService(
     IBlobContainer<DocumentBlobContainer> documentBlobs,
     IBlobContainer<SigningBlobContainer> signingBlobs) : ISigningAppService
 {
-    public async Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var principal = Principal;
-        var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningConfigure);
-        var credentials = await db.SigningCredentials.AsNoTracking().Where(x => x.UserId == userId)
+        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningConfigure);
+        var credentials = await db.SigningCredentials.AsNoTracking().Where(x => x.UserId == targetUserId)
             .OrderBy(x => x.Kind).ToListAsync(cancellationToken);
         return credentials.Select(Map).ToList();
     }
 
-    public async Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest input, CancellationToken cancellationToken = default)
+    public async Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest input, Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var principal = Principal;
-        var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningConfigure);
+        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningConfigure);
         if (!Uri.TryCreate(input.Endpoint, UriKind.Absolute, out var endpoint) || endpoint.Scheme != Uri.UriSchemeHttps)
             throw new ArgumentException("Signing endpoint must be an absolute HTTPS URI.");
         EnsureEndpointAllowed(endpoint);
         var protectedSecret = secretProtector.Protect(input.ConsumeSecret());
-        var credential = await db.SigningCredentials.SingleOrDefaultAsync(x => x.UserId == userId && x.Kind == input.Kind, cancellationToken);
+        var credential = await db.SigningCredentials.SingleOrDefaultAsync(x => x.UserId == targetUserId && x.Kind == input.Kind, cancellationToken);
         if (credential is null)
         {
-            credential = new SigningCredential(Guid.NewGuid(), userId, input.Kind, endpoint.ToString(), protectedSecret, DateTime.UtcNow);
+            credential = new SigningCredential(Guid.NewGuid(), targetUserId, input.Kind, endpoint.ToString(), protectedSecret, DateTime.UtcNow);
             db.SigningCredentials.Add(credential);
         }
         else credential.Replace(endpoint.ToString(), protectedSecret, DateTime.UtcNow);
@@ -122,43 +120,48 @@ public sealed class SigningAppService(
             attempts.Count(x => x.Status == SigningStatus.Failed), attempts.Select(Map).ToList());
     }
 
-    public async Task<IReadOnlyList<UserSignatureDto>> GetSignaturesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {
-        var principal = Principal;
-        var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningExecute);
-        var items = await db.UserSignatures.AsNoTracking().Where(x => x.UserId == userId)
+        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
+        var items = await db.UserSignatures.AsNoTracking().Where(x => x.UserId == targetUserId)
             .OrderByDescending(x => x.IsDefault).ThenByDescending(x => x.CreationTime).ToListAsync(cancellationToken);
         return items.Select(MapSignature).ToList();
     }
 
-    public async Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size, CancellationToken cancellationToken = default)
+    public async Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size, Guid? userId = null, CancellationToken cancellationToken = default)
     {
-        var principal = Principal;
-        var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningExecute);
+        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         if (size is <= 0 or > 2 * 1024 * 1024) throw new ArgumentOutOfRangeException(nameof(size));
         var id = Guid.NewGuid();
-        var blobName = BlobNamePolicy.UserSignature(userId, id);
+        var blobName = BlobNamePolicy.UserSignature(targetUserId, id);
         await signingBlobs.SaveAsync(blobName, content, overrideExisting: false, cancellationToken: cancellationToken);
-        var signature = new UserSignature(id, userId, Path.GetFileName(fileName), contentType, blobName, size, DateTime.UtcNow);
-        if (!await db.UserSignatures.AnyAsync(x => x.UserId == userId, cancellationToken)) signature.MarkDefault();
+        var signature = new UserSignature(id, targetUserId, Path.GetFileName(fileName), contentType, blobName, size, DateTime.UtcNow);
+        if (!await db.UserSignatures.AnyAsync(x => x.UserId == targetUserId, cancellationToken)) signature.MarkDefault();
         db.UserSignatures.Add(signature);
         try { await db.SaveChangesAsync(cancellationToken); }
         catch { await signingBlobs.DeleteAsync(blobName, cancellationToken: cancellationToken); throw; }
         return MapSignature(signature);
     }
 
-    public async Task DeleteSignatureAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default)
     {
-        var principal = Principal;
-        var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningExecute);
-        var signature = await db.UserSignatures.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, cancellationToken)
+        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
+        var signature = await db.UserSignatures.SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Signature not found.");
         db.UserSignatures.Remove(signature);
         await db.SaveChangesAsync(cancellationToken);
         await signingBlobs.DeleteAsync(signature.BlobName, cancellationToken: cancellationToken);
+    }
+
+    private Guid ResolveTargetUser(Guid? userId, string permission)
+    {
+        var principal = Principal;
+        var current = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, permission);
+        if (userId is null || userId == current) return current;
+        if (!DocumentAccess.IsElevated(principal))
+            throw new Volo.Abp.Authorization.AbpAuthorizationException("Managing another user's signatures requires an administrator.");
+        return userId.Value;
     }
 
     private ClaimsPrincipal Principal => httpContext.HttpContext?.User ?? new ClaimsPrincipal();

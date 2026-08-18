@@ -25,4 +25,14 @@ public sealed class BusinessClientContractTests
 
         Assert.Equal("/api/documents?skip=20&take=20&mine=true&status=InReview", actual);
     }
+
+    [Fact]
+    public void Document_list_uri_includes_source_type()
+    {
+        var query = new DocumentListQuery(null, null, false, 0, 50, 2);
+
+        var actual = DocumentClient.BuildListUri(query);
+
+        Assert.Equal("/api/documents?skip=0&take=50&mine=false&sourceType=2", actual);
+    }
 }

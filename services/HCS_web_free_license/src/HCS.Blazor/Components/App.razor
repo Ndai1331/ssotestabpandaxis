@@ -22,6 +22,7 @@
     <link href="HCS.Blazor.styles.css" rel="stylesheet"/>
     <link href="HCS.Blazor.Client.styles.css" rel="stylesheet"/>
     <link href="main.css" rel="stylesheet"/>
+    <link href="libs/select2/css/select2.min.css" rel="stylesheet"/>
     <style>
         html, body.abp-application-layout { background: #f5f8f7 !important; color: #19334c; margin: 0; }
         .hcs-boot-screen { align-items: center; background: radial-gradient(circle at 92% 8%, rgba(61, 92, 255, .14), transparent 18rem), linear-gradient(135deg, #edf0ef 0%, #e6ebe9 100%); color: #19334c; display: grid; font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; inset: 0; justify-items: center; place-content: center; position: fixed; z-index: 2000; }
@@ -75,6 +76,8 @@
     
     <AbpScripts BundleName="@BlazorLeptonXLiteThemeBundles.Scripts.Global" WebAssemblyScriptFiles="GlobalScripts" />
 
+    <script src="libs/select2/js/select2.full.min.js"></script>
+    <script src="js/hcs-catalog-select2.js"></script>
     <script src="global-scripts.js"></script>
     <script src="_framework/blazor.web.js"></script>
 

@@ -27,14 +27,14 @@ public sealed record UpdateDocumentRequest(
     Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId);
 public sealed record AssignDocumentRequest(Guid AssigneeUserId, string Responsibility);
 
-public sealed record WorkflowStepInput(string Code, string Name, int Order, string RequiredPermission);
-public sealed record WorkflowStepDto(Guid Id, string Code, string Name, int Order, string RequiredPermission);
+public sealed record WorkflowStepInput(string Code, string Name, int Order, string RequiredPermission, string Type = "PROCESS", Guid? AssigneeUserId = null);
+public sealed record WorkflowStepDto(Guid Id, string Code, string Name, int Order, string RequiredPermission, string Type, Guid? AssigneeUserId);
 public sealed record WorkflowDefinitionDto(Guid Id, string Code, string Name, List<WorkflowStepDto> Steps, DateTime CreationTime);
 public sealed record CreateWorkflowDefinitionRequest(string Code, string Name, List<WorkflowStepInput> Steps);
 public sealed record UpdateWorkflowDefinitionRequest(string Name, List<WorkflowStepInput> Steps);
-public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid DefinitionId, int Version, bool IsActive, DateTime CreationTime);
+public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid DefinitionId, int Version, bool IsActive, DateTime CreationTime, Guid? WordFileId, string? WordFileName, Guid? PdfFileId, string? PdfFileName);
 public sealed record CreateWorkflowTemplateRequest(string Code, string Name, Guid DefinitionId, int Version, string TemplateJson);
-public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy, DateTime? DecidedAt);
+public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy, DateTime? DecidedAt, Guid? AssigneeUserId);
 public sealed record WorkflowInstanceDto(
     Guid Id, Guid DocumentId, Guid DefinitionId, WorkflowInstanceStatus Status, int CurrentStep,
     List<ApprovalTaskDto> Tasks, DateTime CreationTime);
@@ -50,4 +50,4 @@ public sealed record SigningAttemptDto(
 public sealed record SigningReportDto(Guid DocumentId, int Completed, int Failed, List<SigningAttemptDto> Attempts);
 public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime);
 
-public sealed record DocumentListQuery(string? Filter, string? Status, bool Mine, int SkipCount, int MaxResultCount);
+public sealed record DocumentListQuery(string? Filter, string? Status, bool Mine, int SkipCount, int MaxResultCount, int? SourceType = null);

@@ -39,17 +39,17 @@
     private async Task LoadAsync()
     {
         try { items.Clear(); items.AddRange(await Documents.GetSignaturesAsync()); }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
     }
     private async Task UploadAsync(InputFileChangeEventArgs args)
     {
         try { await Documents.UploadSignatureAsync(args.File); success = L["Catalog:Created"]; await LoadAsync(); }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync(UserSignatureDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.FileName))) return;
         try { await Documents.DeleteSignatureAsync(item.Id); success = L["Catalog:Deleted"]; await LoadAsync(); }
-        catch { error = L["Catalog:DeleteError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
     }
 }

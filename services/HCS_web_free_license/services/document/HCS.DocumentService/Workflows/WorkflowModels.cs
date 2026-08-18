@@ -1,5 +1,22 @@
 namespace HCS.DocumentService.Workflows;
 
+public static class WorkflowStepTypes
+{
+    public const string Process = "PROCESS";
+    public const string Sign = "SIGN";
+    public const string View = "VIEW";
+
+    public static string Normalize(string? type)
+    {
+        var value = string.IsNullOrWhiteSpace(type) ? Process : type.Trim().ToUpperInvariant();
+        if (value is not (Process or Sign or View))
+        {
+            throw new ArgumentException("Invalid workflow step type.");
+        }
+        return value;
+    }
+}
+
 public sealed class WorkflowDefinition
 {
     private readonly List<WorkflowStep> _steps = [];
@@ -10,14 +27,7 @@ public sealed class WorkflowDefinition
         Code = Required(code, 64);
         Name = Required(name, 256);
         CreationTime = now;
-        var normalized = steps.OrderBy(x => x.Order).ToList();
-        if (normalized.Count == 0) throw new InvalidOperationException("A workflow requires at least one step.");
-        if (normalized.Select(x => x.Code.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Count() != normalized.Count)
-            throw new InvalidOperationException("Workflow step codes must be unique.");
-        if (normalized.Select(x => x.Order).Distinct().Count() != normalized.Count)
-            throw new InvalidOperationException("Workflow step orders must be unique.");
-        _steps.AddRange(normalized.Select(x => new WorkflowStep(Guid.NewGuid(), id,
-            Required(x.Code, 64), Required(x.Name, 256), x.Order, Required(x.RequiredPermission, 128))));
+        ReplaceSteps(steps);
     }
     public Guid Id { get; private set; }
     public string Code { get; private set; } = string.Empty;
@@ -35,7 +45,8 @@ public sealed class WorkflowDefinition
             throw new InvalidOperationException("Workflow step orders must be unique.");
         _steps.Clear();
         _steps.AddRange(normalized.Select(x => new WorkflowStep(Guid.NewGuid(), Id,
-            Required(x.Code, 64), Required(x.Name, 256), x.Order, Required(x.RequiredPermission, 128))));
+            Required(x.Code, 64), Required(x.Name, 256), x.Order, Required(x.RequiredPermission, 128),
+            WorkflowStepTypes.Normalize(x.Type), x.AssigneeUserId)));
     }
     private static string Required(string value, int max)
     {
@@ -48,14 +59,18 @@ public sealed class WorkflowDefinition
 public sealed class WorkflowStep
 {
     private WorkflowStep() { }
-    internal WorkflowStep(Guid id, Guid definitionId, string code, string name, int order, string requiredPermission)
-        => (Id, DefinitionId, Code, Name, Order, RequiredPermission) = (id, definitionId, code, name, order, requiredPermission);
+    internal WorkflowStep(Guid id, Guid definitionId, string code, string name, int order, string requiredPermission,
+        string type, Guid? assigneeUserId)
+        => (Id, DefinitionId, Code, Name, Order, RequiredPermission, Type, AssigneeUserId)
+            = (id, definitionId, code, name, order, requiredPermission, type, assigneeUserId);
     public Guid Id { get; private set; }
     public Guid DefinitionId { get; private set; }
     public string Code { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
     public int Order { get; private set; }
     public string RequiredPermission { get; private set; } = string.Empty;
+    public string Type { get; private set; } = WorkflowStepTypes.Process;
+    public Guid? AssigneeUserId { get; private set; }
 }
 
 public sealed class WorkflowTemplate
@@ -80,7 +95,19 @@ public sealed class WorkflowTemplate
     public string TemplateJson { get; private set; } = string.Empty;
     public bool IsActive { get; private set; }
     public DateTime CreationTime { get; private set; }
+    public Guid? WordFileId { get; private set; }
+    public string? WordFileName { get; private set; }
+    public string? WordContentType { get; private set; }
+    public string? WordBlobName { get; private set; }
+    public Guid? PdfFileId { get; private set; }
+    public string? PdfFileName { get; private set; }
+    public string? PdfContentType { get; private set; }
+    public string? PdfBlobName { get; private set; }
     public void SetActive(bool isActive) => IsActive = isActive;
+    public void AttachWord(Guid fileId, string fileName, string contentType, string blobName)
+        => (WordFileId, WordFileName, WordContentType, WordBlobName) = (fileId, fileName, contentType, blobName);
+    public void AttachPdf(Guid fileId, string fileName, string contentType, string blobName)
+        => (PdfFileId, PdfFileName, PdfContentType, PdfBlobName) = (fileId, fileName, contentType, blobName);
 }
 
 public sealed class WorkflowInstance
@@ -130,19 +157,22 @@ public sealed class WorkflowInstance
         return true;
     }
 
-    private void AddTask(WorkflowStep step, DateTime now) => _tasks.Add(new ApprovalTask(Guid.NewGuid(), Id, step.Code, now));
+    private void AddTask(WorkflowStep step, DateTime now) =>
+        _tasks.Add(new ApprovalTask(Guid.NewGuid(), Id, step.Code, now, step.AssigneeUserId));
 }
 
 public sealed class ApprovalTask
 {
     private ApprovalTask() { }
-    internal ApprovalTask(Guid id, Guid instanceId, string stepCode, DateTime now)
-        => (Id, InstanceId, StepCode, Status, CreationTime) = (id, instanceId, stepCode, ApprovalTaskStatus.Pending, now);
+    internal ApprovalTask(Guid id, Guid instanceId, string stepCode, DateTime now, Guid? assigneeUserId)
+        => (Id, InstanceId, StepCode, Status, CreationTime, AssigneeUserId)
+            = (id, instanceId, stepCode, ApprovalTaskStatus.Pending, now, assigneeUserId);
     public Guid Id { get; private set; }
     public Guid InstanceId { get; private set; }
     public string StepCode { get; private set; } = string.Empty;
     public ApprovalTaskStatus Status { get; private set; }
     public Guid? DecidedBy { get; private set; }
+    public Guid? AssigneeUserId { get; private set; }
     public string? Comment { get; private set; }
     public string? DecisionKey { get; private set; }
     public DateTime CreationTime { get; private set; }

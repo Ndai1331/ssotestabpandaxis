@@ -1,0 +1,17 @@
+.hcs-star-rating {
+    display: flex;
+    gap: .2rem;
+}
+
+.hcs-star-rating button {
+    padding: 0 .15rem;
+    border: 0;
+    background: transparent;
+    color: #c5d0d6;
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.hcs-star-rating button.is-active {
+    color: #e3a008;
+}

@@ -13,6 +13,7 @@
 @using Volo.Abp.AspNetCore.Components.Messages
 @inject IdentityAdminClient IdentityClient
 @inject OrganizationCatalogClient OrganizationClient
+@inject DocumentClient Documents
 @inject IUiMessageService UiMessageService
 @inject IStringLocalizer<HCSResource> L
 
@@ -157,7 +158,7 @@
             </Card>
         </main>
 
-        <Modal @ref="userModal">
+        <Modal @ref="userModal" Class="hcs-user-modal">
             <ModalContent Centered="true" Size="ModalSize.ExtraLarge" Class="hcs-user-modal">
                 <ModalHeader>
                     <ModalTitle>@(editingUserId.HasValue ? "Chỉnh sửa người dùng" : "Tạo người dùng mới")</ModalTitle>
@@ -172,6 +173,10 @@
                         <button class="@(activeUserTab == "info" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "info")">Thông tin người dùng</button>
                         <button class="@(activeUserTab == "roles" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "roles")">Vai trò (@userForm.RoleNames.Count)</button>
                         <button class="@(activeUserTab == "departments" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "departments")">Cây phòng ban (@(string.IsNullOrWhiteSpace(userForm.DepartmentId) ? 0 : 1))</button>
+                        @if (editingUserId.HasValue)
+                        {
+                            <button class="@(activeUserTab == "signatures" ? "is-active" : null)" type="button" role="tab" @onclick="ShowSignaturesTabAsync">@L["Admin:SignaturesTab"]</button>
+                        }
                     </div>
 
                     @if (activeUserTab == "info")
@@ -240,7 +245,7 @@
                             }
                         </div>
                     }
-                    else
+                    else if (activeUserTab == "departments")
                     {
                         <Field>
                             <FieldLabel>Phòng ban</FieldLabel>
@@ -253,6 +258,60 @@
                             </Select>
                         </Field>
                         <p class="hcs-form-note">Mỗi người dùng có thể có một phòng ban chính. Lựa chọn này được lưu qua Organization user-mapping.</p>
+                    }
+                    else if (activeUserTab == "signatures" && editingUserId.HasValue)
+                    {
+                        <div class="hcs-user-signing">
+                            <h2 class="hcs-user-signing__title">@L["Feature:UserSignatures"]</h2>
+                            <p class="hcs-form-note">@L["Feature:SignatureImage"]</p>
+                            <InputFile class="form-control mb-3" accept="image/*" OnChange="UploadUserSignatureAsync" />
+                            @if (userSignatures.Count == 0)
+                            {
+                                <p class="hcs-empty-state">@L["Catalog:EmptyTitle"]</p>
+                            }
+                            else
+                            {
+                                <ul class="hcs-user-signature-list">
+                                    @foreach (var signature in userSignatures)
+                                    {
+                                        <li>
+                                            <span>
+                                                <strong>@signature.FileName</strong>
+                                                <small>@(signature.Size / 1024) KB · @(signature.IsDefault ? L["Feature:DefaultSignature"] : L["Catalog:Active"])</small>
+                                            </span>
+                                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteUserSignatureAsync(signature)">@L["Catalog:Delete"]</Button>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            <h2 class="hcs-user-signing__title">@L["Admin:SigningCredentials"]</h2>
+                            @if (userCredentials.Count > 0)
+                            {
+                                <ul class="mb-3">
+                                    @foreach (var credential in userCredentials)
+                                    {
+                                        <li>@SigningKindName(credential.Kind) · @credential.Endpoint · @credential.MaskedSecret</li>
+                                    }
+                                </ul>
+                            }
+                            <Field>
+                                <FieldLabel>@L["Feature:Kind"]</FieldLabel>
+                                <Select TValue="int" @bind-Value="credentialForm.Kind">
+                                    <SelectItem Value="0">@L["Feature:Electronic"]</SelectItem>
+                                    <SelectItem Value="1">@L["Feature:RemoteCa"]</SelectItem>
+                                    <SelectItem Value="2">@L["Feature:Hsm"]</SelectItem>
+                                </Select>
+                            </Field>
+                            <Field>
+                                <FieldLabel>@L["Feature:SigningEndpoint"]</FieldLabel>
+                                <TextInput @bind-Value="credentialForm.Endpoint" Placeholder="https://" />
+                            </Field>
+                            <Field>
+                                <FieldLabel>@L["Feature:SigningSecret"]</FieldLabel>
+                                <TextInput @bind-Value="credentialForm.Secret" Role="TextRole.Password" autocomplete="new-password" />
+                            </Field>
+                            <Button Color="Color.Primary" Clicked="SaveUserCredentialAsync" Loading="@isSavingSigning" Disabled="@isSavingSigning">@L["Catalog:SaveChanges"]</Button>
+                        </div>
                     }
                 </ModalBody>
                 <ModalFooter>
@@ -276,6 +335,9 @@
     private readonly List<DepartmentCatalogDto> departments = [];
     private readonly List<PositionCatalogDto> positions = [];
     private readonly Dictionary<Guid, string> userRoleNames = [];
+    private readonly List<UserSignatureDto> userSignatures = [];
+    private readonly List<SigningCredentialDto> userCredentials = [];
+    private readonly SigningForm credentialForm = new();
 
     private DataGrid<IdentityAdminUserDto>? usersGrid;
     private Modal? userModal;
@@ -290,6 +352,7 @@
     private bool showAdvancedFilters;
     private bool isLoadingUsers;
     private bool isSaving;
+    private bool isSavingSigning;
     private bool canRetry;
     private int totalUsers;
     private int pageSize = 20;
@@ -396,6 +459,7 @@
         userForm = new IdentityAdminUserForm();
         activeUserTab = "info";
         formErrorMessage = null;
+        ResetSigningState();
         if (userModal is not null) await userModal.Show();
     }
 
@@ -416,6 +480,7 @@
         };
         formErrorMessage = null;
         activeUserTab = "info";
+        ResetSigningState();
         try
         {
             foreach (var role in await IdentityClient.GetUserRolesAsync(user.Id)) userForm.RoleNames.Add(role.Name);
@@ -426,6 +491,7 @@
                 userForm.DepartmentId = mapping.DepartmentId.ToString();
                 userForm.PositionId = mapping.PositionId?.ToString() ?? string.Empty;
             }
+            await LoadUserSigningAsync(user.Id);
         }
         catch (IdentityAdminApiException exception)
         {
@@ -585,4 +651,109 @@
         HttpStatusCode.Conflict => L["Users:Conflict"].Value,
         _ => L[fallbackKey].Value
     };
+
+    private Task ShowSignaturesTabAsync()
+    {
+        activeUserTab = "signatures";
+        return editingUserId is { } userId ? LoadUserSigningAsync(userId) : Task.CompletedTask;
+    }
+
+    private void ResetSigningState()
+    {
+        userSignatures.Clear();
+        userCredentials.Clear();
+        credentialForm.Reset();
+    }
+
+    private async Task LoadUserSigningAsync(Guid userId)
+    {
+        try
+        {
+            userSignatures.Clear();
+            userSignatures.AddRange(await Documents.GetSignaturesAsync(userId));
+            userCredentials.Clear();
+            userCredentials.AddRange(await Documents.GetCredentialsAsync(userId));
+            if (userCredentials.FirstOrDefault() is { } current)
+            {
+                credentialForm.Kind = current.Kind;
+                credentialForm.Endpoint = current.Endpoint;
+            }
+        }
+        catch (Exception exception)
+        {
+            formErrorMessage = BffErrorMapper.From(L, exception);
+        }
+    }
+
+    private async Task UploadUserSignatureAsync(InputFileChangeEventArgs args)
+    {
+        if (editingUserId is not { } userId) return;
+        try
+        {
+            await Documents.UploadSignatureAsync(args.File, userId);
+            await LoadUserSigningAsync(userId);
+        }
+        catch (Exception exception)
+        {
+            formErrorMessage = BffErrorMapper.From(L, exception, BffErrorKind.Save);
+        }
+    }
+
+    private async Task DeleteUserSignatureAsync(UserSignatureDto signature)
+    {
+        if (editingUserId is not { } userId) return;
+        if (!await UiMessageService.Confirm(string.Format(L["Catalog:DeleteConfirmation"].Value, signature.FileName))) return;
+        try
+        {
+            await Documents.DeleteSignatureAsync(signature.Id, userId);
+            await LoadUserSigningAsync(userId);
+        }
+        catch (Exception exception)
+        {
+            formErrorMessage = BffErrorMapper.From(L, exception, BffErrorKind.Delete);
+        }
+    }
+
+    private async Task SaveUserCredentialAsync()
+    {
+        if (editingUserId is not { } userId || isSavingSigning) return;
+        isSavingSigning = true;
+        try
+        {
+            await Documents.ConfigureCredentialAsync(
+                new ConfigureSigningCredentialRequest(credentialForm.Kind, credentialForm.Endpoint.Trim(), credentialForm.Secret),
+                userId);
+            credentialForm.Secret = string.Empty;
+            await LoadUserSigningAsync(userId);
+        }
+        catch (Exception exception)
+        {
+            formErrorMessage = BffErrorMapper.From(L, exception, BffErrorKind.Save);
+        }
+        finally
+        {
+            isSavingSigning = false;
+        }
+    }
+
+    private string SigningKindName(int kind) => kind switch
+    {
+        1 => L["Feature:RemoteCa"],
+        2 => L["Feature:Hsm"],
+        _ => L["Feature:Electronic"]
+    };
+
+    private sealed class SigningForm
+    {
+        public int Kind { get; set; }
+        public string Endpoint { get; set; } = string.Empty;
+        public string Secret { get; set; } = string.Empty;
+
+        public void Reset()
+        {
+            Kind = 0;
+            Endpoint = string.Empty;
+            Secret = string.Empty;
+        }
+    }
 }

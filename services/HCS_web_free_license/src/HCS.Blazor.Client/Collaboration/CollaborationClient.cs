@@ -157,7 +157,7 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
     private HttpClient CreateClient() => httpClientFactory.CreateClient("HCS.Bff");
 }
 
-internal sealed class CollaborationApiException(HttpStatusCode statusCode, string? responseBody)
+public sealed class CollaborationApiException(HttpStatusCode statusCode, string? responseBody)
     : Exception($"Collaboration request failed with HTTP {(int)statusCode}.")
 {
     public HttpStatusCode StatusCode { get; } = statusCode;

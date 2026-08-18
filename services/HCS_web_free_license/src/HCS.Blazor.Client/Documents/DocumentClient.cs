@@ -75,6 +75,27 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<WorkflowTemplateDto> SetTemplateActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken = default) =>
         SendAsync<WorkflowTemplateDto>(HttpMethod.Post, $"/api/workflows/templates/{id:D}/active", isActive, cancellationToken);
 
+    public async Task<WorkflowTemplateDto> UploadTemplateFileAsync(Guid templateId, string kind, IBrowserFile file, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream(25 * 1024 * 1024, cancellationToken);
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+        content.Add(fileContent, "file", file.Name);
+        using var response = await CreateClient().PostAsync($"/api/workflows/templates/{templateId:D}/files?kind={Uri.EscapeDataString(kind)}", content, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<WorkflowTemplateDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+
+    public async Task<byte[]> GetTemplateFileAsync(Guid templateId, string kind, CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().GetAsync($"/api/workflows/templates/{templateId:D}/files/{Uri.EscapeDataString(kind)}/content", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
     public Task<List<WorkflowInstanceDto>> GetInstancesAsync(Guid? documentId = null, string? status = null, CancellationToken cancellationToken = default)
     {
         var builder = new StringBuilder("/api/workflows/instances?");
@@ -92,11 +113,11 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<WorkflowInstanceDto> DecideAsync(Guid taskId, DecideApprovalTaskRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<WorkflowInstanceDto>(HttpMethod.Post, $"/api/workflows/tasks/{taskId:D}/decision", request, cancellationToken);
 
-    public Task<List<SigningCredentialDto>> GetCredentialsAsync(CancellationToken cancellationToken = default) =>
-        GetAsync<List<SigningCredentialDto>>("/api/signing/credentials/current", cancellationToken);
+    public Task<List<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default) =>
+        GetAsync<List<SigningCredentialDto>>(SigningUserUri("/api/signing/credentials/current", userId), cancellationToken);
 
-    public Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest request, CancellationToken cancellationToken = default) =>
-        SendAsync<SigningCredentialDto>(HttpMethod.Put, "/api/signing/credentials/current", request, cancellationToken);
+    public Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest request, Guid? userId = null, CancellationToken cancellationToken = default) =>
+        SendAsync<SigningCredentialDto>(HttpMethod.Put, SigningUserUri("/api/signing/credentials/current", userId), request, cancellationToken);
 
     public Task<SigningAttemptDto> SignAsync(SignDocumentRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<SigningAttemptDto>(HttpMethod.Post, "/api/signing/attempts", request, cancellationToken);
@@ -104,10 +125,10 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<SigningReportDto> GetSigningReportAsync(Guid documentId, CancellationToken cancellationToken = default) =>
         GetAsync<SigningReportDto>($"/api/signing/reports/documents/{documentId:D}", cancellationToken);
 
-    public Task<List<UserSignatureDto>> GetSignaturesAsync(CancellationToken cancellationToken = default) =>
-        GetAsync<List<UserSignatureDto>>("/api/signing/signatures", cancellationToken);
+    public Task<List<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default) =>
+        GetAsync<List<UserSignatureDto>>(SigningUserUri("/api/signing/signatures", userId), cancellationToken);
 
-    public async Task<UserSignatureDto> UploadSignatureAsync(IBrowserFile file, CancellationToken cancellationToken = default)
+    public async Task<UserSignatureDto> UploadSignatureAsync(IBrowserFile file, Guid? userId = null, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
         await using var stream = file.OpenReadStream(2 * 1024 * 1024, cancellationToken);
@@ -115,14 +136,17 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(file.ContentType) ? "image/png" : file.ContentType);
         content.Add(fileContent, "file", file.Name);
-        using var response = await CreateClient().PostAsync("/api/signing/signatures", content, cancellationToken);
+        using var response = await CreateClient().PostAsync(SigningUserUri("/api/signing/signatures", userId), content, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<UserSignatureDto>(cancellationToken: cancellationToken)
             ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
     }
 
-    public Task DeleteSignatureAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendNoContentAsync(HttpMethod.Delete, $"/api/signing/signatures/{id:D}", null, cancellationToken);
+    public Task DeleteSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Delete, SigningUserUri($"/api/signing/signatures/{id:D}", userId), null, cancellationToken);
+
+    private static string SigningUserUri(string path, Guid? userId) =>
+        userId is { } id ? $"{path}{(path.Contains('?') ? "&" : "?")}userId={id:D}" : path;
 
     internal static string BuildListUri(DocumentListQuery query)
     {
@@ -136,6 +160,8 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
             parameters.Add($"filter={Uri.EscapeDataString(query.Filter.Trim())}");
         if (!string.IsNullOrWhiteSpace(query.Status))
             parameters.Add($"status={Uri.EscapeDataString(query.Status.Trim())}");
+        if (query.SourceType is { } sourceType)
+            parameters.Add($"sourceType={sourceType}");
         return $"/api/documents?{string.Join('&', parameters)}";
     }
 

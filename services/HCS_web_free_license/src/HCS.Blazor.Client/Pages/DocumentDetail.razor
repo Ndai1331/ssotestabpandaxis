@@ -107,29 +107,29 @@
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
             if (definitions.Count == 0) definitions.AddRange(await Documents.GetDefinitionsAsync());
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
     }
     private async Task UploadAsync(InputFileChangeEventArgs args)
     {
         try { await Documents.UploadFileAsync(DocumentId, args.File); success = L["Catalog:Created"]; await LoadAsync(); }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task DeleteFileAsync(Guid fileId)
     {
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value.Replace("{0}", L["Feature:Files"]))) return;
         try { await Documents.DeleteFileAsync(DocumentId, fileId); await LoadAsync(); }
-        catch { error = L["Catalog:DeleteError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
     }
     private async Task AssignAsync()
     {
         if (assigneeId is not { } userId) return;
         try { document = await Documents.AssignAsync(DocumentId, new AssignDocumentRequest(userId, string.IsNullOrWhiteSpace(responsibility) ? "reviewer" : responsibility.Trim())); success = L["Catalog:Updated"]; }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task SubmitAsync()
     {
         try { document = await Documents.SubmitAsync(DocumentId); success = L["Feature:SubmitDocument"]; }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task StartWorkflowAsync()
     {
@@ -139,7 +139,7 @@
             await Documents.StartWorkflowAsync(new StartWorkflowRequest(DocumentId, id, Guid.NewGuid().ToString("N")));
             success = L["Feature:StartWorkflow"]; await LoadAsync();
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private string ContactName(Guid id) => contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.ToString("N")[..8];
 }

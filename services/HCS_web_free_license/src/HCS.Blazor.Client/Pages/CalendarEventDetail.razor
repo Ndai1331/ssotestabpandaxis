@@ -10,7 +10,13 @@
 <section class="hcs-document-page">
     <header class="hcs-document-page__header">
         <div><h1>@(item?.Title ?? L["Feature:EventDetail"])</h1>@if (item is not null) { <p>@item.StartTime.ToLocalTime() – @item.EndTime.ToLocalTime() · @item.Visibility</p> }</div>
-        <a class="btn btn-outline-primary" href="/calendar-events">@L["Feature:BackToList"]</a>
+        <div>
+            @if (RelatedHref() is { } relatedHref)
+            {
+                <a class="btn btn-outline-secondary me-2" href="@relatedHref">@L["Work:OpenRelated"]</a>
+            }
+            <a class="btn btn-outline-primary" href="/calendar-events">@L["Feature:BackToList"]</a>
+        </div>
     </header>
     @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
     @if (item is not null)
@@ -52,9 +58,10 @@
             form.Participants.Clear(); foreach (var id in item.ParticipantUserIds) form.Participants.Add(id);
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
         }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
     }
 
+    private string? RelatedHref() => item is null ? null : WorkUi.RelatedEntityHref(item.RelatedType, item.RelatedId);
     private void Toggle(Guid id, bool selected) { if (selected) form.Participants.Add(id); else form.Participants.Remove(id); }
     private async Task SaveAsync()
     {
@@ -63,13 +70,13 @@
         {
             item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, item.StartTime, item.EndTime, item.AllDay, item.EventType, item.Location, item.RelatedType, item.RelatedId, form.Visibility, form.Participants.ToList()));
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync()
     {
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
         try { await Work.DeleteCalendarEventAsync(EventId); Navigation.NavigateTo("/calendar-events"); }
-        catch { error = L["Catalog:DeleteError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
     }
     private sealed class EventForm
     {

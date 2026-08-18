@@ -39,13 +39,13 @@
     protected override async Task OnInitializedAsync()
     {
         try { credentials.AddRange(await Documents.GetCredentialsAsync()); if (credentials.FirstOrDefault() is { } current) { form.Kind = current.Kind; form.Endpoint = current.Endpoint; } }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
     }
     private async Task SaveAsync()
     {
         isSaving = true; error = null; success = null;
         try { await Documents.ConfigureCredentialAsync(new ConfigureSigningCredentialRequest(form.Kind, form.Endpoint.Trim(), form.Secret)); form.Secret = ""; success = L["Catalog:Updated"]; credentials.Clear(); credentials.AddRange(await Documents.GetCredentialsAsync()); }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
         finally { isSaving = false; }
     }
     private string KindName(int kind) => kind switch { 1 => L["Feature:RemoteCa"], 2 => L["Feature:Hsm"], _ => L["Feature:Electronic"] };

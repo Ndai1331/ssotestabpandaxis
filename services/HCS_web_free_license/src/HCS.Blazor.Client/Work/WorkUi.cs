@@ -72,8 +72,29 @@ internal static class WorkUi
         _ => 15
     };
 
+    public const int MaxStars = 5;
+
+    /// <summary>Survey scores are persisted on a 0-100 scale but collected as 1-5 stars.</summary>
+    public static int ScoreToStars(decimal score) =>
+        score <= 0 ? 0 : Math.Clamp((int)Math.Round(score / 20m, MidpointRounding.AwayFromZero), 1, MaxStars);
+
+    public static decimal StarsToScore(int stars) => stars * 20m;
+
     public static string FormatRange(DateTime start, DateTime end) =>
         $"{start.ToLocalTime():dd/MM/yyyy HH:mm} - {end.ToLocalTime():dd/MM/yyyy HH:mm}";
 
     public static string FormatDay(DateTime value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+
+    public static string EventHref(string relatedType, string? relatedId, Guid eventId) =>
+        RelatedEntityHref(relatedType, relatedId) ?? $"/calendar-event-detail/{eventId}";
+
+    public static string? RelatedEntityHref(string relatedType, string? relatedId)
+    {
+        if (!Guid.TryParse(relatedId, out var id)) return null;
+        if (string.Equals(relatedType, "PROJECT", StringComparison.OrdinalIgnoreCase))
+            return $"/project-detail/{id}";
+        if (string.Equals(relatedType, "TASK", StringComparison.OrdinalIgnoreCase))
+            return $"/project-task-detail/{id}";
+        return null;
+    }
 }

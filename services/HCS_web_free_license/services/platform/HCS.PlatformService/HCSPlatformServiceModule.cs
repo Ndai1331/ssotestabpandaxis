@@ -1,4 +1,5 @@
 using HCS.EntityFrameworkCore;
+using HCS.Permissions;
 using HCS.PlatformService.Filters;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
@@ -62,6 +63,11 @@ public sealed class HCSPlatformServiceModule : AbpModule
             options.Filters.Add<DefaultApplicationLocalizationCultureFilter>());
         context.Services.AddAuthentication(
             OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+        context.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy(HCSPermissions.Collaboration.Chat,
+                policy => policy.RequireClaim("permission", HCSPermissions.Collaboration.Chat));
+        });
         context.Services.Configure<AbpClaimsPrincipalFactoryOptions>(options =>
             options.IsDynamicClaimsEnabled = true);
         Configure<AbpAntiForgeryOptions>(options =>

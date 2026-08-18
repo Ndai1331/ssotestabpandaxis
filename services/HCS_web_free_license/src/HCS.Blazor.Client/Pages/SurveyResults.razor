@@ -32,20 +32,54 @@
         else if (results.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div> }
         else
         {
-            <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
-                <thead><tr><th></th><th>@L["Menu:SurveyCriterias"]</th><th>@L["Feature:Score"]</th><th>@L["Feature:Comment"]</th></tr></thead>
-                <tbody>
-                @foreach (var result in results)
-                {
-                    <tr>
-                        <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
-                        <td>@CriteriaName(result.CriteriaId)</td>
-                        <td><span class="hcs-status-badge hcs-status-badge--info">@result.Score</span></td>
-                        <td>@(result.Comment ?? "—")</td>
-                    </tr>
-                }
-                </tbody>
-            </table></div>
+            <div class="hcs-survey-tabs" role="tablist">
+                <button type="button" class="@(resultsTab == "chart" ? "is-active" : null)" @onclick='() => resultsTab = "chart"'>@L["Feature:ChartStatistics"]</button>
+                <button type="button" class="@(resultsTab == "detail" ? "is-active" : null)" @onclick='() => resultsTab = "detail"'>@L["Feature:DetailData"]</button>
+            </div>
+            @if (resultsTab == "chart")
+            {
+                var starBuckets = CountByStars();
+                <div class="hcs-survey-charts">
+                    @foreach (var row in CriteriaAverages)
+                    {
+                        <div class="hcs-survey-bar">
+                            <span class="hcs-survey-bar__label">@row.Name</span>
+                            <div class="hcs-survey-bar__track" aria-hidden="true"><div class="hcs-survey-bar__fill" style="@($"width:{row.Average:0}%")"></div></div>
+                            <span class="hcs-survey-bar__value">@row.Average.ToString("0.#")</span>
+                        </div>
+                    }
+                    <h2 class="h6 mt-4">@L["Feature:StarRating"]</h2>
+                    <div class="hcs-survey-stars">
+                        @for (var star = 1; star <= starBuckets.Length; star++)
+                        {
+                            var count = starBuckets[star - 1];
+                            var percent = count * 100d / results.Count;
+                            <div class="hcs-survey-bar">
+                                <span class="hcs-survey-bar__label">@($"{star}★")</span>
+                                <div class="hcs-survey-bar__track"><div class="hcs-survey-bar__fill" style="@($"width:{percent:0}%")"></div></div>
+                                <span class="hcs-survey-bar__value">@count</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
+                    <thead><tr><th></th><th>@L["Menu:SurveyCriterias"]</th><th>@L["Feature:Score"]</th><th>@L["Feature:Comment"]</th></tr></thead>
+                    <tbody>
+                    @foreach (var result in results)
+                    {
+                        <tr>
+                            <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
+                            <td>@CriteriaName(result.CriteriaId)</td>
+                            <td><span class="hcs-status-badge hcs-status-badge--info">@result.Score</span></td>
+                            <td>@(result.Comment ?? "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+            }
         }
     </CardBody></Card>
     @if (Guid.TryParse(selectedSessionId, out var sid))
@@ -56,7 +90,7 @@
                 <InputFile class="form-control w-auto" OnChange="e => UploadAsync(sid, e)" />
             </div>
             @if (files.Count == 0) { <div class="hcs-empty py-4"><i class="fa fa-inbox"></i><p>@L["Catalog:EmptyTitle"]</p></div> }
-            else { <ul class="mb-0">@foreach (var file in files) { <li>@file.FileName <small class="text-muted">(@file.Size bytes)</small></li> }</ul> }
+            else { <ul class="mb-0">@foreach (var file in files) { <li><a href="@($"/api/surveys/files/{file.Id}/content")" target="_blank" rel="noopener">@file.FileName</a> <small class="text-muted">(@file.Size bytes)</small></li> }</ul> }
         </CardBody></Card>
     }
 </section>
@@ -88,13 +122,27 @@
     private readonly ResultForm form = new();
     private Modal? modal;
     private string selectedSessionId = "";
+    private string resultsTab = "chart";
     private string? error;
     private bool isLoading;
+    private IEnumerable<(string Name, decimal Average)> CriteriaAverages =>
+        results.GroupBy(result => result.CriteriaId)
+            .Select(group => (CriteriaName(group.Key), group.Average(item => item.Score)));
+    // Index 0 holds the 1-star count; scores at or below zero fall into that lowest bucket.
+    private int[] CountByStars()
+    {
+        var buckets = new int[WorkUi.MaxStars];
+        foreach (var result in results)
+        {
+            buckets[Math.Max(WorkUi.ScoreToStars(result.Score), 1) - 1]++;
+        }
+        return buckets;
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try { sessions.AddRange(await Work.GetSessionsAsync()); criteria.AddRange(await Work.GetCriteriaAsync()); }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
     }
     private async Task OpenSubmit() { form.CriteriaId = ""; form.Score = 0; form.Comment = ""; if (modal is not null) await modal.Show(); }
     private async Task LoadResultsAsync()
@@ -103,7 +151,7 @@
         if (!Guid.TryParse(selectedSessionId, out var id)) return;
         isLoading = true; error = null;
         try { results.AddRange(await Work.GetResultsAsync(id)); files.AddRange(await Work.GetSessionFilesAsync(id)); }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
     }
     private async Task SubmitAsync()
@@ -115,12 +163,12 @@
             if (modal is not null) await modal.Hide();
             await LoadResultsAsync();
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private async Task UploadAsync(Guid sessionId, InputFileChangeEventArgs args)
     {
         try { await Work.UploadSurveyFileAsync(sessionId, args.File); await LoadResultsAsync(); }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
     private string CriteriaName(Guid id) => criteria.FirstOrDefault(x => x.Id == id)?.Name ?? id.ToString("N")[..8];
     private sealed class ResultForm { public string CriteriaId { get; set; } = ""; public decimal Score { get; set; } public string Comment { get; set; } = ""; }

@@ -45,6 +45,22 @@ public sealed class WorkflowsController(IWorkflowAppService workflows) : Control
     [HttpPost("templates/{id:guid}/active"), Authorize(Policy = Documents.DocumentPermissions.WorkflowManage)]
     public Task<WorkflowTemplateDto> SetTemplateActive(Guid id, [FromBody] bool isActive, CancellationToken cancellationToken) =>
         workflows.SetTemplateActiveAsync(id, isActive, cancellationToken);
+    [HttpPost("templates/{id:guid}/files"), Authorize(Policy = Documents.DocumentPermissions.WorkflowManage)]
+    [RequestSizeLimit(Documents.DocumentFileService.MaxFileSize)]
+    public async Task<ActionResult<WorkflowTemplateDto>> UploadTemplateFile(Guid id, [FromQuery] string kind, IFormFile? file, CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length <= 0) return BadRequest();
+        await using var stream = file.OpenReadStream();
+        return await workflows.UploadTemplateFileAsync(id, kind, file.FileName, file.ContentType, stream, file.Length, cancellationToken);
+    }
+    [HttpGet("templates/{id:guid}/files/{kind}/content")]
+    public async Task<IActionResult> DownloadTemplateFile(Guid id, string kind, CancellationToken cancellationToken)
+    {
+        var result = await workflows.OpenTemplateFileAsync(id, kind, cancellationToken);
+        var fileName = Path.GetFileName(result.FileName);
+        if (string.IsNullOrWhiteSpace(fileName)) fileName = "template";
+        return File(result.Content, result.ContentType, fileName, enableRangeProcessing: true);
+    }
     [HttpPost("instances"), Authorize(Policy = Documents.DocumentPermissions.WorkflowStart)]
     public Task<WorkflowInstanceDto> Start(StartWorkflowRequest input, CancellationToken cancellationToken) => workflows.StartAsync(input, cancellationToken);
     [HttpPost("tasks/{taskId:guid}/decision"), Authorize(Policy = Documents.DocumentPermissions.WorkflowDecide)]

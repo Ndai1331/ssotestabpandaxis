@@ -9,8 +9,9 @@ public sealed class DocumentsController(IDocumentAppService documents, DocumentF
 {
     [HttpGet]
     public Task<PagedDocumentsDto> GetList([FromQuery] string? filter, [FromQuery] DocumentStatus? status,
-        [FromQuery] bool mine = false, [FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken cancellationToken = default) =>
-        documents.GetListAsync(filter, status, mine, skip, take, cancellationToken);
+        [FromQuery] bool mine = false, [FromQuery] int skip = 0, [FromQuery] int take = 50,
+        [FromQuery] int? sourceType = null, CancellationToken cancellationToken = default) =>
+        documents.GetListAsync(filter, status, mine, skip, take, sourceType, cancellationToken);
     [HttpPost, Authorize(Policy = DocumentPermissions.Create)]
     public Task<DocumentDto> Create(CreateDocumentRequest input, CancellationToken cancellationToken) => documents.CreateAsync(input, cancellationToken);
     [HttpGet("{id:guid}")]

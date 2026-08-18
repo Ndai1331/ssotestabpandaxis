@@ -45,7 +45,7 @@
     align-items: center;
     background: var(--ws-pink);
     border: 0;
-    border-radius: 6px;
+    border-radius: 0;
     color: #fff;
     display: inline-flex;
     font-size: .8rem;
@@ -151,7 +151,7 @@
     align-items: center;
     background: var(--ws-pink);
     border: 0;
-    border-radius: 6px;
+    border-radius: 0;
     color: #fff;
     display: inline-flex;
     font-size: .75rem;
@@ -221,7 +221,7 @@
 .hcs-workspace .hcs-ws-view {
     background: var(--ws-pink);
     border: 0;
-    border-radius: 6px;
+    border-radius: 0;
     color: #fff;
     font-size: .75rem;
     font-weight: 650;

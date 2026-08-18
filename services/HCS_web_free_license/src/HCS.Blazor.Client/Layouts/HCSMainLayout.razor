@@ -83,16 +83,16 @@
             </NavLink>
 
             @Menu("documents", "fa-file-lines", Localizer["Menu:Documents"].Value,
-                ("/manage-documents", "fa-folder-open", Localizer["Menu:DocumentList"].Value),
-                ("/my-documents", "fa-user", Localizer["Menu:MyDocuments"].Value),
+                ("/manage-documents?sourceType=0", "fa-folder-open", Localizer["Menu:DocumentList"].Value),
+                ("/manage-documents?sourceType=1", "fa-user", Localizer["Menu:MyDocuments"].Value),
+                ("/manage-documents?sourceType=2", "fa-inbox", Localizer["Menu:DocumentsSentToMe"].Value),
                 ("/document-signing", "fa-signature", Localizer["Menu:DocumentSigning"].Value),
-                ("/user-signatures", "fa-pen-fancy", Localizer["Menu:UserSignatures"].Value),
-                ("/signature-settings", "fa-pen-nib", Localizer["Menu:SignatureSettings"].Value),
                 ("/signing-kpi-report", "fa-chart-pie", Localizer["Menu:SigningKpi"].Value))
 
             @Menu("workflows", "fa-arrow-trend-up", Localizer["Menu:Workflows"].Value,
                 ("/workflow-definitions", "fa-diagram-project", Localizer["Menu:WorkflowDefinitions"].Value),
-                ("/workflow-lists", "fa-code-branch", Localizer["Menu:WorkflowInstances"].Value))
+                ("/workflow-lists", "fa-code-branch", Localizer["Menu:WorkflowList"].Value),
+                ("/document-workflow-instances", "fa-folder-open", Localizer["Menu:WorkflowInstances"].Value))
 
             @Menu("projects", "fa-diagram-project", Localizer["Menu:ProjectsAndTasks"].Value,
                 ("/projects", "fa-briefcase", Localizer["Menu:ProjectList"].Value),
@@ -128,6 +128,7 @@
                             <NavLink href="/processing-methods" @onclick="CloseMobileNav"><i class="fa fa-gears" aria-hidden="true"></i>@Localizer["Menu:ProcessingMethods"]</NavLink>
                             <NavLink href="/document-status" @onclick="CloseMobileNav"><i class="fa fa-circle-check" aria-hidden="true"></i>@Localizer["Menu:DocumentStatus"]</NavLink>
                             <NavLink href="/signing-methods" @onclick="CloseMobileNav"><i class="fa fa-pen-nib" aria-hidden="true"></i>@Localizer["Menu:SigningMethods"]</NavLink>
+                            <NavLink href="/signature-settings" @onclick="CloseMobileNav"><i class="fa fa-key" aria-hidden="true"></i>@Localizer["Menu:SignatureSettings"]</NavLink>
                             <NavLink href="/event-types" @onclick="CloseMobileNav"><i class="fa fa-star-o" aria-hidden="true"></i>@Localizer["Menu:EventTypes"]</NavLink>
                         </Authorized>
                     </AuthorizeView>

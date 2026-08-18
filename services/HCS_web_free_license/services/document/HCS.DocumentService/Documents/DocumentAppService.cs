@@ -9,7 +9,7 @@ namespace HCS.DocumentService.Documents;
 public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContextAccessor httpContext) : IDocumentAppService
 {
     public async Task<PagedDocumentsDto> GetListAsync(string? filter = null, DocumentStatus? status = null,
-        bool mine = false, int skip = 0, int take = 50, CancellationToken cancellationToken = default)
+        bool mine = false, int skip = 0, int take = 50, int? sourceType = null, CancellationToken cancellationToken = default)
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
@@ -17,11 +17,20 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         take = Math.Clamp(take, 1, 100);
         skip = Math.Max(skip, 0);
         var query = Query();
-        if (mine || !DocumentAccess.IsElevated(principal))
+        query = sourceType switch
         {
-            query = query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) ||
-                                     x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId));
-        }
+            1 => query.Where(x => x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
+            2 => query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) &&
+                                  !x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
+            0 when !DocumentAccess.IsElevated(principal) =>
+                query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) ||
+                                 x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
+            0 => query,
+            _ when mine || !DocumentAccess.IsElevated(principal) =>
+                query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) ||
+                                 x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
+            _ => query
+        };
         if (!string.IsNullOrWhiteSpace(filter))
         {
             var value = filter.Trim();

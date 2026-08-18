@@ -22,6 +22,34 @@ public sealed class DomainInvariantTests
     }
 
     [Fact]
+    public void Project_calendar_event_uses_project_identity()
+    {
+        var start = DateTime.UtcNow;
+        var project = new Project(Guid.NewGuid(), "P-1", "Project", start, start.AddDays(2), "Active", null, Guid.NewGuid());
+        var calendar = WorkCalendarSync.CreateProjectEvent(Guid.NewGuid(), project);
+        Assert.Equal(WorkCalendarSync.ProjectRelatedType, calendar.RelatedType);
+        Assert.Equal(project.Id.ToString(), calendar.RelatedId);
+        Assert.Equal(project.Name, calendar.Title);
+        Assert.Equal(project.StartDate, calendar.StartTime);
+        Assert.Equal(project.EndDate, calendar.EndTime);
+        Assert.Equal(WorkCalendarSync.SyncedVisibility, calendar.Visibility);
+    }
+
+    [Fact]
+    public void Task_calendar_event_uses_task_identity()
+    {
+        var start = DateTime.UtcNow;
+        var owner = Guid.NewGuid();
+        var task = new ProjectTask(Guid.NewGuid(), Guid.NewGuid(), null, "T-1", "Task",
+            null, start, start.AddDays(1), "Normal", "Open", 0);
+        var calendar = WorkCalendarSync.CreateTaskEvent(Guid.NewGuid(), task, owner);
+        Assert.Equal(WorkCalendarSync.TaskRelatedType, calendar.RelatedType);
+        Assert.Equal(task.Id.ToString(), calendar.RelatedId);
+        Assert.Equal(task.Title, calendar.Title);
+        Assert.Equal(owner, calendar.OwnerUserId);
+    }
+
+    [Fact]
     public void Calendar_rejects_inverted_date_range()
     {
         Assert.Throws<BusinessException>(() => new CalendarEvent(Guid.NewGuid(), "Meeting", null,

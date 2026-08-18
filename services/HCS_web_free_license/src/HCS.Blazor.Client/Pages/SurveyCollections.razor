@@ -16,7 +16,15 @@
                 {
                     <Field>
                         <FieldLabel>@item.Name</FieldLabel>
-                        <NumericPicker TValue="decimal" Value="scores.GetValueOrDefault(item.Id)" ValueChanged="value => scores[item.Id] = value" Min="0" Max="100" />
+                        <div class="hcs-star-rating" role="radiogroup" aria-label="@L["Feature:StarRating"]">
+                            @foreach (var star in Enumerable.Range(1, WorkUi.MaxStars))
+                            {
+                                <button type="button"
+                                        class="@(WorkUi.ScoreToStars(scores.GetValueOrDefault(item.Id)) >= star ? "is-active" : null)"
+                                        aria-label="@($"{star}★")"
+                                        @onclick="() => scores[item.Id] = WorkUi.StarsToScore(star)">★</button>
+                            }
+                        </div>
                     </Field>
                 }
                 <Button Color="Color.Primary" Clicked="() => SubmitAsync(session.Id)">@L["Catalog:SaveChanges"]</Button>
@@ -34,7 +42,7 @@
     protected override async Task OnParametersSetAsync()
     {
         try { sessions.Clear(); sessions.AddRange(await Work.GetSessionsAsync(SurveyLocationId)); criteria.Clear(); criteria.AddRange(await Work.GetCriteriaAsync()); }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
     }
     private async Task SubmitAsync(Guid sessionId)
     {
@@ -46,6 +54,6 @@
             }
             success = L["Catalog:Created"];
         }
-        catch { error = L["Catalog:SaveError"]; }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
 }

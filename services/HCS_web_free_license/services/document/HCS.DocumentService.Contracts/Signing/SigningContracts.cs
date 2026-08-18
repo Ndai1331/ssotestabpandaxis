@@ -26,11 +26,11 @@ public sealed record SigningReportDto(Guid DocumentId, int Completed, int Failed
 
 public interface ISigningAppService
 {
-    Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(CancellationToken cancellationToken = default);
-    Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest input, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default);
+    Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest input, Guid? userId = null, CancellationToken cancellationToken = default);
     Task<SigningAttemptDto> SignAsync(SignDocumentRequest input, CancellationToken cancellationToken = default);
     Task<SigningReportDto> GetReportAsync(Guid documentId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<UserSignatureDto>> GetSignaturesAsync(CancellationToken cancellationToken = default);
-    Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size, CancellationToken cancellationToken = default);
-    Task DeleteSignatureAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default);
+    Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size, Guid? userId = null, CancellationToken cancellationToken = default);
+    Task DeleteSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);
 }

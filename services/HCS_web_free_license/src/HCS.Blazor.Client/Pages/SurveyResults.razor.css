@@ -1,0 +1,53 @@
+.hcs-survey-tabs {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid #e5edf2;
+}
+
+.hcs-survey-tabs button {
+    padding: .45rem 0 .7rem;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: #355770;
+    font-weight: 650;
+}
+
+.hcs-survey-tabs button.is-active {
+    border-bottom-color: #d4356b;
+    color: #d4356b;
+}
+
+.hcs-survey-charts {
+    display: grid;
+    gap: .75rem;
+}
+
+.hcs-survey-bar {
+    align-items: center;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(7rem, 12rem) minmax(0, 1fr) 3rem;
+}
+
+.hcs-survey-bar__label {
+    color: #355770;
+    font-size: .9rem;
+}
+
+.hcs-survey-bar__track {
+    background: #eef3f6;
+    height: .65rem;
+}
+
+.hcs-survey-bar__fill {
+    background: #2f6f62;
+    height: 100%;
+}
+
+.hcs-survey-bar__value {
+    color: #193b57;
+    font-weight: 700;
+    text-align: right;
+}

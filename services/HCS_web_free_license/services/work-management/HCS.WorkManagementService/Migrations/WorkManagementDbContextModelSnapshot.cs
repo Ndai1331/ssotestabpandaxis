@@ -117,7 +117,10 @@ namespace HCS.WorkManagementService.Migrations
 
                     b.HasIndex("OwnerUserId");
 
-                    b.HasIndex("RelatedType", "RelatedId");
+                    b.HasIndex("RelatedType", "RelatedId", "EventType")
+                        .IsUnique()
+                        .HasFilter("\"RelatedId\" IS NOT NULL AND \"EventType\" IN ('PROJECT', 'TASK')")
+                        .HasDatabaseName("IX_CalendarEvents_SyncedRelated");
 
                     b.HasIndex("StartTime", "EndTime");
 

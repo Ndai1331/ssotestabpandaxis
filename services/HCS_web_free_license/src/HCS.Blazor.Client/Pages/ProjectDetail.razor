@@ -1,24 +1,55 @@
+@page "/project-detail"
 @page "/project-detail/{ProjectId:guid}"
 @attribute [Authorize(Policy = "WorkManagement.Projects")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
+@inject OrganizationCatalogClient Catalog
 @inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
 
-<PageTitle>@L["Feature:ProjectDetail"] · HCS</PageTitle>
+<PageTitle>@(IsCreate ? L["Feature:ProjectCreate"] : L["Feature:ProjectDetail"]) · HCS</PageTitle>
 <section class="hcs-document-page">
     <header class="hcs-document-page__header">
         <div>
             <p class="hcs-document-page__eyebrow">@L["Menu:ProjectsAndTasks"]</p>
-            <h1>@(detail?.Project.Name ?? L["Feature:ProjectDetail"])</h1>
-            @if (detail is not null) { <p>@detail.Project.Code · @detail.Project.Status · @detail.Project.StartDate.ToString("dd/MM/yyyy") – @detail.Project.EndDate.ToString("dd/MM/yyyy")</p> }
+            <h1>@(IsCreate ? L["Feature:ProjectCreate"] : (detail?.Project.Name ?? L["Feature:ProjectDetail"]))</h1>
+            @if (detail is not null)
+            {
+                <p>@detail.Project.Code · @detail.Project.Status · @detail.Project.StartDate.ToString("dd/MM/yyyy") – @detail.Project.EndDate.ToString("dd/MM/yyyy")</p>
+            }
         </div>
         <a class="btn btn-outline-primary" href="/projects">@L["Feature:BackToList"]</a>
     </header>
     @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
     @if (!string.IsNullOrWhiteSpace(success)) { <div class="alert alert-success">@success</div> }
     @if (isLoading) { <p>@L["Catalog:Loading"]</p> }
+    else if (IsCreate)
+    {
+        <Card>
+            <CardHeader><strong>@L["Feature:ProjectCreate"]</strong></CardHeader>
+            <CardBody>
+                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="projectForm.Code" /></Field>
+                <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><TextInput @bind-Value="projectForm.Name" /></Field>
+                <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="projectForm.Description"></textarea></Field>
+                <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="projectForm.StartDate" /></Field>
+                <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="projectForm.EndDate" /></Field>
+                <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
+                    <Select TValue="string" @bind-Value="projectForm.Status">
+                        @foreach (var value in WorkUi.ProjectStatuses) { <SelectItem Value="@value">@L[WorkUi.ProjectStatusKey(value)]</SelectItem> }
+                    </Select>
+                </Field>
+                <Field><FieldLabel>@L["Catalog:Department"]</FieldLabel>
+                    <CatalogSelect2 Value="projectForm.OwnerDepartmentId"
+                                    ValueChanged="value => projectForm.OwnerDepartmentId = value"
+                                    Placeholder="@L["Catalog:SearchPlaceholder"]"
+                                    SelectedText="@DepartmentSelectText(projectForm.OwnerDepartmentId)"
+                                    Search="SearchDepartmentsAsync" />
+                </Field>
+                <Button Color="Color.Primary" Clicked="CreateProjectAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+            </CardBody>
+        </Card>
+    }
     else if (detail is not null)
     {
         <div class="hcs-document-page__grid">
@@ -26,10 +57,11 @@
                 <CardHeader><strong>@L["Feature:Members"]</strong></CardHeader>
                 <CardBody>
                     <Field><FieldLabel>@L["Feature:Member"]</FieldLabel>
-                        <Select TValue="Guid?" @bind-Value="memberUserId">
-                            <SelectItem TValue="Guid?" Value="null">@L["Chat:SelectContacts"]</SelectItem>
-                            @foreach (var contact in contacts) { <SelectItem TValue="Guid?" Value="contact.Id">@contact.DisplayName</SelectItem> }
-                        </Select>
+                        <CatalogSelect2 Value="memberUserId"
+                                        ValueChanged="value => memberUserId = value"
+                                        Placeholder="@L["Chat:SelectContacts"]"
+                                        SelectedText="@Name(memberUserId)"
+                                        Search="SearchContactsAsync" />
                     </Field>
                     <Field><FieldLabel>@L["Feature:Role"]</FieldLabel>
                         <Select TValue="string" @bind-Value="memberRole">
@@ -54,10 +86,32 @@
             </Card>
             <Card>
                 <CardHeader><strong>@L["Menu:Tasks"]</strong></CardHeader>
-                <CardBody Class="p-0">
-                    @if (detail.Tasks.Count == 0) { <p class="p-4 mb-0">@L["Feature:NoTasks"]</p> }
+                <CardBody>
+                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="taskForm.Code" /></Field>
+                    <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><TextInput @bind-Value="taskForm.Title" /></Field>
+                    <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="taskForm.StartDate" /></Field>
+                    <Field><FieldLabel>@L["Feature:DueDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="taskForm.DueDate" /></Field>
+                    <Field><FieldLabel>@L["Feature:Priority"]</FieldLabel>
+                        <Select TValue="string" @bind-Value="taskForm.Priority">
+                            @foreach (var value in WorkUi.TaskPriorities) { <SelectItem Value="@value">@L[WorkUi.PriorityKey(value)]</SelectItem> }
+                        </Select>
+                    </Field>
+                    <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
+                        <Select TValue="string" @bind-Value="taskForm.Status">
+                            @foreach (var value in WorkUi.TaskStatuses) { <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem> }
+                        </Select>
+                    </Field>
+                    <Field><FieldLabel>@L["Feature:Assignments"]</FieldLabel>
+                        <CatalogSelect2 Value="taskForm.AssigneeUserId"
+                                        ValueChanged="value => taskForm.AssigneeUserId = value"
+                                        Placeholder="@L["Chat:SelectContacts"]"
+                                        SelectedText="@MemberName(taskForm.AssigneeUserId)"
+                                        Search="SearchMembersAsync" />
+                    </Field>
+                    <Button Color="Color.Primary" Clicked="AddTaskAsync" Disabled="@isSaving">@L["Feature:AddTask"]</Button>
+                    @if (detail.Tasks.Count == 0) { <p class="mt-3 mb-0">@L["Feature:NoTasks"]</p> }
                     else {
-                        <table class="table mb-0"><thead><tr><th>@L["Catalog:Code"]</th><th>@L["Feature:TaskTitle"]</th><th>@L["Catalog:Status"]</th></tr></thead>
+                        <table class="table mt-3 mb-0"><thead><tr><th>@L["Catalog:Code"]</th><th>@L["Feature:TaskTitle"]</th><th>@L["Catalog:Status"]</th></tr></thead>
                         <tbody>
                         @foreach (var task in detail.Tasks)
                         {
@@ -75,40 +129,168 @@
     }
 </section>
 @code {
-    [Parameter] public Guid ProjectId { get; set; }
+    [Parameter] public Guid? ProjectId { get; set; }
     private ProjectDetailDto? detail;
     private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
+    private readonly List<DepartmentCatalogDto> departments = [];
+    private readonly ProjectForm projectForm = new();
+    private readonly TaskForm taskForm = new();
     private Guid? memberUserId;
     private string memberRole = "Member";
-    private bool isLoading;
+    private bool isLoading, isSaving;
     private string? error, success;
+    private bool IsCreate => ProjectId is null;
 
     protected override async Task OnParametersSetAsync()
     {
         isLoading = true; error = null;
         try
         {
-            detail = await Work.GetProjectAsync(ProjectId);
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+            if (departments.Count == 0)
+            {
+                try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
+            }
+            if (ProjectId is { } id)
+            {
+                detail = await Work.GetProjectAsync(id);
+            }
         }
-        catch (BffApiException) { error = L["Catalog:LoadError"]; }
-        catch { error = L["Catalog:LoadError"]; }
+        catch (Exception ex) { error = MapBffError(ex); }
         finally { isLoading = false; }
+    }
+
+    private async Task CreateProjectAsync()
+    {
+        isSaving = true; error = null;
+        try
+        {
+            var created = await Work.CreateProjectAsync(new CreateProjectRequest(
+                projectForm.Code.Trim(), projectForm.Name.Trim(), Blank(projectForm.Description),
+                projectForm.StartDate, projectForm.EndDate, projectForm.Status, projectForm.OwnerDepartmentId));
+            Navigation.NavigateTo($"/project-detail/{created.Id}", forceLoad: true);
+        }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        finally { isSaving = false; }
     }
 
     private async Task AddMemberAsync()
     {
-        if (memberUserId is not { } userId) return;
-        try { await Work.AddMemberAsync(ProjectId, new AddProjectMemberRequest(userId, memberRole)); success = L["Feature:MemberAdded"]; detail = await Work.GetProjectAsync(ProjectId); }
-        catch (BffApiException) { error = L["Catalog:SaveError"]; }
+        if (ProjectId is not { } projectId || memberUserId is not { } userId) return;
+        try
+        {
+            await Work.AddMemberAsync(projectId, new AddProjectMemberRequest(userId, memberRole));
+            success = L["Feature:MemberAdded"];
+            detail = await Work.GetProjectAsync(projectId);
+        }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
     }
 
     private async Task RemoveMemberAsync(ProjectMemberDto member)
     {
+        if (ProjectId is not { } projectId) return;
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], Name(member.UserId)))) return;
-        try { await Work.RemoveMemberAsync(ProjectId, member.Id); success = L["Catalog:Deleted"]; detail = await Work.GetProjectAsync(ProjectId); }
-        catch (BffApiException) { error = L["Catalog:DeleteError"]; }
+        try
+        {
+            await Work.RemoveMemberAsync(projectId, member.Id);
+            success = L["Catalog:Deleted"];
+            detail = await Work.GetProjectAsync(projectId);
+        }
+        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
     }
 
-    private string Name(Guid id) => contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.ToString("N")[..8];
+    private async Task AddTaskAsync()
+    {
+        if (ProjectId is not { } projectId) return;
+        if (taskForm.AssigneeUserId is null)
+        {
+            error = L["Feature:RequireAssignee"];
+            return;
+        }
+        isSaving = true; error = null;
+        Guid? createdId = null;
+        try
+        {
+            var created = await Work.CreateTaskAsync(new CreateProjectTaskRequest(
+                projectId, null, taskForm.Code.Trim(), taskForm.Title.Trim(), null,
+                taskForm.StartDate, taskForm.DueDate, taskForm.Priority, taskForm.Status, 0));
+            createdId = created.Id;
+            await Work.AddAssignmentAsync(created.Id, new AddTaskAssignmentRequest(taskForm.AssigneeUserId.Value, "Assignee"));
+            success = L["Catalog:Created"];
+            taskForm.Reset();
+            detail = await Work.GetProjectAsync(projectId);
+        }
+        catch (Exception ex)
+        {
+            if (createdId is { } id)
+            {
+                try { await Work.DeleteTaskAsync(id); } catch { /* rollback best-effort */ }
+            }
+            error = MapBffError(ex, BffErrorKind.Save);
+        }
+        finally { isSaving = false; }
+    }
+
+    private string MemberName(Guid? id) => Name(id);
+    private async Task<CatalogSelect2SearchResponse> SearchMembersAsync(string term, int page)
+    {
+        var members = (detail?.Members ?? []).Where(x => x.IsActive).ToList();
+        if (members.Count == 0)
+        {
+            var found = await Chat.GetContactsAsync(term, 50);
+            return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false);
+        }
+        var filtered = string.IsNullOrWhiteSpace(term)
+            ? members
+            : members.Where(x => Name(x.UserId).Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
+        return new(filtered.Select(x => new CatalogSelect2Item(x.UserId.ToString(), Name(x.UserId))).ToList(), false);
+    }
+
+    private string Name(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.Value.ToString("N")[..8];
+    private string DepartmentSelectText(Guid? id) =>
+        CatalogSelect2Cache.TextFor(departments, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+    private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
+    {
+        var skip = Math.Max(page - 1, 0) * 20;
+        var result = await Catalog.SearchDepartmentsAsync(term, skip, 20);
+        return CatalogSelect2Cache.Merge(departments, result.Items, x => x.Id,
+            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+    }
+    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
+    {
+        var found = await Chat.GetContactsAsync(term, 50);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false);
+    }
+    private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private sealed class ProjectForm
+    {
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public DateTime EndDate { get; set; } = DateTime.Today.AddMonths(1);
+        public string Status { get; set; } = "Active";
+        public Guid? OwnerDepartmentId { get; set; }
+    }
+
+    private sealed class TaskForm
+    {
+        public string Code { get; set; } = "";
+        public string Title { get; set; } = "";
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public DateTime DueDate { get; set; } = DateTime.Today.AddDays(7);
+        public string Priority { get; set; } = "Normal";
+        public string Status { get; set; } = "New";
+        public Guid? AssigneeUserId { get; set; }
+        public void Reset()
+        {
+            Code = Title = "";
+            StartDate = DateTime.Today;
+            DueDate = DateTime.Today.AddDays(7);
+            Priority = "Normal";
+            Status = "New";
+            AssigneeUserId = null;
+        }
+    }
 }

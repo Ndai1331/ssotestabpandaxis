@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../HCS.WorkManagementService.Contracts/HCS.WorkManagementService.Contracts.csproj" />
+    <InternalsVisibleTo Include="HCS.WorkManagementService.Tests" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="OpenIddict.Validation.AspNetCore" Version="7.5.0" />
