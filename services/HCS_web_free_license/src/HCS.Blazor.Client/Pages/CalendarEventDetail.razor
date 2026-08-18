@@ -1,0 +1,81 @@
+@page "/calendar-event-detail/{EventId:guid}"
+@attribute [Authorize(Policy = "WorkManagement.Calendar")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject CollaborationClient Chat
+@inject IUiMessageService UiMessage
+@inject NavigationManager Navigation
+
+<PageTitle>@L["Feature:EventDetail"] · HCS</PageTitle>
+<section class="hcs-document-page">
+    <header class="hcs-document-page__header">
+        <div><h1>@(item?.Title ?? L["Feature:EventDetail"])</h1>@if (item is not null) { <p>@item.StartTime.ToLocalTime() – @item.EndTime.ToLocalTime() · @item.Visibility</p> }</div>
+        <a class="btn btn-outline-primary" href="/calendar-events">@L["Feature:BackToList"]</a>
+    </header>
+    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
+    @if (item is not null)
+    {
+        <Card Class="mb-3"><CardBody>
+            <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><TextInput @bind-Value="form.Title" /></Field>
+            <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
+            <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.Visibility">
+                    <SelectItem Value="@("Private")">Private</SelectItem>
+                    <SelectItem Value="@("Participants")">Participants</SelectItem>
+                    <SelectItem Value="@("Public")">Public</SelectItem>
+                </Select>
+            </Field>
+            <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
+                @foreach (var contact in contacts)
+                {
+                    <Check TValue="bool" Checked="form.Participants.Contains(contact.Id)" CheckedChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
+                }
+            </Field>
+            <Button Color="Color.Primary" Clicked="SaveAsync">@L["Catalog:SaveChanges"]</Button>
+            <Button Color="Color.Danger" Outline="true" Clicked="DeleteAsync">@L["Catalog:Delete"]</Button>
+        </CardBody></Card>
+    }
+</section>
+@code {
+    [Parameter] public Guid EventId { get; set; }
+    private CalendarEventDto? item;
+    private readonly EventForm form = new();
+    private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
+    private string? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            item = await Work.GetCalendarEventAsync(EventId);
+            form.Title = item.Title; form.Description = item.Description ?? ""; form.Visibility = item.Visibility;
+            form.Participants.Clear(); foreach (var id in item.ParticipantUserIds) form.Participants.Add(id);
+            if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+        }
+        catch { error = L["Catalog:LoadError"]; }
+    }
+
+    private void Toggle(Guid id, bool selected) { if (selected) form.Participants.Add(id); else form.Participants.Remove(id); }
+    private async Task SaveAsync()
+    {
+        if (item is null) return;
+        try
+        {
+            item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, item.StartTime, item.EndTime, item.AllDay, item.EventType, item.Location, item.RelatedType, item.RelatedId, form.Visibility, form.Participants.ToList()));
+        }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private async Task DeleteAsync()
+    {
+        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
+        try { await Work.DeleteCalendarEventAsync(EventId); Navigation.NavigateTo("/calendar-events"); }
+        catch { error = L["Catalog:DeleteError"]; }
+    }
+    private sealed class EventForm
+    {
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Visibility { get; set; } = "Private";
+        public HashSet<Guid> Participants { get; } = [];
+    }
+}

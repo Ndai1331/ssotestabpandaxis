@@ -1,0 +1,127 @@
+@page "/survey-results"
+@attribute [Authorize(Policy = "WorkManagement.Surveys")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>@L["Feature:SurveyResults"] · HCS</PageTitle>
+<section class="hcs-catalog-page">
+    <header class="hcs-catalog-titlebar">
+        <div class="min-w-0"><h1>@L["Feature:SurveyResults"]</h1></div>
+        <div class="hcs-catalog-page__actions">
+            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenSubmit" Disabled="@(string.IsNullOrWhiteSpace(selectedSessionId))">
+                <Icon Name="@IconName.Add" /> @L["Catalog:New"]
+            </Button>
+        </div>
+    </header>
+    @if (error is not null) { <div class="alert alert-warning">@error</div> }
+    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+        <div class="hcs-catalog-filter-row">
+            <Field Class="mb-0 flex-grow-1">
+                <FieldLabel>@L["Feature:SurveySessions"]</FieldLabel>
+                <Select TValue="string" @bind-Value="selectedSessionId" @bind-Value:after="LoadResultsAsync">
+                    <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
+                    @foreach (var session in sessions) { <SelectItem Value="@session.Id.ToString()">@($"{session.Code} — {session.Name}")</SelectItem> }
+                </Select>
+            </Field>
+            <Button Color="Color.Primary" Class="align-self-end" Clicked="LoadResultsAsync"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
+        </div>
+    </CardBody></Card>
+    <Card Class="hcs-catalog-grid-card mb-4"><CardBody>
+        @if (isLoading) { <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div> }
+        else if (results.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div> }
+        else
+        {
+            <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
+                <thead><tr><th></th><th>@L["Menu:SurveyCriterias"]</th><th>@L["Feature:Score"]</th><th>@L["Feature:Comment"]</th></tr></thead>
+                <tbody>
+                @foreach (var result in results)
+                {
+                    <tr>
+                        <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
+                        <td>@CriteriaName(result.CriteriaId)</td>
+                        <td><span class="hcs-status-badge hcs-status-badge--info">@result.Score</span></td>
+                        <td>@(result.Comment ?? "—")</td>
+                    </tr>
+                }
+                </tbody>
+            </table></div>
+        }
+    </CardBody></Card>
+    @if (Guid.TryParse(selectedSessionId, out var sid))
+    {
+        <Card Class="hcs-catalog-grid-card"><CardBody>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h6 mb-0">@L["Feature:Files"]</h2>
+                <InputFile class="form-control w-auto" OnChange="e => UploadAsync(sid, e)" />
+            </div>
+            @if (files.Count == 0) { <div class="hcs-empty py-4"><i class="fa fa-inbox"></i><p>@L["Catalog:EmptyTitle"]</p></div> }
+            else { <ul class="mb-0">@foreach (var file in files) { <li>@file.FileName <small class="text-muted">(@file.Size bytes)</small></li> }</ul> }
+        </CardBody></Card>
+    }
+</section>
+
+<Modal @ref="modal"><ModalContent Centered Class="hcs-catalog-modal">
+    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:SurveyResults"]</ModalTitle><CloseButton /></ModalHeader>
+    <ModalBody Class="hcs-catalog-modal__body">
+        <div class="hcs-catalog-form">
+            <Field><FieldLabel>@L["Menu:SurveyCriterias"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.CriteriaId">
+                    <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
+                    @foreach (var item in criteria) { <SelectItem Value="@item.Id.ToString()">@item.Name</SelectItem> }
+                </Select>
+            </Field>
+            <Field><FieldLabel>@L["Feature:Score"]</FieldLabel><NumericPicker TValue="decimal" @bind-Value="form.Score" Min="0" Max="100" Decimals="1" /></Field>
+            <Field><FieldLabel>@L["Feature:Comment"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Comment"></textarea></Field>
+        </div>
+    </ModalBody>
+    <ModalFooter Class="hcs-catalog-modal__footer">
+        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SubmitAsync">@L["Catalog:SaveChanges"]</Button>
+    </ModalFooter>
+</ModalContent></Modal>
+@code {
+    private readonly List<SurveySessionDto> sessions = [];
+    private readonly List<SurveyCriteriaDto> criteria = [];
+    private readonly List<SurveyResultDto> results = [];
+    private readonly List<SurveyFileDto> files = [];
+    private readonly ResultForm form = new();
+    private Modal? modal;
+    private string selectedSessionId = "";
+    private string? error;
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { sessions.AddRange(await Work.GetSessionsAsync()); criteria.AddRange(await Work.GetCriteriaAsync()); }
+        catch { error = L["Catalog:LoadError"]; }
+    }
+    private async Task OpenSubmit() { form.CriteriaId = ""; form.Score = 0; form.Comment = ""; if (modal is not null) await modal.Show(); }
+    private async Task LoadResultsAsync()
+    {
+        results.Clear(); files.Clear();
+        if (!Guid.TryParse(selectedSessionId, out var id)) return;
+        isLoading = true; error = null;
+        try { results.AddRange(await Work.GetResultsAsync(id)); files.AddRange(await Work.GetSessionFilesAsync(id)); }
+        catch { error = L["Catalog:LoadError"]; }
+        finally { isLoading = false; }
+    }
+    private async Task SubmitAsync()
+    {
+        if (!Guid.TryParse(selectedSessionId, out var sessionId) || !Guid.TryParse(form.CriteriaId, out var criteriaId)) return;
+        try
+        {
+            await Work.SubmitResultAsync(sessionId, new SubmitSurveyResultRequest(criteriaId, null, form.Score, string.IsNullOrWhiteSpace(form.Comment) ? null : form.Comment));
+            if (modal is not null) await modal.Hide();
+            await LoadResultsAsync();
+        }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private async Task UploadAsync(Guid sessionId, InputFileChangeEventArgs args)
+    {
+        try { await Work.UploadSurveyFileAsync(sessionId, args.File); await LoadResultsAsync(); }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private string CriteriaName(Guid id) => criteria.FirstOrDefault(x => x.Id == id)?.Name ?? id.ToString("N")[..8];
+    private sealed class ResultForm { public string CriteriaId { get; set; } = ""; public decimal Score { get; set; } public string Comment { get; set; } = ""; }
+}

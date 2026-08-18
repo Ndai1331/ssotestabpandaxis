@@ -1,0 +1,17 @@
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter] public string? ReturnUrl { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Navigation.NavigateTo(
+                BffLoginUrlBuilder.Build(Configuration, ReturnUrl ?? Navigation.Uri),
+                forceLoad: true);
+        }
+    }
+}

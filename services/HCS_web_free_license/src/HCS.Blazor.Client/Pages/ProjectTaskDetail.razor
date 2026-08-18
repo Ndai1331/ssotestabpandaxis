@@ -1,0 +1,117 @@
+@page "/project-task-detail/{TaskId:guid}"
+@attribute [Authorize(Policy = "WorkManagement.ProjectTasks")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject DocumentClient Documents
+@inject CollaborationClient Chat
+@inject IUiMessageService UiMessage
+
+<PageTitle>@L["Feature:TaskDetail"] · HCS</PageTitle>
+<section class="hcs-document-page">
+    <header class="hcs-document-page__header">
+        <div>
+            <p class="hcs-document-page__eyebrow">@L["Menu:Tasks"]</p>
+            <h1>@(detail?.Task.Title ?? L["Feature:TaskDetail"])</h1>
+            @if (detail is not null) { <p>@detail.Task.Code · @detail.Task.Status · @detail.Task.ProgressPercent%</p> }
+        </div>
+        <a class="btn btn-outline-primary" href="/tasks">@L["Feature:BackToList"]</a>
+    </header>
+    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
+    @if (isLoading) { <p>@L["Catalog:Loading"]</p> }
+    else if (detail is not null)
+    {
+        <div class="hcs-document-page__grid">
+            <Card>
+                <CardHeader>@L["Feature:Assignments"]</CardHeader>
+                <CardBody>
+                    <Select TValue="Guid?" @bind-Value="assigneeId">
+                        <SelectItem TValue="Guid?" Value="null">@L["Chat:SelectContacts"]</SelectItem>
+                        @foreach (var contact in contacts) { <SelectItem TValue="Guid?" Value="contact.Id">@contact.DisplayName</SelectItem> }
+                    </Select>
+                    <Button Color="Color.Primary" Class="mt-2" Clicked="AddAssignmentAsync">@L["Feature:Assign"]</Button>
+                    <ul class="list-group mt-3">
+                        @foreach (var assignment in detail.Assignments)
+                        {
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>@Name(assignment.UserId) · @assignment.AssignmentType</span>
+                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveAssignmentAsync(assignment)">@L["Catalog:Delete"]</Button>
+                            </li>
+                        }
+                    </ul>
+                </CardBody>
+            </Card>
+            <Card>
+                <CardHeader>@L["Menu:Documents"]</CardHeader>
+                <CardBody>
+                    <Select TValue="Guid?" @bind-Value="documentId">
+                        <SelectItem TValue="Guid?" Value="null">@L["Feature:ChooseDocument"]</SelectItem>
+                        @foreach (var document in documents) { <SelectItem TValue="Guid?" Value="document.Id">@($"{document.Number} — {document.Title}")</SelectItem> }
+                    </Select>
+                    <Button Color="Color.Primary" Class="mt-2" Clicked="AddDocumentAsync">@L["Feature:AttachDocument"]</Button>
+                    <ul class="list-group mt-3">
+                        @foreach (var reference in detail.Documents)
+                        {
+                            <li class="list-group-item d-flex justify-content-between">
+                                <a href="@($"/document-detail/{reference.DocumentId}")">@(reference.DocumentCode ?? reference.DocumentId.ToString("N")[..8])</a>
+                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveDocumentAsync(reference)">@L["Catalog:Delete"]</Button>
+                            </li>
+                        }
+                    </ul>
+                </CardBody>
+            </Card>
+        </div>
+    }
+</section>
+@code {
+    [Parameter] public Guid TaskId { get; set; }
+    private ProjectTaskDetailDto? detail;
+    private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
+    private readonly List<DocumentDto> documents = [];
+    private Guid? assigneeId, documentId;
+    private bool isLoading;
+    private string? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true; error = null;
+        try
+        {
+            detail = await Work.GetTaskAsync(TaskId);
+            if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+            if (documents.Count == 0)
+            {
+                var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100));
+                documents.AddRange(page.Items);
+            }
+        }
+        catch { error = L["Catalog:LoadError"]; }
+        finally { isLoading = false; }
+    }
+
+    private async Task AddAssignmentAsync()
+    {
+        if (assigneeId is not { } userId) return;
+        try { await Work.AddAssignmentAsync(TaskId, new AddTaskAssignmentRequest(userId, "Assignee")); detail = await Work.GetTaskAsync(TaskId); }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private async Task RemoveAssignmentAsync(TaskAssignmentDto assignment)
+    {
+        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
+        try { await Work.RemoveAssignmentAsync(TaskId, assignment.Id); detail = await Work.GetTaskAsync(TaskId); }
+        catch { error = L["Catalog:DeleteError"]; }
+    }
+    private async Task AddDocumentAsync()
+    {
+        if (documentId is not { } id) return;
+        var document = documents.FirstOrDefault(x => x.Id == id);
+        try { await Work.AddTaskDocumentAsync(TaskId, new AddTaskDocumentRequest(id, document?.Number)); detail = await Work.GetTaskAsync(TaskId); }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private async Task RemoveDocumentAsync(TaskDocumentReferenceDto reference)
+    {
+        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
+        try { await Work.RemoveTaskDocumentAsync(TaskId, reference.Id); detail = await Work.GetTaskAsync(TaskId); }
+        catch { error = L["Catalog:DeleteError"]; }
+    }
+    private string Name(Guid id) => contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.ToString("N")[..8];
+}

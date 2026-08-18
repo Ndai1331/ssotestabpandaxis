@@ -1,0 +1,354 @@
+@page "/workspace"
+@attribute [Authorize(Policy = "WorkManagement.Dashboard")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject DocumentClient Documents
+@inject CollaborationClient Chat
+@inject NavigationManager Navigation
+
+<PageTitle>@L["Feature:WorkspaceTitle"] · HCS</PageTitle>
+<section class="hcs-workspace">
+    <div class="hcs-ws-filter">
+        <span class="hcs-ws-filter-label"><i class="fa fa-calendar-day" aria-hidden="true"></i> @L["Work:FilterByDateRange"]</span>
+        <div class="hcs-ws-filter-dates">
+            <DatePicker TValue="DateTime" @bind-Value="fromDate" InputMode="DateInputMode.Date" />
+            <DatePicker TValue="DateTime" @bind-Value="toDate" InputMode="DateInputMode.Date" />
+        </div>
+        <button type="button" class="hcs-ws-search" @onclick="LoadAsync" disabled="@isLoading">
+            <i class="fa fa-search" aria-hidden="true"></i> @L["Catalog:SearchButton"]
+        </button>
+    </div>
+
+    @if (error is not null) { <div class="alert alert-warning">@error</div> }
+
+    <div class="hcs-ws-kpis">
+        @Kpi("fa-calendar-days", "#fef0f5", "#e8437a", events.Count, L["Work:Events"])
+        @Kpi("fa-file-lines", "#fef2f2", "#dc2626", documents.Count, L["Menu:Documents"])
+        @Kpi("fa-folder-open", "#eff6ff", "#2563eb", projects.Count, L["Menu:Projects"])
+        @Kpi("fa-list-check", "#eaf3de", "#1d9e75", myTasks.Count, L["Work:MyTasks"])
+    </div>
+
+    <div class="hcs-ws-grid-73">
+        <article class="hcs-ws-card">
+            <header class="hcs-ws-card-hd">
+                <div class="hcs-ws-card-title-wrap">
+                    <div class="hcs-ws-card-icon" style="background:#fef0f5;color:#e8437a;"><i class="fa fa-calendar-days"></i></div>
+                    <div>
+                        <div class="hcs-ws-card-title">@L["Work:Calendar"]</div>
+                        <div class="hcs-ws-card-sub">@L["Work:Total"] @selectedDayEvents.Count @L["Work:Events"]</div>
+                    </div>
+                </div>
+            </header>
+            <div class="hcs-ws-card-body">
+                <div class="hcs-ws-week">
+                    @foreach (var day in week)
+                    {
+                        <div class="hcs-ws-day">
+                            <span class="hcs-ws-wd">@day.ToString("ddd")</span>
+                            <button type="button" class="hcs-ws-dn @(day.Date == selectedDay.Date ? "is-today" : null)" @onclick="() => selectedDay = day">@day.Day</button>
+                            <span class="hcs-ws-dot @(events.Any(x => x.StartTime.ToLocalTime().Date == day.Date) ? null : "is-empty")"></span>
+                        </div>
+                    }
+                </div>
+                @if (selectedDayEvents.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoUpcomingEvents"]</div> }
+                else
+                {
+                    <div class="hcs-ws-ev">
+                        @foreach (var item in selectedDayEvents)
+                        {
+                            <div class="hcs-ws-ev-row">
+                                <span class="hcs-ws-ev-accent"></span>
+                                <div class="hcs-ws-ev-body">
+                                    <div class="hcs-ws-ev-name">@item.Title</div>
+                                    <div class="hcs-ws-ev-meta"><i class="fa fa-clock me-1"></i>@item.StartTime.ToLocalTime().ToString("HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")@ProjectLabel(item)</div>
+                                </div>
+                                <a class="hcs-ws-view" href="@($"/calendar-event-detail/{item.Id}")">@L["Work:View"]</a>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </article>
+        <article class="hcs-ws-card">
+            <header class="hcs-ws-card-hd">
+                <div class="hcs-ws-card-title-wrap">
+                    <div class="hcs-ws-card-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa fa-bell"></i></div>
+                    <div>
+                        <div class="hcs-ws-card-title">@L["Work:Notifications"]</div>
+                        <div class="hcs-ws-card-sub">@notifications.Count(x => !x.IsRead) @L["Work:Unread"]</div>
+                    </div>
+                </div>
+            </header>
+            <div class="hcs-ws-card-body">
+                @if (notifications.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentNotifications"]</div> }
+                else
+                {
+                    <div class="hcs-ws-notif">
+                        @foreach (var item in notifications)
+                        {
+                            <a class="hcs-ws-notif-row text-decoration-none @(item.IsRead ? null : "is-unread")" href="@(string.IsNullOrWhiteSpace(item.Link) ? "/workspace" : item.Link)">
+                                <span class="@(item.IsRead ? null : "hcs-ws-ndot")"></span>
+                                <div>
+                                    <div class="hcs-ws-n-title">@item.Title</div>
+                                    <div class="hcs-ws-n-detail">@item.Body</div>
+                                </div>
+                                <span class="hcs-ws-n-time">@item.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </article>
+    </div>
+
+    <div class="hcs-ws-grid-37">
+        <article class="hcs-ws-card">
+            <header class="hcs-ws-card-hd">
+                <div class="hcs-ws-card-title-wrap">
+                    <div class="hcs-ws-card-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="fa fa-diagram-project"></i></div>
+                    <div>
+                        <div class="hcs-ws-card-title">@L["Menu:Workflows"]</div>
+                        <div class="hcs-ws-card-sub">@workflows.Count @L["Menu:Documents"]</div>
+                    </div>
+                </div>
+            </header>
+            <div class="hcs-ws-card-body">
+                @if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
+                else
+                {
+                    <div class="hcs-ws-wf">
+                        @foreach (var group in workflowGroups)
+                        {
+                            <div class="hcs-ws-wf-row">
+                                <div class="hcs-ws-wf-left"><span class="hcs-ws-wf-dot" style="background:@group.Color"></span>@group.Label</div>
+                                <div><span class="hcs-ws-wf-val" style="color:@group.Color">@group.Count</span> <span class="hcs-ws-card-sub">@group.Percent%</span></div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </article>
+        <article class="hcs-ws-card">
+            <header class="hcs-ws-card-hd">
+                <div class="hcs-ws-card-title-wrap">
+                    <div class="hcs-ws-card-icon" style="background:#fef2f2;color:#dc2626;"><i class="fa fa-file-lines"></i></div>
+                    <div>
+                        <div class="hcs-ws-card-title">@L["Menu:Documents"]</div>
+                        <div class="hcs-ws-card-sub">@documents.Count @L["Menu:Documents"]</div>
+                    </div>
+                </div>
+            </header>
+            <div class="hcs-ws-card-body">
+                @if (documents.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
+                else
+                {
+                    <div class="hcs-ws-doc">
+                        @foreach (var item in documents.Take(6))
+                        {
+                            <div class="hcs-ws-doc-row">
+                                <i class="fa fa-file-lines" style="color:#9ca3af"></i>
+                                <div class="hcs-ws-doc-name">@item.Title</div>
+                                <span class="hcs-status-badge hcs-status-badge--planning">@item.Status</span>
+                                <a class="hcs-ws-view" href="@($"/document-detail/{item.Id}")">@L["Work:View"]</a>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </article>
+    </div>
+
+    <div class="hcs-ws-grid-37">
+        <article class="hcs-ws-card">
+            <header class="hcs-ws-card-hd">
+                <div class="hcs-ws-card-title-wrap">
+                    <div class="hcs-ws-card-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa fa-chart-column"></i></div>
+                    <div>
+                        <div class="hcs-ws-card-title">@L["Menu:Projects"]</div>
+                        <div class="hcs-ws-card-sub">@L["Work:ProgressPercent"]</div>
+                    </div>
+                </div>
+            </header>
+            <div class="hcs-ws-card-body">
+                @if (projects.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoProjectsFound"]</div> }
+                else
+                {
+                    <div class="hcs-ws-chart">
+                        @foreach (var project in projects.Take(6))
+                        {
+                            var progress = WorkUi.ProjectProgress(project.Status);
+                            <div class="hcs-ws-chart-row">
+                                <span class="hcs-ws-chart-lbl">@project.Name</span>
+                                <div class="hcs-ws-chart-track"><div class="hcs-ws-chart-fill" style="width:@progress%"></div></div>
+                                <span class="hcs-ws-chart-pct">@progress%</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </article>
+        <article class="hcs-ws-card">
+            <header class="hcs-ws-card-hd">
+                <div class="hcs-ws-card-title-wrap">
+                    <div class="hcs-ws-card-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa fa-folder-open"></i></div>
+                    <div>
+                        <div class="hcs-ws-card-title">@L["Menu:Projects"]</div>
+                        <div class="hcs-ws-card-sub">@projects.Count(x => x.Status == "Completed") @L["Work:Of"] @projects.Count @L["Menu:Projects"]</div>
+                    </div>
+                </div>
+                <button type="button" class="hcs-ws-action" @onclick='() => Navigation.NavigateTo("/projects")'><i class="fa fa-plus"></i> @L["Work:NewProject"]</button>
+            </header>
+            <div class="hcs-ws-card-body">
+                @if (projects.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoProjectsFound"]</div> }
+                else
+                {
+                    <div class="hcs-ws-proj">
+                        @foreach (var project in projects.Take(5))
+                        {
+                            var progress = WorkUi.ProjectProgress(project.Status);
+                            <a class="hcs-ws-proj-row text-decoration-none" href="@($"/project-detail/{project.Id}")">
+                                <div class="hcs-ws-proj-top">
+                                    <span class="hcs-ws-proj-name">@project.Name</span>
+                                    <span class="@WorkUi.ProjectBadgeClass(project.Status)">@L[WorkUi.ProjectStatusKey(project.Status)]</span>
+                                </div>
+                                <div class="hcs-ws-pbar"><div class="hcs-ws-pbf" style="width:@progress%"></div></div>
+                                <div class="hcs-ws-proj-foot">
+                                    <span><i class="fa fa-users me-1"></i>@project.MemberCount @L["Work:Members"]</span>
+                                    <span>@project.EndDate.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </article>
+    </div>
+
+    <div class="hcs-ws-grid-37">
+        <article class="hcs-ws-card">
+            <header class="hcs-ws-card-hd">
+                <div class="hcs-ws-card-title-wrap">
+                    <div class="hcs-ws-card-icon" style="background:#eaf3de;color:#1d9e75;"><i class="fa fa-list-check"></i></div>
+                    <div>
+                        <div class="hcs-ws-card-title">@L["Menu:Tasks"]</div>
+                        <div class="hcs-ws-card-sub">@tasks.Count @L["Menu:Tasks"]</div>
+                    </div>
+                </div>
+            </header>
+            <div class="hcs-ws-card-body">
+                @if (tasks.Count == 0) { <div class="hcs-ws-empty">@L["Feature:NoTasks"]</div> }
+                else
+                {
+                    <div class="hcs-ws-task">
+                        @foreach (var task in tasks.Take(6))
+                        {
+                            <a class="hcs-ws-task-row text-decoration-none" href="@($"/project-task-detail/{task.Id}")">
+                                <span class="hcs-ws-task-name">@task.Title</span>
+                                <span class="@WorkUi.TaskBadgeClass(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </article>
+        <article class="hcs-ws-card">
+            <header class="hcs-ws-card-hd">
+                <div class="hcs-ws-card-title-wrap">
+                    <div class="hcs-ws-card-icon" style="background:#eaf3de;color:#1d9e75;"><i class="fa fa-user-check"></i></div>
+                    <div>
+                        <div class="hcs-ws-card-title">@L["Work:MyTasks"]</div>
+                        <div class="hcs-ws-card-sub">@myTasks.Count @L["Menu:Tasks"]</div>
+                    </div>
+                </div>
+                <button type="button" class="hcs-ws-action" @onclick='() => Navigation.NavigateTo("/tasks")'><i class="fa fa-plus"></i> @L["Work:NewTask"]</button>
+            </header>
+            <div class="hcs-ws-card-body">
+                @if (myTasks.Count == 0) { <div class="hcs-ws-empty">@L["Feature:NoTasks"]</div> }
+                else
+                {
+                    <div class="hcs-ws-task">
+                        @foreach (var task in myTasks.Take(6))
+                        {
+                            <a class="hcs-ws-task-row text-decoration-none" href="@($"/project-task-detail/{task.Id}")">
+                                <span class="hcs-ws-task-name">@task.Title</span>
+                                <span class="@WorkUi.ProgressBadgeClass(task.ProgressPercent)">@task.ProgressPercent%</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </article>
+    </div>
+</section>
+@code {
+    private readonly List<CalendarEventDto> events = [];
+    private readonly List<ProjectDto> projects = [];
+    private readonly List<ProjectTaskDto> tasks = [];
+    private readonly List<DocumentDto> documents = [];
+    private readonly List<WorkflowInstanceDto> workflows = [];
+    private readonly List<NotificationDto> notifications = [];
+    private DateTime fromDate = DateTime.Today;
+    private DateTime toDate = DateTime.Today.AddMonths(3);
+    private DateTime selectedDay = DateTime.Today;
+    private bool isLoading;
+    private string? error;
+
+    private IEnumerable<DateTime> week => Enumerable.Range(0, 7).Select(offset => DateTime.Today.AddDays(offset));
+    private List<CalendarEventDto> selectedDayEvents => events.Where(x => x.StartTime.ToLocalTime().Date == selectedDay.Date).ToList();
+    private List<ProjectTaskDto> myTasks => tasks.Where(x => x.Status is not "Completed" and not "Cancelled").ToList();
+    private IReadOnlyList<(string Label, int Count, int Percent, string Color)> workflowGroups
+    {
+        get
+        {
+            var total = Math.Max(workflows.Count, 1);
+            return new (string Label, string Color, Func<WorkflowInstanceDto, bool> Match)[]
+            {
+                (L["Work:Status.Doing"], "#355dff", x => x.Status == WorkflowInstanceStatus.Running),
+                (L["Work:Status.Done"], "#1d9e75", x => x.Status == WorkflowInstanceStatus.Completed),
+                (L["Work:Status.Cancelled"], "#dc2626", x => x.Status is WorkflowInstanceStatus.Cancelled or WorkflowInstanceStatus.Rejected)
+            }.Select(x => (x.Label, workflows.Count(x.Match), (int)Math.Round(100d * workflows.Count(x.Match) / total), x.Color)).ToList();
+        }
+    }
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true; error = null;
+        try
+        {
+            var from = fromDate.Date;
+            var to = toDate.Date.AddDays(1).AddTicks(-1);
+            events.Clear(); events.AddRange((await Work.GetCalendarAsync(from, to)).Where(x => x.StartTime.ToLocalTime() >= from && x.StartTime.ToLocalTime() <= to));
+            projects.Clear(); projects.AddRange((await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100))).Items);
+            tasks.Clear(); tasks.AddRange((await Work.GetTasksAsync(null, new WorkListQuery(null, null, 0, 100))).Items);
+            try { documents.Clear(); documents.AddRange((await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 20))).Items); } catch { documents.Clear(); }
+            try { workflows.Clear(); workflows.AddRange(await Documents.GetInstancesAsync()); } catch { workflows.Clear(); }
+            try { notifications.Clear(); notifications.AddRange(await Chat.GetNotificationsAsync()); } catch { notifications.Clear(); }
+            if (!week.Contains(selectedDay.Date)) selectedDay = DateTime.Today;
+        }
+        catch { error = L["Catalog:LoadError"]; }
+        finally { isLoading = false; }
+    }
+
+    private string ProjectLabel(CalendarEventDto item)
+    {
+        if (item.RelatedType == "PROJECT" && Guid.TryParse(item.RelatedId, out var id))
+        {
+            var project = projects.FirstOrDefault(x => x.Id == id);
+            if (project is not null) return $" · {project.Name}";
+        }
+        return string.IsNullOrWhiteSpace(item.Description) ? "" : $" · {item.Description}";
+    }
+
+    private RenderFragment Kpi(string icon, string background, string color, int value, string label) => __builder =>
+    {
+        <div class="hcs-ws-kpi">
+            <div class="hcs-ws-kpi-top">
+                <div class="hcs-ws-kpi-icon" style="@($"background:{background};color:{color}")"><i class="fa @icon"></i></div>
+            </div>
+            <div class="hcs-ws-kpi-num">@value</div>
+            <div class="hcs-ws-kpi-lbl">@label</div>
+        </div>
+    };
+}

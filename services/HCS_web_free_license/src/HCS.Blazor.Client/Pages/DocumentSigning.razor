@@ -1,0 +1,95 @@
+@page "/document-signing"
+@attribute [Authorize(Policy = "Documents.Signing.Execute")]
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+
+<PageTitle>@L["Menu:DocumentSigning"] · HCS</PageTitle>
+<section class="hcs-document-page">
+    <header class="hcs-document-page__header">
+        <div><p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p><h1>@L["Feature:SigningQueue"]</h1></div>
+        <Button Color="Color.Primary" Outline="true" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
+    </header>
+    @if (error is not null) { <div class="alert alert-warning">@error</div> }
+    @if (success is not null) { <div class="alert alert-success">@success</div> }
+    <div class="hcs-document-page__grid">
+        <form class="card hcs-document-form" @onsubmit="SignAsync" @onsubmit:preventDefault>
+            <div class="card-body">
+                <h2>@L["Feature:Sign"]</h2>
+                <div class="mb-3"><label class="form-label">@L["Menu:Documents"]</label>
+                    <select class="form-select" @bind="form.DocumentId" @bind:after="OnDocumentChanged">
+                        <option value="">@L["Catalog:ChooseType"]</option>
+                        @foreach (var document in documents.Where(x => x.Files.Count > 0)) { <option value="@document.Id">@document.Number · @document.Title</option> }
+                    </select>
+                </div>
+                <div class="mb-3"><label class="form-label">@L["Feature:Files"]</label>
+                    <select class="form-select" @bind="form.FileId">
+                        <option value="">@L["Catalog:ChooseType"]</option>
+                        @foreach (var file in Selected?.Files ?? []) { <option value="@file.Id">@file.FileName</option> }
+                    </select>
+                </div>
+                <div class="mb-3"><label class="form-label">@L["Feature:Kind"]</label>
+                    <select class="form-select" @bind="form.Kind">
+                        <option value="0">@L["Feature:Electronic"]</option>
+                        <option value="1">@L["Feature:RemoteCa"]</option>
+                        <option value="2">@L["Feature:Hsm"]</option>
+                    </select>
+                </div>
+                <Button Color="Color.Primary" Type="ButtonType.Submit">@L["Feature:Sign"]</Button>
+            </div>
+        </form>
+        <Card>
+            <CardBody>
+                <h2>@L["Feature:Attempts"]</h2>
+                @if (report is null) { <p>@L["Catalog:EmptyTitle"]</p> }
+                else {
+                    <p>@L["Feature:Completed"]: @report.Completed · @L["Feature:Failed"]: @report.Failed</p>
+                    <table class="table"><thead><tr><th>@L["Feature:Kind"]</th><th>@L["Catalog:Status"]</th><th>@L["Feature:Time"]</th></tr></thead>
+                    <tbody>
+                    @foreach (var attempt in report.Attempts)
+                    {
+                        <tr><td>@attempt.Kind</td><td>@attempt.Status</td><td>@attempt.CreationTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>
+                    }
+                    </tbody></table>
+                }
+            </CardBody>
+        </Card>
+    </div>
+</section>
+@code {
+    private readonly List<DocumentDto> documents = [];
+    private readonly SignForm form = new();
+    private SigningReportDto? report;
+    private string? error, success;
+    private DocumentDto? Selected => Guid.TryParse(form.DocumentId, out var id) ? documents.FirstOrDefault(x => x.Id == id) : null;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+    private async Task LoadAsync()
+    {
+        try
+        {
+            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100));
+            documents.Clear(); documents.AddRange(page.Items);
+            await LoadReportAsync();
+        }
+        catch { error = L["Catalog:LoadError"]; }
+    }
+    private Task OnDocumentChanged() { form.FileId = ""; return LoadReportAsync(); }
+    private async Task LoadReportAsync()
+    {
+        report = null;
+        if (!Guid.TryParse(form.DocumentId, out var id)) return;
+        try { report = await Documents.GetSigningReportAsync(id); }
+        catch { report = null; }
+    }
+    private async Task SignAsync()
+    {
+        if (!Guid.TryParse(form.DocumentId, out var documentId) || !Guid.TryParse(form.FileId, out var fileId)) { error = L["Catalog:TypeRequired"]; return; }
+        try
+        {
+            await Documents.SignAsync(new SignDocumentRequest(documentId, fileId, form.Kind, Guid.NewGuid().ToString("N")));
+            success = L["Feature:Sign"]; await LoadReportAsync();
+        }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private sealed class SignForm { public string DocumentId { get; set; } = ""; public string FileId { get; set; } = ""; public int Kind { get; set; } }
+}

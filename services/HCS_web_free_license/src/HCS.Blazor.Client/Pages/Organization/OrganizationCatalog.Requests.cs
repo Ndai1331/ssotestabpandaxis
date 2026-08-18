@@ -1,0 +1,110 @@
+using System;
+using System.Linq;
+using System.Net;
+
+namespace HCS.Blazor.Client.Pages.Organization;
+
+public partial class OrganizationCatalog
+{
+    private bool TryBuildRequest(out object request, out string validationMessage)
+    {
+        request = new object();
+        validationMessage = string.Empty;
+
+        switch (Kind)
+        {
+            case OrganizationCatalogKind.Department:
+                request = new DepartmentUpsertRequest(
+                    form.Code.Trim(),
+                    form.Name.Trim(),
+                    ParseOptionalGuid(form.ParentId),
+                    form.SortOrder,
+                    form.IsActive);
+                return true;
+            case OrganizationCatalogKind.Unit:
+                if (!Guid.TryParse(form.DepartmentId, out var departmentId))
+                {
+                    validationMessage = L["Catalog:DepartmentRequired"].Value;
+                    return false;
+                }
+
+                request = new UnitUpsertRequest(
+                    departmentId,
+                    form.Code.Trim(),
+                    form.Name.Trim(),
+                    form.SortOrder,
+                    form.IsActive);
+                return true;
+            case OrganizationCatalogKind.Position:
+                request = new PositionUpsertRequest(
+                    form.Code.Trim(),
+                    form.Name.Trim(),
+                    form.SignOrder,
+                    form.SortOrder,
+                    form.IsActive);
+                return true;
+            case OrganizationCatalogKind.MasterData:
+                var type = Definition.MasterType ?? form.Type;
+                if (!MasterTypeOptions.Any(option => string.Equals(option.Type, type, StringComparison.Ordinal)))
+                {
+                    validationMessage = L["Catalog:TypeRequired"].Value;
+                    return false;
+                }
+
+                request = new MasterDataUpsertRequest(
+                    type,
+                    form.Code.Trim(),
+                    form.Name.Trim(),
+                    form.SortOrder,
+                    form.IsActive);
+                return true;
+            default:
+                validationMessage = L["Catalog:InvalidType"].Value;
+                return false;
+        }
+    }
+
+    private string RelationName(Guid? relationId)
+    {
+        if (!relationId.HasValue)
+        {
+            return "—";
+        }
+
+        var department = departmentOptions.FirstOrDefault(item => item.Id == relationId.Value);
+        return department is null ? relationId.Value.ToString() : $"{department.Code} — {department.Name}";
+    }
+
+    private string GetFriendlyErrorMessage(HttpStatusCode statusCode, bool isMutation) => statusCode switch
+    {
+        HttpStatusCode.Unauthorized => L["Catalog:Unauthorized"].Value,
+        HttpStatusCode.Forbidden => L["Catalog:ForbiddenDescription"].Value,
+        HttpStatusCode.BadRequest => L["Catalog:ValidationError"].Value,
+        HttpStatusCode.NotFound => L["Catalog:NotFound"].Value,
+        HttpStatusCode.Conflict => L["Catalog:Conflict"].Value,
+        _ when isMutation => L["Catalog:SaveError"].Value,
+        _ => L["Catalog:LoadError"].Value
+    };
+
+    private string GetErrorTitleKey(HttpStatusCode statusCode, bool isMutation) => statusCode switch
+    {
+        HttpStatusCode.BadRequest => "Catalog:ValidationErrorTitle",
+        HttpStatusCode.Conflict => "Catalog:ConflictTitle",
+        HttpStatusCode.NotFound => "Catalog:NotFoundTitle",
+        _ when isMutation => "Catalog:SaveErrorTitle",
+        _ => "Catalog:LoadErrorTitle"
+    };
+
+    private bool? ParseStatusFilter() => statusFilter switch
+    {
+        "true" => true,
+        "false" => false,
+        _ => null
+    };
+
+    private static Guid? ParseOptionalGuid(string value) =>
+        Guid.TryParse(value, out var parsed) ? parsed : null;
+
+    private static int ToDataGridTotal(long value) =>
+        value >= int.MaxValue ? int.MaxValue : Math.Max(0, (int)value);
+}

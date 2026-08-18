@@ -1,0 +1,53 @@
+@page "/signature-settings"
+@attribute [Authorize(Policy = "Documents.Signing.Configure")]
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+
+<PageTitle>@L["Menu:SignatureSettings"] · HCS</PageTitle>
+<section class="hcs-document-page">
+    <header class="hcs-document-page__header"><div><p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p><h1>@L["Menu:SignatureSettings"]</h1></div></header>
+    @if (error is not null) { <div class="alert alert-warning">@error</div> }
+    @if (success is not null) { <div class="alert alert-success">@success</div> }
+    @if (credentials.Count > 0)
+    {
+        <Card Class="mb-3"><CardBody>
+            <h2 class="h6">@L["Feature:CurrentCredential"]</h2>
+            <ul class="mb-0">@foreach (var item in credentials) { <li>@KindName(item.Kind) · @item.Endpoint · @item.MaskedSecret</li> }</ul>
+        </CardBody></Card>
+    }
+    <form class="card hcs-document-form hcs-document-form--wide" @onsubmit="SaveAsync" @onsubmit:preventDefault>
+        <div class="card-body">
+            <div class="mb-3"><label class="form-label">@L["Feature:Kind"]</label>
+                <select class="form-select" @bind="form.Kind">
+                    <option value="0">@L["Feature:Electronic"]</option>
+                    <option value="1">@L["Feature:RemoteCa"]</option>
+                    <option value="2">@L["Feature:Hsm"]</option>
+                </select>
+            </div>
+            <div class="mb-3"><label class="form-label">@L["Feature:SigningEndpoint"]</label><input class="form-control" type="url" @bind="form.Endpoint" required /></div>
+            <div class="mb-3"><label class="form-label">@L["Feature:SigningSecret"]</label><input class="form-control" type="password" @bind="form.Secret" autocomplete="new-password" required /></div>
+            <Button Color="Color.Primary" Type="ButtonType.Submit" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+        </div>
+    </form>
+</section>
+@code {
+    private readonly List<SigningCredentialDto> credentials = [];
+    private readonly SettingsForm form = new();
+    private bool isSaving;
+    private string? error, success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { credentials.AddRange(await Documents.GetCredentialsAsync()); if (credentials.FirstOrDefault() is { } current) { form.Kind = current.Kind; form.Endpoint = current.Endpoint; } }
+        catch { error = L["Catalog:LoadError"]; }
+    }
+    private async Task SaveAsync()
+    {
+        isSaving = true; error = null; success = null;
+        try { await Documents.ConfigureCredentialAsync(new ConfigureSigningCredentialRequest(form.Kind, form.Endpoint.Trim(), form.Secret)); form.Secret = ""; success = L["Catalog:Updated"]; credentials.Clear(); credentials.AddRange(await Documents.GetCredentialsAsync()); }
+        catch { error = L["Catalog:SaveError"]; }
+        finally { isSaving = false; }
+    }
+    private string KindName(int kind) => kind switch { 1 => L["Feature:RemoteCa"], 2 => L["Feature:Hsm"], _ => L["Feature:Electronic"] };
+    private sealed class SettingsForm { public int Kind { get; set; } public string Endpoint { get; set; } = ""; public string Secret { get; set; } = ""; }
+}

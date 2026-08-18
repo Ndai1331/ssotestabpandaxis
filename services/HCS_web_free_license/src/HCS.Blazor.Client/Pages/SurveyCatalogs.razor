@@ -1,0 +1,128 @@
+@page "/survey-locations"
+@page "/survey-criterias"
+@attribute [Authorize(Policy = "WorkManagement.SurveyManagement")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject SurveyCatalogCache Cache
+@inject IUiMessageService UiMessage
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>@(isCriteria ? L["Menu:SurveyCriterias"] : L["Menu:SurveyLocations"]) · HCS</PageTitle>
+<section class="hcs-catalog-page">
+    <header class="hcs-catalog-titlebar">
+        <div><h1>@(isCriteria ? L["Menu:SurveyCriterias"] : L["Menu:SurveyLocations"])</h1></div>
+        <div class="hcs-catalog-page__actions">
+            <Button Color="Color.Primary" Outline="true" Clicked="RefreshAsync">@L["Catalog:Refresh"]</Button>
+        </div>
+    </header>
+    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
+    @if (!string.IsNullOrWhiteSpace(success)) { <div class="alert alert-success">@success</div> }
+    <div class="hcs-document-page__grid">
+        <form class="card hcs-document-form" @onsubmit="SaveAsync" @onsubmit:preventDefault>
+            <div class="card-body">
+                <h2>@(editingId is null ? L["Catalog:Create"] : L["Catalog:Edit"])</h2>
+                <div class="mb-3"><label class="form-label">@L["Catalog:Code"]</label><input class="form-control" @bind="form.Code" disabled="@(editingId is not null)" required /></div>
+                <div class="mb-3"><label class="form-label">@L["Catalog:Name"]</label><input class="form-control" @bind="form.Name" required /></div>
+                @if (isCriteria) { <div class="mb-3"><label class="form-label">@L["Catalog:SortOrder"]</label><input class="form-control" type="number" @bind="form.SortOrder" /></div> }
+                @if (editingId is not null) { <div class="form-check mb-3"><input class="form-check-input" type="checkbox" @bind="form.IsActive" id="active" /><label class="form-check-label" for="active">@L["Catalog:Active"]</label></div> }
+                <Button Color="Color.Primary" Type="ButtonType.Submit" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+                @if (editingId is not null) { <Button Color="Color.Secondary" Clicked="Reset">@L["Catalog:Cancel"]</Button> }
+            </div>
+        </form>
+        <div class="card"><div class="card-body p-0">
+            @if (isLoading) { <p class="p-4">@L["Catalog:Loading"]</p> }
+            else {
+                <table class="table mb-0"><thead><tr><th>@L["Catalog:Code"]</th><th>@L["Catalog:Name"]</th><th>@L["Catalog:Status"]</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var item in items)
+                {
+                    <tr>
+                        <td>@item.Code</td><td>@item.Name</td><td>@(item.IsActive ? L["Catalog:Active"] : L["Catalog:Inactive"])</td>
+                        <td class="text-nowrap">
+                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Clicked="() => Edit(item)">@L["Catalog:Edit"]</Button>
+                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteAsync(item)">@L["Catalog:Delete"]</Button>
+                        </td>
+                    </tr>
+                }
+                </tbody></table>
+            }
+        </div></div>
+    </div>
+</section>
+@code {
+    private readonly List<SurveyCatalogItem> items = [];
+    private readonly CatalogForm form = new();
+    private Guid? editingId;
+    private bool isCriteria, isLoading, isSaving;
+    private string? error, success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        ApplyRoute();
+        await LoadAsync();
+    }
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        ApplyRoute(); Reset(); _ = InvokeAsync(LoadAsync);
+    }
+    private void ApplyRoute() => isCriteria = Navigation.ToBaseRelativePath(Navigation.Uri).Contains("survey-criterias", StringComparison.OrdinalIgnoreCase);
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+    private Task RefreshAsync() => LoadAsync();
+    private async Task LoadAsync()
+    {
+        isLoading = true; error = null;
+        try
+        {
+            items.Clear();
+            if (isCriteria)
+            {
+                var data = await Work.GetCriteriaAsync();
+                Cache.Set(true, data.Select(x => new SurveyCatalogItem(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive)).ToList());
+                items.AddRange(Cache.Criterias);
+            }
+            else
+            {
+                var data = await Work.GetLocationsAsync();
+                Cache.Set(false, data.Select(x => new SurveyCatalogItem(x.Id, x.Code, x.Name, 0, x.IsActive)).ToList());
+                items.AddRange(Cache.Locations);
+            }
+        }
+        catch { error = L["Catalog:LoadError"]; }
+        finally { isLoading = false; }
+    }
+    private void Edit(SurveyCatalogItem item) { editingId = item.Id; form.Code = item.Code; form.Name = item.Name; form.SortOrder = item.SortOrder; form.IsActive = item.IsActive; }
+    private void Reset() { editingId = null; form.Code = form.Name = ""; form.SortOrder = 0; form.IsActive = true; }
+    private async Task SaveAsync()
+    {
+        isSaving = true; error = null;
+        try
+        {
+            if (isCriteria)
+            {
+                if (editingId is { } id) await Work.UpdateCriteriaAsync(id, new UpdateSurveyCriteriaRequest(form.Name.Trim(), form.SortOrder, form.IsActive));
+                else await Work.CreateCriteriaAsync(new CreateSurveyCriteriaRequest(form.Code.Trim(), form.Name.Trim(), form.SortOrder));
+            }
+            else
+            {
+                if (editingId is { } id) await Work.UpdateLocationAsync(id, new UpdateSurveyLocationRequest(form.Name.Trim(), null, form.IsActive));
+                else await Work.CreateLocationAsync(new CreateSurveyLocationRequest(form.Code.Trim(), form.Name.Trim(), null));
+            }
+            success = L["Catalog:Updated"]; Reset(); await LoadAsync();
+        }
+        catch { error = L["Catalog:SaveError"]; }
+        finally { isSaving = false; }
+    }
+    private async Task DeleteAsync(SurveyCatalogItem item)
+    {
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
+        try
+        {
+            if (isCriteria) await Work.DeleteCriteriaAsync(item.Id); else await Work.DeleteLocationAsync(item.Id);
+            success = L["Catalog:Deleted"]; await LoadAsync();
+        }
+        catch { error = L["Catalog:DeleteError"]; }
+    }
+    private sealed class CatalogForm { public string Code { get; set; } = ""; public string Name { get; set; } = ""; public int SortOrder { get; set; } public bool IsActive { get; set; } = true; }
+}
