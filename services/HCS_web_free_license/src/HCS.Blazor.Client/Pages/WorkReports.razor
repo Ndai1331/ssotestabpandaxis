@@ -1,0 +1,11 @@
+@page "/reports"
+@using System.Net.Http.Json
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Báo cáo · HCS</PageTitle>
+<section class="hcs-document-page" aria-labelledby="reports-title">
+ <header class="hcs-document-page__header"><div><p class="hcs-document-page__eyebrow">Báo cáo</p><h1 id="reports-title">Báo cáo vận hành</h1><p>Tổng hợp số liệu đã được materialize từ Dự án, Công việc, Lịch và Khảo sát.</p></div><button class="btn btn-outline-primary" @onclick="LoadAsync" disabled="@loading">@(loading?"Đang tải…":"Làm mới")</button></header>
+ @if(error is not null){<div class="alert alert-warning">@error</div>}
+ <div class="card hcs-document-list"><div class="card-body p-0">@if(loading){<p class="p-4 mb-0">Đang tải báo cáo…</p>}else if(rows.Count==0){<div class="p-4"><h2>Chưa có số liệu</h2><p class="mb-0">Dữ liệu báo cáo sẽ xuất hiện khi nghiệp vụ phát sinh và read-model được làm mới.</p></div>}else{<div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Nhóm</th><th>Chỉ tiêu</th><th>Giá trị</th><th>Cập nhật</th></tr></thead><tbody>@foreach(var row in rows){<tr><td>@row.Dimension</td><td><strong>@row.Label</strong><br/><small>@row.Key</small></td><td>@row.Value</td><td>@row.RefreshedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>}</tbody></table></div>}</div></div>
+</section>
+@code {private readonly List<ReportRow> rows=[];private bool loading;private string? error;protected override Task OnInitializedAsync()=>LoadAsync();private async Task LoadAsync(){loading=true;error=null;try{using var c=HttpClientFactory.CreateClient("HCS.Bff");rows.Clear();rows.AddRange(await c.GetFromJsonAsync<List<ReportRow>>("/api/reports")??[]);}catch{error="Không thể tải báo cáo. Hãy kiểm tra quyền truy cập.";}finally{loading=false;}}private sealed record ReportRow(string Dimension,string Key,string Label,decimal Value,DateTime RefreshedAt);}

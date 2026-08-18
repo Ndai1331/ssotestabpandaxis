@@ -1,0 +1,51 @@
+@page "/survey-collections/{SurveyLocationId:guid}"
+@attribute [Authorize(Policy = "WorkManagement.Surveys")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+
+<PageTitle>@L["Feature:Collect"] · HCS</PageTitle>
+<section class="hcs-document-page">
+    <header class="hcs-document-page__header"><div><h1>@L["Feature:Collect"]</h1></div><a class="btn btn-outline-primary" href="/survey-sessions">@L["Feature:BackToList"]</a></header>
+    @if (error is not null) { <div class="alert alert-warning">@error</div> }
+    @if (success is not null) { <div class="alert alert-success">@success</div> }
+    @foreach (var session in sessions.Where(x => x.Status == "Active"))
+    {
+        <Card Class="mb-3"><CardHeader>@session.Name</CardHeader>
+            <CardBody>
+                @foreach (var item in criteria.Where(x => x.IsActive))
+                {
+                    <Field>
+                        <FieldLabel>@item.Name</FieldLabel>
+                        <NumericPicker TValue="decimal" Value="scores.GetValueOrDefault(item.Id)" ValueChanged="value => scores[item.Id] = value" Min="0" Max="100" />
+                    </Field>
+                }
+                <Button Color="Color.Primary" Clicked="() => SubmitAsync(session.Id)">@L["Catalog:SaveChanges"]</Button>
+            </CardBody>
+        </Card>
+    }
+</section>
+@code {
+    [Parameter] public Guid SurveyLocationId { get; set; }
+    private readonly List<SurveySessionDto> sessions = [];
+    private readonly List<SurveyCriteriaDto> criteria = [];
+    private readonly Dictionary<Guid, decimal> scores = [];
+    private string? error, success;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try { sessions.Clear(); sessions.AddRange(await Work.GetSessionsAsync(SurveyLocationId)); criteria.Clear(); criteria.AddRange(await Work.GetCriteriaAsync()); }
+        catch { error = L["Catalog:LoadError"]; }
+    }
+    private async Task SubmitAsync(Guid sessionId)
+    {
+        try
+        {
+            foreach (var pair in scores)
+            {
+                await Work.SubmitResultAsync(sessionId, new SubmitSurveyResultRequest(pair.Key, null, pair.Value, null));
+            }
+            success = L["Catalog:Created"];
+        }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+}

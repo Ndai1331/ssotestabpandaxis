@@ -1,0 +1,39 @@
+@inject BffAuthenticationStateProvider AuthenticationStateProvider
+@inject Volo.Abp.AspNetCore.Components.Web.Security.ApplicationConfigurationChangedService ApplicationConfigurationChangedService
+
+@if (isChecking)
+{
+    <span class="visually-hidden" role="status">Đang kiểm tra phiên đăng nhập…</span>
+}
+else if (isAuthenticated)
+{
+    @ChildContent
+}
+else
+{
+    <BffRedirectToLogin />
+}
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
+
+    private bool isChecking = true;
+    private bool isAuthenticated;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authenticationState = await AuthenticationStateProvider.RefreshAsync();
+            isAuthenticated = authenticationState.User.Identity?.IsAuthenticated == true;
+            if (isAuthenticated)
+            {
+                ApplicationConfigurationChangedService.NotifyChanged();
+            }
+        }
+        finally
+        {
+            isChecking = false;
+        }
+    }
+}

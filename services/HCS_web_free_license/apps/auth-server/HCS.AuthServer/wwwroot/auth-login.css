@@ -1,0 +1,358 @@
+/* HCS Auth login — keep ABP Account markup; fix cramped form + mobile. */
+body:has(#LoginInput_UserNameOrEmailAddress) {
+    --hcs-login-ink: #1a445c;
+    --hcs-login-muted: #5f7a8a;
+    --hcs-login-line: #d5e3ea;
+    --hcs-login-primary: #1e7fad;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(73, 188, 213, .18) 0 2px, transparent 3px) 0 0 / 20px 20px,
+        linear-gradient(145deg, #e8f4f8 0%, #f7fbfc 42%, #eef6f8 100%);
+    color: var(--hcs-login-ink);
+    min-height: 100dvh;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-sidebar-container,
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-topbar-container,
+body:has(#LoginInput_UserNameOrEmailAddress) footer {
+    display: none !important;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content-container,
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content {
+    background: transparent !important;
+    min-height: 100dvh;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    padding: clamp(1.25rem, 5vw, 3rem) clamp(.85rem, 4vw, 1.5rem);
+}
+
+/* Give the form real breathing room — ABP often nests a narrow column. */
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content > .container {
+    margin: 0 auto;
+    max-width: min(440px, 100%);
+    padding-left: 0;
+    padding-right: 0;
+    width: 100%;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content > .container > .row {
+    --bs-gutter-x: 0;
+    margin: 0;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content > .container > .row > [class*="col"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+    position: relative;
+    width: 100%;
+}
+
+/* Brand */
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-brand-text {
+    display: grid;
+    justify-items: center;
+    margin: 0 auto 1.35rem;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-logo {
+    background-color: transparent !important;
+    background-image: url('/images/logo/logo.png') !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    border-radius: 0;
+    box-shadow: none;
+    height: 72px !important;
+    position: relative;
+    width: 108px !important;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-logo::after {
+    content: none;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-name {
+    color: #1b617f !important;
+    font-size: 0;
+    letter-spacing: .12em;
+    margin-top: .65rem;
+    text-transform: uppercase;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-name::after {
+    color: #6d8795;
+    content: "HCS\A HÀNH CHÍNH SỐ";
+    display: block;
+    font: 800 .72rem/1.35 "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    letter-spacing: .1em;
+    margin-top: .3rem;
+    text-align: center;
+    white-space: pre;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-title {
+    display: none !important;
+}
+
+/* Hide LeptonX language/tenant card — language lives inside the login card */
+body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content > .container > .row > [class*="col"] > .card.mb-3 {
+    display: none !important;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-language {
+    align-items: center;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: 1fr 1fr;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-language > .form-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-language .dropdown {
+    width: 100%;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-language .dropdown-toggle {
+    align-items: center;
+    background: #f4f8fa;
+    border: 1px solid var(--hcs-login-line);
+    border-radius: .7rem;
+    color: var(--hcs-login-ink);
+    display: inline-flex;
+    font-weight: 700;
+    gap: .55rem;
+    justify-content: flex-start;
+    min-height: 3.15rem;
+    padding: .75rem 2.2rem .75rem 1rem;
+    position: relative;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-language .dropdown-toggle::after {
+    margin-left: auto;
+    position: absolute;
+    right: .9rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-language .dropdown-toggle .bi-translate {
+    color: #355b72;
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-language .dropdown-menu {
+    border: 1px solid rgba(50, 113, 142, .14);
+    border-radius: .7rem;
+    box-shadow: 0 12px 28px rgba(24, 62, 80, .12);
+    padding: .35rem;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-language .dropdown-item {
+    border-radius: .5rem;
+    font-weight: 600;
+    padding: .55rem .75rem;
+}
+
+/* Main login card */
+body:has(#LoginInput_UserNameOrEmailAddress) .card.mt-3.shadow-sm.rounded {
+    background: rgba(255, 255, 255, .97);
+    border: 1px solid rgba(50, 113, 142, .14);
+    border-radius: 1.1rem !important;
+    box-shadow: 0 22px 48px rgba(24, 62, 80, .14) !important;
+    margin: 0 !important;
+    overflow: visible;
+    width: 100%;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .card.mt-3.shadow-sm.rounded > .card-body {
+    padding: clamp(1.35rem, 4.5vw, 2rem) clamp(1.2rem, 4vw, 1.85rem) !important;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) h4,
+body:has(#LoginInput_UserNameOrEmailAddress) .card-body > h4 {
+    color: #174b67;
+    font: 700 clamp(1.25rem, 3.5vw, 1.45rem)/1.3 "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    margin: 0 0 .85rem;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .mb-3,
+body:has(#LoginInput_UserNameOrEmailAddress) .form-group {
+    margin-bottom: 1.05rem !important;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .form-label {
+    color: var(--hcs-login-muted);
+    display: block;
+    font-size: .84rem;
+    font-weight: 700;
+    margin-bottom: .45rem;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .form-control {
+    background: #f4f8fa;
+    border: 1px solid var(--hcs-login-line);
+    border-radius: .7rem;
+    color: var(--hcs-login-ink);
+    font-size: 1rem;
+    line-height: 1.4;
+    min-height: 3.15rem;
+    padding: .85rem 1rem;
+    width: 100%;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .input-group {
+    align-items: stretch;
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .input-group > .form-control {
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 1%;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) #PasswordVisibilityButton,
+body:has(#LoginInput_UserNameOrEmailAddress) .input-group-text,
+body:has(#LoginInput_UserNameOrEmailAddress) .input-group > .btn {
+    align-items: center;
+    background: #f4f8fa;
+    border: 1px solid var(--hcs-login-line);
+    border-left: 0;
+    border-radius: 0 .7rem .7rem 0;
+    color: #67808e;
+    display: inline-flex;
+    flex: 0 0 auto;
+    justify-content: center;
+    min-height: 3.15rem;
+    min-width: 3.15rem;
+    padding: 0 .9rem;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .form-control:focus {
+    background: #fff;
+    border-color: #258ab8;
+    box-shadow: 0 0 0 .2rem rgba(37, 138, 184, .14);
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .form-check {
+    align-items: center;
+    display: flex;
+    gap: .55rem;
+    margin: .15rem 0 1.15rem;
+    min-height: 1.5rem;
+    padding-left: 0;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .form-check-input {
+    flex: 0 0 auto;
+    float: none;
+    height: 1.1rem;
+    margin: 0;
+    position: static;
+    width: 1.1rem;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .form-check-input.mb-4 {
+    margin-bottom: 0 !important;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .form-check-label {
+    color: var(--hcs-login-muted);
+    font-size: .9rem;
+    font-weight: 600;
+    line-height: 1.1rem;
+    margin: 0;
+    padding: 0;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][value="Login"],
+body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][name="Action"][value="Login"] {
+    background: var(--hcs-login-primary);
+    border: 1px solid var(--hcs-login-primary);
+    border-radius: .75rem;
+    color: #fff;
+    display: block;
+    font-size: 1rem;
+    font-weight: 750;
+    margin-top: .15rem;
+    min-height: 3.15rem;
+    padding: .75rem 1rem;
+    width: 100%;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][value="Login"]:hover,
+body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][value="Login"]:focus,
+body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][name="Action"][value="Login"]:hover,
+body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][name="Action"][value="Login"]:focus {
+    background: #176b94;
+    border-color: #176b94;
+}
+
+/* External providers (Keycloak, …) */
+body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][name="provider"] {
+    border-radius: .7rem;
+    font-weight: 650;
+    min-height: 2.85rem;
+    width: 100%;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) a {
+    color: #1775a2;
+}
+
+@media (max-width: 576px) {
+    body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content {
+        align-items: stretch;
+        padding: 1rem .75rem 1.5rem;
+    }
+
+    body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content > .container {
+        max-width: 100%;
+    }
+
+    body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-logo {
+        height: 56px !important;
+        width: 88px !important;
+    }
+
+    body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-logo::after {
+        content: none;
+    }
+
+    body:has(#LoginInput_UserNameOrEmailAddress) .card.mt-3.shadow-sm.rounded {
+        border-radius: .95rem !important;
+        box-shadow: 0 14px 32px rgba(24, 62, 80, .12) !important;
+    }
+
+    body:has(#LoginInput_UserNameOrEmailAddress) .card.mt-3.shadow-sm.rounded > .card-body {
+        padding: 1.2rem 1rem 1.35rem !important;
+    }
+
+    body:has(#LoginInput_UserNameOrEmailAddress) .form-control,
+    body:has(#LoginInput_UserNameOrEmailAddress) #PasswordVisibilityButton,
+    body:has(#LoginInput_UserNameOrEmailAddress) .input-group > .btn,
+    body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][value="Login"],
+    body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][name="Action"][value="Login"] {
+        min-height: 3rem;
+    }
+}
+
+@media (min-width: 768px) {
+    body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content > .container {
+        max-width: 460px;
+    }
+}

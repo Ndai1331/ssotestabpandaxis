@@ -1,0 +1,167 @@
+@page "/manage-documents"
+@page "/my-documents"
+@page "/document-assignments"
+@page "/document-files"
+@page "/document-histories"
+@attribute [Authorize(Policy = "Documents.View")]
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+@inject OrganizationCatalogClient Catalog
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>@(IsMine ? L["Menu:MyDocuments"] : L["Menu:DocumentList"]) · HCS</PageTitle>
+<section class="hcs-catalog-page">
+    <header class="hcs-catalog-titlebar">
+        <div><p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p><h1>@(IsMine ? L["Menu:MyDocuments"] : L["Feature:DocumentTitle"])</h1></div>
+        <div class="hcs-catalog-page__actions">
+            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
+            @if (!IsMine) { <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button> }
+        </div>
+    </header>
+    @if (error is not null) { <div class="alert alert-warning">@error</div> }
+    @if (success is not null) { <div class="alert alert-success">@success</div> }
+    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+        <div class="hcs-catalog-filter-row">
+            <Addons Class="hcs-catalog-search">
+                <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
+                <Addon AddonType="AddonType.End">
+                    <Button Color="Color.Primary" Clicked="SearchAsync"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
+                </Addon>
+            </Addons>
+        </div>
+    </CardBody></Card>
+    <Card Class="hcs-catalog-grid-card"><CardBody Class="p-0">
+        @if (isLoading) { <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div> }
+        else if (items.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2></div> }
+        else {
+            <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
+                <thead><tr>
+                    <th></th>
+                    <th>@L["Catalog:Code"]</th>
+                    <th>@L["Catalog:Status"]</th>
+                    <th>@L["Catalog:Actions"]</th>
+                </tr></thead>
+                <tbody>
+                @foreach (var item in items)
+                {
+                    <tr>
+                        <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
+                        <td>
+                            <a href="@($"/document-detail/{item.Id}")"><strong>@item.Title</strong></a>
+                            <span class="hcs-catalog-code">#@item.Number</span>
+                            <span class="hcs-catalog-desc">@item.CreationTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @item.Files.Count @L["Feature:Files"]</span>
+                        </td>
+                        <td><span class="hcs-status-badge hcs-status-badge--planning">@item.Status</span></td>
+                        <td>
+                            <div class="hcs-row-actions">
+                                <a class="btn btn-sm btn-outline-primary hcs-action-button hcs-action-button--edit" href="@($"/document-detail/{item.Id}")" title="@L["Catalog:Edit"]"><i class="fa fa-pen"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table></div>
+        }
+    </CardBody></Card>
+</section>
+<Modal @ref="modal"><ModalContent Centered>
+    <ModalHeader><ModalTitle>@L["Catalog:Create"]</ModalTitle><CloseButton /></ModalHeader>
+    <ModalBody>
+        <Field><FieldLabel>@L["Feature:DocumentNumber"]</FieldLabel><TextInput @bind-Value="form.Number" /></Field>
+        <Field><FieldLabel>@L["Feature:DocumentTitleField"]</FieldLabel><TextInput @bind-Value="form.Title" /></Field>
+        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
+        <Field><FieldLabel>@L["Menu:DocumentTypes"]</FieldLabel>
+            <Select TValue="Guid?" @bind-Value="form.DocumentTypeId">
+                <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
+                @foreach (var item in documentTypes) { <SelectItem TValue="Guid?" Value="@item.Id">@item.Name</SelectItem> }
+            </Select>
+        </Field>
+        <Field><FieldLabel>@L["Menu:Sectors"]</FieldLabel>
+            <Select TValue="Guid?" @bind-Value="form.SectorId">
+                <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
+                @foreach (var item in sectors) { <SelectItem TValue="Guid?" Value="@item.Id">@item.Name</SelectItem> }
+            </Select>
+        </Field>
+        <Field><FieldLabel>@L["Menu:UrgencyLevels"]</FieldLabel>
+            <Select TValue="Guid?" @bind-Value="form.UrgencyId">
+                <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
+                @foreach (var item in urgencies) { <SelectItem TValue="Guid?" Value="@item.Id">@item.Name</SelectItem> }
+            </Select>
+        </Field>
+        <Field><FieldLabel>@L["Menu:ConfidentialityLevels"]</FieldLabel>
+            <Select TValue="Guid?" @bind-Value="form.ConfidentialityId">
+                <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
+                @foreach (var item in confidentialities) { <SelectItem TValue="Guid?" Value="@item.Id">@item.Name</SelectItem> }
+            </Select>
+        </Field>
+    </ModalBody>
+    <ModalFooter>
+        <Button Color="Color.Secondary" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Primary" Clicked="CreateAsync">@L["Catalog:Create"]</Button>
+    </ModalFooter>
+</ModalContent></Modal>
+@code {
+    private readonly List<DocumentDto> items = [];
+    private readonly List<MasterDataCatalogDto> documentTypes = [];
+    private readonly List<MasterDataCatalogDto> sectors = [];
+    private readonly List<MasterDataCatalogDto> urgencies = [];
+    private readonly List<MasterDataCatalogDto> confidentialities = [];
+    private readonly DocumentForm form = new();
+    private Modal? modal;
+    private string filter = "";
+    private string status = "";
+    private bool isLoading;
+    private string? error, success;
+    private bool IsMine => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Contains("my-documents", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        await LoadLookupsAsync();
+        await LoadAsync();
+    }
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(LoadAsync);
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+    private Task SearchAsync() => LoadAsync();
+    private async Task LoadLookupsAsync()
+    {
+        try
+        {
+            var query = new OrganizationCatalogQuery(null, true, 0, 100);
+            documentTypes.AddRange((await Catalog.GetMasterDataAsync("DocumentType", query)).Items);
+            sectors.AddRange((await Catalog.GetMasterDataAsync("Sector", query)).Items);
+            urgencies.AddRange((await Catalog.GetMasterDataAsync("UrgencyLevel", query)).Items);
+            confidentialities.AddRange((await Catalog.GetMasterDataAsync("ConfidentialityLevel", query)).Items);
+        }
+        catch { /* catalog permission is optional for list view */ }
+    }
+    private async Task LoadAsync()
+    {
+        isLoading = true; error = null;
+        try
+        {
+            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(string.IsNullOrWhiteSpace(filter) ? null : filter, string.IsNullOrWhiteSpace(status) ? null : status, IsMine, 0, 20));
+            items.Clear(); items.AddRange(page.Items);
+        }
+        catch { error = L["Catalog:LoadError"]; }
+        finally { isLoading = false; }
+    }
+    private async Task OpenCreate() { form.Reset(); if (modal is not null) await modal.Show(); }
+    private async Task CreateAsync()
+    {
+        try
+        {
+            await Documents.CreateDocumentAsync(new CreateDocumentRequest(form.Number.Trim(), form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.DocumentTypeId, form.SectorId, form.UrgencyId, form.ConfidentialityId));
+            if (modal is not null) await modal.Hide();
+            success = L["Catalog:Created"]; await LoadAsync();
+        }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private sealed class DocumentForm
+    {
+        public string Number { get; set; } = ""; public string Title { get; set; } = ""; public string Description { get; set; } = "";
+        public Guid? DocumentTypeId { get; set; } public Guid? SectorId { get; set; } public Guid? UrgencyId { get; set; } public Guid? ConfidentialityId { get; set; }
+        public void Reset() { Number = Title = Description = ""; DocumentTypeId = SectorId = UrgencyId = ConfidentialityId = null; }
+    }
+}

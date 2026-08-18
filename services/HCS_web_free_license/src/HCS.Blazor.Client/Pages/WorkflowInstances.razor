@@ -1,0 +1,160 @@
+@page "/workflow-instances"
+@page "/workflow-lists"
+@page "/document-workflow-instances"
+@page "/workflow-lists/{InstanceId:guid}"
+@attribute [Authorize(Policy = "Documents.Workflow.View")]
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+
+<PageTitle>@L["Menu:WorkflowInstances"] · HCS</PageTitle>
+<section class="hcs-catalog-page">
+    <header class="hcs-catalog-titlebar">
+        <div class="min-w-0"><h1>@L["Menu:WorkflowInstances"]</h1></div>
+        <div class="hcs-catalog-page__actions">
+            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync" Disabled="@isLoading">@L["Catalog:Refresh"]</Button>
+            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenStart"><Icon Name="@IconName.Add" /> @L["Feature:StartWorkflow"]</Button>
+        </div>
+    </header>
+    @if (error is not null) { <div class="alert alert-warning">@error</div> }
+    @if (success is not null) { <div class="alert alert-success">@success</div> }
+    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+        <div class="hcs-catalog-filter-row">
+            <Addons Class="hcs-catalog-search">
+                <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
+                <Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="() => { }"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button></Addon>
+            </Addons>
+        </div>
+    </CardBody></Card>
+    <Card Class="hcs-catalog-grid-card"><CardBody>
+        @if (isLoading) { <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div> }
+        else if (VisibleInstances.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div> }
+        else
+        {
+            <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
+                <thead><tr><th></th><th>@L["Menu:Documents"]</th><th>@L["Catalog:Status"]</th><th>@L["Feature:AddStep"]</th><th>@L["Catalog:Actions"]</th></tr></thead>
+                <tbody>
+                @foreach (var instance in VisibleInstances)
+                {
+                    <tr class="@(instance.Id == InstanceId ? "table-active" : null)">
+                        <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
+                        <td><a href="@($"/document-detail/{instance.DocumentId}")"><strong>@DocumentName(instance.DocumentId)</strong></a></td>
+                        <td><span class="hcs-status-badge hcs-status-badge--planning">@instance.Status</span></td>
+                        <td>@instance.CurrentStep / @instance.Tasks.Count</td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary hcs-action-button" href="@($"/workflow-lists/{instance.Id}")">@L["Work:View"]</a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table></div>
+        }
+    </CardBody></Card>
+
+    @if (selected is not null)
+    {
+        <Card Class="hcs-catalog-grid-card mt-4">
+            <CardHeader>@L["Work:View"] · @selected.Id</CardHeader>
+            <CardBody>
+                <p class="mb-3"><span class="hcs-status-badge hcs-status-badge--info">@selected.Status</span> · @L["Feature:AddStep"] @selected.CurrentStep</p>
+                @foreach (var task in selected.Tasks)
+                {
+                    <div class="border rounded p-3 mb-2">
+                        <strong>@task.StepCode</strong> · @task.Status
+                        @if (task.Status == ApprovalTaskStatus.Pending)
+                        {
+                            <textarea class="form-control mt-2" rows="2" @bind="decisionComment" placeholder="@L["Feature:DecisionComment"]"></textarea>
+                            <div class="mt-2 d-flex gap-2">
+                                <Button Color="Color.Success" Clicked="() => DecideAsync(task.Id, true)">@L["Feature:Approve"]</Button>
+                                <Button Color="Color.Danger" Clicked="() => DecideAsync(task.Id, false)">@L["Feature:Reject"]</Button>
+                            </div>
+                        }
+                    </div>
+                }
+            </CardBody>
+        </Card>
+    }
+</section>
+
+<Modal @ref="startModal"><ModalContent Centered Class="hcs-catalog-modal">
+    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:StartWorkflow"]</ModalTitle><CloseButton /></ModalHeader>
+    <ModalBody Class="hcs-catalog-modal__body">
+        <div class="hcs-catalog-form">
+            <Field><FieldLabel>@L["Menu:Documents"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.DocumentId">
+                    <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
+                    @foreach (var document in documents) { <SelectItem Value="@document.Id.ToString()">@($"{document.Number} · {document.Title}")</SelectItem> }
+                </Select>
+            </Field>
+            <Field><FieldLabel>@L["Menu:WorkflowDefinitions"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.DefinitionId">
+                    <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
+                    @foreach (var definition in definitions) { <SelectItem Value="@definition.Id.ToString()">@($"{definition.Code} · {definition.Name}")</SelectItem> }
+                </Select>
+            </Field>
+        </div>
+    </ModalBody>
+    <ModalFooter Class="hcs-catalog-modal__footer">
+        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => startModal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="StartAsync">@L["Feature:StartWorkflow"]</Button>
+    </ModalFooter>
+</ModalContent></Modal>
+@code {
+    [Parameter] public Guid? InstanceId { get; set; }
+    private readonly List<DocumentDto> documents = [];
+    private readonly List<WorkflowDefinitionDto> definitions = [];
+    private readonly List<WorkflowInstanceDto> instances = [];
+    private readonly StartForm form = new();
+    private Modal? startModal;
+    private WorkflowInstanceDto? selected;
+    private string filter = "";
+    private string decisionComment = "";
+    private bool isLoading;
+    private string? error, success;
+
+    private List<WorkflowInstanceDto> VisibleInstances => string.IsNullOrWhiteSpace(filter)
+        ? instances
+        : instances.Where(x => DocumentName(x.DocumentId).Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+    private async Task OpenStart() { form.DocumentId = form.DefinitionId = ""; if (startModal is not null) await startModal.Show(); }
+    private async Task LoadAsync()
+    {
+        isLoading = true; error = null;
+        try
+        {
+            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100));
+            documents.Clear(); documents.AddRange(page.Items);
+            definitions.Clear(); definitions.AddRange(await Documents.GetDefinitionsAsync());
+            instances.Clear(); instances.AddRange(await Documents.GetInstancesAsync());
+            selected = InstanceId is { } id
+                ? await Documents.GetInstanceAsync(id)
+                : null;
+        }
+        catch { error = L["Catalog:LoadError"]; }
+        finally { isLoading = false; }
+    }
+    private async Task StartAsync()
+    {
+        if (!Guid.TryParse(form.DocumentId, out var documentId) || !Guid.TryParse(form.DefinitionId, out var definitionId))
+        { error = L["Catalog:TypeRequired"]; return; }
+        try
+        {
+            await Documents.StartWorkflowAsync(new StartWorkflowRequest(documentId, definitionId, Guid.NewGuid().ToString("N")));
+            if (startModal is not null) await startModal.Hide();
+            form.DocumentId = form.DefinitionId = ""; success = L["Catalog:Created"]; await LoadAsync();
+        }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private async Task DecideAsync(Guid taskId, bool approve)
+    {
+        try
+        {
+            selected = await Documents.DecideAsync(taskId, new DecideApprovalTaskRequest(approve, string.IsNullOrWhiteSpace(decisionComment) ? null : decisionComment, Guid.NewGuid().ToString("N")));
+            decisionComment = ""; success = approve ? L["Feature:Approve"] : L["Feature:Reject"];
+            instances.Clear(); instances.AddRange(await Documents.GetInstancesAsync());
+        }
+        catch { error = L["Catalog:SaveError"]; }
+    }
+    private string DocumentName(Guid id) => documents.FirstOrDefault(x => x.Id == id) is { } d ? $"{d.Number} · {d.Title}" : id.ToString("N")[..8];
+    private sealed class StartForm { public string DocumentId { get; set; } = ""; public string DefinitionId { get; set; } = ""; }
+}

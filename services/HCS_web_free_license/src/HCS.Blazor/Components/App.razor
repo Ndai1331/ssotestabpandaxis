@@ -1,0 +1,97 @@
+﻿@using System.Globalization
+@using Microsoft.Extensions.Hosting
+@using Volo.Abp.AspNetCore.Components.Server.LeptonXLiteTheme.Bundling
+@using Volo.Abp.Localization
+@using Volo.Abp.AspNetCore.Components.Web.Theming.Bundling
+@inject IHostEnvironment Env
+@{
+    var rtl = CultureHelper.IsRtl ? "rtl" : string.Empty;
+}
+
+<!DOCTYPE html>
+<html lang="@CultureInfo.CurrentCulture.Name" dir="@rtl" data-enhance-nav="false">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HCS</title>
+    <base href="/" />
+
+
+    <AbpStyles BundleName="@BlazorLeptonXLiteThemeBundles.Styles.Global" WebAssemblyStyleFiles="GlobalStyles" />
+
+    <link href="HCS.Blazor.styles.css" rel="stylesheet"/>
+    <link href="HCS.Blazor.Client.styles.css" rel="stylesheet"/>
+    <link href="main.css" rel="stylesheet"/>
+    <style>
+        html, body.abp-application-layout { background: #f5f8f7 !important; color: #19334c; margin: 0; }
+        .hcs-boot-screen { align-items: center; background: radial-gradient(circle at 92% 8%, rgba(61, 92, 255, .14), transparent 18rem), linear-gradient(135deg, #edf0ef 0%, #e6ebe9 100%); color: #19334c; display: grid; font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; inset: 0; justify-items: center; place-content: center; position: fixed; z-index: 2000; }
+        .hcs-boot-screen__card { text-align: center; width: min(22rem, calc(100vw - 2rem)); }
+        .hcs-boot-screen__logo { display: block; height: auto; margin: 0 auto; max-width: 5.5rem; }
+        .hcs-boot-screen__spinner { animation: hcs-boot-spin .7s linear infinite; border: .22rem solid #d7e2e8; border-radius: 50%; border-top-color: #3d5cff; height: 2.35rem; margin: 1.15rem auto .9rem; width: 2.35rem; }
+        .hcs-boot-screen__title { color: #173b56; font-size: 1.2rem; font-weight: 750; margin: 0 0 .2rem; }
+        .hcs-boot-screen__brand { color: #3d5cff; font-size: .78rem; font-weight: 800; letter-spacing: .08em; margin: 0 0 .55rem; text-transform: uppercase; }
+        .hcs-boot-screen__hint { color: #6d8596; display: flex; font-size: .95rem; justify-content: center; margin: 0; }
+        .hcs-boot-screen__hint span { animation: hcs-boot-letter-jump 2.6s ease-in-out infinite; animation-delay: calc(var(--i) * .07s); display: inline-block; }
+        @@keyframes hcs-boot-letter-jump { 0%, 18%, 100% { transform: translateY(0); } 8% { transform: translateY(-.42em); } }
+        @@media (prefers-reduced-motion: reduce) { .hcs-boot-screen__hint span { animation: none; } }
+        @@keyframes hcs-boot-spin { to { transform: rotate(360deg); } }
+        body:has(.hcs-app-shell) .hcs-boot-screen { opacity: 0; pointer-events: none; visibility: hidden; }
+        #blazorise-license-banner-host { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important; overflow: hidden !important; }
+    </style>
+
+    <HeadOutlet />
+</head>
+<body class="abp-application-layout @rtl">
+    <div id="hcs-boot-screen" class="hcs-boot-screen" role="status" aria-live="polite" aria-busy="true">
+        <div class="hcs-boot-screen__card">
+            <img class="hcs-boot-screen__logo" src="/images/logo/logo.png" alt="HCS" width="88" height="62" />
+            <div class="hcs-boot-screen__spinner" aria-hidden="true"></div>
+            <p class="hcs-boot-screen__title">Đang tải hệ thống</p>
+            <p class="hcs-boot-screen__brand">HCS · Hành chính số</p>
+            <p class="hcs-boot-screen__hint" aria-label="@HintText">
+                @for (var i = 0; i < HintText.Length; i++)
+                {
+                    var ch = HintText[i] == ' ' ? "\u00A0" : HintText[i].ToString();
+                    <span style="--i: @i">@ch</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    <Routes @rendermode="@(new InteractiveWebAssemblyRenderMode(prerender: false))" />
+
+    <div id="blazor-error-ui">
+        @if (Env.IsDevelopment())
+        {
+            <text>An unhandled exception has occurred. See browser dev tools for details.</text>
+        }
+        else if (Env.IsStaging() || Env.IsProduction())
+        {
+            <text>An error has occurred. This application may no longer respond until reloaded.</text>
+        }
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">&times;</a>
+    </div>
+    
+    <AbpScripts BundleName="@BlazorLeptonXLiteThemeBundles.Scripts.Global" WebAssemblyScriptFiles="GlobalScripts" />
+
+    <script src="global-scripts.js"></script>
+    <script src="_framework/blazor.web.js"></script>
+
+</body>
+</html>
+
+@code{
+    private const string HintText = "Vui lòng đợi trong giây lát…";
+
+    private List<string> GlobalStyles =>
+    [
+        "main.css"
+    ];
+
+    private List<string> GlobalScripts =>
+    [
+        "global.js"
+    ];
+
+}

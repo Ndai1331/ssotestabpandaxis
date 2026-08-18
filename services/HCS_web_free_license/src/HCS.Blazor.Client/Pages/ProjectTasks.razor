@@ -1,0 +1,298 @@
+@page "/tasks"
+@attribute [Authorize(Policy = "WorkManagement.ProjectTasks")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject IUiMessageService UiMessage
+@inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
+
+<PageTitle>@L["Menu:Tasks"] · HCS</PageTitle>
+<section class="hcs-catalog-page">
+    <header class="hcs-catalog-titlebar">
+        <div class="min-w-0"><h1>@L["Menu:Tasks"]</h1></div>
+        <div class="hcs-catalog-page__actions">
+            <Button Color="Color.Primary" Outline="true" Clicked="ToggleViewAsync">
+                <i class="fa @(isKanban ? "fa-table-list" : "fa-columns") me-1"></i> @(isKanban ? L["Work:ListView"] : L["Work:KanbanView"])
+            </Button>
+            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="ExportAsync" Disabled="@(tasks.Count == 0 || isLoading)">
+                <i class="fa fa-download me-1"></i> @L["Catalog:Export"]
+            </Button>
+            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate">
+                <Icon Name="@IconName.Add" /> @L["Work:NewTask"]
+            </Button>
+        </div>
+    </header>
+    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
+    @if (!string.IsNullOrWhiteSpace(success)) { <div class="alert alert-success">@success</div> }
+    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+        <div class="hcs-catalog-filter-row">
+            <Addons Class="hcs-catalog-search">
+                <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
+                <Addon AddonType="AddonType.End">
+                    <Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
+                </Addon>
+            </Addons>
+            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-toggle" Clicked="() => showFilters = !showFilters">
+                <i class="fa fa-sliders me-2"></i>@L["Catalog:Filter"]
+                <i class="fa @(showFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2"></i>
+            </Button>
+        </div>
+        @if (showFilters)
+        {
+            <div class="hcs-catalog-advanced-filter">
+                <Field>
+                    <FieldLabel>@L["Feature:Project"]</FieldLabel>
+                    <Select TValue="Guid?" @bind-Value="projectFilter">
+                        <SelectItem TValue="Guid?" Value="null">@L["Feature:AllProjects"]</SelectItem>
+                        @foreach (var project in projects) { <SelectItem TValue="Guid?" Value="project.Id">@($"{project.Code} — {project.Name}")</SelectItem> }
+                    </Select>
+                </Field>
+                <Field>
+                    <FieldLabel>@L["Catalog:Status"]</FieldLabel>
+                    <Select TValue="string" @bind-Value="statusFilter">
+                        <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
+                        @foreach (var value in WorkUi.TaskStatuses) { <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem> }
+                    </Select>
+                </Field>
+                <Button Color="Color.Light" Outline="true" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
+            </div>
+        }
+    </CardBody></Card>
+
+    @if (isKanban)
+    {
+        <div class="hcs-kanban-board">
+            @foreach (var column in WorkUi.TaskStatuses)
+            {
+                var columnTasks = tasks.Where(x => string.Equals(x.Status, column, StringComparison.Ordinal)).ToList();
+                <section class="hcs-kanban-column @(dragOver == column ? "is-over" : null)"
+                         @ondragover:preventDefault
+                         @ondragenter="() => dragOver = column"
+                         @ondragleave="() => dragOver = dragOver == column ? null : dragOver"
+                         @ondrop="() => DropAsync(column)">
+                    <header class="hcs-kanban-hd">
+                        <h2>@L[WorkUi.TaskStatusKey(column)]</h2>
+                        <span class="hcs-kanban-count">@columnTasks.Count</span>
+                    </header>
+                    <div class="hcs-kanban-zone">
+                        @foreach (var task in columnTasks)
+                        {
+                            <article class="hcs-kanban-card" draggable="true" @ondragstart="() => dragging = task" @ondragend="() => dragging = null">
+                                <div class="hcs-kanban-project">@ProjectName(task.ProjectId)</div>
+                                <h3 class="hcs-kanban-title"><a href="@($"/project-task-detail/{task.Id}")">@task.Title</a></h3>
+                                <div class="hcs-kanban-code">@task.Code</div>
+                                @if (task.ParentTaskId is { } parentId)
+                                {
+                                    <div class="hcs-kanban-parent">@L["Feature:ParentTask"]: @ParentTitle(parentId)</div>
+                                }
+                                <div class="hcs-kanban-pills">
+                                    <span class="@WorkUi.PriorityBadgeClass(task.Priority)">@L[WorkUi.PriorityKey(task.Priority)]</span>
+                                    <span class="@WorkUi.ProgressBadgeClass(task.ProgressPercent)">@task.ProgressPercent%</span>
+                                </div>
+                                <div class="hcs-kanban-dates">
+                                    <span class="hcs-kanban-date hcs-kanban-date--start">@WorkUi.FormatDay(task.StartDate)</span>
+                                    <span class="hcs-kanban-date hcs-kanban-date--due">@WorkUi.FormatDay(task.DueDate)</span>
+                                </div>
+                                <div class="hcs-kanban-foot">
+                                    <span class="hcs-kanban-avatar">@(string.IsNullOrWhiteSpace(task.Title) ? "?" : task.Title[..1])</span>
+                                    <span>#@task.Id.ToString("N")[..8]</span>
+                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Clicked="() => Edit(task)"><Icon Name="@IconName.Edit" /></Button>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    }
+    else
+    {
+        <Card Class="hcs-catalog-grid-card"><CardBody>
+            <DataGrid TItem="ProjectTaskDto" Data="@pagedTasks" TotalItems="@totalCount" ReadData="OnReadAsync"
+                      ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
+                      Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
+                <EmptyTemplate><div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Feature:NoTasks"]</p></div></EmptyTemplate>
+                <LoadingTemplate><div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div></LoadingTemplate>
+                <DataGridColumns>
+                    <DataGridColumn TItem="ProjectTaskDto" Caption=""><DisplayTemplate><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></DisplayTemplate></DataGridColumn>
+                    <DataGridColumn TItem="ProjectTaskDto" Caption="@L["Catalog:Code"].Value">
+                        <DisplayTemplate Context="cell">
+                            <a href="@($"/project-task-detail/{cell.Item.Id}")"><strong>@cell.Item.Title</strong></a>
+                            <span class="hcs-catalog-code">#@cell.Item.Code</span>
+                            <span class="hcs-catalog-desc">@ProjectName(cell.Item.ProjectId)</span>
+                        </DisplayTemplate>
+                    </DataGridColumn>
+                    <DataGridColumn TItem="ProjectTaskDto" Caption="@L["Work:DateRange"].Value">
+                        <DisplayTemplate Context="cell">@WorkUi.FormatRange(cell.Item.StartDate, cell.Item.DueDate)</DisplayTemplate>
+                    </DataGridColumn>
+                    <DataGridColumn TItem="ProjectTaskDto" Caption="@L["Catalog:Status"].Value">
+                        <DisplayTemplate Context="cell"><span class="@WorkUi.TaskBadgeClass(cell.Item.Status)">@L[WorkUi.TaskStatusKey(cell.Item.Status)]</span></DisplayTemplate>
+                    </DataGridColumn>
+                    <DataGridColumn TItem="ProjectTaskDto" Caption="@L["Feature:Priority"].Value">
+                        <DisplayTemplate Context="cell"><span class="@WorkUi.PriorityBadgeClass(cell.Item.Priority)">@L[WorkUi.PriorityKey(cell.Item.Priority)]</span></DisplayTemplate>
+                    </DataGridColumn>
+                    <DataGridColumn TItem="ProjectTaskDto" Caption="@L["Feature:Progress"].Value" Field="@nameof(ProjectTaskDto.ProgressPercent)" />
+                    <DataGridColumn TItem="ProjectTaskDto" Caption="@L["Catalog:Actions"].Value">
+                        <DisplayTemplate Context="cell">
+                            <div class="hcs-row-actions">
+                                <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--edit" Clicked="() => Edit(cell.Item)"><Icon Name="@IconName.Edit" /></Button>
+                                <Button Color="Color.Danger" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--delete" Clicked="() => DeleteAsync(cell.Item)"><Icon Name="@IconName.Delete" /></Button>
+                            </div>
+                        </DisplayTemplate>
+                    </DataGridColumn>
+                </DataGridColumns>
+            </DataGrid>
+        </CardBody></Card>
+    }
+</section>
+<Modal @ref="modal"><ModalContent Centered Size="ModalSize.Large" Class="hcs-catalog-modal">
+    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@(editingId is null ? L["Feature:TaskCreate"] : L["Feature:TaskEdit"])</ModalTitle><CloseButton /></ModalHeader>
+    <ModalBody Class="hcs-catalog-modal__body">
+        <div class="hcs-catalog-form">
+            <Field><FieldLabel>@L["Feature:Project"]</FieldLabel>
+                <Select TValue="Guid?" @bind-Value="form.ProjectId" Disabled="@(editingId is not null)">
+                    <SelectItem TValue="Guid?" Value="null">@L["Feature:ChooseProject"]</SelectItem>
+                    @foreach (var project in projects) { <SelectItem TValue="Guid?" Value="project.Id">@($"{project.Code} — {project.Name}")</SelectItem> }
+                </Select>
+            </Field>
+            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editingId is not null)" /></Field>
+            <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><TextInput @bind-Value="form.Title" /></Field>
+            <Field><FieldLabel>@L["Feature:ParentTask"]</FieldLabel>
+                <Select TValue="Guid?" @bind-Value="form.ParentTaskId">
+                    <SelectItem TValue="Guid?" Value="null">@L["Catalog:NoParent"]</SelectItem>
+                    @foreach (var task in tasks.Where(x => x.ProjectId == form.ProjectId && x.Id != editingId))
+                    { <SelectItem TValue="Guid?" Value="task.Id">@task.Title</SelectItem> }
+                </Select>
+            </Field>
+            <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartDate" /></Field>
+            <Field><FieldLabel>@L["Feature:DueDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.DueDate" /></Field>
+            <Field><FieldLabel>@L["Feature:Priority"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.Priority">
+                    @foreach (var value in WorkUi.TaskPriorities) { <SelectItem Value="@value">@L[WorkUi.PriorityKey(value)]</SelectItem> }
+                </Select>
+            </Field>
+            <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.Status">
+                    @foreach (var value in WorkUi.TaskStatuses) { <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem> }
+                </Select>
+            </Field>
+            <Field><FieldLabel>@L["Feature:Progress"]</FieldLabel><NumericPicker TValue="int" @bind-Value="form.ProgressPercent" Min="0" Max="100" /></Field>
+        </div>
+    </ModalBody>
+    <ModalFooter Class="hcs-catalog-modal__footer">
+        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SaveAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+    </ModalFooter>
+</ModalContent></Modal>
+@code {
+    private static readonly int[] pageSizes = [10, 20, 50, 100];
+    private readonly List<ProjectDto> projects = [];
+    private readonly List<ProjectTaskDto> tasks = [];
+    private readonly List<ProjectTaskDto> pagedTasks = [];
+    private readonly TaskForm form = new();
+    private Modal? modal;
+    private Guid? editingId, projectFilter;
+    private ProjectTaskDto? dragging;
+    private string? dragOver, filter, statusFilter, error, success;
+    private bool isLoading, isSaving, showFilters, isKanban = true;
+    private int totalCount, pageSize = 20, currentPage = 1;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task OnReadAsync(DataGridReadDataEventArgs<ProjectTaskDto> args)
+    {
+        if (isKanban) return;
+        currentPage = Math.Max(args.Page, 1);
+        pageSize = Math.Clamp(args.PageSize, 10, 100);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true; error = null;
+        try
+        {
+            var projectPage = await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100));
+            projects.Clear(); projects.AddRange(projectPage.Items);
+            var skip = isKanban ? 0 : (currentPage - 1) * pageSize;
+            var take = isKanban ? 100 : pageSize;
+            var taskPage = await Work.GetTasksAsync(projectFilter, new WorkListQuery(filter, string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter, skip, take));
+            tasks.Clear(); tasks.AddRange(taskPage.Items);
+            totalCount = (int)taskPage.TotalCount;
+            pagedTasks.Clear(); pagedTasks.AddRange(taskPage.Items);
+        }
+        catch { error = L["Catalog:LoadError"]; }
+        finally { isLoading = false; }
+    }
+
+    private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
+    private Task ResetSearchAsync() { filter = statusFilter = null; projectFilter = null; currentPage = 1; return LoadAsync(); }
+    private Task ToggleViewAsync() { isKanban = !isKanban; currentPage = 1; return LoadAsync(); }
+    private async Task OpenCreate() { editingId = null; form.Reset(); form.ProjectId = projectFilter; if (modal is not null) await modal.Show(); }
+    private async Task Edit(ProjectTaskDto task)
+    {
+        editingId = task.Id;
+        form.ProjectId = task.ProjectId; form.ParentTaskId = task.ParentTaskId; form.Code = task.Code; form.Title = task.Title;
+        form.StartDate = task.StartDate; form.DueDate = task.DueDate; form.Priority = task.Priority; form.Status = task.Status; form.ProgressPercent = task.ProgressPercent;
+        if (modal is not null) await modal.Show();
+    }
+    private async Task SaveAsync()
+    {
+        if (form.ProjectId is not { } projectId) { error = L["Feature:ChooseProject"]; return; }
+        isSaving = true;
+        try
+        {
+            if (editingId is { } id)
+                await Work.UpdateTaskAsync(id, new UpdateProjectTaskRequest(form.Title.Trim(), null, form.StartDate, form.DueDate, form.Priority, form.Status, form.ProgressPercent));
+            else
+                await Work.CreateTaskAsync(new CreateProjectTaskRequest(projectId, form.ParentTaskId, form.Code.Trim(), form.Title.Trim(), null, form.StartDate, form.DueDate, form.Priority, form.Status, form.ProgressPercent));
+            success = editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"];
+            if (modal is not null) await modal.Hide();
+            await LoadAsync();
+        }
+        catch { error = L["Catalog:SaveError"]; }
+        finally { isSaving = false; }
+    }
+    private async Task DeleteAsync(ProjectTaskDto task)
+    {
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], task.Title))) return;
+        try { await Work.DeleteTaskAsync(task.Id); success = L["Catalog:Deleted"]; await LoadAsync(); }
+        catch { error = L["Catalog:DeleteError"]; }
+    }
+    private async Task DropAsync(string status)
+    {
+        if (dragging is null || string.Equals(dragging.Status, status, StringComparison.Ordinal)) { dragOver = null; return; }
+        try
+        {
+            await Work.UpdateTaskAsync(dragging.Id, new UpdateProjectTaskRequest(dragging.Title, dragging.Description, dragging.StartDate, dragging.DueDate, dragging.Priority, status, dragging.ProgressPercent));
+            dragging = null; dragOver = null; await LoadAsync();
+        }
+        catch { error = L["Catalog:SaveError"]; dragOver = null; }
+    }
+    private async Task ExportAsync()
+    {
+        try
+        {
+            await CsvDownload.DownloadAsync(JsRuntime, $"tasks-{DateTime.Now:yyyyMMdd-HHmm}.csv",
+                [L["Catalog:Code"], L["Feature:TaskTitle"], L["Feature:Project"], L["Catalog:Status"], L["Feature:Priority"]],
+                tasks.Select(item => (IReadOnlyList<string>)[item.Code, item.Title, ProjectName(item.ProjectId), L[WorkUi.TaskStatusKey(item.Status)], L[WorkUi.PriorityKey(item.Priority)]]));
+            await UiMessage.Success(L["Catalog:Exported"]);
+        }
+        catch { await UiMessage.Error(L["Catalog:ExportError"]); }
+    }
+    private string ProjectName(Guid projectId) => projects.FirstOrDefault(x => x.Id == projectId)?.Name ?? "—";
+    private string ParentTitle(Guid parentId) => tasks.FirstOrDefault(x => x.Id == parentId)?.Title ?? "—";
+    private sealed class TaskForm
+    {
+        public Guid? ProjectId { get; set; }
+        public Guid? ParentTaskId { get; set; }
+        public string Code { get; set; } = "";
+        public string Title { get; set; } = "";
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public DateTime DueDate { get; set; } = DateTime.Today.AddDays(7);
+        public string Priority { get; set; } = "Normal";
+        public string Status { get; set; } = "New";
+        public int ProgressPercent { get; set; }
+        public void Reset() { ProjectId = ParentTaskId = null; Code = Title = ""; StartDate = DateTime.Today; DueDate = DateTime.Today.AddDays(7); Priority = "Normal"; Status = "New"; ProgressPercent = 0; }
+    }
+}
