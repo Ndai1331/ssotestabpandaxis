@@ -1,33 +1,33 @@
 # Codebase Summary — BD Workspace
 
-> Updated: 2026-07-24. Local SSO lab only.
+> Updated: 2026-08-10. Local SSO lab only.
 
 ## Meta repo
 
-`bd-workspace` chứa docs, agent rules, và hai tree application local:
+`bd-workspace` chứa docs, agent rules, và các tree application local:
 
 | Path | Stack | Role |
 |------|-------|------|
 | `services/directus-main-v11` | Directus v11 lab SoT (Node monorepo) | Clinical data + compose Keycloak SSO |
 | `services/directus-main` | Directus v12 archive | Không dùng cho SSO lab |
-| `services/abp-blazor` | ABP .NET 10 microservice | Digital admin app (Blazor + AuthServer + services) |
+| `services/HCS_web_free_license` | ABP Community / .NET 10 microservices | Runtime HCS hiện tại: Blazor UI, BFF gateway, AuthServer và domain services |
+| `services/abp-blazor` | ABP .NET 10 microservice template | Tham chiếu lịch sử, không phải runtime HCS mặc định |
 
 ## Notable local infra
 
 - Keycloak in Directus `docker-compose.yml` → host port **5110**  
 - Directus compose also exposes Postgres, Redis, Minio, Maildev for debug  
 
-## ABP solution highlights
+## HCS Community runtime highlights
 
-- Solution name pattern: `hanhchinhso`  
-- Apps: AuthServer (OpenIddict), Blazor, Elsa Studio WASM (:44396)  
-- Services: identity, administration, audit-logging, gdpr, language, ai-management, **workflow-service** (Elsa Pro 3.5, :44395), …  
-- Gateways: web BFF  
-- **Local runner:** Aspire AppHost (`.NET 13.4.6`); `./aspire/run.sh [light|full]` — see [`aspire/README.md`](../services/abp-blazor/aspire/README.md)  
+- Default runtime: Docker Compose from `services/HCS_web_free_license/`; browser entry is `https://hcs.localhost`.
+- Browser flow: protected Blazor routes → Gateway `/bff/login` → AuthServer → Keycloak; the gateway allows deep-link returns only to configured UI origins.
+- Primary HCS-specific navigation is Chat (`/chat`), guarded by the `Collaboration.Chat` policy/permission.
+- Runtime details and safe startup/rollback: [`runbooks/hcs-docker-compose-handoff.md`](./runbooks/hcs-docker-compose-handoff.md).
 
 ## Auth target state
 
-Keycloak = central IdP; Directus + ABP = OIDC clients; Zimbra = LDAP/auth source.
+Keycloak = central IdP; Directus + HCS AuthServer/BFF = OIDC consumers; Zimbra = LDAP/auth source.
 
 ## Legacy
 

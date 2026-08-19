@@ -15,20 +15,26 @@ flowchart TB
   KCDB[(Keycloak DB)]
   Dir[Directus]
   DirDB[(Directus DB)]
-  ABP[ABP Framework]
+  HCS[HCS Blazor UI]
+  BFF[HCS Web Gateway / BFF]
+  Auth[HCS AuthServer]
   ABPDB[(ABP DBs)]
 
   User -->|1. Mở app| Dir
-  User -->|1. Mở app| ABP
+  User -->|1. Mở workspace| HCS
   Dir -->|2. OIDC redirect| KC
-  ABP -->|2. OIDC redirect| KC
+  HCS -->|2. Protected route / login| BFF
+  BFF -->|3. OIDC challenge| Auth
+  Auth -->|4. External OIDC| KC
   KC -->|3. Auth| Zimbra
   Zimbra -->|4. OK| KC
   KC -->|5-6. Tokens| Dir
-  KC -->|5-6. Tokens| ABP
+  KC -->|5-6. Callback + session| Auth
+  Auth -->|7. Browser session| BFF
+  BFF -->|8. Safe deep-link return| HCS
   KC --- KCDB
   Dir --- DirDB
-  ABP --- ABPDB
+  Auth --- ABPDB
   Zimbra -.->|User Federation sync| KC
 ```
 
@@ -41,7 +47,9 @@ flowchart TB
 | Zimbra | Credential source; LDAP groups/departments |
 | Keycloak | Authenticate, federate users, issue OIDC tokens, central roles |
 | Directus | App authz (collections/policies) after token validation |
-| ABP | App authz (permissions, orgs, workflows) after token validation |
+| HCS Blazor UI | Protect routes, render workspace and redirect unauthenticated visitors to the BFF |
+| HCS Web Gateway / BFF | Own browser session, validate return origins, proxy protected API/hub requests |
+| HCS AuthServer | OIDC client of Keycloak and authority used by the BFF |
 
 ---
 
@@ -51,13 +59,14 @@ flowchart TB
 |---------|---------------|-------|
 | Keycloak | `docker compose` in `directus-main` | `:5110` |
 | Directus | Node/pnpm per upstream | OIDC → Keycloak |
-| ABP infra | `abp-blazor/etc/docker` | Redis, DBs, etc. |
-| ABP apps | `dotnet run` / ABP Studio | AuthServer + Blazor + services |
+| HCS Community | `services/HCS_web_free_license/docker-compose.yml` | Default Docker Compose runtime; browser at `https://hcs.localhost` |
+| HCS gateway | `/bff/login` | Starts sign-in; only configured UI origins may be used as deep-link returns |
 
 ---
 
 ## Trust boundary
 
-- Browser redirects only to Keycloak for credentials (apps không nhận password Zimbra trực tiếp trong mô hình chuẩn).  
+- Browser credentials are handled by Keycloak through the AuthServer; the Blazor client does not receive tokens.
+- The BFF session cookie is secure and HTTP-only; protected API and SignalR requests go through the gateway.
 - Apps trust JWTs/OIDC assertions từ Keycloak realm.  
 - App DBs không thay thế Keycloak DB cho identity trung tâm.  

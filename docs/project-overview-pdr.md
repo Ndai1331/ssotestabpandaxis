@@ -2,7 +2,7 @@
 
 > **Project:** Bình Dương (BD) — SSO Zimbra + Keycloak + Directus + ABP  
 > **Status:** Local proof-of-concept  
-> **Updated:** 2026-07-23
+> **Updated:** 2026-08-10
 
 ---
 
@@ -22,11 +22,12 @@ Identity trung tâm: **Keycloak** (OIDC/OAuth2).
 | ID | Goal | Acceptance |
 |----|------|------------|
 | G1 | Keycloak chạy local | Admin UI `:5110` reachable |
-| G2 | Realm + 2 OIDC clients | Directus + ABP clients configured |
+| G2 | Realm + 2 OIDC client paths | Directus + HCS AuthServer external client configured |
 | G3 | Directus login via Keycloak | Redirect → login → session Directus |
-| G4 | ABP login via Keycloak | Redirect → login → session ABP |
-| G5 | SSO giữa 2 app | Login app A, mở app B không nhập lại password (cùng session KC) |
+| G4 | HCS login via BFF | Protected UI → BFF → AuthServer → Keycloak → same HTTPS deep link |
+| G5 | SSO giữa 2 app | Login app A, mở app B không nhập lại password (cùng session Keycloak) |
 | G6 | (Optional) LDAP Zimbra | User Federation sync user từ Zimbra khi có LDAP |
+| G7 | Chat authorization | `/chat` is visible/usable only with `Collaboration.Chat` |
 
 ---
 
@@ -53,7 +54,7 @@ Identity trung tâm: **Keycloak** (OIDC/OAuth2).
 
 - Local machine + Docker  
 - Zimbra LDAP có thể chưa sẵn — POC cho phép user Keycloak local trước  
-- Docs/rules agent phải phản ánh cấu trúc `services/directus-main` + `services/abp-blazor`  
+- Docs/rules agent phải phản ánh runtime `services/directus-main-v11` + `services/HCS_web_free_license`; `services/abp-blazor` chỉ là tham chiếu lịch sử.
 
 ---
 
@@ -71,6 +72,7 @@ Identity trung tâm: **Keycloak** (OIDC/OAuth2).
 |------|------------|
 | ABP AuthServer vs Keycloak trùng vai trò IdP | Chọn rõ: Keycloak = IdP; ABP AuthServer trust external; document quyết định |
 | Redirect URI mismatch | Checklist client settings trước mỗi test |
+| Open redirect hoặc token exposure | Gateway validates configured return origins; browser uses an HTTP-only BFF cookie |
 | Docs Task9 gây nhiễu agent | Sunset rules trong CLAUDE; wiki index chỉ BD |
 
 ---

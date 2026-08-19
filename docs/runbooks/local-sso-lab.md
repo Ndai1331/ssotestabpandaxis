@@ -143,12 +143,20 @@ Keycloak đã cấu hình sẵn trong `apps/auth-server/.../appsettings.Developm
 
 Redirect KC: `http://localhost:44372/signin-oidc`
 
+Blazor host và WASM client đều đặt `RemoteServices:Default`,
+`RemoteServices:OrganizationService` và `RemoteServices:DocumentService` trỏ tới
+WebGateway (`http://localhost:44398/`). Cấu hình nằm lần lượt trong
+`apps/blazor/hanhchinhso.Blazor/appsettings.json` và
+`apps/blazor/hanhchinhso.Blazor.Client/wwwroot/appsettings.json`.
+
 ### 3.3 Login test
 
-1. Mở http://localhost:44306 → Login  
-2. Chọn **Keycloak**  
-3. User lab: `bacsi@benhvien.vn` / `Passw0rd!` (hoặc user vừa tạo trên KC)  
-4. Sau login, Identity map group `bd-*` → role ABP.
+1. Mở http://localhost:44306 và chọn **Đăng nhập bằng SSO** trên trang chủ.
+2. Tại `/login`, chọn **Đăng nhập bằng SSO**; ứng dụng chuyển sang
+   `/Account/Login`.
+3. Chọn **Keycloak**.
+4. User lab: `bacsi@benhvien.vn` / `Passw0rd!` (hoặc user vừa tạo trên KC).
+5. Sau login, Identity map group `bd-*` → role ABP.
 
 ### 3.4 Elsa Studio access
 

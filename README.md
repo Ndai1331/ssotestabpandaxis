@@ -21,9 +21,10 @@ docker compose up -d keycloak postgres redis
 # Admin: admin / secret
 
 # 2. Directus (xem readme trong services/directus-main)
-# 3. ABP (infra + apps — xem services/abp-blazor/README.md)
-cd ../abp-blazor/etc/docker
-# chạy up.ps1 / docker compose theo README ABP
+# 3. HCS Community (ABP free) — xem services/HCS_web_free_license/README.md
+cd ../HCS_web_free_license
+./scripts/audit-license-clean.sh
+./scripts/docker-up.sh
 ```
 
 Chi tiết: [`docs/workspace-architecture.md`](./docs/workspace-architecture.md)
@@ -58,7 +59,8 @@ bd-workspace/                          ← Meta workspace (docs + agent rules)
 |---------|------|------|-------------|-------------|
 | **Keycloak** | (Docker trong `directus-main`) | Keycloak | IdP trung tâm — OIDC tokens | `:5110` |
 | **Directus** | `services/directus-main/` | Node.js / Directus | OIDC client → Keycloak | Studio + API |
-| **ABP** | `services/abp-blazor/` | .NET 10 / ABP microservice | OIDC client → Keycloak (qua AuthServer/OpenIddict hoặc external IdP) | Blazor + gateways + microservices |
+| **HCS Community** | `services/HCS_web_free_license/` | .NET 10 / ABP Community microservice | OIDC client → Keycloak qua AuthServer + BFF Gateway | Docker Compose mặc định, không cần ABP license |
+| **ABP template cũ** | `services/abp-blazor/` | ABP Commercial | Chỉ tham chiếu lịch sử; không deploy | Không dùng làm runtime |
 
 ## Kiến trúc SSO (tóm tắt)
 

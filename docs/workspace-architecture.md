@@ -1,7 +1,7 @@
 # BD Platform — Workspace Architecture
 
-> **Mục đích:** Single source of truth cho kiến trúc lab SSO Bình Dương (Directus + ABP qua Keycloak).  
-> **Cập nhật:** 2026-07-24  
+> **Mục đích:** Single source of truth cho kiến trúc lab SSO Bình Dương (Directus + HCS Community qua Keycloak).
+> **Cập nhật:** 2026-08-10
 > **Workspace:** `bd-workspace` (local meta folder — chưa GitHub)  
 > **Diagram:** [`../system-sso-guideline.png`](../system-sso-guideline.png)
 
@@ -14,7 +14,7 @@ Lab thử nghiệm **một lần đăng nhập bằng mail Zimbra** cho hai hệ
 || Hệ thống | Vai trò nghiệp vụ | Code |
 |----------|-------------------|------|
 || **Directus** | Quản lý dữ liệu lâm sàng (Clinical Data Management) | `services/directus-main-v11/` (lab SoT; v12 `directus-main` = archive) |
-|| **ABP Framework** | Hành chính số — văn bản, phê duyệt | `services/abp-blazor/` |
+|| **HCS Community** | Hành chính số — văn bản, công việc, trao đổi | `services/HCS_web_free_license/` (runtime mặc định) |
 
 **Keycloak** là Identity Provider trung tâm (OIDC/OAuth2).  
 **Zimbra** là nguồn account + xác thực mật khẩu (LDAP/AD hoặc Zimbra Auth Token).
@@ -30,7 +30,8 @@ bd-workspace/
 ├── services/
 │   ├── directus-main-v11/      ← Lab SoT Directus (v11) + docker-compose.bd-lab (Keycloak :5110)
 │   ├── directus-main/          ← Archive v12 (MSCL) — không dùng cho SSO lab
-│   └── abp-blazor/             ← ABP microservice template (hanhchinhso)
+│   ├── HCS_web_free_license/   ← HCS Community runtime (Blazor + BFF + AuthServer)
+│   └── abp-blazor/             ← ABP microservice template lịch sử (hanhchinhso)
 ├── docs/                       ← Architecture & PDR
 ├── wiki/                       ← Second brain BD
 ├── plans/                      ← Agent plans (Task9 cũ = archive)
@@ -50,40 +51,40 @@ Không còn: `services/ui`, `api`, `agent`, `worker`, `n8n`, `metabase` (Task9).
                     │   Người dùng         │
                     │   NV / BS / Lãnh đạo │
                     └──────────┬───────────┘
-                               │ mở Directus hoặc ABP
+                               │ mở Directus hoặc HCS
                                ▼
 ┌──────────────┐    redirect    ┌─────────────────────────┐
 │ Directus     │───────────────►│                         │
 │ (OIDC client)│◄───────────────│      Keycloak           │
 └──────────────┘   token        │   (SSO / IdP)           │
                                 │  • User Federation      │
-┌──────────────┐    redirect    │  • Roles / Groups       │
-│ ABP          │───────────────►│  • OIDC tokens          │
-│ (OIDC client)│◄───────────────│                         │
-└──────────────┘   token        └───────────┬─────────────┘
-                                            │ LDAP / Auth
-                                            ▼
-                                ┌─────────────────────────┐
-                                │  Zimbra Mail Server     │
-                                │  (LDAP / AD)            │
-                                └─────────────────────────┘
+┌──────────────┐    external    │  • Roles / Groups       │
+│ HCS AuthServer│──────────────►│  • OIDC tokens          │
+└──────┬───────┘    OIDC        └───────────┬─────────────┘
+       │ authority                            │ LDAP / Auth
+       ▼                                      ▼
+┌──────────────┐                    ┌─────────────────────────┐
+│ HCS Gateway  │                    │  Zimbra Mail Server     │
+│ + Blazor UI  │                    │  (LDAP / AD)            │
+└──────────────┘                    └─────────────────────────┘
 ```
 
-### 3.1 Luồng đăng nhập (7 bước)
+### 3.1 Luồng đăng nhập HCS (8 bước)
 
-1. User truy cập Directus hoặc ABP  
-2. Hệ thống redirect → Keycloak  
-3. Keycloak yêu cầu xác thực qua Zimbra (email/password)  
-4. Zimbra xác thực thành công → trả về Keycloak  
-5. Keycloak tạo session, cấp **ID Token** + **Access Token**  
-6. Redirect về hệ thống gốc kèm token  
-7. Hệ thống verify token → tạo session đăng nhập local  
+1. User truy cập HCS root hoặc một HTTPS deep link.
+2. Blazor route yêu cầu xác thực và chuyển browser tới Gateway `/bff/login`.
+3. Gateway khởi tạo OIDC challenge tới HCS AuthServer.
+4. AuthServer dùng Keycloak làm external OIDC provider.
+5. Keycloak yêu cầu xác thực qua Zimbra (khi User Federation đã được cấu hình) và tạo SSO session.
+6. Callback trả về AuthServer, rồi Gateway tạo BFF session cookie HTTP-only.
+7. Gateway chỉ chấp nhận return URL có origin đã cấu hình; URL ngoài origin quay về UI origin mặc định.
+8. Browser trở về deep link ban đầu; authorization nội bộ vẫn kiểm tra policy/quyền của route.
 
 ### 3.2 Đồng bộ user & group
 
 ```
 Zimbra LDAP/AD ──User Federation──► Keycloak ──map──► Directus roles
-                                         └──map──► ABP Identity roles
+                                         └──map──► HCS roles / permissions
 ```
 
 - Sync: email, tên, phòng ban, group, trạng thái active/inactive  
@@ -118,12 +119,12 @@ Mỗi app tự quản lý authorization nội bộ sau khi nhận claims từ to
 || Bootstrap | `python3 scripts/keycloak_bootstrap_bd_realm.py` → realm `bd` |
 || Runbook | `docs/runbooks/local-sso-lab.md` |
 
-Lab secrets (local only): `directus`/`bd-directus-lab-secret`, `abp-auth`/`bd-abp-auth-lab-secret`.
+Thông tin xác thực lab được quản lý ngoài tài liệu và không được commit.
 
 Đã cấu hình (lab):
 
 - Realm `bd`, RS256  
-- Clients Directus + ABP + ElsaStudio  
+- Clients Directus + HCS AuthServer
 - Protocol mapper `groups`  
 - 4 users test  
 
@@ -141,34 +142,19 @@ Còn lại:
 - App gate: `bd-lab-extensions/directus-extension-bd-app-gate` (`bd-app-axis`)
 - ROLE_MAPPING UUID đã fill trong compose lab sau bootstrap roles Studio 
 
-### 4.3 ABP Framework (`hanhchinhso`)
+### 4.3 HCS Community (`HCS_web_free_license`)
 
 || Thành phần | Path | Port |
 |------------|------|------|
-|| AuthServer (OpenIddict) | `apps/auth-server/` | **44372** |
-|| Blazor UI | `apps/blazor/` | **44306** |
-|| Web Gateway | `gateways/web/` | **44398** |
-|| Elsa Studio WASM | `apps/elsa-studio/` | **44396** |
-|| Identity Service | `services/identity/` | **44392** |
-|| Workflow Service (Elsa 3.5) | `services/workflow-service/` | **44395** |
-|| Other Microservices | `services/` (administration, audit-logging, gdpr, language, ai-management) | various |
-|| Docker deps | `etc/docker/` | — |
+|| AuthServer | `apps/auth-server/HCS.AuthServer/` | **44401** |
+|| Web Gateway / BFF | `gateways/web/HCS.WebGateway/` | **44402** |
+|| Blazor UI | `src/HCS.Blazor/` + `src/HCS.Blazor.Client/` | **44403** |
+|| Domain services | `services/` | Platform **44411**, Organization **44412**, Document **44413**, Work Management **44414**, Collaboration **44415** |
+|| Docker runtime | `docker-compose.yml` | Browser `https://hcs.localhost` |
 
-**Elsa Integration:**
-- WorkflowService: Elsa Pro 3.5 host, DB `hanhchinhso_Workflow`
-- ElsaStudio WASM: Razor component in Blazor, OpenIddict client `ElsaStudio` + scope `WorkflowService`
-- Auth: Code + PKCE via AuthServer Keycloak external provider
-- Menu link: Opens Studio in new tab from Blazor nav
-
-Việc cần làm cho SSO BD:
-
-- Thêm **external OpenID Connect** provider trỏ Keycloak (hoặc federation tương đương)  
-- Align redirect URIs / client credentials với Keycloak client  
-- Map claims → ABP roles / organization units  
-
-**Chạy locally:** `./aspire/run.sh` (light/full profile) — see [`aspire/README.md`](../services/abp-blazor/aspire/README.md).
-
-Pre-req: .NET 10+, Node 18/20, Docker, Redis; generate `openiddict.pfx`; `abp install-libs`.
+- `/` requires authentication; `/login` is anonymous only to start the same BFF flow.
+- The sole HCS-specific main-menu item is Chat (`/chat`), protected by `Collaboration.Chat`; standard Administration entries remain permission-driven.
+- Docker Compose is the default runtime. See [`runbooks/hcs-docker-compose-handoff.md`](./runbooks/hcs-docker-compose-handoff.md) for safe startup and rollback.
 
 ---
 
@@ -183,12 +169,13 @@ Pre-req: .NET 10+, Node 18/20, Docker, Redis; generate `openiddict.pfx`; `abp in
 
 - [ ] Tạo Realm  
 - [ ] User Federation LDAP/Zimbra (hoặc user local cho POC)  
-- [ ] Clients Directus + ABP + ElsaStudio  
+- [ ] Clients Directus + HCS AuthServer
 - [ ] Mappers email / name / groups / roles  
 
-### Directus & ABP
+### Directus & HCS
 
-- [ ] Cấu hình OIDC nhận token từ Keycloak  
+- [ ] Directus OIDC và HCS AuthServer external OIDC nhận token từ Keycloak
+- [ ] BFF return URL chỉ chấp nhận origin UI đã cấu hình
 - [ ] Map role Keycloak → permission nội bộ  
 - [ ] Test login + SSO giữa 2 app  
 
@@ -196,7 +183,7 @@ Pre-req: .NET 10+, Node 18/20, Docker, Redis; generate `openiddict.pfx`; `abp in
 
 ## 6. Lợi ích mô hình (theo guideline)
 
-- Đăng nhập một lần dùng cho cả Directus + ABP  
+- Đăng nhập một lần dùng cho cả Directus + HCS
 - Dùng sẵn account mail Zimbra  
 - Quản lý user/group/role tập trung tại Keycloak  
 - Mở rộng thêm hệ thống mới chỉ cần OIDC client  
@@ -208,7 +195,7 @@ Pre-req: .NET 10+, Node 18/20, Docker, Redis; generate `openiddict.pfx`; `abp in
 
 || Mục | Hiện tại |
 ||-----|----------|
-|| Chạy | Local Docker + process Directus/ABP |
+|| Chạy | Local Docker + process Directus/HCS |
 || GitHub | **Chưa** |
 || CI/CD | **Chưa** |
 || Deploy remote | **Chưa** |
