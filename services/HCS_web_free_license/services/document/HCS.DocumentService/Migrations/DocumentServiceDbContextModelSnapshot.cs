@@ -387,6 +387,9 @@ namespace HCS.DocumentService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AssigneeUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Comment")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
@@ -404,6 +407,9 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<DateTime?>("DueAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("InstanceId")
                         .HasColumnType("uuid");
 
@@ -415,9 +421,6 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<Guid?>("AssigneeUserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DecisionKey")
@@ -427,40 +430,6 @@ namespace HCS.DocumentService.Migrations
                     b.HasIndex("InstanceId");
 
                     b.ToTable("ApprovalTasks", "document");
-                });
-
-            modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowKind", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.ToTable("WorkflowKinds", "document");
                 });
 
             modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowDefinition", b =>
@@ -539,7 +508,7 @@ namespace HCS.DocumentService.Migrations
                     b.ToTable("WorkflowInstances", "document");
                 });
 
-            modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowStep", b =>
+            modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowKind", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -550,8 +519,57 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("WorkflowKinds", "document");
+                });
+
+            modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowStep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AllowReturn")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("AssigneeType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid?>("AssigneeUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<Guid>("DefinitionId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("DepartmentIdsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -566,31 +584,16 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<Guid?>("AssigneeUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("AllowReturn")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("AssigneeType")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<string>("DepartmentIdsJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
                     b.Property<Guid?>("RoleId")
                         .HasColumnType("uuid");
 
                     b.Property<int?>("SlaDays")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("UserIdsJson")
                         .IsRequired()
@@ -632,27 +635,13 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("TemplateJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<int>("Version")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("WordFileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("WordFileName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("WordContentType")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<string>("WordBlobName")
+                    b.Property<string>("PdfBlobName")
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
+
+                    b.Property<string>("PdfContentType")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<Guid?>("PdfFileId")
                         .HasColumnType("uuid");
@@ -661,13 +650,27 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("PdfContentType")
+                    b.Property<string>("TemplateJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("WordBlobName")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("WordContentType")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
-                    b.Property<string>("PdfBlobName")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
+                    b.Property<Guid?>("WordFileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("WordFileName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
