@@ -77,7 +77,8 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
             phoneNumber = NullIfWhiteSpace(form.PhoneNumber),
             isActive = form.IsActive,
             lockoutEnabled = form.LockoutEnabled,
-            concurrencyStamp
+            concurrencyStamp,
+            roleNames = form.RoleNames
         }, cancellationToken);
 
     public Task DeleteUserAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -153,6 +154,9 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
             positionId,
             isPrimary = true
         }, cancellationToken);
+
+    public Task DeleteUserMappingAsync(Guid mappingId, CancellationToken cancellationToken = default) =>
+        DeleteAsync($"api/organization/user-mappings/{mappingId:D}", cancellationToken);
 
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)
     {

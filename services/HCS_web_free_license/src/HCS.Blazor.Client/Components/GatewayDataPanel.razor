@@ -1,4 +1,5 @@
 @inject IHttpClientFactory HttpClientFactory
+@inject IUiMessageService UiMessage
 
 <section class="hcs-feature" aria-labelledby="feature-title">
     <header class="hcs-feature__header">
@@ -21,14 +22,7 @@
         <span>Gateway</span><code>@Endpoint</code>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(error))
-    {
-        <div class="alert alert-warning" role="alert">
-            <strong>Chưa thể tải dữ liệu.</strong> @error
-            <button class="btn btn-sm btn-outline-dark ms-2" @onclick="LoadAsync">Thử lại</button>
-        </div>
-    }
-    else if (isLoading)
+    @if (isLoading)
     {
         <div class="hcs-skeleton" aria-live="polite" aria-label="Đang tải dữ liệu">
             <span></span><span></span><span></span>
@@ -40,6 +34,10 @@
             <i class="fa fa-inbox" aria-hidden="true"></i>
             <h2>@(CanLoad ? "Chưa có dữ liệu" : "Sẵn sàng kết nối")</h2>
             <p>@(CanLoad ? "Không tìm thấy bản ghi phù hợp." : "Chức năng dùng API bảo mật qua gateway và chỉ hiện thao tác khi backend hỗ trợ.")</p>
+            @if (CanLoad)
+            {
+                <button class="btn btn-outline-primary" @onclick="LoadAsync">Thử lại</button>
+            }
         </div>
     }
     else
@@ -66,7 +64,6 @@
     [Parameter] public bool CanLoad { get; set; } = true;
 
     private bool isLoading;
-    private string? error;
     private readonly List<Dictionary<string, string>> rows = [];
     private readonly List<string> columns = [];
 
@@ -74,21 +71,19 @@
     {
         rows.Clear();
         columns.Clear();
-        error = null;
         if (CanLoad) await LoadAsync();
     }
 
     private async Task LoadAsync()
     {
         isLoading = true;
-        error = null;
         try
         {
             using var http = HttpClientFactory.CreateClient("HCS.Bff");
             using var response = await http.GetAsync(Endpoint);
             if (!response.IsSuccessStatusCode)
             {
-                error = $"Gateway trả về {(int)response.StatusCode}. Kiểm tra service, phiên đăng nhập và quyền truy cập.";
+                await UiMessage.Error($"Gateway trả về {(int)response.StatusCode}. Kiểm tra service, phiên đăng nhập và quyền truy cập.");
                 return;
             }
 
@@ -103,7 +98,7 @@
         }
         catch (Exception exception)
         {
-            error = $"{exception.Message} Không thể kết nối qua gateway bảo mật. Hãy kiểm tra phiên đăng nhập và trạng thái các dịch vụ HCS.";
+            await UiMessage.Error($"{exception.Message} Không thể kết nối qua gateway bảo mật. Hãy kiểm tra phiên đăng nhập và trạng thái các dịch vụ HCS.");
         }
         finally
         {

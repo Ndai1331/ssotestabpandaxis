@@ -17,16 +17,24 @@
             <Button Color="Color.Primary" Outline="true" Clicked="RefreshAsync">@L["Catalog:Refresh"]</Button>
         </div>
     </header>
-    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
-    @if (!string.IsNullOrWhiteSpace(success)) { <div class="alert alert-success">@success</div> }
     <div class="hcs-document-page__grid">
         <form class="card hcs-document-form" @onsubmit="SaveAsync" @onsubmit:preventDefault>
             <div class="card-body">
                 <h2>@(editingId is null ? L["Catalog:Create"] : L["Catalog:Edit"])</h2>
-                <div class="mb-3"><label class="form-label">@L["Catalog:Code"]</label><input class="form-control" @bind="form.Code" disabled="@(editingId is not null)" required /></div>
-                <div class="mb-3"><label class="form-label">@L["Catalog:Name"]</label><input class="form-control" @bind="form.Name" required /></div>
-                @if (isCriteria) { <div class="mb-3"><label class="form-label">@L["Catalog:SortOrder"]</label><input class="form-control" type="number" @bind="form.SortOrder" /></div> }
-                @if (editingId is not null) { <div class="form-check mb-3"><input class="form-check-input" type="checkbox" @bind="form.IsActive" id="active" /><label class="form-check-label" for="active">@L["Catalog:Active"]</label></div> }
+                <div class="hcs-catalog-form">
+                    <div class="hcs-form-row">
+                        <div>
+                            <label class="form-label">@L["Catalog:Code"]</label>
+                            <input class="form-control" name="hcsSurveyCode" autocomplete="off" @bind="form.Code" disabled="@(editingId is not null)" required />
+                        </div>
+                        <div>
+                            <label class="form-label">@L["Catalog:Name"]</label>
+                            <input class="form-control" name="hcsSurveyName" autocomplete="off" @bind="form.Name" required />
+                        </div>
+                    </div>
+                    @if (isCriteria) { <div><label class="form-label">@L["Catalog:SortOrder"]</label><input class="form-control" type="number" @bind="form.SortOrder" /></div> }
+                    @if (editingId is not null) { <div class="form-check"><input class="form-check-input" type="checkbox" @bind="form.IsActive" id="active" /><label class="form-check-label" for="active">@L["Catalog:Active"]</label></div> }
+                </div>
                 <Button Color="Color.Primary" Type="ButtonType.Submit" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
                 @if (editingId is not null) { <Button Color="Color.Secondary" Clicked="Reset">@L["Catalog:Cancel"]</Button> }
             </div>
@@ -60,7 +68,6 @@
     private readonly CatalogForm form = new();
     private Guid? editingId;
     private bool isCriteria, isLoading, isSaving;
-    private string? error, success;
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,7 +84,7 @@
     private Task RefreshAsync() => LoadAsync();
     private async Task LoadAsync()
     {
-        isLoading = true; error = null;
+        isLoading = true;
         try
         {
             items.Clear();
@@ -94,14 +101,14 @@
                 items.AddRange(Cache.Locations);
             }
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
     private void Edit(SurveyCatalogItem item) { editingId = item.Id; form.Code = item.Code; form.Name = item.Name; form.SortOrder = item.SortOrder; form.IsActive = item.IsActive; }
     private void Reset() { editingId = null; form.Code = form.Name = ""; form.SortOrder = 0; form.IsActive = true; }
     private async Task SaveAsync()
     {
-        isSaving = true; error = null;
+        isSaving = true;
         try
         {
             if (isCriteria)
@@ -114,9 +121,9 @@
                 if (editingId is { } id) await Work.UpdateLocationAsync(id, new UpdateSurveyLocationRequest(form.Name.Trim(), null, form.IsActive));
                 else await Work.CreateLocationAsync(new CreateSurveyLocationRequest(form.Code.Trim(), form.Name.Trim(), null));
             }
-            success = L["Catalog:Updated"]; Reset(); await LoadAsync();
+            await NotifySuccessAsync(L["Catalog:Updated"]); Reset(); await LoadAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
         finally { isSaving = false; }
     }
     private async Task CopyCollectionLinkAsync(Guid locationId)
@@ -124,9 +131,9 @@
         try
         {
             await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Navigation.ToAbsoluteUri($"/survey-collections/{locationId}").ToString());
-            success = L["Feature:LinkCopied"];
+            await NotifySuccessAsync(L["Feature:LinkCopied"]);
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync(SurveyCatalogItem item)
     {
@@ -134,9 +141,9 @@
         try
         {
             if (isCriteria) await Work.DeleteCriteriaAsync(item.Id); else await Work.DeleteLocationAsync(item.Id);
-            success = L["Catalog:Deleted"]; await LoadAsync();
+            await NotifySuccessAsync(L["Catalog:Deleted"]); await LoadAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private sealed class CatalogForm { public string Code { get; set; } = ""; public string Name { get; set; } = ""; public int SortOrder { get; set; } public bool IsActive { get; set; } = true; }
 }

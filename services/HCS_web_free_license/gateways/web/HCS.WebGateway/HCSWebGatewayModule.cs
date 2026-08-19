@@ -292,7 +292,6 @@ public sealed class HCSWebGatewayModule : AbpModule
                 options.Scope.Add("offline_access");
                 options.Events.OnRedirectToIdentityProvider = oidcContext =>
                 {
-                    oidcContext.ProtocolMessage.Prompt = "login";
                     // #region agent log
                     _ = AgentDebugLog.WriteAsync(
                         "A",

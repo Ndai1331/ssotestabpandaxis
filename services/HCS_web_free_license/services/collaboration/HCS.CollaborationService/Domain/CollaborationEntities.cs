@@ -106,7 +106,7 @@ public sealed class ChatMessage : CreationAuditedAggregateRoot<Guid>
     {
         ConversationId = conversationId;
         SenderUserId = senderUserId;
-        Text = Check.NotNullOrWhiteSpace(text, nameof(text), 4000);
+        Text = Check.Length(text ?? string.Empty, nameof(text), maxLength: 4000) ?? string.Empty;
         ClientMessageId = clientMessageId;
         ReplyToMessageId = replyToMessageId;
         ForwardedFromMessageId = forwardedFromMessageId;

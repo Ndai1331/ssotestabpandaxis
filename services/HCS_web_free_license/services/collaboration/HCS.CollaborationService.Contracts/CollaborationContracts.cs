@@ -36,7 +36,7 @@ public sealed class CreateConversationInput
 public sealed class SendMessageInput
 {
     public Guid ConversationId { get; init; }
-    [Required, StringLength(4000, MinimumLength = 1)] public string Text { get; init; } = string.Empty;
+    [StringLength(4000)] public string Text { get; init; } = string.Empty;
     public Guid? ClientMessageId { get; init; }
     public Guid? ReplyToMessageId { get; init; }
     public IReadOnlyCollection<Guid> AttachmentIds { get; init; } = [];
@@ -61,6 +61,15 @@ public sealed record AuthorizedDownload(string FileName, string ContentType, Str
 
 public sealed record NotificationDto(Guid Id, Guid UserId, string Title, string Body, string? Link,
     bool IsRead, DateTime CreatedAt);
+
+public static class ChatNotificationRules
+{
+    public static bool IsChatLink(string? link) =>
+        !string.IsNullOrWhiteSpace(link)
+        && (link.Equals("/chat", StringComparison.OrdinalIgnoreCase)
+            || link.StartsWith("/chat/", StringComparison.OrdinalIgnoreCase)
+            || link.StartsWith("/chat1/", StringComparison.OrdinalIgnoreCase));
+}
 
 public sealed class CreateNotificationInput
 {

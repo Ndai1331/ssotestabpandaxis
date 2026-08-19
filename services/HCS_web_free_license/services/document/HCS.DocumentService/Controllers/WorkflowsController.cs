@@ -7,6 +7,27 @@ namespace HCS.DocumentService.Controllers;
 [ApiController, Authorize(Policy = Documents.DocumentPermissions.WorkflowView), Route("api/workflows")]
 public sealed class WorkflowsController(IWorkflowAppService workflows) : ControllerBase
 {
+    [HttpGet("kinds")]
+    public Task<IReadOnlyList<WorkflowKindDto>> GetKinds(CancellationToken cancellationToken) =>
+        workflows.GetKindsAsync(cancellationToken);
+    [HttpGet("kinds/{id:guid}")]
+    public async Task<ActionResult<WorkflowKindDto>> GetKind(Guid id, CancellationToken cancellationToken) =>
+        await workflows.GetKindAsync(id, cancellationToken) is { } result ? Ok(result) : NotFound();
+    [HttpPost("kinds"), Authorize(Policy = Documents.DocumentPermissions.WorkflowManage)]
+    public Task<Guid> CreateKind(CreateWorkflowKindRequest input, CancellationToken cancellationToken) =>
+        workflows.CreateKindAsync(input, cancellationToken);
+    [HttpPut("kinds/{id:guid}"), Authorize(Policy = Documents.DocumentPermissions.WorkflowManage)]
+    public async Task<IActionResult> UpdateKind(Guid id, UpdateWorkflowKindRequest input, CancellationToken cancellationToken)
+    {
+        await workflows.UpdateKindAsync(id, input, cancellationToken);
+        return NoContent();
+    }
+    [HttpDelete("kinds/{id:guid}"), Authorize(Policy = Documents.DocumentPermissions.WorkflowManage)]
+    public async Task<IActionResult> DeleteKind(Guid id, CancellationToken cancellationToken)
+    {
+        await workflows.DeleteKindAsync(id, cancellationToken);
+        return NoContent();
+    }
     [HttpGet("definitions")]
     public Task<IReadOnlyList<WorkflowDefinitionDto>> GetDefinitions(CancellationToken cancellationToken) =>
         workflows.GetDefinitionsAsync(cancellationToken);
@@ -65,4 +86,7 @@ public sealed class WorkflowsController(IWorkflowAppService workflows) : Control
     public Task<WorkflowInstanceDto> Start(StartWorkflowRequest input, CancellationToken cancellationToken) => workflows.StartAsync(input, cancellationToken);
     [HttpPost("tasks/{taskId:guid}/decision"), Authorize(Policy = Documents.DocumentPermissions.WorkflowDecide)]
     public Task<WorkflowInstanceDto> Decide(Guid taskId, DecideApprovalTaskRequest input, CancellationToken cancellationToken) => workflows.DecideAsync(taskId, input, cancellationToken);
+    [HttpPost("instances/{id:guid}/resubmit"), Authorize(Policy = Documents.DocumentPermissions.WorkflowStart)]
+    public Task<WorkflowInstanceDto> Resubmit(Guid id, [FromBody] string idempotencyKey, CancellationToken cancellationToken) =>
+        workflows.ResubmitAsync(id, idempotencyKey, cancellationToken);
 }

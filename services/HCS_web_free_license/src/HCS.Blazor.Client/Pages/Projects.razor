@@ -17,14 +17,15 @@
             <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="ExportAsync" Disabled="@(items.Count == 0 || isLoading)">
                 <i class="fa fa-download me-1" aria-hidden="true"></i> @L["Catalog:Export"]
             </Button>
+            <Button Color="Color.Primary" Outline="true" Clicked="OpenCreateTask">
+                <Icon Name="@IconName.Add" /> @L["Work:NewTask"]
+            </Button>
             <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate">
                 <Icon Name="@IconName.Add" /> @L["Work:NewProject"]
             </Button>
         </div>
     </header>
-    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning" role="alert">@error</div> }
-    @if (!string.IsNullOrWhiteSpace(success)) { <div class="alert alert-success" role="status">@success</div> }
-    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
             <Addons Class="hcs-catalog-search">
                 <Addon AddonType="AddonType.Body">
@@ -95,8 +96,8 @@
                         <DisplayTemplate Context="cell">
                             <div class="hcs-row-actions">
                                 <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--edit" Title="@L["Catalog:Edit"]" Clicked="() => Edit(cell.Item)"><Icon Name="@IconName.Edit" /></Button>
-                                <Button Color="Color.Success" Outline="true" Size="Size.Small" Class="hcs-action-button" Title="@L["Menu:Tasks"]" Clicked="@(() => Navigation.NavigateTo($"/project-detail/{cell.Item.Id}"))"><Icon Name="@IconName.List" /></Button>
-                                <Button Color="Color.Info" Outline="true" Size="Size.Small" Class="hcs-action-button" Title="@L["Work:Members"]" Clicked="@(() => Navigation.NavigateTo($"/project-detail/{cell.Item.Id}"))"><Icon Name="@IconName.Users" /></Button>
+                                <Button Color="Color.Success" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--tasks" Title="@L["Menu:Tasks"]" Clicked="@(() => Navigation.NavigateTo($"/project-detail/{cell.Item.Id}"))"><Icon Name="@IconName.List" /></Button>
+                                <Button Color="Color.Info" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--members" Title="@L["Work:Members"]" Clicked="@(() => Navigation.NavigateTo($"/project-detail/{cell.Item.Id}"))"><Icon Name="@IconName.Users" /></Button>
                                 <Button Color="Color.Danger" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--delete" Title="@L["Catalog:Delete"]" Clicked="() => DeleteAsync(cell.Item)"><Icon Name="@IconName.Delete" /></Button>
                             </div>
                         </DisplayTemplate>
@@ -107,31 +108,37 @@
     </Card>
 </section>
 
-<Modal @ref="modal">
-    <ModalContent Centered Size="ModalSize.Large" Class="hcs-catalog-modal">
+<Modal @ref="modal" Size="ModalSize.Large">
+    <ModalContent Centered Class="hcs-catalog-modal">
         <ModalHeader Class="hcs-catalog-modal__header">
             <ModalTitle>@(editingId is null ? L["Feature:ProjectCreate"] : L["Feature:ProjectEdit"])</ModalTitle>
             <CloseButton />
         </ModalHeader>
         <ModalBody Class="hcs-catalog-modal__body">
             <div class="hcs-catalog-form">
-                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editingId is not null)" /></Field>
-                <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><TextInput @bind-Value="form.Name" /></Field>
-                <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
-                <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartDate" /></Field>
-                <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.EndDate" /></Field>
-                <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                    <Select TValue="string" @bind-Value="form.Status">
-                        @foreach (var value in WorkUi.ProjectStatuses) { <SelectItem Value="@value">@L[WorkUi.ProjectStatusKey(value)]</SelectItem> }
-                    </Select>
-                </Field>
-                <Field><FieldLabel>@L["Catalog:Department"]</FieldLabel>
-                    <CatalogSelect2 Value="form.OwnerDepartmentId"
-                                    ValueChanged="value => form.OwnerDepartmentId = value"
-                                    Placeholder="@L["Catalog:SearchPlaceholder"]"
-                                    SelectedText="@DepartmentSelectText(form.OwnerDepartmentId)"
-                                    Search="SearchDepartmentsAsync" />
-                </Field>
+                <div class="hcs-form-row">
+                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editingId is not null)" Autocomplete="off" name="hcsProjectCode" /></Field>
+                    <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><TextInput @bind-Value="form.Name" Autocomplete="off" name="hcsProjectName" /></Field>
+                </div>
+                <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
+                <div class="hcs-form-row hcs-form-row--equal">
+                    <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartDate" /></Field>
+                    <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.EndDate" /></Field>
+                </div>
+                <div class="hcs-form-row hcs-form-row--equal">
+                    <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
+                        <Select TValue="string" @bind-Value="form.Status">
+                            @foreach (var value in WorkUi.ProjectStatuses) { <SelectItem Value="@value">@L[WorkUi.ProjectStatusKey(value)]</SelectItem> }
+                        </Select>
+                    </Field>
+                    <Field><FieldLabel>@L["Catalog:Department"]</FieldLabel>
+                        <CatalogSelect2 Value="form.OwnerDepartmentId"
+                                        ValueChanged="value => form.OwnerDepartmentId = value"
+                                        Placeholder="@L["Catalog:SearchPlaceholder"]"
+                                        SelectedText="@DepartmentSelectText(form.OwnerDepartmentId)"
+                                        Search="SearchDepartmentsAsync" />
+                    </Field>
+                </div>
             </div>
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
@@ -140,14 +147,16 @@
         </ModalFooter>
     </ModalContent>
 </Modal>
+<ProjectTaskCreateModal @ref="createTaskModal" OnCreated="LoadAsync" />
 @code {
     private static readonly int[] pageSizes = [10, 20, 50, 100];
     private readonly List<ProjectDto> items = [];
     private readonly List<DepartmentCatalogDto> departments = [];
     private readonly ProjectForm form = new();
     private Modal? modal;
+    private ProjectTaskCreateModal? createTaskModal;
     private Guid? editingId;
-    private string? filter, status, error, success;
+    private string? filter, status;
     private bool isLoading, isSaving, showFilters;
     private int totalCount, pageSize = 20, currentPage = 1;
 
@@ -165,51 +174,51 @@
 
     private async Task LoadAsync()
     {
-        isLoading = true; error = null;
+        isLoading = true;
         try
         {
             var result = await Work.GetProjectsAsync(new WorkListQuery(filter, string.IsNullOrWhiteSpace(status) ? null : status, (currentPage - 1) * pageSize, pageSize));
             items.Clear(); items.AddRange(result.Items);
             totalCount = (int)result.TotalCount;
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
 
     private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
     private Task ResetSearchAsync() { filter = status = null; showFilters = false; currentPage = 1; return LoadAsync(); }
-    private async Task OpenCreate() => Navigation.NavigateTo("/project-detail");
-    private async Task Edit(ProjectDto item)
+    private async Task OpenCreate()
     {
-        editingId = item.Id;
-        form.Code = item.Code; form.Name = item.Name; form.Description = item.Description ?? "";
-        form.StartDate = item.StartDate; form.EndDate = item.EndDate; form.Status = item.Status;
-        form.OwnerDepartmentId = item.OwnerDepartmentId;
+        editingId = null;
+        form.Reset();
         if (modal is not null) await modal.Show();
     }
 
+    private void Edit(ProjectDto item) => Navigation.NavigateTo($"/project-detail/{item.Id}");
+    private Task OpenCreateTask() => createTaskModal?.ShowAsync() ?? Task.CompletedTask;
+
     private async Task SaveAsync()
     {
-        isSaving = true; error = null; success = null;
+        isSaving = true;
         try
         {
             if (editingId is { } id)
                 await Work.UpdateProjectAsync(id, new UpdateProjectRequest(form.Name.Trim(), Blank(form.Description), form.StartDate, form.EndDate, form.Status));
             else
                 await Work.CreateProjectAsync(new CreateProjectRequest(form.Code.Trim(), form.Name.Trim(), Blank(form.Description), form.StartDate, form.EndDate, form.Status, form.OwnerDepartmentId));
-            success = editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"];
+            await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             await LoadAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
         finally { isSaving = false; }
     }
 
     private async Task DeleteAsync(ProjectDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
-        try { await Work.DeleteProjectAsync(item.Id); success = L["Catalog:Deleted"]; await LoadAsync(); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        try { await Work.DeleteProjectAsync(item.Id); await NotifySuccessAsync(L["Catalog:Deleted"]); await LoadAsync(); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
 
     private async Task ExportAsync()

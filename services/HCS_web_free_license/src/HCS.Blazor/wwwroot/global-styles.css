@@ -1,7 +1,9 @@
 html,
+body,
 body.abp-application-layout {
     background: #f5f8f7 !important;
     color: #19334c;
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif !important;
 }
 
 .hcs-boot-screen {
@@ -135,6 +137,26 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     --lpx-logo-icon: url('/images/logo/logo.png');
     --hcs-button-max-height: 36px;
     --hcs-button-compact-height: 32px;
+    --hcs-radius: 5px;
+    --bs-body-font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    --bs-font-sans-serif: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    --bs-border-radius: 5px;
+    --bs-border-radius-sm: 5px;
+    --bs-border-radius-lg: 5px;
+    --bs-btn-border-radius: 5px;
+    --bs-card-border-radius: 5px;
+    --bs-modal-border-radius: 5px;
+    --bs-input-border-radius: 5px;
+}
+
+.lpx-heading,
+.modal-header,
+.alert-heading,
+.lpx-nav-menu .menu-item .menu-item-text,
+.lpx-topbar,
+.lpx-mobile-navbar,
+.lpx-mobile-menu {
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif !important;
 }
 :root .abp-account-layout .lpx-brand-logo{
     --lpx-logo: url('/images/logo/logo.png');
@@ -147,7 +169,7 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     .hcs-app-shell button.btn,
     .hcs-app-shell a.btn {
         box-sizing: border-box;
-        border-radius: 0 !important;
+        border-radius: var(--hcs-radius) !important;
         max-height: var(--hcs-button-max-height);
         min-height: var(--hcs-button-max-height);
         line-height: 1;
@@ -239,7 +261,7 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     }
 }
 
-/* Square theme: no rounded corners on chrome components. Keep circles for avatars/spinners. */
+/* Shared 5px corners on form chrome. Keep circles for avatars/spinners. */
 .hcs-app-shell .btn,
 .hcs-app-shell .card,
 .hcs-app-shell .card-header,
@@ -247,8 +269,6 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 .hcs-app-shell .form-control,
 .hcs-app-shell .form-select,
 .hcs-app-shell .input-group-text,
-.hcs-app-shell .input-group > :not(:first-child),
-.hcs-app-shell .input-group > :not(:last-child),
 .hcs-app-shell .modal-content,
 .hcs-app-shell .dropdown-menu,
 .hcs-app-shell .alert,
@@ -257,21 +277,60 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 .hcs-app-shell .page-item .page-link,
 .hcs-app-shell .nav-pills .nav-link,
 .hcs-app-shell .form-check-input,
-.hcs-app-shell .form-switch .form-check-input,
 .hcs-app-shell .list-group,
 .hcs-app-shell .list-group-item,
 .hcs-app-shell .table,
 .hcs-app-shell .b-table,
 .hcs-app-shell select,
 .hcs-app-shell textarea,
-.hcs-app-shell input:not([type="checkbox"]):not([type="radio"]) {
+.hcs-app-shell input:not([type="checkbox"]):not([type="radio"]),
+.hcs-app-shell .hcs-action-button,
+.hcs-app-shell .b-is-datepicker,
+.hcs-app-shell .b-is-datepicker .form-control,
+.hcs-app-shell .flatpickr-input,
+.hcs-app-shell .numeric-picker,
+.hcs-app-shell .select2-container .select2-selection,
+.hcs-app-shell .hcs-status-badge,
+.hcs-app-shell .hcs-priority-badge,
+.hcs-app-shell .hcs-progress-badge {
+    border-radius: var(--hcs-radius) !important;
+}
+
+.hcs-app-shell .input-group > :first-child:not(:last-child) {
+    border-radius: var(--hcs-radius) 0 0 var(--hcs-radius) !important;
+}
+
+.hcs-app-shell .input-group > :last-child:not(:first-child) {
+    border-radius: 0 var(--hcs-radius) var(--hcs-radius) 0 !important;
+}
+
+.hcs-app-shell .input-group > :first-child:last-child {
+    border-radius: var(--hcs-radius) !important;
+}
+
+.hcs-app-shell .input-group > :not(:first-child):not(:last-child) {
     border-radius: 0 !important;
+}
+
+.hcs-app-shell .form-switch .form-check-input {
+    border-radius: 2rem !important;
 }
 
 .hcs-app-shell .hcs-avatar,
 .hcs-app-shell .hcs-notification-dot,
+.hcs-app-shell .hcs-icon-button,
 .hcs-boot-screen__spinner {
     border-radius: 50% !important;
+}
+
+.hcs-app-shell .hcs-main-content:has(.hcs-chat-page) {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--hcs-header-h, 8.75rem));
+    max-width: none;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
 }
 
 

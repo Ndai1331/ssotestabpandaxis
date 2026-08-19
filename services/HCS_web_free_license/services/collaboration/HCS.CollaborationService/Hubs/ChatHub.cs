@@ -5,6 +5,7 @@ using HCS.CollaborationService.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Volo.Abp.DependencyInjection;
 
 namespace HCS.CollaborationService.Hubs;
 
@@ -32,7 +33,7 @@ public sealed class ChatHub(CollaborationDbContext db) : Hub
     internal static string UserGroup(Guid userId) => $"user:{userId:N}";
 }
 
-public sealed class SignalRChatRealtimeNotifier(IHubContext<ChatHub> hub) : IChatRealtimeNotifier
+public sealed class SignalRChatRealtimeNotifier(IHubContext<ChatHub> hub) : IChatRealtimeNotifier, ITransientDependency
 {
     public Task MessageSentAsync(ChatMessageDto message, IEnumerable<Guid> recipientUserIds, CancellationToken ct = default) =>
         hub.Clients.Groups(recipientUserIds.Distinct().Select(ChatHub.UserGroup)).SendAsync("ReceiveMessage", message, ct);

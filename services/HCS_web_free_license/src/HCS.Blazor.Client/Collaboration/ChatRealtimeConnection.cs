@@ -2,14 +2,15 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using HCS.CollaborationService.Contracts;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HCS.Blazor.Client.Collaboration;
 
 /// <summary>
 /// Owns the one browser SignalR connection used by the Chat workspace. Its negotiate
-/// request is routed through <see cref="Authentication.BffHttpMessageHandler"/>, so the
-/// BFF antiforgery header and credential mode are applied before the WebSocket upgrade.
+/// request is routed through <see cref="Authentication.BffHttpMessageHandler"/>, so the BFF
+/// antiforgery header and credential mode are applied before the WebSocket upgrade.
 /// </summary>
 public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDisposable
 {
@@ -17,7 +18,10 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
     private HubConnection? connection;
 
     public event Func<Task>? Changed;
+    public event Func<ChatMessageDto, Task>? MessageReceived;
     public event Func<HubConnectionState, Task>? StatusChanged;
+
+    public Guid? ActiveConversationId { get; set; }
 
     public bool IsConnected => connection?.State == HubConnectionState.Connected;
 
@@ -44,8 +48,8 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
                     .WithAutomaticReconnect()
                     .Build();
 
-                connection.On<object>("ReceiveMessage", NotifyChangedAsync);
-                connection.On<object>("MessageDeleted", NotifyChangedAsync);
+                connection.On<ChatMessageDto>("ReceiveMessage", NotifyMessageAsync);
+                connection.On<object>("MessageDeleted", _ => NotifyChangedAsync());
                 connection.Reconnecting += _ => NotifyStatusAsync(HubConnectionState.Reconnecting);
                 connection.Reconnected += _ => NotifyStatusAsync(HubConnectionState.Connected);
                 connection.Closed += _ => NotifyStatusAsync(HubConnectionState.Disconnected);
@@ -53,8 +57,16 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
             if (connection.State == HubConnectionState.Disconnected)
             {
-                await connection.StartAsync(cancellationToken);
-                await NotifyStatusAsync(HubConnectionState.Connected);
+                try
+                {
+                    await connection.StartAsync(cancellationToken);
+                    await NotifyStatusAsync(HubConnectionState.Connected);
+                }
+                catch
+                {
+                    await NotifyStatusAsync(HubConnectionState.Disconnected);
+                    throw;
+                }
             }
         }
         finally
@@ -73,7 +85,21 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
         startLock.Dispose();
     }
 
-    private async Task NotifyChangedAsync(object _)
+    private async Task NotifyMessageAsync(ChatMessageDto message)
+    {
+        var received = MessageReceived;
+        if (received is not null)
+        {
+            foreach (var handler in received.GetInvocationList().Cast<Func<ChatMessageDto, Task>>())
+            {
+                await handler(message);
+            }
+        }
+
+        await NotifyChangedAsync();
+    }
+
+    private async Task NotifyChangedAsync()
     {
         var handlers = Changed;
         if (handlers is null)

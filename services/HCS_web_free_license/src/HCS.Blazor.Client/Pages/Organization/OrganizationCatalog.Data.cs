@@ -90,11 +90,11 @@ public partial class OrganizationCatalog
         }
         catch (OrganizationCatalogApiException exception)
         {
-            SetError(GetFriendlyErrorMessage(exception.StatusCode, false), "Catalog:LoadErrorTitle", true);
+            await SetErrorAsync(GetFriendlyErrorMessage(exception.StatusCode, false), "Catalog:LoadErrorTitle", true);
         }
         catch (Exception)
         {
-            SetError(L["Catalog:NetworkError"].Value, "Catalog:LoadErrorTitle", true);
+            await SetErrorAsync(L["Catalog:NetworkError"].Value, "Catalog:LoadErrorTitle", true);
         }
         finally
         {
@@ -118,12 +118,12 @@ public partial class OrganizationCatalog
         catch (OrganizationCatalogApiException exception)
         {
             departmentOptions.Clear();
-            SetError(GetFriendlyErrorMessage(exception.StatusCode, false), "Catalog:LoadErrorTitle", true);
+            await SetErrorAsync(GetFriendlyErrorMessage(exception.StatusCode, false), "Catalog:LoadErrorTitle", true);
         }
         catch (Exception)
         {
             departmentOptions.Clear();
-            SetError(L["Catalog:LookupError"].Value, "Catalog:LoadErrorTitle", true);
+            await SetErrorAsync(L["Catalog:LookupError"].Value, "Catalog:LoadErrorTitle", true);
         }
     }
 

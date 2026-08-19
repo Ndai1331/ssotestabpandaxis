@@ -11,57 +11,98 @@
     <header class="hcs-document-page__header">
         <div>
             <p class="hcs-document-page__eyebrow">@L["Menu:Tasks"]</p>
-            <h1>@(detail?.Task.Title ?? L["Feature:TaskDetail"])</h1>
-            @if (detail is not null) { <p>@detail.Task.Code · @detail.Task.Status · @detail.Task.ProgressPercent%</p> }
+            <h1>@(form.Title.Length > 0 ? form.Title : L["Feature:TaskDetail"])</h1>
+            @if (detail is not null) { <p>@detail.Task.Code · @L[WorkUi.TaskStatusKey(detail.Task.Status)] · @detail.Task.ProgressPercent%</p> }
         </div>
         <a class="btn btn-outline-primary" href="/tasks">@L["Feature:BackToList"]</a>
     </header>
-    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
     @if (isLoading) { <p>@L["Catalog:Loading"]</p> }
     else if (detail is not null)
     {
-        <div class="hcs-document-page__grid">
+        <div class="hcs-detail-split">
             <Card>
-                <CardHeader>@L["Feature:Assignments"]</CardHeader>
+                <CardHeader><strong>@L["Feature:GeneralInformation"]</strong></CardHeader>
                 <CardBody>
-                    <Select TValue="Guid?" @bind-Value="assigneeId">
-                        <SelectItem TValue="Guid?" Value="null">@L["Chat:SelectContacts"]</SelectItem>
-                        @foreach (var member in AssigneeOptions)
-                        {
-                            <SelectItem TValue="Guid?" Value="@member.Id">@member.Name</SelectItem>
-                        }
-                    </Select>
-                    <Button Color="Color.Primary" Class="mt-2" Clicked="AddAssignmentAsync">@L["Feature:Assign"]</Button>
-                    <ul class="list-group mt-3">
-                        @foreach (var assignment in detail.Assignments)
-                        {
-                            <li class="list-group-item d-flex justify-content-between">
-                                <span>@Name(assignment.UserId) · @assignment.AssignmentType</span>
-                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveAssignmentAsync(assignment)">@L["Catalog:Delete"]</Button>
-                            </li>
-                        }
-                    </ul>
+                    <div class="hcs-catalog-form">
+                        <div class="hcs-form-row">
+                            <Field>
+                                <FieldLabel>@L["Feature:Project"]</FieldLabel>
+                                <TextInput Value="@projectName" Disabled="true" />
+                            </Field>
+                            <Field>
+                                <FieldLabel>@L["Feature:ParentTask"]</FieldLabel>
+                                <TextInput Value="@ParentTaskLabel" Disabled="true" />
+                            </Field>
+                        </div>
+                        <div class="hcs-form-row">
+                            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput Value="@form.Code" Disabled="true" /></Field>
+                            <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><TextInput @bind-Value="form.Title" Autocomplete="off" name="hcsTaskTitle" /></Field>
+                        </div>
+                        <div class="hcs-form-row hcs-form-row--equal">
+                            <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartDate" /></Field>
+                            <Field><FieldLabel>@L["Feature:DueDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.DueDate" /></Field>
+                        </div>
+                        <div class="hcs-form-row hcs-form-row--equal">
+                            <Field><FieldLabel>@L["Feature:Priority"]</FieldLabel>
+                                <Select TValue="string" @bind-Value="form.Priority">
+                                    @foreach (var value in WorkUi.TaskPriorities) { <SelectItem Value="@value">@L[WorkUi.PriorityKey(value)]</SelectItem> }
+                                </Select>
+                            </Field>
+                            <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
+                                <Select TValue="string" @bind-Value="form.Status">
+                                    @foreach (var value in WorkUi.TaskStatuses) { <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem> }
+                                </Select>
+                            </Field>
+                            <Field><FieldLabel>@L["Feature:Progress"]</FieldLabel><NumericPicker TValue="int" @bind-Value="form.ProgressPercent" Min="0" Max="100" /></Field>
+                        </div>
+                        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
+                        <Button Color="Color.Primary" Clicked="SaveTaskAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+                    </div>
                 </CardBody>
             </Card>
-            <Card>
-                <CardHeader>@L["Menu:Documents"]</CardHeader>
-                <CardBody>
-                    <Select TValue="Guid?" @bind-Value="documentId">
-                        <SelectItem TValue="Guid?" Value="null">@L["Feature:ChooseDocument"]</SelectItem>
-                        @foreach (var document in documents) { <SelectItem TValue="Guid?" Value="document.Id">@($"{document.Number} — {document.Title}")</SelectItem> }
-                    </Select>
-                    <Button Color="Color.Primary" Class="mt-2" Clicked="AddDocumentAsync">@L["Feature:AttachDocument"]</Button>
-                    <ul class="list-group mt-3">
-                        @foreach (var reference in detail.Documents)
-                        {
-                            <li class="list-group-item d-flex justify-content-between">
-                                <a href="@($"/document-detail/{reference.DocumentId}")">@(reference.DocumentCode ?? reference.DocumentId.ToString("N")[..8])</a>
-                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveDocumentAsync(reference)">@L["Catalog:Delete"]</Button>
-                            </li>
-                        }
-                    </ul>
-                </CardBody>
-            </Card>
+            <div class="d-flex flex-column gap-3">
+                <Card>
+                    <CardHeader>@L["Feature:Assignments"]</CardHeader>
+                    <CardBody>
+                        <Select TValue="Guid?" @bind-Value="assigneeId">
+                            <SelectItem TValue="Guid?" Value="null">@L["Chat:SelectContacts"]</SelectItem>
+                            @foreach (var member in AssigneeOptions)
+                            {
+                                <SelectItem TValue="Guid?" Value="@member.Id">@member.Name</SelectItem>
+                            }
+                        </Select>
+                        <Button Color="Color.Primary" Class="mt-2" Clicked="AddAssignmentAsync">@L["Feature:Assign"]</Button>
+                        <ul class="list-group mt-3">
+                            @foreach (var assignment in detail.Assignments)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@Name(assignment.UserId) · @assignment.AssignmentType</span>
+                                    <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveAssignmentAsync(assignment)">@L["Catalog:Delete"]</Button>
+                                </li>
+                            }
+                        </ul>
+                    </CardBody>
+                </Card>
+                <Card>
+                    <CardHeader>@L["Menu:Documents"]</CardHeader>
+                    <CardBody>
+                        <Select TValue="Guid?" @bind-Value="documentId">
+                            <SelectItem TValue="Guid?" Value="null">@L["Feature:ChooseDocument"]</SelectItem>
+                            @foreach (var document in documents) { <SelectItem TValue="Guid?" Value="document.Id">@($"{document.Number} — {document.Title}")</SelectItem> }
+                        </Select>
+                        <Button Color="Color.Primary" Class="mt-2" Clicked="AddDocumentAsync">@L["Feature:AttachDocument"]</Button>
+                        <ul class="list-group mt-3">
+                            @foreach (var reference in detail.Documents)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <a href="@($"/document-detail/{reference.DocumentId}")">@(reference.DocumentCode ?? reference.DocumentId.ToString("N")[..8])</a>
+                                    <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveDocumentAsync(reference)">@L["Catalog:Delete"]</Button>
+                                </li>
+                            }
+                        </ul>
+                    </CardBody>
+                </Card>
+            </div>
         </div>
     }
 </section>
@@ -70,11 +111,16 @@
     private ProjectTaskDetailDto? detail;
     private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
     private readonly List<ProjectMemberDto> projectMembers = [];
+    private readonly List<ProjectTaskDto> siblingTasks = [];
     private readonly List<DocumentDto> documents = [];
+    private readonly TaskEditForm form = new();
+    private string projectName = "";
     private Guid? assigneeId, documentId;
-    private bool isLoading;
-    private string? error;
-    // Prefer project members; fall back to the chat directory when the project exposes none.
+    private bool isLoading, isSaving;
+    private string ParentTaskLabel =>
+        form.ParentTaskId is { } parentId
+            ? siblingTasks.FirstOrDefault(x => x.Id == parentId)?.Title ?? parentId.ToString("N")[..8]
+            : L["Catalog:NoParent"];
     private IEnumerable<(Guid Id, string Name)> AssigneeOptions =>
         projectMembers.Count > 0
             ? projectMembers.Select(member => (member.UserId, Name(member.UserId)))
@@ -82,11 +128,12 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        isLoading = true; error = null;
+        isLoading = true;
         try
         {
             detail = await Work.GetTaskAsync(TaskId);
-            await LoadProjectMembersAsync(detail.Task.ProjectId);
+            BindForm(detail.Task);
+            await LoadProjectContextAsync(detail.Task.ProjectId);
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
             if (documents.Count == 0)
             {
@@ -94,45 +141,110 @@
                 documents.AddRange(page.Items);
             }
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
 
-    private async Task LoadProjectMembersAsync(Guid projectId)
+    private void BindForm(ProjectTaskDto task)
+    {
+        form.ParentTaskId = task.ParentTaskId;
+        form.Code = task.Code;
+        form.Title = task.Title;
+        form.Description = task.Description ?? "";
+        form.StartDate = task.StartDate;
+        form.DueDate = task.DueDate;
+        form.Priority = task.Priority;
+        form.Status = task.Status;
+        form.ProgressPercent = task.ProgressPercent;
+    }
+
+    private async Task LoadProjectContextAsync(Guid projectId)
     {
         projectMembers.Clear();
+        siblingTasks.Clear();
         try
         {
             var project = await Work.GetProjectAsync(projectId);
+            projectName = project.Project.Name;
             projectMembers.AddRange(project.Members.Where(x => x.IsActive));
+            siblingTasks.AddRange(project.Tasks.Where(x => x.Id != TaskId));
         }
         catch { /* fall back to chat contacts */ }
+    }
+
+    private async Task SaveTaskAsync()
+    {
+        isSaving = true;
+        try
+        {
+            await Work.UpdateTaskAsync(TaskId, new UpdateProjectTaskRequest(
+                form.Title.Trim(), Blank(form.Description), form.StartDate, form.DueDate, form.Priority, form.Status, form.ProgressPercent));
+            detail = await Work.GetTaskAsync(TaskId);
+            BindForm(detail.Task);
+            await NotifySuccessAsync(L["Catalog:Updated"]);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isSaving = false; }
     }
 
     private async Task AddAssignmentAsync()
     {
         if (assigneeId is not { } userId) return;
-        try { await Work.AddAssignmentAsync(TaskId, new AddTaskAssignmentRequest(userId, "Assignee")); detail = await Work.GetTaskAsync(TaskId); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        try
+        {
+            await Work.AddAssignmentAsync(TaskId, new AddTaskAssignmentRequest(userId, "Assignee"));
+            detail = await Work.GetTaskAsync(TaskId);
+            await NotifySuccessAsync(L["Catalog:Updated"]);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task RemoveAssignmentAsync(TaskAssignmentDto assignment)
     {
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
-        try { await Work.RemoveAssignmentAsync(TaskId, assignment.Id); detail = await Work.GetTaskAsync(TaskId); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+        try
+        {
+            await Work.RemoveAssignmentAsync(TaskId, assignment.Id);
+            detail = await Work.GetTaskAsync(TaskId);
+            await NotifySuccessAsync(L["Catalog:Deleted"]);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private async Task AddDocumentAsync()
     {
         if (documentId is not { } id) return;
         var document = documents.FirstOrDefault(x => x.Id == id);
-        try { await Work.AddTaskDocumentAsync(TaskId, new AddTaskDocumentRequest(id, document?.Number)); detail = await Work.GetTaskAsync(TaskId); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        try
+        {
+            await Work.AddTaskDocumentAsync(TaskId, new AddTaskDocumentRequest(id, document?.Number));
+            detail = await Work.GetTaskAsync(TaskId);
+            await NotifySuccessAsync(L["Catalog:Updated"]);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task RemoveDocumentAsync(TaskDocumentReferenceDto reference)
     {
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
-        try { await Work.RemoveTaskDocumentAsync(TaskId, reference.Id); detail = await Work.GetTaskAsync(TaskId); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+        try
+        {
+            await Work.RemoveTaskDocumentAsync(TaskId, reference.Id);
+            detail = await Work.GetTaskAsync(TaskId);
+            await NotifySuccessAsync(L["Catalog:Deleted"]);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private string Name(Guid id) => contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.ToString("N")[..8];
+    private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private sealed class TaskEditForm
+    {
+        public Guid? ParentTaskId { get; set; }
+        public string Code { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public DateTime DueDate { get; set; } = DateTime.Today.AddDays(7);
+        public string Priority { get; set; } = "Normal";
+        public string Status { get; set; } = "New";
+        public int ProgressPercent { get; set; }
+    }
 }

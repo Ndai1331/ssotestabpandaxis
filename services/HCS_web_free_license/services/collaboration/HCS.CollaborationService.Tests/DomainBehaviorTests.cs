@@ -25,6 +25,13 @@ public sealed class DomainBehaviorTests
     }
 
     [Fact]
+    public void Message_allows_attachment_only_empty_text()
+    {
+        var message = new ChatMessage(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), string.Empty);
+        message.Text.ShouldBeEmpty();
+    }
+
+    [Fact]
     public void Message_preserves_reply_forward_pin_and_soft_delete_audit_semantics()
     {
         var reply = Guid.NewGuid(); var forwarded = Guid.NewGuid(); var user = Guid.NewGuid();
@@ -51,6 +58,15 @@ public sealed class DomainBehaviorTests
         var outbox = new OutboxMessage(eventId, "event", "{}", DateTime.UtcNow);
         outbox.RecordAttempt(false, DateTime.UtcNow); outbox.Attempts.ShouldBe(1); outbox.PublishedAt.ShouldBeNull();
         outbox.RecordAttempt(true, DateTime.UtcNow); outbox.PublishedAt.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void Chat_notification_links_are_identified_for_toast_dedupe()
+    {
+        ChatNotificationRules.IsChatLink("/chat/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee").ShouldBeTrue();
+        ChatNotificationRules.IsChatLink("/chat").ShouldBeTrue();
+        ChatNotificationRules.IsChatLink("/document-signing").ShouldBeFalse();
+        ChatNotificationRules.IsChatLink(null).ShouldBeFalse();
     }
 
     [Fact]

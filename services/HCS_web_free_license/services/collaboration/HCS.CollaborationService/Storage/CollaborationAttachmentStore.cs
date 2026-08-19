@@ -3,8 +3,9 @@ using HCS.CollaborationService.Data;
 using HCS.CollaborationService.Domain;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp;
-using Volo.Abp.BlobStoring;
 using Volo.Abp.Authorization;
+using Volo.Abp.BlobStoring;
+using Volo.Abp.DependencyInjection;
 using Volo.Abp.Guids;
 using Volo.Abp.Users;
 
@@ -18,7 +19,7 @@ public sealed class CollaborationAttachmentStore(
     CollaborationDbContext db,
     ICurrentUser currentUser,
     IGuidGenerator guidGenerator,
-    IConfiguration configuration)
+    IConfiguration configuration) : ITransientDependency
 {
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -42,7 +43,10 @@ public sealed class CollaborationAttachmentStore(
         if (string.IsNullOrWhiteSpace(safeName) || safeName.Length > 256) throw new BusinessException("Collaboration:InvalidFileName");
         var id = guidGenerator.Create();
         var blobName = $"conversations/{conversationId:N}/{id:N}";
-        await container.SaveAsync(blobName, content, overrideExisting: false, cancellationToken: ct);
+        await using var buffer = await AttachmentContent.BufferAsync(content, size, ct);
+        if (buffer.Length != size)
+            throw new BusinessException("Collaboration:InvalidAttachmentSize");
+        await container.SaveAsync(blobName, buffer, overrideExisting: false, cancellationToken: ct);
         var kind = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ? AttachmentKind.Image
             : contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ? AttachmentKind.Video
             : contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) ? AttachmentKind.Audio : AttachmentKind.File;

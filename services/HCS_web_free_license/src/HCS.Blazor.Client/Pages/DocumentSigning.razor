@@ -3,24 +3,40 @@
 @attribute [Authorize(Policy = "Documents.Signing.Execute")]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
+@inject CollaborationClient Chat
+@inject OrganizationCatalogClient Catalog
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>@L["Menu:DocumentSigning"] · HCS</PageTitle>
 <section class="hcs-catalog-page">
     <header class="hcs-catalog-titlebar">
-        <div><p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p><h1>@L["Feature:SigningQueue"]</h1></div>
-        <Button Color="Color.Primary" Outline="true" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
+        <div><h1>@L["Feature:SigningQueue"]</h1></div>
+        <div class="hcs-catalog-page__actions">
+            <Button Color="Color.Primary" Outline="true" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
+            <AuthorizeView Policy="Documents.Workflow.Start">
+                <Authorized>
+                    <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenSubmit">@L["Work:SubmitWorkflow"]</Button>
+                </Authorized>
+            </AuthorizeView>
+        </div>
     </header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
-    @if (success is not null) { <div class="alert alert-success">@success</div> }
+    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
+        <DocumentSigningFilterBar @bind-FromDate="fromDate" @bind-ToDate="toDate"
+                                  @bind-SubmitterUserId="submitterId" SubmitterText="@ContactName(submitterId)"
+                                  @bind-DepartmentId="departmentId" DepartmentText="@DepartmentName(departmentId)"
+                                  @bind-FilterText="filter"
+                                  SearchClicked="ApplyFilter"
+                                  SearchUsers="SearchContactsAsync"
+                                  SearchDepartments="SearchDepartmentsAsync" />
+    </CardBody></Card>
     <Card Class="hcs-catalog-grid-card"><CardBody>
-        @if (queue.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2></div> }
+        @if (VisibleQueue.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2></div> }
         else
         {
             <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
                 <thead><tr><th>@L["Menu:Documents"]</th><th>@L["Feature:AddStep"]</th><th>@L["Catalog:Status"]</th><th>@L["Catalog:Actions"]</th></tr></thead>
                 <tbody>
-                @foreach (var item in queue)
+                @foreach (var item in VisibleQueue)
                 {
                     <tr class="@(item.Document.Id == RelatedId ? "table-active" : null)">
                         <td><a href="@($"/document-detail/{item.Document.Id}")"><strong>@item.Document.Title</strong></a><span class="hcs-catalog-code">#@item.Document.Number</span></td>
@@ -65,27 +81,59 @@
         <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SignAsync">@L["Feature:Sign"]</Button>
     </ModalFooter>
 </ModalContent></Modal>
+<SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
 @code {
     [Parameter] public Guid? RelatedId { get; set; }
     private readonly List<SigningQueueItem> queue = [];
+    private readonly List<ChatContactDto> contacts = [];
+    private readonly List<DepartmentCatalogDto> departments = [];
     private readonly SignForm form = new();
     private Modal? modal;
+    private SubmitWorkflowModal? submitModal;
     private SigningQueueItem? selected;
     private SigningReportDto? report;
-    private Guid? currentUserId;
-    private string? error, success;
+    private Guid? currentUserId, submitterId, departmentId;
+    private DateTime? fromDate, toDate;
+    private string filter = "", search = "";
+
+    private List<SigningQueueItem> VisibleQueue
+    {
+        get
+        {
+            IEnumerable<SigningQueueItem> items = queue;
+            if (!string.IsNullOrWhiteSpace(search))
+                items = items.Where(x => x.Document.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || x.Document.Number.Contains(search, StringComparison.OrdinalIgnoreCase));
+            if (fromDate is { } from)
+                items = items.Where(x => x.Document.CreationTime >= from.ToUniversalTime());
+            if (toDate is { } to)
+                items = items.Where(x => x.Document.CreationTime <= to.ToUniversalTime().AddDays(1));
+            if (submitterId is { } user)
+                items = items.Where(x => x.Document.History.Any(h => h.Action == "Created" && h.ActorUserId == user)
+                    || x.Document.Assignments.Any(a => a.AssigneeUserId == user));
+            return items.ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         if (Guid.TryParse(state.User.FindFirst("sub")?.Value, out var userId)) currentUserId = userId;
+        try
+        {
+            contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+            departments.AddRange(await Catalog.GetDepartmentLookupAsync());
+        }
+        catch { }
         await LoadAsync();
     }
 
+    private void ApplyFilter() => search = filter;
+    private Task OpenSubmit() => submitModal?.ShowAsync() ?? Task.CompletedTask;
+
     private async Task LoadAsync()
     {
-        error = null;
-        try
+                try
         {
             var documents = (await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100))).Items;
             var definitions = await Documents.GetDefinitionsAsync();
@@ -108,7 +156,7 @@
             if (RelatedId is { } related && queue.FirstOrDefault(x => x.Document.Id == related) is { } match)
                 await OpenSign(match);
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
 
     private async Task OpenSign(SigningQueueItem item)
@@ -117,23 +165,35 @@
         form.FileId = item.Document.Files.FirstOrDefault()?.Id.ToString() ?? "";
         form.Kind = 0;
         try { report = await Documents.GetSigningReportAsync(item.Document.Id); }
-        catch (Exception ex) { report = null; error = MapBffError(ex); }
+        catch (Exception ex) { report = null; await NotifyErrorAsync(ex); }
         if (modal is not null) await modal.Show();
     }
 
     private async Task SignAsync()
     {
-        if (selected is null || !Guid.TryParse(form.FileId, out var fileId)) { error = L["Catalog:TypeRequired"]; return; }
+        if (selected is null || !Guid.TryParse(form.FileId, out var fileId)) { await NotifyErrorAsync(L["Catalog:TypeRequired"]); return; }
         try
         {
             await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, fileId, form.Kind, Guid.NewGuid().ToString("N")));
             if (modal is not null) await modal.Hide();
-            success = L["Catalog:Updated"];
+            await NotifySuccessAsync(L["Catalog:Updated"]);
             await LoadAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
 
     private sealed record SigningQueueItem(DocumentDto Document, ApprovalTaskDto Task);
     private sealed class SignForm { public string FileId { get; set; } = ""; public int Kind { get; set; } }
+    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private string DepartmentName(Guid? id) => id is null ? "" : departments.FirstOrDefault(x => x.Id == id)?.Name ?? "";
+    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
+    {
+        var found = await Chat.GetContactsAsync(term, 50);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+    }
+    private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
+    {
+        var found = departments.Where(x => string.IsNullOrWhiteSpace(term) || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
+        return Task.FromResult(CatalogSelect2Cache.Merge(departments, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
+    }
 }

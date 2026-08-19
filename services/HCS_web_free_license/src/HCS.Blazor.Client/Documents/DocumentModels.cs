@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace HCS.Blazor.Client.Documents;
 
 public enum DocumentStatus { Draft, Submitted, InReview, Approved, Rejected, Archived }
-public enum WorkflowInstanceStatus { Running, Completed, Rejected, Cancelled }
-public enum ApprovalTaskStatus { Pending, Approved, Rejected, Cancelled }
+public enum WorkflowInstanceStatus { Running, Completed, Rejected, Cancelled, Returned }
+public enum ApprovalTaskStatus { Pending, Approved, Rejected, Cancelled, Returned }
 public enum SigningStatus { Pending, Completed, Failed }
 
 public sealed record PagedDocumentsResponse(long TotalCount, List<DocumentDto> Items);
@@ -27,19 +27,32 @@ public sealed record UpdateDocumentRequest(
     Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId);
 public sealed record AssignDocumentRequest(Guid AssigneeUserId, string Responsibility);
 
-public sealed record WorkflowStepInput(string Code, string Name, int Order, string RequiredPermission, string Type = "PROCESS", Guid? AssigneeUserId = null);
-public sealed record WorkflowStepDto(Guid Id, string Code, string Name, int Order, string RequiredPermission, string Type, Guid? AssigneeUserId);
-public sealed record WorkflowDefinitionDto(Guid Id, string Code, string Name, List<WorkflowStepDto> Steps, DateTime CreationTime);
-public sealed record CreateWorkflowDefinitionRequest(string Code, string Name, List<WorkflowStepInput> Steps);
-public sealed record UpdateWorkflowDefinitionRequest(string Name, List<WorkflowStepInput> Steps);
+public sealed record WorkflowStepInput(string Code, string Name, int Order, string RequiredPermission, string Type = "PROCESS",
+    Guid? AssigneeUserId = null, string AssigneeType = "SpecificUser", Guid? RoleId = null,
+    List<Guid>? UserIds = null, List<Guid>? DepartmentIds = null, int? SlaDays = null, bool AllowReturn = false);
+public sealed record WorkflowStepDto(Guid Id, string Code, string Name, int Order, string RequiredPermission, string Type, Guid? AssigneeUserId,
+    string AssigneeType = "SpecificUser", Guid? RoleId = null, List<Guid>? UserIds = null, List<Guid>? DepartmentIds = null,
+    int? SlaDays = null, bool AllowReturn = false);
+public sealed record WorkflowKindDto(Guid Id, string Code, string Name, string? Description, bool IsActive, DateTime CreationTime);
+public sealed record CreateWorkflowKindRequest(string Code, string Name, string? Description, bool IsActive = true);
+public sealed record UpdateWorkflowKindRequest(string Name, string? Description, bool IsActive);
+public sealed record WorkflowDefinitionDto(Guid Id, string Code, string Name, List<WorkflowStepDto> Steps, DateTime CreationTime,
+    Guid? KindId = null, string? Description = null, bool IsActive = true);
+public sealed record CreateWorkflowDefinitionRequest(string Code, string Name, List<WorkflowStepInput> Steps,
+    Guid? KindId = null, string? Description = null, bool IsActive = true);
+public sealed record UpdateWorkflowDefinitionRequest(string Name, List<WorkflowStepInput> Steps,
+    Guid? KindId = null, string? Description = null, bool IsActive = true);
 public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid DefinitionId, int Version, bool IsActive, DateTime CreationTime, Guid? WordFileId, string? WordFileName, Guid? PdfFileId, string? PdfFileName);
 public sealed record CreateWorkflowTemplateRequest(string Code, string Name, Guid DefinitionId, int Version, string TemplateJson);
-public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy, DateTime? DecidedAt, Guid? AssigneeUserId);
+public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy, DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt = null);
 public sealed record WorkflowInstanceDto(
     Guid Id, Guid DocumentId, Guid DefinitionId, WorkflowInstanceStatus Status, int CurrentStep,
     List<ApprovalTaskDto> Tasks, DateTime CreationTime);
-public sealed record StartWorkflowRequest(Guid DocumentId, Guid DefinitionId, string IdempotencyKey);
-public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey);
+public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
+public sealed record WorkflowViewScopeSelection(string StepCode, List<Guid> DepartmentIds, List<Guid> UserIds);
+public sealed record StartWorkflowRequest(Guid DocumentId, Guid DefinitionId, string IdempotencyKey,
+    List<WorkflowStepSignerSelection>? Signers = null, List<WorkflowViewScopeSelection>? ViewScopes = null);
+public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey, bool Return = false);
 
 public sealed record SigningCredentialDto(Guid Id, int Kind, string Endpoint, string MaskedSecret, DateTime UpdatedAt);
 public sealed record ConfigureSigningCredentialRequest(int Kind, string Endpoint, string Secret);

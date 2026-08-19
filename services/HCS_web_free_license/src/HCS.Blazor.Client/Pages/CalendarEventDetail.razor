@@ -18,12 +18,12 @@
             <a class="btn btn-outline-primary" href="/calendar-events">@L["Feature:BackToList"]</a>
         </div>
     </header>
-    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
     @if (item is not null)
     {
         <Card Class="mb-3"><CardBody>
-            <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><TextInput @bind-Value="form.Title" /></Field>
-            <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
+            <div class="hcs-catalog-form">
+            <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><TextInput @bind-Value="form.Title" Autocomplete="off" name="hcsEventTitle" /></Field>
+            <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
             <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
                 <Select TValue="string" @bind-Value="form.Visibility">
                     <SelectItem Value="@("Private")">Private</SelectItem>
@@ -39,6 +39,7 @@
             </Field>
             <Button Color="Color.Primary" Clicked="SaveAsync">@L["Catalog:SaveChanges"]</Button>
             <Button Color="Color.Danger" Outline="true" Clicked="DeleteAsync">@L["Catalog:Delete"]</Button>
+            </div>
         </CardBody></Card>
     }
 </section>
@@ -47,7 +48,6 @@
     private CalendarEventDto? item;
     private readonly EventForm form = new();
     private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
-    private string? error;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -58,7 +58,7 @@
             form.Participants.Clear(); foreach (var id in item.ParticipantUserIds) form.Participants.Add(id);
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
 
     private string? RelatedHref() => item is null ? null : WorkUi.RelatedEntityHref(item.RelatedType, item.RelatedId);
@@ -70,13 +70,13 @@
         {
             item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, item.StartTime, item.EndTime, item.AllDay, item.EventType, item.Location, item.RelatedType, item.RelatedId, form.Visibility, form.Participants.ToList()));
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync()
     {
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
         try { await Work.DeleteCalendarEventAsync(EventId); Navigation.NavigateTo("/calendar-events"); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private sealed class EventForm
     {

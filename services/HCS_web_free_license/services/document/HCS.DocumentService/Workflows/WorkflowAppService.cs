@@ -11,6 +11,49 @@ namespace HCS.DocumentService.Workflows;
 public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContextAccessor httpContext,
     IBlobContainer<DocumentBlobContainer> blobs) : IWorkflowAppService
 {
+    public async Task<IReadOnlyList<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default)
+    {
+        Require(DocumentPermissions.WorkflowView);
+        var kinds = await db.WorkflowKinds.AsNoTracking().OrderBy(x => x.Name).ToListAsync(cancellationToken);
+        return kinds.Select(MapKind).ToList();
+    }
+
+    public async Task<WorkflowKindDto?> GetKindAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        Require(DocumentPermissions.WorkflowView);
+        var kind = await db.WorkflowKinds.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return kind is null ? null : MapKind(kind);
+    }
+
+    public async Task<Guid> CreateKindAsync(CreateWorkflowKindRequest input, CancellationToken cancellationToken = default)
+    {
+        Require(DocumentPermissions.WorkflowManage);
+        var kind = new WorkflowKind(Guid.NewGuid(), input.Code, input.Name, input.Description, input.IsActive, DateTime.UtcNow);
+        db.WorkflowKinds.Add(kind);
+        await db.SaveChangesAsync(cancellationToken);
+        return kind.Id;
+    }
+
+    public async Task UpdateKindAsync(Guid id, UpdateWorkflowKindRequest input, CancellationToken cancellationToken = default)
+    {
+        Require(DocumentPermissions.WorkflowManage);
+        var kind = await db.WorkflowKinds.SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new KeyNotFoundException("Workflow kind not found.");
+        kind.Update(input.Name, input.Description, input.IsActive);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteKindAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        Require(DocumentPermissions.WorkflowManage);
+        if (await db.WorkflowDefinitions.AnyAsync(x => x.KindId == id, cancellationToken))
+            throw new InvalidOperationException("Workflow definitions still reference this type.");
+        var kind = await db.WorkflowKinds.SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new KeyNotFoundException("Workflow kind not found.");
+        db.WorkflowKinds.Remove(kind);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<WorkflowDefinitionDto>> GetDefinitionsAsync(CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowView);
@@ -77,7 +120,8 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task<Guid> CreateDefinitionAsync(CreateWorkflowDefinitionRequest input, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowManage);
-        var definition = new WorkflowDefinition(Guid.NewGuid(), input.Code, input.Name, input.Steps, DateTime.UtcNow);
+        var definition = new WorkflowDefinition(Guid.NewGuid(), input.Code, input.Name, input.Steps, DateTime.UtcNow,
+            input.KindId, input.Description, input.IsActive);
         db.WorkflowDefinitions.Add(definition);
         await db.SaveChangesAsync(cancellationToken);
         return definition.Id;
@@ -92,6 +136,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
         definition.Rename(input.Name);
+        definition.SetMetadata(input.KindId, input.Description, input.IsActive);
         definition.ReplaceSteps(input.Steps);
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -200,7 +245,13 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             ?? throw new KeyNotFoundException("Workflow definition not found.");
         if (document.Status == DocumentStatus.Draft) document.Submit(userId, DateTime.UtcNow);
         document.StartReview(userId, DateTime.UtcNow);
-        var instance = new WorkflowInstance(Guid.NewGuid(), input.DocumentId, definition, input.IdempotencyKey, DateTime.UtcNow);
+        var overrides = (input.Signers ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x.StepCode))
+            .GroupBy(x => x.StepCode, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(x => x.Key, x => x.Last().UserId, StringComparer.OrdinalIgnoreCase);
+        var viewScopesJson = input.ViewScopes is { Count: > 0 } ? System.Text.Json.JsonSerializer.Serialize(input.ViewScopes) : null;
+        var instance = new WorkflowInstance(Guid.NewGuid(), input.DocumentId, definition, input.IdempotencyKey, DateTime.UtcNow,
+            overrides, viewScopesJson);
         db.WorkflowInstances.Add(instance);
         AddChangeEvent(instance, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
@@ -224,7 +275,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         if (step.AssigneeUserId is { } assignee && assignee != actor && !DocumentAccess.IsElevated(principal))
             throw new UnauthorizedAccessException("Only the assigned user can decide this step.");
         var changed = instance.Decide(taskId, input.Approve, actor, input.Comment, input.IdempotencyKey,
-            definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow);
+            definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, input.Return);
         if (changed)
         {
             if (instance.Status is WorkflowInstanceStatus.Completed or WorkflowInstanceStatus.Rejected)
@@ -234,6 +285,23 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             AddChangeEvent(instance, DateTime.UtcNow);
             await db.SaveChangesAsync(cancellationToken);
         }
+        return Map(instance);
+    }
+
+    public async Task<WorkflowInstanceDto> ResubmitAsync(Guid instanceId, string idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        var principal = Principal;
+        var actor = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowStart);
+        var instance = await Query().SingleOrDefaultAsync(x => x.Id == instanceId, cancellationToken)
+            ?? throw new KeyNotFoundException("Workflow instance not found.");
+        var document = await LoadDocumentAsync(instance.DocumentId, cancellationToken);
+        DocumentAccess.EnsureCanManage(document, actor, principal);
+        var definition = await db.WorkflowDefinitions.Include(x => x.Steps).SingleAsync(x => x.Id == instance.DefinitionId, cancellationToken);
+        instance.Resubmit(definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, idempotencyKey);
+        if (document.Status != DocumentStatus.InReview) document.StartReview(actor, DateTime.UtcNow);
+        AddChangeEvent(instance, DateTime.UtcNow);
+        await db.SaveChangesAsync(cancellationToken);
         return Map(instance);
     }
 
@@ -256,10 +324,12 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, now));
     }
     internal static WorkflowInstanceDto Map(WorkflowInstance x) => new(x.Id, x.DocumentId, x.DefinitionId, x.Status, x.CurrentStep,
-        x.Tasks.OrderBy(t => t.CreationTime).Select(t => new ApprovalTaskDto(t.Id, t.InstanceId, t.StepCode, t.Status, t.DecidedBy, t.DecidedAt, t.AssigneeUserId)).ToList(), x.CreationTime);
-    internal static WorkflowDefinitionDto MapDefinition(WorkflowDefinition x) => new(x.Id, x.Code, x.Name,
+        x.Tasks.OrderBy(t => t.CreationTime).Select(t => new ApprovalTaskDto(t.Id, t.InstanceId, t.StepCode, t.Status, t.DecidedBy, t.DecidedAt, t.AssigneeUserId, t.DueAt)).ToList(), x.CreationTime);
+    internal static WorkflowDefinitionDto MapDefinition(WorkflowDefinition x) => new(x.Id, x.Code, x.Name, x.KindId, x.Description, x.IsActive,
         x.Steps.OrderBy(step => step.Order).Select(step => new WorkflowStepDto(step.Id, step.Code, step.Name,
-            step.Order, step.RequiredPermission, step.Type, step.AssigneeUserId)).ToList(), x.CreationTime);
+            step.Order, step.RequiredPermission, step.Type, step.AssigneeUserId, step.AssigneeType, step.RoleId,
+            step.UserIds, step.DepartmentIds, step.SlaDays, step.AllowReturn)).ToList(), x.CreationTime);
+    private static WorkflowKindDto MapKind(WorkflowKind x) => new(x.Id, x.Code, x.Name, x.Description, x.IsActive, x.CreationTime);
     private static WorkflowTemplateDto MapTemplate(WorkflowTemplate x) => new(x.Id, x.Code, x.Name,
         x.DefinitionId, x.Version, x.IsActive, x.CreationTime, x.WordFileId, x.WordFileName, x.PdfFileId, x.PdfFileName);
 }

@@ -13,15 +13,13 @@
 <PageTitle>@PageTitle · HCS</PageTitle>
 <section class="hcs-catalog-page">
     <header class="hcs-catalog-titlebar">
-        <div><p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p><h1>@PageTitle</h1></div>
+        <div><h1>@PageTitle</h1></div>
         <div class="hcs-catalog-page__actions">
             <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
             @if (SourceType == 0) { <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button> }
         </div>
     </header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
-    @if (success is not null) { <div class="alert alert-success">@success</div> }
-    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
             <Addons Class="hcs-catalog-search">
                 <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
@@ -65,36 +63,44 @@
         }
     </CardBody></Card>
 </section>
-<Modal @ref="modal"><ModalContent Centered>
-    <ModalHeader><ModalTitle>@L["Catalog:Create"]</ModalTitle><CloseButton /></ModalHeader>
-    <ModalBody>
-        <Field><FieldLabel>@L["Feature:DocumentNumber"]</FieldLabel><TextInput @bind-Value="form.Number" /></Field>
-        <Field><FieldLabel>@L["Feature:DocumentTitleField"]</FieldLabel><TextInput @bind-Value="form.Title" /></Field>
-        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
-        <Field><FieldLabel>@L["Menu:DocumentTypes"]</FieldLabel>
-            <CatalogSelect2 Value="form.DocumentTypeId" ValueChanged="value => form.DocumentTypeId = value"
-                            Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(documentTypes, form.DocumentTypeId)"
-                            Search="SearchDocumentTypesAsync" />
-        </Field>
-        <Field><FieldLabel>@L["Menu:Sectors"]</FieldLabel>
-            <CatalogSelect2 Value="form.SectorId" ValueChanged="value => form.SectorId = value"
-                            Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(sectors, form.SectorId)"
-                            Search="SearchSectorsAsync" />
-        </Field>
-        <Field><FieldLabel>@L["Menu:UrgencyLevels"]</FieldLabel>
-            <CatalogSelect2 Value="form.UrgencyId" ValueChanged="value => form.UrgencyId = value"
-                            Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(urgencies, form.UrgencyId)"
-                            Search="SearchUrgenciesAsync" />
-        </Field>
-        <Field><FieldLabel>@L["Menu:ConfidentialityLevels"]</FieldLabel>
-            <CatalogSelect2 Value="form.ConfidentialityId" ValueChanged="value => form.ConfidentialityId = value"
-                            Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(confidentialities, form.ConfidentialityId)"
-                            Search="SearchConfidentialitiesAsync" />
-        </Field>
+<Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal">
+    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Catalog:Create"]</ModalTitle><CloseButton /></ModalHeader>
+    <ModalBody Class="hcs-catalog-modal__body">
+        <div class="hcs-catalog-form">
+            <div class="hcs-form-row">
+                <Field><FieldLabel>@L["Feature:DocumentNumber"]</FieldLabel><TextInput @bind-Value="form.Number" Autocomplete="off" name="hcsDocumentNumber" /></Field>
+                <Field><FieldLabel>@L["Feature:DocumentTitleField"]</FieldLabel><TextInput @bind-Value="form.Title" Autocomplete="off" name="hcsDocumentTitle" /></Field>
+            </div>
+            <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
+            <div class="hcs-form-row hcs-form-row--equal">
+                <Field><FieldLabel>@L["Menu:DocumentTypes"]</FieldLabel>
+                    <CatalogSelect2 Value="form.DocumentTypeId" ValueChanged="value => form.DocumentTypeId = value"
+                                    Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(documentTypes, form.DocumentTypeId)"
+                                    Search="SearchDocumentTypesAsync" />
+                </Field>
+                <Field><FieldLabel>@L["Menu:Sectors"]</FieldLabel>
+                    <CatalogSelect2 Value="form.SectorId" ValueChanged="value => form.SectorId = value"
+                                    Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(sectors, form.SectorId)"
+                                    Search="SearchSectorsAsync" />
+                </Field>
+            </div>
+            <div class="hcs-form-row hcs-form-row--equal">
+                <Field><FieldLabel>@L["Menu:UrgencyLevels"]</FieldLabel>
+                    <CatalogSelect2 Value="form.UrgencyId" ValueChanged="value => form.UrgencyId = value"
+                                    Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(urgencies, form.UrgencyId)"
+                                    Search="SearchUrgenciesAsync" />
+                </Field>
+                <Field><FieldLabel>@L["Menu:ConfidentialityLevels"]</FieldLabel>
+                    <CatalogSelect2 Value="form.ConfidentialityId" ValueChanged="value => form.ConfidentialityId = value"
+                                    Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(confidentialities, form.ConfidentialityId)"
+                                    Search="SearchConfidentialitiesAsync" />
+                </Field>
+            </div>
+        </div>
     </ModalBody>
-    <ModalFooter>
-        <Button Color="Color.Secondary" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
-        <Button Color="Color.Primary" Clicked="CreateAsync">@L["Catalog:Create"]</Button>
+    <ModalFooter Class="hcs-catalog-modal__footer">
+        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="CreateAsync">@L["Catalog:Create"]</Button>
     </ModalFooter>
 </ModalContent></Modal>
 @code {
@@ -108,7 +114,6 @@
     private string filter = "";
     private string status = "";
     private bool isLoading;
-    private string? error, success;
     private int SourceType
     {
         get
@@ -156,13 +161,13 @@
     }
     private async Task LoadAsync()
     {
-        isLoading = true; error = null;
+        isLoading = true;
         try
         {
             var page = await Documents.GetDocumentsAsync(new DocumentListQuery(string.IsNullOrWhiteSpace(filter) ? null : filter, string.IsNullOrWhiteSpace(status) ? null : status, SourceType == 1, 0, 20, SourceType));
             items.Clear(); items.AddRange(page.Items);
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
     private async Task OpenCreate() { form.Reset(); if (modal is not null) await modal.Show(); }
@@ -172,9 +177,9 @@
         {
             await Documents.CreateDocumentAsync(new CreateDocumentRequest(form.Number.Trim(), form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.DocumentTypeId, form.SectorId, form.UrgencyId, form.ConfidentialityId));
             if (modal is not null) await modal.Hide();
-            success = L["Catalog:Created"]; await LoadAsync();
+            await NotifySuccessAsync(L["Catalog:Created"]); await LoadAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private static string MasterText(IEnumerable<MasterDataCatalogDto> items, Guid? id) =>
         CatalogSelect2Cache.TextFor(items, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));

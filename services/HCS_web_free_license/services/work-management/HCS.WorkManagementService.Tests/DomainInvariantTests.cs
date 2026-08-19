@@ -6,6 +6,17 @@ namespace HCS.WorkManagementService.Tests;
 public sealed class DomainInvariantTests
 {
     [Fact]
+    public void Project_stores_unspecified_dates_as_utc()
+    {
+        var start = new DateTime(2026, 8, 19);
+        Assert.Equal(DateTimeKind.Unspecified, start.Kind);
+        var project = new Project(Guid.NewGuid(), "P-1", "Project", start, start.AddDays(1), "Active", null, Guid.NewGuid());
+        Assert.Equal(DateTimeKind.Utc, project.StartDate.Kind);
+        Assert.Equal(DateTimeKind.Utc, project.EndDate.Kind);
+        Assert.Equal(new DateTime(2026, 8, 19, 0, 0, 0, DateTimeKind.Utc), project.StartDate);
+    }
+
+    [Fact]
     public void Project_rejects_inverted_date_range()
     {
         Assert.Throws<BusinessException>(() => new Project(Guid.NewGuid(), "P-1", "Project",

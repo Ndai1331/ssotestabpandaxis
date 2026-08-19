@@ -59,4 +59,13 @@ public sealed class SecurityContractTests
         Assert.Contains(method.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>(),
             attribute => attribute.Policy == WorkPermissions.SurveyManagement);
     }
+
+    [Fact]
+    public void Bearer_apis_do_not_auto_validate_antiforgery_cookies()
+    {
+        var options = new Volo.Abp.AspNetCore.Mvc.AntiForgery.AbpAntiForgeryOptions { AutoValidate = true };
+        BearerApiAntiforgery.DisableCookieValidation(options);
+        Assert.False(options.AutoValidate);
+        Assert.True(typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(typeof(ProjectsController)));
+    }
 }

@@ -6,9 +6,16 @@
         return v === true || v === "true" || v === "True" || v === 1 || v === "1";
     }
 
-    function fillOptions($el, items) {
+    function asArray(val) {
+        if (val == null || val === "") return [];
+        return Array.isArray(val) ? val : [val];
+    }
+
+    function fillOptions($el, items, multiple) {
         $el.empty();
-        $el.append(new Option("", "", false, false));
+        if (!multiple) {
+            $el.append(new Option("", "", false, false));
+        }
         if (!items || !items.length) {
             return;
         }
@@ -16,9 +23,16 @@
             var item = items[i];
             $el.append(new Option(item.text || "", item.id, true, true));
         }
-        if (items.length > 1) {
+        if (!multiple && items.length > 1) {
             $el.find("option").slice(2).remove();
         }
+    }
+
+    function bindChange($el, dotNetRef) {
+        $el.off("change.hcsCatalogSelect2");
+        $el.on("change.hcsCatalogSelect2", function () {
+            dotNetRef.invokeMethodAsync("OnSelectionChangeAsync", asArray($el.val()));
+        });
     }
 
     window.hcsCatalogSelect2.init = function (selectId, dotNetRef, options, initialItems) {
@@ -32,14 +46,16 @@
         }
 
         var placeholder = (options && options.placeholder) || "";
-        fillOptions($el, initialItems);
+        var multiple = parseBool(options && options.multiple);
+        $el.prop("multiple", multiple);
+        fillOptions($el, initialItems, multiple);
 
         var dropdownParent = $el.closest(".modal").length ? $el.closest(".modal") : $(document.body);
         $el.select2({
             width: "100%",
             placeholder: placeholder,
             allowClear: true,
-            multiple: false,
+            multiple: multiple,
             dropdownParent: dropdownParent,
             minimumInputLength: typeof options.minimumInputLength === "number" ? options.minimumInputLength : 0,
             ajax: {
@@ -59,11 +75,7 @@
         });
 
         $el.data("hcsCatalogSelect2DotNetRef", dotNetRef);
-        $el.on("change.hcsCatalogSelect2", function () {
-            var val = $el.val();
-            var arr = val ? [val] : [];
-            dotNetRef.invokeMethodAsync("OnSelectionChangeAsync", arr);
-        });
+        bindChange($el, dotNetRef);
     };
 
     window.hcsCatalogSelect2.setSelection = function (selectId, items) {
@@ -72,16 +84,12 @@
             return;
         }
         var dotNetRef = $el.data("hcsCatalogSelect2DotNetRef");
+        var multiple = $el.prop("multiple");
         $el.off("change.hcsCatalogSelect2");
-        $el.empty();
-        fillOptions($el, items);
+        fillOptions($el, items, multiple);
         $el.trigger("change");
         if (dotNetRef) {
-            $el.on("change.hcsCatalogSelect2", function () {
-                var val = $el.val();
-                var arr = val ? [val] : [];
-                dotNetRef.invokeMethodAsync("OnSelectionChangeAsync", arr);
-            });
+            bindChange($el, dotNetRef);
         }
     };
 

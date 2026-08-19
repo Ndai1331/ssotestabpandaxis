@@ -265,7 +265,12 @@ public sealed class HCSBlazorModule : AbpModule
 
     private static void ConfigureBlazorise(ServiceConfigurationContext context)
     {
-        context.Services.AddBlazorise().AddBootstrap5Providers().AddFontAwesomeIcons();
+        context.Services.AddBlazorise(options =>
+        {
+            options.Immediate = false;
+        })
+            .AddBootstrap5Providers()
+            .AddFontAwesomeIcons();
     }
 
     private void ConfigureRouter()

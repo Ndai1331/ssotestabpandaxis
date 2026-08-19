@@ -6,7 +6,7 @@
     align-items: center;
     background: transparent;
     border: 0;
-    border-radius: .7rem;
+    border-radius: 5px;
     color: var(--hcs-ink, #19334c);
     cursor: pointer;
     display: inline-flex;
@@ -67,7 +67,7 @@
 .hcs-lang-switch__panel {
     background: #1e2430;
     border: 1px solid rgb(255 255 255 / 8%);
-    border-radius: .7rem;
+    border-radius: 5px;
     box-shadow: 0 18px 40px rgb(16 24 40 / 28%);
     min-width: 11.5rem;
     padding: .4rem;
@@ -81,7 +81,7 @@
     align-items: center;
     background: transparent;
     border: 0;
-    border-radius: .45rem;
+    border-radius: 5px;
     color: #d7dbe3;
     cursor: pointer;
     display: flex;

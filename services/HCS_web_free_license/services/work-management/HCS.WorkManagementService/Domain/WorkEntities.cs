@@ -33,6 +33,8 @@ public sealed class Project : FullAuditedAggregateRoot<Guid>
     public Guid OwnerUserId { get; private set; }
     public void Change(string name, string? description, DateTime startDate, DateTime endDate, string status)
     {
+        startDate = WorkTimestamps.ToUtc(startDate);
+        endDate = WorkTimestamps.ToUtc(endDate);
         if (endDate < startDate) throw new BusinessException("Work:ProjectDateRange");
         Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
         Description = description;
@@ -79,6 +81,8 @@ public sealed class ProjectTask : FullAuditedAggregateRoot<Guid>
     public void Change(string title, string? description, DateTime startDate, DateTime dueDate, string priority,
         string status, int progressPercent)
     {
+        startDate = WorkTimestamps.ToUtc(startDate);
+        dueDate = WorkTimestamps.ToUtc(dueDate);
         if (dueDate < startDate) throw new BusinessException("Work:TaskDateRange");
         if (progressPercent is < 0 or > 100) throw new BusinessException("Work:TaskProgressRange");
         Title = Check.NotNullOrWhiteSpace(title, nameof(title), WorkConsts.NameLength);
@@ -119,6 +123,8 @@ public sealed class CalendarEvent : FullAuditedAggregateRoot<Guid>
         bool allDay, string eventType, string? location, string relatedType, string? relatedId, string visibility,
         Guid ownerUserId) : base(id)
     {
+        startTime = WorkTimestamps.ToUtc(startTime);
+        endTime = WorkTimestamps.ToUtc(endTime);
         if (endTime < startTime) throw new BusinessException("Work:CalendarDateRange");
         Title = Check.NotNullOrWhiteSpace(title, nameof(title), WorkConsts.NameLength);
         Description = description; StartTime = startTime; EndTime = endTime; AllDay = allDay;
@@ -141,6 +147,8 @@ public sealed class CalendarEvent : FullAuditedAggregateRoot<Guid>
     public void Change(string title, string? description, DateTime startTime, DateTime endTime, bool allDay,
         string eventType, string? location, string relatedType, string? relatedId, string visibility)
     {
+        startTime = WorkTimestamps.ToUtc(startTime);
+        endTime = WorkTimestamps.ToUtc(endTime);
         if (endTime < startTime) throw new BusinessException("Work:CalendarDateRange");
         Title = Check.NotNullOrWhiteSpace(title, nameof(title), WorkConsts.NameLength);
         Description = description;
@@ -206,6 +214,8 @@ public sealed class SurveySession : FullAuditedAggregateRoot<Guid>
     public SurveySession(Guid id, string code, string name, DateTime startsAt, DateTime endsAt, Guid? locationId,
         Guid ownerUserId) : base(id)
     {
+        startsAt = WorkTimestamps.ToUtc(startsAt);
+        endsAt = WorkTimestamps.ToUtc(endsAt);
         if (endsAt < startsAt) throw new BusinessException("Work:SurveyDateRange");
         Code = Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength);
         Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
@@ -221,6 +231,8 @@ public sealed class SurveySession : FullAuditedAggregateRoot<Guid>
     public Guid OwnerUserId { get; private set; }
     public void Change(string name, DateTime startsAt, DateTime endsAt, Guid? locationId)
     {
+        startsAt = WorkTimestamps.ToUtc(startsAt);
+        endsAt = WorkTimestamps.ToUtc(endsAt);
         if (endsAt < startsAt) throw new BusinessException("Work:SurveyDateRange");
         Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
         StartsAt = startsAt;

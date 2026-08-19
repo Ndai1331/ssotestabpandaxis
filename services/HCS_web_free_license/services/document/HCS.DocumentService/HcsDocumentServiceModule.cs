@@ -10,6 +10,7 @@ using Microsoft.OpenApi;
 using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
+using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.BlobStoring;
@@ -69,6 +70,7 @@ public sealed class HcsDocumentServiceModule : AbpModule
                     DocumentAccess.HasPermission(auth.User, permission)));
             }
         });
+        Configure<AbpAntiForgeryOptions>(BearerApiAntiforgery.DisableCookieValidation);
         context.Services.AddDbContext<DocumentServiceDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DocumentService")));
         Configure<AbpBlobStoringOptions>(options =>

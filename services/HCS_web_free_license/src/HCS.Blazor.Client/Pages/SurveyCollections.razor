@@ -6,8 +6,6 @@
 <PageTitle>@L["Feature:Collect"] · HCS</PageTitle>
 <section class="hcs-document-page">
     <header class="hcs-document-page__header"><div><h1>@L["Feature:Collect"]</h1></div><a class="btn btn-outline-primary" href="/survey-sessions">@L["Feature:BackToList"]</a></header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
-    @if (success is not null) { <div class="alert alert-success">@success</div> }
     @foreach (var session in sessions.Where(x => x.Status == "Active"))
     {
         <Card Class="mb-3"><CardHeader>@session.Name</CardHeader>
@@ -37,12 +35,11 @@
     private readonly List<SurveySessionDto> sessions = [];
     private readonly List<SurveyCriteriaDto> criteria = [];
     private readonly Dictionary<Guid, decimal> scores = [];
-    private string? error, success;
 
     protected override async Task OnParametersSetAsync()
     {
         try { sessions.Clear(); sessions.AddRange(await Work.GetSessionsAsync(SurveyLocationId)); criteria.Clear(); criteria.AddRange(await Work.GetCriteriaAsync()); }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
     private async Task SubmitAsync(Guid sessionId)
     {
@@ -52,8 +49,8 @@
             {
                 await Work.SubmitResultAsync(sessionId, new SubmitSurveyResultRequest(pair.Key, null, pair.Value, null));
             }
-            success = L["Catalog:Created"];
+            await NotifySuccessAsync(L["Catalog:Created"]);
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
 }

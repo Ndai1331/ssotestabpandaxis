@@ -47,7 +47,7 @@
                     <div class="hcs-users-filter-row">
                         <Addons Class="hcs-users-search-bar">
                             <Addon AddonType="AddonType.Body">
-                                <TextInput @bind-Value="filterText" Placeholder="Tìm kiếm" Class="hcs-users-search-input" />
+                                <TextInput @bind-Value="filterText" Placeholder="Tìm kiếm" Class="hcs-users-search-input" Autocomplete="off" name="hcsUserSearch" />
                             </Addon>
                             <Addon AddonType="AddonType.End">
                                 <Button Color="Color.Primary" Clicked="SearchUsersAsync" Disabled="@isLoadingUsers">
@@ -126,8 +126,8 @@
                                         <div><strong>Email:</strong> @cell.Item.Email</div>
                                         <div><strong>Họ và tên:</strong> @FullName(cell.Item)</div>
                                         <div><strong>Vai trò:</strong> @RoleSummary(cell.Item.Id)</div>
-                                        <div><strong>Chức vụ:</strong> —</div>
-                                        <div><strong>Phòng ban:</strong> —</div>
+                                        <div><strong>Chức vụ:</strong> @PositionSummary(cell.Item.Id)</div>
+                                        <div><strong>Phòng ban:</strong> @DepartmentSummary(cell.Item.Id)</div>
                                     </div>
                                 </DisplayTemplate>
                             </DataGridColumn>
@@ -158,8 +158,8 @@
             </Card>
         </main>
 
-        <Modal @ref="userModal" Class="hcs-user-modal">
-            <ModalContent Centered="true" Size="ModalSize.ExtraLarge" Class="hcs-user-modal">
+        <Modal @ref="userModal" Size="ModalSize.ExtraLarge" Class="hcs-user-modal">
+            <ModalContent Centered="true" Class="hcs-user-modal">
                 <ModalHeader>
                     <ModalTitle>@(editingUserId.HasValue ? "Chỉnh sửa người dùng" : "Tạo người dùng mới")</ModalTitle>
                     <CloseButton Clicked="CloseUserModalAsync" />
@@ -179,32 +179,31 @@
                         }
                     </div>
 
-                    @if (activeUserTab == "info")
-                    {
+                    <div class="hcs-user-tab-panel" hidden="@(activeUserTab != "info")" role="tabpanel">
                         <div class="hcs-user-form-grid">
                             <Field>
                                 <FieldLabel>Tên người dùng *</FieldLabel>
-                                <TextInput @bind-Value="userForm.UserName" ReadOnly="@editingUserId.HasValue" />
+                                <TextInput @bind-Value="userForm.UserName" ReadOnly="@editingUserId.HasValue" Autocomplete="off" name="hcsUserUserName" />
                             </Field>
                             <Field>
                                 <FieldLabel>Mật khẩu @(editingUserId.HasValue ? string.Empty : "*")</FieldLabel>
-                                <TextInput @bind-Value="userForm.Password" Role="TextRole.Password" autocomplete="new-password" Placeholder="@(editingUserId.HasValue ? "Để trống nếu không đổi" : null)" />
+                                <TextInput @bind-Value="userForm.Password" Role="TextRole.Password" Autocomplete="new-password" name="hcsUserPassword" Placeholder="@(editingUserId.HasValue ? "Để trống nếu không đổi" : null)" />
                             </Field>
                             <Field>
                                 <FieldLabel>Họ</FieldLabel>
-                                <TextInput @bind-Value="userForm.Surname" />
+                                <TextInput @bind-Value="userForm.Surname" Autocomplete="off" name="hcsUserSurname" />
                             </Field>
                             <Field>
                                 <FieldLabel>Tên</FieldLabel>
-                                <TextInput @bind-Value="userForm.Name" />
+                                <TextInput @bind-Value="userForm.Name" Autocomplete="off" name="hcsUserGivenName" />
                             </Field>
                             <Field Class="hcs-user-form-grid__full">
                                 <FieldLabel>Địa chỉ email *</FieldLabel>
-                                <TextInput @bind-Value="userForm.Email" Role="TextRole.Email" />
+                                <TextInput @bind-Value="userForm.Email" Role="TextRole.Email" Autocomplete="off" name="hcsUserEmail" />
                             </Field>
                             <Field>
                                 <FieldLabel>Số điện thoại</FieldLabel>
-                                <TextInput @bind-Value="userForm.PhoneNumber" Role="TextRole.Telephone" />
+                                <TextInput @bind-Value="userForm.PhoneNumber" Role="TextRole.Telephone" Autocomplete="off" name="hcsUserPhone" />
                             </Field>
                             <Field>
                                 <FieldLabel>Chức vụ</FieldLabel>
@@ -224,9 +223,8 @@
                             <Check TValue="bool" Checked="@userForm.ShouldChangePasswordOnNextLogin" Disabled="true">Bắt đổi mật khẩu</Check>
                         </div>
                         <p class="hcs-form-note">Các cờ “Email đã xác nhận” và “Bắt đổi mật khẩu” chưa có trong hợp đồng Identity Community hiện tại nên chỉ hiển thị trạng thái.</p>
-                    }
-                    else if (activeUserTab == "roles")
-                    {
+                    </div>
+                    <div class="hcs-user-tab-panel" hidden="@(activeUserTab != "roles")" role="tabpanel">
                         <div class="hcs-user-role-list">
                             @if (roles.Count == 0)
                             {
@@ -244,9 +242,8 @@
                                 }
                             }
                         </div>
-                    }
-                    else if (activeUserTab == "departments")
-                    {
+                    </div>
+                    <div class="hcs-user-tab-panel" hidden="@(activeUserTab != "departments")" role="tabpanel">
                         <Field>
                             <FieldLabel>Phòng ban</FieldLabel>
                             <Select TValue="string" @bind-Value="userForm.DepartmentId">
@@ -258,59 +255,41 @@
                             </Select>
                         </Field>
                         <p class="hcs-form-note">Mỗi người dùng có thể có một phòng ban chính. Lựa chọn này được lưu qua Organization user-mapping.</p>
-                    }
-                    else if (activeUserTab == "signatures" && editingUserId.HasValue)
+                    </div>
+                    @if (editingUserId.HasValue)
                     {
-                        <div class="hcs-user-signing">
-                            <h2 class="hcs-user-signing__title">@L["Feature:UserSignatures"]</h2>
-                            <p class="hcs-form-note">@L["Feature:SignatureImage"]</p>
-                            <InputFile class="form-control mb-3" accept="image/*" OnChange="UploadUserSignatureAsync" />
-                            @if (userSignatures.Count == 0)
-                            {
-                                <p class="hcs-empty-state">@L["Catalog:EmptyTitle"]</p>
-                            }
-                            else
-                            {
-                                <ul class="hcs-user-signature-list">
-                                    @foreach (var signature in userSignatures)
-                                    {
-                                        <li>
-                                            <span>
-                                                <strong>@signature.FileName</strong>
-                                                <small>@(signature.Size / 1024) KB · @(signature.IsDefault ? L["Feature:DefaultSignature"] : L["Catalog:Active"])</small>
-                                            </span>
-                                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteUserSignatureAsync(signature)">@L["Catalog:Delete"]</Button>
-                                        </li>
-                                    }
-                                </ul>
-                            }
-                            <h2 class="hcs-user-signing__title">@L["Admin:SigningCredentials"]</h2>
-                            @if (userCredentials.Count > 0)
-                            {
-                                <ul class="mb-3">
-                                    @foreach (var credential in userCredentials)
-                                    {
-                                        <li>@SigningKindName(credential.Kind) · @credential.Endpoint · @credential.MaskedSecret</li>
-                                    }
-                                </ul>
-                            }
-                            <Field>
-                                <FieldLabel>@L["Feature:Kind"]</FieldLabel>
-                                <Select TValue="int" @bind-Value="credentialForm.Kind">
-                                    <SelectItem Value="0">@L["Feature:Electronic"]</SelectItem>
-                                    <SelectItem Value="1">@L["Feature:RemoteCa"]</SelectItem>
-                                    <SelectItem Value="2">@L["Feature:Hsm"]</SelectItem>
-                                </Select>
-                            </Field>
-                            <Field>
-                                <FieldLabel>@L["Feature:SigningEndpoint"]</FieldLabel>
-                                <TextInput @bind-Value="credentialForm.Endpoint" Placeholder="https://" />
-                            </Field>
-                            <Field>
-                                <FieldLabel>@L["Feature:SigningSecret"]</FieldLabel>
-                                <TextInput @bind-Value="credentialForm.Secret" Role="TextRole.Password" autocomplete="new-password" />
-                            </Field>
-                            <Button Color="Color.Primary" Clicked="SaveUserCredentialAsync" Loading="@isSavingSigning" Disabled="@isSavingSigning">@L["Catalog:SaveChanges"]</Button>
+                        <div class="hcs-user-tab-panel" hidden="@(activeUserTab != "signatures")" role="tabpanel">
+                            <div class="hcs-user-signing">
+                                <h2 class="hcs-user-signing__title">@L["Feature:UserSignatures"]</h2>
+                                <UserSignaturesPanel UserId="editingUserId" />
+                                <h2 class="hcs-user-signing__title">@L["Admin:SigningCredentials"]</h2>
+                                @if (userCredentials.Count > 0)
+                                {
+                                    <ul class="mb-3">
+                                        @foreach (var credential in userCredentials)
+                                        {
+                                            <li>@SigningKindName(credential.Kind) · @credential.Endpoint · @credential.MaskedSecret</li>
+                                        }
+                                    </ul>
+                                }
+                                <Field>
+                                    <FieldLabel>@L["Feature:Kind"]</FieldLabel>
+                                    <Select TValue="int" @bind-Value="credentialForm.Kind">
+                                        <SelectItem Value="0">@L["Feature:Electronic"]</SelectItem>
+                                        <SelectItem Value="1">@L["Feature:RemoteCa"]</SelectItem>
+                                        <SelectItem Value="2">@L["Feature:Hsm"]</SelectItem>
+                                    </Select>
+                                </Field>
+                                <Field>
+                                    <FieldLabel>@L["Feature:SigningEndpoint"]</FieldLabel>
+                                    <TextInput @bind-Value="credentialForm.Endpoint" Placeholder="https://" Autocomplete="off" name="hcsUserSigningEndpoint" />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>@L["Feature:SigningSecret"]</FieldLabel>
+                                    <TextInput @bind-Value="credentialForm.Secret" Role="TextRole.Password" Autocomplete="new-password" name="hcsUserSigningSecret" />
+                                </Field>
+                                <Button Color="Color.Primary" Clicked="SaveUserCredentialAsync" Loading="@isSavingSigning" Disabled="@isSavingSigning">@L["Catalog:SaveChanges"]</Button>
+                            </div>
                         </div>
                     }
                 </ModalBody>
@@ -335,7 +314,8 @@
     private readonly List<DepartmentCatalogDto> departments = [];
     private readonly List<PositionCatalogDto> positions = [];
     private readonly Dictionary<Guid, string> userRoleNames = [];
-    private readonly List<UserSignatureDto> userSignatures = [];
+    private readonly Dictionary<Guid, string> userDepartmentNames = [];
+    private readonly Dictionary<Guid, string> userPositionNames = [];
     private readonly List<SigningCredentialDto> userCredentials = [];
     private readonly SigningForm credentialForm = new();
 
@@ -380,6 +360,7 @@
             totalUsers = Math.Min(int.MaxValue, (int)result.TotalCount);
             pageSize = requestedPageSize;
             await LoadUserRoleSummariesAsync(users, args.CancellationToken);
+            await LoadUserOrganizationSummariesAsync(users, args.CancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -418,21 +399,44 @@
     {
         try
         {
+            departments.Clear();
             var query = new OrganizationCatalogQuery(null, true, 0, 100);
             var departmentsResult = await OrganizationClient.GetDepartmentsAsync(query);
             departments.AddRange(departmentsResult.Items);
         }
         catch (Exception)
         {
+            departments.Clear();
         }
 
         try
         {
+            positions.Clear();
             var positionsResult = await OrganizationClient.GetPositionsAsync(new OrganizationCatalogQuery(null, true, 0, 100));
             positions.AddRange(positionsResult.Items);
         }
         catch (Exception)
         {
+            positions.Clear();
+        }
+    }
+
+    private async Task LoadUserOrganizationSummariesAsync(IEnumerable<IdentityAdminUserDto> loadedUsers, CancellationToken cancellationToken)
+    {
+        foreach (var user in loadedUsers)
+        {
+            try
+            {
+                var mappings = await IdentityClient.GetUserMappingsAsync(user.Id, cancellationToken);
+                var mapping = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
+                userDepartmentNames[user.Id] = mapping is null ? "—" : DepartmentName(mapping.DepartmentId);
+                userPositionNames[user.Id] = mapping?.PositionId is { } positionId ? PositionName(positionId) : "—";
+            }
+            catch (IdentityAdminApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+            {
+                userDepartmentNames[user.Id] = "—";
+                userPositionNames[user.Id] = "—";
+            }
         }
     }
 
@@ -558,10 +562,19 @@
 
     private async Task SyncOrganizationMappingAsync(Guid userId)
     {
-        if (!Guid.TryParse(userForm.DepartmentId, out var departmentId)) return;
         Guid? positionId = Guid.TryParse(userForm.PositionId, out var parsedPositionId) ? parsedPositionId : null;
         var mappings = await IdentityClient.GetUserMappingsAsync(userId);
         var primary = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
+        if (!Guid.TryParse(userForm.DepartmentId, out var departmentId))
+        {
+            if (primary is not null)
+            {
+                await IdentityClient.DeleteUserMappingAsync(primary.Id);
+            }
+
+            return;
+        }
+
         if (primary is null)
         {
             await IdentityClient.CreateUserMappingAsync(userId, departmentId, positionId);
@@ -638,6 +651,14 @@
     private void ToggleAdvancedFilters() => showAdvancedFilters = !showAdvancedFilters;
 
     private string RoleSummary(Guid userId) => userRoleNames.TryGetValue(userId, out var names) && !string.IsNullOrWhiteSpace(names) ? names : "—";
+    private string DepartmentSummary(Guid userId) => userDepartmentNames.TryGetValue(userId, out var name) && !string.IsNullOrWhiteSpace(name) ? name : "—";
+    private string PositionSummary(Guid userId) => userPositionNames.TryGetValue(userId, out var name) && !string.IsNullOrWhiteSpace(name) ? name : "—";
+    private string DepartmentName(Guid departmentId) => departments.FirstOrDefault(item => item.Id == departmentId) is { } department
+        ? $"{department.Code} — {department.Name}"
+        : departmentId.ToString("D");
+    private string PositionName(Guid positionId) => positions.FirstOrDefault(item => item.Id == positionId) is { } position
+        ? $"{position.Code} — {position.Name}"
+        : positionId.ToString("D");
     private static string FullName(IdentityAdminUserDto user) => string.Join(' ', new[] { user.Surname, user.Name }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim() is { Length: > 0 } fullName ? fullName : "—";
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy\nHH:mm:ss", CultureInfo.InvariantCulture) ?? "—";
     private static MarkupString StatusIcon(bool value) => new($"<span class=\"hcs-admin-status-icon {(value ? "is-active" : "is-inactive")}\"><i class=\"fa {(value ? "fa-check" : "fa-xmark")}\" aria-hidden=\"true\"></i><span class=\"visually-hidden\">{(value ? "Có" : "Không")}</span></span>");
@@ -660,7 +681,6 @@
 
     private void ResetSigningState()
     {
-        userSignatures.Clear();
         userCredentials.Clear();
         credentialForm.Reset();
     }
@@ -669,8 +689,6 @@
     {
         try
         {
-            userSignatures.Clear();
-            userSignatures.AddRange(await Documents.GetSignaturesAsync(userId));
             userCredentials.Clear();
             userCredentials.AddRange(await Documents.GetCredentialsAsync(userId));
             if (userCredentials.FirstOrDefault() is { } current)
@@ -682,35 +700,6 @@
         catch (Exception exception)
         {
             formErrorMessage = BffErrorMapper.From(L, exception);
-        }
-    }
-
-    private async Task UploadUserSignatureAsync(InputFileChangeEventArgs args)
-    {
-        if (editingUserId is not { } userId) return;
-        try
-        {
-            await Documents.UploadSignatureAsync(args.File, userId);
-            await LoadUserSigningAsync(userId);
-        }
-        catch (Exception exception)
-        {
-            formErrorMessage = BffErrorMapper.From(L, exception, BffErrorKind.Save);
-        }
-    }
-
-    private async Task DeleteUserSignatureAsync(UserSignatureDto signature)
-    {
-        if (editingUserId is not { } userId) return;
-        if (!await UiMessageService.Confirm(string.Format(L["Catalog:DeleteConfirmation"].Value, signature.FileName))) return;
-        try
-        {
-            await Documents.DeleteSignatureAsync(signature.Id, userId);
-            await LoadUserSigningAsync(userId);
-        }
-        catch (Exception exception)
-        {
-            formErrorMessage = BffErrorMapper.From(L, exception, BffErrorKind.Delete);
         }
     }
 

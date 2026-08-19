@@ -1,10 +1,22 @@
 using HCS.DocumentService.Workflows;
+using System.Collections.Generic;
 
 namespace HCS.DocumentService.Tests;
 
 public sealed class WorkflowTests
 {
     private static readonly DateTime Now = new(2026, 8, 3, 0, 0, 0, DateTimeKind.Utc);
+
+    [Fact]
+    public void Definition_allows_empty_steps_for_draft()
+    {
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "draft", "Draft", [], Now);
+        Assert.Empty(definition.Steps);
+        definition.ReplaceSteps([]);
+        Assert.Empty(definition.Steps);
+        Assert.Throws<InvalidOperationException>(() =>
+            new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-empty", Now));
+    }
 
     [Fact]
     public void Definition_rejects_duplicate_steps()
@@ -122,5 +134,60 @@ public sealed class WorkflowTests
         Assert.True(instance.Decide(task.Id, true, actor, null, "same-command", definition.Steps.ToList(), Now));
         Assert.Equal(WorkflowInstanceStatus.Completed, instance.Status);
         Assert.False(instance.Decide(task.Id, true, actor, null, "same-command", definition.Steps.ToList(), Now));
+    }
+
+    [Fact]
+    public void View_steps_are_skipped_when_starting()
+    {
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "mix", "Mix", new[]
+        {
+            new WorkflowStepInput("see", "See", 1, "Documents.View", "VIEW"),
+            new WorkflowStepInput("sign", "Sign", 2, "Documents.Approve", "SIGN")
+        }, Now);
+        var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-view", Now);
+        Assert.Equal(1, instance.CurrentStep);
+        Assert.Equal("sign", instance.Tasks.Single().StepCode);
+    }
+
+    [Fact]
+    public void Start_uses_signer_override()
+    {
+        var configured = Guid.NewGuid();
+        var selected = Guid.NewGuid();
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "sign", "Sign", new[]
+        {
+            new WorkflowStepInput("sign", "Sign", 1, "Documents.Approve", "SIGN", configured)
+        }, Now);
+        var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-override", Now,
+            new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase) { ["sign"] = selected });
+        Assert.Equal(selected, instance.Tasks.Single().AssigneeUserId);
+    }
+
+    [Fact]
+    public void Return_and_resubmit_restore_running_state()
+    {
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "ret", "Return", new[]
+        {
+            new WorkflowStepInput("review", "Review", 1, "Documents.Review", "PROCESS", null,
+                WorkflowStepAssigneeTypes.SpecificUser, null, null, null, 2, true)
+        }, Now);
+        var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-return", Now);
+        var task = instance.Tasks.Single();
+        Assert.True(instance.Decide(task.Id, false, Guid.NewGuid(), "send back", "return-1", definition.Steps.ToList(), Now, returnStep: true));
+        Assert.Equal(WorkflowInstanceStatus.Returned, instance.Status);
+        instance.Resubmit(definition.Steps.ToList(), Now, "resubmit-1");
+        Assert.Equal(WorkflowInstanceStatus.Running, instance.Status);
+        Assert.Equal(2, instance.Tasks.Count);
+        Assert.Equal(ApprovalTaskStatus.Pending, instance.Tasks.Last().Status);
+        Assert.NotNull(instance.Tasks.Last().DueAt);
+    }
+
+    [Fact]
+    public void Kind_can_be_updated()
+    {
+        var kind = new WorkflowKind(Guid.NewGuid(), "cv", "Cong van", "desc", true, Now);
+        kind.Update("Official", null, false);
+        Assert.Equal("Official", kind.Name);
+        Assert.False(kind.IsActive);
     }
 }

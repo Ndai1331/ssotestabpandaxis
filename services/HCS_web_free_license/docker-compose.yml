@@ -33,6 +33,7 @@ x-hcs-image: &hcs-image
     Minio__AccessKey: ${HCS_MINIO_ROOT_USER}
     Minio__SecretKey: ${HCS_MINIO_ROOT_PASSWORD}
     Minio__WithSSL: "false"
+    Minio__CreateBucketIfNotExists: "true"
   depends_on:
     postgres: { condition: service_healthy }
     redis: { condition: service_healthy }
@@ -186,7 +187,15 @@ services:
   collaboration:
     <<: *hcs-image
     build: { context: ., dockerfile: deploy/docker/Dockerfile, args: { PROJECT: services/collaboration/HCS.CollaborationService/HCS.CollaborationService.csproj, APP_DLL: HCS.CollaborationService.dll } }
-    environment: { <<: *common-env, AuthServer__Authority: http://auth-server:8080, AuthServer__RequireHttpsMetadata: "false" }
+    environment:
+      <<: *common-env
+      # Tokens are issued with the public issuer. Resolve discovery through Caddy
+      # so JWT issuer validation matches https://auth.hcs.localhost/ on the token.
+      AuthServer__Authority: https://auth.hcs.localhost
+      AuthServer__Audience: HCS
+      AuthServer__RequireHttpsMetadata: "true"
+      AuthServer__AllowUntrustedBackchannelCertificate: "true"
+      App__CorsOrigins: https://hcs.localhost
 
   caddy:
     image: caddy:2.10-alpine

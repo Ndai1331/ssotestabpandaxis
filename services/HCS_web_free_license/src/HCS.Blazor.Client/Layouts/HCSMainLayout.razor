@@ -29,8 +29,12 @@
 
             <div class="hcs-header__actions">
                 <CultureSelector />
-                <button class="hcs-icon-button" type="button" aria-label='@Localizer["Notifications:Title"]'>
-                    <i class="fa fa-bell" aria-hidden="true"></i><span class="hcs-notification-dot"></span>
+                <button class="hcs-icon-button" type="button" aria-label='@Localizer["Notifications:Title"]' @onclick="ToggleNotificationsAsync">
+                    <i class="fa fa-bell" aria-hidden="true"></i>
+                    @if (unreadNotifications > 0)
+                    {
+                        <span class="hcs-notification-dot"></span>
+                    }
                 </button>
                 <AuthorizeView Policy="Collaboration.Chat">
                     <Authorized>
@@ -193,6 +197,11 @@
     }
 
     <main id="main-content" class="hcs-main-content">@Body</main>
+    <AuthorizeView>
+        <Authorized>
+            <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" />
+        </Authorized>
+    </AuthorizeView>
     <UiNotificationAlert />
     <UiMessageAlert />
 </div>
@@ -202,6 +211,8 @@
     private string? expandedSection;
     private bool isLoggingOut;
     private string? logoutError;
+    private NotificationToast? notificationToast;
+    private int unreadNotifications;
 
     protected override void OnInitialized()
     {
@@ -249,6 +260,13 @@
         {
             expandedSection = null;
         }
+    }
+
+    private Task ToggleNotificationsAsync() => notificationToast?.TogglePanelAsync() ?? Task.CompletedTask;
+    private void OnUnreadChanged(int count)
+    {
+        unreadNotifications = count;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void ToggleMobileNav()

@@ -8,6 +8,7 @@
     --ws-line: #e5e7eb;
     --ws-bg: #f9fafb;
     color: var(--ws-text);
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
     margin: -1.5rem calc(-1 * clamp(.9rem, 3vw, 2.5rem));
     min-height: calc(100dvh - var(--hcs-header-h, 4rem));
     padding: 1.25rem clamp(.9rem, 3vw, 2.5rem) 2.5rem;
@@ -17,7 +18,7 @@
     align-items: center;
     background: #fff;
     border: 1px solid var(--ws-line);
-    border-radius: 14px;
+    border-radius: 5px;
     display: flex;
     flex-wrap: wrap;
     gap: .75rem;
@@ -41,11 +42,22 @@
     max-width: 28rem;
 }
 
+.hcs-workspace .hcs-ws-filter-dates .form-control,
+.hcs-workspace .hcs-ws-filter-dates .flatpickr-input,
+.hcs-workspace .hcs-ws-filter-dates .b-is-datepicker,
+.hcs-workspace .hcs-ws-filter-dates .b-is-datepicker .form-control {
+    height: 36px;
+    max-height: 36px;
+    min-height: 36px;
+    padding-bottom: .35rem;
+    padding-top: .35rem;
+}
+
 .hcs-workspace .hcs-ws-search {
     align-items: center;
     background: var(--ws-pink);
     border: 0;
-    border-radius: 0;
+    border-radius: 5px;
     color: #fff;
     display: inline-flex;
     font-size: .8rem;
@@ -67,7 +79,7 @@
 .hcs-workspace .hcs-ws-kpi {
     background: #fff;
     border: 1px solid var(--ws-line);
-    border-radius: 14px;
+    border-radius: 5px;
     display: flex;
     flex-direction: column;
     padding: 1rem 1.1rem;
@@ -81,9 +93,9 @@
 
 .hcs-workspace .hcs-ws-kpi-icon {
     align-items: center;
-    border-radius: 9px;
+    border-radius: 5px;
     display: flex;
-    height: 38px;
+    height: 36px;
     justify-content: center;
     width: 38px;
 }
@@ -113,7 +125,7 @@
 .hcs-workspace .hcs-ws-card {
     background: #fff;
     border: 1px solid var(--ws-line);
-    border-radius: 14px;
+    border-radius: 5px;
     display: flex;
     flex-direction: column;
     min-height: 16rem;
@@ -136,7 +148,7 @@
 
 .hcs-workspace .hcs-ws-card-icon {
     align-items: center;
-    border-radius: 9px;
+    border-radius: 5px;
     display: flex;
     flex-shrink: 0;
     height: 34px;
@@ -151,7 +163,7 @@
     align-items: center;
     background: var(--ws-pink);
     border: 0;
-    border-radius: 0;
+    border-radius: 5px;
     color: #fff;
     display: inline-flex;
     font-size: .75rem;
@@ -181,7 +193,7 @@
 .hcs-workspace .hcs-ws-dn {
     background: transparent;
     border: 0;
-    border-radius: 999px;
+    border-radius: 5px;
     color: var(--ws-text);
     font-size: .85rem;
     font-weight: 650;
@@ -207,7 +219,7 @@
 .hcs-workspace .hcs-ws-ev-row {
     align-items: center;
     border: 1px solid var(--ws-line);
-    border-radius: 10px;
+    border-radius: 5px;
     display: flex;
     gap: .65rem;
     padding: .55rem .7rem;
@@ -221,7 +233,7 @@
 .hcs-workspace .hcs-ws-view {
     background: var(--ws-pink);
     border: 0;
-    border-radius: 0;
+    border-radius: 5px;
     color: #fff;
     font-size: .75rem;
     font-weight: 650;
@@ -231,7 +243,7 @@
 .hcs-workspace .hcs-ws-notif { display: flex; flex-direction: column; gap: .35rem; max-height: 18rem; overflow: auto; }
 
 .hcs-workspace .hcs-ws-notif-row {
-    border-radius: 8px;
+    border-radius: 5px;
     display: flex;
     gap: .55rem;
     justify-content: space-between;
@@ -258,7 +270,7 @@
 .hcs-workspace .hcs-ws-task-row {
     align-items: center;
     border: 1px solid var(--ws-line);
-    border-radius: 10px;
+    border-radius: 5px;
     display: flex;
     gap: .55rem;
     padding: .55rem .7rem;
@@ -267,17 +279,17 @@
 .hcs-workspace .hcs-ws-doc-name,
 .hcs-workspace .hcs-ws-task-name { flex: 1; font-size: .85rem; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.hcs-workspace .hcs-ws-proj-row { border: 1px solid var(--ws-line); border-radius: 10px; padding: .65rem .75rem; }
+.hcs-workspace .hcs-ws-proj-row { border: 1px solid var(--ws-line); border-radius: 5px; padding: .65rem .75rem; }
 .hcs-workspace .hcs-ws-proj-top { align-items: center; display: flex; justify-content: space-between; gap: .5rem; }
 .hcs-workspace .hcs-ws-proj-name { font-size: .86rem; font-weight: 700; }
-.hcs-workspace .hcs-ws-pbar { background: #f3f4f6; border-radius: 999px; height: 6px; margin: .45rem 0; overflow: hidden; }
+.hcs-workspace .hcs-ws-pbar { background: #f3f4f6; border-radius: 5px; height: 6px; margin: .45rem 0; overflow: hidden; }
 .hcs-workspace .hcs-ws-pbf { background: var(--ws-pink); height: 100%; }
 .hcs-workspace .hcs-ws-proj-foot { color: var(--ws-muted); display: flex; font-size: .75rem; justify-content: space-between; }
 
 .hcs-workspace .hcs-ws-chart { display: flex; flex-direction: column; gap: .55rem; }
 .hcs-workspace .hcs-ws-chart-row { display: grid; gap: .5rem; grid-template-columns: 7rem 1fr 2.4rem; align-items: center; }
 .hcs-workspace .hcs-ws-chart-lbl { font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hcs-workspace .hcs-ws-chart-track { background: #f3f4f6; border-radius: 999px; height: 8px; overflow: hidden; }
+.hcs-workspace .hcs-ws-chart-track { background: #f3f4f6; border-radius: 5px; height: 8px; overflow: hidden; }
 .hcs-workspace .hcs-ws-chart-fill { background: #2563eb; height: 100%; }
 .hcs-workspace .hcs-ws-chart-pct { font-size: .75rem; font-weight: 700; text-align: right; }
 

@@ -55,6 +55,16 @@ public sealed class ApiContractTests
         Assert.Equal("HCS", configuration["AuthServer:Audience"]);
     }
 
+    [Fact]
+    public void Bearer_apis_do_not_auto_validate_antiforgery_cookies()
+    {
+        var options = new Volo.Abp.AspNetCore.Mvc.AntiForgery.AbpAntiForgeryOptions { AutoValidate = true };
+        BearerApiAntiforgery.DisableCookieValidation(options);
+        Assert.False(options.AutoValidate);
+        Assert.True(typeof(ControllerBase).IsAssignableFrom(typeof(WorkflowsController)));
+        Assert.True(typeof(ControllerBase).IsAssignableFrom(typeof(DocumentsController)));
+    }
+
     private static void AssertHttpGet(Type controller, string method, string? template)
     {
         var attribute = controller.GetMethod(method)!.GetCustomAttributes(typeof(HttpGetAttribute), true)

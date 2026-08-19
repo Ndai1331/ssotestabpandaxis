@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
+using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.BlobStoring;
@@ -30,24 +31,13 @@ public sealed class HCSCollaborationServiceModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
+        CollaborationJwtBearer.AlignAbpClaimTypes();
         context.Services.AddAbpDbContext<CollaborationDbContext>();
         Configure<AbpDbContextOptions>(options => options.Configure<CollaborationDbContext>(db => db.UseNpgsql()));
 
-        context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-        {
-            options.Authority = configuration["AuthServer:Authority"];
-            options.Audience = configuration["AuthServer:Audience"] ?? "HCS";
-            options.RequireHttpsMetadata = configuration.GetValue("AuthServer:RequireHttpsMetadata", true);
-            options.Events = new JwtBearerEvents
-            {
-                OnMessageReceived = ctx =>
-                {
-                    var token = ctx.Request.Query["access_token"];
-                    if (!string.IsNullOrWhiteSpace(token) && ctx.HttpContext.Request.Path.StartsWithSegments("/hubs/chat")) ctx.Token = token;
-                    return Task.CompletedTask;
-                }
-            };
-        });
+        context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => CollaborationJwtBearer.Configure(options, configuration));
+        Configure<AbpAntiForgeryOptions>(BearerApiAntiforgery.DisableCookieValidation);
         context.Services.AddAuthorization(options =>
         {
             options.AddPolicy(CollaborationPermissions.Chat, p => p.RequireClaim("permission", CollaborationPermissions.Chat));
@@ -64,6 +54,7 @@ public sealed class HCSCollaborationServiceModule : AbpModule
                 options.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal(
                     configuration["Redis:SignalRChannel"] ?? "hcs-collaboration"));
         context.Services.AddHttpClient<IPushSender, FirebasePushSender>();
+        context.Services.AddTransient<IChatRealtimeNotifier, SignalRChatRealtimeNotifier>();
         context.Services.AddHostedService<CollaborationOutboxDispatcher>();
         context.Services.AddHostedService<PushDeliveryWorker>();
         Configure<AbpBlobStoringOptions>(options => options.Containers.Configure<CollaborationAttachmentContainer>(container =>
@@ -73,7 +64,7 @@ public sealed class HCSCollaborationServiceModule : AbpModule
                 minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
                 minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
                 minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
-                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", false);
+                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
                 minio.PresignedGetExpirySeconds = configuration.GetValue("AttachmentPolicy:PresignedLifetimeSeconds", 300);
             })));
         context.Services.AddHealthChecks().AddDbContextCheck<CollaborationDbContext>("hcs_collaboration");

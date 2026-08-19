@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -43,6 +44,65 @@ public sealed class IdentityAdminClientTests
         Assert.Equal("new-user", json.RootElement.GetProperty("userName").GetString());
         Assert.Equal("Password123!", json.RootElement.GetProperty("password").GetString());
         Assert.Contains("operator", json.RootElement.GetProperty("roleNames").EnumerateArray().Select(item => item.GetString()));
+    }
+
+    [Fact]
+    public async Task Sends_update_user_with_role_names()
+    {
+        var userId = Guid.NewGuid();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new { id = userId, userName = "existing", email = "existing@example.com" })
+        });
+        var client = CreateClient(handler);
+        var form = new IdentityAdminUserForm
+        {
+            UserName = "existing",
+            Email = "existing@example.com"
+        };
+        form.RoleNames.Add("admin");
+        form.RoleNames.Add("bacsi");
+
+        await client.UpdateUserAsync(userId, form, "stamp");
+
+        using var json = JsonDocument.Parse(handler.RequestBody!);
+        var roleNames = json.RootElement.GetProperty("roleNames").EnumerateArray().Select(item => item.GetString()).ToArray();
+        Assert.Contains("admin", roleNames);
+        Assert.Contains("bacsi", roleNames);
+        Assert.Equal("stamp", json.RootElement.GetProperty("concurrencyStamp").GetString());
+    }
+
+    [Fact]
+    public async Task Sends_update_user_roles_payload()
+    {
+        var userId = Guid.NewGuid();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.NoContent));
+        var client = CreateClient(handler);
+
+        await client.UpdateUserRolesAsync(userId, ["admin", "lanhdao"]);
+
+        Assert.Equal(HttpMethod.Put, handler.Request!.Method);
+        Assert.Equal($"/api/identity/users/{userId:D}/roles", handler.Request.RequestUri!.PathAndQuery);
+        using var json = JsonDocument.Parse(handler.RequestBody!);
+        var roleNames = json.RootElement.GetProperty("roleNames").EnumerateArray()
+            .Select(item => item.GetString())
+            .Where(name => name is not null)
+            .Cast<string>()
+            .ToArray();
+        Assert.Equal(new[] { "admin", "lanhdao" }, roleNames);
+    }
+
+    [Fact]
+    public async Task Deletes_user_organization_mapping()
+    {
+        var mappingId = Guid.NewGuid();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.NoContent));
+        var client = CreateClient(handler);
+
+        await client.DeleteUserMappingAsync(mappingId);
+
+        Assert.Equal(HttpMethod.Delete, handler.Request!.Method);
+        Assert.Equal($"/api/organization/user-mappings/{mappingId:D}", handler.Request.RequestUri!.PathAndQuery);
     }
 
     [Fact]

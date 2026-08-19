@@ -51,6 +51,18 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
             ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
     }
 
+    public Task<List<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<WorkflowKindDto>>("/api/workflows/kinds", cancellationToken);
+
+    public Task<Guid> CreateKindAsync(CreateWorkflowKindRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<Guid>(HttpMethod.Post, "/api/workflows/kinds", request, cancellationToken);
+
+    public Task UpdateKindAsync(Guid id, UpdateWorkflowKindRequest request, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Put, $"/api/workflows/kinds/{id:D}", request, cancellationToken);
+
+    public Task DeleteKindAsync(Guid id, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"/api/workflows/kinds/{id:D}", null, cancellationToken);
+
     public Task<List<WorkflowDefinitionDto>> GetDefinitionsAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<WorkflowDefinitionDto>>("/api/workflows/definitions", cancellationToken);
 
@@ -112,6 +124,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 
     public Task<WorkflowInstanceDto> DecideAsync(Guid taskId, DecideApprovalTaskRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<WorkflowInstanceDto>(HttpMethod.Post, $"/api/workflows/tasks/{taskId:D}/decision", request, cancellationToken);
+
+    public Task<WorkflowInstanceDto> ResubmitWorkflowAsync(Guid instanceId, string idempotencyKey, CancellationToken cancellationToken = default) =>
+        SendAsync<WorkflowInstanceDto>(HttpMethod.Post, $"/api/workflows/instances/{instanceId:D}/resubmit", idempotencyKey, cancellationToken);
 
     public Task<List<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default) =>
         GetAsync<List<SigningCredentialDto>>(SigningUserUri("/api/signing/credentials/current", userId), cancellationToken);

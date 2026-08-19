@@ -108,7 +108,8 @@ public class CollaborationAppService(
 
     public async Task SetConversationPinnedAsync(Guid id, bool pinned, CancellationToken ct = default)
     {
-        var member = await db.ConversationMembers.SingleOrDefaultAsync(x => x.ConversationId == id && x.UserId == UserId, ct)
+        var me = UserId;
+        var member = await db.ConversationMembers.SingleOrDefaultAsync(x => x.ConversationId == id && x.UserId == me, ct)
             ?? throw new AbpAuthorizationException();
         member.SetPinned(pinned); await db.SaveChangesAsync(ct);
     }
@@ -170,6 +171,9 @@ public class CollaborationAppService(
     public async Task<ChatMessageDto> SendMessageAsync(SendMessageInput input, CancellationToken ct = default)
     {
         var conversation = await RequireMember(input.ConversationId, UserId, ct);
+        var text = input.Text?.Trim() ?? string.Empty;
+        if (text.Length == 0 && input.AttachmentIds.Count == 0)
+            throw new BusinessException("Collaboration:EmptyMessage");
         if (input.ClientMessageId.HasValue)
         {
             var duplicate = await db.Messages.AsNoTracking().Include(x => x.Attachments)
@@ -180,7 +184,7 @@ public class CollaborationAppService(
             throw new BusinessException("Collaboration:ReplyMessageNotFound");
 
         var now = clock.Now.ToUniversalTime();
-        var message = new ChatMessage(guidGenerator.Create(), input.ConversationId, UserId, input.Text,
+        var message = new ChatMessage(guidGenerator.Create(), input.ConversationId, UserId, text,
             input.ClientMessageId, input.ReplyToMessageId);
         if (input.AttachmentIds.Count > 20) throw new BusinessException("Collaboration:TooManyAttachments");
         var attachmentIds = input.AttachmentIds.Distinct().ToArray();
@@ -190,7 +194,7 @@ public class CollaborationAppService(
             throw new BusinessException("Collaboration:InvalidAttachment");
         foreach (var attachment in attachments) { attachment.AttachTo(message.Id); message.Attachments.Add(attachment); }
         db.Messages.Add(message);
-        conversation.SetLastMessage(input.Text, now);
+        conversation.SetLastMessage(text.Length > 0 ? text : attachments[0].FileName, now);
         var recipientIds = conversation.Members.Where(x => x.UserId != UserId).Select(x => x.UserId).ToArray();
 
         var evt = new ChatMessageSentEto(guidGenerator.Create(), now, CurrentCorrelationId(), conversation.Id,
@@ -250,7 +254,8 @@ public class CollaborationAppService(
 
     public async Task MarkReadAsync(Guid conversationId, CancellationToken ct = default)
     {
-        var member = await db.ConversationMembers.SingleOrDefaultAsync(x => x.ConversationId == conversationId && x.UserId == UserId, ct)
+        var me = UserId;
+        var member = await db.ConversationMembers.SingleOrDefaultAsync(x => x.ConversationId == conversationId && x.UserId == me, ct)
             ?? throw new AbpAuthorizationException();
         await db.ConversationMembers.Where(x => x.Id == member.Id)
             .ExecuteUpdateAsync(setters => setters
@@ -258,8 +263,11 @@ public class CollaborationAppService(
                 .SetProperty(x => x.LastReadAt, clock.Now.ToUniversalTime()), ct);
     }
 
-    public Task<int> GetTotalUnreadAsync(CancellationToken ct = default) =>
-        db.ConversationMembers.Where(x => x.UserId == UserId).SumAsync(x => x.UnreadCount, ct);
+    public Task<int> GetTotalUnreadAsync(CancellationToken ct = default)
+    {
+        var me = UserId;
+        return db.ConversationMembers.Where(x => x.UserId == me).SumAsync(x => x.UnreadCount, ct);
+    }
 
     public async Task<PagedMessagesDto> SearchMessagesAsync(Guid conversationId, string? keyword, int skip = 0, int take = 50, CancellationToken ct = default)
     {

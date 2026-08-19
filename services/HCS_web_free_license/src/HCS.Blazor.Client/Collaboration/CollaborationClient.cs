@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -82,6 +83,9 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
             $"api/notifications?unreadOnly={unreadOnly}&skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}",
             cancellationToken);
 
+    public Task MarkNotificationReadAsync(Guid notificationId, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Post, $"api/notifications/{notificationId:D}/read", cancellationToken: cancellationToken);
+
     public async Task<UploadAttachmentResult> UploadAttachmentAsync(
         Guid conversationId,
         IBrowserFile file,
@@ -93,8 +97,12 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
         }
 
         using var content = new MultipartFormDataContent();
-        await using var stream = file.OpenReadStream(MaxAttachmentSize, cancellationToken);
-        using var fileContent = new StreamContent(stream);
+        await using var source = file.OpenReadStream(MaxAttachmentSize, cancellationToken);
+        await using var buffer = new MemoryStream();
+        await source.CopyToAsync(buffer, cancellationToken);
+        buffer.Position = 0;
+        using var fileContent = new StreamContent(buffer);
+        fileContent.Headers.ContentLength = buffer.Length;
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
         content.Add(fileContent, "file", file.Name);

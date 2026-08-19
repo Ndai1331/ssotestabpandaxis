@@ -22,7 +22,7 @@
 <PageTitle>@T("Chat:Title") · HCS</PageTitle>
 
 <main class="hcs-chat-page" aria-labelledby="chat-title">
-    <section class="hcs-chat" aria-label="@T("Chat:Title")">
+    <section class="hcs-chat @(infoOpen ? "hcs-chat--info-open" : "hcs-chat--info-collapsed")" aria-label="@T("Chat:Title")">
         <aside class="hcs-chat__conversations @(mobileView == MobileView.List ? "hcs-chat__panel--mobile-active" : null)" aria-label="@T("Chat:ConversationList")">
             <header class="hcs-chat__panel-header">
                 <div>
@@ -156,7 +156,7 @@
                     <button class="hcs-chat__icon hcs-chat__back" type="button" aria-label="@T("Chat:ConversationList")" @onclick="ShowList"><i class="fa fa-arrow-left" aria-hidden="true"></i></button>
                     <span class="hcs-chat__avatar">@ConversationInitials(selected)</span>
                     <div class="hcs-chat__thread-title"><h2>@ConversationTitle(selected)</h2><small>@ConversationTypeLabel(selected.Type)</small></div>
-                    <button class="hcs-chat__icon hcs-chat__info-button" type="button" aria-label="@T("Chat:Information")" @onclick="ShowInfo"><i class="fa fa-circle-info" aria-hidden="true"></i></button>
+                    <button class="hcs-chat__icon hcs-chat__info-button @(infoOpen ? "is-active" : null)" type="button" aria-pressed="@infoOpen.ToString().ToLowerInvariant()" aria-label="@(infoOpen ? T("Chat:HideInformation") : T("Chat:Information"))" @onclick="ToggleInfo"><i class="fa fa-circle-info" aria-hidden="true"></i></button>
                 </header>
                 @if (realtimeUnavailable)
                 {
@@ -185,20 +185,32 @@
                         @foreach (var message in messages)
                         {
                             <article class="hcs-chat__message @(message.SenderUserId == currentUserId ? "hcs-chat__message--mine" : null)">
-                                <div class="hcs-chat__message-meta"><strong>@MemberName(message.SenderUserId)</strong><time datetime="@message.CreatedAt.ToUniversalTime().ToString("O")">@message.CreatedAt.ToLocalTime().ToString("g")</time></div>
+                                <div class="hcs-chat__message-meta"><strong>@MemberName(message.SenderUserId)</strong><time datetime="@FormatMessageTimestamp(message.CreatedAt)">@FormatMessageTime(message.CreatedAt)</time></div>
                                 @if (message.IsDeleted)
                                 {
                                     <p class="hcs-chat__message-deleted">@T("Chat:DeletedMessage")</p>
                                 }
                                 else
                                 {
-                                    <p>@message.Text</p>
+                                    @if (!string.IsNullOrWhiteSpace(message.Text))
+                                    {
+                                        <p>@message.Text</p>
+                                    }
                                     @if (message.Attachments.Count > 0)
                                     {
                                         <div class="hcs-chat__attachments">
                                             @foreach (var attachment in message.Attachments)
                                             {
-                                                <a href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener"><i class="fa fa-paperclip" aria-hidden="true"></i>@attachment.FileName</a>
+                                                @if (IsImage(attachment))
+                                                {
+                                                    <button class="hcs-chat__image" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
+                                                        <img src="@AttachmentUrl(attachment.Id)" alt="@attachment.FileName" />
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <a href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")"><i class="fa fa-paperclip" aria-hidden="true"></i>@attachment.FileName</a>
+                                                }
                                             }
                                         </div>
                                     }
@@ -214,9 +226,12 @@
                         @if (pendingFiles.Count > 0)
                         {
                             <div class="hcs-chat__pending-files" aria-label="@T("Chat:Attach")">
-                                @foreach (var file in pendingFiles)
+                                @foreach (var file in pendingFiles.ToArray())
                                 {
-                                    <span><i class="fa fa-paperclip" aria-hidden="true"></i>@file.Name</span>
+                                    <span>
+                                        <i class="fa fa-paperclip" aria-hidden="true"></i>@file.Name
+                                        <button type="button" aria-label="@T("Chat:RemoveAttachment")" @onclick="() => RemovePendingFile(file)"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+                                    </span>
                                 }
                             </div>
                         }
@@ -226,11 +241,11 @@
                         }
                         <div class="hcs-chat__composer-row">
                             <label class="hcs-chat__attach" title="@T("Chat:Attach")">
-                                <InputFile OnChange="OnFilesSelected" multiple accept="image/*,.pdf,.txt,.docx,.xlsx,.mp4,.mp3" />
+                                <InputFile class="visually-hidden" OnChange="OnFilesSelected" multiple accept="image/*,.pdf,.txt,.docx,.xlsx,.mp4,.mp3" />
                                 <i class="fa fa-paperclip" aria-hidden="true"></i><span class="visually-hidden">@T("Chat:Attach")</span>
                             </label>
-                            <textarea @bind="messageText" @bind:event="oninput" rows="1" maxlength="4000" placeholder="@T("Chat:MessagePlaceholder")" aria-label="@T("Chat:MessagePlaceholder")"></textarea>
-                            <button class="btn btn-primary hcs-chat__send" type="submit" disabled="@(isSending || string.IsNullOrWhiteSpace(messageText))">
+                            <textarea @bind="messageText" @bind:event="oninput" @onkeydown="OnComposerKeyDown" @onkeydown:preventDefault="preventComposerDefault" rows="1" maxlength="4000" placeholder="@T("Chat:MessagePlaceholder")" aria-label="@T("Chat:MessagePlaceholder")"></textarea>
+                            <button class="btn btn-primary hcs-chat__send" type="submit" disabled="@(isSending || !CanSend)">
                                 <i class="fa @(isSending ? "fa-spinner fa-spin" : "fa-paper-plane")" aria-hidden="true"></i><span>@T("Chat:Send")</span>
                             </button>
                         </div>
@@ -246,7 +261,7 @@
             }
             else
             {
-                <header class="hcs-chat__panel-header"><div><small>@T("Chat:Information")</small><h2>@ConversationTitle(selected)</h2></div><button class="hcs-chat__icon hcs-chat__back" type="button" aria-label="@T("Chat:Title")" @onclick="ShowThread"><i class="fa fa-arrow-left" aria-hidden="true"></i></button></header>
+                <header class="hcs-chat__panel-header"><div><small>@T("Chat:Information")</small><h2>@ConversationTitle(selected)</h2></div><button class="hcs-chat__icon hcs-chat__back" type="button" aria-label="@T("Chat:HideInformation")" @onclick="CloseInfo"><i class="fa fa-arrow-left" aria-hidden="true"></i></button></header>
                 <div class="hcs-chat__info-body">
                     <span class="hcs-chat__avatar hcs-chat__avatar--large">@ConversationInitials(selected)</span>
                     <p class="hcs-chat__info-type">@ConversationTypeLabel(selected.Type)</p>
@@ -287,6 +302,57 @@
                             </button>
                         </div>
                     }
+                    <div class="hcs-chat__info-section">
+                        <h3>@T("Chat:SharedMedia")</h3>
+                        <div class="hcs-chat__media-actions">
+                            <button class="btn btn-outline-primary @(mediaPanel == MediaPanel.Photos ? "is-active" : null)" type="button" @onclick="() => ToggleMediaPanel(MediaPanel.Photos)">
+                                <i class="fa fa-image" aria-hidden="true"></i>@T("Chat:ViewPhotos")
+                            </button>
+                            <button class="btn btn-outline-primary @(mediaPanel == MediaPanel.Files ? "is-active" : null)" type="button" @onclick="() => ToggleMediaPanel(MediaPanel.Files)">
+                                <i class="fa fa-paperclip" aria-hidden="true"></i>@T("Chat:ViewFiles")
+                            </button>
+                        </div>
+                        @if (mediaPanel == MediaPanel.Photos)
+                        {
+                            @if (!ConversationPhotos.Any())
+                            {
+                                <p class="hcs-chat__media-empty">@T("Chat:NoPhotos")</p>
+                            }
+                            else
+                            {
+                                <ul class="hcs-chat__media-list hcs-chat__media-list--photos">
+                                    @foreach (var attachment in ConversationPhotos)
+                                    {
+                                        <li>
+                                            <button class="hcs-chat__media-photo" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
+                                                <img src="@AttachmentUrl(attachment.Id)" alt="@attachment.FileName" />
+                                            </button>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        }
+                        else if (mediaPanel == MediaPanel.Files)
+                        {
+                            @if (!ConversationFiles.Any())
+                            {
+                                <p class="hcs-chat__media-empty">@T("Chat:NoFiles")</p>
+                            }
+                            else
+                            {
+                                <ul class="hcs-chat__media-list">
+                                    @foreach (var attachment in ConversationFiles)
+                                    {
+                                        <li>
+                                            <a class="hcs-chat__media-file" href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")">
+                                                <i class="fa fa-paperclip" aria-hidden="true"></i><span>@attachment.FileName</span>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        }
+                    </div>
                     <div class="hcs-chat__info-actions">
                         <button class="btn btn-light" type="button" @onclick="TogglePinnedAsync"><i class="fa fa-thumbtack" aria-hidden="true"></i>@(selected.IsPinned ? T("Chat:Unpin") : T("Chat:Pin"))</button>
                         @if (permissions?.CanLeave == true)
@@ -298,6 +364,17 @@
             }
         </aside>
     </section>
+    @if (previewAttachment is not null)
+    {
+        <div class="hcs-chat-preview" role="dialog" aria-modal="true" aria-label="@T("Chat:ViewImage")" @onclick="ClosePreview">
+            <button class="hcs-chat-preview__close" type="button" aria-label="@T("Chat:ClosePreview")" @onclick="ClosePreview" @onclick:stopPropagation><i class="fa fa-xmark" aria-hidden="true"></i></button>
+            @if (IsImage(previewAttachment))
+            {
+                <img src="@AttachmentUrl(previewAttachment.Id)" alt="@previewAttachment.FileName" @onclick:stopPropagation />
+            }
+            <a class="hcs-chat-preview__download" href="@AttachmentUrl(previewAttachment.Id)" target="_blank" rel="noopener" @onclick:stopPropagation>@previewAttachment.FileName</a>
+        </div>
+    }
 </main>
 
 @code {
@@ -334,6 +411,22 @@
     private int messageSkip;
     private long totalMessageCount;
     private MobileView mobileView = MobileView.List;
+    private bool infoOpen;
+    private bool preventComposerDefault;
+    private MessageAttachmentDto? previewAttachment;
+    private MediaPanel mediaPanel = MediaPanel.None;
+
+    private bool CanSend => !string.IsNullOrWhiteSpace(messageText) || pendingFiles.Count > 0;
+
+    private IEnumerable<MessageAttachmentDto> ConversationPhotos => ConversationAttachments.Where(IsImage);
+
+    private IEnumerable<MessageAttachmentDto> ConversationFiles => ConversationAttachments.Where(attachment => !IsImage(attachment));
+
+    private IEnumerable<MessageAttachmentDto> ConversationAttachments => messages
+        .Where(message => !message.IsDeleted)
+        .SelectMany(message => message.Attachments)
+        .GroupBy(attachment => attachment.Id)
+        .Select(group => group.First());
 
     private IEnumerable<ConversationDto> FilteredConversations => conversations.Where(conversation =>
         string.IsNullOrWhiteSpace(conversationSearch) ||
@@ -435,6 +528,8 @@
         messageSkip = 0;
         totalMessageCount = 0;
         mobileView = MobileView.Thread;
+        mediaPanel = MediaPanel.None;
+        Realtime.ActiveConversationId = value.Id;
 
         try
         {
@@ -488,7 +583,7 @@
 
     private async Task SendAsync()
     {
-        if (selected is null || isSending || string.IsNullOrWhiteSpace(messageText))
+        if (selected is null || isSending || !CanSend)
         {
             return;
         }
@@ -653,6 +748,7 @@
             selected = null;
             permissions = null;
             messages.Clear();
+            Realtime.ActiveConversationId = null;
             await LoadConversationsAsync();
             ShowList();
         }
@@ -679,6 +775,17 @@
             {
                 messageError = T("Chat:AttachmentTooLarge");
             }
+        }
+    }
+
+    private void RemovePendingFile(IBrowserFile file) => pendingFiles.Remove(file);
+
+    private async Task OnComposerKeyDown(KeyboardEventArgs args)
+    {
+        preventComposerDefault = args.Key == "Enter" && !args.ShiftKey;
+        if (preventComposerDefault)
+        {
+            await SendAsync();
         }
     }
 
@@ -729,9 +836,55 @@
         return contacts.Count == 0 ? LoadContactsAsync() : Task.CompletedTask;
     }
 
-    private void ShowList() => mobileView = MobileView.List;
-    private void ShowThread() => mobileView = MobileView.Thread;
-    private void ShowInfo() => mobileView = MobileView.Info;
+    private void ShowList()
+    {
+        infoOpen = false;
+        mediaPanel = MediaPanel.None;
+        mobileView = MobileView.List;
+        Realtime.ActiveConversationId = null;
+    }
+
+    private void ShowThread()
+    {
+        infoOpen = false;
+        mobileView = MobileView.Thread;
+    }
+
+    private void ToggleInfo()
+    {
+        infoOpen = !infoOpen;
+        if (!infoOpen)
+        {
+            mediaPanel = MediaPanel.None;
+        }
+        mobileView = infoOpen ? MobileView.Info : MobileView.Thread;
+    }
+
+    private void CloseInfo()
+    {
+        infoOpen = false;
+        mediaPanel = MediaPanel.None;
+        mobileView = MobileView.Thread;
+    }
+
+    private void ToggleMediaPanel(MediaPanel panel) =>
+        mediaPanel = mediaPanel == panel ? MediaPanel.None : panel;
+
+    private void OpenPreview(MessageAttachmentDto attachment) => previewAttachment = attachment;
+    private void ClosePreview() => previewAttachment = null;
+
+    private static bool IsImage(MessageAttachmentDto attachment) =>
+        attachment.Kind == AttachmentKind.Image ||
+        attachment.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+
+    private static string FormatMessageTime(DateTime value) =>
+        value.Year < 2 ? string.Empty : ToLocal(value).ToString("g");
+
+    private static string FormatMessageTimestamp(DateTime value) =>
+        value.Year < 2 ? string.Empty : ToLocal(value).ToUniversalTime().ToString("O");
+
+    private static DateTime ToLocal(DateTime value) =>
+        value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : DateTime.SpecifyKind(value, DateTimeKind.Utc).ToLocalTime();
 
     private async Task HandleRealtimeChangeAsync()
     {
@@ -811,14 +964,7 @@
     private string MapChatError(Exception exception, string fallbackKey)
     {
         LogChatError(exception, fallbackKey);
-        if (exception is CollaborationApiException api)
-        {
-            if (api.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-                return T("Chat:NoPermission");
-            if (api.StatusCode is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout)
-                return T("Catalog:ServiceUnavailable");
-        }
-        return T(fallbackKey);
+        return ChatErrorMapper.From(Localizer, exception, fallbackKey);
     }
 
     private void LogChatError(Exception exception, string operation)
@@ -838,6 +984,11 @@
     {
         Realtime.Changed -= HandleRealtimeChangeAsync;
         Realtime.StatusChanged -= HandleRealtimeStatusAsync;
+        if (Realtime.ActiveConversationId == selected?.Id)
+        {
+            Realtime.ActiveConversationId = null;
+        }
+
         return ValueTask.CompletedTask;
     }
 
@@ -846,6 +997,13 @@
         List,
         Thread,
         Info
+    }
+
+    private enum MediaPanel
+    {
+        None,
+        Photos,
+        Files
     }
 
     private enum LeftTab

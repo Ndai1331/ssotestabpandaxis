@@ -2,6 +2,7 @@ html,
 body.abp-application-layout {
     background: #f5f8f7 !important;
     color: #19334c;
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif !important;
 }
 
 #ApplicationContainer > div:first-child:not(:only-child) {
@@ -36,6 +37,9 @@ body.abp-application-layout {
 :root {
     --lpx-logo: url('/images/logo/leptonxlite/logo-light-thumbnail.png') !important;
     --lpx-logo-icon: url('/images/logo/leptonxlite/logo-light-thumbnail.png') !important;
+    --hcs-radius: 5px;
+    --bs-body-font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    --bs-font-sans-serif: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
 }
 :root .abp-account-layout .lpx-brand-logo{
     --lpx-logo: url('/images/logo/leptonxlite/logo-dark-thumbnail.png') !important;
@@ -58,6 +62,7 @@ body.abp-application-layout {
     --catalog-input: #eef3f7;
     --catalog-green: #48bd73;
     --catalog-danger: #df1e53;
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
     background:
         radial-gradient(circle at 96% 8%, rgba(123, 173, 99, .16), transparent 17rem),
         linear-gradient(135deg, #edf0ef 0%, #e6ebe9 100%);
@@ -92,6 +97,39 @@ body.abp-application-layout {
     margin: 0;
 }
 
+.hcs-document-page__header {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.1rem;
+}
+
+.hcs-document-page__header h1 {
+    margin: 0;
+}
+
+.hcs-document-page__header > :last-child:not(:only-child) {
+    flex: 0 0 auto;
+}
+
+/* Blazorise 2.3 applies ExtraLarge/Large via Modal.Size → .modal-xl/.modal-lg on the dialog.
+   Bootstrap 5.3 still sizes dialogs with --bs-modal-width inherited from .modal (default 500px). */
+.modal:has(> .modal-dialog.modal-xl),
+.modal.hcs-user-modal {
+    --bs-modal-width: min(94vw, 1180px);
+}
+
+.modal:has(> .modal-dialog.modal-lg) {
+    --bs-modal-width: min(94vw, 800px);
+}
+
+.modal:has(> .modal-dialog.modal-xl) > .modal-dialog,
+.modal.hcs-user-modal > .modal-dialog,
+.modal:has(> .modal-dialog.modal-lg) > .modal-dialog {
+    max-width: var(--bs-modal-width);
+}
+
 .hcs-catalog-page__actions {
     align-items: center;
     display: flex;
@@ -101,7 +139,7 @@ body.abp-application-layout {
 }
 
 .hcs-catalog-page .btn {
-    border-radius: .72rem;
+    border-radius: 5px;
     font-size: .95rem;
     font-weight: 700;
     min-height: 2.85rem;
@@ -131,7 +169,7 @@ body.abp-application-layout {
 
 .hcs-catalog-page .alert {
     border: 0;
-    border-radius: .75rem;
+    border-radius: 5px;
     margin: 0 auto 1rem;
     max-width: 1720px;
 }
@@ -139,7 +177,7 @@ body.abp-application-layout {
 .hcs-catalog-page .card {
     background: #fff;
     border: 0;
-    border-radius: .85rem;
+    border-radius: 5px;
     box-shadow: 0 10px 28px rgba(49, 72, 88, .07);
     margin-left: auto;
     margin-right: auto;
@@ -195,9 +233,9 @@ body.abp-application-layout {
 }
 
 .hcs-catalog-page .hcs-catalog-search .form-control {
-    border-radius: .72rem 0 0 .72rem;
+    border-radius: 5px 0 0 5px;
     box-shadow: none;
-    padding: .8rem 1rem;
+    padding: .5rem;
 }
 
 .hcs-catalog-page .hcs-catalog-search .form-control::placeholder {
@@ -206,7 +244,7 @@ body.abp-application-layout {
 }
 
 .hcs-catalog-page .hcs-catalog-search .btn {
-    border-radius: 0 .72rem .72rem 0;
+    border-radius: 0 5px 5px 0;
     min-width: 8.5rem;
 }
 
@@ -297,7 +335,7 @@ body.abp-application-layout {
     appearance: none;
     background: #eef3f6;
     border: 1px solid #dfe8ee;
-    border-radius: .25rem;
+    border-radius: 5px;
     display: inline-block;
     height: 1.35rem;
     margin: 0;
@@ -329,18 +367,26 @@ body.abp-application-layout {
 
 .hcs-catalog-page .hcs-row-actions .hcs-action-button {
     background: #fff;
-    border-radius: .65rem;
+    border-radius: 5px;
     min-height: 2.7rem;
     min-width: 2.7rem;
     padding: .45rem;
 }
 
 .hcs-catalog-page .hcs-row-actions .hcs-action-button--edit {
-    color: var(--catalog-primary);
+    color: #7A6FF0;
+}
+
+.hcs-catalog-page .hcs-row-actions .hcs-action-button--tasks {
+    color: #198754;
+}
+
+.hcs-catalog-page .hcs-row-actions .hcs-action-button--members {
+    color: #0dcaf0;
 }
 
 .hcs-catalog-page .hcs-row-actions .hcs-action-button--delete {
-    color: var(--catalog-danger);
+    color: #EB4D4B;
 }
 
 .hcs-catalog-page .hcs-catalog-grid .pagination {
@@ -375,7 +421,7 @@ body.abp-application-layout {
 
 .hcs-catalog-page .hcs-catalog-modal .modal-content {
     border: 0;
-    border-radius: 1rem;
+    border-radius: 5px;
     box-shadow: 0 25px 70px rgba(23, 50, 68, .25);
     overflow: hidden;
 }
@@ -406,6 +452,28 @@ body.abp-application-layout {
     gap: 1.1rem;
 }
 
+.hcs-form-row {
+    display: grid;
+    gap: 1.1rem 1.25rem;
+    grid-template-columns: minmax(8rem, 4fr) minmax(12rem, 8fr);
+    align-items: start;
+}
+
+.hcs-form-row--equal {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hcs-form-row .field {
+    margin: 0;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-form-row,
+    .hcs-form-row--equal {
+        grid-template-columns: 1fr;
+    }
+}
+
 .hcs-catalog-form .field {
     margin: 0;
 }
@@ -420,19 +488,34 @@ body.abp-application-layout {
 
 .hcs-catalog-form .form-control,
 .hcs-catalog-form .form-select,
-.hcs-catalog-form .numeric-picker {
+.hcs-catalog-form .numeric-picker,
+.hcs-catalog-form .b-is-datepicker,
+.hcs-catalog-form .b-is-datepicker .form-control,
+.hcs-catalog-form .flatpickr-input,
+.hcs-document-page input.form-control:not(textarea),
+.hcs-document-page .form-select {
     background-color: var(--catalog-input);
     border: 1px solid #e2eaf0;
-    border-radius: .78rem;
+    border-radius: 5px;
     box-shadow: none;
     color: #24465e;
     font-size: 1rem;
-    min-height: 3.45rem;
-    padding: .8rem 1rem;
+    height: 36px;
+    max-height: 36px;
+    min-height: 36px;
+    padding: .35rem .5rem;
 }
 
 .hcs-catalog-form textarea.form-control {
+    height: auto;
+    max-height: none;
     min-height: 7rem;
+}
+
+select.hcs-catalog-select2 + .select2-container .select2-selection--single {
+    height: 38px !important;
+    max-height: 36px;
+    min-height: 38px !important;
 }
 
 .hcs-catalog-form .form-control:focus,
@@ -502,6 +585,11 @@ body.abp-application-layout {
     }
 
     .hcs-catalog-titlebar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .hcs-document-page__header {
         align-items: flex-start;
         flex-direction: column;
     }
@@ -607,7 +695,7 @@ body.abp-application-layout {
 .hcs-status-badge,
 .hcs-priority-badge,
 .hcs-progress-badge {
-    border-radius: 999px;
+    border-radius: 5px;
     display: inline-flex;
     font-size: .78rem;
     font-weight: 700;
@@ -641,6 +729,24 @@ body.abp-application-layout {
     margin-top: .15rem;
 }
 
+.hcs-detail-split {
+    align-items: stretch;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+    .hcs-detail-split {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.hcs-detail-split > .card,
+.hcs-detail-split > .d-flex > .card {
+    height: 100%;
+}
+
 
 /* === hcs-workspace.css (bundled into main.css) === */
 /* Workspace dashboard chrome. Visual target: community workspace home. */
@@ -653,6 +759,7 @@ body.abp-application-layout {
     --ws-line: #e5e7eb;
     --ws-bg: #f9fafb;
     color: var(--ws-text);
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
     margin: -1.5rem calc(-1 * clamp(.9rem, 3vw, 2.5rem));
     min-height: calc(100dvh - var(--hcs-header-h, 4rem));
     padding: 1.25rem clamp(.9rem, 3vw, 2.5rem) 2.5rem;
@@ -662,7 +769,7 @@ body.abp-application-layout {
     align-items: center;
     background: #fff;
     border: 1px solid var(--ws-line);
-    border-radius: 14px;
+    border-radius: 5px;
     display: flex;
     flex-wrap: wrap;
     gap: .75rem;
@@ -686,11 +793,22 @@ body.abp-application-layout {
     max-width: 28rem;
 }
 
+.hcs-workspace .hcs-ws-filter-dates .form-control,
+.hcs-workspace .hcs-ws-filter-dates .flatpickr-input,
+.hcs-workspace .hcs-ws-filter-dates .b-is-datepicker,
+.hcs-workspace .hcs-ws-filter-dates .b-is-datepicker .form-control {
+    height: 36px;
+    max-height: 36px;
+    min-height: 36px;
+    padding-bottom: .35rem;
+    padding-top: .35rem;
+}
+
 .hcs-workspace .hcs-ws-search {
     align-items: center;
     background: var(--ws-pink);
     border: 0;
-    border-radius: 0;
+    border-radius: 5px;
     color: #fff;
     display: inline-flex;
     font-size: .8rem;
@@ -712,7 +830,7 @@ body.abp-application-layout {
 .hcs-workspace .hcs-ws-kpi {
     background: #fff;
     border: 1px solid var(--ws-line);
-    border-radius: 14px;
+    border-radius: 5px;
     display: flex;
     flex-direction: column;
     padding: 1rem 1.1rem;
@@ -726,9 +844,9 @@ body.abp-application-layout {
 
 .hcs-workspace .hcs-ws-kpi-icon {
     align-items: center;
-    border-radius: 9px;
+    border-radius: 5px;
     display: flex;
-    height: 38px;
+    height: 36px;
     justify-content: center;
     width: 38px;
 }
@@ -758,7 +876,7 @@ body.abp-application-layout {
 .hcs-workspace .hcs-ws-card {
     background: #fff;
     border: 1px solid var(--ws-line);
-    border-radius: 14px;
+    border-radius: 5px;
     display: flex;
     flex-direction: column;
     min-height: 16rem;
@@ -781,7 +899,7 @@ body.abp-application-layout {
 
 .hcs-workspace .hcs-ws-card-icon {
     align-items: center;
-    border-radius: 9px;
+    border-radius: 5px;
     display: flex;
     flex-shrink: 0;
     height: 34px;
@@ -796,7 +914,7 @@ body.abp-application-layout {
     align-items: center;
     background: var(--ws-pink);
     border: 0;
-    border-radius: 0;
+    border-radius: 5px;
     color: #fff;
     display: inline-flex;
     font-size: .75rem;
@@ -826,7 +944,7 @@ body.abp-application-layout {
 .hcs-workspace .hcs-ws-dn {
     background: transparent;
     border: 0;
-    border-radius: 999px;
+    border-radius: 5px;
     color: var(--ws-text);
     font-size: .85rem;
     font-weight: 650;
@@ -852,7 +970,7 @@ body.abp-application-layout {
 .hcs-workspace .hcs-ws-ev-row {
     align-items: center;
     border: 1px solid var(--ws-line);
-    border-radius: 10px;
+    border-radius: 5px;
     display: flex;
     gap: .65rem;
     padding: .55rem .7rem;
@@ -866,7 +984,7 @@ body.abp-application-layout {
 .hcs-workspace .hcs-ws-view {
     background: var(--ws-pink);
     border: 0;
-    border-radius: 0;
+    border-radius: 5px;
     color: #fff;
     font-size: .75rem;
     font-weight: 650;
@@ -876,7 +994,7 @@ body.abp-application-layout {
 .hcs-workspace .hcs-ws-notif { display: flex; flex-direction: column; gap: .35rem; max-height: 18rem; overflow: auto; }
 
 .hcs-workspace .hcs-ws-notif-row {
-    border-radius: 8px;
+    border-radius: 5px;
     display: flex;
     gap: .55rem;
     justify-content: space-between;
@@ -903,7 +1021,7 @@ body.abp-application-layout {
 .hcs-workspace .hcs-ws-task-row {
     align-items: center;
     border: 1px solid var(--ws-line);
-    border-radius: 10px;
+    border-radius: 5px;
     display: flex;
     gap: .55rem;
     padding: .55rem .7rem;
@@ -912,17 +1030,17 @@ body.abp-application-layout {
 .hcs-workspace .hcs-ws-doc-name,
 .hcs-workspace .hcs-ws-task-name { flex: 1; font-size: .85rem; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.hcs-workspace .hcs-ws-proj-row { border: 1px solid var(--ws-line); border-radius: 10px; padding: .65rem .75rem; }
+.hcs-workspace .hcs-ws-proj-row { border: 1px solid var(--ws-line); border-radius: 5px; padding: .65rem .75rem; }
 .hcs-workspace .hcs-ws-proj-top { align-items: center; display: flex; justify-content: space-between; gap: .5rem; }
 .hcs-workspace .hcs-ws-proj-name { font-size: .86rem; font-weight: 700; }
-.hcs-workspace .hcs-ws-pbar { background: #f3f4f6; border-radius: 999px; height: 6px; margin: .45rem 0; overflow: hidden; }
+.hcs-workspace .hcs-ws-pbar { background: #f3f4f6; border-radius: 5px; height: 6px; margin: .45rem 0; overflow: hidden; }
 .hcs-workspace .hcs-ws-pbf { background: var(--ws-pink); height: 100%; }
 .hcs-workspace .hcs-ws-proj-foot { color: var(--ws-muted); display: flex; font-size: .75rem; justify-content: space-between; }
 
 .hcs-workspace .hcs-ws-chart { display: flex; flex-direction: column; gap: .55rem; }
 .hcs-workspace .hcs-ws-chart-row { display: grid; gap: .5rem; grid-template-columns: 7rem 1fr 2.4rem; align-items: center; }
 .hcs-workspace .hcs-ws-chart-lbl { font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hcs-workspace .hcs-ws-chart-track { background: #f3f4f6; border-radius: 999px; height: 8px; overflow: hidden; }
+.hcs-workspace .hcs-ws-chart-track { background: #f3f4f6; border-radius: 5px; height: 8px; overflow: hidden; }
 .hcs-workspace .hcs-ws-chart-fill { background: #2563eb; height: 100%; }
 .hcs-workspace .hcs-ws-chart-pct { font-size: .75rem; font-weight: 700; text-align: right; }
 
@@ -956,7 +1074,7 @@ body.abp-application-layout {
 .hcs-kanban-column {
     background: #f7f9fc;
     border: 1px solid #e5e7eb;
-    border-radius: .75rem;
+    border-radius: 5px;
     display: flex;
     flex-direction: column;
     min-height: 22rem;
@@ -981,7 +1099,7 @@ body.abp-application-layout {
 
 .hcs-kanban-count {
     background: #fff;
-    border-radius: 999px;
+    border-radius: 5px;
     color: #6b7280;
     font-size: .75rem;
     font-weight: 700;
@@ -999,7 +1117,7 @@ body.abp-application-layout {
 .hcs-kanban-card {
     background: #fff;
     border: 1px solid #e9e9e9;
-    border-radius: .75rem;
+    border-radius: 5px;
     box-shadow: 0 6px 16px rgba(49, 72, 88, .05);
     cursor: grab;
     padding: .75rem;
@@ -1029,7 +1147,7 @@ body.abp-application-layout {
 .hcs-kanban-dates { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .55rem; }
 
 .hcs-kanban-date {
-    border-radius: 4px;
+    border-radius: 5px;
     display: inline-flex;
     font-size: .68rem;
     padding: .2rem .35rem;
@@ -1057,29 +1175,4 @@ body.abp-application-layout {
     height: 1.7rem;
     justify-content: center;
     width: 1.7rem;
-}
-
-/* === Critical layout fallbacks === */
-.hcs-catalog-titlebar {
-    align-items: flex-end !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    width: 100%;
-}
-.hcs-catalog-page__actions {
-    margin-left: auto !important;
-    justify-content: flex-end !important;
-}
-.hcs-empty, .hcs-loading {
-    align-items: center !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    text-align: center !important;
-    width: 100% !important;
-    min-height: 14rem !important;
-}
-.hcs-catalog-page .table-responsive .hcs-empty,
-.hcs-catalog-grid-card .hcs-empty {
-    margin: 0 auto;
 }

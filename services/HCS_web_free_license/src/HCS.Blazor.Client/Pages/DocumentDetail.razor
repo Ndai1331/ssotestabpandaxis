@@ -11,14 +11,12 @@
 <section class="hcs-document-page">
     <header class="hcs-document-page__header">
         <div>
-            <p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p>
+            
             <h1>@(document?.Title ?? L["Feature:DocumentTitle"])</h1>
             @if (document is not null) { <p>@document.Number · @document.Status</p> }
         </div>
         <a class="btn btn-outline-primary" href="/manage-documents">@L["Feature:BackToList"]</a>
     </header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
-    @if (success is not null) { <div class="alert alert-success">@success</div> }
     @if (document is not null)
     {
         <div class="row g-3">
@@ -65,12 +63,12 @@
                     <CardBody>
                         <div class="d-flex gap-2 mb-3">
                             <Button Color="Color.Primary" Clicked="SubmitAsync" Disabled="@(document.Status != DocumentStatus.Draft)">@L["Feature:SubmitDocument"]</Button>
+                            <AuthorizeView Policy="Documents.Workflow.Start">
+                                <Authorized>
+                                    <Button Color="Color.Primary" Outline="true" Clicked="OpenSubmitWorkflow">@L["Work:SubmitWorkflow"]</Button>
+                                </Authorized>
+                            </AuthorizeView>
                         </div>
-                        <Select TValue="Guid?" @bind-Value="definitionId">
-                            <SelectItem TValue="Guid?" Value="null">@L["Menu:WorkflowDefinitions"]</SelectItem>
-                            @foreach (var definition in definitions) { <SelectItem TValue="Guid?" Value="@definition.Id">@definition.Name</SelectItem> }
-                        </Select>
-                        <Button Color="Color.Primary" Class="mt-2" Clicked="StartWorkflowAsync">@L["Feature:StartWorkflow"]</Button>
                     </CardBody>
                 </Card>
                 <Card Class="mt-3">
@@ -88,58 +86,47 @@
         </div>
     }
 </section>
+<SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
 @code {
     [Parameter] public Guid DocumentId { get; set; }
     private DocumentDto? document;
     private readonly List<ChatContactDto> contacts = [];
-    private readonly List<WorkflowDefinitionDto> definitions = [];
-    private Guid? assigneeId, definitionId;
+    private SubmitWorkflowModal? submitModal;
+    private Guid? assigneeId;
     private string responsibility = "reviewer";
-    private string? error, success;
 
     protected override Task OnParametersSetAsync() => LoadAsync();
     private async Task LoadAsync()
     {
-        error = null;
-        try
+                try
         {
             document = await Documents.GetDocumentAsync(DocumentId);
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
-            if (definitions.Count == 0) definitions.AddRange(await Documents.GetDefinitionsAsync());
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
     private async Task UploadAsync(InputFileChangeEventArgs args)
     {
-        try { await Documents.UploadFileAsync(DocumentId, args.File); success = L["Catalog:Created"]; await LoadAsync(); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        try { await Documents.UploadFileAsync(DocumentId, args.File); await NotifySuccessAsync(L["Catalog:Created"]); await LoadAsync(); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteFileAsync(Guid fileId)
     {
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value.Replace("{0}", L["Feature:Files"]))) return;
         try { await Documents.DeleteFileAsync(DocumentId, fileId); await LoadAsync(); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private async Task AssignAsync()
     {
         if (assigneeId is not { } userId) return;
-        try { document = await Documents.AssignAsync(DocumentId, new AssignDocumentRequest(userId, string.IsNullOrWhiteSpace(responsibility) ? "reviewer" : responsibility.Trim())); success = L["Catalog:Updated"]; }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        try { document = await Documents.AssignAsync(DocumentId, new AssignDocumentRequest(userId, string.IsNullOrWhiteSpace(responsibility) ? "reviewer" : responsibility.Trim())); await NotifySuccessAsync(L["Catalog:Updated"]); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task SubmitAsync()
     {
-        try { document = await Documents.SubmitAsync(DocumentId); success = L["Feature:SubmitDocument"]; }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        try { document = await Documents.SubmitAsync(DocumentId); await NotifySuccessAsync(L["Feature:SubmitDocument"]); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
-    private async Task StartWorkflowAsync()
-    {
-        if (definitionId is not { } id) return;
-        try
-        {
-            await Documents.StartWorkflowAsync(new StartWorkflowRequest(DocumentId, id, Guid.NewGuid().ToString("N")));
-            success = L["Feature:StartWorkflow"]; await LoadAsync();
-        }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
-    }
+    private Task OpenSubmitWorkflow() => submitModal?.ShowAsync(DocumentId) ?? Task.CompletedTask;
     private string ContactName(Guid id) => contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.ToString("N")[..8];
 }

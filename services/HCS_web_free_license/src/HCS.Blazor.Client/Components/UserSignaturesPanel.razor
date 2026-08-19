@@ -1,0 +1,91 @@
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+@inject IUiMessageService UiMessage
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="hcs-user-signatures-panel">
+    <p class="hcs-form-note">@L["Feature:SignatureImage"]</p>
+    <InputFile class="form-control mb-3" accept="image/*" OnChange="UploadAsync" />
+    @if (items.Count == 0)
+    {
+        <p class="hcs-empty-state">@L["Catalog:EmptyTitle"]</p>
+    }
+    else
+    {
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>@L["Catalog:Name"]</th>
+                    <th>@L["Catalog:Status"]</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in items)
+            {
+                <tr>
+                    <td>@item.FileName <small>(@(item.Size / 1024) KB)</small></td>
+                    <td>@(item.IsDefault ? L["Feature:DefaultSignature"] : L["Catalog:Active"])</td>
+                    <td>
+                        <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteAsync(item)">
+                            @L["Catalog:Delete"]
+                        </Button>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+</div>
+@code {
+    [Parameter] public Guid? UserId { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private readonly List<UserSignatureDto> items = [];
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            items.Clear();
+            items.AddRange(await Documents.GetSignaturesAsync(UserId));
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex);
+        }
+    }
+
+    private async Task UploadAsync(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            await Documents.UploadSignatureAsync(args.File, UserId);
+            await NotifySuccessAsync(L["Catalog:Created"]);
+            await LoadAsync();
+            await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex, BffErrorKind.Save);
+        }
+    }
+
+    private async Task DeleteAsync(UserSignatureDto item)
+    {
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.FileName))) return;
+        try
+        {
+            await Documents.DeleteSignatureAsync(item.Id, UserId);
+            await NotifySuccessAsync(L["Catalog:Deleted"]);
+            await LoadAsync();
+            await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex, BffErrorKind.Delete);
+        }
+    }
+}

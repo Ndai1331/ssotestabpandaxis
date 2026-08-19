@@ -10,38 +10,45 @@
         <div class="min-w-0"><h1>@L["Menu:WorkflowDefinitions"]</h1></div>
         <div class="hcs-catalog-page__actions">
             <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync" Disabled="@isLoading">@L["Catalog:Refresh"]</Button>
-            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
+            <AuthorizeView Policy="Documents.Workflow.Manage">
+                <Authorized>
+                    <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
-    @if (success is not null) { <div class="alert alert-success">@success</div> }
-    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
             <Addons Class="hcs-catalog-search">
                 <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
-                <Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="() => { }"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button></Addon>
+                <Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="() => search = filter"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button></Addon>
             </Addons>
         </div>
     </CardBody></Card>
     <Card Class="hcs-catalog-grid-card"><CardBody>
         @if (isLoading) { <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div> }
-        else if (VisibleDefinitions.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div> }
+        else if (Visible.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div> }
         else
         {
             <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
-                <thead><tr><th></th><th>@L["Catalog:Code"]</th><th>@L["Feature:AddStep"]</th><th>@L["Catalog:Actions"]</th></tr></thead>
+                <thead><tr><th>@L["Catalog:Code"]</th><th>@L["Catalog:Name"]</th><th>@L["Work:Description"]</th><th>@L["Work:IsActive"]</th><th>@L["Catalog:Actions"]</th></tr></thead>
                 <tbody>
-                @foreach (var item in VisibleDefinitions)
+                @foreach (var item in Visible)
                 {
                     <tr>
-                        <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
-                        <td><strong>@item.Name</strong><span class="hcs-catalog-code">#@item.Code</span></td>
-                        <td>@item.Steps.Count</td>
+                        <td><span class="hcs-catalog-code">#@item.Code</span></td>
+                        <td><strong>@item.Name</strong></td>
+                        <td>@item.Description</td>
+                        <td>@(item.IsActive ? L["Catalog:Active"] : L["Catalog:Inactive"])</td>
                         <td>
-                            <div class="hcs-row-actions">
-                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--edit" Clicked="() => Edit(item)"><Icon Name="@IconName.Edit" /></Button>
-                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button hcs-action-button--delete" Clicked="() => DeleteAsync(item)"><Icon Name="@IconName.Delete" /></Button>
-                            </div>
+                            <AuthorizeView Policy="Documents.Workflow.Manage">
+                                <Authorized>
+                                    <div class="hcs-row-actions">
+                                        <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--edit" Clicked="() => Edit(item)"><Icon Name="@IconName.Edit" /></Button>
+                                        <Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button hcs-action-button--delete" Clicked="() => DeleteAsync(item)"><Icon Name="@IconName.Delete" /></Button>
+                                    </div>
+                                </Authorized>
+                            </AuthorizeView>
                         </td>
                     </tr>
                 }
@@ -55,8 +62,12 @@
     <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@(editing is null ? L["Catalog:Create"] : L["Catalog:Edit"])</ModalTitle><CloseButton /></ModalHeader>
     <ModalBody Class="hcs-catalog-modal__body">
         <div class="hcs-catalog-form">
-            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editing is not null)" /></Field>
-            <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><TextInput @bind-Value="form.Name" /></Field>
+            <div class="hcs-form-row">
+                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editing is not null)" Autocomplete="off" name="hcsKindCode" /></Field>
+                <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><TextInput @bind-Value="form.Name" Autocomplete="off" name="hcsKindName" /></Field>
+            </div>
+            <Field><FieldLabel>@L["Work:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
+            <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Work:IsActive"]</Check></Field>
         </div>
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
@@ -65,32 +76,30 @@
     </ModalFooter>
 </ModalContent></Modal>
 @code {
-    private readonly List<WorkflowDefinitionDto> definitions = [];
-    private readonly CatalogForm form = new();
-    private WorkflowDefinitionDto? editing;
+    private readonly List<WorkflowKindDto> kinds = [];
+    private readonly KindForm form = new();
+    private WorkflowKindDto? editing;
     private Modal? modal;
-    private string filter = "";
+    private string filter = "", search = "";
     private bool isLoading;
-    private string? error, success;
 
-    private List<WorkflowDefinitionDto> VisibleDefinitions => string.IsNullOrWhiteSpace(filter)
-        ? definitions
-        : definitions.Where(x => x.Code.Contains(filter, StringComparison.OrdinalIgnoreCase) || x.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+    private List<WorkflowKindDto> Visible => string.IsNullOrWhiteSpace(search)
+        ? kinds
+        : kinds.Where(x => x.Code.Contains(search, StringComparison.OrdinalIgnoreCase) || x.Name.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
 
     protected override Task OnInitializedAsync() => LoadAsync();
     private async Task LoadAsync()
     {
-        isLoading = true; error = null;
-        try { definitions.Clear(); definitions.AddRange(await Documents.GetDefinitionsAsync()); }
-        catch (Exception ex) { error = MapBffError(ex); }
+        isLoading = true;
+        try { kinds.Clear(); kinds.AddRange(await Documents.GetKindsAsync()); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
     private async Task OpenCreate() { editing = null; form.Reset(); if (modal is not null) await modal.Show(); }
-    private async Task Edit(WorkflowDefinitionDto item)
+    private async Task Edit(WorkflowKindDto item)
     {
         editing = item;
-        form.Code = item.Code;
-        form.Name = item.Name;
+        form.Code = item.Code; form.Name = item.Name; form.Description = item.Description ?? ""; form.IsActive = item.IsActive;
         if (modal is not null) await modal.Show();
     }
     private async Task SaveAsync()
@@ -98,28 +107,27 @@
         try
         {
             if (editing is null)
-                await Documents.CreateDefinitionAsync(new CreateWorkflowDefinitionRequest(form.Code.Trim(), form.Name.Trim(), []));
+                await Documents.CreateKindAsync(new CreateWorkflowKindRequest(form.Code.Trim(), form.Name.Trim(), form.Description, form.IsActive));
             else
-            {
-                var steps = editing.Steps.Select(step => new WorkflowStepInput(step.Code, step.Name, step.Order, step.RequiredPermission, step.Type, step.AssigneeUserId)).ToList();
-                await Documents.UpdateDefinitionAsync(editing.Id, new UpdateWorkflowDefinitionRequest(form.Name.Trim(), steps));
-            }
+                await Documents.UpdateKindAsync(editing.Id, new UpdateWorkflowKindRequest(form.Name.Trim(), form.Description, form.IsActive));
             if (modal is not null) await modal.Hide();
-            success = editing is null ? L["Catalog:Created"] : L["Catalog:Updated"];
+            await NotifySuccessAsync(editing is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             await LoadAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
-    private async Task DeleteAsync(WorkflowDefinitionDto item)
+    private async Task DeleteAsync(WorkflowKindDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
-        try { await Documents.DeleteDefinitionAsync(item.Id); success = L["Catalog:Deleted"]; await LoadAsync(); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+        try { await Documents.DeleteKindAsync(item.Id); await NotifySuccessAsync(L["Catalog:Deleted"]); await LoadAsync(); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
-    private sealed class CatalogForm
+    private sealed class KindForm
     {
         public string Code { get; set; } = "";
         public string Name { get; set; } = "";
-        public void Reset() { Code = Name = ""; }
+        public string Description { get; set; } = "";
+        public bool IsActive { get; set; } = true;
+        public void Reset() { Code = Name = Description = ""; IsActive = true; }
     }
 }

@@ -35,4 +35,8 @@ public static class CatalogSelect2Cache
 
     public static string TextFor<T>(IEnumerable<T> cache, Guid? id, Func<T, Guid> idOf, Func<T, string> textOf) =>
         id is null ? "" : cache.Where(x => idOf(x) == id).Select(textOf).FirstOrDefault() ?? "";
+
+    public static IReadOnlyList<string> TextsFor<T>(IEnumerable<T> cache, IEnumerable<Guid> ids,
+        Func<T, Guid> idOf, Func<T, string> textOf) =>
+        ids.Select(id => TextFor(cache, id, idOf, textOf)).ToList();
 }

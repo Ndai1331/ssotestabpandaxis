@@ -15,6 +15,7 @@ ADMIN_PASS = os.environ.get("KEYCLOAK_ADMIN_PASSWORD", "secret")
 REALM = "bd"
 DIRECTUS_SECRET = os.environ.get("DIRECTUS_CLIENT_SECRET", "bd-directus-lab-secret")
 ABP_SECRET = os.environ.get("ABP_CLIENT_SECRET", "bd-abp-auth-lab-secret")
+HCS_AUTH_SECRET = os.environ.get("HCS_AUTH_CLIENT_SECRET")
 USER_PASS = os.environ.get("BD_TEST_USER_PASSWORD", "Passw0rd!")
 
 
@@ -197,6 +198,9 @@ def ensure_client(token: str, client_id: str, secret: str, redirects: list[str],
 
 
 def main() -> None:
+    if not HCS_AUTH_SECRET:
+        raise SystemExit("HCS_AUTH_CLIENT_SECRET is required to configure the hcs-free-auth client.")
+
     token = get_token()
     ensure_realm(token)
     # Role groups (permission inside apps) + app entitlement groups (which apps allowed)
@@ -228,6 +232,13 @@ def main() -> None:
         ABP_SECRET,
         ["http://localhost:44372/signin-oidc", "http://localhost:44372/signin-keycloak"],
         ["http://localhost:44372", "http://localhost:44306", "+"],
+    )
+    ensure_client(
+        token,
+        "hcs-free-auth",
+        HCS_AUTH_SECRET,
+        ["https://auth.hcs.localhost/signin-oidc"],
+        ["https://auth.hcs.localhost", "+"],
     )
     status, _ = req("GET", f"/realms/{REALM}/.well-known/openid-configuration")
     print()

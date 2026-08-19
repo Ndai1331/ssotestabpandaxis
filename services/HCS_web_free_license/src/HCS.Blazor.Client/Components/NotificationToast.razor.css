@@ -1,0 +1,130 @@
+.hcs-notification-toast-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: min(22rem, calc(100vw - 1.5rem));
+    position: fixed;
+    right: 1rem;
+    top: 4.5rem;
+    width: 22rem;
+    z-index: 1080;
+}
+
+.hcs-notification-toast {
+    background: #fff;
+    border: 1px solid #e6edf2;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(18, 38, 63, 0.14);
+    color: #1e3348;
+    overflow: hidden;
+    width: 100%;
+}
+
+.hcs-notification-toast__header {
+    align-items: center;
+    background: #f4f7fb;
+    border-bottom: 1px solid #e6edf2;
+    color: #1e3348;
+    display: flex;
+    font-size: 0.9rem;
+    font-weight: 700;
+    gap: 0.5rem;
+    padding: 0.7rem 0.85rem;
+}
+
+.hcs-notification-toast__header i {
+    color: #3d5cff;
+}
+
+.hcs-notification-toast__header strong {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hcs-notification-toast__header small {
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.hcs-notification-toast__close {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0.4rem;
+    color: #64748b;
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 1.75rem;
+    justify-content: center;
+    width: 1.75rem;
+}
+
+.hcs-notification-toast__close:hover,
+.hcs-notification-toast__close:focus-visible {
+    background: #e8eef5;
+    color: #1e3348;
+}
+
+.hcs-notification-toast__body {
+    color: #334155;
+    font-size: 0.85rem;
+    padding: 0.85rem 0.95rem 1rem;
+}
+
+.hcs-notification-toast__body p {
+    margin: 0 0 0.75rem;
+    overflow-wrap: anywhere;
+}
+
+.hcs-notification-panel {
+    background: #fff;
+    border: 1px solid #eef1f7;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(18, 38, 63, 0.12);
+    position: fixed;
+    right: 4.5rem;
+    top: 4.25rem;
+    width: 20rem;
+    z-index: 1075;
+}
+
+.hcs-notification-panel__header {
+    align-items: center;
+    border-bottom: 1px solid #eef1f7;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+}
+
+.hcs-notification-panel__empty {
+    color: #64748b;
+    margin: 0;
+    padding: 1.25rem 1rem;
+}
+
+.hcs-notification-panel__list {
+    list-style: none;
+    margin: 0;
+    max-height: 20rem;
+    overflow: auto;
+    padding: 0;
+}
+
+.hcs-notification-panel__list a {
+    border-bottom: 1px solid #f1f5f9;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+    text-decoration: none;
+}
+
+.hcs-notification-panel__list a:hover {
+    background: #f8fafc;
+}

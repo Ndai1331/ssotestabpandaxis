@@ -23,7 +23,7 @@ post_logout_redirect_uri=https://localhost:44403
 grants=authorization_code,refresh_token
 ```
 
-The local flow intentionally uses `prompt=login` and local BFF sign-out only. Keycloak silent SSO and single logout are not implemented.
+The local flow does not force `prompt=login` on Gateway→AuthServer challenges, so a dropped BFF cookie can resume the AuthServer session instead of asking for a second password. Sign-out is local BFF only. Keycloak silent SSO and single logout are not implemented.
 
 For production, Gateway and Blazor additionally require the same key-encryption certificate:
 

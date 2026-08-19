@@ -8,6 +8,7 @@
     --catalog-input: #eef3f7;
     --catalog-green: #48bd73;
     --catalog-danger: #df1e53;
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
     background:
         radial-gradient(circle at 96% 8%, rgba(123, 173, 99, .16), transparent 17rem),
         linear-gradient(135deg, #edf0ef 0%, #e6ebe9 100%);
@@ -42,6 +43,39 @@
     margin: 0;
 }
 
+.hcs-document-page__header {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.1rem;
+}
+
+.hcs-document-page__header h1 {
+    margin: 0;
+}
+
+.hcs-document-page__header > :last-child:not(:only-child) {
+    flex: 0 0 auto;
+}
+
+/* Blazorise 2.3 applies ExtraLarge/Large via Modal.Size → .modal-xl/.modal-lg on the dialog.
+   Bootstrap 5.3 still sizes dialogs with --bs-modal-width inherited from .modal (default 500px). */
+.modal:has(> .modal-dialog.modal-xl),
+.modal.hcs-user-modal {
+    --bs-modal-width: min(94vw, 1180px);
+}
+
+.modal:has(> .modal-dialog.modal-lg) {
+    --bs-modal-width: min(94vw, 800px);
+}
+
+.modal:has(> .modal-dialog.modal-xl) > .modal-dialog,
+.modal.hcs-user-modal > .modal-dialog,
+.modal:has(> .modal-dialog.modal-lg) > .modal-dialog {
+    max-width: var(--bs-modal-width);
+}
+
 .hcs-catalog-page__actions {
     align-items: center;
     display: flex;
@@ -51,7 +85,7 @@
 }
 
 .hcs-catalog-page .btn {
-    border-radius: .72rem;
+    border-radius: 5px;
     font-size: .95rem;
     font-weight: 700;
     min-height: 2.85rem;
@@ -81,7 +115,7 @@
 
 .hcs-catalog-page .alert {
     border: 0;
-    border-radius: .75rem;
+    border-radius: 5px;
     margin: 0 auto 1rem;
     max-width: 1720px;
 }
@@ -89,7 +123,7 @@
 .hcs-catalog-page .card {
     background: #fff;
     border: 0;
-    border-radius: .85rem;
+    border-radius: 5px;
     box-shadow: 0 10px 28px rgba(49, 72, 88, .07);
     margin-left: auto;
     margin-right: auto;
@@ -145,9 +179,9 @@
 }
 
 .hcs-catalog-page .hcs-catalog-search .form-control {
-    border-radius: .72rem 0 0 .72rem;
+    border-radius: 5px 0 0 5px;
     box-shadow: none;
-    padding: .8rem 1rem;
+    padding: .5rem;
 }
 
 .hcs-catalog-page .hcs-catalog-search .form-control::placeholder {
@@ -156,7 +190,7 @@
 }
 
 .hcs-catalog-page .hcs-catalog-search .btn {
-    border-radius: 0 .72rem .72rem 0;
+    border-radius: 0 5px 5px 0;
     min-width: 8.5rem;
 }
 
@@ -247,7 +281,7 @@
     appearance: none;
     background: #eef3f6;
     border: 1px solid #dfe8ee;
-    border-radius: .25rem;
+    border-radius: 5px;
     display: inline-block;
     height: 1.35rem;
     margin: 0;
@@ -279,18 +313,26 @@
 
 .hcs-catalog-page .hcs-row-actions .hcs-action-button {
     background: #fff;
-    border-radius: .65rem;
+    border-radius: 5px;
     min-height: 2.7rem;
     min-width: 2.7rem;
     padding: .45rem;
 }
 
 .hcs-catalog-page .hcs-row-actions .hcs-action-button--edit {
-    color: var(--catalog-primary);
+    color: #7A6FF0;
+}
+
+.hcs-catalog-page .hcs-row-actions .hcs-action-button--tasks {
+    color: #198754;
+}
+
+.hcs-catalog-page .hcs-row-actions .hcs-action-button--members {
+    color: #0dcaf0;
 }
 
 .hcs-catalog-page .hcs-row-actions .hcs-action-button--delete {
-    color: var(--catalog-danger);
+    color: #EB4D4B;
 }
 
 .hcs-catalog-page .hcs-catalog-grid .pagination {
@@ -325,7 +367,7 @@
 
 .hcs-catalog-page .hcs-catalog-modal .modal-content {
     border: 0;
-    border-radius: 1rem;
+    border-radius: 5px;
     box-shadow: 0 25px 70px rgba(23, 50, 68, .25);
     overflow: hidden;
 }
@@ -356,6 +398,28 @@
     gap: 1.1rem;
 }
 
+.hcs-form-row {
+    display: grid;
+    gap: 1.1rem 1.25rem;
+    grid-template-columns: minmax(8rem, 4fr) minmax(12rem, 8fr);
+    align-items: start;
+}
+
+.hcs-form-row--equal {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hcs-form-row .field {
+    margin: 0;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-form-row,
+    .hcs-form-row--equal {
+        grid-template-columns: 1fr;
+    }
+}
+
 .hcs-catalog-form .field {
     margin: 0;
 }
@@ -370,19 +434,34 @@
 
 .hcs-catalog-form .form-control,
 .hcs-catalog-form .form-select,
-.hcs-catalog-form .numeric-picker {
+.hcs-catalog-form .numeric-picker,
+.hcs-catalog-form .b-is-datepicker,
+.hcs-catalog-form .b-is-datepicker .form-control,
+.hcs-catalog-form .flatpickr-input,
+.hcs-document-page input.form-control:not(textarea),
+.hcs-document-page .form-select {
     background-color: var(--catalog-input);
     border: 1px solid #e2eaf0;
-    border-radius: .78rem;
+    border-radius: 5px;
     box-shadow: none;
     color: #24465e;
     font-size: 1rem;
-    min-height: 3.45rem;
-    padding: .8rem 1rem;
+    height: 36px;
+    max-height: 36px;
+    min-height: 36px;
+    padding: .35rem .5rem;
 }
 
 .hcs-catalog-form textarea.form-control {
+    height: auto;
+    max-height: none;
     min-height: 7rem;
+}
+
+select.hcs-catalog-select2 + .select2-container .select2-selection--single {
+    height: 38px !important;
+    max-height: 36px;
+    min-height: 38px !important;
 }
 
 .hcs-catalog-form .form-control:focus,
@@ -452,6 +531,11 @@
     }
 
     .hcs-catalog-titlebar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .hcs-document-page__header {
         align-items: flex-start;
         flex-direction: column;
     }
@@ -557,7 +641,7 @@
 .hcs-status-badge,
 .hcs-priority-badge,
 .hcs-progress-badge {
-    border-radius: 999px;
+    border-radius: 5px;
     display: inline-flex;
     font-size: .78rem;
     font-weight: 700;
@@ -589,5 +673,23 @@
     display: block;
     font-size: .85rem;
     margin-top: .15rem;
+}
+
+.hcs-detail-split {
+    align-items: stretch;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+    .hcs-detail-split {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.hcs-detail-split > .card,
+.hcs-detail-split > .d-flex > .card {
+    height: 100%;
 }
 

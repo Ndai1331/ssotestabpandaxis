@@ -24,7 +24,6 @@
         </button>
     </div>
 
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
 
     <div class="hcs-ws-kpis">
         @Kpi("fa-calendar-days", "#fef0f5", "#e8437a", events.Count, L["Work:Events"])
@@ -297,7 +296,6 @@
     private IReadOnlyList<DateTime?> selectedDates = [DateTime.Today, DateTime.Today.AddMonths(3)];
     private DateTime selectedDay = DateTime.Today;
     private bool isLoading;
-    private string? error;
 
     private IEnumerable<DateTime> week => Enumerable.Range(0, 7).Select(offset => fromDate.Date.AddDays(offset));
     private List<CalendarEventDto> selectedDayEvents => events.Where(x => x.StartTime.ToLocalTime().Date == selectedDay.Date).ToList();
@@ -333,7 +331,7 @@
 
     private async Task LoadAsync()
     {
-        isLoading = true; error = null;
+        isLoading = true;
         try
         {
             var from = fromDate.Date;
@@ -348,7 +346,7 @@
             try { notifications.Clear(); notifications.AddRange(await Chat.GetNotificationsAsync()); } catch { notifications.Clear(); }
             if (!week.Contains(selectedDay.Date)) selectedDay = DateTime.Today;
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
 

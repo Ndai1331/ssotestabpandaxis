@@ -103,7 +103,7 @@
     align-items: center;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: .55rem;
+    border-radius: 5px;
     color: #4c6679;
     cursor: pointer;
     display: none;
@@ -245,7 +245,7 @@
 .hcs-nav-menu__panel {
     background: #fff;
     border: 1px solid var(--hcs-line);
-    border-radius: .75rem;
+    border-radius: 5px;
     box-shadow: 0 16px 36px rgba(22, 53, 72, .16);
     display: grid;
     gap: .1rem;
@@ -296,7 +296,7 @@
 .hcs-nav-menu__panel ::deep a,
 .hcs-nav-menu__panel a {
     align-items: center;
-    border-radius: .45rem;
+    border-radius: 5px;
     color: #3e5b6f;
     display: flex;
     font-size: .86rem;
@@ -454,7 +454,7 @@
 .hcs-user-menu__panel {
     background: #fff;
     border: 1px solid var(--hcs-line);
-    border-radius: .75rem;
+    border-radius: 5px;
     box-shadow: 0 15px 35px rgba(22, 53, 72, .14);
     min-width: 15.5rem;
     opacity: 0;
@@ -487,7 +487,7 @@
 }
 
 .hcs-user-menu__panel a {
-    border-radius: .45rem;
+    border-radius: 5px;
     color: #315269;
     display: block;
     font-size: .88rem;
@@ -509,7 +509,7 @@
     align-items: center;
     background: transparent;
     border: 0;
-    border-radius: .45rem;
+    border-radius: 5px;
     color: #315269;
     cursor: pointer;
     display: flex;
@@ -661,7 +661,7 @@
     .hcs-top-nav ::deep .hcs-top-nav__link,
     .hcs-nav-menu__trigger {
         border-bottom: 0;
-        border-radius: .55rem;
+        border-radius: 5px;
         font-size: .95rem;
         justify-content: flex-start;
         min-height: 2.85rem;

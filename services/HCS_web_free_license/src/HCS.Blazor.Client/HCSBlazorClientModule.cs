@@ -99,7 +99,11 @@ public class HCSBlazorClientModule : AbpModule
     private void ConfigureBlazorise(ServiceConfigurationContext context)
     {
         context.Services
-            .AddBlazorise()
+            .AddBlazorise(options =>
+            {
+                // Bind on change/blur so Tab does not copy the current field into the next input.
+                options.Immediate = false;
+            })
             .AddBootstrap5Providers()
             .AddFontAwesomeIcons();
     }

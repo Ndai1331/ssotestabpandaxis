@@ -21,10 +21,11 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
 
     public async Task<IReadOnlyList<NotificationDto>> GetMineAsync(bool unreadOnly, int skip, int take, CancellationToken ct = default)
     {
+        var me = UserId;
         take = Math.Clamp(take, 1, 100);
         var query = from receiver in db.NotificationReceivers.AsNoTracking()
                     join notification in db.Notifications.AsNoTracking() on receiver.NotificationId equals notification.Id
-                    where receiver.UserId == UserId && (!unreadOnly || !receiver.IsRead)
+                    where receiver.UserId == me && (!unreadOnly || !receiver.IsRead)
                     orderby receiver.CreationTime descending
                     select new NotificationDto(notification.Id, receiver.UserId, notification.Title, notification.Body,
                         notification.Link, receiver.IsRead, receiver.CreationTime);
@@ -51,16 +52,18 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
 
     public async Task MarkReadAsync(Guid notificationId, CancellationToken ct = default)
     {
-        var receiver = await db.NotificationReceivers.SingleOrDefaultAsync(x => x.NotificationId == notificationId && x.UserId == UserId, ct)
+        var me = UserId;
+        var receiver = await db.NotificationReceivers.SingleOrDefaultAsync(x => x.NotificationId == notificationId && x.UserId == me, ct)
             ?? throw new BusinessException("Collaboration:NotificationNotFound");
         receiver.MarkRead(clock.Now.ToUniversalTime()); await db.SaveChangesAsync(ct);
     }
 
     public async Task RegisterDeviceAsync(RegisterPushDeviceInput input, CancellationToken ct = default)
     {
+        var me = UserId;
         var existing = await db.PushDeviceTokens.SingleOrDefaultAsync(x => x.Token == input.Token, ct);
-        if (existing is null) db.PushDeviceTokens.Add(new PushDeviceToken(guidGenerator.Create(), UserId, input.Token, input.Platform));
-        else existing.AssignTo(UserId, input.Platform);
+        if (existing is null) db.PushDeviceTokens.Add(new PushDeviceToken(guidGenerator.Create(), me, input.Token, input.Platform));
+        else existing.AssignTo(me, input.Platform);
         await db.SaveChangesAsync(ct);
     }
 }

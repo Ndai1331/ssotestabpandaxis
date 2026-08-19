@@ -14,8 +14,7 @@
             </Button>
         </div>
     </header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
-    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
             <Field Class="mb-0 flex-grow-1">
                 <FieldLabel>@L["Feature:SurveySessions"]</FieldLabel>
@@ -99,14 +98,16 @@
     <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:SurveyResults"]</ModalTitle><CloseButton /></ModalHeader>
     <ModalBody Class="hcs-catalog-modal__body">
         <div class="hcs-catalog-form">
-            <Field><FieldLabel>@L["Menu:SurveyCriterias"]</FieldLabel>
-                <Select TValue="string" @bind-Value="form.CriteriaId">
-                    <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
-                    @foreach (var item in criteria) { <SelectItem Value="@item.Id.ToString()">@item.Name</SelectItem> }
-                </Select>
-            </Field>
-            <Field><FieldLabel>@L["Feature:Score"]</FieldLabel><NumericPicker TValue="decimal" @bind-Value="form.Score" Min="0" Max="100" Decimals="1" /></Field>
-            <Field><FieldLabel>@L["Feature:Comment"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Comment"></textarea></Field>
+            <div class="hcs-form-row hcs-form-row--equal">
+                <Field><FieldLabel>@L["Menu:SurveyCriterias"]</FieldLabel>
+                    <Select TValue="string" @bind-Value="form.CriteriaId">
+                        <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
+                        @foreach (var item in criteria) { <SelectItem Value="@item.Id.ToString()">@item.Name</SelectItem> }
+                    </Select>
+                </Field>
+                <Field><FieldLabel>@L["Feature:Score"]</FieldLabel><NumericPicker TValue="decimal" @bind-Value="form.Score" Min="0" Max="100" Decimals="1" /></Field>
+            </div>
+            <Field><FieldLabel>@L["Feature:Comment"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Comment" autocomplete="off"></textarea></Field>
         </div>
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
@@ -123,7 +124,6 @@
     private Modal? modal;
     private string selectedSessionId = "";
     private string resultsTab = "chart";
-    private string? error;
     private bool isLoading;
     private IEnumerable<(string Name, decimal Average)> CriteriaAverages =>
         results.GroupBy(result => result.CriteriaId)
@@ -142,16 +142,16 @@
     protected override async Task OnInitializedAsync()
     {
         try { sessions.AddRange(await Work.GetSessionsAsync()); criteria.AddRange(await Work.GetCriteriaAsync()); }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
     private async Task OpenSubmit() { form.CriteriaId = ""; form.Score = 0; form.Comment = ""; if (modal is not null) await modal.Show(); }
     private async Task LoadResultsAsync()
     {
         results.Clear(); files.Clear();
         if (!Guid.TryParse(selectedSessionId, out var id)) return;
-        isLoading = true; error = null;
+        isLoading = true;
         try { results.AddRange(await Work.GetResultsAsync(id)); files.AddRange(await Work.GetSessionFilesAsync(id)); }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
     private async Task SubmitAsync()
@@ -163,12 +163,12 @@
             if (modal is not null) await modal.Hide();
             await LoadResultsAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task UploadAsync(Guid sessionId, InputFileChangeEventArgs args)
     {
         try { await Work.UploadSurveyFileAsync(sessionId, args.File); await LoadResultsAsync(); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private string CriteriaName(Guid id) => criteria.FirstOrDefault(x => x.Id == id)?.Name ?? id.ToString("N")[..8];
     private sealed class ResultForm { public string CriteriaId { get; set; } = ""; public decimal Score { get; set; } public string Comment { get; set; } = ""; }

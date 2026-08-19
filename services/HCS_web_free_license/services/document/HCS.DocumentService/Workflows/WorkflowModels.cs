@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace HCS.DocumentService.Workflows;
 
 public static class WorkflowStepTypes
@@ -15,30 +17,88 @@ public static class WorkflowStepTypes
         }
         return value;
     }
+
+    public static bool IsBlocking(string type) => Normalize(type) != View;
+}
+
+public sealed class WorkflowKind
+{
+    private WorkflowKind() { }
+    public WorkflowKind(Guid id, string code, string name, string? description, bool isActive, DateTime now)
+    {
+        Id = id;
+        Code = Required(code, 64);
+        Name = Required(name, 256);
+        Description = Optional(description, 2000);
+        IsActive = isActive;
+        CreationTime = now;
+    }
+    public Guid Id { get; private set; }
+    public string Code { get; private set; } = string.Empty;
+    public string Name { get; private set; } = string.Empty;
+    public string? Description { get; private set; }
+    public bool IsActive { get; private set; }
+    public DateTime CreationTime { get; private set; }
+    public void Update(string name, string? description, bool isActive)
+    {
+        Name = Required(name, 256);
+        Description = Optional(description, 2000);
+        IsActive = isActive;
+    }
+    private static string Required(string value, int max)
+    {
+        var result = value?.Trim();
+        if (string.IsNullOrWhiteSpace(result) || result.Length > max) throw new ArgumentException("Invalid workflow value.");
+        return result;
+    }
+    private static string? Optional(string? value, int max)
+    {
+        var result = value?.Trim();
+        if (string.IsNullOrWhiteSpace(result)) return null;
+        if (result.Length > max) throw new ArgumentException("Invalid workflow value.");
+        return result;
+    }
 }
 
 public sealed class WorkflowDefinition
 {
     private readonly List<WorkflowStep> _steps = [];
     private WorkflowDefinition() { }
-    public WorkflowDefinition(Guid id, string code, string name, IEnumerable<WorkflowStepInput> steps, DateTime now)
+    public WorkflowDefinition(Guid id, string code, string name, IEnumerable<WorkflowStepInput> steps, DateTime now,
+        Guid? kindId = null, string? description = null, bool isActive = true)
     {
         Id = id;
         Code = Required(code, 64);
         Name = Required(name, 256);
+        KindId = kindId;
+        Description = Optional(description, 2000);
+        IsActive = isActive;
         CreationTime = now;
         ReplaceSteps(steps);
     }
     public Guid Id { get; private set; }
+    public Guid? KindId { get; private set; }
     public string Code { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
+    public string? Description { get; private set; }
+    public bool IsActive { get; private set; } = true;
     public DateTime CreationTime { get; private set; }
     public IReadOnlyCollection<WorkflowStep> Steps => _steps;
     public void Rename(string name) => Name = Required(name, 256);
+    public void SetMetadata(Guid? kindId, string? description, bool isActive)
+    {
+        KindId = kindId;
+        Description = Optional(description, 2000);
+        IsActive = isActive;
+    }
     public void ReplaceSteps(IEnumerable<WorkflowStepInput> steps)
     {
         var normalized = steps.OrderBy(x => x.Order).ToList();
-        if (normalized.Count == 0) throw new InvalidOperationException("A workflow requires at least one step.");
+        if (normalized.Count == 0)
+        {
+            _steps.Clear();
+            return;
+        }
         if (normalized.Select(x => x.Code.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Count() != normalized.Count)
             throw new InvalidOperationException("Workflow step codes must be unique.");
         if (normalized.Select(x => x.Order).Distinct().Count() != normalized.Count)
@@ -46,12 +106,20 @@ public sealed class WorkflowDefinition
         _steps.Clear();
         _steps.AddRange(normalized.Select(x => new WorkflowStep(Guid.NewGuid(), Id,
             Required(x.Code, 64), Required(x.Name, 256), x.Order, Required(x.RequiredPermission, 128),
-            WorkflowStepTypes.Normalize(x.Type), x.AssigneeUserId)));
+            WorkflowStepTypes.Normalize(x.Type), x.AssigneeUserId, x.AssigneeType, x.RoleId, x.UserIds, x.DepartmentIds,
+            x.SlaDays, x.AllowReturn)));
     }
-    private static string Required(string value, int max)
+    internal static string Required(string value, int max)
     {
         var result = value?.Trim();
         if (string.IsNullOrWhiteSpace(result) || result.Length > max) throw new ArgumentException("Invalid workflow value.");
+        return result;
+    }
+    internal static string? Optional(string? value, int max)
+    {
+        var result = value?.Trim();
+        if (string.IsNullOrWhiteSpace(result)) return null;
+        if (result.Length > max) throw new ArgumentException("Invalid workflow value.");
         return result;
     }
 }
@@ -60,9 +128,25 @@ public sealed class WorkflowStep
 {
     private WorkflowStep() { }
     internal WorkflowStep(Guid id, Guid definitionId, string code, string name, int order, string requiredPermission,
-        string type, Guid? assigneeUserId)
-        => (Id, DefinitionId, Code, Name, Order, RequiredPermission, Type, AssigneeUserId)
-            = (id, definitionId, code, name, order, requiredPermission, type, assigneeUserId);
+        string type, Guid? assigneeUserId, string? assigneeType, Guid? roleId, IReadOnlyList<Guid>? userIds,
+        IReadOnlyList<Guid>? departmentIds, int? slaDays, bool allowReturn)
+    {
+        Id = id;
+        DefinitionId = definitionId;
+        Code = code;
+        Name = name;
+        Order = order;
+        RequiredPermission = requiredPermission;
+        Type = type;
+        AssigneeType = WorkflowStepAssigneeTypes.Normalize(assigneeType);
+        RoleId = roleId;
+        UserIdsJson = Serialize(userIds);
+        DepartmentIdsJson = Serialize(departmentIds);
+        SlaDays = slaDays is < 0 ? throw new ArgumentOutOfRangeException(nameof(slaDays)) : slaDays;
+        AllowReturn = allowReturn;
+        AssigneeUserId = assigneeUserId ?? UserIds.FirstOrDefault();
+        if (AssigneeUserId == Guid.Empty) AssigneeUserId = null;
+    }
     public Guid Id { get; private set; }
     public Guid DefinitionId { get; private set; }
     public string Code { get; private set; } = string.Empty;
@@ -71,6 +155,28 @@ public sealed class WorkflowStep
     public string RequiredPermission { get; private set; } = string.Empty;
     public string Type { get; private set; } = WorkflowStepTypes.Process;
     public Guid? AssigneeUserId { get; private set; }
+    public string AssigneeType { get; private set; } = WorkflowStepAssigneeTypes.SpecificUser;
+    public Guid? RoleId { get; private set; }
+    public string UserIdsJson { get; private set; } = "[]";
+    public string DepartmentIdsJson { get; private set; } = "[]";
+    public int? SlaDays { get; private set; }
+    public bool AllowReturn { get; private set; }
+    public IReadOnlyList<Guid> UserIds => Deserialize(UserIdsJson);
+    public IReadOnlyList<Guid> DepartmentIds => Deserialize(DepartmentIdsJson);
+    public bool IsBlocking => WorkflowStepTypes.IsBlocking(Type);
+    public Guid? ResolveAssignee(IReadOnlyDictionary<string, Guid>? overrides)
+    {
+        if (overrides is not null && overrides.TryGetValue(Code, out var selected)) return selected;
+        if (UserIds.Count > 0) return UserIds[0];
+        return AssigneeUserId;
+    }
+    private static string Serialize(IReadOnlyList<Guid>? ids) =>
+        JsonSerializer.Serialize(ids?.Distinct().ToArray() ?? []);
+    private static IReadOnlyList<Guid> Deserialize(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        return JsonSerializer.Deserialize<List<Guid>>(json) ?? [];
+    }
 }
 
 public sealed class WorkflowTemplate
@@ -83,7 +189,7 @@ public sealed class WorkflowTemplate
         if (definitionId == Guid.Empty) throw new ArgumentException("Definition is required.");
         if (version <= 0) throw new ArgumentOutOfRangeException(nameof(version));
         if (string.IsNullOrWhiteSpace(templateJson)) throw new ArgumentException("Template JSON is required.");
-        using var _ = System.Text.Json.JsonDocument.Parse(templateJson);
+        using var _ = JsonDocument.Parse(templateJson);
         (Id, Code, Name, DefinitionId, Version, TemplateJson, IsActive, CreationTime) =
             (id, code.Trim(), name.Trim(), definitionId, version, templateJson, true, now);
     }
@@ -114,17 +220,23 @@ public sealed class WorkflowInstance
 {
     private readonly List<ApprovalTask> _tasks = [];
     private WorkflowInstance() { }
-    public WorkflowInstance(Guid id, Guid documentId, WorkflowDefinition definition, string idempotencyKey, DateTime now)
+    public WorkflowInstance(Guid id, Guid documentId, WorkflowDefinition definition, string idempotencyKey, DateTime now,
+        IReadOnlyDictionary<string, Guid>? assigneeOverrides = null, string? viewScopesJson = null)
     {
         if (string.IsNullOrWhiteSpace(idempotencyKey)) throw new ArgumentException("Idempotency key is required.");
+        var ordered = definition.Steps.OrderBy(x => x.Order).ToList();
+        if (ordered.Count == 0) throw new InvalidOperationException("A workflow requires at least one step.");
+        var first = FirstBlockingIndex(ordered);
+        if (first < 0) throw new InvalidOperationException("A workflow requires at least one blocking step.");
         Id = id;
         DocumentId = documentId;
         DefinitionId = definition.Id;
         IdempotencyKey = idempotencyKey.Trim();
         Status = WorkflowInstanceStatus.Running;
-        CurrentStep = 0;
+        CurrentStep = first;
         CreationTime = now;
-        AddTask(definition.Steps.OrderBy(x => x.Order).First(), now);
+        ViewScopesJson = viewScopesJson;
+        AddTask(ordered[first], now, assigneeOverrides);
     }
     public Guid Id { get; private set; }
     public Guid DocumentId { get; private set; }
@@ -132,41 +244,81 @@ public sealed class WorkflowInstance
     public WorkflowInstanceStatus Status { get; private set; }
     public int CurrentStep { get; private set; }
     public string IdempotencyKey { get; private set; } = string.Empty;
+    public string? ViewScopesJson { get; private set; }
     public DateTime CreationTime { get; private set; }
     public IReadOnlyCollection<ApprovalTask> Tasks => _tasks;
 
     public bool Decide(Guid taskId, bool approve, Guid actorUserId, string? comment, string commandKey,
-        IReadOnlyList<WorkflowStep> orderedSteps, DateTime now)
+        IReadOnlyList<WorkflowStep> orderedSteps, DateTime now, bool returnStep = false,
+        IReadOnlyDictionary<string, Guid>? assigneeOverrides = null)
     {
         var task = _tasks.SingleOrDefault(x => x.Id == taskId) ?? throw new KeyNotFoundException("Approval task not found.");
         if (task.DecisionKey == commandKey) return false;
         if (Status != WorkflowInstanceStatus.Running) throw new InvalidOperationException("Workflow is not running.");
+        var ordered = orderedSteps.OrderBy(x => x.Order).ToList();
+        var current = ordered.ElementAtOrDefault(CurrentStep)
+            ?? throw new InvalidOperationException("Workflow step configuration is missing.");
+        if (returnStep)
+        {
+            if (!current.AllowReturn) throw new InvalidOperationException("This step does not allow return.");
+            task.Return(actorUserId, comment, commandKey, now);
+            Status = WorkflowInstanceStatus.Returned;
+            return true;
+        }
         task.Decide(approve, actorUserId, comment, commandKey, now);
         if (!approve)
         {
             Status = WorkflowInstanceStatus.Rejected;
             return true;
         }
-        CurrentStep++;
-        if (CurrentStep >= orderedSteps.Count)
+        var next = NextBlockingIndex(ordered, CurrentStep + 1);
+        if (next < 0)
         {
             Status = WorkflowInstanceStatus.Completed;
+            CurrentStep = ordered.Count;
             return true;
         }
-        AddTask(orderedSteps[CurrentStep], now);
+        CurrentStep = next;
+        AddTask(ordered[next], now, assigneeOverrides);
         return true;
     }
 
-    private void AddTask(WorkflowStep step, DateTime now) =>
-        _tasks.Add(new ApprovalTask(Guid.NewGuid(), Id, step.Code, now, step.AssigneeUserId));
+    public void Resubmit(IReadOnlyList<WorkflowStep> orderedSteps, DateTime now, string commandKey,
+        IReadOnlyDictionary<string, Guid>? assigneeOverrides = null)
+    {
+        if (string.IsNullOrWhiteSpace(commandKey)) throw new ArgumentException("Idempotency key is required.");
+        if (Status != WorkflowInstanceStatus.Returned) throw new InvalidOperationException("Only returned workflows can be resubmitted.");
+        var ordered = orderedSteps.OrderBy(x => x.Order).ToList();
+        var first = FirstBlockingIndex(ordered);
+        if (first < 0) throw new InvalidOperationException("A workflow requires at least one blocking step.");
+        Status = WorkflowInstanceStatus.Running;
+        CurrentStep = first;
+        AddTask(ordered[first], now, assigneeOverrides);
+    }
+
+    private void AddTask(WorkflowStep step, DateTime now, IReadOnlyDictionary<string, Guid>? assigneeOverrides)
+    {
+        DateTime? dueAt = step.SlaDays is { } days ? now.AddDays(days) : null;
+        _tasks.Add(new ApprovalTask(Guid.NewGuid(), Id, step.Code, now, step.ResolveAssignee(assigneeOverrides), dueAt));
+    }
+
+    internal static int FirstBlockingIndex(IReadOnlyList<WorkflowStep> ordered) => NextBlockingIndex(ordered, 0);
+    internal static int NextBlockingIndex(IReadOnlyList<WorkflowStep> ordered, int start)
+    {
+        for (var i = start; i < ordered.Count; i++)
+        {
+            if (ordered[i].IsBlocking) return i;
+        }
+        return -1;
+    }
 }
 
 public sealed class ApprovalTask
 {
     private ApprovalTask() { }
-    internal ApprovalTask(Guid id, Guid instanceId, string stepCode, DateTime now, Guid? assigneeUserId)
-        => (Id, InstanceId, StepCode, Status, CreationTime, AssigneeUserId)
-            = (id, instanceId, stepCode, ApprovalTaskStatus.Pending, now, assigneeUserId);
+    internal ApprovalTask(Guid id, Guid instanceId, string stepCode, DateTime now, Guid? assigneeUserId, DateTime? dueAt)
+        => (Id, InstanceId, StepCode, Status, CreationTime, AssigneeUserId, DueAt)
+            = (id, instanceId, stepCode, ApprovalTaskStatus.Pending, now, assigneeUserId, dueAt);
     public Guid Id { get; private set; }
     public Guid InstanceId { get; private set; }
     public string StepCode { get; private set; } = string.Empty;
@@ -177,11 +329,26 @@ public sealed class ApprovalTask
     public string? DecisionKey { get; private set; }
     public DateTime CreationTime { get; private set; }
     public DateTime? DecidedAt { get; private set; }
+    public DateTime? DueAt { get; private set; }
     internal void Decide(bool approve, Guid actorUserId, string? comment, string key, DateTime now)
+    {
+        EnsurePending(key);
+        Status = approve ? ApprovalTaskStatus.Approved : ApprovalTaskStatus.Rejected;
+        Apply(actorUserId, comment, key, now);
+    }
+    internal void Return(Guid actorUserId, string? comment, string key, DateTime now)
+    {
+        EnsurePending(key);
+        Status = ApprovalTaskStatus.Returned;
+        Apply(actorUserId, comment, key, now);
+    }
+    private void EnsurePending(string key)
     {
         if (Status != ApprovalTaskStatus.Pending) throw new InvalidOperationException("Approval task was already decided.");
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Idempotency key is required.");
-        Status = approve ? ApprovalTaskStatus.Approved : ApprovalTaskStatus.Rejected;
+    }
+    private void Apply(Guid actorUserId, string? comment, string key, DateTime now)
+    {
         DecidedBy = actorUserId;
         Comment = comment?.Trim();
         DecisionKey = key.Trim();

@@ -37,6 +37,15 @@ public sealed class HCSMenuContributor(IConfiguration configuration) : IMenuCont
             Item("HCS.Chat", "Trao đổi", "/chat", "fa fa-comments", 100)
                 .RequirePermissions(HCSPermissions.Collaboration.Chat));
 
+        var workflows = Item("HCS.Workflows", "Quy trình", icon: "fa fa-arrow-trend-up", order: 150);
+        workflows.AddItem(Item("HCS.Workflows.Kinds", "Loại quy trình", "/workflow-definitions", "fa fa-diagram-project", 10)
+            .RequirePermissions(HCSPermissions.Documents.WorkflowView));
+        workflows.AddItem(Item("HCS.Workflows.List", "Quy trình", "/workflow-lists", "fa fa-code-branch", 20)
+            .RequirePermissions(HCSPermissions.Documents.WorkflowView));
+        workflows.AddItem(Item("HCS.Workflows.Instances", "Hồ sơ quy trình", "/document-workflow-instances", "fa fa-folder-open", 30)
+            .RequirePermissions(HCSPermissions.Documents.WorkflowView));
+        context.Menu.AddItem(workflows);
+
         var organization = Item("HCS.Organization", "Tổ chức", icon: "fa fa-sitemap", order: 200);
         organization.AddItem(Item("HCS.Organization.Departments", "Phòng ban", "/departments", "fa fa-diagram-project", 10)
             .RequirePermissions(HCSPermissions.Organization.Departments));

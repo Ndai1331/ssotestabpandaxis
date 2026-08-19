@@ -1,0 +1,52 @@
+@namespace HCS.Blazor.Client.Components
+@inherits HCSComponentBase
+
+<div class="hcs-catalog-filter-row">
+    <Field Class="mb-0">
+        <DatePicker TValue="DateTime?" Value="FromDate" ValueChanged="OnFromChanged" Placeholder="@L["Feature:StartDate"]" />
+    </Field>
+    <Field Class="mb-0">
+        <DatePicker TValue="DateTime?" Value="ToDate" ValueChanged="OnToChanged" Placeholder="@L["Feature:DueDate"]" />
+    </Field>
+    <Field Class="mb-0" Style="min-width:12rem">
+        <UserSelect2 Value="SubmitterUserId"
+                     ValueChanged="OnSubmitterChanged"
+                     Placeholder="@L["Work:FilterSubmitter"]"
+                     SelectedText="SubmitterText"
+                     Search="SearchUsers" />
+    </Field>
+    <Field Class="mb-0" Style="min-width:12rem">
+        <CatalogSelect2 Value="DepartmentId"
+                        ValueChanged="OnDepartmentChanged"
+                        Placeholder="@L["Work:FilterDepartment"]"
+                        SelectedText="DepartmentText"
+                        Search="SearchDepartments" />
+    </Field>
+    <Addons Class="hcs-catalog-search">
+        <Addon AddonType="AddonType.Body"><TextInput Value="FilterText" ValueChanged="OnFilterTextChanged" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
+        <Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchClicked"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button></Addon>
+    </Addons>
+</div>
+@code {
+    [Parameter] public DateTime? FromDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> FromDateChanged { get; set; }
+    [Parameter] public DateTime? ToDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> ToDateChanged { get; set; }
+    [Parameter] public Guid? SubmitterUserId { get; set; }
+    [Parameter] public EventCallback<Guid?> SubmitterUserIdChanged { get; set; }
+    [Parameter] public string? SubmitterText { get; set; }
+    [Parameter] public Guid? DepartmentId { get; set; }
+    [Parameter] public EventCallback<Guid?> DepartmentIdChanged { get; set; }
+    [Parameter] public string? DepartmentText { get; set; }
+    [Parameter] public string FilterText { get; set; } = "";
+    [Parameter] public EventCallback<string> FilterTextChanged { get; set; }
+    [Parameter] public EventCallback SearchClicked { get; set; }
+    [Parameter] public Func<string, int, Task<CatalogSelect2SearchResponse>> SearchUsers { get; set; } = default!;
+    [Parameter] public Func<string, int, Task<CatalogSelect2SearchResponse>> SearchDepartments { get; set; } = default!;
+
+    private Task OnSubmitterChanged(Guid? value) => SubmitterUserIdChanged.InvokeAsync(value);
+    private Task OnDepartmentChanged(Guid? value) => DepartmentIdChanged.InvokeAsync(value);
+    private Task OnFromChanged(DateTime? value) { FromDate = value; return FromDateChanged.InvokeAsync(value); }
+    private Task OnToChanged(DateTime? value) { ToDate = value; return ToDateChanged.InvokeAsync(value); }
+    private Task OnFilterTextChanged(string value) { FilterText = value ?? ""; return FilterTextChanged.InvokeAsync(FilterText); }
+}

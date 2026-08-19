@@ -13,9 +13,7 @@
             <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
         </div>
     </header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
-    @if (success is not null) { <div class="alert alert-success">@success</div> }
-    <Card Class="mb-4 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
             <Addons Class="hcs-catalog-search">
                 <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
@@ -69,20 +67,24 @@
     </CardBody></Card>
 </section>
 
-<Modal @ref="modal"><ModalContent Centered Size="ModalSize.Large" Class="hcs-catalog-modal">
+<Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal">
     <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@(editingId is null ? L["Catalog:Create"] : L["Catalog:Edit"])</ModalTitle><CloseButton /></ModalHeader>
     <ModalBody Class="hcs-catalog-modal__body">
         <div class="hcs-catalog-form">
-            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editingId is not null)" /></Field>
-            <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><TextInput @bind-Value="form.Name" /></Field>
+            <div class="hcs-form-row">
+                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editingId is not null)" Autocomplete="off" name="hcsSurveyCode" /></Field>
+                <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><TextInput @bind-Value="form.Name" Autocomplete="off" name="hcsSurveyName" /></Field>
+            </div>
             <Field><FieldLabel>@L["Menu:SurveyLocations"]</FieldLabel>
                 <Select TValue="string" @bind-Value="form.LocationId">
                     <SelectItem Value="@string.Empty">@L["Catalog:NoParent"]</SelectItem>
                     @foreach (var location in locations) { <SelectItem Value="@location.Id.ToString()">@location.Name</SelectItem> }
                 </Select>
             </Field>
-            <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartsAt" /></Field>
-            <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.EndsAt" /></Field>
+            <div class="hcs-form-row hcs-form-row--equal">
+                <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartsAt" /></Field>
+                <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.EndsAt" /></Field>
+            </div>
         </div>
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
@@ -97,7 +99,6 @@
     private Modal? modal;
     private Guid? editingId;
     private string filter = "";
-    private string? error, success;
     private bool isLoading;
 
     private List<SurveySessionDto> VisibleSessions => string.IsNullOrWhiteSpace(filter)
@@ -108,9 +109,9 @@
     private Task SearchAsync() => Task.CompletedTask;
     private async Task LoadAsync()
     {
-        isLoading = true; error = null;
+        isLoading = true;
         try { sessions.Clear(); sessions.AddRange(await Work.GetSessionsAsync()); locations.Clear(); locations.AddRange(await Work.GetLocationsAsync()); }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
     private async Task OpenCreate() { editingId = null; form.Reset(); if (modal is not null) await modal.Show(); }
@@ -128,22 +129,22 @@
             Guid? location = Guid.TryParse(form.LocationId, out var id) ? id : null;
             if (editingId is { } sessionId) await Work.UpdateSessionAsync(sessionId, new UpdateSurveySessionRequest(form.Name.Trim(), form.StartsAt, form.EndsAt, location));
             else await Work.CreateSessionAsync(new CreateSurveySessionRequest(form.Code.Trim(), form.Name.Trim(), form.StartsAt, form.EndsAt, location));
-            success = editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"];
+            await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             form.Reset(); await LoadAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task ChangeStatusAsync(SurveySessionDto session, string status)
     {
-        try { await Work.ChangeSessionStatusAsync(session.Id, status); success = L["Catalog:Updated"]; await LoadAsync(); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        try { await Work.ChangeSessionStatusAsync(session.Id, status); await NotifySuccessAsync(L["Catalog:Updated"]); await LoadAsync(); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync(SurveySessionDto session)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], session.Name))) return;
-        try { await Work.DeleteSessionAsync(session.Id); success = L["Catalog:Deleted"]; await LoadAsync(); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+        try { await Work.DeleteSessionAsync(session.Id); await NotifySuccessAsync(L["Catalog:Deleted"]); await LoadAsync(); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private sealed class SessionForm
     {

@@ -18,7 +18,6 @@
             <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
         </div>
     </header>
-    @if (!string.IsNullOrWhiteSpace(error)) { <div class="alert alert-warning">@error</div> }
     @if (isLoading) { <p>@L["Catalog:Loading"]</p> }
     else
     {
@@ -36,7 +35,16 @@
                             <div><strong>@day.Day</strong></div>
                             @foreach (var item in daily.Take(3))
                             {
-                                <div><a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@item.Title</a></div>
+                                <div>
+                                    @if (IsTask(item))
+                                    {
+                                        <button type="button" class="btn btn-link p-0" @onclick="() => OpenTask(item)">@item.Title</button>
+                                    }
+                                    else
+                                    {
+                                        <a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@item.Title</a>
+                                    }
+                                </div>
                             }
                         </td>
                     }
@@ -51,7 +59,17 @@
             @foreach (var item in events)
             {
                 <tr>
-                    <td><a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)"><strong>@item.Title</strong></a><br /><small>@item.EventType</small></td>
+                    <td>
+                        @if (IsTask(item))
+                        {
+                            <button type="button" class="btn btn-link p-0 text-start" @onclick="() => OpenTask(item)"><strong>@item.Title</strong></button>
+                        }
+                        else
+                        {
+                            <a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)"><strong>@item.Title</strong></a>
+                        }
+                        <br /><small>@item.EventType</small>
+                    </td>
                     <td>@item.StartTime.ToLocalTime().ToString("dd/MM HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")</td>
                     <td>@item.Visibility</td>
                     <td><Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteAsync(item)">@L["Catalog:Delete"]</Button></td>
@@ -61,26 +79,31 @@
         </CardBody></Card>
     }
 </section>
-<Modal @ref="modal"><ModalContent Centered>
-    <ModalHeader><ModalTitle>@L["Feature:EventCreate"]</ModalTitle><CloseButton /></ModalHeader>
-    <ModalBody>
-        <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><TextInput @bind-Value="form.Title" /></Field>
-        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="2" @bind="form.Description"></textarea></Field>
-        <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.Start" /></Field>
-        <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.End" /></Field>
-        <Field><FieldLabel>@L["Catalog:EventTypeTitle"]</FieldLabel>
-            <Select TValue="string" @bind-Value="form.EventType">
-                <SelectItem Value="@("Meeting")">Meeting</SelectItem>
-                @foreach (var type in eventTypes) { <SelectItem Value="@type.Name">@type.Name</SelectItem> }
-            </Select>
-        </Field>
-        <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
-            <Select TValue="string" @bind-Value="form.Visibility">
-                <SelectItem Value="@("Private")">Private</SelectItem>
-                <SelectItem Value="@("Participants")">Participants</SelectItem>
-                <SelectItem Value="@("Public")">Public</SelectItem>
-            </Select>
-        </Field>
+<Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal">
+    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:EventCreate"]</ModalTitle><CloseButton /></ModalHeader>
+    <ModalBody Class="hcs-catalog-modal__body">
+        <div class="hcs-catalog-form">
+        <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><TextInput @bind-Value="form.Title" Autocomplete="off" name="hcsEventTitle" /></Field>
+        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="2" @bind="form.Description" autocomplete="off"></textarea></Field>
+        <div class="hcs-form-row hcs-form-row--equal">
+            <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.Start" /></Field>
+            <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.End" /></Field>
+        </div>
+        <div class="hcs-form-row hcs-form-row--equal">
+            <Field><FieldLabel>@L["Catalog:EventTypeTitle"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.EventType">
+                    <SelectItem Value="@("Meeting")">Meeting</SelectItem>
+                    @foreach (var type in eventTypes) { <SelectItem Value="@type.Name">@type.Name</SelectItem> }
+                </Select>
+            </Field>
+            <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.Visibility">
+                    <SelectItem Value="@("Private")">Private</SelectItem>
+                    <SelectItem Value="@("Participants")">Participants</SelectItem>
+                    <SelectItem Value="@("Public")">Public</SelectItem>
+                </Select>
+            </Field>
+        </div>
         <Field><FieldLabel>@L["Feature:RelatedType"]</FieldLabel>
             <Select TValue="string" Value="form.RelatedType" ValueChanged="OnRelatedTypeChanged">
                 <SelectItem Value="@("NONE")">NONE</SelectItem>
@@ -103,12 +126,14 @@
                 <Check TValue="bool" Checked="form.Participants.Contains(contact.Id)" CheckedChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
             }
         </Field>
+        </div>
     </ModalBody>
-    <ModalFooter>
-        <Button Color="Color.Secondary" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
-        <Button Color="Color.Primary" Clicked="CreateAsync">@L["Catalog:Create"]</Button>
+    <ModalFooter Class="hcs-catalog-modal__footer">
+        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="CreateAsync">@L["Catalog:Create"]</Button>
     </ModalFooter>
 </ModalContent></Modal>
+<ProjectTaskViewModal @ref="taskModal" />
 @code {
     private static readonly string[] days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     private DateTime month = new(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -117,14 +142,14 @@
     private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
     private readonly EventForm form = new();
     private Modal? modal;
+    private ProjectTaskViewModal? taskModal;
     private bool isLoading;
-    private string? error;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
     private async Task LoadAsync()
     {
-        isLoading = true; error = null;
+        isLoading = true;
         try
         {
             var from = month.AddDays(-7); var to = month.AddMonths(1).AddDays(7);
@@ -136,13 +161,17 @@
             }
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
 
     private Task PreviousMonth() { month = month.AddMonths(-1); return LoadAsync(); }
     private Task NextMonth() { month = month.AddMonths(1); return LoadAsync(); }
     private async Task OpenCreate() { form.Reset(); if (modal is not null) await modal.Show(); }
+    private static bool IsTask(CalendarEventDto item) =>
+        string.Equals(item.RelatedType, "TASK", StringComparison.OrdinalIgnoreCase) && Guid.TryParse(item.RelatedId, out _);
+    private Task OpenTask(CalendarEventDto item) =>
+        Guid.TryParse(item.RelatedId, out var id) ? taskModal?.ShowAsync(id) ?? Task.CompletedTask : Task.CompletedTask;
     private void OnRelatedTypeChanged(string value)
     {
         if (!string.Equals(form.RelatedType, value, StringComparison.Ordinal)) form.RelatedId = null;
@@ -165,13 +194,13 @@
             if (modal is not null) await modal.Hide();
             await LoadAsync();
         }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync(CalendarEventDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Title))) return;
         try { await Work.DeleteCalendarEventAsync(item.Id); await LoadAsync(); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Delete); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private async Task<CatalogSelect2SearchResponse> SearchRelatedAsync(string term, int page)
     {

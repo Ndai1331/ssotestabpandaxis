@@ -20,7 +20,6 @@ public partial class OrganizationCatalog : System.IDisposable
 
     [Inject] private OrganizationCatalogClient CatalogClient { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
-    [Inject] private IUiMessageService UiMessageService { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public OrganizationCatalogKind Kind { get; set; }
@@ -117,6 +116,12 @@ public partial class OrganizationCatalog : System.IDisposable
         errorMessage = message;
         errorTitleKey = titleKey;
         errorCanRetry = canRetry;
+    }
+
+    private async Task SetErrorAsync(string message, string titleKey, bool canRetry)
+    {
+        SetError(message, titleKey, canRetry);
+        await UiMessageService.Error(message);
     }
 
 

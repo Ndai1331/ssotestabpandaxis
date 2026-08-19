@@ -7,7 +7,6 @@
 <PageTitle>@L["Menu:SigningKpi"] · HCS</PageTitle>
 <section class="hcs-document-page">
     <header class="hcs-document-page__header"><div><h1>@L["Feature:SigningKpi"]</h1></div><Button Color="Color.Primary" Outline="true" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button></header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
     <div class="row g-3 mb-4">
         <div class="col-md-4"><Card><CardBody><p class="mb-1">@L["Feature:Completed"]</p><h2>@completed</h2></CardBody></Card></div>
         <div class="col-md-4"><Card><CardBody><p class="mb-1">@L["Feature:Failed"]</p><h2>@failed</h2></CardBody></Card></div>
@@ -38,12 +37,11 @@
     private readonly List<ReportRowDto> rows = [];
     private readonly List<SigningReportDto> reports = [];
     private int completed, failed, attempts;
-    private string? error;
 
     protected override Task OnInitializedAsync() => LoadAsync();
     private async Task LoadAsync()
     {
-        error = null; completed = failed = attempts = 0; rows.Clear(); reports.Clear();
+        completed = failed = attempts = 0; rows.Clear(); reports.Clear();
         try
         {
             try { rows.AddRange(await Work.GetReportsAsync("signing")); } catch { /* reports permission is independent */ }
@@ -59,6 +57,6 @@
                 catch { /* skip documents without signing access */ }
             }
         }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
 }

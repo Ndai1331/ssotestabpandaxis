@@ -7,6 +7,7 @@ using Microsoft.OpenApi;
 using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
+using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.BlobStoring;
@@ -60,6 +61,7 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
                          WorkPermissions.Surveys, WorkPermissions.SurveyManagement, WorkPermissions.Reports, WorkPermissions.Dashboard })
                 options.AddPolicy(permission, policy => policy.RequireClaim("permission", permission));
         });
+        Configure<AbpAntiForgeryOptions>(BearerApiAntiforgery.DisableCookieValidation);
         context.Services.AddDbContext<WorkManagementDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString(WorkManagementDbContext.ConnectionStringName)));
         Configure<AbpBlobStoringOptions>(options => options.Containers.Configure<WorkAssetBlobContainer>(container =>

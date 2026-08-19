@@ -5,9 +5,7 @@
 
 <PageTitle>@L["Menu:SignatureSettings"] · HCS</PageTitle>
 <section class="hcs-document-page">
-    <header class="hcs-document-page__header"><div><p class="hcs-document-page__eyebrow">@L["Menu:Documents"]</p><h1>@L["Menu:SignatureSettings"]</h1></div></header>
-    @if (error is not null) { <div class="alert alert-warning">@error</div> }
-    @if (success is not null) { <div class="alert alert-success">@success</div> }
+    <header class="hcs-document-page__header"><div><h1>@L["Menu:SignatureSettings"]</h1></div></header>
     @if (credentials.Count > 0)
     {
         <Card Class="mb-3"><CardBody>
@@ -34,18 +32,17 @@
     private readonly List<SigningCredentialDto> credentials = [];
     private readonly SettingsForm form = new();
     private bool isSaving;
-    private string? error, success;
 
     protected override async Task OnInitializedAsync()
     {
         try { credentials.AddRange(await Documents.GetCredentialsAsync()); if (credentials.FirstOrDefault() is { } current) { form.Kind = current.Kind; form.Endpoint = current.Endpoint; } }
-        catch (Exception ex) { error = MapBffError(ex); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
     private async Task SaveAsync()
     {
-        isSaving = true; error = null; success = null;
-        try { await Documents.ConfigureCredentialAsync(new ConfigureSigningCredentialRequest(form.Kind, form.Endpoint.Trim(), form.Secret)); form.Secret = ""; success = L["Catalog:Updated"]; credentials.Clear(); credentials.AddRange(await Documents.GetCredentialsAsync()); }
-        catch (Exception ex) { error = MapBffError(ex, BffErrorKind.Save); }
+        isSaving = true;
+        try { await Documents.ConfigureCredentialAsync(new ConfigureSigningCredentialRequest(form.Kind, form.Endpoint.Trim(), form.Secret)); form.Secret = ""; await NotifySuccessAsync(L["Catalog:Updated"]); credentials.Clear(); credentials.AddRange(await Documents.GetCredentialsAsync()); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
         finally { isSaving = false; }
     }
     private string KindName(int kind) => kind switch { 1 => L["Feature:RemoteCa"], 2 => L["Feature:Hsm"], _ => L["Feature:Electronic"] };

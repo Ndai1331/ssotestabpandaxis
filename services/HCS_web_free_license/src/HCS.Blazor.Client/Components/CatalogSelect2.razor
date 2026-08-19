@@ -1,16 +1,22 @@
 @implements IAsyncDisposable
-<select id="@selectId" class="hcs-catalog-select2 form-select"></select>
+<select id="@selectId" class="@CssClass form-select" multiple="@Multiple"></select>
 <style>
     select.hcs-catalog-select2 + .select2-container { width: 100% !important; }
     select.hcs-catalog-select2 + .select2-container .select2-selection--single {
-        height: auto !important;
-        min-height: 2.4rem;
+        border-radius: 5px !important;
+        height: 38px !important;
+        max-height: 36px;
+        min-height: 38px !important;
         display: flex;
         align-items: center;
     }
     select.hcs-catalog-select2 + .select2-container .select2-selection--single .select2-selection__rendered {
-        line-height: 1.4 !important;
-        padding: 0.4rem 2.2rem 0.4rem 0.65rem !important;
+        line-height: 36px !important;
+        padding: 0 2.2rem 0 0.65rem !important;
+    }
+    select.hcs-catalog-select2 + .select2-container .select2-selection--multiple {
+        min-height: 38px;
+        border-radius: 5px;
     }
 </style>
 @code {
@@ -23,8 +29,13 @@
 
     [Parameter] public Guid? Value { get; set; }
     [Parameter] public EventCallback<Guid?> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<Guid> Values { get; set; } = [];
+    [Parameter] public EventCallback<IReadOnlyList<Guid>> ValuesChanged { get; set; }
+    [Parameter] public bool Multiple { get; set; }
     [Parameter] public string? Placeholder { get; set; }
     [Parameter] public string? SelectedText { get; set; }
+    [Parameter] public IReadOnlyList<string>? SelectedTexts { get; set; }
+    [Parameter] public string CssClass { get; set; } = "hcs-catalog-select2";
     [Parameter] public Func<string, int, Task<CatalogSelect2SearchResponse>> Search { get; set; } = default!;
 
     [JSInvokable]
@@ -34,15 +45,20 @@
     [JSInvokable]
     public async Task OnSelectionChangeAsync(string[]? rawIds)
     {
-        Guid? next = null;
-        if (rawIds is { Length: > 0 } && Guid.TryParse(rawIds[0], out var id))
-        {
-            next = id;
-        }
-        var signature = next?.ToString("N") ?? "";
+        var ids = (rawIds ?? [])
+            .Select(x => Guid.TryParse(x, out var id) ? id : (Guid?)null)
+            .Where(x => x.HasValue)
+            .Select(x => x!.Value)
+            .ToList();
+        var signature = SignatureOf(ids);
         if (signature == lastSignature) return;
         lastSignature = signature;
-        await ValueChanged.InvokeAsync(next);
+        if (Multiple)
+        {
+            await ValuesChanged.InvokeAsync(ids);
+            return;
+        }
+        await ValueChanged.InvokeAsync(ids.Count > 0 ? ids[0] : null);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -50,25 +66,39 @@
         if (firstRender)
         {
             dotNetRef = DotNetObjectReference.Create(this);
-            lastSignature = Value?.ToString("N") ?? "";
+            lastSignature = CurrentSignature();
             await Js.InvokeVoidAsync("hcsCatalogSelect2.init", selectId, dotNetRef, new
             {
                 placeholder = Placeholder ?? string.Empty,
-                minimumInputLength = 0
+                minimumInputLength = 0,
+                multiple = Multiple
             }, InitialItems());
             initialized = true;
             return;
         }
 
         if (!initialized) return;
-        var signature = Value?.ToString("N") ?? "";
+        var signature = CurrentSignature();
         if (signature == lastSignature) return;
         lastSignature = signature;
         await Js.InvokeVoidAsync("hcsCatalogSelect2.setSelection", selectId, InitialItems());
     }
 
+    private string CurrentSignature() => Multiple
+        ? SignatureOf(Values)
+        : (Value?.ToString("N") ?? "");
+
+    private static string SignatureOf(IEnumerable<Guid> ids) =>
+        string.Join(",", ids.Select(x => x.ToString("N")).OrderBy(x => x, StringComparer.Ordinal));
+
     private List<CatalogSelect2Item> InitialItems()
     {
+        if (Multiple)
+        {
+            var texts = SelectedTexts ?? [];
+            return Values.Select((id, i) =>
+                new CatalogSelect2Item(id.ToString(), i < texts.Count && !string.IsNullOrWhiteSpace(texts[i]) ? texts[i] : id.ToString())).ToList();
+        }
         if (Value is not { } id) return [];
         var text = string.IsNullOrWhiteSpace(SelectedText) ? id.ToString() : SelectedText;
         return [new CatalogSelect2Item(id.ToString(), text)];
