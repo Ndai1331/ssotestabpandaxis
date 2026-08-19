@@ -429,6 +429,40 @@ namespace HCS.DocumentService.Migrations
                     b.ToTable("ApprovalTasks", "document");
                 });
 
+            modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowKind", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("WorkflowKinds", "document");
+                });
+
             modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowDefinition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -443,6 +477,16 @@ namespace HCS.DocumentService.Migrations
                     b.Property<DateTime>("CreationTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("KindId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -452,6 +496,8 @@ namespace HCS.DocumentService.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("KindId");
 
                     b.ToTable("WorkflowDefinitions", "document");
                 });
@@ -481,6 +527,9 @@ namespace HCS.DocumentService.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ViewScopesJson")
+                        .HasColumnType("jsonb");
 
                     b.HasKey("Id");
 
@@ -524,6 +573,28 @@ namespace HCS.DocumentService.Migrations
 
                     b.Property<Guid?>("AssigneeUserId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("AllowReturn")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("AssigneeType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("DepartmentIdsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("SlaDays")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserIdsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.HasKey("Id");
 
@@ -642,6 +713,14 @@ namespace HCS.DocumentService.Migrations
                         .HasForeignKey("InstanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowDefinition", b =>
+                {
+                    b.HasOne("HCS.DocumentService.Workflows.WorkflowKind", null)
+                        .WithMany()
+                        .HasForeignKey("KindId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("HCS.DocumentService.Workflows.WorkflowStep", b =>
