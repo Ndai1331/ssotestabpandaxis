@@ -1,9 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-  </Configurations>
-
-  <Project Path="hanhchinhso.Blazor/hanhchinhso.Blazor.csproj" />
-  <Project Path="hanhchinhso.Blazor.Client/hanhchinhso.Blazor.Client.csproj" />
-</Solution>
-

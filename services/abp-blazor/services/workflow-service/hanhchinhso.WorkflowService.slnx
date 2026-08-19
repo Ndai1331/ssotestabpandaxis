@@ -1,9 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-  </Configurations>
-
-  <Project Path="hanhchinhso.WorkflowService.Contracts/hanhchinhso.WorkflowService.Contracts.csproj" />
-  <Project Path="hanhchinhso.WorkflowService.Tests/hanhchinhso.WorkflowService.Tests.csproj" />
-  <Project Path="hanhchinhso.WorkflowService/hanhchinhso.WorkflowService.csproj" />
-</Solution>

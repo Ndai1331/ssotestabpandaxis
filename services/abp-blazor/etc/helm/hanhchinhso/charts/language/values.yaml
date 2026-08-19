@@ -1,6 +1,0 @@
-image:
-  repository: "hanhchinhso/language"
-  tag: "latest"
-  pullPolicy: IfNotPresent
-swagger:
-  isEnabled: "true"

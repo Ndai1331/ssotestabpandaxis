@@ -1,9 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-  </Configurations>
-
-  <Project Path="hanhchinhso.OrganizationService.Contracts/hanhchinhso.OrganizationService.Contracts.csproj" />
-  <Project Path="hanhchinhso.OrganizationService.Tests/hanhchinhso.OrganizationService.Tests.csproj" />
-  <Project Path="hanhchinhso.OrganizationService/hanhchinhso.OrganizationService.csproj" />
-</Solution>

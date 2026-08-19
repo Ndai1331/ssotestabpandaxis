@@ -57,3 +57,11 @@ coverage/
 # Cursor / Claude local (keep skills in repo; ignore heavy caches)
 .cursor/
 **/agent-transcripts/
+.agents/
+.claude/hooks/.logs/
+
+# Local runtime artifacts
+**/.runtime-build/
+
+# Licensed commercial reference — keep local only, never push
+services/HCS_web_with_license/

@@ -1,6 +1,0 @@
-image:
-  repository: "hanhchinhso/administration"
-  tag: "latest"
-  pullPolicy: IfNotPresent
-swagger:
-  isEnabled: "true"

@@ -1,9 +1,0 @@
-./build-image.ps1 -ProjectPath "../../services/administration/hanhchinhso.AdministrationService/hanhchinhso.AdministrationService.csproj" -ImageName hanhchinhso/administration
-./build-image.ps1 -ProjectPath "../../services/identity/hanhchinhso.IdentityService/hanhchinhso.IdentityService.csproj" -ImageName hanhchinhso/identity
-./build-image.ps1 -ProjectPath "../../services/audit-logging/hanhchinhso.AuditLoggingService/hanhchinhso.AuditLoggingService.csproj" -ImageName hanhchinhso/auditlogging
-./build-image.ps1 -ProjectPath "../../services/gdpr/hanhchinhso.GdprService/hanhchinhso.GdprService.csproj" -ImageName hanhchinhso/gdpr
-./build-image.ps1 -ProjectPath "../../services/ai-management/hanhchinhso.AIManagementService/hanhchinhso.AIManagementService.csproj" -ImageName hanhchinhso/aimanagement
-./build-image.ps1 -ProjectPath "../../services/language/hanhchinhso.LanguageService/hanhchinhso.LanguageService.csproj" -ImageName hanhchinhso/language
-./build-image.ps1 -ProjectPath "../../gateways/web/hanhchinhso.WebGateway/hanhchinhso.WebGateway.csproj" -ImageName hanhchinhso/webgateway
-./build-image.ps1 -ProjectPath "../../apps/auth-server/hanhchinhso.AuthServer/hanhchinhso.AuthServer.csproj" -ImageName hanhchinhso/authserver
-./build-image.ps1 -ProjectPath "../../apps/blazor/hanhchinhso.Blazor/hanhchinhso.Blazor.csproj" -ImageName hanhchinhso/blazorwebapp

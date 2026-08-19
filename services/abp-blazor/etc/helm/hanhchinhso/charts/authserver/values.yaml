@@ -1,4 +1,0 @@
-image:
-  repository: "hanhchinhso/authserver"
-  tag: "latest"
-  pullPolicy: IfNotPresent
