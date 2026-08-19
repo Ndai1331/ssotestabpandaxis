@@ -70,6 +70,22 @@ public sealed class DomainBehaviorTests
     }
 
     [Fact]
+    public void System_or_conversation_admin_can_delete_other_people_messages()
+    {
+        var me = Guid.NewGuid();
+        var other = Guid.NewGuid();
+        ChatModerationRules.CanDeleteMessage(me, me, false, ConversationMemberRole.Member).ShouldBeTrue();
+        ChatModerationRules.CanDeleteMessage(me, other, false, ConversationMemberRole.Member).ShouldBeFalse();
+        ChatModerationRules.CanDeleteMessage(me, other, true, ConversationMemberRole.Member).ShouldBeTrue();
+        ChatModerationRules.CanDeleteMessage(me, other, false, ConversationMemberRole.Admin).ShouldBeTrue();
+        ChatModerationRules.IsSystemAdmin(true, false).ShouldBeTrue();
+        ChatModerationRules.IsSystemAdmin(false, true).ShouldBeTrue();
+        ChatModerationRules.IsSystemAdmin(false, false).ShouldBeFalse();
+        ChatModerationRules.ForwardBody("  note  ").ShouldBe("note");
+        ChatModerationRules.ForwardBody(" ").ShouldBe(ChatModerationRules.ForwardedPlaceholder);
+    }
+
+    [Fact]
     public void Push_token_can_be_safely_reassigned_without_mutating_the_provider_token()
     {
         var firstUser = Guid.NewGuid(); var nextUser = Guid.NewGuid();

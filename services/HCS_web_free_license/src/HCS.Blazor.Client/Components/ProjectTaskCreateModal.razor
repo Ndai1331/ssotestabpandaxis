@@ -39,8 +39,8 @@
                                 </Select>
                             </Field>
                             <div class="hcs-form-row">
-                                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="code" Disabled="@(createdId is not null)" Autocomplete="off" name="hcsTaskCode" /></Field>
-                                <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><TextInput @bind-Value="title" Autocomplete="off" name="hcsTaskTitle" /></Field>
+                                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="code" Name="hcsTaskCode" MaxLength="64" Disabled="@(createdId is not null)" /></Field>
+                                <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><HcsIsolatedTextInput @bind-Value="title" Name="hcsTaskTitle" /></Field>
                             </div>
                             <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="description"></textarea></Field>
                             <div class="hcs-form-row hcs-form-row--equal">
@@ -115,16 +115,18 @@
     private readonly List<ProjectTaskDto> parentOptions = [];
     private readonly List<ChatContactDto> contacts = [];
     private readonly List<DocumentDto> documents = [];
-    private Guid? projectId, selectedProjectId, parentTaskId, createdId, assigneeId, documentId;
+    private Guid? projectId, selectedProjectId, parentTaskId, createdId, assigneeId, documentId, linkedDocumentId;
     private string tab = "general", code = "", title = "", description = "", priority = "Normal", status = "New";
     private DateTime startDate = DateTime.Today, dueDate = DateTime.Today.AddDays(7);
     private bool isSaving;
 
-    public async Task ShowAsync(Guid? fixedProjectId = null, Guid? parentId = null)
+    public async Task ShowAsync(Guid? fixedProjectId = null, Guid? parentId = null, Guid? linkedDocumentId = null)
     {
         Reset();
         projectId = selectedProjectId = fixedProjectId;
         parentTaskId = parentId;
+        this.linkedDocumentId = linkedDocumentId;
+        documentId = linkedDocumentId;
         if (projects.Count == 0)
         {
             var page = await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100));
@@ -140,7 +142,7 @@
     private void Reset()
     {
         tab = "general";
-        createdId = assigneeId = documentId = parentTaskId = null;
+        createdId = assigneeId = documentId = parentTaskId = linkedDocumentId = null;
         code = title = description = "";
         priority = "Normal";
         status = "New";
@@ -191,6 +193,11 @@
             newId = created.Id;
             await Work.AddAssignmentAsync(created.Id, new AddTaskAssignmentRequest(assigneeId.Value, "Assignee"));
             createdId = created.Id;
+            if (linkedDocumentId is { } linked)
+            {
+                documentId = linked;
+                await AddDocumentAsync();
+            }
             tab = "assignments";
             await NotifySuccessAsync(L["Catalog:Created"]);
         }

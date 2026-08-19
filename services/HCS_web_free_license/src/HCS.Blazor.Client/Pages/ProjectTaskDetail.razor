@@ -27,16 +27,16 @@
                         <div class="hcs-form-row">
                             <Field>
                                 <FieldLabel>@L["Feature:Project"]</FieldLabel>
-                                <TextInput Value="@projectName" Disabled="true" />
+                                <HcsIsolatedTextInput Value="@projectName" Name="hcsTaskProjectName" Disabled="true" />
                             </Field>
                             <Field>
                                 <FieldLabel>@L["Feature:ParentTask"]</FieldLabel>
-                                <TextInput Value="@ParentTaskLabel" Disabled="true" />
+                                <HcsIsolatedTextInput Value="@ParentTaskLabel" Name="hcsTaskParentLabel" Disabled="true" />
                             </Field>
                         </div>
                         <div class="hcs-form-row">
-                            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput Value="@form.Code" Disabled="true" /></Field>
-                            <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><TextInput @bind-Value="form.Title" Autocomplete="off" name="hcsTaskTitle" /></Field>
+                            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput Value="@form.Code" Name="hcsTaskDetailCode" Disabled="true" /></Field>
+                            <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsTaskDetailTitle" /></Field>
                         </div>
                         <div class="hcs-form-row hcs-form-row--equal">
                             <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartDate" /></Field>

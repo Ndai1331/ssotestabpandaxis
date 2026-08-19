@@ -43,6 +43,7 @@
                         <td>@instance.CurrentStep / @instance.Tasks.Count</td>
                         <td>
                             <a class="btn btn-sm btn-outline-primary hcs-action-button" href="@($"/document-workflow-instances/{instance.Id}")">@L["Work:View"]</a>
+                            <Button Size="Size.Small" Color="Color.Light" Outline="true" Class="hcs-action-button" Clicked="() => PreviewAsync(instance)">@L["Work:PdfPreview"]</Button>
                         </td>
                     </tr>
                 }
@@ -97,12 +98,14 @@
 </section>
 
 <SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
+<DocumentPdfPreviewModal @ref="previewModal" />
 @code {
     [Parameter] public Guid? InstanceId { get; set; }
     private readonly List<DocumentDto> documents = [];
     private readonly List<WorkflowDefinitionDto> definitions = [];
     private readonly List<WorkflowInstanceDto> instances = [];
     private SubmitWorkflowModal? submitModal;
+    private DocumentPdfPreviewModal? previewModal;
     private WorkflowInstanceDto? selected;
     private string filter = "", search = "";
     private string decisionComment = "";
@@ -114,13 +117,20 @@
 
     protected override Task OnParametersSetAsync() => LoadAsync();
     private Task OpenStart() => submitModal?.ShowAsync() ?? Task.CompletedTask;
+    private Task PreviewAsync(WorkflowInstanceDto instance)
+    {
+        var document = documents.FirstOrDefault(x => x.Id == instance.DocumentId);
+        return document is null
+            ? Task.CompletedTask
+            : previewModal?.ShowAsync(document.Id, document.Files, document.Title) ?? Task.CompletedTask;
+    }
     private void ApplyFilter() => search = filter;
     private async Task LoadAsync()
     {
         isLoading = true;
         try
         {
-            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100));
+            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 3));
             documents.Clear(); documents.AddRange(page.Items);
             definitions.Clear(); definitions.AddRange(await Documents.GetDefinitionsAsync());
             instances.Clear(); instances.AddRange(await Documents.GetInstancesAsync());

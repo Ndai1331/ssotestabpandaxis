@@ -492,6 +492,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     display: flex;
     gap: .55rem;
     margin: 0;
+    padding-left: 0px;
 }
 
 .hcs-catalog-active-field .form-check-input {
@@ -692,4 +693,179 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 .hcs-detail-split > .d-flex > .card {
     height: 100%;
 }
+
+.hcs-calendar-grid,
+.hcs-calendar-grid th,
+.hcs-calendar-grid td {
+    background: #fff;
+}
+
+.hcs-calendar-grid th {
+    color: #4d6d82;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .075em;
+    text-transform: uppercase;
+}
+
+.hcs-calendar-grid td {
+    height: 7rem;
+    min-width: 8rem;
+    vertical-align: top;
+}
+
+.hcs-calendar-grid__today {
+    background: rgba(13, 110, 253, 0.08) !important;
+}
+
+.hcs-wizard-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    justify-content: flex-end;
+    margin-top: 1.25rem;
+}
+
+.hcs-pdf-frame {
+    background: #fff;
+    border: 1px solid #d7e2e8;
+    border-radius: .5rem;
+    min-height: 32rem;
+    width: 100%;
+}
+
+.hcs-dropzone {
+    background: #f7fafc;
+    border: 1px dashed #c5d4de;
+    border-radius: .5rem;
+    padding: .85rem;
+}
+
+.hcs-dropzone__hint {
+    color: #6d8596;
+    font-size: .85rem;
+    margin-top: .45rem;
+}
+
+.hcs-assignee-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+}
+
+.hcs-pill {
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: .78rem;
+    font-weight: 700;
+    padding: .2rem .65rem;
+}
+
+.hcs-pill--role {
+    background: #d1f4ee;
+    color: #0f766e;
+}
+
+.hcs-pill--user {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.hcs-signing-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.hcs-signing-tab {
+    background: #fff;
+    border: 1px solid #d7e2e8;
+    border-radius: 999px;
+    color: #315873;
+    font-weight: 700;
+    padding: .35rem .9rem;
+}
+
+.hcs-signing-tab--active {
+    background: #e8437a;
+    border-color: #e8437a;
+    color: #fff;
+}
+
+.hcs-signing-count {
+    background: rgba(255, 255, 255, .22);
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: .75rem;
+    margin-left: .35rem;
+    min-width: 1.4rem;
+    padding: .05rem .4rem;
+    justify-content: center;
+}
+
+.hcs-signing-tab:not(.hcs-signing-tab--active) .hcs-signing-count {
+    background: #fde8ee;
+    color: #e8437a;
+}
+
+.hcs-template-file-box,
+.hcs-step-card {
+    background: #f7fafc;
+    border: 1px solid #e2eaf0;
+    border-radius: .5rem;
+    padding: .85rem 1rem;
+}
+
+.hcs-step-card {
+    margin-bottom: .75rem;
+}
+
+.hcs-workflow-info {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+    .hcs-workflow-info {
+        grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr);
+    }
+}
+
+.hcs-timeline-step {
+    align-items: flex-start;
+    display: flex;
+    gap: .75rem;
+    margin-bottom: .9rem;
+}
+
+.hcs-timeline-step__marker {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    height: 1.7rem;
+    justify-content: center;
+    width: 1.7rem;
+}
+
+.hcs-timeline-step--active .hcs-timeline-step__marker {
+    background: #1d9e75;
+    color: #fff;
+}
+
+.hcs-timeline-step--signed .hcs-timeline-step__marker {
+    background: #e8f8ee;
+    color: #1d9e75;
+}
+
+.hcs-timeline-step--return .hcs-timeline-step__marker {
+    background: #fde8ee;
+    color: #df1e53;
+}
+
+.hcs-timeline-step--pending .hcs-timeline-step__marker {
+    background: #eef3f6;
+    color: #6d8596;
+}
+
 

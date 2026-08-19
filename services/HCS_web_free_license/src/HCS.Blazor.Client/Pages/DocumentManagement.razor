@@ -6,17 +6,21 @@
 @attribute [Authorize(Policy = "Documents.View")]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
-@inject OrganizationCatalogClient Catalog
+@inject CollaborationClient Chat
 @inject NavigationManager Navigation
 @implements IDisposable
+@using System.Threading
 
 <PageTitle>@PageTitle · HCS</PageTitle>
-<section class="hcs-catalog-page">
+<section class="hcs-catalog-page" @key="SourceType">
     <header class="hcs-catalog-titlebar">
         <div><h1>@PageTitle</h1></div>
         <div class="hcs-catalog-page__actions">
             <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
-            @if (SourceType == 0) { <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button> }
+            @if (CanCreate)
+            {
+                <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
+            }
         </div>
     </header>
     <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
@@ -35,27 +39,42 @@
         else {
             <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
                 <thead><tr>
-                    <th></th>
-                    <th>@L["Catalog:Code"]</th>
-                    <th>@L["Catalog:Status"]</th>
                     <th>@L["Catalog:Actions"]</th>
+                    <th>@L["Feature:DocumentNumber"]</th>
+                    <th>@L["Feature:DocumentTitleField"]</th>
+                    <th>@L["Catalog:Status"]</th>
+                    <th>@L["Feature:Files"]</th>
                 </tr></thead>
                 <tbody>
                 @foreach (var item in items)
                 {
                     <tr>
-                        <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
-                        <td>
-                            <a href="@($"/document-detail/{item.Id}")"><strong>@item.Title</strong></a>
-                            <span class="hcs-catalog-code">#@item.Number</span>
-                            <span class="hcs-catalog-desc">@item.CreationTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @item.Files.Count @L["Feature:Files"]</span>
-                        </td>
-                        <td><span class="hcs-status-badge hcs-status-badge--planning">@item.Status</span></td>
                         <td>
                             <div class="hcs-row-actions">
-                                <a class="btn btn-sm btn-outline-primary hcs-action-button hcs-action-button--edit" href="@($"/document-detail/{item.Id}")" title="@L["Catalog:Edit"]"><i class="fa fa-pen"></i></a>
+                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => PreviewAsync(item)" title="@L["Work:PdfPreview"]"><i class="fa fa-eye"></i></Button>
+                                <a class="btn btn-sm btn-outline-primary hcs-action-button hcs-action-button--edit" href="@DetailHref(item.Id)" title="@L["Catalog:Edit"]"><i class="fa fa-pen"></i></a>
+                                @if (CanManage)
+                                {
+                                    <AuthorizeView Policy="Documents.Assign">
+                                        <Authorized>
+                                            <Button Size="Size.Small" Color="Color.Secondary" Outline="true" Class="hcs-action-button" Clicked="() => OpenSend(item)" title="@L["Feature:SendDocument"]"><i class="fa fa-paper-plane"></i></Button>
+                                        </Authorized>
+                                    </AuthorizeView>
+                                    <AuthorizeView Policy="Documents.Workflow.Start">
+                                        <Authorized>
+                                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => OpenSubmit(item)" title="@L["Work:SubmitWorkflow"]"><i class="fa fa-signature"></i></Button>
+                                        </Authorized>
+                                    </AuthorizeView>
+                                }
                             </div>
                         </td>
+                        <td><span class="hcs-catalog-code">#@item.Number</span></td>
+                        <td>
+                            <a href="@DetailHref(item.Id)"><strong>@item.Title</strong></a>
+                            <span class="hcs-catalog-desc">@item.CreationTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        </td>
+                        <td><span class="hcs-status-badge @StatusClass(item.Status)">@item.Status</span></td>
+                        <td>@item.Files.Count</td>
                     </tr>
                 }
                 </tbody>
@@ -63,74 +82,52 @@
         }
     </CardBody></Card>
 </section>
-<Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal">
-    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Catalog:Create"]</ModalTitle><CloseButton /></ModalHeader>
+<DocumentPdfPreviewModal @ref="previewModal" ShowAssignTask="true" OnAssignTask="AssignFromPreviewAsync" />
+<ProjectTaskCreateModal @ref="taskModal" />
+<SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
+<Modal @ref="sendModal"><ModalContent Centered Class="hcs-catalog-modal">
+    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:SendDocument"]</ModalTitle><CloseButton /></ModalHeader>
     <ModalBody Class="hcs-catalog-modal__body">
-        <div class="hcs-catalog-form">
-            <div class="hcs-form-row">
-                <Field><FieldLabel>@L["Feature:DocumentNumber"]</FieldLabel><TextInput @bind-Value="form.Number" Autocomplete="off" name="hcsDocumentNumber" /></Field>
-                <Field><FieldLabel>@L["Feature:DocumentTitleField"]</FieldLabel><TextInput @bind-Value="form.Title" Autocomplete="off" name="hcsDocumentTitle" /></Field>
-            </div>
-            <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
-            <div class="hcs-form-row hcs-form-row--equal">
-                <Field><FieldLabel>@L["Menu:DocumentTypes"]</FieldLabel>
-                    <CatalogSelect2 Value="form.DocumentTypeId" ValueChanged="value => form.DocumentTypeId = value"
-                                    Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(documentTypes, form.DocumentTypeId)"
-                                    Search="SearchDocumentTypesAsync" />
-                </Field>
-                <Field><FieldLabel>@L["Menu:Sectors"]</FieldLabel>
-                    <CatalogSelect2 Value="form.SectorId" ValueChanged="value => form.SectorId = value"
-                                    Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(sectors, form.SectorId)"
-                                    Search="SearchSectorsAsync" />
-                </Field>
-            </div>
-            <div class="hcs-form-row hcs-form-row--equal">
-                <Field><FieldLabel>@L["Menu:UrgencyLevels"]</FieldLabel>
-                    <CatalogSelect2 Value="form.UrgencyId" ValueChanged="value => form.UrgencyId = value"
-                                    Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(urgencies, form.UrgencyId)"
-                                    Search="SearchUrgenciesAsync" />
-                </Field>
-                <Field><FieldLabel>@L["Menu:ConfidentialityLevels"]</FieldLabel>
-                    <CatalogSelect2 Value="form.ConfidentialityId" ValueChanged="value => form.ConfidentialityId = value"
-                                    Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(confidentialities, form.ConfidentialityId)"
-                                    Search="SearchConfidentialitiesAsync" />
-                </Field>
-            </div>
-        </div>
+        <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
+            <UserSelect2 Value="sendReceiverId" ValueChanged="value => sendReceiverId = value"
+                         Placeholder="@L["Chat:SelectContacts"]" SelectedText="@ContactName(sendReceiverId)"
+                         Search="SearchContactsAsync" />
+        </Field>
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
-        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
-        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="CreateAsync">@L["Catalog:Create"]</Button>
+        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => sendModal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SendAsync">@L["Feature:SendDocument"]</Button>
     </ModalFooter>
 </ModalContent></Modal>
 @code {
+    [SupplyParameterFromQuery(Name = "sourceType")] public int? SourceTypeQuery { get; set; }
+
     private readonly List<DocumentDto> items = [];
-    private readonly List<MasterDataCatalogDto> documentTypes = [];
-    private readonly List<MasterDataCatalogDto> sectors = [];
-    private readonly List<MasterDataCatalogDto> urgencies = [];
-    private readonly List<MasterDataCatalogDto> confidentialities = [];
-    private readonly DocumentForm form = new();
-    private Modal? modal;
+    private readonly List<ChatContactDto> contacts = [];
+    private DocumentPdfPreviewModal? previewModal;
+    private ProjectTaskCreateModal? taskModal;
+    private SubmitWorkflowModal? submitModal;
+    private Modal? sendModal;
+    private DocumentDto? sending;
+    private DocumentDto? previewing;
+    private Guid? sendReceiverId;
     private string filter = "";
-    private string status = "";
     private bool isLoading;
+    private int lastLoadedSource = int.MinValue;
+    private int loadGeneration;
+
     private int SourceType
     {
         get
         {
             var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
             if (relative.Contains("my-documents", StringComparison.OrdinalIgnoreCase)) return 1;
-            var query = relative.Contains('?') ? relative[(relative.IndexOf('?') + 1)..] : "";
-            foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var pair = part.Split('=', 2);
-                if (pair.Length == 2 && pair[0].Equals("sourceType", StringComparison.OrdinalIgnoreCase)
-                    && int.TryParse(pair[1], out var value) && value is >= 0 and <= 2)
-                    return value;
-            }
+            if (SourceTypeQuery is >= 0 and <= 2) return SourceTypeQuery.Value;
             return 0;
         }
     }
+    private bool CanCreate => SourceType is 0 or 1;
+    private bool CanManage => SourceType is 0 or 1;
     private string PageTitle => SourceType switch
     {
         1 => L["Menu:MyDocuments"],
@@ -138,66 +135,81 @@
         _ => L["Menu:DocumentList"]
     };
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
+    protected override async Task OnParametersSetAsync() => await ReloadIfSourceChangedAsync(resetFilter: lastLoadedSource != int.MinValue);
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) =>
+        _ = InvokeAsync(() => ReloadIfSourceChangedAsync(resetFilter: true));
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+
+    private async Task ReloadIfSourceChangedAsync(bool resetFilter)
     {
-        Navigation.LocationChanged += OnLocationChanged;
-        await LoadLookupsAsync();
+        var source = SourceType;
+        if (source == lastLoadedSource) return;
+        if (resetFilter) filter = "";
+        lastLoadedSource = source;
         await LoadAsync();
     }
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(LoadAsync);
-    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+
     private Task SearchAsync() => LoadAsync();
-    private async Task LoadLookupsAsync()
-    {
-        try
-        {
-            var query = new OrganizationCatalogQuery(null, true, 0, 100);
-            documentTypes.AddRange((await Catalog.GetMasterDataAsync("DocumentType", query)).Items);
-            sectors.AddRange((await Catalog.GetMasterDataAsync("Sector", query)).Items);
-            urgencies.AddRange((await Catalog.GetMasterDataAsync("UrgencyLevel", query)).Items);
-            confidentialities.AddRange((await Catalog.GetMasterDataAsync("ConfidentialityLevel", query)).Items);
-        }
-        catch { /* catalog permission is optional for list view */ }
-    }
     private async Task LoadAsync()
     {
+        var generation = Interlocked.Increment(ref loadGeneration);
         isLoading = true;
         try
         {
-            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(string.IsNullOrWhiteSpace(filter) ? null : filter, string.IsNullOrWhiteSpace(status) ? null : status, SourceType == 1, 0, 20, SourceType));
+            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(
+                string.IsNullOrWhiteSpace(filter) ? null : filter, null, SourceType == 1, 0, 50, SourceType));
+            if (generation != loadGeneration) return;
             items.Clear(); items.AddRange(page.Items);
         }
-        catch (Exception ex) { await NotifyErrorAsync(ex); }
-        finally { isLoading = false; }
+        catch (Exception ex) { if (generation == loadGeneration) await NotifyErrorAsync(ex); }
+        finally { if (generation == loadGeneration) isLoading = false; }
     }
-    private async Task OpenCreate() { form.Reset(); if (modal is not null) await modal.Show(); }
-    private async Task CreateAsync()
+    private string DetailHref(Guid id) => $"/document-detail/{id}?sourceType={SourceType}";
+    private void OpenCreate() => Navigation.NavigateTo($"/document-detail?sourceType={SourceType}");
+    private Task PreviewAsync(DocumentDto item)
     {
+        previewing = item;
+        return previewModal?.ShowAsync(item.Id, item.Files, item.Title) ?? Task.CompletedTask;
+    }
+    private Task AssignFromPreviewAsync() =>
+        taskModal?.ShowAsync(linkedDocumentId: previewing?.Id) ?? Task.CompletedTask;
+    private Task OpenSubmit(DocumentDto item) => submitModal?.ShowAsync(item.Id) ?? Task.CompletedTask;
+    private async Task OpenSend(DocumentDto item)
+    {
+        sending = item;
+        sendReceiverId = null;
+        if (contacts.Count == 0)
+        {
+            try { contacts.AddRange(await Chat.GetContactsAsync(null, 50)); }
+            catch { }
+        }
+        if (sendModal is not null) await sendModal.Show();
+    }
+    private async Task SendAsync()
+    {
+        if (sending is null || sendReceiverId is null) { await NotifyErrorAsync(L["Catalog:TypeRequired"]); return; }
         try
         {
-            await Documents.CreateDocumentAsync(new CreateDocumentRequest(form.Number.Trim(), form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.DocumentTypeId, form.SectorId, form.UrgencyId, form.ConfidentialityId));
-            if (modal is not null) await modal.Hide();
-            await NotifySuccessAsync(L["Catalog:Created"]); await LoadAsync();
+            await Documents.SendDocumentAsync(sending.Id, new SendDocumentRequest(sendReceiverId));
+            if (sendModal is not null) await sendModal.Hide();
+            await NotifySuccessAsync(L["Catalog:Updated"]);
+            await LoadAsync();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
-    private static string MasterText(IEnumerable<MasterDataCatalogDto> items, Guid? id) =>
-        CatalogSelect2Cache.TextFor(items, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
-    private async Task<CatalogSelect2SearchResponse> SearchMasterAsync(string type, List<MasterDataCatalogDto> cache, string term, int page)
+    private static string StatusClass(DocumentStatus status) => status switch
     {
-        var skip = Math.Max(page - 1, 0) * 20;
-        var result = await Catalog.SearchMasterDataAsync(type, term, skip, 20);
-        return CatalogSelect2Cache.Merge(cache, result.Items, x => x.Id,
-            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
-    }
-    private Task<CatalogSelect2SearchResponse> SearchDocumentTypesAsync(string term, int page) => SearchMasterAsync("DocumentType", documentTypes, term, page);
-    private Task<CatalogSelect2SearchResponse> SearchSectorsAsync(string term, int page) => SearchMasterAsync("Sector", sectors, term, page);
-    private Task<CatalogSelect2SearchResponse> SearchUrgenciesAsync(string term, int page) => SearchMasterAsync("UrgencyLevel", urgencies, term, page);
-    private Task<CatalogSelect2SearchResponse> SearchConfidentialitiesAsync(string term, int page) => SearchMasterAsync("ConfidentialityLevel", confidentialities, term, page);
-    private sealed class DocumentForm
+        DocumentStatus.Approved => "hcs-status-badge--success",
+        DocumentStatus.Rejected => "hcs-status-badge--danger",
+        DocumentStatus.InReview or DocumentStatus.Submitted => "hcs-status-badge--warning",
+        DocumentStatus.Archived => "hcs-status-badge--todo",
+        _ => "hcs-status-badge--planning"
+    };
+    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
-        public string Number { get; set; } = ""; public string Title { get; set; } = ""; public string Description { get; set; } = "";
-        public Guid? DocumentTypeId { get; set; } public Guid? SectorId { get; set; } public Guid? UrgencyId { get; set; } public Guid? ConfidentialityId { get; set; }
-        public void Reset() { Number = Title = Description = ""; DocumentTypeId = SectorId = UrgencyId = ConfidentialityId = null; }
+        var found = await Chat.GetContactsAsync(term, 50);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
     }
 }

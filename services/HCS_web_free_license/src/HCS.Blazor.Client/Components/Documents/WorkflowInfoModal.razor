@@ -1,0 +1,162 @@
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+@inject IJSRuntime Js
+
+<Modal @ref="modal" Size="ModalSize.ExtraLarge">
+    <ModalContent Centered Class="hcs-catalog-modal hcs-workflow-info-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@L["Work:WorkflowInfo"]</ModalTitle>
+            <CloseButton Clicked="HideAsync" />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            @if (document is null || instance is null || definition is null)
+            {
+                <p class="text-muted mb-0">@L["Catalog:EmptyTitle"]</p>
+            }
+            else
+            {
+                <div class="hcs-workflow-info">
+                    <aside class="hcs-workflow-info__timeline">
+                        <h3 class="h6 mb-3">@definition.Name</h3>
+                        @foreach (var step in definition.Steps.OrderBy(x => x.Order))
+                        {
+                            var task = instance.Tasks.FirstOrDefault(x => string.Equals(x.StepCode, step.Code, StringComparison.OrdinalIgnoreCase));
+                            <div class="hcs-timeline-step @TimelineClass(task)">
+                                <span class="hcs-timeline-step__marker">@TimelineIcon(task)</span>
+                                <div>
+                                    <strong>@step.Name</strong>
+                                    <span class="hcs-catalog-desc">@L[$"Work:StepType.{step.Type}"]
+                                        @if (step.SlaDays is { } sla)
+                                        {
+                                            <span> · @sla @L["Work:Days"]</span>
+                                        }
+                                    </span>
+                                    @if (IsOverdue(task))
+                                    {
+                                        <span class="hcs-status-badge hcs-status-badge--danger">@L["Work:Overdue"]</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </aside>
+                    <div>
+                        <Tabs SelectedTab="@tab" SelectedTabChanged="OnTabChanged">
+                            <Items>
+                                <Tab Name="general">@L["Feature:GeneralInformation"]</Tab>
+                                <Tab Name="files">@L["Feature:Files"]</Tab>
+                            </Items>
+                            <Content>
+                                <TabPanel Name="general">
+                                    <p class="mb-2"><strong>@document.Title</strong> <span class="hcs-catalog-code">#@document.Number</span></p>
+                                    <h4 class="h6 mt-3">@L["Feature:History"]</h4>
+                                    @if (document.History.Count == 0)
+                                    {
+                                        <p class="text-muted mb-0">@L["Catalog:EmptyTitle"]</p>
+                                    }
+                                    else
+                                    {
+                                        <ul class="list-unstyled mb-0">
+                                            @foreach (var entry in document.History.OrderByDescending(x => x.OccurredAt))
+                                            {
+                                                <li class="mb-2">
+                                                    <strong>@entry.Action</strong>
+                                                    <span class="hcs-catalog-desc">@entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") @entry.Detail</span>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </TabPanel>
+                                <TabPanel Name="files">
+                                    @if (document.Files.Count == 0)
+                                    {
+                                        <p class="text-muted mb-0">@L["Catalog:EmptyTitle"]</p>
+                                    }
+                                    else
+                                    {
+                                        <ul class="list-group">
+                                            @foreach (var file in document.Files)
+                                            {
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>@file.FileName</span>
+                                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Clicked="() => DownloadAsync(file)">@L["Work:View"]</Button>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </TabPanel>
+                            </Content>
+                        </Tabs>
+                    </div>
+                </div>
+            }
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <Button Color="Color.Secondary" Clicked="HideAsync">@L["Catalog:Cancel"]</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+@code {
+    private Modal? modal;
+    private DocumentDto? document;
+    private WorkflowInstanceDto? instance;
+    private WorkflowDefinitionDto? definition;
+    private string tab = "general";
+
+    public async Task ShowAsync(DocumentDto document, WorkflowInstanceDto instance, WorkflowDefinitionDto definition)
+    {
+        this.document = document;
+        this.instance = instance;
+        this.definition = definition;
+        tab = "general";
+        if (modal is not null) await modal.Show();
+    }
+
+    public Task HideAsync() => modal?.Hide() ?? Task.CompletedTask;
+    private Task OnTabChanged(string value)
+    {
+        tab = value;
+        return Task.CompletedTask;
+    }
+
+    private static bool IsOverdue(ApprovalTaskDto? task) =>
+        task is { Status: ApprovalTaskStatus.Pending, DueAt: { } due } && due < DateTime.UtcNow;
+
+    private string TimelineClass(ApprovalTaskDto? task)
+    {
+        if (task is null) return "hcs-timeline-step--pending";
+        return task.Status switch
+        {
+            ApprovalTaskStatus.Approved => "hcs-timeline-step--signed",
+            ApprovalTaskStatus.Returned => "hcs-timeline-step--return",
+            ApprovalTaskStatus.Rejected or ApprovalTaskStatus.Cancelled => "hcs-timeline-step--return",
+            ApprovalTaskStatus.Pending when instance is not null && string.Equals(task.StepCode, CurrentStepCode(), StringComparison.OrdinalIgnoreCase)
+                => "hcs-timeline-step--active",
+            _ => "hcs-timeline-step--pending"
+        };
+    }
+
+    private string? CurrentStepCode()
+    {
+        if (definition is null || instance is null) return null;
+        var ordered = definition.Steps.OrderBy(x => x.Order).ToList();
+        return ordered.ElementAtOrDefault(instance.CurrentStep)?.Code;
+    }
+
+    private MarkupString TimelineIcon(ApprovalTaskDto? task)
+    {
+        if (task?.Status == ApprovalTaskStatus.Approved) return new MarkupString("<i class=\"fa fa-check\"></i>");
+        if (task?.Status is ApprovalTaskStatus.Returned or ApprovalTaskStatus.Rejected) return new MarkupString("<i class=\"fa fa-times\"></i>");
+        return new MarkupString("<i class=\"fa fa-circle\"></i>");
+    }
+
+    private async Task DownloadAsync(DocumentFileDto file)
+    {
+        if (document is null) return;
+        try
+        {
+            var content = await Documents.GetFileContentAsync(document.Id, file.Id);
+            await Js.InvokeVoidAsync("hcsDownloadBytes", file.FileName, content.ContentType, content.Bytes);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
+    }
+}

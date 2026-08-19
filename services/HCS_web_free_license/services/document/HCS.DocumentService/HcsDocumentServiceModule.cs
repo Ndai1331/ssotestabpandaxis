@@ -1,3 +1,4 @@
+using HCS.DocumentService.Conversion;
 using HCS.DocumentService.Documents;
 using HCS.DocumentService.Integration;
 using HCS.DocumentService.Signing;
@@ -78,6 +79,7 @@ public sealed class HcsDocumentServiceModule : AbpModule
             ConfigureContainer<DocumentBlobContainer>(options, configuration);
             ConfigureContainer<SigningBlobContainer>(options, configuration);
         });
+        context.Services.AddSingleton<IDocxToPdfConverter, LibreOfficeDocxToPdfConverter>();
         context.Services.AddScoped<IDocumentAppService, DocumentAppService>();
         context.Services.AddScoped<IWorkflowAppService, WorkflowAppService>();
         context.Services.AddScoped<ISigningAppService, SigningAppService>();

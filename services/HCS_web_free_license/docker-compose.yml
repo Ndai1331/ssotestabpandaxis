@@ -163,7 +163,7 @@ services:
       RabbitMQ__EventBus__ExchangeName: hcs
   document:
     <<: *hcs-image
-    build: { context: ., dockerfile: deploy/docker/Dockerfile, args: { PROJECT: services/document/HCS.DocumentService/HCS.DocumentService.csproj, APP_DLL: HCS.DocumentService.dll } }
+    build: { context: ., dockerfile: deploy/docker/Dockerfile, args: { PROJECT: services/document/HCS.DocumentService/HCS.DocumentService.csproj, APP_DLL: HCS.DocumentService.dll, INSTALL_LIBREOFFICE: "true" } }
     environment:
       <<: *common-env
       AuthServer__Authority: https://auth.hcs.localhost

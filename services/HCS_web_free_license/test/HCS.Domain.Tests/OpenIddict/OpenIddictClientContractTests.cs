@@ -26,7 +26,7 @@ public sealed class OpenIddictClientContractTests
         Assert.Equal("https://localhost:44402", registration.GatewayRootUrl);
         Assert.Equal("https://localhost:44403", registration.BlazorRootUrl);
         Assert.Equal("https://localhost:44402/signin-oidc", registration.CallbackUrl);
-        Assert.Equal("https://localhost:44403", registration.LogoutCallbackUrl);
+        Assert.Equal("https://localhost:44402/signout-callback-oidc", registration.LogoutCallbackUrl);
     }
 
     [Theory]

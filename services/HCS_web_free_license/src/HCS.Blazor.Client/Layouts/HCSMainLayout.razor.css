@@ -552,6 +552,28 @@
     padding: 1.5rem clamp(.9rem, 3vw, 2.5rem);
 }
 
+.hcs-app-shell:has(.hcs-chat-page) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+.hcs-app-shell:has(.hcs-chat-page) .hcs-header {
+    flex: 0 0 auto;
+}
+
+.hcs-main-content:has(.hcs-chat-page) {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    max-width: none;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+    width: 100%;
+}
+
 /* ——— Compact desktop / laptop: avoid horizontal scroll ——— */
 @media (max-width: 1280px) {
     .hcs-top-nav {
@@ -741,6 +763,11 @@
     .hcs-main-content {
         min-height: calc(100dvh - var(--hcs-header-h));
         padding: 1rem .85rem 1.5rem;
+    }
+
+    .hcs-main-content:has(.hcs-chat-page) {
+        min-height: 0;
+        padding: 0;
     }
 }
 

@@ -1,15 +1,18 @@
 using System.Security.Claims;
+using HCS.DocumentService.Conversion;
 using HCS.DocumentService.Documents;
 using HCS.DocumentService.Storage;
 using HCS.IntegrationEvents.Documents;
 using HCS.DocumentService.Integration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Volo.Abp.BlobStoring;
 
 namespace HCS.DocumentService.Workflows;
 
 public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContextAccessor httpContext,
-    IBlobContainer<DocumentBlobContainer> blobs) : IWorkflowAppService
+    IBlobContainer<DocumentBlobContainer> blobs, DocumentFileService files, IDocxToPdfConverter converter,
+    ILogger<WorkflowAppService> logger) : IWorkflowAppService
 {
     public async Task<IReadOnlyList<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default)
     {
@@ -28,6 +31,8 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task<Guid> CreateKindAsync(CreateWorkflowKindRequest input, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowManage);
+        if (string.IsNullOrWhiteSpace(input.Code) || string.IsNullOrWhiteSpace(input.Name))
+            throw new InvalidOperationException("Code and name are required.");
         var kind = new WorkflowKind(Guid.NewGuid(), input.Code, input.Name, input.Description, input.IsActive, DateTime.UtcNow);
         db.WorkflowKinds.Add(kind);
         await db.SaveChangesAsync(cancellationToken);
@@ -95,9 +100,11 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var query = Query().AsNoTracking();
         if (!DocumentAccess.IsElevated(principal))
         {
-            query = query.Where(instance => db.Documents.Any(document => document.Id == instance.DocumentId &&
-                (document.Assignments.Any(a => a.AssigneeUserId == userId) ||
-                 document.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))));
+            query = query.Where(instance =>
+                instance.Tasks.Any(task => task.AssigneeUserId == userId) ||
+                db.Documents.Any(document => document.Id == instance.DocumentId &&
+                    (document.Assignments.Any(a => a.AssigneeUserId == userId) ||
+                     document.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))));
         }
         if (documentId.HasValue) query = query.Where(x => x.DocumentId == documentId.Value);
         if (status.HasValue) query = query.Where(x => x.Status == status.Value);
@@ -121,7 +128,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         Require(DocumentPermissions.WorkflowManage);
         var definition = new WorkflowDefinition(Guid.NewGuid(), input.Code, input.Name, input.Steps, DateTime.UtcNow,
-            input.KindId, input.Description, input.IsActive);
+            input.KindId, input.Description, input.IsActive, input.SignMode);
         db.WorkflowDefinitions.Add(definition);
         await db.SaveChangesAsync(cancellationToken);
         return definition.Id;
@@ -136,7 +143,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
         definition.Rename(input.Name);
-        definition.SetMetadata(input.KindId, input.Description, input.IsActive);
+        definition.SetMetadata(input.KindId, input.Description, input.IsActive, input.SignMode);
         definition.ReplaceSteps(input.Steps);
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -162,7 +169,18 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             throw new KeyNotFoundException("Workflow definition not found.");
         var template = new WorkflowTemplate(Guid.NewGuid(), input.Code, input.Name, input.DefinitionId,
             input.Version, input.TemplateJson, DateTime.UtcNow);
+        template.UpdateContent(input.Name, input.TemplateJson, input.OutputFormat);
         db.WorkflowTemplates.Add(template);
+        await db.SaveChangesAsync(cancellationToken);
+        return MapTemplate(template);
+    }
+
+    public async Task<WorkflowTemplateDto> UpdateTemplateAsync(Guid id, UpdateWorkflowTemplateRequest input, CancellationToken cancellationToken = default)
+    {
+        Require(DocumentPermissions.WorkflowManage);
+        var template = await db.WorkflowTemplates.SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new KeyNotFoundException("Workflow template not found.");
+        template.UpdateContent(input.Name, input.TemplateJson, input.OutputFormat);
         await db.SaveChangesAsync(cancellationToken);
         return MapTemplate(template);
     }
@@ -197,12 +215,17 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         if (string.IsNullOrWhiteSpace(safeName)) throw new InvalidOperationException("File name is not allowed.");
         await using var copy = new MemoryStream();
         await content.CopyToAsync(copy, cancellationToken);
+        var bytes = copy.ToArray();
         var fileId = Guid.NewGuid();
         var blobName = BlobNamePolicy.WorkflowTemplate(id, fileId);
         copy.Position = 0;
         await blobs.SaveAsync(blobName, copy, overrideExisting: true, cancellationToken: cancellationToken);
         if (normalizedKind == "pdf") template.AttachPdf(fileId, safeName, allowed, blobName);
-        else template.AttachWord(fileId, safeName, allowed, blobName);
+        else
+        {
+            template.AttachWord(fileId, safeName, allowed, blobName);
+            await TryConvertTemplateWordAsync(template, bytes, cancellationToken);
+        }
         await db.SaveChangesAsync(cancellationToken);
         return MapTemplate(template);
     }
@@ -236,24 +259,53 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
         DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowStart);
-        var document = await LoadDocumentAsync(input.DocumentId, cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
-        var existing = await Query().SingleOrDefaultAsync(x => x.IdempotencyKey == input.IdempotencyKey &&
-            x.DocumentId == input.DocumentId, cancellationToken);
+        var source = await LoadDocumentAsync(input.DocumentId, cancellationToken);
+        DocumentAccess.EnsureCanManage(source, userId, principal);
+        var existing = await Query().SingleOrDefaultAsync(x => x.IdempotencyKey == input.IdempotencyKey, cancellationToken);
         if (existing is not null) return Map(existing);
         var definition = await db.WorkflowDefinitions.Include(x => x.Steps).SingleOrDefaultAsync(x => x.Id == input.DefinitionId, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
-        if (document.Status == DocumentStatus.Draft) document.Submit(userId, DateTime.UtcNow);
-        document.StartReview(userId, DateTime.UtcNow);
+        var now = DateTime.UtcNow;
+        var document = source;
+        if (source.SourceType != DocumentSourceType.Workflow)
+        {
+            var number = await NextWorkflowNumberAsync(source.Number, cancellationToken);
+            document = source.DuplicateAsWorkflow(Guid.NewGuid(), number, userId, now);
+            db.Documents.Add(document);
+            if (input.UseTemplateFile)
+            {
+                var template = await db.WorkflowTemplates.AsNoTracking()
+                    .Where(x => x.DefinitionId == definition.Id && x.IsActive && x.PdfBlobName != null)
+                    .OrderByDescending(x => x.CreationTime)
+                    .FirstOrDefaultAsync(cancellationToken);
+                if (template?.PdfBlobName is { } blob)
+                {
+                    await using var content = await blobs.GetAsync(blob, cancellationToken: cancellationToken);
+                    await files.AttachBlobAsync(document, template.PdfFileName ?? "template.pdf",
+                        template.PdfContentType ?? "application/pdf", content, userId, now, cancellationToken);
+                }
+                else
+                {
+                    await files.CopyFilesAsync(source, document, userId, now, cancellationToken);
+                }
+            }
+            else
+            {
+                await files.CopyFilesAsync(source, document, userId, now, cancellationToken);
+            }
+        }
+        if (document.Status == DocumentStatus.Draft) document.Submit(userId, now);
+        document.StartReview(userId, now);
         var overrides = (input.Signers ?? [])
             .Where(x => !string.IsNullOrWhiteSpace(x.StepCode))
             .GroupBy(x => x.StepCode, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(x => x.Key, x => x.Last().UserId, StringComparer.OrdinalIgnoreCase);
         var viewScopesJson = input.ViewScopes is { Count: > 0 } ? System.Text.Json.JsonSerializer.Serialize(input.ViewScopes) : null;
-        var instance = new WorkflowInstance(Guid.NewGuid(), input.DocumentId, definition, input.IdempotencyKey, DateTime.UtcNow,
+        var instance = new WorkflowInstance(Guid.NewGuid(), document.Id, definition, input.IdempotencyKey, now,
             overrides, viewScopesJson);
         db.WorkflowInstances.Add(instance);
-        AddChangeEvent(instance, DateTime.UtcNow);
+        GrantWorkflowAccess(document, instance, input.ViewScopes, userId, now);
+        AddChangeEvent(instance, now);
         await db.SaveChangesAsync(cancellationToken);
         return Map(instance);
     }
@@ -272,7 +324,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var step = definition.Steps.SingleOrDefault(x => x.Code == task.StepCode)
             ?? throw new InvalidOperationException("Workflow step configuration is missing.");
         DocumentAccess.RequirePermission(principal, step.RequiredPermission);
-        if (step.AssigneeUserId is { } assignee && assignee != actor && !DocumentAccess.IsElevated(principal))
+        if (task.AssigneeUserId is { } assignee && assignee != actor && !DocumentAccess.IsElevated(principal))
             throw new UnauthorizedAccessException("Only the assigned user can decide this step.");
         var changed = instance.Decide(taskId, input.Approve, actor, input.Comment, input.IdempotencyKey,
             definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, input.Return);
@@ -281,6 +333,10 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             if (instance.Status is WorkflowInstanceStatus.Completed or WorkflowInstanceStatus.Rejected)
             {
                 documentForAccess.CompleteReview(instance.Status == WorkflowInstanceStatus.Completed, actor, input.Comment, DateTime.UtcNow);
+            }
+            else
+            {
+                GrantWorkflowAccess(documentForAccess, instance, null, actor, DateTime.UtcNow);
             }
             AddChangeEvent(instance, DateTime.UtcNow);
             await db.SaveChangesAsync(cancellationToken);
@@ -300,11 +356,23 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var definition = await db.WorkflowDefinitions.Include(x => x.Steps).SingleAsync(x => x.Id == instance.DefinitionId, cancellationToken);
         instance.Resubmit(definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, idempotencyKey);
         if (document.Status != DocumentStatus.InReview) document.StartReview(actor, DateTime.UtcNow);
+        GrantWorkflowAccess(document, instance, null, actor, DateTime.UtcNow);
         AddChangeEvent(instance, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
         return Map(instance);
     }
 
+    private static void GrantWorkflowAccess(DocumentAggregate document, WorkflowInstance instance,
+        IReadOnlyList<WorkflowViewScopeSelection>? viewScopes, Guid? actor, DateTime now)
+    {
+        foreach (var task in instance.Tasks.Where(t => t.AssigneeUserId is not null))
+            document.Assign(Guid.NewGuid(), task.AssigneeUserId!.Value, task.StepCode, actor, now, task.StepCode);
+        foreach (var scope in viewScopes ?? [])
+        {
+            foreach (var user in scope.UserIds)
+                document.Assign(Guid.NewGuid(), user, "VIEW", actor, now, scope.StepCode);
+        }
+    }
     private IQueryable<WorkflowInstance> Query() => db.WorkflowInstances.Include(x => x.Tasks);
     private ClaimsPrincipal Principal => httpContext.HttpContext?.User ?? new ClaimsPrincipal();
     private void Require(string permission)
@@ -312,6 +380,40 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequireUser(Principal);
         DocumentAccess.RequirePermission(Principal, permission);
     }
+    private async Task<string> NextWorkflowNumberAsync(string sourceNumber, CancellationToken cancellationToken)
+    {
+        var prefix = sourceNumber.Length > 60 ? sourceNumber[..60] : sourceNumber;
+        var candidate = $"{prefix}-WF";
+        var i = 1;
+        while (await db.Documents.AnyAsync(x => x.Number == candidate, cancellationToken))
+        {
+            candidate = $"{prefix}-WF{i++}";
+            if (candidate.Length > 64) candidate = $"{prefix[..Math.Max(1, 64 - 6)]}-WF{i}";
+        }
+        return candidate;
+    }
+
+    private async Task TryConvertTemplateWordAsync(WorkflowTemplate template, byte[] docxBytes, CancellationToken cancellationToken)
+    {
+        if (!converter.IsAvailable)
+        {
+            logger.LogInformation("Skipping template Word-to-PDF conversion because LibreOffice is not available.");
+            return;
+        }
+        var pdfBytes = await converter.ConvertAsync(docxBytes, cancellationToken);
+        if (pdfBytes is null or { Length: 0 })
+        {
+            logger.LogWarning("Template Word-to-PDF conversion produced no output for {Template}.", template.Id);
+            return;
+        }
+        var pdfId = Guid.NewGuid();
+        var pdfName = Path.ChangeExtension(template.WordFileName ?? "template.docx", ".pdf");
+        var blobName = BlobNamePolicy.WorkflowTemplate(template.Id, pdfId);
+        await using var stream = new MemoryStream(pdfBytes);
+        await blobs.SaveAsync(blobName, stream, overrideExisting: true, cancellationToken: cancellationToken);
+        template.AttachPdf(pdfId, pdfName, "application/pdf", blobName);
+    }
+
     private async Task<DocumentAggregate> LoadDocumentAsync(Guid id, CancellationToken cancellationToken) =>
         await db.Documents.Include(x => x.Files).Include(x => x.Assignments).Include(x => x.History)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
@@ -328,8 +430,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     internal static WorkflowDefinitionDto MapDefinition(WorkflowDefinition x) => new(x.Id, x.Code, x.Name, x.KindId, x.Description, x.IsActive,
         x.Steps.OrderBy(step => step.Order).Select(step => new WorkflowStepDto(step.Id, step.Code, step.Name,
             step.Order, step.RequiredPermission, step.Type, step.AssigneeUserId, step.AssigneeType, step.RoleId,
-            step.UserIds, step.DepartmentIds, step.SlaDays, step.AllowReturn)).ToList(), x.CreationTime);
+            step.UserIds, step.DepartmentIds, step.SlaDays, step.AllowReturn)).ToList(), x.CreationTime, x.SignMode);
     private static WorkflowKindDto MapKind(WorkflowKind x) => new(x.Id, x.Code, x.Name, x.Description, x.IsActive, x.CreationTime);
     private static WorkflowTemplateDto MapTemplate(WorkflowTemplate x) => new(x.Id, x.Code, x.Name,
-        x.DefinitionId, x.Version, x.IsActive, x.CreationTime, x.WordFileId, x.WordFileName, x.PdfFileId, x.PdfFileName);
+        x.DefinitionId, x.Version, x.IsActive, x.CreationTime, x.WordFileId, x.WordFileName, x.PdfFileId, x.PdfFileName,
+        x.TemplateJson, x.OutputFormat);
 }

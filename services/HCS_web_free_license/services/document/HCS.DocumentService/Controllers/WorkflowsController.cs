@@ -63,6 +63,9 @@ public sealed class WorkflowsController(IWorkflowAppService workflows) : Control
     }
     [HttpPost("templates"), Authorize(Policy = Documents.DocumentPermissions.WorkflowManage)]
     public Task<WorkflowTemplateDto> CreateTemplate(CreateWorkflowTemplateRequest input, CancellationToken cancellationToken) => workflows.CreateTemplateAsync(input, cancellationToken);
+    [HttpPut("templates/{id:guid}"), Authorize(Policy = Documents.DocumentPermissions.WorkflowManage)]
+    public Task<WorkflowTemplateDto> UpdateTemplate(Guid id, UpdateWorkflowTemplateRequest input, CancellationToken cancellationToken) =>
+        workflows.UpdateTemplateAsync(id, input, cancellationToken);
     [HttpPost("templates/{id:guid}/active"), Authorize(Policy = Documents.DocumentPermissions.WorkflowManage)]
     public Task<WorkflowTemplateDto> SetTemplateActive(Guid id, [FromBody] bool isActive, CancellationToken cancellationToken) =>
         workflows.SetTemplateActiveAsync(id, isActive, cancellationToken);

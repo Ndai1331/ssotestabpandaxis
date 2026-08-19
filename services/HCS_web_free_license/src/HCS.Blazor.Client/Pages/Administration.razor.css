@@ -1,7 +1,6 @@
 .hcs-admin-page {
     max-width: 1480px;
     margin: 0 auto;
-    padding: 2.5rem 2rem 4rem;
     color: #193b57;
 }
 
@@ -499,7 +498,6 @@
 }
 
 @media (max-width: 900px) {
-    .hcs-admin-page { padding: 1.5rem 1rem 3rem; }
     .hcs-users-heading { align-items: flex-start; flex-direction: column; }
     .hcs-users-heading__actions { width: 100%; }
     .hcs-users-heading__actions ::deep .btn { flex: 1; }

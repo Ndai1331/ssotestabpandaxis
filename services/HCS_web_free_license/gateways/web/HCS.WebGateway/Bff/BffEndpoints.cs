@@ -19,7 +19,10 @@ internal static class BffEndpoints
                 [HCSWebGatewayModule.OidcScheme]);
         }).AllowAnonymous();
 
-        endpoints.MapPost("/bff/logout", async (HttpContext context, IAntiforgery antiforgery) =>
+        endpoints.MapGet("/bff/logout", (HttpContext context, IConfiguration configuration, string? returnUrl) =>
+            FederatedLogout(context, configuration, returnUrl)).AllowAnonymous();
+
+        endpoints.MapPost("/bff/logout", async (HttpContext context, IConfiguration configuration, IAntiforgery antiforgery, string? returnUrl) =>
         {
             try
             {
@@ -31,8 +34,7 @@ internal static class BffEndpoints
                 return Results.BadRequest(new { error = "invalid_antiforgery_token" });
             }
 
-            await context.SignOutAsync(HCSWebGatewayModule.CookieScheme);
-            return Results.NoContent();
+            return FederatedLogout(context, configuration, returnUrl);
         }).RequireAuthorization();
 
         endpoints.MapGet("/bff/user", (HttpContext context, ClaimsPrincipal user) =>
@@ -73,6 +75,37 @@ internal static class BffEndpoints
         }).RequireAuthorization();
 
         return endpoints;
+    }
+
+    private static IResult FederatedLogout(HttpContext context, IConfiguration configuration, string? returnUrl)
+    {
+        var postLogoutUrl = GetSafePostLogoutUrl(configuration, returnUrl);
+        if (context.User.Identity?.IsAuthenticated != true)
+        {
+            return Results.Redirect(postLogoutUrl);
+        }
+
+        // Top-level navigation is required: OIDC SignOut redirects to AuthServer
+        // end_session so the Identity cookie is cleared. Cookie-only sign-out
+        // leaves that session alive and /bff/login silently signs the user back in.
+        return Results.SignOut(
+            new AuthenticationProperties { RedirectUri = postLogoutUrl },
+            [HCSWebGatewayModule.CookieScheme, HCSWebGatewayModule.OidcScheme]);
+    }
+
+    internal static string GetSafePostLogoutUrl(IConfiguration configuration, string? returnUrl)
+    {
+        var loginFallback = GetSafeReturnUrl(configuration, null).TrimEnd('/') + "/login";
+        if (string.IsNullOrWhiteSpace(returnUrl) ||
+            !Uri.TryCreate(returnUrl, UriKind.Absolute, out var candidate))
+        {
+            return loginFallback;
+        }
+
+        var allowed = GetSafeReturnUrl(configuration, returnUrl);
+        return string.Equals(allowed, candidate.ToString(), StringComparison.Ordinal)
+            ? allowed
+            : loginFallback;
     }
 
     internal static string GetSafeReturnUrl(IConfiguration configuration, string? returnUrl)

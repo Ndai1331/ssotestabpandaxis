@@ -108,7 +108,7 @@
     </Card>
 </section>
 
-<Modal @ref="modal" Size="ModalSize.Large">
+<Modal @ref="modal" Size="ModalSize.Default">
     <ModalContent Centered Class="hcs-catalog-modal">
         <ModalHeader Class="hcs-catalog-modal__header">
             <ModalTitle>@(editingId is null ? L["Feature:ProjectCreate"] : L["Feature:ProjectEdit"])</ModalTitle>
@@ -117,8 +117,8 @@
         <ModalBody Class="hcs-catalog-modal__body">
             <div class="hcs-catalog-form">
                 <div class="hcs-form-row">
-                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editingId is not null)" Autocomplete="off" name="hcsProjectCode" /></Field>
-                    <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><TextInput @bind-Value="form.Name" Autocomplete="off" name="hcsProjectName" /></Field>
+                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsProjectCode" MaxLength="64" Disabled="@(editingId is not null)" /></Field>
+                    <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsProjectName" /></Field>
                 </div>
                 <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
                 <div class="hcs-form-row hcs-form-row--equal">

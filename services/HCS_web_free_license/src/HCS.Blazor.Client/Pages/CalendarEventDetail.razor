@@ -22,7 +22,7 @@
     {
         <Card Class="mb-3"><CardBody>
             <div class="hcs-catalog-form">
-            <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><TextInput @bind-Value="form.Title" Autocomplete="off" name="hcsEventTitle" /></Field>
+            <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventDetailTitle" /></Field>
             <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
             <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
                 <Select TValue="string" @bind-Value="form.Visibility">

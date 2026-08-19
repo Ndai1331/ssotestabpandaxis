@@ -11,6 +11,7 @@ namespace HCS.AuthServer;
 public interface IPermissionClaimResolver
 {
     Task<IReadOnlyList<string>> ResolveAsync(ClaimsPrincipal principal);
+    Task<IReadOnlyList<string>> ResolveRolesAsync(ClaimsPrincipal principal);
 }
 
 /// <summary>
@@ -39,9 +40,12 @@ public sealed class PermissionClaimResolver(
         "PermissionManagement."
     ];
 
+    public Task<IReadOnlyList<string>> ResolveRolesAsync(ClaimsPrincipal principal) =>
+        ResolveLocalRolesAsync(principal);
+
     public async Task<IReadOnlyList<string>> ResolveAsync(ClaimsPrincipal principal)
     {
-        var roles = await ResolveLocalRolesAsync(principal);
+        var roles = await ResolveRolesAsync(principal);
         var isAdmin = roles.Any(role => string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase));
 
         var grants = new HashSet<string>(StringComparer.Ordinal);
@@ -103,7 +107,8 @@ public sealed class PermissionClaimResolver(
 }
 
 /// <summary>
-/// Adds only resolved local grants to the access-token principal before OpenIddict clones it.
+/// Adds local role and permission claims to the access-token principal before OpenIddict clones it.
+/// Role claims must be on the access token so Platform Identity can assign roles to other users.
 /// </summary>
 public sealed class PermissionClaimsHandler(IPermissionClaimResolver resolver)
     : IOpenIddictServerHandler<OpenIddictServerEvents.ProcessSignInContext>
@@ -118,6 +123,21 @@ public sealed class PermissionClaimsHandler(IPermissionClaimResolver resolver)
         foreach (var claim in principal.FindAll("permission").ToArray())
         {
             identity.RemoveClaim(claim);
+        }
+
+        var roles = await resolver.ResolveRolesAsync(principal);
+        foreach (var claim in principal.FindAll(AbpClaimTypes.Role).Concat(principal.FindAll(ClaimTypes.Role)).ToArray())
+        {
+            identity.RemoveClaim(claim);
+        }
+
+        foreach (var role in roles)
+        {
+            var claim = new Claim(AbpClaimTypes.Role, role);
+            claim.SetDestinations(
+                OpenIddictConstants.Destinations.AccessToken,
+                OpenIddictConstants.Destinations.IdentityToken);
+            identity.AddClaim(claim);
         }
 
         var permissions = await resolver.ResolveAsync(principal);

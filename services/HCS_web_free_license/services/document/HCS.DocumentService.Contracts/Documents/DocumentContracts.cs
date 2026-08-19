@@ -2,6 +2,8 @@ namespace HCS.DocumentService.Documents;
 
 public enum DocumentStatus { Draft, Submitted, InReview, Approved, Rejected, Archived }
 
+public enum DocumentSourceType { Archive = 0, Personal = 1, SentToMe = 2, Workflow = 3 }
+
 public static class DocumentPermissions
 {
     public const string View = "Documents.View";
@@ -19,18 +21,23 @@ public static class DocumentPermissions
 }
 
 public sealed record CreateDocumentRequest(string Number, string Title, string? Description,
-    Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null);
+    Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null,
+    DocumentSourceType SourceType = DocumentSourceType.Archive);
+public sealed record SendDocumentRequest(Guid? ReceiverUserId = null, Guid? OrganizationUnitId = null);
 public sealed record UpdateDocumentRequest(string Title, string? Description,
     Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null);
 public sealed record AddDocumentFileRequest(string FileName, string ContentType, long Size, string Sha256);
 public sealed record AssignDocumentRequest(Guid AssigneeUserId, string Responsibility);
-public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime);
-public sealed record DocumentAssignmentDto(Guid Id, Guid AssigneeUserId, string Responsibility, DateTime AssignedAt);
+public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null);
+public sealed record DocumentAssignmentDto(Guid Id, Guid AssigneeUserId, string Responsibility, DateTime AssignedAt,
+    bool IsCurrent = true, string? StepCode = null);
 public sealed record DocumentHistoryDto(Guid Id, string Action, Guid? ActorUserId, string? Detail, DateTime OccurredAt);
 public sealed record DocumentDto(Guid Id, string Number, string Title, string? Description, DocumentStatus Status,
     Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId,
     IReadOnlyList<DocumentFileDto> Files, IReadOnlyList<DocumentAssignmentDto> Assignments,
-    IReadOnlyList<DocumentHistoryDto> History, DateTime CreationTime);
+    IReadOnlyList<DocumentHistoryDto> History, DateTime CreationTime,
+    DocumentSourceType SourceType = DocumentSourceType.Archive, Guid? ParentDocumentId = null,
+    Guid? FromUserId = null, Guid? OrganizationUnitId = null);
 public sealed record PagedDocumentsDto(long TotalCount, IReadOnlyList<DocumentDto> Items);
 
 public interface IDocumentAppService
@@ -42,4 +49,6 @@ public interface IDocumentAppService
     Task<DocumentDto> UpdateAsync(Guid id, UpdateDocumentRequest input, CancellationToken cancellationToken = default);
     Task<DocumentDto> AssignAsync(Guid id, AssignDocumentRequest input, CancellationToken cancellationToken = default);
     Task<DocumentDto> SubmitAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<DocumentDto> SendAsync(Guid id, SendDocumentRequest input, CancellationToken cancellationToken = default);
+    Task<DocumentDto> RevokeAsync(Guid id, CancellationToken cancellationToken = default);
 }

@@ -4,24 +4,31 @@ using System.Collections.Generic;
 namespace HCS.Blazor.Client.Documents;
 
 public enum DocumentStatus { Draft, Submitted, InReview, Approved, Rejected, Archived }
+public enum DocumentSourceType { Archive = 0, Personal = 1, SentToMe = 2, Workflow = 3 }
 public enum WorkflowInstanceStatus { Running, Completed, Rejected, Cancelled, Returned }
 public enum ApprovalTaskStatus { Pending, Approved, Rejected, Cancelled, Returned }
 public enum SigningStatus { Pending, Completed, Failed }
 
 public sealed record PagedDocumentsResponse(long TotalCount, List<DocumentDto> Items);
 
-public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime);
-public sealed record DocumentAssignmentDto(Guid Id, Guid AssigneeUserId, string Responsibility, DateTime AssignedAt);
+public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null);
+public sealed record DocumentFileContent(byte[] Bytes, string ContentType, string FileName);
+public sealed record DocumentAssignmentDto(Guid Id, Guid AssigneeUserId, string Responsibility, DateTime AssignedAt,
+    bool IsCurrent = true, string? StepCode = null);
 public sealed record DocumentHistoryDto(Guid Id, string Action, Guid? ActorUserId, string? Detail, DateTime OccurredAt);
 public sealed record DocumentDto(
     Guid Id, string Number, string Title, string? Description, DocumentStatus Status,
     Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId,
     List<DocumentFileDto> Files, List<DocumentAssignmentDto> Assignments,
-    List<DocumentHistoryDto> History, DateTime CreationTime);
+    List<DocumentHistoryDto> History, DateTime CreationTime,
+    DocumentSourceType SourceType = DocumentSourceType.Archive, Guid? ParentDocumentId = null,
+    Guid? FromUserId = null, Guid? OrganizationUnitId = null);
 
 public sealed record CreateDocumentRequest(
     string Number, string Title, string? Description,
-    Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId);
+    Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId,
+    DocumentSourceType SourceType = DocumentSourceType.Archive);
+public sealed record SendDocumentRequest(Guid? ReceiverUserId = null, Guid? OrganizationUnitId = null);
 public sealed record UpdateDocumentRequest(
     string Title, string? Description,
     Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId);
@@ -37,13 +44,14 @@ public sealed record WorkflowKindDto(Guid Id, string Code, string Name, string? 
 public sealed record CreateWorkflowKindRequest(string Code, string Name, string? Description, bool IsActive = true);
 public sealed record UpdateWorkflowKindRequest(string Name, string? Description, bool IsActive);
 public sealed record WorkflowDefinitionDto(Guid Id, string Code, string Name, List<WorkflowStepDto> Steps, DateTime CreationTime,
-    Guid? KindId = null, string? Description = null, bool IsActive = true);
+    Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = "SEQUENTIAL");
 public sealed record CreateWorkflowDefinitionRequest(string Code, string Name, List<WorkflowStepInput> Steps,
-    Guid? KindId = null, string? Description = null, bool IsActive = true);
+    Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = "SEQUENTIAL");
 public sealed record UpdateWorkflowDefinitionRequest(string Name, List<WorkflowStepInput> Steps,
-    Guid? KindId = null, string? Description = null, bool IsActive = true);
-public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid DefinitionId, int Version, bool IsActive, DateTime CreationTime, Guid? WordFileId, string? WordFileName, Guid? PdfFileId, string? PdfFileName);
-public sealed record CreateWorkflowTemplateRequest(string Code, string Name, Guid DefinitionId, int Version, string TemplateJson);
+    Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = "SEQUENTIAL");
+public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid DefinitionId, int Version, bool IsActive, DateTime CreationTime, Guid? WordFileId, string? WordFileName, Guid? PdfFileId, string? PdfFileName, string TemplateJson = "{}", string OutputFormat = "PDF");
+public sealed record CreateWorkflowTemplateRequest(string Code, string Name, Guid DefinitionId, int Version, string TemplateJson, string OutputFormat = "PDF");
+public sealed record UpdateWorkflowTemplateRequest(string Name, string TemplateJson, string OutputFormat = "PDF");
 public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy, DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt = null);
 public sealed record WorkflowInstanceDto(
     Guid Id, Guid DocumentId, Guid DefinitionId, WorkflowInstanceStatus Status, int CurrentStep,
@@ -51,7 +59,8 @@ public sealed record WorkflowInstanceDto(
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, List<Guid> DepartmentIds, List<Guid> UserIds);
 public sealed record StartWorkflowRequest(Guid DocumentId, Guid DefinitionId, string IdempotencyKey,
-    List<WorkflowStepSignerSelection>? Signers = null, List<WorkflowViewScopeSelection>? ViewScopes = null);
+    List<WorkflowStepSignerSelection>? Signers = null, List<WorkflowViewScopeSelection>? ViewScopes = null,
+    bool UseTemplateFile = false);
 public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey, bool Return = false);
 
 public sealed record SigningCredentialDto(Guid Id, int Kind, string Endpoint, string MaskedSecret, DateTime UpdatedAt);

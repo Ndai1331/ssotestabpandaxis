@@ -1,6 +1,7 @@
 @page "/calendar-events"
 @attribute [Authorize(Policy = "WorkManagement.Calendar")]
 @inherits HCSComponentBase
+@using System.Globalization
 @inject WorkManagementClient Work
 @inject OrganizationCatalogClient Catalog
 @inject CollaborationClient Chat
@@ -12,78 +13,98 @@
     <header class="hcs-catalog-titlebar">
         <div><h1>@L["Feature:CalendarTitle"]</h1></div>
         <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Light" Clicked="PreviousMonth">‹</Button>
-            <strong class="align-self-center">@month.ToString("MMMM yyyy")</strong>
-            <Button Color="Color.Light" Clicked="NextMonth">›</Button>
+            @if (!isListView)
+            {
+                <Button Color="Color.Light" Clicked="PreviousMonth">‹</Button>
+                <strong class="align-self-center">@month.ToString("MMMM yyyy")</strong>
+                <Button Color="Color.Light" Clicked="NextMonth">›</Button>
+            }
+            <Button Color="Color.Light" Outline="@(!isListView)" Clicked="() => isListView = true">@L["Feature:ListView"]</Button>
+            <Button Color="Color.Light" Outline="@isListView" Clicked="() => isListView = false">@L["Feature:CalendarView"]</Button>
             <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
         </div>
     </header>
     @if (isLoading) { <p>@L["Catalog:Loading"]</p> }
-    else
+    else if (isListView)
     {
-        <div class="table-responsive mb-4">
-            <table class="table table-bordered text-center">
-                <thead><tr>@foreach (var day in days) { <th>@day</th> }</tr></thead>
-                <tbody>
-                @foreach (var week in Weeks())
-                {
-                    <tr>
-                    @foreach (var day in week)
-                    {
-                        var daily = events.Where(x => x.StartTime.ToLocalTime().Date == day.Date).ToList();
-                        <td class="@(day.Month == month.Month ? null : "text-muted")" style="min-width:8rem;height:7rem;vertical-align:top">
-                            <div><strong>@day.Day</strong></div>
-                            @foreach (var item in daily.Take(3))
-                            {
-                                <div>
+        <Card Class="hcs-catalog-grid-card"><CardBody Class="p-0">
+            @if (events.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2></div> }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 hcs-catalog-grid">
+                        <thead><tr><th>@L["Feature:Event"]</th><th>@L["Feature:Time"]</th><th>@L["Catalog:Status"]</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var item in events)
+                        {
+                            <tr>
+                                <td>
                                     @if (IsTask(item))
                                     {
-                                        <button type="button" class="btn btn-link p-0" @onclick="() => OpenTask(item)">@item.Title</button>
+                                        <button type="button" class="btn btn-link p-0 text-start" @onclick="() => OpenTask(item)"><strong>@item.Title</strong></button>
                                     }
                                     else
                                     {
-                                        <a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@item.Title</a>
+                                        <a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)"><strong>@item.Title</strong></a>
                                     }
-                                </div>
-                            }
-                        </td>
-                    }
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-        <Card><CardBody Class="p-0">
-            <table class="table mb-0"><thead><tr><th>@L["Feature:Event"]</th><th>@L["Feature:Time"]</th><th>@L["Catalog:Status"]</th><th></th></tr></thead>
-            <tbody>
-            @foreach (var item in events)
-            {
-                <tr>
-                    <td>
-                        @if (IsTask(item))
-                        {
-                            <button type="button" class="btn btn-link p-0 text-start" @onclick="() => OpenTask(item)"><strong>@item.Title</strong></button>
+                                    <br /><small>@item.EventType</small>
+                                </td>
+                                <td>@item.StartTime.ToLocalTime().ToString("dd/MM HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")</td>
+                                <td>@item.Visibility</td>
+                                <td><Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteAsync(item)">@L["Catalog:Delete"]</Button></td>
+                            </tr>
                         }
-                        else
-                        {
-                            <a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)"><strong>@item.Title</strong></a>
-                        }
-                        <br /><small>@item.EventType</small>
-                    </td>
-                    <td>@item.StartTime.ToLocalTime().ToString("dd/MM HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")</td>
-                    <td>@item.Visibility</td>
-                    <td><Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteAsync(item)">@L["Catalog:Delete"]</Button></td>
-                </tr>
+                        </tbody>
+                    </table>
+                </div>
             }
-            </tbody></table>
         </CardBody></Card>
+    }
+    else
+    {
+        <Card Class="hcs-catalog-grid-card">
+            <CardBody Class="p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center mb-0 hcs-calendar-grid">
+                        <thead><tr>@foreach (var day in DayNames) { <th>@day</th> }</tr></thead>
+                        <tbody>
+                        @foreach (var week in Weeks())
+                        {
+                            <tr>
+                            @foreach (var day in week)
+                            {
+                                var daily = events.Where(x => x.StartTime.ToLocalTime().Date == day.Date).ToList();
+                                <td class="@(day.Month == month.Month ? null : "text-muted") @(day.Date == DateTime.Today ? "hcs-calendar-grid__today" : null)">
+                                    <div><strong>@day.Day</strong></div>
+                                    @foreach (var item in daily.Take(3))
+                                    {
+                                        <div>
+                                            @if (IsTask(item))
+                                            {
+                                                <button type="button" class="btn btn-link p-0" @onclick="() => OpenTask(item)">@item.Title</button>
+                                            }
+                                            else
+                                            {
+                                                <a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@item.Title</a>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                            }
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </CardBody>
+        </Card>
     }
 </section>
 <Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal">
     <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:EventCreate"]</ModalTitle><CloseButton /></ModalHeader>
     <ModalBody Class="hcs-catalog-modal__body">
         <div class="hcs-catalog-form">
-        <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><TextInput @bind-Value="form.Title" Autocomplete="off" name="hcsEventTitle" /></Field>
+        <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventTitle" /></Field>
         <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="2" @bind="form.Description" autocomplete="off"></textarea></Field>
         <div class="hcs-form-row hcs-form-row--equal">
             <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.Start" /></Field>
@@ -135,7 +156,6 @@
 </ModalContent></Modal>
 <ProjectTaskViewModal @ref="taskModal" />
 @code {
-    private static readonly string[] days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     private DateTime month = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private readonly List<CalendarEventDto> events = [];
     private readonly List<MasterDataCatalogDto> eventTypes = [];
@@ -144,6 +164,10 @@
     private Modal? modal;
     private ProjectTaskViewModal? taskModal;
     private bool isLoading;
+    private bool isListView;
+    private IEnumerable<string> DayNames =>
+        CultureInfo.CurrentUICulture.DateTimeFormat.AbbreviatedDayNames
+            .Skip(1).Concat(CultureInfo.CurrentUICulture.DateTimeFormat.AbbreviatedDayNames.Take(1));
 
     protected override Task OnInitializedAsync() => LoadAsync();
 

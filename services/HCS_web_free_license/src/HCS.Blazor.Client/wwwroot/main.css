@@ -34,6 +34,10 @@ body.abp-application-layout {
     top: 0.5rem;
 }
 
+body:has(.hcs-chat-page) {
+    overflow: hidden;
+}
+
 :root {
     --lpx-logo: url('/images/logo/leptonxlite/logo-light-thumbnail.png') !important;
     --lpx-logo-icon: url('/images/logo/leptonxlite/logo-light-thumbnail.png') !important;
@@ -546,6 +550,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     display: flex;
     gap: .55rem;
     margin: 0;
+    padding-left: 0px;
 }
 
 .hcs-catalog-active-field .form-check-input {
@@ -745,6 +750,30 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 .hcs-detail-split > .card,
 .hcs-detail-split > .d-flex > .card {
     height: 100%;
+}
+
+.hcs-calendar-grid,
+.hcs-calendar-grid th,
+.hcs-calendar-grid td {
+    background: #fff;
+}
+
+.hcs-calendar-grid th {
+    color: #4d6d82;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .075em;
+    text-transform: uppercase;
+}
+
+.hcs-calendar-grid td {
+    height: 7rem;
+    min-width: 8rem;
+    vertical-align: top;
+}
+
+.hcs-calendar-grid__today {
+    background: rgba(13, 110, 253, 0.08) !important;
 }
 
 

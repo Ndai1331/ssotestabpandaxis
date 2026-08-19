@@ -267,7 +267,7 @@ public sealed class HCSBlazorModule : AbpModule
     {
         context.Services.AddBlazorise(options =>
         {
-            options.Immediate = false;
+            options.Immediate = true;
         })
             .AddBootstrap5Providers()
             .AddFontAwesomeIcons();

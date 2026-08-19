@@ -42,13 +42,25 @@ namespace HCS.DocumentService.Migrations
                     b.Property<Guid?>("DocumentTypeId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("FromUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Number")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<Guid?>("OrganizationUnitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ParentDocumentId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("SectorId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -72,6 +84,10 @@ namespace HCS.DocumentService.Migrations
                     b.HasIndex("Number")
                         .IsUnique();
 
+                    b.HasIndex("ParentDocumentId");
+
+                    b.HasIndex("SourceType");
+
                     b.ToTable("Documents", "document");
                 });
 
@@ -90,10 +106,17 @@ namespace HCS.DocumentService.Migrations
                     b.Property<Guid>("DocumentId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Responsibility")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
+
+                    b.Property<string>("StepCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 
@@ -132,6 +155,9 @@ namespace HCS.DocumentService.Migrations
 
                     b.Property<bool>("IsPendingDeletion")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid?>("PairedFileId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Sha256")
                         .IsRequired()
@@ -461,6 +487,11 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("SignMode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
@@ -634,6 +665,11 @@ namespace HCS.DocumentService.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
+
+                    b.Property<string>("OutputFormat")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("PdfBlobName")
                         .HasMaxLength(512)

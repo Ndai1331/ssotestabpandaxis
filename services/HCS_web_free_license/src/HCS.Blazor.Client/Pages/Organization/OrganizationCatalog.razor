@@ -161,7 +161,7 @@
             </Card>
         </section>
 
-        <Modal @ref="editModal" Size="ModalSize.Large">
+        <Modal @ref="editModal" Size="ModalSize.Default">
             <ModalContent Centered="true" Class="hcs-catalog-modal">
                 <ModalHeader Class="hcs-catalog-modal__header">
                     <ModalTitle>@(editingId.HasValue ? L["Catalog:EditTitle"] : L["Catalog:CreateTitle"]) @Definition.Title</ModalTitle>
@@ -232,18 +232,17 @@
                         <Validation>
                             <Field>
                                 <FieldLabel>@L["Catalog:Code"] *</FieldLabel>
-                                <TextInput @bind-Value="form.Code"
-                                           MaxLength="50"
-                                           Autofocus="true"
-                                           Autocomplete="off"
-                                           name="hcsCatalogCode"
-                                           Class="hcs-catalog-input hcs-catalog-input--code" />
+                                <HcsIsolatedTextInput @bind-Value="form.Code"
+                                                     Name="hcsCatalogCode"
+                                                     MaxLength="50"
+                                                     Autofocus="true"
+                                                     CssClass="form-control hcs-catalog-input hcs-catalog-input--code" />
                             </Field>
                         </Validation>
                         <Validation>
                             <Field>
                                 <FieldLabel>@L["Catalog:Name"] *</FieldLabel>
-                                <TextInput @bind-Value="form.Name" MaxLength="256" Autocomplete="off" name="hcsCatalogName" Class="hcs-catalog-input" />
+                                <HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsCatalogName" MaxLength="256" CssClass="form-control hcs-catalog-input" />
                             </Field>
                         </Validation>
                         </div>

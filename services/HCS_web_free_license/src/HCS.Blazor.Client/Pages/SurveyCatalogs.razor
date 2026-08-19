@@ -25,11 +25,11 @@
                     <div class="hcs-form-row">
                         <div>
                             <label class="form-label">@L["Catalog:Code"]</label>
-                            <input class="form-control" name="hcsSurveyCode" autocomplete="off" @bind="form.Code" disabled="@(editingId is not null)" required />
+                            <HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsSurveyCatalogCode" MaxLength="64" Disabled="@(editingId is not null)" />
                         </div>
                         <div>
                             <label class="form-label">@L["Catalog:Name"]</label>
-                            <input class="form-control" name="hcsSurveyName" autocomplete="off" @bind="form.Name" required />
+                            <HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsSurveyCatalogName" />
                         </div>
                     </div>
                     @if (isCriteria) { <div><label class="form-label">@L["Catalog:SortOrder"]</label><input class="form-control" type="number" @bind="form.SortOrder" /></div> }

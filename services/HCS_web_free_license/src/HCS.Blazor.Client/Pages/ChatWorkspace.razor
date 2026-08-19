@@ -17,6 +17,7 @@
 @inject IStringLocalizer<HCSResource> Localizer
 @inject ILogger<ChatWorkspace> Logger
 @inject IUiMessageService UiMessageService
+@inject IJSRuntime Js
 @implements IAsyncDisposable
 
 <PageTitle>@T("Chat:Title") · HCS</PageTitle>
@@ -162,8 +163,28 @@
                 {
                     <p class="hcs-chat__realtime-warning" role="status"><i class="fa fa-plug-circle-xmark" aria-hidden="true"></i>@T("Chat:ConnectionUnavailable")</p>
                 }
+                @if (pinnedMessages.Count > 0)
+                {
+                    <button class="hcs-chat__pinned-bar @(pinnedPanelOpen ? "is-open" : null)" type="button" aria-expanded="@pinnedPanelOpen.ToString().ToLowerInvariant()" aria-label="@T("Chat:ViewPinned")" @onclick="TogglePinnedPanel">
+                        <i class="fa fa-thumbtack" aria-hidden="true"></i>
+                        <span>@T("Chat:PinnedMessages") · @pinnedMessages.Count</span>
+                        <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    @if (pinnedPanelOpen)
+                    {
+                        <div class="hcs-chat__pinned-panel" role="list">
+                            @foreach (var pinned in pinnedMessages)
+                            {
+                                <button class="hcs-chat__pinned-item" type="button" @onclick="() => OpenPinnedMessageAsync(pinned)">
+                                    <strong>@MemberName(pinned.SenderUserId)</strong>
+                                    <span>@PreviewText(pinned.Text, pinned.Attachments.FirstOrDefault()?.FileName)</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                }
 
-                <div class="hcs-chat__messages" aria-live="polite">
+                <div id="hcs-chat-messages" class="hcs-chat__messages" aria-live="polite" @onscroll="OnMessagesScrollAsync" @onclick="CloseMessageMenu">
                     @if (messages.Count < totalMessageCount)
                     {
                         <button class="hcs-chat__older" type="button" @onclick="LoadOlderMessagesAsync" disabled="@isLoadingMessages">@T("Chat:OlderMessages")</button>
@@ -184,38 +205,88 @@
                     {
                         @foreach (var message in messages)
                         {
-                            <article class="hcs-chat__message @(message.SenderUserId == currentUserId ? "hcs-chat__message--mine" : null)">
-                                <div class="hcs-chat__message-meta"><strong>@MemberName(message.SenderUserId)</strong><time datetime="@FormatMessageTimestamp(message.CreatedAt)">@FormatMessageTime(message.CreatedAt)</time></div>
-                                @if (message.IsDeleted)
-                                {
-                                    <p class="hcs-chat__message-deleted">@T("Chat:DeletedMessage")</p>
-                                }
-                                else
-                                {
-                                    @if (!string.IsNullOrWhiteSpace(message.Text))
+                            var isMine = message.SenderUserId == currentUserId;
+                            <div class="hcs-chat__message-row @(isMine ? "hcs-chat__message-row--mine" : null) @(messageMenuId == message.Id ? "is-menu-open" : null)">
+                                <article id="@MessageElementId(message.Id)" class="hcs-chat__message @(isMine ? "hcs-chat__message--mine" : null) @(highlightedMessageId == message.Id ? "hcs-chat__message--jump" : null)">
+                                    <div class="hcs-chat__message-meta">
+                                        <strong>@MemberName(message.SenderUserId)</strong>
+                                        @if (message.IsPinned)
+                                        {
+                                            <i class="fa fa-thumbtack hcs-chat__pin-mark" title="@T("Chat:PinMessage")" aria-label="@T("Chat:PinMessage")"></i>
+                                        }
+                                        <time datetime="@FormatMessageTimestamp(message.CreatedAt)">@FormatMessageTime(message.CreatedAt)</time>
+                                    </div>
+                                    @if (message.IsDeleted)
                                     {
-                                        <p>@message.Text</p>
+                                        <p class="hcs-chat__message-deleted">@T("Chat:DeletedMessage")</p>
                                     }
-                                    @if (message.Attachments.Count > 0)
+                                    else
                                     {
-                                        <div class="hcs-chat__attachments">
-                                            @foreach (var attachment in message.Attachments)
-                                            {
-                                                @if (IsImage(attachment))
+                                        @if (message.ReplyTo is not null || message.ReplyToMessageId is not null)
+                                        {
+                                            <button class="hcs-chat__quote" type="button" @onclick="() => JumpToMessageAsync(message.ReplyToMessageId ?? message.ReplyTo?.Id ?? Guid.Empty)">
+                                                <strong>@(message.ReplyTo is null ? T("Chat:ReplyTo") : $"{T("Chat:ReplyTo")} {MemberName(message.ReplyTo.SenderUserId)}")</strong>
+                                                <p>@(message.ReplyTo?.IsDeleted == true ? T("Chat:DeletedMessage") : PreviewText(message.ReplyTo?.Text))</p>
+                                            </button>
+                                        }
+                                        @if (message.ForwardedFrom is not null || message.ForwardedFromMessageId is not null)
+                                        {
+                                            <div class="hcs-chat__forward-preview">
+                                                <strong>@T("Chat:ForwardedMessage")</strong>
+                                                <p>@(message.ForwardedFrom?.IsDeleted == true ? T("Chat:DeletedMessage") : PreviewText(message.ForwardedFrom?.Text, message.Text))</p>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(message.Text) && message.ForwardedFromMessageId is null)
+                                        {
+                                            <p>@message.Text</p>
+                                        }
+                                        else if (!string.IsNullOrWhiteSpace(message.Text) && message.Text != ChatModerationRules.ForwardedPlaceholder)
+                                        {
+                                            <p>@message.Text</p>
+                                        }
+                                        @if (message.Attachments.Count > 0)
+                                        {
+                                            <div class="hcs-chat__attachments">
+                                                @foreach (var attachment in message.Attachments)
                                                 {
-                                                    <button class="hcs-chat__image" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
-                                                        <img src="@AttachmentUrl(attachment.Id)" alt="@attachment.FileName" />
-                                                    </button>
+                                                    @if (IsImage(attachment))
+                                                    {
+                                                        <button class="hcs-chat__image" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
+                                                            <img src="@AttachmentUrl(attachment.Id)" alt="@attachment.FileName" />
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <a href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")"><i class="fa fa-paperclip" aria-hidden="true"></i>@attachment.FileName</a>
+                                                    }
                                                 }
-                                                else
-                                                {
-                                                    <a href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")"><i class="fa fa-paperclip" aria-hidden="true"></i>@attachment.FileName</a>
-                                                }
-                                            }
-                                        </div>
+                                            </div>
+                                        }
                                     }
+                                </article>
+                                @if (!message.IsDeleted)
+                                {
+                                    <div class="hcs-chat__message-more @(messageMenuId == message.Id ? "is-open" : null)" @onclick:stopPropagation="true">
+                                        <button class="hcs-chat__message-more-trigger" type="button" aria-haspopup="true" aria-expanded="@(messageMenuId == message.Id ? "true" : "false")" aria-label="@T("Chat:MessageActions")" @onclick="() => ToggleMessageMenu(message.Id)">
+                                            <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                                        </button>
+                                        @if (messageMenuId == message.Id)
+                                        {
+                                            <div class="hcs-chat__message-menu" role="menu">
+                                                <button type="button" role="menuitem" @onclick="() => ReplyFromMenu(message)"><i class="fa fa-reply" aria-hidden="true"></i>@T("Chat:Reply")</button>
+                                                <button type="button" role="menuitem" @onclick="() => ForwardFromMenu(message)"><i class="fa fa-share" aria-hidden="true"></i>@T("Chat:Forward")</button>
+                                                <button type="button" role="menuitem" disabled="@isPinningMessage" @onclick="() => ToggleMessagePinnedAsync(message)">
+                                                    <i class="fa fa-thumbtack" aria-hidden="true"></i>@(message.IsPinned ? T("Chat:UnpinMessage") : T("Chat:PinMessage"))
+                                                </button>
+                                                @if (CanDeleteMessage(message))
+                                                {
+                                                    <button class="is-danger" type="button" role="menuitem" disabled="@isDeletingMessage" @onclick="() => DeleteFromMenuAsync(message)"><i class="fa fa-trash" aria-hidden="true"></i>@T("Chat:Delete")</button>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
                                 }
-                            </article>
+                            </div>
                         }
                     }
                 </div>
@@ -223,6 +294,16 @@
                 @if (permissions?.CanSend == true)
                 {
                     <form class="hcs-chat__composer" @onsubmit="SendAsync" @onsubmit:preventDefault>
+                        @if (replyingTo is not null)
+                        {
+                            <div class="hcs-chat__reply-preview">
+                                <div>
+                                    <strong>@T("Chat:ReplyingTo") @MemberName(replyingTo.SenderUserId)</strong>
+                                    <p>@PreviewText(replyingTo.Text)</p>
+                                </div>
+                                <button class="hcs-chat__close" type="button" aria-label="@T("Chat:CancelReply")" @onclick="CancelReply"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+                            </div>
+                        }
                         @if (pendingFiles.Count > 0)
                         {
                             <div class="hcs-chat__pending-files" aria-label="@T("Chat:Attach")">
@@ -280,7 +361,16 @@
                     <div class="hcs-chat__info-section"><h3>@T("Chat:Members")</h3><ul>
                         @foreach (var member in selected.Members)
                         {
-                            <li><span class="hcs-chat__avatar hcs-chat__avatar--small">@Initials(MemberName(member.UserId))</span><span><strong>@MemberName(member.UserId)</strong><small>@(member.Role == ConversationMemberRole.Admin ? T("Chat:Administrator") : T("Chat:Member"))</small></span></li>
+                            <li>
+                                <span class="hcs-chat__avatar hcs-chat__avatar--small">@Initials(MemberName(member.UserId))</span>
+                                <span><strong>@MemberName(member.UserId)</strong><small>@(member.Role == ConversationMemberRole.Admin ? T("Chat:Administrator") : T("Chat:Member"))</small></span>
+                                @if (CanRemoveMember(member))
+                                {
+                                    <button class="hcs-chat__icon hcs-chat__member-remove" type="button" title="@T("Chat:RemoveMember")" aria-label="@T("Chat:RemoveMember")" @onclick="() => RemoveMemberAsync(member.UserId)" disabled="@isRemovingMember">
+                                        <i class="fa fa-user-minus" aria-hidden="true"></i>
+                                    </button>
+                                }
+                            </li>
                         }
                     </ul></div>
                     @if (permissions?.CanManageMembers == true && selected.Type != ConversationType.User && AvailableMemberContacts.Any())
@@ -375,6 +465,31 @@
             <a class="hcs-chat-preview__download" href="@AttachmentUrl(previewAttachment.Id)" target="_blank" rel="noopener" @onclick:stopPropagation>@previewAttachment.FileName</a>
         </div>
     }
+    @if (forwardingMessage is not null)
+    {
+        <div class="hcs-chat-modal" role="dialog" aria-modal="true" aria-labelledby="chat-forward-title" @onclick="CloseForward">
+            <div class="hcs-chat-modal__panel" @onclick:stopPropagation>
+                <h2 id="chat-forward-title">@T("Chat:Forward")</h2>
+                <input class="hcs-chat__contact-filter" @bind="forwardSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" />
+                <div class="hcs-chat-modal__list" role="listbox" aria-label="@T("Chat:ForwardTo")">
+                    @foreach (var conversation in ForwardTargets)
+                    {
+                        <button class="hcs-chat-modal__choice @(forwardTargetId == conversation.Id ? "is-active" : null)" type="button" role="option" aria-selected="@(forwardTargetId == conversation.Id)" @onclick="() => forwardTargetId = conversation.Id">
+                            <span class="hcs-chat__avatar hcs-chat__avatar--small">@ConversationInitials(conversation)</span>
+                            <span>@ConversationTitle(conversation)</span>
+                        </button>
+                    }
+                </div>
+                <textarea @bind="forwardComment" rows="2" maxlength="4000" placeholder="@T("Chat:ForwardCommentPlaceholder")"></textarea>
+                <div class="hcs-chat-modal__actions">
+                    <button class="btn btn-light" type="button" @onclick="CloseForward">@T("Chat:Cancel")</button>
+                    <button class="btn btn-primary" type="button" @onclick="ForwardAsync" disabled="@(isForwarding || forwardTargetId is null)">
+                        <i class="fa @(isForwarding ? "fa-spinner fa-spin" : "fa-share")" aria-hidden="true"></i>@T("Chat:Forward")
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
 </main>
 
 @code {
@@ -415,6 +530,22 @@
     private bool preventComposerDefault;
     private MessageAttachmentDto? previewAttachment;
     private MediaPanel mediaPanel = MediaPanel.None;
+    private ChatMessageDto? replyingTo;
+    private ChatMessageDto? forwardingMessage;
+    private Guid? highlightedMessageId;
+    private Guid? messageMenuId;
+    private Guid? jumpToMessageIdAfterRender;
+    private Guid? forwardTargetId;
+    private bool scrollToBottomAfterRender;
+    private bool isDeletingMessage;
+    private bool isPinningMessage;
+    private bool isForwarding;
+    private bool isRemovingMember;
+    private bool allowOlderScroll;
+    private bool pinnedPanelOpen;
+    private readonly List<ChatMessageDto> pinnedMessages = [];
+    private string forwardComment = string.Empty;
+    private string forwardSearch = string.Empty;
 
     private bool CanSend => !string.IsNullOrWhiteSpace(messageText) || pendingFiles.Count > 0;
 
@@ -442,6 +573,12 @@
         ? []
         : contacts.Where(contact => !selected.Members.Any(member => member.UserId == contact.Id));
 
+    private IEnumerable<ConversationDto> ForwardTargets => conversations.Where(conversation =>
+        selected is not null &&
+        conversation.Id != selected.Id &&
+        (string.IsNullOrWhiteSpace(forwardSearch) ||
+         ConversationTitle(conversation).Contains(forwardSearch.Trim(), StringComparison.CurrentCultureIgnoreCase)));
+
     protected override async Task OnInitializedAsync()
     {
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -454,6 +591,8 @@
         }
 
         Realtime.Changed += HandleRealtimeChangeAsync;
+        Realtime.MessageReceived += HandleMessageReceivedAsync;
+        Realtime.MessageDeleted += HandleMessageDeletedAsync;
         Realtime.StatusChanged += HandleRealtimeStatusAsync;
         try
         {
@@ -527,6 +666,13 @@
         messages.Clear();
         messageSkip = 0;
         totalMessageCount = 0;
+        allowOlderScroll = false;
+        replyingTo = null;
+        forwardingMessage = null;
+        highlightedMessageId = null;
+        messageMenuId = null;
+        pinnedPanelOpen = false;
+        pinnedMessages.Clear();
         mobileView = MobileView.Thread;
         mediaPanel = MediaPanel.None;
         Realtime.ActiveConversationId = value.Id;
@@ -537,6 +683,7 @@
             permissions = await Client.GetPermissionsAsync(value.Id);
             renameText = selected.Name ?? string.Empty;
             await LoadMessagesAsync(reset: true);
+            await LoadPinnedMessagesAsync();
             await Client.MarkReadAsync(value.Id);
             await LoadConversationsAsync();
         }
@@ -568,6 +715,10 @@
             messages.InsertRange(0, incoming);
             messageSkip += incoming.Count;
             totalMessageCount = response.TotalCount;
+            if (reset)
+            {
+                scrollToBottomAfterRender = true;
+            }
         }
         catch (Exception exception)
         {
@@ -579,7 +730,6 @@
         }
     }
 
-    private Task LoadOlderMessagesAsync() => LoadMessagesAsync(reset: false);
 
     private async Task SendAsync()
     {
@@ -604,13 +754,16 @@
                 ConversationId = selected.Id,
                 Text = messageText.Trim(),
                 ClientMessageId = Guid.NewGuid(),
+                ReplyToMessageId = replyingTo?.Id,
                 AttachmentIds = attachmentIds
             });
-            messages.Add(sent);
+            UpsertMessage(sent);
             messageSkip = messages.Count;
             totalMessageCount = Math.Max(totalMessageCount, messages.Count);
             messageText = string.Empty;
             pendingFiles.Clear();
+            replyingTo = null;
+            scrollToBottomAfterRender = true;
             await Client.MarkReadAsync(selected.Id);
             await LoadConversationsAsync();
         }
@@ -840,6 +993,8 @@
     {
         infoOpen = false;
         mediaPanel = MediaPanel.None;
+        messageMenuId = null;
+        pinnedPanelOpen = false;
         mobileView = MobileView.List;
         Realtime.ActiveConversationId = null;
     }
@@ -891,11 +1046,6 @@
         await InvokeAsync(async () =>
         {
             await LoadConversationsAsync();
-            if (selected is not null && conversations.Any(item => item.Id == selected.Id))
-            {
-                await LoadMessagesAsync(reset: true);
-            }
-
             StateHasChanged();
         });
     }
@@ -983,6 +1133,8 @@
     public ValueTask DisposeAsync()
     {
         Realtime.Changed -= HandleRealtimeChangeAsync;
+        Realtime.MessageReceived -= HandleMessageReceivedAsync;
+        Realtime.MessageDeleted -= HandleMessageDeletedAsync;
         Realtime.StatusChanged -= HandleRealtimeStatusAsync;
         if (Realtime.ActiveConversationId == selected?.Id)
         {

@@ -30,6 +30,7 @@ notes: "2026-08-19 Workflow slice: Kind CRUD, wizard 4 bước, assignment VIEW/
 ## Phase 3 — core business parity
 
 1. Documents and signing: document list/detail/assignment workflow, signing policy and audit trail.
+   - **Slice done (2026-08-19):** SourceType query reload (3 menu tabs); LibreOffice Word→PDF on DocumentService (`INSTALL_LIBREOFFICE` chỉ image `document`); wizard bước 2 Word+PDF 2 cột; bảng bước/phân công SLA/pills; trình ký tab màu + count + overdue + CSV; `SubmitWorkflowModal` attach; `WorkflowInfoModal`; preview Giao việc. Không copy LeptonX/PdfViewer/RichTextEdit.
 2. Workflow: definitions and instances.
    - **Slice done (2026-08-18):** `/workflow-detail` wizard (Type/Assignee, Word/PDF upload, PDF iframe); list New/Edit đi detail.
    - **Slice done (2026-08-19):** Kind vs List tách entity; wizard 4 bước (Kind, template, step+SLA, assignment VIEW/blocking); Start nhận signer/scope; VIEW skip; Return/Resubmit; SubmitWorkflowModal + signing filter; NotificationToast poll (`WORKFLOW` → `/document-signing`).

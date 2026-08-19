@@ -63,8 +63,8 @@
     <ModalBody Class="hcs-catalog-modal__body">
         <div class="hcs-catalog-form">
             <div class="hcs-form-row">
-                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="form.Code" Disabled="@(editing is not null)" Autocomplete="off" name="hcsKindCode" /></Field>
-                <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><TextInput @bind-Value="form.Name" Autocomplete="off" name="hcsKindName" /></Field>
+                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsKindCode" MaxLength="64" Disabled="@(editing is not null)" /></Field>
+                <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsKindName" /></Field>
             </div>
             <Field><FieldLabel>@L["Work:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
             <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Work:IsActive"]</Check></Field>
@@ -104,6 +104,11 @@
     }
     private async Task SaveAsync()
     {
+        if (string.IsNullOrWhiteSpace(form.Code) || string.IsNullOrWhiteSpace(form.Name))
+        {
+            await NotifyErrorAsync(L["Catalog:CodeNameRequired"]);
+            return;
+        }
         try
         {
             if (editing is null)

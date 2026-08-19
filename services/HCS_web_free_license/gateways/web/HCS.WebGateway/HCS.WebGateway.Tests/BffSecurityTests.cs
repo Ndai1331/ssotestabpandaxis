@@ -79,6 +79,38 @@ public sealed class BffSecurityTests
 
         Assert.Equal("https://localhost:44403/workspace", BffEndpoints.GetSafeReturnUrl(configuration, "https://localhost:44403/workspace"));
         Assert.Equal("https://localhost:44403", BffEndpoints.GetSafeReturnUrl(configuration, "https://attacker.example/steal"));
+        Assert.Equal("https://localhost:44403/login", BffEndpoints.GetSafePostLogoutUrl(configuration, null));
+        Assert.Equal("https://localhost:44403/login", BffEndpoints.GetSafePostLogoutUrl(configuration, "https://localhost:44403/login"));
+        Assert.Equal("https://localhost:44403/login", BffEndpoints.GetSafePostLogoutUrl(configuration, "https://attacker.example/steal"));
+    }
+
+    [Fact]
+    public async Task Anonymous_logout_redirects_to_the_login_page()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["App:CorsOrigins:0"] = "https://localhost:44403"
+        });
+        builder.Services.AddAuthentication(HCSWebGatewayModule.CookieScheme).AddCookie();
+        builder.Services.AddAuthorization();
+        builder.Services.AddAntiforgery();
+
+        await using var app = builder.Build();
+        app.UseRouting();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapBffEndpoints();
+        await app.StartAsync();
+
+        using var client = new HttpClient(app.GetTestServer().CreateHandler())
+        {
+            BaseAddress = new Uri("http://localhost")
+        };
+        using var response = await client.GetAsync("/bff/logout");
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("https://localhost:44403/login", response.Headers.Location?.OriginalString);
     }
 
     [Fact]

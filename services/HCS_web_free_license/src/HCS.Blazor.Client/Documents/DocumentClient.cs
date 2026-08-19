@@ -34,8 +34,26 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<DocumentDto> SubmitAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendAsync<DocumentDto>(HttpMethod.Post, $"/api/documents/{id:D}/submit", new { }, cancellationToken);
 
+    public Task<DocumentDto> SendDocumentAsync(Guid id, SendDocumentRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<DocumentDto>(HttpMethod.Post, $"/api/documents/{id:D}/send", request, cancellationToken);
+
+    public Task<DocumentDto> RevokeDocumentAsync(Guid id, CancellationToken cancellationToken = default) =>
+        SendAsync<DocumentDto>(HttpMethod.Post, $"/api/documents/{id:D}/revoke", new { }, cancellationToken);
+
     public Task DeleteFileAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"/api/documents/{documentId:D}/files/{fileId:D}", null, cancellationToken);
+
+    public async Task<DocumentFileContent> GetFileContentAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().GetAsync($"/api/documents/{documentId:D}/files/{fileId:D}/content", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? "file";
+        return new DocumentFileContent(bytes, contentType, fileName);
+    }
 
     public async Task<DocumentFileDto> UploadFileAsync(Guid documentId, IBrowserFile file, CancellationToken cancellationToken = default)
     {
@@ -86,6 +104,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 
     public Task<WorkflowTemplateDto> SetTemplateActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken = default) =>
         SendAsync<WorkflowTemplateDto>(HttpMethod.Post, $"/api/workflows/templates/{id:D}/active", isActive, cancellationToken);
+
+    public Task<WorkflowTemplateDto> UpdateTemplateAsync(Guid id, UpdateWorkflowTemplateRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<WorkflowTemplateDto>(HttpMethod.Put, $"/api/workflows/templates/{id:D}", request, cancellationToken);
 
     public async Task<WorkflowTemplateDto> UploadTemplateFileAsync(Guid templateId, string kind, IBrowserFile file, CancellationToken cancellationToken = default)
     {

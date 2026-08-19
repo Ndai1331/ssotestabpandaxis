@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using OpenIddict.Abstractions;
@@ -81,7 +82,12 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
                 },
                 scopes: commonScopes,
                 redirectUris: new List<string> { app.CallbackUrl },
-                postLogoutRedirectUris: new List<string> { app.LogoutCallbackUrl },
+                postLogoutRedirectUris: new List<string>
+                {
+                    app.LogoutCallbackUrl,
+                    app.BlazorRootUrl,
+                    $"{app.BlazorRootUrl}/login"
+                }.Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
                 clientUri: app.BlazorRootUrl,
                 logoUri: "/images/clients/hcs.svg"
             );
@@ -155,7 +161,7 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
         var blazorRootUrl = ValidateHttpsOrigin(
             applications["HCS_App:PostLogoutRootUrl"] ?? DefaultBlazorRootUrl, "HCS_App PostLogoutRootUrl");
         return new HcsAppRegistration(clientId!, clientSecret!, gatewayRootUrl, blazorRootUrl,
-            $"{gatewayRootUrl}/signin-oidc", blazorRootUrl);
+            $"{gatewayRootUrl}/signin-oidc", $"{gatewayRootUrl}/signout-callback-oidc");
     }
 
     private static string ValidateHttpsOrigin(string value, string setting)

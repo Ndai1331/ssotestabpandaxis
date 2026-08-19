@@ -20,7 +20,8 @@ public sealed record ConversationDto(Guid Id, ConversationType Type, string? Nam
 
 public sealed record ConversationMemberDto(Guid UserId, ConversationMemberRole Role, DateTime JoinedAt);
 public sealed record ChatContactDto(Guid Id, string UserName, string DisplayName, bool IsActive);
-public sealed record ConversationPermissionDto(bool CanSend, bool CanManageMembers, bool CanRename, bool CanLeave);
+public sealed record ConversationPermissionDto(bool CanSend, bool CanManageMembers, bool CanRename, bool CanLeave,
+    bool CanModerateMessages = false);
 
 public sealed class CreateConversationInput
 {
@@ -45,12 +46,34 @@ public sealed class SendMessageInput
 public sealed record MessageAttachmentDto(Guid Id, string FileName, string ContentType, long Size,
     AttachmentKind Kind, Guid? MessageId);
 
+public sealed record ChatMessagePreviewDto(Guid Id, Guid SenderUserId, string Text, bool IsDeleted);
+
 public sealed record ChatMessageDto(Guid Id, Guid ConversationId, Guid SenderUserId, string Text,
     DateTime CreatedAt, Guid? ReplyToMessageId, Guid? ForwardedFromMessageId, bool IsPinned,
-    bool IsDeleted, IReadOnlyList<MessageAttachmentDto> Attachments);
+    bool IsDeleted, IReadOnlyList<MessageAttachmentDto> Attachments,
+    ChatMessagePreviewDto? ReplyTo = null, ChatMessagePreviewDto? ForwardedFrom = null);
 
 public sealed record MessageContextDto(ChatMessageDto Target, IReadOnlyList<ChatMessageDto> Before,
-    IReadOnlyList<ChatMessageDto> After);
+    IReadOnlyList<ChatMessageDto> After, bool HasMoreBefore = false, bool HasMoreAfter = false);
+
+public static class ChatModerationRules
+{
+    public const string ForwardedPlaceholder = "📤";
+
+    public static bool IsSystemAdmin(bool isAdmin, bool isBdAdmin) => isAdmin || isBdAdmin;
+
+    public static bool CanDeleteMessage(
+        Guid currentUserId,
+        Guid senderUserId,
+        bool isSystemAdmin,
+        ConversationMemberRole memberRole) =>
+        senderUserId == currentUserId
+        || isSystemAdmin
+        || memberRole == ConversationMemberRole.Admin;
+
+    public static string ForwardBody(string? comment) =>
+        string.IsNullOrWhiteSpace(comment) ? ForwardedPlaceholder : comment.Trim();
+}
 
 public sealed record PagedMessagesDto(long TotalCount, IReadOnlyList<ChatMessageDto> Items);
 

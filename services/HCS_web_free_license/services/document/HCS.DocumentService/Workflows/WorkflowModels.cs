@@ -65,7 +65,7 @@ public sealed class WorkflowDefinition
     private readonly List<WorkflowStep> _steps = [];
     private WorkflowDefinition() { }
     public WorkflowDefinition(Guid id, string code, string name, IEnumerable<WorkflowStepInput> steps, DateTime now,
-        Guid? kindId = null, string? description = null, bool isActive = true)
+        Guid? kindId = null, string? description = null, bool isActive = true, string? signMode = null)
     {
         Id = id;
         Code = Required(code, 64);
@@ -73,6 +73,7 @@ public sealed class WorkflowDefinition
         KindId = kindId;
         Description = Optional(description, 2000);
         IsActive = isActive;
+        SignMode = WorkflowSignModes.Normalize(signMode);
         CreationTime = now;
         ReplaceSteps(steps);
     }
@@ -82,14 +83,16 @@ public sealed class WorkflowDefinition
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public string SignMode { get; private set; } = WorkflowSignModes.Sequential;
     public DateTime CreationTime { get; private set; }
     public IReadOnlyCollection<WorkflowStep> Steps => _steps;
     public void Rename(string name) => Name = Required(name, 256);
-    public void SetMetadata(Guid? kindId, string? description, bool isActive)
+    public void SetMetadata(Guid? kindId, string? description, bool isActive, string? signMode = null)
     {
         KindId = kindId;
         Description = Optional(description, 2000);
         IsActive = isActive;
+        SignMode = WorkflowSignModes.Normalize(signMode);
     }
     public void ReplaceSteps(IEnumerable<WorkflowStepInput> steps)
     {
@@ -190,8 +193,8 @@ public sealed class WorkflowTemplate
         if (version <= 0) throw new ArgumentOutOfRangeException(nameof(version));
         if (string.IsNullOrWhiteSpace(templateJson)) throw new ArgumentException("Template JSON is required.");
         using var _ = JsonDocument.Parse(templateJson);
-        (Id, Code, Name, DefinitionId, Version, TemplateJson, IsActive, CreationTime) =
-            (id, code.Trim(), name.Trim(), definitionId, version, templateJson, true, now);
+        (Id, Code, Name, DefinitionId, Version, TemplateJson, OutputFormat, IsActive, CreationTime) =
+            (id, code.Trim(), name.Trim(), definitionId, version, templateJson, "PDF", true, now);
     }
     public Guid Id { get; private set; }
     public string Code { get; private set; } = string.Empty;
@@ -199,6 +202,7 @@ public sealed class WorkflowTemplate
     public Guid DefinitionId { get; private set; }
     public int Version { get; private set; }
     public string TemplateJson { get; private set; } = string.Empty;
+    public string OutputFormat { get; private set; } = "PDF";
     public bool IsActive { get; private set; }
     public DateTime CreationTime { get; private set; }
     public Guid? WordFileId { get; private set; }
@@ -210,6 +214,16 @@ public sealed class WorkflowTemplate
     public string? PdfContentType { get; private set; }
     public string? PdfBlobName { get; private set; }
     public void SetActive(bool isActive) => IsActive = isActive;
+    public void UpdateContent(string name, string templateJson, string outputFormat)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 256) throw new ArgumentException("Invalid template name.");
+        if (string.IsNullOrWhiteSpace(templateJson)) throw new ArgumentException("Template JSON is required.");
+        using var _ = JsonDocument.Parse(templateJson);
+        Name = name.Trim();
+        TemplateJson = templateJson;
+        OutputFormat = string.IsNullOrWhiteSpace(outputFormat) ? "PDF" : outputFormat.Trim().ToUpperInvariant();
+        if (OutputFormat.Length > 16) throw new ArgumentException("Invalid output format.");
+    }
     public void AttachWord(Guid fileId, string fileName, string contentType, string blobName)
         => (WordFileId, WordFileName, WordContentType, WordBlobName) = (fileId, fileName, contentType, blobName);
     public void AttachPdf(Guid fileId, string fileName, string contentType, string blobName)

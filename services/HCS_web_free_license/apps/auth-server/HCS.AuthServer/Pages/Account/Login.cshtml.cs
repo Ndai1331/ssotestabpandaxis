@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Volo.Abp.Account.Web;
+using Volo.Abp.AspNetCore.Mvc.UI.Alerts;
 using Volo.Abp.Identity;
 
 namespace HCS.AuthServer.Pages.Account;
@@ -10,6 +11,8 @@ namespace HCS.AuthServer.Pages.Account;
 public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
 {
     private readonly IConfiguration _configuration;
+
+    public IReadOnlyList<AlertMessage> VisibleAlerts => Alerts;
 
     public LoginModel(
         IAuthenticationSchemeProvider schemeProvider,

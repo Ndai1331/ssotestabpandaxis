@@ -77,6 +77,27 @@ public sealed class PermissionClaimResolverTests
             claim.GetDestinations().OrderBy(destination => destination));
     }
 
+    [Fact]
+    public async Task Handler_AddsLocalRolesToAccessToken()
+    {
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(AbpClaimTypes.Role, "admin")], "test"));
+        var context = new OpenIddictServerEvents.ProcessSignInContext(new OpenIddictServerTransaction())
+        {
+            Principal = principal
+        };
+
+        await new PermissionClaimsHandler(new StaticPermissionClaimResolver("HCS.Organization.Departments")
+        {
+            Roles = ["admin", "bacsi"]
+        }).HandleAsync(context);
+
+        var roles = principal.FindAll(AbpClaimTypes.Role).Select(claim => claim.Value).OrderBy(role => role).ToArray();
+        Assert.Equal(["admin", "bacsi"], roles);
+        Assert.All(principal.FindAll(AbpClaimTypes.Role), claim =>
+            Assert.Contains(OpenIddictConstants.Destinations.AccessToken, claim.GetDestinations()));
+    }
+
     private static ClaimsPrincipal CreatePrincipal(params string[] roles) =>
         new(new ClaimsIdentity(
             roles.Select(role => new Claim(AbpClaimTypes.Role, role)),
@@ -88,8 +109,13 @@ public sealed class PermissionClaimResolverTests
 
     private sealed class StaticPermissionClaimResolver(params string[] permissions) : IPermissionClaimResolver
     {
+        public IReadOnlyList<string> Roles { get; init; } = [];
+
         public Task<IReadOnlyList<string>> ResolveAsync(ClaimsPrincipal principal) =>
             Task.FromResult<IReadOnlyList<string>>(permissions);
+
+        public Task<IReadOnlyList<string>> ResolveRolesAsync(ClaimsPrincipal principal) =>
+            Task.FromResult(Roles);
     }
 
     private sealed class FakePermissionManager(

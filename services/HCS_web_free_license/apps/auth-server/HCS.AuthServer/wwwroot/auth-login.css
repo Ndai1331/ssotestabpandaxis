@@ -185,6 +185,48 @@ body:has(#LoginInput_UserNameOrEmailAddress) .card-body > h4 {
     margin: 0 0 .85rem;
 }
 
+/* Login errors live on Alerts (wrong password), not field validation. Keep them in the card. */
+body:has(#LoginInput_UserNameOrEmailAddress) #AbpPageAlerts,
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-alerts {
+    display: block !important;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-alerts .alert,
+body:has(#LoginInput_UserNameOrEmailAddress) #AbpPageAlerts .alert,
+body:has(#LoginInput_UserNameOrEmailAddress) .abp-alert {
+    border: 1px solid;
+    border-radius: .7rem;
+    font-size: .92rem;
+    font-weight: 650;
+    line-height: 1.45;
+    margin: 0 0 1rem;
+    padding: .85rem 1rem;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .alert-danger,
+body:has(#LoginInput_UserNameOrEmailAddress) .abp-alert-danger {
+    background: #fdecee;
+    border-color: #f1b4bc;
+    color: #9b1c2e;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .alert-warning,
+body:has(#LoginInput_UserNameOrEmailAddress) .abp-alert-warning {
+    background: #fff6e5;
+    border-color: #efd39a;
+    color: #8a5a00;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-validation-summary:empty {
+    display: none;
+}
+
+body:has(#LoginInput_UserNameOrEmailAddress) .hcs-login-validation-summary {
+    font-size: .9rem;
+    font-weight: 650;
+    margin-bottom: 1rem;
+}
+
 body:has(#LoginInput_UserNameOrEmailAddress) .mb-3,
 body:has(#LoginInput_UserNameOrEmailAddress) .form-group {
     margin-bottom: 1.05rem !important;

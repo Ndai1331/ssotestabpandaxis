@@ -72,13 +72,46 @@
         }
     </CardBody></Card>
 </section>
+
+<Modal @ref="modal"><ModalContent Centered Class="hcs-catalog-modal">
+    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Work:CreateWorkflow"]</ModalTitle><CloseButton /></ModalHeader>
+    <ModalBody Class="hcs-catalog-modal__body">
+        <div class="hcs-catalog-form">
+            <Field><FieldLabel>@L["Work:Kind"]</FieldLabel>
+                <CatalogSelect2 Value="form.KindId"
+                                ValueChanged="value => form.KindId = value"
+                                Placeholder="@L["Work:Kind"]"
+                                SelectedText="@KindName(form.KindId)"
+                                Search="SearchKindsAsync" />
+            </Field>
+            <div class="hcs-form-row">
+                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsWorkflowListCode" MaxLength="64" /></Field>
+                <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsWorkflowListName" /></Field>
+            </div>
+            <Field><FieldLabel>@L["Work:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
+            <Field><FieldLabel>@L["Work:SignMode"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.SignMode">
+                    <SelectItem Value="@("SEQUENTIAL")">@L["Work:SignMode.SEQUENTIAL"]</SelectItem>
+                    <SelectItem Value="@("PARALLEL")">@L["Work:SignMode.PARALLEL"]</SelectItem>
+                </Select>
+            </Field>
+            <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Work:IsActive"]</Check></Field>
+        </div>
+    </ModalBody>
+    <ModalFooter Class="hcs-catalog-modal__footer">
+        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SaveCreateAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+    </ModalFooter>
+</ModalContent></Modal>
 @code {
     private readonly List<WorkflowDefinitionDto> definitions = [];
     private readonly List<WorkflowTemplateDto> templates = [];
     private readonly List<WorkflowKindDto> kinds = [];
+    private readonly WorkflowCreateForm form = new();
+    private Modal? modal;
     private string filter = "", search = "", activeFilter = "";
     private Guid? kindId;
-    private bool isLoading;
+    private bool isLoading, isSaving;
 
     private List<WorkflowDefinitionDto> VisibleDefinitions
     {
@@ -109,8 +142,32 @@
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
-    private void OpenCreate() => Navigation.NavigateTo("/workflow-detail");
+    private async Task OpenCreate()
+    {
+        form.Reset();
+        if (modal is not null) await modal.Show();
+    }
     private void Edit(WorkflowDefinitionDto item) => Navigation.NavigateTo($"/workflow-detail/{item.Id}");
+    private async Task SaveCreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(form.Code) || string.IsNullOrWhiteSpace(form.Name))
+        {
+            await NotifyErrorAsync(L["Catalog:TypeRequired"]);
+            return;
+        }
+        isSaving = true;
+        try
+        {
+            var steps = new List<WorkflowStepInput> { new("review", L["Feature:StepName"], 1, "Documents.Workflow.Decide", "PROCESS") };
+            var id = await Documents.CreateDefinitionAsync(new CreateWorkflowDefinitionRequest(
+                form.Code.Trim(), form.Name.Trim(), steps, form.KindId, form.Description, form.IsActive, form.SignMode));
+            if (modal is not null) await modal.Hide();
+            await NotifySuccessAsync(L["Catalog:Created"]);
+            Navigation.NavigateTo($"/workflow-detail/{id}");
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isSaving = false; }
+    }
     private async Task DeleteAsync(WorkflowDefinitionDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
@@ -124,5 +181,19 @@
             || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
             || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
         return Task.FromResult(CatalogSelect2Cache.Merge(kinds, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
+    }
+
+    private sealed class WorkflowCreateForm
+    {
+        public Guid? KindId { get; set; }
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string SignMode { get; set; } = "SEQUENTIAL";
+        public bool IsActive { get; set; } = true;
+        public void Reset()
+        {
+            KindId = null; Code = Name = Description = ""; SignMode = "SEQUENTIAL"; IsActive = true;
+        }
     }
 }

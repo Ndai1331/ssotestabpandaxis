@@ -10,7 +10,8 @@ public sealed class DocumentAggregate
 
     private DocumentAggregate() { }
 
-    public DocumentAggregate(Guid id, string number, string title, string? description, Guid? actorUserId, DateTime now)
+    public DocumentAggregate(Guid id, string number, string title, string? description, Guid? actorUserId, DateTime now,
+        DocumentSourceType sourceType = DocumentSourceType.Archive)
     {
         if (id == Guid.Empty) throw new ArgumentException("Document id is required.", nameof(id));
         Id = id;
@@ -18,6 +19,7 @@ public sealed class DocumentAggregate
         Title = Required(title, 256, nameof(title));
         Description = Trim(description, 2000);
         Status = DocumentStatus.Draft;
+        SourceType = sourceType;
         CreationTime = now;
         AddHistory("Created", actorUserId, null, now);
     }
@@ -27,6 +29,10 @@ public sealed class DocumentAggregate
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public DocumentStatus Status { get; private set; }
+    public DocumentSourceType SourceType { get; private set; }
+    public Guid? ParentDocumentId { get; private set; }
+    public Guid? FromUserId { get; private set; }
+    public Guid? OrganizationUnitId { get; private set; }
     public Guid? DocumentTypeId { get; private set; }
     public Guid? SectorId { get; private set; }
     public Guid? UrgencyId { get; private set; }
@@ -70,18 +76,55 @@ public sealed class DocumentAggregate
         return file;
     }
 
-    public DocumentAssignment Assign(Guid id, Guid userId, string responsibility, Guid? actorUserId, DateTime now)
+    public DocumentAssignment Assign(Guid id, Guid userId, string responsibility, Guid? actorUserId, DateTime now, string? stepCode = null)
     {
         EnsureMutable();
         if (userId == Guid.Empty) throw new ArgumentException("Assignee is required.", nameof(userId));
         var role = Required(responsibility, 128, nameof(responsibility));
-        var existing = _assignments.FirstOrDefault(x => x.AssigneeUserId == userId && x.Responsibility == role);
-        if (existing is not null) return existing;
-        var assignment = new DocumentAssignment(id, Id, userId, role, now);
+        var existing = _assignments.FirstOrDefault(x => x.AssigneeUserId == userId && x.Responsibility == role && x.StepCode == stepCode);
+        if (existing is not null)
+        {
+            existing.Restore();
+            return existing;
+        }
+        var assignment = new DocumentAssignment(id, Id, userId, role, now, stepCode);
         _assignments.Add(assignment);
         AddHistory("Assigned", actorUserId, $"{userId}:{role}", now);
         return assignment;
     }
+
+    public void Send(Guid? receiverUserId, Guid? organizationUnitId, Guid fromUserId, DateTime now)
+    {
+        if (SourceType == DocumentSourceType.Workflow)
+            throw new InvalidOperationException("Workflow documents cannot be sent as inbox items.");
+        if (receiverUserId is null && organizationUnitId is null)
+            throw new ArgumentException("A receiver or organization unit is required.");
+        FromUserId = fromUserId;
+        OrganizationUnitId = organizationUnitId;
+        if (receiverUserId is { } userId)
+            Assign(Guid.NewGuid(), userId, "VIEW", fromUserId, now);
+        AddHistory("Sent", fromUserId, receiverUserId?.ToString() ?? organizationUnitId?.ToString(), now);
+    }
+
+    public void RevokeInbox(Guid actorUserId, DateTime now)
+    {
+        foreach (var assignment in _assignments.Where(x => x.Responsibility == "VIEW" && x.StepCode == null && x.IsCurrent))
+            assignment.Revoke();
+        AddHistory("Revoked", actorUserId, null, now);
+    }
+
+    public DocumentAggregate DuplicateAsWorkflow(Guid newId, string number, Guid? actorUserId, DateTime now)
+    {
+        var copy = new DocumentAggregate(newId, number, Title, Description, actorUserId, now, DocumentSourceType.Workflow);
+        copy.ParentDocumentId = Id;
+        copy.DocumentTypeId = DocumentTypeId;
+        copy.SectorId = SectorId;
+        copy.UrgencyId = UrgencyId;
+        copy.ConfidentialityId = ConfidentialityId;
+        copy.AddHistory("DuplicatedForWorkflow", actorUserId, Id.ToString(), now);
+        return copy;
+    }
+
 
     public DocumentFile BeginFileDeletion(Guid fileId, Guid? actorUserId, DateTime now)
     {
@@ -165,19 +208,25 @@ public sealed class DocumentFile
     public string BlobName { get; private set; } = string.Empty;
     public DateTime CreationTime { get; private set; }
     public bool IsPendingDeletion { get; private set; }
+    public Guid? PairedFileId { get; private set; }
     internal void MarkPendingDeletion() => IsPendingDeletion = true;
+    internal void SetPairedFileId(Guid pairedFileId) => PairedFileId = pairedFileId;
 }
 
 public sealed class DocumentAssignment
 {
     private DocumentAssignment() { }
-    internal DocumentAssignment(Guid id, Guid documentId, Guid userId, string responsibility, DateTime now)
-        => (Id, DocumentId, AssigneeUserId, Responsibility, AssignedAt) = (id, documentId, userId, responsibility, now);
+    internal DocumentAssignment(Guid id, Guid documentId, Guid userId, string responsibility, DateTime now, string? stepCode = null)
+        => (Id, DocumentId, AssigneeUserId, Responsibility, AssignedAt, IsCurrent, StepCode) = (id, documentId, userId, responsibility, now, true, stepCode);
     public Guid Id { get; private set; }
     public Guid DocumentId { get; private set; }
     public Guid AssigneeUserId { get; private set; }
     public string Responsibility { get; private set; } = string.Empty;
     public DateTime AssignedAt { get; private set; }
+    public bool IsCurrent { get; private set; } = true;
+    public string? StepCode { get; private set; }
+    internal void Revoke() => IsCurrent = false;
+    internal void Restore() => IsCurrent = true;
 }
 
 public sealed class DocumentHistory

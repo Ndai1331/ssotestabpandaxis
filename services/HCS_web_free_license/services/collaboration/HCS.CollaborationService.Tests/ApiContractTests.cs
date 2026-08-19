@@ -14,6 +14,8 @@ public sealed class ApiContractTests
     public void Chat_and_notification_routes_keep_gateway_contracts()
     {
         typeof(ChatController).GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().Single().Template.ShouldBe("api/chat");
+        typeof(ChatController).GetMethod(nameof(ChatController.PinMessage))!.GetCustomAttributes(typeof(HttpPutAttribute), true).ShouldNotBeEmpty();
+        typeof(ChatController).GetMethod(nameof(ChatController.Search))!.GetParameters().ShouldContain(p => p.Name == "pinnedOnly");
         typeof(NotificationController).GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().Single().Template.ShouldBe("api/notifications");
     }
 

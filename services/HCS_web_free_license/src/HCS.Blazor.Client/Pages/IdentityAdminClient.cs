@@ -59,7 +59,7 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
             phoneNumber = NullIfWhiteSpace(form.PhoneNumber),
             isActive = form.IsActive,
             lockoutEnabled = form.LockoutEnabled,
-            roleNames = form.RoleNames
+            roleNames = form.RoleNames.ToArray()
         }, cancellationToken);
 
     public Task<IdentityAdminUserDto> UpdateUserAsync(
@@ -78,7 +78,7 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
             isActive = form.IsActive,
             lockoutEnabled = form.LockoutEnabled,
             concurrencyStamp,
-            roleNames = form.RoleNames
+            roleNames = form.RoleNames.ToArray()
         }, cancellationToken);
 
     public Task DeleteUserAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -95,7 +95,7 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
     }
 
     public Task UpdateUserRolesAsync(Guid userId, IEnumerable<string> roleNames, CancellationToken cancellationToken = default) =>
-        SendAsync(HttpMethod.Put, $"api/identity/users/{userId:D}/roles", new { roleNames }, cancellationToken);
+        SendAsync(HttpMethod.Put, $"api/identity/users/{userId:D}/roles", new { roleNames = roleNames.ToArray() }, cancellationToken);
 
     public Task<IdentityAdminPermissionResult> GetRolePermissionsAsync(string roleName, CancellationToken cancellationToken = default) =>
         GetAsync<IdentityAdminPermissionResult>(

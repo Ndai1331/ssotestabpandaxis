@@ -6,21 +6,34 @@
 @inject CollaborationClient Chat
 @inject OrganizationCatalogClient Catalog
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime Js
 
 <PageTitle>@L["Menu:DocumentSigning"] · HCS</PageTitle>
 <section class="hcs-catalog-page">
     <header class="hcs-catalog-titlebar">
         <div><h1>@L["Feature:SigningQueue"]</h1></div>
         <div class="hcs-catalog-page__actions">
+            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="ExportAsync">@L["Catalog:Export"]</Button>
             <Button Color="Color.Primary" Outline="true" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
             <AuthorizeView Policy="Documents.Workflow.Start">
                 <Authorized>
-                    <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenSubmit">@L["Work:SubmitWorkflow"]</Button>
+                    <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenSubmit">@L["Work:CreateSigning"]</Button>
                 </Authorized>
             </AuthorizeView>
         </div>
     </header>
     <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
+        <div class="hcs-signing-tabs mb-3">
+            <button type="button" class="hcs-signing-tab @(inboxFilter == "all" ? "hcs-signing-tab--active" : null)" @onclick="@(() => SetInbox("all"))">
+                @L["Feature:SigningAll"] <span class="hcs-signing-count">@CountAll</span>
+            </button>
+            <button type="button" class="hcs-signing-tab @(inboxFilter == "toMe" ? "hcs-signing-tab--active" : null)" @onclick="@(() => SetInbox("toMe"))">
+                @L["Feature:SigningSentToMe"] <span class="hcs-signing-count">@CountToMe</span>
+            </button>
+            <button type="button" class="hcs-signing-tab @(inboxFilter == "byMe" ? "hcs-signing-tab--active" : null)" @onclick="@(() => SetInbox("byMe"))">
+                @L["Feature:SigningSentByMe"] <span class="hcs-signing-count">@CountByMe</span>
+            </button>
+        </div>
         <DocumentSigningFilterBar @bind-FromDate="fromDate" @bind-ToDate="toDate"
                                   @bind-SubmitterUserId="submitterId" SubmitterText="@ContactName(submitterId)"
                                   @bind-DepartmentId="departmentId" DepartmentText="@DepartmentName(departmentId)"
@@ -29,20 +42,40 @@
                                   SearchUsers="SearchContactsAsync"
                                   SearchDepartments="SearchDepartmentsAsync" />
     </CardBody></Card>
-    <Card Class="hcs-catalog-grid-card"><CardBody>
+    <Card Class="hcs-catalog-grid-card"><CardBody Class="p-0">
         @if (VisibleQueue.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2></div> }
         else
         {
             <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
-                <thead><tr><th>@L["Menu:Documents"]</th><th>@L["Feature:AddStep"]</th><th>@L["Catalog:Status"]</th><th>@L["Catalog:Actions"]</th></tr></thead>
+                <thead><tr>
+                    <th>@L["Catalog:Actions"]</th>
+                    <th>@L["Feature:DocumentTitleField"]</th>
+                    <th>@L["Work:FilterSubmitter"]</th>
+                    <th>@L["Work:FilterDepartment"]</th>
+                    <th>@L["Catalog:Status"]</th>
+                    <th>@L["Work:CurrentStep"]</th>
+                    <th>@L["Work:ReceivedDate"]</th>
+                </tr></thead>
                 <tbody>
                 @foreach (var item in VisibleQueue)
                 {
                     <tr class="@(item.Document.Id == RelatedId ? "table-active" : null)">
-                        <td><a href="@($"/document-detail/{item.Document.Id}")"><strong>@item.Document.Title</strong></a><span class="hcs-catalog-code">#@item.Document.Number</span></td>
-                        <td>@item.Task.StepCode</td>
-                        <td><span class="hcs-status-badge hcs-status-badge--planning">@item.Task.Status</span></td>
-                        <td><Button Size="Size.Small" Color="Color.Primary" Clicked="() => OpenSign(item)">@L["Feature:Sign"]</Button></td>
+                        <td>
+                            <div class="hcs-row-actions">
+                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => OpenInfo(item)" title="@L["Work:WorkflowInfo"]"><i class="fa fa-info-circle"></i></Button>
+                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => PreviewAsync(item)" title="@L["Work:PdfPreview"]"><i class="fa fa-eye"></i></Button>
+                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => OpenSign(item)" title="@L["Feature:Approve"]"><i class="fa fa-signature"></i></Button>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="@($"/document-detail/{item.Document.Id}?sourceType=3")"><strong>@item.Document.Title</strong></a>
+                            <span class="hcs-catalog-code">#@item.Document.Number</span>
+                        </td>
+                        <td>@SubmitterName(item)</td>
+                        <td>@DepartmentName(item.Document.OrganizationUnitId)</td>
+                        <td><span class="hcs-status-badge @StatusClass(item)">@StatusText(item)</span></td>
+                        <td>@CurrentStepLabel(item)</td>
+                        <td>@item.Document.CreationTime.ToLocalTime().ToString("dd/MM/yyyy")</td>
                     </tr>
                 }
                 </tbody>
@@ -51,12 +84,26 @@
     </CardBody></Card>
 </section>
 
-<Modal @ref="modal"><ModalContent Centered Class="hcs-catalog-modal">
-    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:Sign"]</ModalTitle><CloseButton /></ModalHeader>
+<Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal">
+    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:Approve"]</ModalTitle><CloseButton /></ModalHeader>
     <ModalBody Class="hcs-catalog-modal__body">
         @if (selected is not null)
         {
-            <p class="mb-3"><strong>@selected.Document.Title</strong> · @selected.Task.StepCode</p>
+            <p class="mb-3"><strong>@selected.Document.Title</strong> · @selected.Task.StepCode
+                <Button Size="Size.Small" Color="Color.Light" Outline="true" Class="ms-2" Clicked="() => PreviewAsync(selected)">@L["Work:PdfPreview"]</Button>
+            </p>
+            <Field><FieldLabel>@L["Feature:Comment"]</FieldLabel>
+                <textarea class="form-control" rows="3" @bind="form.Comment"></textarea>
+            </Field>
+            <Field><FieldLabel>@L["Feature:UserSignatures"]</FieldLabel>
+                <Select TValue="string" @bind-Value="form.SignatureId">
+                    <SelectItem Value="@string.Empty">—</SelectItem>
+                    @foreach (var signature in signatures)
+                    {
+                        <SelectItem Value="@signature.Id.ToString()">@signature.FileName @(signature.IsDefault ? $"({L["Feature:DefaultSignature"]})" : "")</SelectItem>
+                    }
+                </Select>
+            </Field>
             <Field><FieldLabel>@L["Feature:Files"]</FieldLabel>
                 <Select TValue="string" @bind-Value="form.FileId">
                     <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
@@ -78,23 +125,37 @@
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
         <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
-        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SignAsync">@L["Feature:Sign"]</Button>
+        <Button Color="Color.Warning" Clicked="() => DecideAsync(true, true)">@L["Work:Return"]</Button>
+        <Button Color="Color.Danger" Clicked="() => DecideAsync(false, false)">@L["Feature:Reject"]</Button>
+        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="ApproveAsync">@L["Feature:Approve"]</Button>
     </ModalFooter>
 </ModalContent></Modal>
+<DocumentPdfPreviewModal @ref="previewModal" ShowAssignTask="true" OnAssignTask="AssignFromPreviewAsync" />
+<ProjectTaskCreateModal @ref="taskModal" />
 <SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
+<WorkflowInfoModal @ref="infoModal" />
 @code {
     [Parameter] public Guid? RelatedId { get; set; }
     private readonly List<SigningQueueItem> queue = [];
     private readonly List<ChatContactDto> contacts = [];
     private readonly List<DepartmentCatalogDto> departments = [];
     private readonly SignForm form = new();
+    private readonly List<UserSignatureDto> signatures = [];
     private Modal? modal;
     private SubmitWorkflowModal? submitModal;
+    private DocumentPdfPreviewModal? previewModal;
+    private ProjectTaskCreateModal? taskModal;
+    private WorkflowInfoModal? infoModal;
     private SigningQueueItem? selected;
+    private SigningQueueItem? previewing;
     private SigningReportDto? report;
     private Guid? currentUserId, submitterId, departmentId;
     private DateTime? fromDate, toDate;
-    private string filter = "", search = "";
+    private string filter = "", search = "", inboxFilter = "all";
+
+    private int CountAll => queue.Count;
+    private int CountToMe => currentUserId is { } me ? queue.Count(x => x.Task.AssigneeUserId == me) : 0;
+    private int CountByMe => currentUserId is not null ? queue.Count(IsSentBy) : 0;
 
     private List<SigningQueueItem> VisibleQueue
     {
@@ -109,8 +170,14 @@
             if (toDate is { } to)
                 items = items.Where(x => x.Document.CreationTime <= to.ToUniversalTime().AddDays(1));
             if (submitterId is { } user)
-                items = items.Where(x => x.Document.History.Any(h => h.Action == "Created" && h.ActorUserId == user)
-                    || x.Document.Assignments.Any(a => a.AssigneeUserId == user));
+                items = items.Where(x => x.Document.FromUserId == user
+                    || x.Document.History.Any(h => h.Action == "Created" && h.ActorUserId == user));
+            if (departmentId is { } dept)
+                items = items.Where(x => x.Document.OrganizationUnitId == dept);
+            if (inboxFilter == "toMe" && currentUserId is { } me)
+                items = items.Where(x => x.Task.AssigneeUserId == me);
+            if (inboxFilter == "byMe")
+                items = items.Where(IsSentBy);
             return items.ToList();
         }
     }
@@ -123,34 +190,47 @@
         {
             contacts.AddRange(await Chat.GetContactsAsync(null, 50));
             departments.AddRange(await Catalog.GetDepartmentLookupAsync());
+            signatures.AddRange(await Documents.GetSignaturesAsync());
         }
         catch { }
         await LoadAsync();
     }
 
     private void ApplyFilter() => search = filter;
+    private void SetInbox(string value) => inboxFilter = value;
     private Task OpenSubmit() => submitModal?.ShowAsync() ?? Task.CompletedTask;
+    private Task PreviewAsync(SigningQueueItem item)
+    {
+        previewing = item;
+        return previewModal?.ShowAsync(item.Document.Id, item.Document.Files, item.Document.Title) ?? Task.CompletedTask;
+    }
+    private Task AssignFromPreviewAsync() =>
+        taskModal?.ShowAsync(linkedDocumentId: previewing?.Document.Id) ?? Task.CompletedTask;
+    private Task OpenInfo(SigningQueueItem item) =>
+        infoModal?.ShowAsync(item.Document, item.Instance, item.Definition) ?? Task.CompletedTask;
 
     private async Task LoadAsync()
     {
-                try
+        try
         {
-            var documents = (await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100))).Items;
+            var documents = (await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 3))).Items;
             var definitions = await Documents.GetDefinitionsAsync();
             var instances = await Documents.GetInstancesAsync();
-            var signCodes = definitions
-                .SelectMany(definition => definition.Steps.Where(step => string.Equals(step.Type, "SIGN", StringComparison.OrdinalIgnoreCase)).Select(step => (definition.Id, step.Code)))
+            var blockingCodes = definitions
+                .SelectMany(definition => definition.Steps
+                    .Where(step => step.Type is "SIGN" or "PROCESS")
+                    .Select(step => (definition.Id, step.Code)))
                 .ToHashSet();
             queue.Clear();
             foreach (var instance in instances.Where(x => x.Status == WorkflowInstanceStatus.Running))
             {
                 var document = documents.FirstOrDefault(x => x.Id == instance.DocumentId);
-                if (document is null) continue;
+                var definition = definitions.FirstOrDefault(x => x.Id == instance.DefinitionId);
+                if (document is null || definition is null) continue;
                 foreach (var task in instance.Tasks.Where(x => x.Status == ApprovalTaskStatus.Pending))
                 {
-                    if (!signCodes.Contains((instance.DefinitionId, task.StepCode))) continue;
-                    if (task.AssigneeUserId is { } assignee && currentUserId is { } me && assignee != me) continue;
-                    queue.Add(new SigningQueueItem(document, task));
+                    if (!blockingCodes.Contains((instance.DefinitionId, task.StepCode))) continue;
+                    queue.Add(new SigningQueueItem(document, task, instance, definition));
                 }
             }
             if (RelatedId is { } related && queue.FirstOrDefault(x => x.Document.Id == related) is { } match)
@@ -162,28 +242,102 @@
     private async Task OpenSign(SigningQueueItem item)
     {
         selected = item;
-        form.FileId = item.Document.Files.FirstOrDefault()?.Id.ToString() ?? "";
+        form.FileId = DocumentFilePick.PreferPdf(item.Document.Files)?.Id.ToString() ?? "";
         form.Kind = 0;
+        form.Comment = "";
+        form.SignatureId = signatures.FirstOrDefault(x => x.IsDefault)?.Id.ToString() ?? signatures.FirstOrDefault()?.Id.ToString() ?? "";
         try { report = await Documents.GetSigningReportAsync(item.Document.Id); }
         catch (Exception ex) { report = null; await NotifyErrorAsync(ex); }
         if (modal is not null) await modal.Show();
     }
 
-    private async Task SignAsync()
+    private async Task ApproveAsync()
     {
-        if (selected is null || !Guid.TryParse(form.FileId, out var fileId)) { await NotifyErrorAsync(L["Catalog:TypeRequired"]); return; }
+        if (selected is null) return;
         try
         {
-            await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, fileId, form.Kind, Guid.NewGuid().ToString("N")));
+            if (Guid.TryParse(form.FileId, out var fileId))
+                await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, fileId, form.Kind, Guid.NewGuid().ToString("N")));
+            await Documents.DecideAsync(selected.Task.Id, new DecideApprovalTaskRequest(true, CommentOrNull(), Guid.NewGuid().ToString("N")));
             if (modal is not null) await modal.Hide();
-            await NotifySuccessAsync(L["Catalog:Updated"]);
+            await NotifySuccessAsync(L["Feature:Approve"]);
             await LoadAsync();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
 
-    private sealed record SigningQueueItem(DocumentDto Document, ApprovalTaskDto Task);
-    private sealed class SignForm { public string FileId { get; set; } = ""; public int Kind { get; set; } }
+    private async Task DecideAsync(bool approve, bool returnStep)
+    {
+        if (selected is null) return;
+        try
+        {
+            await Documents.DecideAsync(selected.Task.Id, new DecideApprovalTaskRequest(approve, CommentOrNull(), Guid.NewGuid().ToString("N"), Return: returnStep));
+            if (modal is not null) await modal.Hide();
+            await NotifySuccessAsync(returnStep ? L["Work:Return"] : L["Feature:Reject"]);
+            await LoadAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+    }
+
+    private string? CommentOrNull() => string.IsNullOrWhiteSpace(form.Comment) ? null : form.Comment.Trim();
+    private bool IsSentBy(SigningQueueItem item) =>
+        currentUserId is { } me && (item.Document.FromUserId == me
+            || item.Document.History.Any(h => h.Action == "Created" && h.ActorUserId == me));
+    private bool IsOverdue(SigningQueueItem item) =>
+        item.Task.DueAt is { } due && due < DateTime.UtcNow && item.Task.Status == ApprovalTaskStatus.Pending;
+    private string StatusClass(SigningQueueItem item)
+    {
+        if (item.Instance.Status == WorkflowInstanceStatus.Cancelled) return "hcs-status-badge--todo";
+        if (IsOverdue(item)) return "hcs-status-badge--danger";
+        return "hcs-status-badge--success";
+    }
+    private string StatusText(SigningQueueItem item)
+    {
+        if (item.Instance.Status == WorkflowInstanceStatus.Cancelled) return L["Work:Status.Cancelled"];
+        if (IsOverdue(item)) return L["Work:Overdue"];
+        return L["Work:Status.InProgress"];
+    }
+    private string CurrentStepLabel(SigningQueueItem item)
+    {
+        var total = Math.Max(item.Definition.Steps.Count, 1);
+        var step = item.Definition.Steps.FirstOrDefault(x => string.Equals(x.Code, item.Task.StepCode, StringComparison.OrdinalIgnoreCase));
+        var current = step?.Order ?? item.Instance.CurrentStep + 1;
+        return $"{current} / {total}";
+    }
+    private string SubmitterName(SigningQueueItem item)
+    {
+        if (item.Document.FromUserId is { } from) return ContactName(from);
+        var created = item.Document.History.FirstOrDefault(h => h.Action == "Created");
+        return created?.ActorUserId is { } actor ? ContactName(actor) : "—";
+    }
+    private async Task ExportAsync()
+    {
+        try
+        {
+            await CsvDownload.DownloadAsync(Js, "document-signing.csv",
+                [L["Feature:DocumentNumber"], L["Feature:DocumentTitleField"], L["Work:FilterSubmitter"], L["Work:FilterDepartment"], L["Catalog:Status"], L["Work:CurrentStep"], L["Work:ReceivedDate"]],
+                VisibleQueue.Select(item => (IReadOnlyList<string>)[
+                    item.Document.Number,
+                    item.Document.Title,
+                    SubmitterName(item),
+                    DepartmentName(item.Document.OrganizationUnitId),
+                    StatusText(item),
+                    CurrentStepLabel(item),
+                    item.Document.CreationTime.ToLocalTime().ToString("dd/MM/yyyy")
+                ]));
+            await NotifySuccessAsync(L["Catalog:Exported"]);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
+    }
+
+    private sealed record SigningQueueItem(DocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance, WorkflowDefinitionDto Definition);
+    private sealed class SignForm
+    {
+        public string FileId { get; set; } = "";
+        public string SignatureId { get; set; } = "";
+        public string Comment { get; set; } = "";
+        public int Kind { get; set; }
+    }
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
     private string DepartmentName(Guid? id) => id is null ? "" : departments.FirstOrDefault(x => x.Id == id)?.Name ?? "";
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)

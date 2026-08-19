@@ -277,6 +277,7 @@ public sealed class HCSWebGatewayModule : AbpModule
                 options.GetClaimsFromUserInfoEndpoint = true;
                 options.MapInboundClaims = false;
                 options.CallbackPath = "/signin-oidc";
+                options.SignedOutCallbackPath = "/signout-callback-oidc";
                 options.NonceCookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.NonceCookie.SameSite = SameSiteMode.None;
                 options.NonceCookie.HttpOnly = true;
@@ -290,6 +291,14 @@ public sealed class HCSWebGatewayModule : AbpModule
                 options.Scope.Add("roles");
                 options.Scope.Add("HCS");
                 options.Scope.Add("offline_access");
+                options.Events.OnRedirectToIdentityProviderForSignOut = oidcContext =>
+                {
+                    // OpenIddict historically registered the UI origin. Send that exact
+                    // value so end_session succeeds even before /signout-callback-oidc is seeded.
+                    oidcContext.ProtocolMessage.PostLogoutRedirectUri =
+                        BffEndpoints.GetSafeReturnUrl(configuration, null).TrimEnd('/');
+                    return Task.CompletedTask;
+                };
                 options.Events.OnRedirectToIdentityProvider = oidcContext =>
                 {
                     // #region agent log

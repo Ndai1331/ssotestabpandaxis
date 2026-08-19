@@ -23,8 +23,8 @@
                         <TabPanel Name="general">
                             <div class="hcs-catalog-form">
                                 <div class="hcs-form-row">
-                                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput Value="@detail.Task.Code" Disabled="true" /></Field>
-                                    <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><TextInput @bind-Value="title" Autocomplete="off" name="hcsTaskViewTitle" /></Field>
+                                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput Value="@detail.Task.Code" Name="hcsTaskViewCode" Disabled="true" /></Field>
+                                    <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><HcsIsolatedTextInput @bind-Value="title" Name="hcsTaskViewTitle" /></Field>
                                 </div>
                                 <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="description"></textarea></Field>
                                 <div class="hcs-form-row hcs-form-row--equal">

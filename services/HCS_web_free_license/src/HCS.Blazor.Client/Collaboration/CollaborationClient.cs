@@ -49,6 +49,20 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
             $"api/chat/conversations/{conversationId:D}/messages?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 100)}",
             cancellationToken);
 
+    public Task<PagedMessagesDto> GetPinnedMessagesAsync(
+        Guid conversationId,
+        int take = 50,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<PagedMessagesDto>(
+            $"api/chat/conversations/{conversationId:D}/messages?skip=0&take={Math.Clamp(take, 1, 100)}&pinnedOnly=true",
+            cancellationToken);
+
+    public Task SetMessagePinnedAsync(
+        Guid messageId,
+        bool pinned,
+        CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Put, $"api/chat/messages/{messageId:D}/pin", new { pinned }, cancellationToken);
+
     public Task<ConversationDto> CreateConversationAsync(
         CreateConversationInput input,
         CancellationToken cancellationToken = default) =>
@@ -73,6 +87,33 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
 
     public Task LeaveAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Post, $"api/chat/conversations/{id:D}/leave", new { transferAdminTo = (Guid?)null }, cancellationToken);
+
+    public Task RemoveMemberAsync(Guid id, Guid userId, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"api/chat/conversations/{id:D}/members/{userId:D}", cancellationToken: cancellationToken);
+
+    public Task DeleteMessageAsync(Guid messageId, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"api/chat/messages/{messageId:D}", cancellationToken: cancellationToken);
+
+    public Task<ChatMessageDto> ForwardMessageAsync(
+        Guid messageId,
+        Guid targetConversationId,
+        string? comment,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<object, ChatMessageDto>(
+            HttpMethod.Post,
+            $"api/chat/messages/{messageId:D}/forward",
+            new { targetConversationId, comment },
+            cancellationToken);
+
+    public Task<MessageContextDto> GetMessageContextAsync(
+        Guid conversationId,
+        Guid messageId,
+        int before = 20,
+        int after = 20,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<MessageContextDto>(
+            $"api/chat/conversations/{conversationId:D}/messages/{messageId:D}/context?before={Math.Clamp(before, 0, 50)}&after={Math.Clamp(after, 0, 50)}",
+            cancellationToken);
 
     public Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(
         bool unreadOnly = false,

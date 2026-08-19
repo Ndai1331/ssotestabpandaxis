@@ -183,27 +183,27 @@
                         <div class="hcs-user-form-grid">
                             <Field>
                                 <FieldLabel>Tên người dùng *</FieldLabel>
-                                <TextInput @bind-Value="userForm.UserName" ReadOnly="@editingUserId.HasValue" Autocomplete="off" name="hcsUserUserName" />
+                                <HcsIsolatedTextInput @bind-Value="userForm.UserName" Name="hcsUserUserName" ReadOnly="@editingUserId.HasValue" />
                             </Field>
                             <Field>
                                 <FieldLabel>Mật khẩu @(editingUserId.HasValue ? string.Empty : "*")</FieldLabel>
-                                <TextInput @bind-Value="userForm.Password" Role="TextRole.Password" Autocomplete="new-password" name="hcsUserPassword" Placeholder="@(editingUserId.HasValue ? "Để trống nếu không đổi" : null)" />
+                                <HcsIsolatedTextInput @bind-Value="userForm.Password" Name="hcsUserPassword" InputType="password" Placeholder="@(editingUserId.HasValue ? "Để trống nếu không đổi" : null)" />
                             </Field>
                             <Field>
                                 <FieldLabel>Họ</FieldLabel>
-                                <TextInput @bind-Value="userForm.Surname" Autocomplete="off" name="hcsUserSurname" />
+                                <HcsIsolatedTextInput @bind-Value="userForm.Surname" Name="hcsUserSurname" />
                             </Field>
                             <Field>
                                 <FieldLabel>Tên</FieldLabel>
-                                <TextInput @bind-Value="userForm.Name" Autocomplete="off" name="hcsUserGivenName" />
+                                <HcsIsolatedTextInput @bind-Value="userForm.Name" Name="hcsUserGivenName" />
                             </Field>
                             <Field Class="hcs-user-form-grid__full">
                                 <FieldLabel>Địa chỉ email *</FieldLabel>
-                                <TextInput @bind-Value="userForm.Email" Role="TextRole.Email" Autocomplete="off" name="hcsUserEmail" />
+                                <HcsIsolatedTextInput @bind-Value="userForm.Email" Name="hcsUserEmail" InputType="email" />
                             </Field>
                             <Field>
                                 <FieldLabel>Số điện thoại</FieldLabel>
-                                <TextInput @bind-Value="userForm.PhoneNumber" Role="TextRole.Telephone" Autocomplete="off" name="hcsUserPhone" />
+                                <HcsIsolatedTextInput @bind-Value="userForm.PhoneNumber" Name="hcsUserPhone" InputType="tel" />
                             </Field>
                             <Field>
                                 <FieldLabel>Chức vụ</FieldLabel>
@@ -234,11 +234,13 @@
                             {
                                 @foreach (var role in roles)
                                 {
-                                    <Check TValue="bool"
-                                           Checked="@userForm.RoleNames.Contains(role.Name)"
-                                           CheckedChanged="@((bool value) => ToggleUserRole(role.Name, value))">
-                                        @role.Name
-                                    </Check>
+                                    <label class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               checked="@userForm.RoleNames.Contains(role.Name)"
+                                               @onchange="args => ToggleUserRole(role.Name, args)" />
+                                        <span class="form-check-label">@role.Name</span>
+                                    </label>
                                 }
                             }
                         </div>
@@ -282,11 +284,11 @@
                                 </Field>
                                 <Field>
                                     <FieldLabel>@L["Feature:SigningEndpoint"]</FieldLabel>
-                                    <TextInput @bind-Value="credentialForm.Endpoint" Placeholder="https://" Autocomplete="off" name="hcsUserSigningEndpoint" />
+                                    <HcsIsolatedTextInput @bind-Value="credentialForm.Endpoint" Name="hcsUserSigningEndpoint" Placeholder="https://" />
                                 </Field>
                                 <Field>
                                     <FieldLabel>@L["Feature:SigningSecret"]</FieldLabel>
-                                    <TextInput @bind-Value="credentialForm.Secret" Role="TextRole.Password" Autocomplete="new-password" name="hcsUserSigningSecret" />
+                                    <HcsIsolatedTextInput @bind-Value="credentialForm.Secret" Name="hcsUserSigningSecret" InputType="password" />
                                 </Field>
                                 <Button Color="Color.Primary" Clicked="SaveUserCredentialAsync" Loading="@isSavingSigning" Disabled="@isSavingSigning">@L["Catalog:SaveChanges"]</Button>
                             </div>
@@ -606,10 +608,18 @@
         }
     }
 
-    private void ToggleUserRole(string roleName, bool isSelected)
+    private void ToggleUserRole(string roleName, ChangeEventArgs args)
     {
-        if (isSelected) userForm.RoleNames.Add(roleName);
-        else userForm.RoleNames.Remove(roleName);
+        var isSelected = args.Value is bool flag && flag
+            || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        if (isSelected)
+        {
+            userForm.RoleNames.Add(roleName);
+        }
+        else
+        {
+            userForm.RoleNames.Remove(roleName);
+        }
     }
 
     private string? ValidateUserForm()

@@ -164,8 +164,10 @@ public class CollaborationAppService(
     public async Task<ConversationPermissionDto> GetPermissionsAsync(Guid id, CancellationToken ct = default)
     {
         var conversation = await RequireMember(id, UserId, ct);
-        var isAdmin = conversation.Members.Single(x => x.UserId == UserId).Role == ConversationMemberRole.Admin;
-        return new ConversationPermissionDto(true, isAdmin, isAdmin, conversation.Type != ConversationType.User);
+        var isConversationAdmin = conversation.Members.Single(x => x.UserId == UserId).Role == ConversationMemberRole.Admin;
+        var canManage = isConversationAdmin || IsSystemAdmin;
+        return new ConversationPermissionDto(true, canManage, canManage,
+            conversation.Type != ConversationType.User, canManage);
     }
 
     public async Task<ChatMessageDto> SendMessageAsync(SendMessageInput input, CancellationToken ct = default)
@@ -178,7 +180,7 @@ public class CollaborationAppService(
         {
             var duplicate = await db.Messages.AsNoTracking().Include(x => x.Attachments)
                 .SingleOrDefaultAsync(x => x.ConversationId == input.ConversationId && x.ClientMessageId == input.ClientMessageId, ct);
-            if (duplicate is not null) return MapMessage(duplicate);
+            if (duplicate is not null) return await MapMessageAsync(duplicate, ct);
         }
         if (input.ReplyToMessageId.HasValue && !await db.Messages.AnyAsync(x => x.Id == input.ReplyToMessageId && x.ConversationId == input.ConversationId, ct))
             throw new BusinessException("Collaboration:ReplyMessageNotFound");
@@ -206,9 +208,9 @@ public class CollaborationAppService(
             db.ChangeTracker.Clear();
             var concurrentDuplicate = await db.Messages.AsNoTracking().Include(x => x.Attachments)
                 .SingleAsync(x => x.ConversationId == input.ConversationId && x.ClientMessageId == input.ClientMessageId, ct);
-            return MapMessage(concurrentDuplicate);
+            return await MapMessageAsync(concurrentDuplicate, ct);
         }
-        var dto = MapMessage(message);
+        var dto = await MapMessageAsync(message, ct);
         await TryNotifyAsync(() => notifier.MessageSentAsync(dto, recipientIds, ct), "message sent", message.Id);
         return dto;
     }
@@ -219,7 +221,7 @@ public class CollaborationAppService(
             ?? throw new BusinessException("Collaboration:MessageNotFound");
         await RequireMember(source.ConversationId, UserId, ct);
         var target = await RequireMember(targetConversationId, UserId, ct);
-        var text = string.IsNullOrWhiteSpace(comment) ? source.Text : $"{comment}\n{source.Text}";
+        var text = ChatModerationRules.ForwardBody(comment);
         var now = clock.Now.ToUniversalTime();
         var forwarded = new ChatMessage(guidGenerator.Create(), target.Id, UserId, text, forwardedFromMessageId: source.Id);
         db.Messages.Add(forwarded); target.SetLastMessage(text, now);
@@ -228,7 +230,7 @@ public class CollaborationAppService(
             forwarded.Id, UserId, recipientIds);
         db.OutboxMessages.Add(new OutboxMessage(evt.EventId, nameof(ChatMessageSentEto), JsonSerializer.Serialize(evt), now));
         await SaveMessageAndIncrementUnreadAsync(target.Id, recipientIds, ct);
-        var dto = MapMessage(forwarded);
+        var dto = await MapMessageAsync(forwarded, ct);
         await TryNotifyAsync(() => notifier.MessageSentAsync(dto, recipientIds, ct), "forwarded message", forwarded.Id);
         return dto;
     }
@@ -236,8 +238,10 @@ public class CollaborationAppService(
     public async Task DeleteMessageAsync(Guid messageId, CancellationToken ct = default)
     {
         var message = await db.Messages.SingleOrDefaultAsync(x => x.Id == messageId, ct) ?? throw new BusinessException("Collaboration:MessageNotFound");
-        await RequireMember(message.ConversationId, UserId, ct);
-        if (message.SenderUserId != UserId) throw new AbpAuthorizationException();
+        var conversation = await RequireMember(message.ConversationId, UserId, ct);
+        var memberRole = conversation.Members.Single(x => x.UserId == UserId).Role;
+        if (!ChatModerationRules.CanDeleteMessage(UserId, message.SenderUserId, IsSystemAdmin, memberRole))
+            throw new AbpAuthorizationException();
         message.SoftDeleteContent(); await db.SaveChangesAsync(ct);
         var recipients = await db.ConversationMembers.AsNoTracking().Where(x => x.ConversationId == message.ConversationId)
             .Select(x => x.UserId).ToArrayAsync(ct);
@@ -269,15 +273,16 @@ public class CollaborationAppService(
         return db.ConversationMembers.Where(x => x.UserId == me).SumAsync(x => x.UnreadCount, ct);
     }
 
-    public async Task<PagedMessagesDto> SearchMessagesAsync(Guid conversationId, string? keyword, int skip = 0, int take = 50, CancellationToken ct = default)
+    public async Task<PagedMessagesDto> SearchMessagesAsync(Guid conversationId, string? keyword, int skip = 0, int take = 50, bool pinnedOnly = false, CancellationToken ct = default)
     {
         await RequireMember(conversationId, UserId, ct);
         take = Math.Clamp(take, 1, 100);
-        var query = db.Messages.AsNoTracking().Include(x => x.Attachments).Where(x => x.ConversationId == conversationId && !x.IsDeleted);
-        if (!string.IsNullOrWhiteSpace(keyword)) query = query.Where(x => EF.Functions.ILike(x.Text, $"%{keyword.Trim()}%"));
+        var query = db.Messages.AsNoTracking().Include(x => x.Attachments).Where(x => x.ConversationId == conversationId);
+        if (pinnedOnly) query = query.Where(x => x.IsPinned && !x.IsDeleted);
+        if (!string.IsNullOrWhiteSpace(keyword)) query = query.Where(x => !x.IsDeleted && EF.Functions.ILike(x.Text, $"%{keyword.Trim()}%"));
         var count = await query.LongCountAsync(ct);
         var items = await query.OrderByDescending(x => x.CreationTime).Skip(Math.Max(skip, 0)).Take(take).ToListAsync(ct);
-        return new PagedMessagesDto(count, items.Select(MapMessage).ToArray());
+        return new PagedMessagesDto(count, await MapMessagesAsync(items, ct));
     }
 
     public async Task<MessageContextDto> GetMessageContextAsync(Guid conversationId, Guid messageId, int before = 20, int after = 20, CancellationToken ct = default)
@@ -286,11 +291,25 @@ public class CollaborationAppService(
         var target = await db.Messages.AsNoTracking().Include(x => x.Attachments).SingleOrDefaultAsync(x => x.Id == messageId && x.ConversationId == conversationId, ct)
             ?? throw new BusinessException("Collaboration:MessageNotFound");
         before = Math.Clamp(before, 0, 50); after = Math.Clamp(after, 0, 50);
-        var previous = await db.Messages.AsNoTracking().Include(x => x.Attachments).Where(x => x.ConversationId == conversationId && x.CreationTime < target.CreationTime)
-            .OrderByDescending(x => x.CreationTime).Take(before).ToListAsync(ct);
-        var following = await db.Messages.AsNoTracking().Include(x => x.Attachments).Where(x => x.ConversationId == conversationId && x.CreationTime > target.CreationTime)
-            .OrderBy(x => x.CreationTime).Take(after).ToListAsync(ct);
-        return new MessageContextDto(MapMessage(target), previous.AsEnumerable().Reverse().Select(MapMessage).ToArray(), following.Select(MapMessage).ToArray());
+        var previous = await db.Messages.AsNoTracking().Include(x => x.Attachments)
+            .Where(x => x.ConversationId == conversationId &&
+                (x.CreationTime < target.CreationTime || (x.CreationTime == target.CreationTime && x.Id.CompareTo(target.Id) < 0)))
+            .OrderByDescending(x => x.CreationTime).ThenByDescending(x => x.Id).Take(before + 1).ToListAsync(ct);
+        var following = await db.Messages.AsNoTracking().Include(x => x.Attachments)
+            .Where(x => x.ConversationId == conversationId &&
+                (x.CreationTime > target.CreationTime || (x.CreationTime == target.CreationTime && x.Id.CompareTo(target.Id) > 0)))
+            .OrderBy(x => x.CreationTime).ThenBy(x => x.Id).Take(after + 1).ToListAsync(ct);
+        var hasMoreBefore = previous.Count > before;
+        var hasMoreAfter = following.Count > after;
+        var beforeItems = previous.Take(before).AsEnumerable().Reverse().ToList();
+        var afterItems = following.Take(after).ToList();
+        var mapped = await MapMessagesAsync(beforeItems.Concat([target]).Concat(afterItems).ToList(), ct);
+        return new MessageContextDto(
+            mapped[beforeItems.Count],
+            mapped.Take(beforeItems.Count).ToArray(),
+            mapped.Skip(beforeItems.Count + 1).ToArray(),
+            hasMoreBefore,
+            hasMoreAfter);
     }
 
     public async Task RequestTaskFromMessageAsync(Guid messageId, string title, string? description, CancellationToken ct = default)
@@ -310,6 +329,7 @@ public class CollaborationAppService(
     private async Task<Conversation> RequireAdmin(Guid id, Guid userId, CancellationToken ct)
     {
         var conversation = await RequireMember(id, userId, ct);
+        if (IsSystemAdmin) return conversation;
         if (conversation.Members.Single(x => x.UserId == userId).Role != ConversationMemberRole.Admin) throw new AbpAuthorizationException("Conversation admin required.");
         return conversation;
     }
@@ -358,9 +378,47 @@ public class CollaborationAppService(
         return new(c.Id, c.Type, c.Name, c.Description, c.ProjectId, c.TaskId, c.LastMessage, c.LastMessageAt,
             me.UnreadCount, me.IsPinned, c.Members.Select(x => new ConversationMemberDto(x.UserId, x.Role, x.CreationTime)).ToArray());
     }
-    internal static ChatMessageDto MapMessage(ChatMessage x) => new(x.Id, x.ConversationId, x.SenderUserId,
-        x.Text, x.CreationTime, x.ReplyToMessageId, x.ForwardedFromMessageId, x.IsPinned, x.IsDeleted,
-        x.Attachments.Select(a => new MessageAttachmentDto(a.Id, a.FileName, a.ContentType, a.Size, a.Kind, a.MessageId)).ToArray());
+    private bool IsSystemAdmin => ChatModerationRules.IsSystemAdmin(currentUser.IsInRole("admin"), currentUser.IsInRole("bd-admin"));
+
+    private async Task<ChatMessageDto> MapMessageAsync(ChatMessage message, CancellationToken ct) =>
+        (await MapMessagesAsync([message], ct))[0];
+
+    private async Task<IReadOnlyList<ChatMessageDto>> MapMessagesAsync(IReadOnlyList<ChatMessage> messages, CancellationToken ct)
+    {
+        var relatedIds = messages
+            .SelectMany(message => new Guid?[] { message.ReplyToMessageId, message.ForwardedFromMessageId })
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToArray();
+        var related = relatedIds.Length == 0
+            ? new Dictionary<Guid, ChatMessage>()
+            : await db.Messages.AsNoTracking()
+                .Where(x => relatedIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, ct);
+        return messages.Select(message => MapMessage(message, related)).ToArray();
+    }
+
+    internal static ChatMessageDto MapMessage(ChatMessage x, IReadOnlyDictionary<Guid, ChatMessage>? related = null)
+    {
+        static ChatMessagePreviewDto? Preview(Guid? id, IReadOnlyDictionary<Guid, ChatMessage>? lookup)
+        {
+            if (id is not { } value || lookup is null || !lookup.TryGetValue(value, out var source))
+            {
+                return null;
+            }
+
+            return new ChatMessagePreviewDto(source.Id, source.SenderUserId,
+                source.IsDeleted ? string.Empty : source.Text, source.IsDeleted);
+        }
+
+        return new ChatMessageDto(x.Id, x.ConversationId, x.SenderUserId,
+            x.Text, x.CreationTime, x.ReplyToMessageId, x.ForwardedFromMessageId, x.IsPinned, x.IsDeleted,
+            x.Attachments.Select(a => new MessageAttachmentDto(a.Id, a.FileName, a.ContentType, a.Size, a.Kind, a.MessageId)).ToArray(),
+            Preview(x.ReplyToMessageId, related),
+            Preview(x.ForwardedFromMessageId, related));
+    }
+
     private string? CurrentCorrelationId() => CurrentUnitOfWork?.Items.TryGetValue("CorrelationId", out var value) == true ? value?.ToString() : null;
 }
 

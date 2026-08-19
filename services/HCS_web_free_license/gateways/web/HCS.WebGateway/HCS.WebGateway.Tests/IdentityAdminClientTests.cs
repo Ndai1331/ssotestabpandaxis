@@ -171,6 +171,28 @@ public sealed class IdentityAdminClientTests
     }
 
     [Fact]
+    public async Task Reads_user_roles_from_the_identity_list_result()
+    {
+        var userId = Guid.NewGuid();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new
+            {
+                items = new[]
+                {
+                    new { id = Guid.NewGuid(), name = "bacsi", isDefault = false, isStatic = false, isPublic = true }
+                }
+            })
+        });
+        var client = CreateClient(handler);
+
+        var roles = await client.GetUserRolesAsync(userId);
+
+        Assert.Equal($"/api/identity/users/{userId:D}/roles", handler.Request!.RequestUri!.PathAndQuery);
+        Assert.Equal(["bacsi"], roles.Select(role => role.Name));
+    }
+
+    [Fact]
     public async Task Maps_identity_conflict_to_typed_exception()
     {
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.Conflict)

@@ -129,4 +129,15 @@
             URL.revokeObjectURL(url);
         }
     };
+
+    window.hcsDownloadBytes = function (fileName, contentType, bytes) {
+        var url = window.hcsCreateObjectUrl(contentType, bytes);
+        var anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = fileName || "file";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+    };
 })();

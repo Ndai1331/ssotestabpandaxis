@@ -23,6 +23,11 @@ public sealed class DocumentsController(IDocumentAppService documents, DocumentF
     public Task<DocumentDto> Assign(Guid id, AssignDocumentRequest input, CancellationToken cancellationToken) => documents.AssignAsync(id, input, cancellationToken);
     [HttpPost("{id:guid}/submit"), Authorize(Policy = DocumentPermissions.Update)]
     public Task<DocumentDto> Submit(Guid id, CancellationToken cancellationToken) => documents.SubmitAsync(id, cancellationToken);
+    [HttpPost("{id:guid}/send"), Authorize(Policy = DocumentPermissions.Assign)]
+    public Task<DocumentDto> Send(Guid id, SendDocumentRequest input, CancellationToken cancellationToken) =>
+        documents.SendAsync(id, input, cancellationToken);
+    [HttpPost("{id:guid}/revoke"), Authorize(Policy = DocumentPermissions.Assign)]
+    public Task<DocumentDto> Revoke(Guid id, CancellationToken cancellationToken) => documents.RevokeAsync(id, cancellationToken);
     [HttpPost("{id:guid}/files"), Authorize(Policy = DocumentPermissions.ManageFiles)]
     [RequestSizeLimit(DocumentFileService.MaxFileSize)]
     public async Task<DocumentFileDto> Upload(Guid id, IFormFile file, CancellationToken cancellationToken)

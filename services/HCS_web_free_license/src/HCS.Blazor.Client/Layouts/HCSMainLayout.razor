@@ -1,11 +1,11 @@
 @inherits LayoutComponentBase
 @using HCS.Localization
 @using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.Localization
 @using Volo.Abp.BlazoriseUI.Components
-@inject IHttpClientFactory HttpClientFactory
+@inject IConfiguration Configuration
 @inject NavigationManager Navigation
-@inject BffAuthenticationStateProvider AuthenticationStateProvider
 @inject IStringLocalizer<HCSResource> Localizer
 @implements IDisposable
 
@@ -64,7 +64,7 @@
                                 </div>
                                 <a href="/workspace" @onclick="CloseMobileNav"><i class="fa fa-house" aria-hidden="true"></i> @Localizer["Auth:Workspace"]</a>
                                 <a href="https://auth.hcs.localhost/Account/Manage" target="_blank" rel="noopener"><i class="fa fa-user-gear" aria-hidden="true"></i> @Localizer["Auth:ManageAccount"]</a>
-                                <button class="hcs-user-menu__action hcs-user-menu__action--danger" type="button" @onclick="LogoutAsync" disabled="@isLoggingOut">
+                                <button class="hcs-user-menu__action hcs-user-menu__action--danger" type="button" @onclick="Logout" disabled="@isLoggingOut">
                                     <i class="fa @(isLoggingOut ? "fa-spinner fa-spin" : "fa-right-from-bracket")" aria-hidden="true"></i>
                                     @(isLoggingOut ? Localizer["Auth:LogoutProgress"] : Localizer["Auth:Logout"])
                                 </button>
@@ -240,9 +240,9 @@
             <div class="hcs-nav-menu__panel" role="menu">
                 @foreach (var item in items)
                 {
-                    <NavLink href="@item.Href" @onclick="CloseMobileNav">
+                    <a href="@item.Href" class="@(IsMenuHrefActive(item.Href) ? "active" : null)" @onclick="CloseMobileNav">
                         <i class="fa @item.Icon" aria-hidden="true"></i>@item.Text
-                    </NavLink>
+                    </a>
                 }
             </div>
         </div>
@@ -299,7 +299,22 @@
         return string.Equals(current, path, StringComparison.OrdinalIgnoreCase);
     }
 
-    private async Task LogoutAsync()
+    private bool IsMenuHrefActive(string href)
+    {
+        var current = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('#')[0];
+        if (href.Contains("sourceType=", StringComparison.OrdinalIgnoreCase))
+        {
+            if (current.Contains("/my-documents", StringComparison.OrdinalIgnoreCase))
+                return href.Contains("sourceType=1", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(current, href, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var hrefPath = href.Split('?', '#')[0].TrimEnd('/');
+        var currentPath = current.Split('?', '#')[0].TrimEnd('/');
+        return string.Equals(currentPath, hrefPath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void Logout()
     {
         if (isLoggingOut)
         {
@@ -310,24 +325,13 @@
         logoutError = null;
         try
         {
-            using var client = HttpClientFactory.CreateClient("HCS.Bff");
-            using var response = await client.PostAsync("bff/logout", content: null);
-            if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
-            {
-                logoutError = Localizer["Auth:LogoutError"];
-                return;
-            }
-
-            await AuthenticationStateProvider.RefreshAsync();
-            Navigation.NavigateTo("/login", forceLoad: true);
+            var loginUrl = new Uri(new Uri(Navigation.BaseUri, UriKind.Absolute), "login").AbsoluteUri;
+            Navigation.NavigateTo(BffLogoutUrlBuilder.Build(Configuration, loginUrl), forceLoad: true);
         }
         catch
         {
-            logoutError = Localizer["Auth:LogoutError"];
-        }
-        finally
-        {
             isLoggingOut = false;
+            logoutError = Localizer["Auth:LogoutError"];
         }
     }
 

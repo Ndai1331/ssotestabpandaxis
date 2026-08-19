@@ -54,6 +54,23 @@
     <div class="card-body p-5">
         <h4>@L["Login"]</h4>
 
+        @if (Model.VisibleAlerts.Any())
+        {
+            <div class="hcs-login-alerts" role="alert" aria-live="assertive">
+                @foreach (var alert in Model.VisibleAlerts)
+                {
+                    var alertClass = alert.Type.ToString().ToLowerInvariant();
+                    <div class="alert alert-@alertClass hcs-login-alert mb-3">
+                        @if (!string.IsNullOrWhiteSpace(alert.Title))
+                        {
+                            <div class="alert-heading">@alert.Title</div>
+                        }
+                        @alert.Text
+                    </div>
+                }
+            </div>
+        }
+
         @if (languages.Count > 1 && currentLanguage != null)
         {
             <div class="mb-3 hcs-login-language">
@@ -91,6 +108,7 @@
             <form method="post" class="mt-2">
                 <input type="hidden" asp-for="ReturnUrl" />
                 <input type="hidden" asp-for="ReturnUrlHash" />
+                <div asp-validation-summary="ModelOnly" class="text-danger hcs-login-validation-summary"></div>
                 <div class="mb-3">
                     <label asp-for="LoginInput.UserNameOrEmailAddress" class="form-label"></label>
                     <input asp-for="LoginInput.UserNameOrEmailAddress" class="form-control" />

@@ -49,20 +49,24 @@
             <Card>
                 <CardHeader><strong>@L["Feature:Members"]</strong></CardHeader>
                 <CardBody>
-                    <Field><FieldLabel>@L["Feature:Member"]</FieldLabel>
-                        <CatalogSelect2 Value="memberUserId"
-                                        ValueChanged="value => memberUserId = value"
-                                        Placeholder="@L["Chat:SelectContacts"]"
-                                        SelectedText="@Name(memberUserId)"
-                                        Search="SearchContactsAsync" />
-                    </Field>
-                    <Field><FieldLabel>@L["Feature:Role"]</FieldLabel>
-                        <Select TValue="string" @bind-Value="memberRole">
-                            <SelectItem Value="@("Member")">Member</SelectItem>
-                            <SelectItem Value="@("Manager")">Manager</SelectItem>
-                        </Select>
-                    </Field>
-                    <Button Color="Color.Primary" Clicked="AddMemberAsync">@L["Feature:AddMember"]</Button>
+                    <div class="hcs-form-row">
+                        <Field>
+                            <FieldLabel>@L["Feature:Member"]</FieldLabel>
+                            <CatalogSelect2 Value="memberUserId"
+                                            ValueChanged="value => memberUserId = value"
+                                            Placeholder="@L["Chat:SelectContacts"]"
+                                            SelectedText="@Name(memberUserId)"
+                                            Search="SearchContactsAsync" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>@L["Feature:Role"]</FieldLabel>
+                            <Select TValue="string" @bind-Value="memberRole">
+                                <SelectItem Value="@("Member")">Member</SelectItem>
+                                <SelectItem Value="@("Manager")">Manager</SelectItem>
+                            </Select>
+                        </Field>
+                        <Button Color="Color.Primary" Clicked="AddMemberAsync">@L["Feature:AddMember"]</Button>
+                    </div>
                     @if (detail.Members.Count == 0) { <p class="mt-3 mb-0">@L["Feature:NoMembers"]</p> }
                     else {
                         <ul class="list-group mt-3">
@@ -109,8 +113,8 @@
 
     private RenderFragment ProjectFields(bool editableCode) => @<text>
         <div class="hcs-form-row">
-            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><TextInput @bind-Value="projectForm.Code" Disabled="@(!editableCode)" Autocomplete="off" name="hcsProjectCode" /></Field>
-            <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><TextInput @bind-Value="projectForm.Name" Autocomplete="off" name="hcsProjectName" /></Field>
+            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Code" Name="hcsProjectDetailCode" MaxLength="64" Disabled="@(!editableCode)" /></Field>
+            <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Name" Name="hcsProjectDetailName" /></Field>
         </div>
         <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="projectForm.Description" autocomplete="off"></textarea></Field>
         <div class="hcs-form-row hcs-form-row--equal">

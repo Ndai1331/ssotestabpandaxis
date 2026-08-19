@@ -214,7 +214,7 @@
             }
             <Field>
                 <FieldLabel>@L["Roles:Name"] *</FieldLabel>
-                <TextInput @bind-Value="roleForm.Name" Placeholder='@L["Roles:NamePlaceholder"]' Autofocus="true" MaxLength="256" Autocomplete="off" name="hcsRoleName" />
+                <HcsIsolatedTextInput @bind-Value="roleForm.Name" Name="hcsRoleName" Autofocus="true" Placeholder='@L["Roles:NamePlaceholder"].Value' />
             </Field>
             <div class="hcs-role-create-flags">
                 <Check TValue="bool" @bind-Checked="roleForm.IsDefault">@L["Roles:Default"]</Check>

@@ -19,6 +19,7 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
     public event Func<Task>? Changed;
     public event Func<ChatMessageDto, Task>? MessageReceived;
+    public event Func<Guid, Guid, Task>? MessageDeleted;
     public event Func<HubConnectionState, Task>? StatusChanged;
 
     public Guid? ActiveConversationId { get; set; }
@@ -49,7 +50,7 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
                     .Build();
 
                 connection.On<ChatMessageDto>("ReceiveMessage", NotifyMessageAsync);
-                connection.On<object>("MessageDeleted", _ => NotifyChangedAsync());
+                connection.On<ChatDeletedPayload>("MessageDeleted", NotifyDeletedAsync);
                 connection.Reconnecting += _ => NotifyStatusAsync(HubConnectionState.Reconnecting);
                 connection.Reconnected += _ => NotifyStatusAsync(HubConnectionState.Connected);
                 connection.Closed += _ => NotifyStatusAsync(HubConnectionState.Disconnected);
@@ -99,6 +100,20 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
         await NotifyChangedAsync();
     }
 
+    private async Task NotifyDeletedAsync(ChatDeletedPayload payload)
+    {
+        var deleted = MessageDeleted;
+        if (deleted is not null)
+        {
+            foreach (var handler in deleted.GetInvocationList().Cast<Func<Guid, Guid, Task>>())
+            {
+                await handler(payload.ConversationId, payload.MessageId);
+            }
+        }
+
+        await NotifyChangedAsync();
+    }
+
     private async Task NotifyChangedAsync()
     {
         var handlers = Changed;
@@ -126,4 +141,6 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
             await handler(state);
         }
     }
+
+    private sealed record ChatDeletedPayload(Guid ConversationId, Guid MessageId);
 }

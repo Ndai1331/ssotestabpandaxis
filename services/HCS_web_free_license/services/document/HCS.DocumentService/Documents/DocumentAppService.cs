@@ -16,16 +16,22 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.View);
         take = Math.Clamp(take, 1, 100);
         skip = Math.Max(skip, 0);
-        var query = Query();
+        var query = Query().Where(x => x.SourceType != DocumentSourceType.Workflow || sourceType == 3);
         query = sourceType switch
         {
-            1 => query.Where(x => x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
-            2 => query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) &&
-                                  !x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
+            1 => query.Where(x => x.SourceType == DocumentSourceType.Personal),
+            2 => query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId && a.IsCurrent &&
+                                  a.Responsibility == "VIEW" && a.StepCode == null)),
             0 when !DocumentAccess.IsElevated(principal) =>
-                query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) ||
-                                 x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
-            0 => query,
+                query.Where(x => x.SourceType == DocumentSourceType.Archive &&
+                                 (x.Assignments.Any(a => a.AssigneeUserId == userId) ||
+                                  x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))),
+            0 => query.Where(x => x.SourceType == DocumentSourceType.Archive),
+            3 when !DocumentAccess.IsElevated(principal) =>
+                query.Where(x => x.SourceType == DocumentSourceType.Workflow &&
+                                 (x.Assignments.Any(a => a.AssigneeUserId == userId) ||
+                                  x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))),
+            3 => query.Where(x => x.SourceType == DocumentSourceType.Workflow),
             _ when mine || !DocumentAccess.IsElevated(principal) =>
                 query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) ||
                                  x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
@@ -50,7 +56,8 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         var userId = DocumentAccess.RequireUser(principal);
         DocumentAccess.RequirePermission(principal, DocumentPermissions.Create);
         var now = DateTime.UtcNow;
-        var document = new DocumentAggregate(Guid.NewGuid(), input.Number, input.Title, input.Description, userId, now);
+        var sourceType = input.SourceType is DocumentSourceType.Personal ? DocumentSourceType.Personal : DocumentSourceType.Archive;
+        var document = new DocumentAggregate(Guid.NewGuid(), input.Number, input.Title, input.Description, userId, now, sourceType);
         if (input.DocumentTypeId is not null || input.SectorId is not null || input.UrgencyId is not null || input.ConfidentialityId is not null)
             document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, now);
         db.Documents.Add(document);
@@ -117,6 +124,32 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         return Map(document);
     }
 
+    public async Task<DocumentDto> SendAsync(Guid id, SendDocumentRequest input, CancellationToken cancellationToken = default)
+    {
+        var principal = Principal;
+        var userId = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
+        var document = await LoadAsync(id, cancellationToken);
+        DocumentAccess.EnsureCanManage(document, userId, principal);
+        document.Send(input.ReceiverUserId, input.OrganizationUnitId, userId, DateTime.UtcNow);
+        AddAudit("DocumentSent", id, 200, input.ReceiverUserId?.ToString() ?? input.OrganizationUnitId?.ToString(), DateTime.UtcNow);
+        await db.SaveChangesAsync(cancellationToken);
+        return Map(document);
+    }
+
+    public async Task<DocumentDto> RevokeAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var principal = Principal;
+        var userId = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
+        var document = await LoadAsync(id, cancellationToken);
+        DocumentAccess.EnsureCanManage(document, userId, principal);
+        document.RevokeInbox(userId, DateTime.UtcNow);
+        AddAudit("DocumentRevoked", id, 200, null, DateTime.UtcNow);
+        await db.SaveChangesAsync(cancellationToken);
+        return Map(document);
+    }
+
     private IQueryable<DocumentAggregate> Query() => db.Documents.AsNoTracking()
         .Include(x => x.Files).Include(x => x.Assignments).Include(x => x.History);
     private async Task<DocumentAggregate> LoadAsync(Guid id, CancellationToken cancellationToken) =>
@@ -138,7 +171,8 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
     }
     internal static DocumentDto Map(DocumentAggregate x) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
         x.DocumentTypeId, x.SectorId, x.UrgencyId, x.ConfidentialityId,
-        x.Files.Select(f => new DocumentFileDto(f.Id, f.FileName, f.ContentType, f.Size, f.Sha256, f.CreationTime)).ToList(),
-        x.Assignments.Select(a => new DocumentAssignmentDto(a.Id, a.AssigneeUserId, a.Responsibility, a.AssignedAt)).ToList(),
-        x.History.OrderBy(h => h.OccurredAt).Select(h => new DocumentHistoryDto(h.Id, h.Action, h.ActorUserId, h.Detail, h.OccurredAt)).ToList(), x.CreationTime);
+        x.Files.Select(f => new DocumentFileDto(f.Id, f.FileName, f.ContentType, f.Size, f.Sha256, f.CreationTime, f.PairedFileId)).ToList(),
+        x.Assignments.Select(a => new DocumentAssignmentDto(a.Id, a.AssigneeUserId, a.Responsibility, a.AssignedAt, a.IsCurrent, a.StepCode)).ToList(),
+        x.History.OrderBy(h => h.OccurredAt).Select(h => new DocumentHistoryDto(h.Id, h.Action, h.ActorUserId, h.Detail, h.OccurredAt)).ToList(),
+        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId);
 }

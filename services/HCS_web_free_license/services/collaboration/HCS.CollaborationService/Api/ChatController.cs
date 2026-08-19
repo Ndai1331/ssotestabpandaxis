@@ -59,7 +59,7 @@ public sealed class ChatController(CollaborationAppService app, CollaborationAtt
     public Task<int> Unread(CancellationToken ct) => app.GetTotalUnreadAsync(ct);
 
     [HttpGet("conversations/{conversationId:guid}/messages")]
-    public Task<PagedMessagesDto> Search(Guid conversationId, [FromQuery] string? keyword, [FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default) => app.SearchMessagesAsync(conversationId, keyword, skip, take, ct);
+    public Task<PagedMessagesDto> Search(Guid conversationId, [FromQuery] string? keyword, [FromQuery] int skip = 0, [FromQuery] int take = 50, [FromQuery] bool pinnedOnly = false, CancellationToken ct = default) => app.SearchMessagesAsync(conversationId, keyword, skip, take, pinnedOnly, ct);
 
     [HttpGet("conversations/{conversationId:guid}/messages/{messageId:guid}/context")]
     public Task<MessageContextDto> Context(Guid conversationId, Guid messageId, [FromQuery] int before = 20, [FromQuery] int after = 20, CancellationToken ct = default) => app.GetMessageContextAsync(conversationId, messageId, before, after, ct);

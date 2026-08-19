@@ -3,6 +3,20 @@ namespace HCS.DocumentService.Workflows;
 public enum WorkflowInstanceStatus { Running, Completed, Rejected, Cancelled, Returned }
 public enum ApprovalTaskStatus { Pending, Approved, Rejected, Cancelled, Returned }
 
+public static class WorkflowSignModes
+{
+    public const string Sequential = "SEQUENTIAL";
+    public const string Parallel = "PARALLEL";
+
+    public static string Normalize(string? value)
+    {
+        var normalized = string.IsNullOrWhiteSpace(value) ? Sequential : value.Trim().ToUpperInvariant();
+        if (normalized is not (Sequential or Parallel))
+            throw new ArgumentException("Invalid workflow sign mode.");
+        return normalized;
+    }
+}
+
 public static class WorkflowStepAssigneeTypes
 {
     public const string SpecificUser = "SpecificUser";
@@ -27,25 +41,29 @@ public sealed record WorkflowStepAssignmentDto(string AssigneeType, Guid? RoleId
     IReadOnlyList<Guid> DepartmentIds);
 
 public sealed record CreateWorkflowDefinitionRequest(string Code, string Name, IReadOnlyList<WorkflowStepInput> Steps,
-    Guid? KindId = null, string? Description = null, bool IsActive = true);
+    Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = WorkflowSignModes.Sequential);
 public sealed record UpdateWorkflowDefinitionRequest(string Name, IReadOnlyList<WorkflowStepInput> Steps,
-    Guid? KindId = null, string? Description = null, bool IsActive = true);
+    Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = WorkflowSignModes.Sequential);
 public sealed record WorkflowStepDto(Guid Id, string Code, string Name, int Order, string RequiredPermission,
     string Type, Guid? AssigneeUserId, string AssigneeType, Guid? RoleId, IReadOnlyList<Guid> UserIds,
     IReadOnlyList<Guid> DepartmentIds, int? SlaDays, bool AllowReturn);
 public sealed record WorkflowDefinitionDto(Guid Id, string Code, string Name, Guid? KindId, string? Description,
-    bool IsActive, IReadOnlyList<WorkflowStepDto> Steps, DateTime CreationTime);
+    bool IsActive, IReadOnlyList<WorkflowStepDto> Steps, DateTime CreationTime,
+    string SignMode = WorkflowSignModes.Sequential);
 public sealed record WorkflowKindDto(Guid Id, string Code, string Name, string? Description, bool IsActive, DateTime CreationTime);
 public sealed record CreateWorkflowKindRequest(string Code, string Name, string? Description, bool IsActive = true);
 public sealed record UpdateWorkflowKindRequest(string Name, string? Description, bool IsActive);
-public sealed record CreateWorkflowTemplateRequest(string Code, string Name, Guid DefinitionId, int Version, string TemplateJson);
+public sealed record CreateWorkflowTemplateRequest(string Code, string Name, Guid DefinitionId, int Version, string TemplateJson, string OutputFormat = "PDF");
+public sealed record UpdateWorkflowTemplateRequest(string Name, string TemplateJson, string OutputFormat = "PDF");
 public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid DefinitionId, int Version, bool IsActive,
-    DateTime CreationTime, Guid? WordFileId, string? WordFileName, Guid? PdfFileId, string? PdfFileName);
+    DateTime CreationTime, Guid? WordFileId, string? WordFileName, Guid? PdfFileId, string? PdfFileName,
+    string TemplateJson = "{}", string OutputFormat = "PDF");
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, IReadOnlyList<Guid> DepartmentIds, IReadOnlyList<Guid> UserIds);
 public sealed record StartWorkflowRequest(Guid DocumentId, Guid DefinitionId, string IdempotencyKey,
     IReadOnlyList<WorkflowStepSignerSelection>? Signers = null,
-    IReadOnlyList<WorkflowViewScopeSelection>? ViewScopes = null);
+    IReadOnlyList<WorkflowViewScopeSelection>? ViewScopes = null,
+    bool UseTemplateFile = false);
 public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey, bool Return = false);
 public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy,
     DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt);
@@ -70,6 +88,7 @@ public interface IWorkflowAppService
     Task UpdateDefinitionAsync(Guid id, UpdateWorkflowDefinitionRequest input, CancellationToken cancellationToken = default);
     Task DeleteDefinitionAsync(Guid id, CancellationToken cancellationToken = default);
     Task<WorkflowTemplateDto> CreateTemplateAsync(CreateWorkflowTemplateRequest input, CancellationToken cancellationToken = default);
+    Task<WorkflowTemplateDto> UpdateTemplateAsync(Guid id, UpdateWorkflowTemplateRequest input, CancellationToken cancellationToken = default);
     Task<WorkflowTemplateDto> SetTemplateActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken = default);
     Task<WorkflowTemplateDto> UploadTemplateFileAsync(Guid id, string kind, string fileName, string contentType,
         Stream content, long size, CancellationToken cancellationToken = default);

@@ -14,6 +14,7 @@ public sealed class WorkflowTests
         Assert.Empty(definition.Steps);
         definition.ReplaceSteps([]);
         Assert.Empty(definition.Steps);
+        Assert.Equal(WorkflowSignModes.Sequential, definition.SignMode);
         Assert.Throws<InvalidOperationException>(() =>
             new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-empty", Now));
     }
@@ -121,6 +122,10 @@ public sealed class WorkflowTests
         Assert.Equal("form.pdf", template.PdfFileName);
         Assert.Equal(wordId, template.WordFileId);
         Assert.Equal("form.docx", template.WordFileName);
+        template.UpdateContent("Incoming v2", """{"title":"form"}""", "PDF");
+        Assert.Equal("Incoming v2", template.Name);
+        Assert.Equal("PDF", template.OutputFormat);
+        Assert.Contains("title", template.TemplateJson);
     }
 
     [Fact]

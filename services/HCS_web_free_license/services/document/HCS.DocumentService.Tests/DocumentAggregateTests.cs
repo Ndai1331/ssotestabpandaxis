@@ -63,4 +63,55 @@ public sealed class DocumentAggregateTests
         document.CompleteFileDeletion(file.Id, null, Now);
         Assert.Empty(document.Files);
     }
+
+    [Fact]
+    public void Send_creates_view_assignment_and_revoke_hides_inbox()
+    {
+        var document = Create();
+        var from = Guid.NewGuid();
+        var to = Guid.NewGuid();
+        document.Send(to, null, from, Now);
+        Assert.Equal(from, document.FromUserId);
+        Assert.Contains(document.Assignments, a => a.AssigneeUserId == to && a.Responsibility == "VIEW" && a.IsCurrent);
+        document.RevokeInbox(from, Now);
+        Assert.All(document.Assignments.Where(a => a.Responsibility == "VIEW"), a => Assert.False(a.IsCurrent));
+    }
+
+    [Fact]
+    public void Duplicate_as_workflow_keeps_parent_and_classification()
+    {
+        var document = Create();
+        var typeId = Guid.NewGuid();
+        document.Classify(typeId, null, null, null, null, Now);
+        var copy = document.DuplicateAsWorkflow(Guid.NewGuid(), "CV-001-WF", null, Now);
+        Assert.Equal(DocumentSourceType.Workflow, copy.SourceType);
+        Assert.Equal(document.Id, copy.ParentDocumentId);
+        Assert.Equal(typeId, copy.DocumentTypeId);
+        Assert.NotEqual(document.Id, copy.Id);
+    }
+
+    [Fact]
+    public void Reviewer_can_be_assigned_while_the_document_is_in_review()
+    {
+        var document = Create();
+        document.AddFile(Guid.NewGuid(), "a.pdf", "application/pdf", 10, new string('a', 64), "documents/a", null, Now);
+        document.Submit(null, Now);
+        document.StartReview(null, Now);
+        var signer = Guid.NewGuid();
+        document.Assign(Guid.NewGuid(), signer, "sign", null, Now, "sign");
+        Assert.Contains(document.Assignments, a => a.AssigneeUserId == signer && a.StepCode == "sign");
+    }
+
+    [Fact]
+    public void Word_and_pdf_files_can_be_paired()
+    {
+        var document = Create();
+        var word = document.AddFile(Guid.NewGuid(), "a.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 12, new string('b', 64), "documents/a.docx", null, Now);
+        var pdf = document.AddFile(Guid.NewGuid(), "a.pdf", "application/pdf", 20, new string('c', 64), "documents/a.pdf", null, Now);
+        word.SetPairedFileId(pdf.Id);
+        pdf.SetPairedFileId(word.Id);
+        Assert.Equal(pdf.Id, word.PairedFileId);
+        Assert.Equal(word.Id, pdf.PairedFileId);
+    }
 }

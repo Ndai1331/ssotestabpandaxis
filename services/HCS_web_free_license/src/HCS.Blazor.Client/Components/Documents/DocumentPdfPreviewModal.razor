@@ -1,0 +1,84 @@
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<Modal @ref="modal" Size="ModalSize.ExtraLarge">
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@title</ModalTitle>
+            <CloseButton Clicked="HideAsync" />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            @if (isLoading)
+            {
+                <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+            }
+            else if (!string.IsNullOrWhiteSpace(error))
+            {
+                <p class="text-muted mb-0">@error</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(pdfUrl))
+            {
+                <iframe src="@pdfUrl" title="@L["Work:PdfPreview"]" class="hcs-pdf-frame"></iframe>
+            }
+        </ModalBody>
+        <PdfViewerTaskActionsFooter OnClose="HideAsync" ShowAssignTask="ShowAssignTask" OnAssignTask="OnAssignTask" />
+    </ModalContent>
+</Modal>
+@code {
+    [Parameter] public bool ShowAssignTask { get; set; }
+    [Parameter] public EventCallback OnAssignTask { get; set; }
+
+    private Modal? modal;
+    private string title = "";
+    private string? pdfUrl;
+    private string? error;
+    private bool isLoading;
+    public Guid? DocumentId { get; private set; }
+
+    public async Task ShowAsync(Guid documentId, IReadOnlyList<DocumentFileDto> files, string? documentTitle = null)
+    {
+        DocumentId = documentId;
+        title = string.IsNullOrWhiteSpace(documentTitle) ? L["Work:PdfPreview"] : documentTitle;
+        error = null;
+        await RevokeAsync();
+        if (modal is not null) await modal.Show();
+        var file = DocumentFilePick.PreferPdf(files);
+        if (file is null)
+        {
+            error = L["Catalog:EmptyTitle"];
+            return;
+        }
+        isLoading = true;
+        try
+        {
+            var content = await Documents.GetFileContentAsync(documentId, file.Id);
+            var type = string.IsNullOrWhiteSpace(content.ContentType) ? "application/pdf" : content.ContentType;
+            pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", type, content.Bytes);
+        }
+        catch (Exception ex)
+        {
+            error = MapBffError(ex);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public async Task HideAsync()
+    {
+        await RevokeAsync();
+        if (modal is not null) await modal.Hide();
+    }
+
+    private async Task RevokeAsync()
+    {
+        if (string.IsNullOrWhiteSpace(pdfUrl)) return;
+        await Js.InvokeVoidAsync("hcsRevokeObjectUrl", pdfUrl);
+        pdfUrl = null;
+    }
+
+    public async ValueTask DisposeAsync() => await RevokeAsync();
+}

@@ -6,6 +6,43 @@ updated: 2026-07-25
 
 # Wiki Log
 
+## 2026-08-19 — HCS Free document/signing UI parity
+- Scope: `HCS_web_free_license` document/workflow/signing UI parity
+- LibreOffice: convert DOCX→PDF trên DocumentService (`INSTALL_LIBREOFFICE=true` chỉ image `document`; thiếu soffice thì lưu Word, không crash)
+- SourceType reload: document create/send/revoke/workflow; PDF preview blob; Giao việc from PDF
+- Wizard: 2-col Code+Name; step create/edit table; workflow step assignment; SignMode SEQUENTIAL/PARALLEL; WorkflowInfoModal
+- Signing: tab All/SentToMe/SentByMe; colors, Excel CSV export; Approve/Return/Reject
+- Tests: DocumentService.Tests 43/43; verified workflow sign mode persist
+- Deploy: rebuild `--build document` (LibreOffice ARG) + `--build blazor`; hard refresh after container restart
+
+## 2026-08-19 — HCS Tab copy catalog Mã→Tên
+- Symptom: modal Loại văn bản `/document-types` gõ Mã thì Tên nhận cùng ký tự (Blazorise Immediate=true)
+- Cause: Blazorise TextInput liền kề; `:event="onchange"` thì không bind khi Save
+- Fix: `HcsIsolatedTextInput` native `oninput`; form catalog/workflow/survey/project/admin dùng component này; search vẫn TextInput
+- Deploy: `docker compose up -d --build blazor`; hard refresh (Ctrl+Shift+R)
+
+## 2026-08-19 — DocumentService không lưu loại quy trình
+- Symptom: `POST /api/workflows/kinds` 500 `Invalid workflow value.`
+- Audit payload: `code:"" name:"" description:"Quy trình nghỉ phép "`
+- Cause: `@bind-Value:event="onchange"` trên Blazorise TextInput không map `ValueChanged`
+- Fix: bỏ `:event="onchange"`, giữ `Immediate=false`; validate Code/Name trước khi gọi API
+- Deploy: `docker compose up -d --build blazor`; hard refresh
+
+## 2026-08-19 — HCS Free document/workflow/calendar UI parity
+- Scope: `HCS_web_free_license` — port luồng license, không copy Razor thương mại
+- Tab-fill: `@bind-Value:event="onchange"` + `Immediate="false"` trên cặp Code/Name
+- Calendar: `isListView` toggle; lưới tháng class `hcs-calendar-grid` nền `#fff`
+- Documents: create = `/document-detail?sourceType=N`; preview iframe blob; send/revoke; start workflow duplicate `SourceType=3`
+- Signing: filter All/SentToMe/SentByMe; modal Approve/Return/Reject + PDF
+- Workflows: modal New → wizard 4 bước; modal step + assignment; SignMode SEQUENTIAL/PARALLEL (persist; engine vẫn sequential)
+- Tests: DocumentService.Tests 40/40
+
+## 2026-08-19 — HCS DocumentService PendingModelChangesWarning
+- Symptom: `hcs-community-document-1` restart loop; `MigrateAsync` throws EF Core 10 `PendingModelChangesWarning`
+- Cause: `20260819120000_AddWorkflowKindsAndStepAssignments.cs` handwritten, snapshot not updated (WorkflowKind, assignment fields, DueAt, ViewScopesJson)
+- Fix: regenerate `DocumentServiceDbContextModelSnapshot.cs`; add `MigrationSnapshotTests`; do not suppress warning / do not add duplicate schema migration
+- Verify: `dotnet test` DocumentService.Tests 38/38; rebuild container `document`
+
 ## 2026-07-25 — Directus v11 SSO lab cook COMPLETED
 - Plan: `plans/260725-1726-directus-v11-sso-lab/` DONE ✅ (4 phases, ~5h cook)
 - Evidence: Phase 1 (artifacts ported), Phase 2 (image+stack+roles), Phase 3 (OIDC login OK + gate deny log), Phase 4 (docs updated)
