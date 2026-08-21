@@ -60,6 +60,9 @@ public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid
     string TemplateJson = "{}", string OutputFormat = "PDF");
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, IReadOnlyList<Guid> DepartmentIds, IReadOnlyList<Guid> UserIds);
+public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null);
+public sealed record WorkflowStepCandidateGroupDto(string StepCode, string StepName, string AssigneeType, Guid? RoleId,
+    IReadOnlyList<WorkflowAssigneeCandidateDto> Candidates);
 public sealed record StartWorkflowRequest(Guid DocumentId, Guid DefinitionId, string IdempotencyKey,
     IReadOnlyList<WorkflowStepSignerSelection>? Signers = null,
     IReadOnlyList<WorkflowViewScopeSelection>? ViewScopes = null,
@@ -93,6 +96,8 @@ public interface IWorkflowAppService
     Task<WorkflowTemplateDto> UploadTemplateFileAsync(Guid id, string kind, string fileName, string contentType,
         Stream content, long size, CancellationToken cancellationToken = default);
     Task<(string FileName, string ContentType, Stream Content)> OpenTemplateFileAsync(Guid id, string kind,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<WorkflowStepCandidateGroupDto>> GetAssigneeCandidatesAsync(Guid definitionId,
         CancellationToken cancellationToken = default);
     Task<WorkflowInstanceDto> StartAsync(StartWorkflowRequest input, CancellationToken cancellationToken = default);
     Task<WorkflowInstanceDto> DecideAsync(Guid taskId, DecideApprovalTaskRequest input, CancellationToken cancellationToken = default);

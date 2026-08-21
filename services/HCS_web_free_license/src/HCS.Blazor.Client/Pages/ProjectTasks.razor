@@ -21,7 +21,7 @@
             </Button>
         </div>
     </header>
-    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
             <Addons Class="hcs-catalog-search">
                 <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
@@ -94,7 +94,18 @@
                                 <div class="hcs-kanban-foot">
                                     <span class="hcs-kanban-avatar">@(string.IsNullOrWhiteSpace(task.Title) ? "?" : task.Title[..1])</span>
                                     <span>#@task.Id.ToString("N")[..8]</span>
-                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--edit" Clicked="() => OpenView(task)"><Icon Name="@IconName.Edit" /></Button>
+                                    <div class="hcs-kanban-menu" @onclick:stopPropagation="true" @ondragstart:preventDefault>
+                                        <Dropdown>
+                                            <DropdownToggle Color="Color.Light" Size="Size.Small" Class="hcs-kanban-menu__toggle" aria-label="@L["Catalog:Actions"]">
+                                                <i class="fa fa-ellipsis-h" aria-hidden="true"></i>
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem Clicked="() => OpenView(task)"><i class="fa fa-eye me-2"></i>@L["Work:ViewDetail"]</DropdownItem>
+                                                <DropdownDivider />
+                                                <DropdownItem Clicked="() => DeleteAsync(task)" TextColor="TextColor.Danger"><i class="fa fa-trash me-2"></i>@L["Catalog:Delete"]</DropdownItem>
+                                            </DropdownMenu>
+                                        </Dropdown>
+                                    </div>
                                 </div>
                             </article>
                         }

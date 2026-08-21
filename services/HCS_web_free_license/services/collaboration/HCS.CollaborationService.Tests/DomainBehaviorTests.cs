@@ -93,4 +93,23 @@ public sealed class DomainBehaviorTests
         device.Deactivate(); device.AssignTo(nextUser, "android");
         device.UserId.ShouldBe(nextUser); device.Token.ShouldBe("provider-token"); device.IsActive.ShouldBeTrue();
     }
+
+    [Fact]
+    public void Display_name_prefers_vietnamese_full_name_over_generic_user_fallback()
+    {
+        UserDisplayNames.FromPerson("Nguyễn", "Văn A", "doctor").ShouldBe("Nguyễn Văn A");
+        UserDisplayNames.FromPerson(null, null, "doctor", "User").ShouldBe("doctor");
+        UserDisplayNames.FirstReal("User", "HCS", "  ").ShouldBeEmpty();
+        UserDisplayNames.FirstReal("User", "Nguyễn Văn A").ShouldBe("Nguyễn Văn A");
+    }
+
+    [Fact]
+    public void Notification_copy_localizes_by_culture_and_keeps_legacy_plain_text()
+    {
+        var body = NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Nguyễn Văn A");
+        NotificationLocalization.Format(body, "vi").ShouldBe("1 tin nhắn mới từ Nguyễn Văn A");
+        NotificationLocalization.Format(body, "en").ShouldBe("1 new message from Nguyễn Văn A");
+        NotificationLocalization.Format(NotificationLocalization.ChatTitle, "en").ShouldBe("You have a new message");
+        NotificationLocalization.Format("Bạn có tin nhắn mới", "en").ShouldBe("Bạn có tin nhắn mới");
+    }
 }

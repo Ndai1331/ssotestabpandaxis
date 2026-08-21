@@ -25,6 +25,7 @@ public interface IKeycloakIdentityStore
     Task<KeycloakIdentityUser> CreateAsync(string userName, string verifiedEmail, CancellationToken cancellationToken);
     Task LinkAsync(KeycloakIdentityUser user, string subject, CancellationToken cancellationToken);
     Task ReconcileRolesAsync(KeycloakIdentityUser user, IReadOnlyList<string> roles, CancellationToken cancellationToken);
+    Task UpdateProfileNamesAsync(KeycloakIdentityUser user, string? givenName, string? surname, CancellationToken cancellationToken);
 }
 
 public sealed record KeycloakIdentityUser(Guid Id, string UserName, string? Email, object NativeUser);
@@ -64,6 +65,16 @@ public class KeycloakUserProvisioner(IKeycloakIdentityStore store) : IKeycloakUs
         }
 
         await store.ReconcileRolesAsync(user, profile.Roles, cancellationToken);
+        var givenName = profile.GivenName;
+        var surname = profile.FamilyName;
+        if (string.IsNullOrWhiteSpace(givenName)
+            && string.IsNullOrWhiteSpace(surname)
+            && !string.IsNullOrWhiteSpace(profile.FullName))
+        {
+            givenName = profile.FullName;
+        }
+
+        await store.UpdateProfileNamesAsync(user, givenName, surname, cancellationToken);
         return user.Id;
     }
 
@@ -139,6 +150,24 @@ public sealed class AbpKeycloakIdentityStore(
     {
         cancellationToken.ThrowIfCancellationRequested();
         Check(await userManager.SetRolesAsync(GetNativeUser(user), roles), "reconcile roles");
+    }
+
+    public async Task UpdateProfileNamesAsync(
+        KeycloakIdentityUser user,
+        string? givenName,
+        string? surname,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var native = GetNativeUser(user);
+        if (string.IsNullOrWhiteSpace(givenName) && string.IsNullOrWhiteSpace(surname))
+        {
+            return;
+        }
+
+        native.Name = string.IsNullOrWhiteSpace(givenName) ? native.Name : givenName.Trim();
+        native.Surname = string.IsNullOrWhiteSpace(surname) ? native.Surname : surname.Trim();
+        Check(await userManager.UpdateAsync(native), "update profile names");
     }
 
     private static AbpIdentityUser GetNativeUser(KeycloakIdentityUser user) =>

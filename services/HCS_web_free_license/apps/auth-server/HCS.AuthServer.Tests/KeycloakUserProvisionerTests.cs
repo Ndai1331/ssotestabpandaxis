@@ -38,6 +38,26 @@ public sealed class KeycloakUserProvisionerTests
     }
 
     [Fact]
+    public async Task Keycloak_Name_Claims_Are_Copied_Onto_The_Local_User()
+    {
+        var store = new InMemoryIdentityStore();
+        var provisioner = new KeycloakUserProvisioner(store);
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim("sub", "kc-name"),
+            new Claim("preferred_username", "doctor"),
+            new Claim("email", "doctor@benhvien.vn"),
+            new Claim("email_verified", "true"),
+            new Claim("given_name", "Văn A"),
+            new Claim("family_name", "Nguyễn")
+        ], "Keycloak"));
+
+        var userId = await provisioner.ProvisionAsync(principal, ["bacsi"]);
+
+        Assert.Equal(("Văn A", "Nguyễn"), store.Names[userId]);
+    }
+
+    [Fact]
     public async Task New_User_Requires_A_Verified_Email()
     {
         var provisioner = new KeycloakUserProvisioner(new InMemoryIdentityStore());
@@ -79,6 +99,7 @@ public sealed class KeycloakUserProvisionerTests
         public List<KeycloakIdentityUser> Users { get; } = [.. seed];
         public Dictionary<string, Guid> Links { get; } = new(StringComparer.Ordinal);
         public Dictionary<Guid, IReadOnlyList<string>> Roles { get; } = [];
+        public Dictionary<Guid, (string? GivenName, string? Surname)> Names { get; } = [];
 
         public static KeycloakIdentityUser User(string userName, string email) =>
             new(Guid.NewGuid(), userName, email, new object());
@@ -112,6 +133,16 @@ public sealed class KeycloakUserProvisionerTests
             CancellationToken cancellationToken)
         {
             Roles[user.Id] = roles.ToArray();
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateProfileNamesAsync(
+            KeycloakIdentityUser user,
+            string? givenName,
+            string? surname,
+            CancellationToken cancellationToken)
+        {
+            Names[user.Id] = (givenName, surname);
             return Task.CompletedTask;
         }
     }

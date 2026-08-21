@@ -4,12 +4,12 @@
 @implements IAsyncDisposable
 
 <Modal @ref="modal" Size="ModalSize.ExtraLarge">
-    <ModalContent Centered Class="hcs-catalog-modal">
+    <ModalContent Centered Class="hcs-catalog-modal hcs-catalog-modal--pdf">
         <ModalHeader Class="hcs-catalog-modal__header">
             <ModalTitle>@title</ModalTitle>
             <CloseButton Clicked="HideAsync" />
         </ModalHeader>
-        <ModalBody Class="hcs-catalog-modal__body">
+        <ModalBody Class="hcs-catalog-modal__body hcs-catalog-modal__body--pdf">
             @if (isLoading)
             {
                 <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
@@ -20,7 +20,7 @@
             }
             else if (!string.IsNullOrWhiteSpace(pdfUrl))
             {
-                <iframe src="@pdfUrl" title="@L["Work:PdfPreview"]" class="hcs-pdf-frame"></iframe>
+                <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(35)" />
             }
         </ModalBody>
         <PdfViewerTaskActionsFooter OnClose="HideAsync" ShowAssignTask="ShowAssignTask" OnAssignTask="OnAssignTask" />
@@ -47,15 +47,14 @@
         var file = DocumentFilePick.PreferPdf(files);
         if (file is null)
         {
-            error = L["Catalog:EmptyTitle"];
+            error = L["Work:NoPdfAvailable"];
             return;
         }
         isLoading = true;
         try
         {
             var content = await Documents.GetFileContentAsync(documentId, file.Id);
-            var type = string.IsNullOrWhiteSpace(content.ContentType) ? "application/pdf" : content.ContentType;
-            pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", type, content.Bytes);
+            pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", "application/pdf", content.Bytes);
         }
         catch (Exception ex)
         {
@@ -75,10 +74,18 @@
 
     private async Task RevokeAsync()
     {
-        if (string.IsNullOrWhiteSpace(pdfUrl)) return;
-        await Js.InvokeVoidAsync("hcsRevokeObjectUrl", pdfUrl);
+        var previous = pdfUrl;
         pdfUrl = null;
+        if (string.IsNullOrWhiteSpace(previous)) return;
+        try { await Js.InvokeVoidAsync("hcsRevokeObjectUrl", previous); }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
     }
 
-    public async ValueTask DisposeAsync() => await RevokeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        try { await RevokeAsync(); }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
+    }
 }

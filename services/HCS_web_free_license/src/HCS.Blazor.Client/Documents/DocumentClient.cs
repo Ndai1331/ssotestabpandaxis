@@ -58,7 +58,7 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public async Task<DocumentFileDto> UploadFileAsync(Guid documentId, IBrowserFile file, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
-        await using var stream = file.OpenReadStream(25 * 1024 * 1024, cancellationToken);
+        await using var stream = file.OpenReadStream(50 * 1024 * 1024, cancellationToken);
         using var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
@@ -111,7 +111,7 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public async Task<WorkflowTemplateDto> UploadTemplateFileAsync(Guid templateId, string kind, IBrowserFile file, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
-        await using var stream = file.OpenReadStream(25 * 1024 * 1024, cancellationToken);
+        await using var stream = file.OpenReadStream(50 * 1024 * 1024, cancellationToken);
         using var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
@@ -139,6 +139,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 
     public Task<WorkflowInstanceDto> GetInstanceAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<WorkflowInstanceDto>($"/api/workflows/instances/{id:D}", cancellationToken);
+
+    public Task<List<WorkflowStepCandidateGroupDto>> GetAssigneeCandidatesAsync(Guid definitionId, CancellationToken cancellationToken = default) =>
+        GetAsync<List<WorkflowStepCandidateGroupDto>>($"/api/workflows/definitions/{definitionId:D}/assignee-candidates", cancellationToken);
 
     public Task<WorkflowInstanceDto> StartWorkflowAsync(StartWorkflowRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<WorkflowInstanceDto>(HttpMethod.Post, "/api/workflows/instances", request, cancellationToken);
@@ -198,6 +201,18 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
             parameters.Add($"status={Uri.EscapeDataString(query.Status.Trim())}");
         if (query.SourceType is { } sourceType)
             parameters.Add($"sourceType={sourceType}");
+        if (query.DocumentTypeId is { } documentTypeId)
+            parameters.Add($"documentTypeId={documentTypeId:D}");
+        if (query.SectorId is { } sectorId)
+            parameters.Add($"sectorId={sectorId:D}");
+        if (query.UrgencyId is { } urgencyId)
+            parameters.Add($"urgencyId={urgencyId:D}");
+        if (query.ConfidentialityId is { } confidentialityId)
+            parameters.Add($"confidentialityId={confidentialityId:D}");
+        if (query.From is { } from)
+            parameters.Add($"from={Uri.EscapeDataString(from.ToString("O"))}");
+        if (query.To is { } to)
+            parameters.Add($"to={Uri.EscapeDataString(to.ToString("O"))}");
         return $"/api/documents?{string.Join('&', parameters)}";
     }
 

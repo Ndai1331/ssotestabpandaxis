@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Security.Cryptography;
 using HCS.DocumentService.Conversion;
 using HCS.DocumentService.Storage;
@@ -16,28 +17,27 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
 
     public async Task<DocumentFileDto> UploadAsync(Guid documentId, string fileName, string contentType, Stream content, long size, CancellationToken cancellationToken)
     {
-        var principal = httpContext.HttpContext?.User ?? new System.Security.Claims.ClaimsPrincipal();
-        var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.ManageFiles);
-        if (size is <= 0 or > MaxFileSize) throw new InvalidOperationException("File size is outside the allowed range.");
-        if (!AllowedTypes.Contains(contentType)) throw new InvalidOperationException("File type is not allowed.");
-        var document = await db.Documents.Include(x => x.Files).Include(x => x.History).SingleOrDefaultAsync(x => x.Id == documentId, cancellationToken)
-            ?? throw new KeyNotFoundException("Document not found.");
-        await db.Entry(document).Collection(x => x.Assignments).LoadAsync(cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
-        await using var copy = new MemoryStream();
-        await content.CopyToAsync(copy, cancellationToken);
-        var bytes = copy.ToArray();
-        if (bytes.Length != size) throw new InvalidOperationException("Declared file size does not match content.");
-        var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        var (principal, userId) = RequireCurrentUser(DocumentPermissions.ManageFiles);
+        if (size > MaxFileSize) throw new InvalidOperationException("File size is outside the allowed range.");
+        var bytes = await ReadAllBytesAsync(content, cancellationToken);
+        if (bytes.Length <= 0 || bytes.Length > MaxFileSize) throw new InvalidOperationException("File size is outside the allowed range.");
+        if (!TryNormalizeContentType(fileName, contentType, out var normalizedType))
+            throw new InvalidOperationException("File type is not allowed.");
+        var document = await LoadManagedDocumentAsync(documentId, userId, principal, cancellationToken);
         var fileId = Guid.NewGuid();
         var blobName = BlobNamePolicy.Document(documentId, fileId);
-        copy.Position = 0;
-        await blobs.SaveAsync(blobName, copy, overrideExisting: false, cancellationToken: cancellationToken);
+        await SaveBlobAsync(blobName, bytes, cancellationToken);
         try
         {
-            var file = document.AddFile(fileId, fileName, contentType, size, hash, blobName, userId, DateTime.UtcNow);
-            await TryAttachConvertedPdfAsync(document, file, bytes, userId, cancellationToken);
+            var file = document.AddFile(fileId, fileName, normalizedType, bytes.Length, Sha256Hex(bytes), blobName, userId, DateTime.UtcNow);
+            try
+            {
+                await TryAttachConvertedPdfAsync(document, file, bytes, userId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Word-to-PDF conversion failed for {File}; Word file was kept.", fileName);
+            }
             await db.SaveChangesAsync(cancellationToken);
             return Map(file);
         }
@@ -50,9 +50,7 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
 
     public async Task<(DocumentFile File, Stream Content)> OpenAuthorizedAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken)
     {
-        var principal = httpContext.HttpContext?.User ?? new System.Security.Claims.ClaimsPrincipal();
-        var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.View);
+        var (principal, userId) = RequireCurrentUser(DocumentPermissions.View);
         var document = await db.Documents.AsNoTracking().Include(x => x.Assignments).Include(x => x.History)
             .SingleOrDefaultAsync(x => x.Id == documentId, cancellationToken)
             ?? throw new KeyNotFoundException("Document not found.");
@@ -64,14 +62,8 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
 
     public async Task DeleteAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken)
     {
-        var principal = httpContext.HttpContext?.User ?? new System.Security.Claims.ClaimsPrincipal();
-        var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.ManageFiles);
-        var document = await db.Documents.Include(x => x.Files).Include(x => x.History)
-            .SingleOrDefaultAsync(x => x.Id == documentId, cancellationToken)
-            ?? throw new KeyNotFoundException("Document not found.");
-        await db.Entry(document).Collection(x => x.Assignments).LoadAsync(cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
+        var (principal, userId) = RequireCurrentUser(DocumentPermissions.ManageFiles);
+        var document = await LoadManagedDocumentAsync(documentId, userId, principal, cancellationToken);
         var file = document.BeginFileDeletion(fileId, userId, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
         await blobs.DeleteAsync(file.BlobName, cancellationToken: cancellationToken);
@@ -98,15 +90,11 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
     public async Task AttachBlobAsync(DocumentAggregate document, string fileName, string contentType, Stream content,
         Guid? actorUserId, DateTime now, CancellationToken cancellationToken)
     {
-        await using var copy = new MemoryStream();
-        await content.CopyToAsync(copy, cancellationToken);
-        var bytes = copy.ToArray();
-        var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        var bytes = await ReadAllBytesAsync(content, cancellationToken);
         var fileId = Guid.NewGuid();
         var blobName = BlobNamePolicy.Document(document.Id, fileId);
-        copy.Position = 0;
-        await blobs.SaveAsync(blobName, copy, overrideExisting: false, cancellationToken: cancellationToken);
-        document.AddFile(fileId, fileName, contentType, bytes.Length, hash, blobName, actorUserId, now);
+        await SaveBlobAsync(blobName, bytes, cancellationToken);
+        document.AddFile(fileId, fileName, contentType, bytes.Length, Sha256Hex(bytes), blobName, actorUserId, now);
     }
 
     private async Task TryAttachConvertedPdfAsync(DocumentAggregate document, DocumentFile wordFile, byte[] docxBytes,
@@ -126,17 +114,69 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
         }
         var pdfId = Guid.NewGuid();
         var pdfName = Path.ChangeExtension(wordFile.FileName, ".pdf");
-        var pdfHash = Convert.ToHexString(SHA256.HashData(pdfBytes)).ToLowerInvariant();
         var pdfBlob = BlobNamePolicy.Document(document.Id, pdfId);
-        await using var pdfStream = new MemoryStream(pdfBytes);
-        await blobs.SaveAsync(pdfBlob, pdfStream, overrideExisting: false, cancellationToken: cancellationToken);
-        var pdfFile = document.AddFile(pdfId, pdfName, "application/pdf", pdfBytes.Length, pdfHash, pdfBlob, actorUserId, DateTime.UtcNow);
+        await SaveBlobAsync(pdfBlob, pdfBytes, cancellationToken);
+        var pdfFile = document.AddFile(pdfId, pdfName, "application/pdf", pdfBytes.Length, Sha256Hex(pdfBytes), pdfBlob, actorUserId, DateTime.UtcNow);
         wordFile.SetPairedFileId(pdfFile.Id);
         pdfFile.SetPairedFileId(wordFile.Id);
     }
 
     internal static DocumentFileDto Map(DocumentFile file) =>
         new(file.Id, file.FileName, file.ContentType, file.Size, file.Sha256, file.CreationTime, file.PairedFileId);
+
+    public static bool TryNormalizeContentType(string fileName, string? contentType, out string normalized)
+    {
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        if (extension.Length > 0)
+        {
+            normalized = extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                _ => ""
+            };
+            return normalized.Length > 0;
+        }
+
+        normalized = contentType?.Trim() ?? "";
+        return AllowedTypes.Contains(normalized);
+    }
+
+    private (ClaimsPrincipal Principal, Guid UserId) RequireCurrentUser(string permission)
+    {
+        var principal = httpContext.HttpContext?.User ?? new ClaimsPrincipal();
+        var userId = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, permission);
+        return (principal, userId);
+    }
+
+    private async Task<DocumentAggregate> LoadManagedDocumentAsync(Guid documentId, Guid userId, ClaimsPrincipal principal,
+        CancellationToken cancellationToken)
+    {
+        var document = await db.Documents.Include(x => x.Files).Include(x => x.History)
+            .SingleOrDefaultAsync(x => x.Id == documentId, cancellationToken)
+            ?? throw new KeyNotFoundException("Document not found.");
+        await db.Entry(document).Collection(x => x.Assignments).LoadAsync(cancellationToken);
+        DocumentAccess.EnsureCanManage(document, userId, principal);
+        return document;
+    }
+
+    private async Task SaveBlobAsync(string blobName, byte[] bytes, CancellationToken cancellationToken)
+    {
+        await using var stream = new MemoryStream(bytes);
+        await blobs.SaveAsync(blobName, stream, overrideExisting: false, cancellationToken: cancellationToken);
+    }
+
+    private static async Task<byte[]> ReadAllBytesAsync(Stream content, CancellationToken cancellationToken)
+    {
+        await using var copy = new MemoryStream();
+        await content.CopyToAsync(copy, cancellationToken);
+        return copy.ToArray();
+    }
+
+    private static string Sha256Hex(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
     private static bool IsDocx(string fileName, string contentType) =>
         fileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)

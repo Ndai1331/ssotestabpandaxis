@@ -19,6 +19,7 @@ public sealed record ConversationDto(Guid Id, ConversationType Type, string? Nam
     int UnreadCount, bool IsPinned, IReadOnlyList<ConversationMemberDto> Members);
 
 public sealed record ConversationMemberDto(Guid UserId, ConversationMemberRole Role, DateTime JoinedAt);
+public sealed record PresenceChangedDto(Guid UserId, bool IsOnline);
 public sealed record ChatContactDto(Guid Id, string UserName, string DisplayName, bool IsActive);
 public sealed record ConversationPermissionDto(bool CanSend, bool CanManageMembers, bool CanRename, bool CanLeave,
     bool CanModerateMessages = false);
@@ -92,6 +93,101 @@ public static class ChatNotificationRules
         && (link.Equals("/chat", StringComparison.OrdinalIgnoreCase)
             || link.StartsWith("/chat/", StringComparison.OrdinalIgnoreCase)
             || link.StartsWith("/chat1/", StringComparison.OrdinalIgnoreCase));
+}
+
+public static class UserDisplayNames
+{
+    public static string FromPerson(string? surname, string? givenName, string? userName, string? jwtFullName = null)
+    {
+        var full = string.Join(' ', new[] { surname, givenName }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim();
+        return FirstReal(full, jwtFullName, userName);
+    }
+
+    public static string FirstReal(params string?[] candidates)
+    {
+        foreach (var candidate in candidates)
+        {
+            var value = candidate?.Trim();
+            if (!string.IsNullOrWhiteSpace(value) && !IsPlaceholder(value))
+            {
+                return value;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    public static bool IsPlaceholder(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+        || string.Equals(value.Trim(), "User", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value.Trim(), "HCS", StringComparison.OrdinalIgnoreCase);
+}
+
+public static class NotificationLocalization
+{
+    public const string ChatTitle = "Notification:ChatNewMessage";
+    public const string ChatBody = "Notification:ChatNewMessageBody";
+    public const string ChatBodyUnknown = "Notification:ChatNewMessageBodyUnknown";
+    public const string TaskAssignedTitle = "Notification:TaskAssigned";
+    public const string TaskAssignedBody = "Notification:TaskAssignedBody";
+    public const string ProjectAssignedTitle = "Notification:ProjectAssigned";
+    public const string ProjectAssignedBody = "Notification:ProjectAssignedBody";
+    public const string GenericTitle = "Notification:Generic";
+    public const string GenericBody = "Notification:GenericBody";
+
+    private const char Separator = '\u001f';
+
+    public static string Encode(string key, params string[] args) =>
+        args.Length == 0 ? key : string.Join(Separator, new[] { key }.Concat(args));
+
+    public static string Format(
+        string stored,
+        Func<string, string> localizeKey,
+        Func<string, object[], string> localizeKeyed)
+    {
+        if (string.IsNullOrWhiteSpace(stored)
+            || !stored.StartsWith("Notification:", StringComparison.Ordinal))
+        {
+            return stored;
+        }
+
+        var parts = stored.Split(Separator);
+        return parts.Length == 1
+            ? localizeKey(parts[0])
+            : localizeKeyed(parts[0], parts.Skip(1).Cast<object>().ToArray());
+    }
+
+    public static string Format(string stored, string culture)
+    {
+        var vietnamese = culture.StartsWith("vi", StringComparison.OrdinalIgnoreCase);
+        return Format(
+            stored,
+            key => Template(key, vietnamese),
+            (key, args) => string.Format(Template(key, vietnamese), args));
+    }
+
+    private static string Template(string key, bool vietnamese) => (key, vietnamese) switch
+    {
+        (ChatTitle, true) => "Bạn có tin nhắn mới",
+        (ChatTitle, false) => "You have a new message",
+        (ChatBody, true) => "1 tin nhắn mới từ {0}",
+        (ChatBody, false) => "1 new message from {0}",
+        (ChatBodyUnknown, true) => "Bạn có tin nhắn mới",
+        (ChatBodyUnknown, false) => "You have a new message",
+        (TaskAssignedTitle, true) => "Có công việc mới",
+        (TaskAssignedTitle, false) => "New task assigned",
+        (TaskAssignedBody, true) => "Bạn được gán vào công việc {0}",
+        (TaskAssignedBody, false) => "You were assigned to task {0}",
+        (ProjectAssignedTitle, true) => "Có dự án mới",
+        (ProjectAssignedTitle, false) => "New project assigned",
+        (ProjectAssignedBody, true) => "Bạn được gán vào dự án {0}",
+        (ProjectAssignedBody, false) => "You were added to project {0}",
+        (GenericTitle, true) => "Thông báo",
+        (GenericTitle, false) => "Notification",
+        (GenericBody, true) => "Thông báo cho {0}",
+        (GenericBody, false) => "Notification for {0}",
+        _ => key
+    };
 }
 
 public sealed class CreateNotificationInput

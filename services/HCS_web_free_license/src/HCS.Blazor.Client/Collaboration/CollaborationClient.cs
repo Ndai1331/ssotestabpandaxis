@@ -37,6 +37,14 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
     public Task<ConversationDto> GetConversationAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<ConversationDto>($"api/chat/conversations/{id:D}", cancellationToken);
 
+    public async Task<ConversationDto?> FindByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().GetAsync($"api/chat/conversations/by-project/{projectId:D}", cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<ConversationDto>(JsonOptions, cancellationToken);
+    }
+
     public Task<ConversationPermissionDto> GetPermissionsAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<ConversationPermissionDto>($"api/chat/conversations/{id:D}/permissions", cancellationToken);
 
@@ -85,8 +93,11 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
     public Task AddMembersAsync(Guid id, IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Post, $"api/chat/conversations/{id:D}/members", new { userIds }, cancellationToken);
 
-    public Task LeaveAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SendNoContentAsync(HttpMethod.Post, $"api/chat/conversations/{id:D}/leave", new { transferAdminTo = (Guid?)null }, cancellationToken);
+    public Task LeaveAsync(Guid id, Guid? transferAdminTo = null, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Post, $"api/chat/conversations/{id:D}/leave", new { transferAdminTo }, cancellationToken);
+
+    public Task<int> GetUnreadCountAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<int>("api/chat/unread-count", cancellationToken);
 
     public Task RemoveMemberAsync(Guid id, Guid userId, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"api/chat/conversations/{id:D}/members/{userId:D}", cancellationToken: cancellationToken);
@@ -121,11 +132,20 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
         int take = 20,
         CancellationToken cancellationToken = default) =>
         GetAsync<IReadOnlyList<NotificationDto>>(
-            $"api/notifications?unreadOnly={unreadOnly}&skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}",
+            $"api/notifications?unreadOnly={unreadOnly}&skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 100)}",
             cancellationToken);
+
+    public Task<int> GetNotificationUnreadCountAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<int>("api/notifications/unread-count", cancellationToken);
+
+    public Task<int> GetNotificationCountAsync(bool unreadOnly = false, CancellationToken cancellationToken = default) =>
+        GetAsync<int>($"api/notifications/count?unreadOnly={unreadOnly}", cancellationToken);
 
     public Task MarkNotificationReadAsync(Guid notificationId, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Post, $"api/notifications/{notificationId:D}/read", cancellationToken: cancellationToken);
+
+    public Task MarkAllNotificationsReadAsync(CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Post, "api/notifications/read-all", cancellationToken: cancellationToken);
 
     public async Task<UploadAttachmentResult> UploadAttachmentAsync(
         Guid conversationId,

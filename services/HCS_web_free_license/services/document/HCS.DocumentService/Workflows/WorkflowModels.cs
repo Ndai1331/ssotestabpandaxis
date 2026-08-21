@@ -108,7 +108,7 @@ public sealed class WorkflowDefinition
             throw new InvalidOperationException("Workflow step orders must be unique.");
         _steps.Clear();
         _steps.AddRange(normalized.Select(x => new WorkflowStep(Guid.NewGuid(), Id,
-            Required(x.Code, 64), Required(x.Name, 256), x.Order, Required(x.RequiredPermission, 128),
+            Required(x.Code, 64), Required(x.Name, 256), x.Order, DefaultPermission(x.RequiredPermission),
             WorkflowStepTypes.Normalize(x.Type), x.AssigneeUserId, x.AssigneeType, x.RoleId, x.UserIds, x.DepartmentIds,
             x.SlaDays, x.AllowReturn)));
     }
@@ -117,6 +117,12 @@ public sealed class WorkflowDefinition
         var result = value?.Trim();
         if (string.IsNullOrWhiteSpace(result) || result.Length > max) throw new ArgumentException("Invalid workflow value.");
         return result;
+    }
+
+    internal static string DefaultPermission(string? value)
+    {
+        var result = value?.Trim();
+        return string.IsNullOrWhiteSpace(result) ? "Documents.Workflow.Decide" : Required(result, 128);
     }
     internal static string? Optional(string? value, int max)
     {

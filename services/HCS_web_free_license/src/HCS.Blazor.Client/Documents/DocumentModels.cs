@@ -58,6 +58,9 @@ public sealed record WorkflowInstanceDto(
     List<ApprovalTaskDto> Tasks, DateTime CreationTime);
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, List<Guid> DepartmentIds, List<Guid> UserIds);
+public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null);
+public sealed record WorkflowStepCandidateGroupDto(string StepCode, string StepName, string AssigneeType, Guid? RoleId,
+    List<WorkflowAssigneeCandidateDto> Candidates);
 public sealed record StartWorkflowRequest(Guid DocumentId, Guid DefinitionId, string IdempotencyKey,
     List<WorkflowStepSignerSelection>? Signers = null, List<WorkflowViewScopeSelection>? ViewScopes = null,
     bool UseTemplateFile = false);
@@ -72,4 +75,6 @@ public sealed record SigningAttemptDto(
 public sealed record SigningReportDto(Guid DocumentId, int Completed, int Failed, List<SigningAttemptDto> Attempts);
 public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime);
 
-public sealed record DocumentListQuery(string? Filter, string? Status, bool Mine, int SkipCount, int MaxResultCount, int? SourceType = null);
+public sealed record DocumentListQuery(string? Filter, string? Status, bool Mine, int SkipCount, int MaxResultCount, int? SourceType = null,
+    Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null,
+    DateTime? From = null, DateTime? To = null);

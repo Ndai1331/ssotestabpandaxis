@@ -16,7 +16,7 @@ public static class SurveySubmissionIdentity
     public static Guid Resolve(Guid authenticatedUserId, Guid? untrustedRequestedUserId) => authenticatedUserId;
 }
 
-public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuthorization access) : ITransientDependency
+public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuthorization access, OutboxDispatcher outbox) : ITransientDependency
 {
     public async Task<PagedWorkDto<ProjectDto>> GetListAsync(string? filter, string? status, int skip, int take, CancellationToken ct)
     {
@@ -69,6 +69,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         AddEvent(new ProjectChangedEto(Guid.NewGuid(), DateTime.UtcNow, project.Id, "Created", project.Status));
         AddAccessEvent(project.Id, null, false, [project.OwnerUserId]);
         await db.SaveChangesAsync(ct);
+        await outbox.DispatchAsync(ct);
         return Map(project);
     }
 
@@ -103,8 +104,16 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         if (!await db.Projects.AnyAsync(x => x.Id == projectId, ct)) throw new EntityNotFoundException(typeof(Project), projectId);
         if (await db.ProjectMembers.AnyAsync(x => x.ProjectId == projectId && x.UserId == input.UserId, ct))
             throw new BusinessException("Work:DuplicateProjectMember");
+        if (input.Role is not ("Manager" or "Supervisor" or "Member"))
+            throw new BusinessException("Work:InvalidProjectRole");
         var member = new ProjectMember(Guid.NewGuid(), projectId, input.UserId, input.Role);
         db.ProjectMembers.Add(member);
+        var project = await db.Projects.AsNoTracking().SingleAsync(x => x.Id == projectId, ct);
+        if (input.UserId != access.UserId)
+        {
+            db.OutboxMessages.Add(WorkOutbox.CreateCanonical(new ProjectMemberAssignedEto(
+                Guid.NewGuid(), DateTimeOffset.UtcNow, Correlation(), projectId, input.UserId, project.Name), Correlation()));
+        }
         var users = await AuthorizedUsers(projectId, ct); users.Add(input.UserId);
         await WorkCalendarLinker.ReplaceParticipantsAsync(db, WorkCalendarSync.ProjectRelatedType, projectId, users, ct);
         AddAccessEvent(projectId, null, false, users.Distinct().ToArray());
@@ -118,6 +127,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
             AddAccessEvent(projectId, task, false, taskUsers.Distinct().ToArray());
         }
         await db.SaveChangesAsync(ct);
+        await outbox.DispatchAsync(ct);
         return new(member.Id, member.ProjectId, member.UserId, member.Role, member.IsActive);
     }
 
@@ -132,6 +142,16 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         await WorkCalendarLinker.ReplaceParticipantsAsync(db, WorkCalendarSync.ProjectRelatedType, projectId, users, ct);
         AddAccessEvent(projectId, null, false, users.Distinct().ToArray());
         await db.SaveChangesAsync(ct);
+        await outbox.DispatchAsync(ct);
+    }
+
+    public async Task SyncChatAccessAsync(Guid projectId, CancellationToken ct)
+    {
+        await access.DemandProjectMemberAsync(projectId, ct);
+        var users = (await AuthorizedUsers(projectId, ct)).Distinct().ToArray();
+        AddAccessEvent(projectId, null, false, users);
+        await db.SaveChangesAsync(ct);
+        await outbox.DispatchAsync(ct);
     }
 
     private void AddEvent(IWorkIntegrationEvent value) => db.OutboxMessages.Add(WorkOutbox.Create(value, Correlation()));
@@ -280,7 +300,7 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
 
     private void AddEvent(ProjectTask task, string change, IReadOnlyList<Guid> users) => db.OutboxMessages.Add(
         WorkOutbox.CreateCanonical(new ProjectTaskChangedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, Correlation(), task.ProjectId,
-            task.Id, change, task.Status, users.Count == 0 ? null : users[0]), Correlation()));
+            task.Id, change, task.Status, users.Count == 0 ? null : users[0], task.Title), Correlation()));
     private async Task AddAccessEvent(ProjectTask task, bool deleted, IReadOnlyCollection<Guid> additionalUsers, CancellationToken ct)
     {
         var users = await db.ProjectMembers.Where(x => x.ProjectId == task.ProjectId && x.IsActive).Select(x => x.UserId).ToListAsync(ct);

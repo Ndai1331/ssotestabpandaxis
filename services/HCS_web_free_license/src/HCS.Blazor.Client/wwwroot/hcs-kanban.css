@@ -105,6 +105,21 @@
     gap: .55rem;
 }
 
+.hcs-kanban-menu { margin-left: auto; }
+
+.hcs-kanban-menu__toggle {
+    align-items: center;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #6b7280;
+    display: inline-flex;
+    height: 1.85rem;
+    justify-content: center;
+    padding: 0;
+    width: 1.85rem;
+}
+
 .hcs-kanban-avatar {
     align-items: center;
     background: #6c757d;

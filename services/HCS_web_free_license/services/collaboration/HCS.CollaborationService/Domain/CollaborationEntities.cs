@@ -148,8 +148,14 @@ public sealed class Notification : CreationAuditedAggregateRoot<Guid>
     public string? Link { get; private set; }
     public NotificationStatus Status { get; private set; }
     private Notification() { }
-    public Notification(Guid id, string title, string body, string? link) : base(id)
-    { Title = Check.NotNullOrWhiteSpace(title, nameof(title), 256); Body = Check.NotNullOrWhiteSpace(body, nameof(body), 2000); Link = link; }
+    public Notification(Guid id, string title, string body, string? link, DateTime? creationTimeUtc = null) : base(id)
+    {
+        Title = Check.NotNullOrWhiteSpace(title, nameof(title), 256);
+        Body = Check.NotNullOrWhiteSpace(body, nameof(body), 2000);
+        Link = link;
+        // Set explicitly: background event handlers may save without ABP audit property setters.
+        CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
+    }
     public void MarkDelivered() => Status = NotificationStatus.Delivered;
     public void MarkFailed() => Status = NotificationStatus.Failed;
 }
@@ -161,9 +167,29 @@ public sealed class NotificationReceiver : CreationAuditedEntity<Guid>
     public bool IsRead { get; private set; }
     public DateTime? ReadAt { get; private set; }
     private NotificationReceiver() { }
-    public NotificationReceiver(Guid id, Guid notificationId, Guid userId) : base(id)
-    { NotificationId = notificationId; UserId = userId; }
+    public NotificationReceiver(Guid id, Guid notificationId, Guid userId, DateTime? creationTimeUtc = null) : base(id)
+    {
+        NotificationId = notificationId;
+        UserId = userId;
+        CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
+    }
     public void MarkRead(DateTime at) { IsRead = true; ReadAt = at; }
+}
+
+internal static class NotificationTimes
+{
+    private static readonly DateTime ValidAfter = new(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    public static DateTime ToUtc(DateTime value)
+    {
+        var utc = value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
+        return utc < ValidAfter ? DateTime.UtcNow : utc;
+    }
 }
 
 public sealed class PushDeviceToken : CreationAuditedAggregateRoot<Guid>

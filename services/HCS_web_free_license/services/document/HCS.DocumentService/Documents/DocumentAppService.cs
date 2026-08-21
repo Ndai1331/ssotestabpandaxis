@@ -9,7 +9,9 @@ namespace HCS.DocumentService.Documents;
 public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContextAccessor httpContext) : IDocumentAppService
 {
     public async Task<PagedDocumentsDto> GetListAsync(string? filter = null, DocumentStatus? status = null,
-        bool mine = false, int skip = 0, int take = 50, int? sourceType = null, CancellationToken cancellationToken = default)
+        bool mine = false, int skip = 0, int take = 50, int? sourceType = null,
+        Guid? documentTypeId = null, Guid? sectorId = null, Guid? urgencyId = null, Guid? confidentialityId = null,
+        DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
@@ -44,6 +46,12 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
                                      EF.Functions.ILike(x.Title, $"%{value}%"));
         }
         if (status.HasValue) query = query.Where(x => x.Status == status);
+        if (documentTypeId.HasValue) query = query.Where(x => x.DocumentTypeId == documentTypeId);
+        if (sectorId.HasValue) query = query.Where(x => x.SectorId == sectorId);
+        if (urgencyId.HasValue) query = query.Where(x => x.UrgencyId == urgencyId);
+        if (confidentialityId.HasValue) query = query.Where(x => x.ConfidentialityId == confidentialityId);
+        if (from.HasValue) query = query.Where(x => x.CreationTime >= from.Value.ToUniversalTime());
+        if (to.HasValue) query = query.Where(x => x.CreationTime < to.Value.ToUniversalTime().AddDays(1));
         var totalCount = await query.LongCountAsync(cancellationToken);
         var items = await query.OrderByDescending(x => x.CreationTime).Skip(skip).Take(take)
             .ToListAsync(cancellationToken);

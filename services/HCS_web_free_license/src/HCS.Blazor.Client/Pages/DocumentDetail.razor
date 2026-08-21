@@ -12,21 +12,20 @@
 @using Microsoft.AspNetCore.Components.Forms
 @implements IAsyncDisposable
 
-<PageTitle>@(string.IsNullOrWhiteSpace(form.Title) ? L["Feature:DocumentTitle"] : form.Title) · HCS</PageTitle>
+<PageTitle>@DocumentTitle · HCS</PageTitle>
 <section class="hcs-catalog-page">
     <header class="hcs-catalog-titlebar">
         <div>
-            <h1>@(IsCreate ? L["Catalog:Create"] : (string.IsNullOrWhiteSpace(form.Title) ? L["Feature:DocumentTitle"] : form.Title))</h1>
+            <h1>@(IsCreate ? L["Catalog:Create"] : DocumentTitle)</h1>
             @if (document is not null) { <p class="mb-0 text-muted">@document.Number · @document.Status</p> }
         </div>
-        <a class="btn btn-outline-primary" href="@BackHref">@L["Feature:BackToList"]</a>
+        <Button Color="Color.Primary" Outline="true" Clicked="GoBack">@L["Feature:BackToList"]</Button>
     </header>
 
-    <div class="row g-3">
-        <div class="col-lg-6">
-            <Card>
-                <CardHeader>@L["Feature:DocumentTitle"]</CardHeader>
-                <CardBody>
+    <Card>
+        <CardBody>
+            <Row>
+                <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop">
                     <div class="hcs-catalog-form">
                         <div class="hcs-form-row">
                             <Field><FieldLabel>@L["Feature:DocumentNumber"]</FieldLabel>
@@ -61,109 +60,116 @@
                                                 Search="SearchConfidentialitiesAsync" />
                             </Field>
                         </div>
-                        <AuthorizeView Policy="Documents.Create">
-                            <Authorized>
-                                @if (IsCreate)
-                                {
-                                    <Button Color="Color.Primary" Clicked="SaveAsync" Disabled="@isSaving">@L["Catalog:Create"]</Button>
-                                }
-                            </Authorized>
-                        </AuthorizeView>
-                        <AuthorizeView Policy="Documents.Update">
-                            <Authorized>
-                                @if (!IsCreate)
-                                {
-                                    <Button Color="Color.Primary" Clicked="SaveAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
-                                }
-                            </Authorized>
-                        </AuthorizeView>
-                    </div>
-                </CardBody>
-            </Card>
-            @if (!IsCreate)
-            {
-                <Card Class="mt-3">
-                    <CardHeader>@L["Feature:Files"]</CardHeader>
-                    <CardBody>
-                        <InputFile class="form-control mb-2" OnChange="UploadAsync" />
-                        @if (document?.Files.Count is null or 0) { <p>@L["Catalog:EmptyTitle"]</p> }
-                        else {
-                            <ul class="list-group">
-                            @foreach (var file in document!.Files)
+                        @if (!IsCreate)
+                        {
+                            <Field>
+                                <FieldLabel>@L["Feature:Files"]</FieldLabel>
+                                <div class="hcs-dropzone">
+                                    <InputFile class="form-control" OnChange="UploadAsync" accept=".docx,.pdf" />
+                                    <p class="hcs-dropzone__hint mb-0">@L["Work:DropFileHere"]</p>
+                                </div>
+                            </Field>
+                            @if (document?.Files.Count is null or 0)
                             {
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>@file.FileName <small>(@(file.Size / 1024) KB)</small></span>
-                                    <span class="d-flex gap-1">
-                                        <Button Size="Size.Small" Color="Color.Primary" Outline="true" Clicked="() => PreviewFileAsync(file)">@L["Work:PdfPreview"]</Button>
-                                        @if (SourceType is 0 or 1)
+                                <p class="text-muted">@L["Catalog:EmptyTitle"]</p>
+                            }
+                            else
+                            {
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-sm table-striped align-middle mb-0">
+                                        <thead><tr>
+                                            <th>@L["Catalog:Name"]</th>
+                                            <th></th>
+                                        </tr></thead>
+                                        <tbody>
+                                        @foreach (var file in document!.Files)
                                         {
-                                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteFileAsync(file.Id)">@L["Catalog:Delete"]</Button>
+                                            <tr>
+                                                <td>@file.FileName <small class="text-muted">(@(file.Size / 1024) KB)</small></td>
+                                                <td class="text-end">
+                                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Clicked="() => PreviewFileAsync(file)">@L["Work:PdfPreview"]</Button>
+                                                    @if (SourceType is 0 or 1)
+                                                    {
+                                                        <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteFileAsync(file.Id)">@L["Catalog:Delete"]</Button>
+                                                    }
+                                                </td>
+                                            </tr>
                                         }
-                                    </span>
-                                </li>
+                                        </tbody>
+                                    </table>
+                                </div>
                             }
-                            </ul>
-                        }
-                    </CardBody>
-                </Card>
-            }
-        </div>
-        <div class="col-lg-6">
-            @if (!string.IsNullOrWhiteSpace(pdfUrl))
-            {
-                <Card>
-                    <CardHeader>@L["Work:PdfPreview"]</CardHeader>
-                    <CardBody>
-                        <iframe src="@pdfUrl" title="@L["Work:PdfPreview"]" style="width:100%;min-height:28rem;border:1px solid #d7e2e8;border-radius:.5rem;"></iframe>
-                    </CardBody>
-                </Card>
-            }
-            @if (!IsCreate && document is not null)
-            {
-                <Card Class="mt-3">
-                    <CardHeader>@L["Feature:Assign"]</CardHeader>
-                    <CardBody>
-                        <Select TValue="Guid?" @bind-Value="assigneeId">
-                            <SelectItem TValue="Guid?" Value="null">@L["Chat:SelectContacts"]</SelectItem>
-                            @foreach (var contact in contacts) { <SelectItem TValue="Guid?" Value="@contact.Id">@contact.DisplayName</SelectItem> }
-                        </Select>
-                        <HcsIsolatedTextInput CssClass="form-control mt-2" @bind-Value="responsibility" Name="hcsDocumentResponsibility" Placeholder="@L["Feature:Responsibility"].Value" />
-                        <Button Color="Color.Primary" Class="mt-2" Clicked="AssignAsync">@L["Feature:Assign"]</Button>
-                        <ul class="mt-3 mb-0">
-                            @foreach (var assignment in document.Assignments)
+                            <Field>
+                                <FieldLabel>@L["Feature:Assign"]</FieldLabel>
+                                <UserSelect2 Value="assigneeId" ValueChanged="value => assigneeId = value"
+                                             Placeholder="@L["Chat:SelectContacts"]"
+                                             SelectedText="@ContactName(assigneeId)"
+                                             Search="SearchContactsAsync" />
+                                <HcsIsolatedTextInput CssClass="form-control mt-2" @bind-Value="responsibility" Name="hcsDocumentResponsibility" Placeholder="@L["Feature:Responsibility"].Value" />
+                                <Button Color="Color.Primary" Class="mt-2" Clicked="AssignAsync">@L["Feature:Assign"]</Button>
+                                @if (document is not null)
+                                {
+                                    <ul class="mt-3 mb-0">
+                                        @foreach (var assignment in document.Assignments)
+                                        {
+                                            <li>@ContactName(assignment.AssigneeUserId) · @assignment.Responsibility</li>
+                                        }
+                                    </ul>
+                                }
+                            </Field>
+                            <div class="d-flex gap-2 mb-3">
+                                <Button Color="Color.Primary" Clicked="SubmitAsync" Disabled="@(document?.Status != DocumentStatus.Draft)">@L["Feature:SubmitDocument"]</Button>
+                                <AuthorizeView Policy="Documents.Workflow.Start">
+                                    <Authorized>
+                                        <Button Color="Color.Primary" Outline="true" Clicked="OpenSubmitWorkflow">@L["Work:SubmitWorkflow"]</Button>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                            @if (document is not null)
                             {
-                                <li>@ContactName(assignment.AssigneeUserId) · @assignment.Responsibility</li>
+                                <FieldLabel>@L["Feature:History"]</FieldLabel>
+                                <ul class="mb-3">
+                                    @foreach (var item in document.History.OrderByDescending(x => x.OccurredAt))
+                                    {
+                                        <li>@item.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @item.Action @item.Detail</li>
+                                    }
+                                </ul>
                             }
-                        </ul>
-                    </CardBody>
-                </Card>
-                <Card Class="mt-3">
-                    <CardHeader>@L["Feature:StartWorkflow"]</CardHeader>
-                    <CardBody>
+                        }
                         <div class="d-flex gap-2">
-                            <Button Color="Color.Primary" Clicked="SubmitAsync" Disabled="@(document.Status != DocumentStatus.Draft)">@L["Feature:SubmitDocument"]</Button>
-                            <AuthorizeView Policy="Documents.Workflow.Start">
+                            <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="GoBack">@L["Catalog:Cancel"]</Button>
+                            <AuthorizeView Policy="Documents.Create">
                                 <Authorized>
-                                    <Button Color="Color.Primary" Outline="true" Clicked="OpenSubmitWorkflow">@L["Work:SubmitWorkflow"]</Button>
+                                    @if (IsCreate)
+                                    {
+                                        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SaveAsync" Disabled="@isSaving">@L["Catalog:Create"]</Button>
+                                    }
+                                </Authorized>
+                            </AuthorizeView>
+                            <AuthorizeView Policy="Documents.Update">
+                                <Authorized>
+                                    @if (!IsCreate)
+                                    {
+                                        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SaveAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+                                    }
                                 </Authorized>
                             </AuthorizeView>
                         </div>
-                    </CardBody>
-                </Card>
-                <Card Class="mt-3">
-                    <CardHeader>@L["Feature:History"]</CardHeader>
-                    <CardBody>
-                        <ul class="mb-0">
-                            @foreach (var item in document.History.OrderByDescending(x => x.OccurredAt))
-                            {
-                                <li>@item.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @item.Action @item.Detail</li>
-                            }
-                        </ul>
-                    </CardBody>
-                </Card>
-            }
-        </div>
-    </div>
+                    </div>
+                </Column>
+                <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop" Class="hcs-document-preview-pane">
+                    @if (!string.IsNullOrWhiteSpace(pdfUrl))
+                    {
+                        <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(50)" />
+                    }
+                    else
+                    {
+                        <Alert Color="Color.Light" Dismissible="false">@L["Work:NoPdfAvailable"]</Alert>
+                    }
+                </Column>
+            </Row>
+        </CardBody>
+    </Card>
 </section>
 <SubmitWorkflowModal @ref="submitModal" OnSubmitted="ReloadExistingAsync" />
 @code {
@@ -184,6 +190,8 @@
     private bool IsCreate => DocumentId == Guid.Empty;
     private int SourceType => SourceTypeQuery is >= 0 and <= 2 ? SourceTypeQuery.Value : 0;
     private string BackHref => $"/manage-documents?sourceType={SourceType}";
+    private string DocumentTitle => string.IsNullOrWhiteSpace(form.Title) ? L["Feature:DocumentTitle"] : form.Title;
+    private string? DescriptionOrNull => string.IsNullOrWhiteSpace(form.Description) ? null : form.Description;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -229,7 +237,7 @@
             form.SectorId = document.SectorId;
             form.UrgencyId = document.UrgencyId;
             form.ConfidentialityId = document.ConfidentialityId;
-            await LoadPreviewAsync(document.Files.FirstOrDefault(x => x.ContentType.Contains("pdf", StringComparison.OrdinalIgnoreCase)) ?? document.Files.FirstOrDefault());
+            await LoadPreviewAsync(DocumentFilePick.PreferPdf(document.Files));
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
@@ -242,8 +250,7 @@
             if (IsCreate)
             {
                 var created = await Documents.CreateDocumentAsync(new CreateDocumentRequest(
-                    form.Number.Trim(), form.Title.Trim(),
-                    string.IsNullOrWhiteSpace(form.Description) ? null : form.Description,
+                    form.Number.Trim(), form.Title.Trim(), DescriptionOrNull,
                     form.DocumentTypeId, form.SectorId, form.UrgencyId, form.ConfidentialityId,
                     SourceType == 1 ? DocumentSourceType.Personal : DocumentSourceType.Archive));
                 await NotifySuccessAsync(L["Catalog:Created"]);
@@ -251,8 +258,7 @@
                 return;
             }
             document = await Documents.UpdateDocumentAsync(DocumentId, new UpdateDocumentRequest(
-                form.Title.Trim(),
-                string.IsNullOrWhiteSpace(form.Description) ? null : form.Description,
+                form.Title.Trim(), DescriptionOrNull,
                 form.DocumentTypeId, form.SectorId, form.UrgencyId, form.ConfidentialityId));
             await NotifySuccessAsync(L["Catalog:Updated"]);
         }
@@ -278,17 +284,21 @@
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
 
-    private Task PreviewFileAsync(DocumentFileDto file) => LoadPreviewAsync(file);
+    private Task PreviewFileAsync(DocumentFileDto file)
+    {
+        if (document is null) return Task.CompletedTask;
+        var pdf = DocumentFilePick.IsPdf(file) ? file : DocumentFilePick.PreferPdf(document.Files);
+        return LoadPreviewAsync(pdf);
+    }
 
     private async Task LoadPreviewAsync(DocumentFileDto? file)
     {
         await RevokePdfAsync();
-        if (file is null) return;
+        if (file is null || !DocumentFilePick.IsPdf(file)) return;
         try
         {
             var content = await Documents.GetFileContentAsync(DocumentId, file.Id);
-            var type = string.IsNullOrWhiteSpace(content.ContentType) ? "application/pdf" : content.ContentType;
-            pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", type, content.Bytes);
+            pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", "application/pdf", content.Bytes);
         }
         catch { pdfUrl = null; }
     }
@@ -296,7 +306,12 @@
     private async Task AssignAsync()
     {
         if (assigneeId is not { } userId) return;
-        try { document = await Documents.AssignAsync(DocumentId, new AssignDocumentRequest(userId, string.IsNullOrWhiteSpace(responsibility) ? "reviewer" : responsibility.Trim())); await NotifySuccessAsync(L["Catalog:Updated"]); }
+        try
+        {
+            var role = string.IsNullOrWhiteSpace(responsibility) ? "reviewer" : responsibility.Trim();
+            document = await Documents.AssignAsync(DocumentId, new AssignDocumentRequest(userId, role));
+            await NotifySuccessAsync(L["Catalog:Updated"]);
+        }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
 
@@ -307,7 +322,8 @@
     }
 
     private Task OpenSubmitWorkflow() => submitModal?.ShowAsync(DocumentId) ?? Task.CompletedTask;
-    private string ContactName(Guid id) => contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.ToString("N")[..8];
+    private void GoBack() => Navigation.NavigateTo(BackHref);
+    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.Value.ToString("N")[..8];
     private static string MasterText(IEnumerable<MasterDataCatalogDto> items, Guid? id) =>
         CatalogSelect2Cache.TextFor(items, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
     private async Task<CatalogSelect2SearchResponse> SearchMasterAsync(string type, List<MasterDataCatalogDto> cache, string term, int page)
@@ -321,15 +337,28 @@
     private Task<CatalogSelect2SearchResponse> SearchSectorsAsync(string term, int page) => SearchMasterAsync("Sector", sectors, term, page);
     private Task<CatalogSelect2SearchResponse> SearchUrgenciesAsync(string term, int page) => SearchMasterAsync("UrgencyLevel", urgencies, term, page);
     private Task<CatalogSelect2SearchResponse> SearchConfidentialitiesAsync(string term, int page) => SearchMasterAsync("ConfidentialityLevel", confidentialities, term, page);
+    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
+    {
+        var found = await Chat.GetContactsAsync(term, 50);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+    }
 
     private async Task RevokePdfAsync()
     {
-        if (string.IsNullOrWhiteSpace(pdfUrl)) return;
-        await Js.InvokeVoidAsync("hcsRevokeObjectUrl", pdfUrl);
+        var previous = pdfUrl;
         pdfUrl = null;
+        if (string.IsNullOrWhiteSpace(previous)) return;
+        try { await Js.InvokeVoidAsync("hcsRevokeObjectUrl", previous); }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
     }
 
-    public async ValueTask DisposeAsync() => await RevokePdfAsync();
+    public async ValueTask DisposeAsync()
+    {
+        try { await RevokePdfAsync(); }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
+    }
 
     private sealed class DocumentForm
     {

@@ -43,7 +43,9 @@ public sealed record PagedDocumentsDto(long TotalCount, IReadOnlyList<DocumentDt
 public interface IDocumentAppService
 {
     Task<PagedDocumentsDto> GetListAsync(string? filter = null, DocumentStatus? status = null,
-        bool mine = false, int skip = 0, int take = 50, int? sourceType = null, CancellationToken cancellationToken = default);
+        bool mine = false, int skip = 0, int take = 50, int? sourceType = null,
+        Guid? documentTypeId = null, Guid? sectorId = null, Guid? urgencyId = null, Guid? confidentialityId = null,
+        DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
     Task<DocumentDto> CreateAsync(CreateDocumentRequest input, CancellationToken cancellationToken = default);
     Task<DocumentDto?> GetAsync(Guid id, CancellationToken cancellationToken = default);
     Task<DocumentDto> UpdateAsync(Guid id, UpdateDocumentRequest input, CancellationToken cancellationToken = default);

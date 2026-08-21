@@ -37,6 +37,9 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
     public Task RemoveMemberAsync(Guid projectId, Guid memberId, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"/api/projects/{projectId:D}/members/{memberId:D}", cancellationToken);
 
+    public Task SyncProjectChatAccessAsync(Guid projectId, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Post, $"/api/projects/{projectId:D}/chat-access", cancellationToken);
+
     public Task<PagedWorkResponse<ProjectTaskDto>> GetTasksAsync(Guid? projectId, WorkListQuery query, CancellationToken cancellationToken = default)
     {
         var uri = BuildListUri("/api/project-tasks", query);

@@ -72,13 +72,25 @@ public class CollaborationAppService(
                 userId == me ? ConversationMemberRole.Admin : ConversationMemberRole.Member));
         db.Conversations.Add(conversation);
         try { await db.SaveChangesAsync(ct); }
-        catch (DbUpdateException exception) when (PostgresErrors.IsUniqueViolation(exception) && input.Type == ConversationType.User)
+        catch (DbUpdateException exception) when (PostgresErrors.IsUniqueViolation(exception) &&
+            input.Type is ConversationType.User or ConversationType.Project)
         {
             db.ChangeTracker.Clear();
-            var target = input.TargetUserId!.Value;
-            var (low, high) = me.CompareTo(target) < 0 ? (me, target) : (target, me);
-            var concurrent = await db.Conversations.Include(x => x.Members).SingleAsync(x =>
-                x.Type == ConversationType.User && x.DirectUserLowId == low && x.DirectUserHighId == high, ct);
+            Conversation concurrent;
+            if (input.Type == ConversationType.Project)
+            {
+                concurrent = await db.Conversations.Include(x => x.Members).SingleAsync(x =>
+                    x.Type == ConversationType.Project && x.ProjectId == input.ProjectId, ct);
+            }
+            else
+            {
+                var target = input.TargetUserId!.Value;
+                var (low, high) = me.CompareTo(target) < 0 ? (me, target) : (target, me);
+                concurrent = await db.Conversations.Include(x => x.Members).SingleAsync(x =>
+                    x.Type == ConversationType.User && x.DirectUserLowId == low && x.DirectUserHighId == high, ct);
+            }
+            if (concurrent.Members.All(x => x.UserId != me))
+                throw new AbpAuthorizationException("Conversation membership required.");
             return MapConversation(concurrent, me);
         }
         return await ToConversationDto(conversation, me, ct);
@@ -99,6 +111,16 @@ public class CollaborationAppService(
     {
         var conversation = await RequireMember(id, UserId, ct);
         return MapConversation(conversation, UserId);
+    }
+
+    public async Task<ConversationDto?> FindConversationByProjectIdAsync(Guid projectId, CancellationToken ct = default)
+    {
+        var me = UserId;
+        var conversation = await db.Conversations.AsNoTracking().Include(x => x.Members)
+            .FirstOrDefaultAsync(x => x.Type == ConversationType.Project && x.ProjectId == projectId, ct);
+        if (conversation is null || conversation.Members.All(x => x.UserId != me))
+            return null;
+        return MapConversation(conversation, me);
     }
 
     public async Task RenameAsync(Guid id, string name, CancellationToken ct = default)
@@ -154,9 +176,13 @@ public class CollaborationAppService(
         var me = conversation.Members.Single(x => x.UserId == UserId);
         if (me.Role == ConversationMemberRole.Admin && conversation.Members.Count(x => x.Role == ConversationMemberRole.Admin) == 1)
         {
-            var target = conversation.Members.SingleOrDefault(x => x.UserId == transferAdminTo)
-                ?? throw new BusinessException("Collaboration:AdminTransferRequired");
-            target.SetRole(ConversationMemberRole.Admin);
+            var others = conversation.Members.Where(x => x.UserId != UserId).ToList();
+            if (others.Count > 0)
+            {
+                var target = others.SingleOrDefault(x => x.UserId == transferAdminTo)
+                    ?? throw new BusinessException("Collaboration:AdminTransferRequired");
+                target.SetRole(ConversationMemberRole.Admin);
+            }
         }
         db.ConversationMembers.Remove(me); await db.SaveChangesAsync(ct);
     }
@@ -200,7 +226,7 @@ public class CollaborationAppService(
         var recipientIds = conversation.Members.Where(x => x.UserId != UserId).Select(x => x.UserId).ToArray();
 
         var evt = new ChatMessageSentEto(guidGenerator.Create(), now, CurrentCorrelationId(), conversation.Id,
-            message.Id, UserId, recipientIds);
+            message.Id, UserId, recipientIds, CurrentDisplayName());
         db.OutboxMessages.Add(new OutboxMessage(evt.EventId, nameof(ChatMessageSentEto), JsonSerializer.Serialize(evt), now));
         try { await SaveMessageAndIncrementUnreadAsync(message.ConversationId, recipientIds, ct); }
         catch (DbUpdateException exception) when (PostgresErrors.IsUniqueViolation(exception) && input.ClientMessageId.HasValue)
@@ -227,7 +253,7 @@ public class CollaborationAppService(
         db.Messages.Add(forwarded); target.SetLastMessage(text, now);
         var recipientIds = target.Members.Where(x => x.UserId != UserId).Select(x => x.UserId).ToArray();
         var evt = new ChatMessageSentEto(guidGenerator.Create(), now, CurrentCorrelationId(), target.Id,
-            forwarded.Id, UserId, recipientIds);
+            forwarded.Id, UserId, recipientIds, CurrentDisplayName());
         db.OutboxMessages.Add(new OutboxMessage(evt.EventId, nameof(ChatMessageSentEto), JsonSerializer.Serialize(evt), now));
         await SaveMessageAndIncrementUnreadAsync(target.Id, recipientIds, ct);
         var dto = await MapMessageAsync(forwarded, ct);
@@ -418,6 +444,13 @@ public class CollaborationAppService(
             Preview(x.ReplyToMessageId, related),
             Preview(x.ForwardedFromMessageId, related));
     }
+
+    private string CurrentDisplayName() =>
+        UserDisplayNames.FromPerson(
+            currentUser.SurName,
+            currentUser.Name,
+            currentUser.UserName,
+            currentUser.FindClaim("name")?.Value);
 
     private string? CurrentCorrelationId() => CurrentUnitOfWork?.Items.TryGetValue("CorrelationId", out var value) == true ? value?.ToString() : null;
 }

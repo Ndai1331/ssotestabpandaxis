@@ -13,7 +13,7 @@
     <a class="hcs-skip-link" href="#main-content">@Localizer["Menu:SkipToContent"]</a>
     <header class="hcs-header">
         <div class="hcs-header__top">
-            <a class="hcs-brand" href="/" aria-label="HCS - @Localizer["Menu:Workspace"]">
+            <a class="hcs-brand" href="/workspace" aria-label="HCS - @Localizer["Menu:Workspace"]">
                 <span class="hcs-brand__mark" aria-hidden="true"><img src="/images/logo/logo.png" alt="" width="100" height="70" /></span>
                 <span class="hcs-brand__text"><strong>HCS</strong><small>@Localizer["Brand:Subtitle"]</small></span>
             </a>
@@ -33,20 +33,26 @@
                     <i class="fa fa-bell" aria-hidden="true"></i>
                     @if (unreadNotifications > 0)
                     {
-                        <span class="hcs-notification-dot"></span>
+                        <span class="hcs-icon-badge">@unreadNotifications</span>
                     }
                 </button>
                 <AuthorizeView Policy="Collaboration.Chat">
                     <Authorized>
                         <a class="hcs-icon-button hcs-icon-link" href="/chat" aria-label='@Localizer["Chat:HeaderShortcut"]'>
                             <i class="fa fa-comments" aria-hidden="true"></i>
+                            @if (unreadChat > 0)
+                            {
+                                <span class="hcs-icon-badge">@unreadChat</span>
+                            }
                         </a>
                     </Authorized>
                 </AuthorizeView>
                 <AuthorizeView Context="authenticationState">
                     <Authorized>
-                        <details class="hcs-user-menu">
-                            <summary aria-label='@Localizer["Auth:OpenAccountMenu"]'>
+                        <details class="hcs-user-menu" open="@userMenuOpen">
+                            <summary aria-label='@Localizer["Auth:OpenAccountMenu"]'
+                                     @onclick="ToggleUserMenu"
+                                     @onclick:preventDefault="true">
                                 <span class="hcs-user-menu__copy">
                                     <strong>@DisplayName(authenticationState.User)</strong>
                                     <small>@RoleName(authenticationState.User)</small>
@@ -62,8 +68,8 @@
                                         <small>@Email(authenticationState.User)</small>
                                     </span>
                                 </div>
-                                <a href="/workspace" @onclick="CloseMobileNav"><i class="fa fa-house" aria-hidden="true"></i> @Localizer["Auth:Workspace"]</a>
-                                <a href="https://auth.hcs.localhost/Account/Manage" target="_blank" rel="noopener"><i class="fa fa-user-gear" aria-hidden="true"></i> @Localizer["Auth:ManageAccount"]</a>
+                                <a href="/workspace" @onclick="CloseMenus"><i class="fa fa-house" aria-hidden="true"></i> @Localizer["Auth:Workspace"]</a>
+                                <a href="https://auth.hcs.localhost/Account/Manage" target="_blank" rel="noopener" @onclick="CloseUserMenu"><i class="fa fa-user-gear" aria-hidden="true"></i> @Localizer["Auth:ManageAccount"]</a>
                                 <button class="hcs-user-menu__action hcs-user-menu__action--danger" type="button" @onclick="Logout" disabled="@isLoggingOut">
                                     <i class="fa @(isLoggingOut ? "fa-spinner fa-spin" : "fa-right-from-bracket")" aria-hidden="true"></i>
                                     @(isLoggingOut ? Localizer["Auth:LogoutProgress"] : Localizer["Auth:Logout"])
@@ -90,8 +96,7 @@
                 ("/manage-documents?sourceType=0", "fa-folder-open", Localizer["Menu:DocumentList"].Value),
                 ("/manage-documents?sourceType=1", "fa-user", Localizer["Menu:MyDocuments"].Value),
                 ("/manage-documents?sourceType=2", "fa-inbox", Localizer["Menu:DocumentsSentToMe"].Value),
-                ("/document-signing", "fa-signature", Localizer["Menu:DocumentSigning"].Value),
-                ("/signing-kpi-report", "fa-chart-pie", Localizer["Menu:SigningKpi"].Value))
+                ("/document-signing", "fa-signature", Localizer["Menu:DocumentSigning"].Value))
 
             @Menu("workflows", "fa-arrow-trend-up", Localizer["Menu:Workflows"].Value,
                 ("/workflow-definitions", "fa-diagram-project", Localizer["Menu:WorkflowDefinitions"].Value),
@@ -153,18 +158,8 @@
                         </Authorized>
                     </AuthorizeView>
                     <p class="hcs-nav-menu__label">@Localizer["Menu:SurveyCatalogs"]</p>
-                    <a href="/survey-locations"
-                       class="@(IsCurrentPath("survey-locations") ? "active" : null)"
-                       @onclick="@(() => NavigateSurvey("/survey-locations"))"
-                       @onclick:preventDefault>
-                        <i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:SurveyLocations"]
-                    </a>
-                    <a href="/survey-criterias"
-                       class="@(IsCurrentPath("survey-criterias") ? "active" : null)"
-                       @onclick="@(() => NavigateSurvey("/survey-criterias"))"
-                       @onclick:preventDefault>
-                        <i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]
-                    </a>
+                    <NavLink href="/survey-locations" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:SurveyLocations"]</NavLink>
+                    <NavLink href="/survey-criterias" @onclick="CloseMobileNav"><i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]</NavLink>
                     <p class="hcs-nav-menu__label">@Localizer["Menu:Reports"]</p>
                     <NavLink href="/reports" @onclick="CloseMobileNav"><i class="fa fa-chart-column" aria-hidden="true"></i>@Localizer["Menu:Reports"]</NavLink>
                 </div>
@@ -199,7 +194,7 @@
     <main id="main-content" class="hcs-main-content">@Body</main>
     <AuthorizeView>
         <Authorized>
-            <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" />
+            <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" ChatUnreadCountChanged="OnChatUnreadChanged" />
         </Authorized>
     </AuthorizeView>
     <UiNotificationAlert />
@@ -208,21 +203,38 @@
 
 @code {
     private bool mobileNavOpen;
+    private bool userMenuOpen;
     private string? expandedSection;
     private bool isLoggingOut;
     private string? logoutError;
     private NotificationToast? notificationToast;
     private int unreadNotifications;
+    private int unreadChat;
 
     protected override void OnInitialized()
     {
         Navigation.LocationChanged += OnLocationChanged;
     }
 
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) =>
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        userMenuOpen = false;
+        mobileNavOpen = false;
+        expandedSection = null;
         _ = InvokeAsync(StateHasChanged);
+    }
 
     public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+
+    private void ToggleUserMenu() => userMenuOpen = !userMenuOpen;
+
+    private void CloseUserMenu() => userMenuOpen = false;
+
+    private void CloseMenus()
+    {
+        userMenuOpen = false;
+        CloseMobileNav();
+    }
 
     private RenderFragment Menu(string key, string icon, string label, params (string Href, string Icon, string Text)[] items) => __builder =>
     {
@@ -269,6 +281,12 @@
         _ = InvokeAsync(StateHasChanged);
     }
 
+    private void OnChatUnreadChanged(int count)
+    {
+        unreadChat = count;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
     private void ToggleMobileNav()
     {
         mobileNavOpen = !mobileNavOpen;
@@ -280,23 +298,9 @@
 
     private void CloseMobileNav()
     {
+        userMenuOpen = false;
         mobileNavOpen = false;
         expandedSection = null;
-    }
-
-    private void NavigateSurvey(string url)
-    {
-        CloseMobileNav();
-        if (!IsCurrentPath(url.Trim('/')))
-        {
-            Navigation.NavigateTo(url);
-        }
-    }
-
-    private bool IsCurrentPath(string path)
-    {
-        var current = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/');
-        return string.Equals(current, path, StringComparison.OrdinalIgnoreCase);
     }
 
     private bool IsMenuHrefActive(string href)

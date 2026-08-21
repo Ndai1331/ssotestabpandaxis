@@ -7,7 +7,8 @@ public sealed record ChatMessageSentEto(
     Guid ConversationId,
     Guid MessageId,
     Guid SenderUserId,
-    IReadOnlyList<Guid> RecipientUserIds)
+    IReadOnlyList<Guid> RecipientUserIds,
+    string? SenderDisplayName = null)
     : IntegrationEvent(EventId, OccurredAtUtc, CorrelationId);
 
 public sealed record NotificationRequestedEto(

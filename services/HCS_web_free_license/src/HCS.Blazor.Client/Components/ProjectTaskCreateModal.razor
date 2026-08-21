@@ -44,8 +44,8 @@
                             </div>
                             <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="description"></textarea></Field>
                             <div class="hcs-form-row hcs-form-row--equal">
-                                <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="startDate" /></Field>
-                                <Field><FieldLabel>@L["Feature:DueDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="dueDate" /></Field>
+                                <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="startDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
+                                <Field><FieldLabel>@L["Feature:DueDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="dueDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
                             </div>
                             <div class="hcs-form-row hcs-form-row--equal">
                                 <Field><FieldLabel>@L["Feature:Priority"]</FieldLabel>

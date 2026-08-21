@@ -171,6 +171,7 @@ services:
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
       DataProtection__KeysPath: /var/lib/hcs-data-protection
+      Services__Platform__BaseUrl: http://platform:8080/
     volumes:
       - ${HCS_OPENIDDICT_PFX}:/var/run/hcs-certs/openiddict.pfx:ro
       - ${HCS_DATAPROTECTION_PFX}:/var/run/hcs-certs/dataprotection.pfx:ro
@@ -196,6 +197,8 @@ services:
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
       App__CorsOrigins: https://hcs.localhost
+      RabbitMQ__EventBus__ClientName: HCS_Collaboration
+      RabbitMQ__EventBus__ExchangeName: hcs
 
   caddy:
     image: caddy:2.10-alpine

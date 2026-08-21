@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using HCS.CollaborationService.Contracts;
 using HCS.CollaborationService.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,7 +65,12 @@ public sealed class PushDeliveryWorker(IServiceScopeFactory scopeFactory, IConfi
                     try
                     {
                         var results = await Task.WhenAll(tokens.Select(token =>
-                            sender.SendAsync(token, delivery.Title, delivery.Body, delivery.Link, timeout.Token)));
+                            sender.SendAsync(
+                                token,
+                                NotificationLocalization.Format(delivery.Title, "vi"),
+                                NotificationLocalization.Format(delivery.Body, "vi"),
+                                delivery.Link,
+                                timeout.Token)));
                         delivered = results.Any(x => x);
                     }
                     catch (Exception exception) when (!stoppingToken.IsCancellationRequested)

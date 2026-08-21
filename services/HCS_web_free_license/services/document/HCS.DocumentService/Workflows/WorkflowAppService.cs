@@ -12,7 +12,7 @@ namespace HCS.DocumentService.Workflows;
 
 public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContextAccessor httpContext,
     IBlobContainer<DocumentBlobContainer> blobs, DocumentFileService files, IDocxToPdfConverter converter,
-    ILogger<WorkflowAppService> logger) : IWorkflowAppService
+    IWorkflowAssigneeResolver assigneeResolver, ILogger<WorkflowAppService> logger) : IWorkflowAppService
 {
     public async Task<IReadOnlyList<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default)
     {
@@ -144,8 +144,21 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             ?? throw new KeyNotFoundException("Workflow definition not found.");
         definition.Rename(input.Name);
         definition.SetMetadata(input.KindId, input.Description, input.IsActive, input.SignMode);
-        definition.ReplaceSteps(input.Steps);
+        // Steps are unique per (DefinitionId, Code) and (DefinitionId, Order), so the old rows must be
+        // deleted in their own round trip before the replacements are inserted.
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        db.WorkflowSteps.RemoveRange(definition.Steps.ToList());
         await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            definition.ReplaceSteps(input.Steps);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new InvalidOperationException("Workflow step code, name, and required permission cannot be empty.", ex);
+        }
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task DeleteDefinitionAsync(Guid id, CancellationToken cancellationToken = default)
@@ -300,6 +313,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             .Where(x => !string.IsNullOrWhiteSpace(x.StepCode))
             .GroupBy(x => x.StepCode, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(x => x.Key, x => x.Last().UserId, StringComparer.OrdinalIgnoreCase);
+        await ApplyRoleAssigneesAsync(definition, userId, overrides, cancellationToken);
         var viewScopesJson = input.ViewScopes is { Count: > 0 } ? System.Text.Json.JsonSerializer.Serialize(input.ViewScopes) : null;
         var instance = new WorkflowInstance(Guid.NewGuid(), document.Id, definition, input.IdempotencyKey, now,
             overrides, viewScopesJson);
@@ -308,6 +322,40 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         AddChangeEvent(instance, now);
         await db.SaveChangesAsync(cancellationToken);
         return Map(instance);
+    }
+
+    public async Task<IReadOnlyList<WorkflowStepCandidateGroupDto>> GetAssigneeCandidatesAsync(Guid definitionId,
+        CancellationToken cancellationToken = default)
+    {
+        var principal = Principal;
+        var userId = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowStart);
+        var definition = await db.WorkflowDefinitions.AsNoTracking().Include(x => x.Steps)
+            .SingleOrDefaultAsync(x => x.Id == definitionId, cancellationToken)
+            ?? throw new KeyNotFoundException("Workflow definition not found.");
+        var groups = new List<WorkflowStepCandidateGroupDto>();
+        foreach (var step in definition.Steps.OrderBy(x => x.Order))
+        {
+            if (step.Type == WorkflowStepTypes.View)
+            {
+                groups.Add(new WorkflowStepCandidateGroupDto(step.Code, step.Name, step.AssigneeType, step.RoleId, []));
+                continue;
+            }
+
+            if (step.AssigneeType == WorkflowStepAssigneeTypes.RoleInSubmitterOu && step.RoleId is { } roleId)
+            {
+                var candidates = await assigneeResolver.ResolveByRoleAsync(roleId, userId, cancellationToken);
+                groups.Add(new WorkflowStepCandidateGroupDto(step.Code, step.Name, step.AssigneeType, roleId, candidates));
+                continue;
+            }
+
+            var preset = step.AssigneeUserId is { } assignee
+                ? new[] { new WorkflowAssigneeCandidateDto(assignee, string.Empty) }
+                : Array.Empty<WorkflowAssigneeCandidateDto>();
+            groups.Add(new WorkflowStepCandidateGroupDto(step.Code, step.Name, step.AssigneeType, step.RoleId, preset));
+        }
+
+        return groups;
     }
 
     public async Task<WorkflowInstanceDto> DecideAsync(Guid taskId, DecideApprovalTaskRequest input, CancellationToken cancellationToken = default)
@@ -412,6 +460,30 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         await using var stream = new MemoryStream(pdfBytes);
         await blobs.SaveAsync(blobName, stream, overrideExisting: true, cancellationToken: cancellationToken);
         template.AttachPdf(pdfId, pdfName, "application/pdf", blobName);
+    }
+
+    private async Task ApplyRoleAssigneesAsync(WorkflowDefinition definition, Guid submitterUserId,
+        Dictionary<string, Guid> overrides, CancellationToken cancellationToken)
+    {
+        foreach (var step in definition.Steps.Where(x => x.IsBlocking))
+        {
+            if (step.AssigneeType != WorkflowStepAssigneeTypes.RoleInSubmitterOu || step.RoleId is not { } roleId)
+                continue;
+            var candidates = await assigneeResolver.ResolveByRoleAsync(roleId, submitterUserId, cancellationToken);
+            if (candidates.Count == 0)
+                throw new InvalidOperationException($"No assignee candidates for step '{step.Code}'.");
+            var allowed = candidates.Select(x => x.UserId).ToHashSet();
+            if (overrides.TryGetValue(step.Code, out var chosen))
+            {
+                if (!allowed.Contains(chosen))
+                    throw new InvalidOperationException($"Chosen signer is not in the submitter OU role for step '{step.Code}'.");
+                continue;
+            }
+            if (candidates.Count == 1)
+                overrides[step.Code] = candidates[0].UserId;
+            else
+                throw new InvalidOperationException($"Choose a signer for step '{step.Code}'.");
+        }
     }
 
     private async Task<DocumentAggregate> LoadDocumentAsync(Guid id, CancellationToken cancellationToken) =>

@@ -80,18 +80,19 @@ public sealed class NotificationRequestedHandler(
     {
         if (await db.InboxMessages.AnyAsync(x => x.Id == eventData.EventId)) return;
         db.InboxMessages.Add(new InboxMessage(eventData.EventId, nameof(NotificationRequestedEto), DateTime.UtcNow));
+        var at = eventData.OccurredAtUtc.UtcDateTime;
         var notification = await db.Notifications.SingleOrDefaultAsync(x => x.Id == eventData.NotificationId);
         if (notification is null)
         {
-            notification = new Notification(eventData.NotificationId, eventData.Type,
-                $"Notification for {eventData.SubjectId}", null);
+            notification = new Notification(eventData.NotificationId, NotificationLocalization.GenericTitle,
+                NotificationLocalization.Encode(NotificationLocalization.GenericBody, eventData.SubjectId), null, at);
             db.Notifications.Add(notification);
         }
         if (!await db.NotificationReceivers.AnyAsync(x => x.NotificationId == eventData.NotificationId && x.UserId == eventData.RecipientUserId))
         {
-            db.NotificationReceivers.Add(new NotificationReceiver(guidGenerator.Create(), notification.Id, eventData.RecipientUserId));
+            db.NotificationReceivers.Add(new NotificationReceiver(guidGenerator.Create(), notification.Id, eventData.RecipientUserId, at));
             db.PushDeliveries.Add(new PushDelivery(guidGenerator.Create(), eventData.RecipientUserId,
-                notification.Title, notification.Body, notification.Link, DateTime.UtcNow));
+                notification.Title, notification.Body, notification.Link, at));
         }
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException exception) when (PostgresErrors.IsInboxDuplicate(exception)) { db.ChangeTracker.Clear(); }
@@ -173,38 +174,66 @@ public sealed class WorkSubjectAccessChangedHandler(CollaborationDbContext db, I
 public sealed class ChatMessageSentNotificationHandler(CollaborationDbContext db, IGuidGenerator guidGenerator)
     : IDistributedEventHandler<ChatMessageSentEto>, ITransientDependency
 {
-    public Task HandleEventAsync(ChatMessageSentEto eventData) => NotificationFanout.UpsertAsync(db, guidGenerator,
-        eventData.EventId, nameof(ChatMessageSentEto), eventData.RecipientUserIds, "Tin nhắn mới",
-        "Bạn có tin nhắn mới", $"/chat/{eventData.ConversationId}");
+    public Task HandleEventAsync(ChatMessageSentEto eventData)
+    {
+        var senderName = UserDisplayNames.FirstReal(eventData.SenderDisplayName);
+        var body = string.IsNullOrWhiteSpace(senderName)
+            ? NotificationLocalization.ChatBodyUnknown
+            : NotificationLocalization.Encode(NotificationLocalization.ChatBody, senderName);
+        return NotificationFanout.UpsertAsync(db, guidGenerator, eventData.EventId, eventData.OccurredAtUtc,
+            nameof(ChatMessageSentEto), eventData.RecipientUserIds, NotificationLocalization.ChatTitle, body,
+            $"/chat/{eventData.ConversationId}");
+    }
 }
 
 public sealed class ProjectTaskChangedNotificationHandler(CollaborationDbContext db, IGuidGenerator guidGenerator)
     : IDistributedEventHandler<ProjectTaskChangedEto>, ITransientDependency
 {
     public Task HandleEventAsync(ProjectTaskChangedEto eventData) => eventData.AssigneeUserId.HasValue
-        ? NotificationFanout.UpsertAsync(db, guidGenerator, eventData.EventId, nameof(ProjectTaskChangedEto),
-            [eventData.AssigneeUserId.Value], "Công việc thay đổi", $"Trạng thái: {eventData.Status}", $"/project-tasks/{eventData.TaskId}")
+        && string.Equals(eventData.ChangeType, "AssignmentChanged", StringComparison.OrdinalIgnoreCase)
+        ? NotificationFanout.UpsertAsync(db, guidGenerator, eventData.EventId, eventData.OccurredAtUtc,
+            nameof(ProjectTaskChangedEto), [eventData.AssigneeUserId.Value], NotificationLocalization.TaskAssignedTitle,
+            NotificationLocalization.Encode(NotificationLocalization.TaskAssignedBody, TaskName(eventData)),
+            $"/project-task-detail/{eventData.TaskId}")
         : Task.CompletedTask;
+
+    private static string TaskName(ProjectTaskChangedEto eventData) =>
+        string.IsNullOrWhiteSpace(eventData.Title) ? eventData.TaskId.ToString("N")[..8] : eventData.Title.Trim();
+}
+
+public sealed class ProjectMemberAssignedNotificationHandler(CollaborationDbContext db, IGuidGenerator guidGenerator)
+    : IDistributedEventHandler<ProjectMemberAssignedEto>, ITransientDependency
+{
+    public Task HandleEventAsync(ProjectMemberAssignedEto eventData) =>
+        NotificationFanout.UpsertAsync(db, guidGenerator, eventData.EventId, eventData.OccurredAtUtc,
+            nameof(ProjectMemberAssignedEto), [eventData.UserId], NotificationLocalization.ProjectAssignedTitle,
+            NotificationLocalization.Encode(NotificationLocalization.ProjectAssignedBody, eventData.ProjectName),
+            $"/project-detail/{eventData.ProjectId}");
 }
 
 internal static class NotificationFanout
 {
     public const int MaxRecipients = 500;
     public static async Task UpsertAsync(CollaborationDbContext db, IGuidGenerator guids, Guid eventId,
-        string eventName, IEnumerable<Guid> recipients, string title, string body, string? link)
+        DateTimeOffset occurredAtUtc, string eventName, IEnumerable<Guid> recipients, string title, string body, string? link)
     {
         if (await db.InboxMessages.AnyAsync(x => x.Id == eventId)) return;
         var userIds = recipients.Distinct().Take(MaxRecipients + 1).ToArray();
         if (userIds.Length > MaxRecipients) throw new BusinessException("Collaboration:TooManyNotificationRecipients");
-        db.InboxMessages.Add(new InboxMessage(eventId, eventName, DateTime.UtcNow));
+        var at = occurredAtUtc.UtcDateTime;
+        db.InboxMessages.Add(new InboxMessage(eventId, eventName, at));
         var notification = await db.Notifications.SingleOrDefaultAsync(x => x.Id == eventId);
-        if (notification is null) { notification = new Notification(eventId, title, body, link); db.Notifications.Add(notification); }
+        if (notification is null)
+        {
+            notification = new Notification(eventId, title, body, link, at);
+            db.Notifications.Add(notification);
+        }
         var existing = await db.NotificationReceivers.Where(x => x.NotificationId == eventId && userIds.Contains(x.UserId))
             .Select(x => x.UserId).ToListAsync();
         foreach (var userId in userIds.Except(existing))
         {
-            db.NotificationReceivers.Add(new NotificationReceiver(guids.Create(), eventId, userId));
-            db.PushDeliveries.Add(new PushDelivery(guids.Create(), userId, title, body, link, DateTime.UtcNow));
+            db.NotificationReceivers.Add(new NotificationReceiver(guids.Create(), eventId, userId, at));
+            db.PushDeliveries.Add(new PushDelivery(guids.Create(), userId, title, body, link, at));
         }
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException exception) when (PostgresErrors.IsInboxDuplicate(exception)) { db.ChangeTracker.Clear(); }

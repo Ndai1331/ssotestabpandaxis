@@ -112,6 +112,8 @@ public sealed class OutboxDispatcher(WorkManagementDbContext db, IDistributedEve
                     await eventBus.PublishAsync(JsonSerializer.Deserialize<SurveySessionChangedEto>(message.Payload)!, onUnitOfWorkComplete: false);
                 else if (message.EventName == typeof(ProjectTaskChangedEto).FullName)
                     await eventBus.PublishAsync(JsonSerializer.Deserialize<ProjectTaskChangedEto>(message.Payload)!, onUnitOfWorkComplete: false);
+                else if (message.EventName == typeof(ProjectMemberAssignedEto).FullName)
+                    await eventBus.PublishAsync(JsonSerializer.Deserialize<ProjectMemberAssignedEto>(message.Payload)!, onUnitOfWorkComplete: false);
                 else if (message.EventName == typeof(WorkSubjectAccessChangedEto).FullName)
                     await eventBus.PublishAsync(JsonSerializer.Deserialize<WorkSubjectAccessChangedEto>(message.Payload)!, onUnitOfWorkComplete: false);
                 else if (message.EventName == AuditRecordCapturedEto.EventName)

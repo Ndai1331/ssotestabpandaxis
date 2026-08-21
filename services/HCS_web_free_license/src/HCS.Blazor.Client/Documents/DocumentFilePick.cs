@@ -17,10 +17,10 @@ internal static class DocumentFilePick
             var paired = files.FirstOrDefault(x => x.Id == pair);
             if (paired is not null && IsPdf(paired)) return paired;
         }
-        return files[0];
+        return null;
     }
 
-    private static bool IsPdf(DocumentFileDto file) =>
+    public static bool IsPdf(DocumentFileDto file) =>
         file.ContentType.Contains("pdf", StringComparison.OrdinalIgnoreCase)
         || file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
 }

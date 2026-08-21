@@ -60,6 +60,11 @@ public sealed class WorkflowTests
         });
         Assert.Equal("Updated", definition.Name);
         Assert.Equal(2, definition.Steps.Count);
+        definition.ReplaceSteps(new[]
+        {
+            new WorkflowStepInput("review", "Review", 1, "  ")
+        });
+        Assert.Equal("Documents.Workflow.Decide", definition.Steps.Single().RequiredPermission);
         Assert.Throws<InvalidOperationException>(() => definition.ReplaceSteps(new[]
         {
             new WorkflowStepInput("same", "A", 1, "Documents.Review"),
@@ -166,6 +171,21 @@ public sealed class WorkflowTests
         var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-override", Now,
             new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase) { ["sign"] = selected });
         Assert.Equal(selected, instance.Tasks.Single().AssigneeUserId);
+    }
+
+    [Fact]
+    public void Role_step_uses_resolved_override()
+    {
+        var roleId = Guid.NewGuid();
+        var resolved = Guid.NewGuid();
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "role", "Role", new[]
+        {
+            new WorkflowStepInput("review", "Review", 1, "Documents.Review", "PROCESS", null,
+                WorkflowStepAssigneeTypes.RoleInSubmitterOu, roleId)
+        }, Now);
+        var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-role", Now,
+            new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase) { ["review"] = resolved });
+        Assert.Equal(resolved, instance.Tasks.Single().AssigneeUserId);
     }
 
     [Fact]

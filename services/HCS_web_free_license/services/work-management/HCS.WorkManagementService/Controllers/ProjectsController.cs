@@ -28,6 +28,13 @@ public sealed class ProjectsController(ProjectAppService service) : ControllerBa
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/chat-access")]
+    public async Task<IActionResult> SyncChatAccess(Guid id, CancellationToken ct)
+    {
+        await service.SyncChatAccessAsync(id, ct);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/members")]
     public Task<ProjectMemberDto> AddMember(Guid id, AddProjectMemberDto input, CancellationToken ct) =>
         service.AddMemberAsync(id, input, ct);

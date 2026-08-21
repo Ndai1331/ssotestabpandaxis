@@ -79,6 +79,8 @@ Mở `https://hcs.localhost`. Nếu browser chưa tin local CA của Caddy, tin 
 
 Handoff triển khai và rollback: [`../../docs/runbooks/hcs-docker-compose-handoff.md`](../../docs/runbooks/hcs-docker-compose-handoff.md).
 
+Production 2 server Ubuntu 24 (data `10.17.227.64`, apps `10.17.227.58`, Nginx + Let's Encrypt): [`docs/runbooks/hcs-ubuntu24-two-server.md`](./docs/runbooks/hcs-ubuntu24-two-server.md).
+
 ## Browser sign-in and navigation
 
 The browser entry point is `https://hcs.localhost`. The workspace root (`/`) requires an authenticated user. A direct visit to `/login` is allowed anonymously, but immediately starts the same BFF sign-in flow.

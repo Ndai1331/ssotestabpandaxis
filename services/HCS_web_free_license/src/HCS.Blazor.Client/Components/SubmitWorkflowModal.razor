@@ -11,6 +11,13 @@
         </ModalHeader>
         <ModalBody Class="hcs-catalog-modal__body">
             <div class="hcs-catalog-form">
+                @if (!allowDocumentPicker && documentId is not null)
+                {
+                    <Alert Color="Color.Info" Visible="true" Class="mb-3">
+                        <AlertMessage>@L["Menu:Documents"]:</AlertMessage>
+                        <AlertDescription>@DocumentName(documentId)</AlertDescription>
+                    </Alert>
+                }
                 @if (documentId is null || allowDocumentPicker)
                 {
                     <Field><FieldLabel>@L["Menu:Documents"]</FieldLabel>
@@ -21,29 +28,31 @@
                                         Search="SearchDocumentsAsync" />
                     </Field>
                 }
-                <Field><FieldLabel>@L["Work:SelectWorkflow"]</FieldLabel>
+                <Field><FieldLabel>@L["Work:SelectWorkflow"] <span class="text-danger">*</span></FieldLabel>
                     <CatalogSelect2 Value="definitionId"
                                     ValueChanged="OnDefinitionChanged"
                                     Placeholder="@L["Work:SelectWorkflow"]"
                                     SelectedText="@DefinitionName(definitionId)"
                                     Search="SearchDefinitionsAsync" />
                 </Field>
-                <Field>
-                    <Check TValue="bool" @bind-Checked="useTemplateFile" Disabled="@(selectedTemplate?.PdfFileId is null)">
-                        @L["Work:UseTemplateFile"]
-                    </Check>
-                    @if (selected is not null && selectedTemplate?.PdfFileId is null)
-                    {
-                        <p class="form-text mb-0">@L["Work:ConvertPending"]</p>
-                    }
-                </Field>
-                @if (useTemplateFile && selectedTemplate is not null)
-                {
-                    <div class="hcs-template-file-box">
-                        <i class="fa fa-file-word me-2"></i>
-                        <span>@(selectedTemplate.WordFileName ?? selectedTemplate.PdfFileName ?? selectedTemplate.Name)</span>
-                    </div>
-                }
+                <Card Class="mt-2 mb-2 border-info">
+                    <CardBody>
+                        <Check TValue="bool" @bind-Checked="useTemplateFile" Disabled="@(selectedTemplate?.PdfFileId is null)">
+                            @L["Work:UseTemplateFile"]
+                        </Check>
+                        @if (selected is not null && selectedTemplate?.PdfFileId is null)
+                        {
+                            <p class="form-text mb-0">@L["Work:ConvertPending"]</p>
+                        }
+                        @if (useTemplateFile && selectedTemplate is not null)
+                        {
+                            <div class="hcs-template-file-box mt-2">
+                                <i class="fa fa-file-word me-2"></i>
+                                <span>@(selectedTemplate.WordFileName ?? selectedTemplate.PdfFileName ?? selectedTemplate.Name)</span>
+                            </div>
+                        }
+                    </CardBody>
+                </Card>
                 @if (selected is not null)
                 {
                     @foreach (var step in selected.Steps.OrderBy(x => x.Order))
@@ -57,6 +66,22 @@
                             @if (step.Type == "VIEW")
                             {
                                 <p class="text-muted mb-0">@L["Work:AssigneeType.ScopedAssignee"]</p>
+                            }
+                            else if (CandidatesFor(step.Code).Count == 1 && SignerFor(step.Code) == CandidatesFor(step.Code)[0].UserId)
+                            {
+                                <p class="mb-0"><i class="fa fa-user me-1"></i> @CandidatesFor(step.Code)[0].DisplayName</p>
+                            }
+                            else if (CandidatesFor(step.Code).Count > 1)
+                            {
+                                <Field Class="mb-0"><FieldLabel>@L["Work:ChooseSigner"] *</FieldLabel>
+                                    <Select TValue="Guid?" Value="SignerFor(step.Code)" ValueChanged="value => SetSigner(step.Code, value)">
+                                        <SelectItem TValue="Guid?" Value="null">@L["Work:ChooseSigner"]</SelectItem>
+                                        @foreach (var candidate in CandidatesFor(step.Code))
+                                        {
+                                            <SelectItem TValue="Guid?" Value="@candidate.UserId">@candidate.DisplayName</SelectItem>
+                                        }
+                                    </Select>
+                                </Field>
                             }
                             else if (step.AssigneeUserId is { } preset && SignerFor(step.Code) == preset)
                             {
@@ -110,6 +135,7 @@
     private readonly List<WorkflowTemplateDto> templates = [];
     private readonly List<DocumentDto> documents = [];
     private readonly List<ChatContactDto> contacts = [];
+    private readonly Dictionary<string, List<WorkflowAssigneeCandidateDto>> candidatesByStep = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Guid?> signers = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> attachedNames = [];
     private Guid? documentId;
@@ -128,6 +154,7 @@
         selected = null;
         selectedTemplate = null;
         signers.Clear();
+        candidatesByStep.Clear();
         attachedNames.Clear();
         useTemplateFile = false;
         if (definitions.Count == 0) definitions.AddRange(await Documents.GetDefinitionsAsync());
@@ -155,21 +182,34 @@
         return Task.CompletedTask;
     }
 
-    private Task OnDefinitionChanged(Guid? value)
+    private async Task OnDefinitionChanged(Guid? value)
     {
         definitionId = value;
         selected = definitions.FirstOrDefault(x => x.Id == value);
         selectedTemplate = templates.Where(x => x.DefinitionId == value).OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Version).FirstOrDefault();
         useTemplateFile = selectedTemplate?.PdfFileId is not null;
         signers.Clear();
-        if (selected is null) return Task.CompletedTask;
+        candidatesByStep.Clear();
+        if (selected is null) return;
         foreach (var step in selected.Steps.Where(x => x.Type != "VIEW"))
             signers[step.Code] = step.AssigneeUserId;
-        return Task.CompletedTask;
+        try
+        {
+            var groups = await Documents.GetAssigneeCandidatesAsync(selected.Id);
+            foreach (var group in groups)
+            {
+                candidatesByStep[group.StepCode] = group.Candidates ?? [];
+                if (group.Candidates is { Count: 1 })
+                    signers[group.StepCode] = group.Candidates[0].UserId;
+            }
+        }
+        catch { }
     }
 
     private Guid? SignerFor(string code) => signers.TryGetValue(code, out var id) ? id : null;
     private void SetSigner(string code, Guid? id) => signers[code] = id;
+    private IReadOnlyList<WorkflowAssigneeCandidateDto> CandidatesFor(string code) =>
+        candidatesByStep.TryGetValue(code, out var list) ? list : [];
 
     private async Task AttachFilesAsync(InputFileChangeEventArgs args)
     {

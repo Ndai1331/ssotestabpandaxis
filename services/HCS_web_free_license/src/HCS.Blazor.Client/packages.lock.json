@@ -39,6 +39,18 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.10"
         }
       },
+      "Blazorise.PdfViewer": {
+        "type": "Direct",
+        "requested": "[2.3.0, )",
+        "resolved": "2.3.0",
+        "contentHash": "Pikov19Mrm2bJtxeTLj1KTgZ9MNkWSk7pirnMe04mWWfcxbiZZPR13slsF7eGArEcW8L3AOaXOA3+TK9QUZMFQ==",
+        "dependencies": {
+          "Blazorise": "2.3.0",
+          "Microsoft.AspNetCore.Components": "10.0.10",
+          "Microsoft.AspNetCore.Components.Web": "10.0.10",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.10"
+        }
+      },
       "Microsoft.AspNetCore.App.Internal.Assets": {
         "type": "Direct",
         "requested": "[10.0.1, )",

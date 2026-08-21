@@ -1,7 +1,7 @@
 ---
 status: in-progress
 blocks: [260814-1000-hcs-blazorise-localization]
-notes: "2026-08-19 Workflow slice: Kind CRUD, wizard 4 bước, assignment VIEW/blocking, Start signer/scope, SubmitWorkflowModal, TaskTree/modals, NotificationToast poll. Không đánh DONE cả module Work/Calendar/Survey."
+notes: "2026-08-20 PDF/signing UI: Blazorise.PdfViewer 2.3.0 (override iframe ban); Select2 user/role in step modal; DOCX MIME-by-extension; document-detail 6/6 LICENSE layout; action button border=icon; signing 3-row filter + ExtraLarge sign modal. DocumentService tests 52. Rebuild blazor+document; hard refresh."
 ---
 
 # HCS Free feature parity — menu, auth, catalogs and business modules

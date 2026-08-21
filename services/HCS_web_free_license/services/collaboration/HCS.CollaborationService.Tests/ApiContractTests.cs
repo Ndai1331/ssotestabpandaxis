@@ -14,6 +14,7 @@ public sealed class ApiContractTests
     public void Chat_and_notification_routes_keep_gateway_contracts()
     {
         typeof(ChatController).GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().Single().Template.ShouldBe("api/chat");
+        typeof(ChatController).GetMethod(nameof(ChatController.FindByProject))!.GetCustomAttributes(typeof(HttpGetAttribute), true).ShouldNotBeEmpty();
         typeof(ChatController).GetMethod(nameof(ChatController.PinMessage))!.GetCustomAttributes(typeof(HttpPutAttribute), true).ShouldNotBeEmpty();
         typeof(ChatController).GetMethod(nameof(ChatController.Search))!.GetParameters().ShouldContain(p => p.Name == "pinnedOnly");
         typeof(NotificationController).GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().Single().Template.ShouldBe("api/notifications");
@@ -23,6 +24,33 @@ public sealed class ApiContractTests
     public void Attachment_store_is_registered_as_transient()
     {
         typeof(CollaborationAttachmentStore).IsAssignableTo(typeof(ITransientDependency)).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Leave_accepts_optional_admin_transfer()
+    {
+        typeof(ChatController).GetMethod(nameof(ChatController.Leave))!.GetParameters()
+            .ShouldContain(p => p.Name == "input");
+        typeof(CollaborationAppService).GetMethod(nameof(CollaborationAppService.LeaveAsync))!.GetParameters()
+            .ShouldContain(p => p.Name == "transferAdminTo" && p.ParameterType == typeof(Guid?));
+    }
+
+    [Fact]
+    public void Unread_count_route_is_exposed()
+    {
+        var method = typeof(ChatController).GetMethod(nameof(ChatController.Unread));
+        method.ShouldNotBeNull();
+        method!.GetCustomAttributes(typeof(HttpGetAttribute), true).Cast<HttpGetAttribute>()
+            .ShouldContain(attribute => attribute.Template == "unread-count");
+        typeof(NotificationController).GetMethod(nameof(NotificationController.UnreadCount))!.GetCustomAttributes(typeof(HttpGetAttribute), true)
+            .Cast<HttpGetAttribute>().ShouldContain(attribute => attribute.Template == "unread-count");
+    }
+
+    [Fact]
+    public void Chat_presence_tracker_is_registered_as_singleton()
+    {
+        typeof(ChatPresenceTracker).IsAssignableTo(typeof(IChatPresenceTracker)).ShouldBeTrue();
+        typeof(ChatPresenceTracker).IsAssignableTo(typeof(ISingletonDependency)).ShouldBeTrue();
     }
 
     [Fact]

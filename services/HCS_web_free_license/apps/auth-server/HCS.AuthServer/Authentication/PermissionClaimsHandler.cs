@@ -107,12 +107,22 @@ public sealed class PermissionClaimResolver(
 }
 
 /// <summary>
-/// Adds local role and permission claims to the access-token principal before OpenIddict clones it.
+/// Adds local role, permission, and profile claims to the access-token principal before OpenIddict clones it.
 /// Role claims must be on the access token so Platform Identity can assign roles to other users.
 /// </summary>
-public sealed class PermissionClaimsHandler(IPermissionClaimResolver resolver)
+public sealed class PermissionClaimsHandler(
+    IPermissionClaimResolver resolver,
+    IIdentityUserRepository? users = null)
     : IOpenIddictServerHandler<OpenIddictServerEvents.ProcessSignInContext>
 {
+    private static readonly string[] ProfileClaimTypes =
+    [
+        OpenIddictConstants.Claims.PreferredUsername,
+        OpenIddictConstants.Claims.Name,
+        OpenIddictConstants.Claims.GivenName,
+        OpenIddictConstants.Claims.FamilyName
+    ];
+
     public async ValueTask HandleAsync(OpenIddictServerEvents.ProcessSignInContext context)
     {
         var principal = context.Principal
@@ -126,7 +136,9 @@ public sealed class PermissionClaimsHandler(IPermissionClaimResolver resolver)
         }
 
         var roles = await resolver.ResolveRolesAsync(principal);
-        foreach (var claim in principal.FindAll(AbpClaimTypes.Role).Concat(principal.FindAll(ClaimTypes.Role)).ToArray())
+        foreach (var claim in identity.Claims
+            .Where(claim => claim.Type == AbpClaimTypes.Role || claim.Type == ClaimTypes.Role)
+            .ToArray())
         {
             identity.RemoveClaim(claim);
         }
@@ -147,5 +159,71 @@ public sealed class PermissionClaimsHandler(IPermissionClaimResolver resolver)
             claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
             identity.AddClaim(claim);
         }
+
+        foreach (var type in ProfileClaimTypes)
+        {
+            foreach (var claim in identity.FindAll(type))
+            {
+                claim.SetDestinations(
+                    OpenIddictConstants.Destinations.AccessToken,
+                    OpenIddictConstants.Destinations.IdentityToken);
+            }
+        }
+
+        await AddIdentityProfileClaimsAsync(identity, principal);
+    }
+
+    private async Task AddIdentityProfileClaimsAsync(ClaimsIdentity identity, ClaimsPrincipal principal)
+    {
+        if (users is null)
+        {
+            return;
+        }
+
+        var subject = principal.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(subject, out var userId))
+        {
+            return;
+        }
+
+        var user = await users.FindAsync(userId);
+        if (user is null)
+        {
+            return;
+        }
+
+        UpsertProfileClaim(identity, OpenIddictConstants.Claims.PreferredUsername, user.UserName);
+        UpsertProfileClaim(identity, OpenIddictConstants.Claims.GivenName, user.Name);
+        UpsertProfileClaim(identity, OpenIddictConstants.Claims.FamilyName, user.Surname);
+        var displayName = string.Join(' ', new[] { user.Surname, user.Name }
+            .Where(value => !string.IsNullOrWhiteSpace(value))).Trim();
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            displayName = user.UserName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            UpsertProfileClaim(identity, OpenIddictConstants.Claims.Name, displayName);
+        }
+    }
+
+    private static void UpsertProfileClaim(ClaimsIdentity identity, string type, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        foreach (var existing in identity.FindAll(type).ToArray())
+        {
+            identity.RemoveClaim(existing);
+        }
+
+        var claim = new Claim(type, value.Trim());
+        claim.SetDestinations(
+            OpenIddictConstants.Destinations.AccessToken,
+            OpenIddictConstants.Destinations.IdentityToken);
+        identity.AddClaim(claim);
     }
 }

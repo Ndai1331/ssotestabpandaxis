@@ -13,7 +13,7 @@
             <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
         </div>
     </header>
-    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
             <Addons Class="hcs-catalog-search">
                 <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
@@ -21,49 +21,65 @@
                     <Button Color="Color.Primary" Clicked="SearchAsync"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
                 </Addon>
             </Addons>
+            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-toggle" Clicked="() => showFilters = !showFilters">
+                <i class="fa fa-sliders me-2"></i>@L["Catalog:Filter"]
+                <i class="fa @(showFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2"></i>
+            </Button>
         </div>
+        @if (showFilters)
+        {
+            <div class="hcs-catalog-advanced-filter">
+                <Field>
+                    <FieldLabel>@L["Catalog:Status"]</FieldLabel>
+                    <Select TValue="string" @bind-Value="statusFilter" @bind-Value:after="SearchAsync">
+                        <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
+                        <SelectItem Value="@("Active")">Active</SelectItem>
+                        <SelectItem Value="@("Closed")">Closed</SelectItem>
+                    </Select>
+                </Field>
+                <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
+            </div>
+        }
     </CardBody></Card>
     <Card Class="hcs-catalog-grid-card"><CardBody>
-        @if (isLoading) { <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div> }
-        else if (VisibleSessions.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div> }
-        else
-        {
-            <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
-                <thead><tr>
-                    <th></th>
-                    <th>@L["Catalog:Code"]</th>
-                    <th>@L["Feature:StartDate"]</th>
-                    <th>@L["Catalog:Status"]</th>
-                    <th>@L["Catalog:Actions"]</th>
-                </tr></thead>
-                <tbody>
-                @foreach (var session in VisibleSessions)
-                {
-                    <tr>
-                        <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
-                        <td>
-                            <strong>@session.Name</strong>
-                            <span class="hcs-catalog-code">#@session.Code</span>
-                        </td>
-                        <td>@session.StartsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @session.EndsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                        <td><span class="hcs-status-badge hcs-status-badge--planning">@session.Status</span></td>
-                        <td>
-                            <div class="hcs-row-actions">
-                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => Edit(session)"><Icon Name="@IconName.Edit" /></Button>
-                                <Button Size="Size.Small" Color="Color.Success" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(session, "Active"))">Active</Button>
-                                <Button Size="Size.Small" Color="Color.Secondary" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(session, "Closed"))">Closed</Button>
-                                @if (session.LocationId is { } locationId)
-                                {
-                                    <a class="btn btn-sm btn-outline-primary hcs-action-button" href="@($"/survey-collections/{locationId}")">@L["Feature:Collect"]</a>
-                                }
-                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button hcs-action-button--delete" Clicked="() => DeleteAsync(session)"><Icon Name="@IconName.Delete" /></Button>
-                            </div>
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table></div>
-        }
+        <DataGrid TItem="SurveySessionDto" Data="@pageItems" TotalItems="@totalCount" ReadData="OnReadAsync"
+                  ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
+                  Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
+            <EmptyTemplate>
+                <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div>
+            </EmptyTemplate>
+            <LoadingTemplate>
+                <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+            </LoadingTemplate>
+            <DataGridColumns>
+                <DataGridColumn TItem="SurveySessionDto" Caption="@L["Catalog:Code"].Value">
+                    <DisplayTemplate Context="cell">
+                        <strong>@cell.Item.Name</strong>
+                        <span class="hcs-catalog-code">#@cell.Item.Code</span>
+                    </DisplayTemplate>
+                </DataGridColumn>
+                <DataGridColumn TItem="SurveySessionDto" Caption="@L["Feature:StartDate"].Value">
+                    <DisplayTemplate Context="cell">@cell.Item.StartsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @cell.Item.EndsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</DisplayTemplate>
+                </DataGridColumn>
+                <DataGridColumn TItem="SurveySessionDto" Caption="@L["Catalog:Status"].Value">
+                    <DisplayTemplate Context="cell"><span class="hcs-status-badge hcs-status-badge--planning">@cell.Item.Status</span></DisplayTemplate>
+                </DataGridColumn>
+                <DataGridColumn TItem="SurveySessionDto" Caption="@L["Catalog:Actions"].Value">
+                    <DisplayTemplate Context="cell">
+                        <div class="hcs-row-actions">
+                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => Edit(cell.Item)"><Icon Name="@IconName.Edit" /></Button>
+                            <Button Size="Size.Small" Color="Color.Success" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(cell.Item, "Active"))">Active</Button>
+                            <Button Size="Size.Small" Color="Color.Secondary" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(cell.Item, "Closed"))">Closed</Button>
+                            @if (cell.Item.LocationId is { } locationId)
+                            {
+                                <a class="btn btn-sm btn-outline-primary hcs-action-button" href="@($"/survey-collections/{locationId}")">@L["Feature:Collect"]</a>
+                            }
+                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button hcs-action-button--delete" Clicked="() => DeleteAsync(cell.Item)"><Icon Name="@IconName.Delete" /></Button>
+                        </div>
+                    </DisplayTemplate>
+                </DataGridColumn>
+            </DataGridColumns>
+        </DataGrid>
     </CardBody></Card>
 </section>
 
@@ -82,8 +98,8 @@
                 </Select>
             </Field>
             <div class="hcs-form-row hcs-form-row--equal">
-                <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartsAt" /></Field>
-                <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.EndsAt" /></Field>
+                <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="form.StartsAt" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
+                <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="form.EndsAt" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
             </div>
         </div>
     </ModalBody>
@@ -93,24 +109,61 @@
     </ModalFooter>
 </ModalContent></Modal>
 @code {
+    private static readonly int[] pageSizes = [10, 20, 50, 100];
     private readonly List<SurveySessionDto> sessions = [];
+    private readonly List<SurveySessionDto> pageItems = [];
     private readonly List<SurveyLocationDto> locations = [];
     private readonly SessionForm form = new();
     private Modal? modal;
     private Guid? editingId;
-    private string filter = "";
-    private bool isLoading;
+    private string filter = "", statusFilter = "";
+    private bool isLoading, showFilters, loaded;
+    private int totalCount, pageSize = 20, currentPage = 1;
 
-    private List<SurveySessionDto> VisibleSessions => string.IsNullOrWhiteSpace(filter)
-        ? sessions
-        : sessions.Where(x => x.Code.Contains(filter, StringComparison.OrdinalIgnoreCase) || x.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+    private async Task OnReadAsync(DataGridReadDataEventArgs<SurveySessionDto> args)
+    {
+        currentPage = Math.Max(args.Page, 1);
+        pageSize = Math.Clamp(args.PageSize, 10, 100);
+        if (!loaded) await LoadAsync();
+        else ApplyPage();
+    }
 
-    protected override Task OnInitializedAsync() => LoadAsync();
-    private Task SearchAsync() => Task.CompletedTask;
+    private Task SearchAsync() { currentPage = 1; ApplyPage(); return Task.CompletedTask; }
+    private Task ResetSearchAsync() { filter = statusFilter = ""; showFilters = false; currentPage = 1; ApplyPage(); return Task.CompletedTask; }
+
+    private void ApplyPage()
+    {
+        var filtered = sessions.Where(Matches).ToList();
+        totalCount = filtered.Count;
+        pageItems.Clear();
+        pageItems.AddRange(filtered.Skip((currentPage - 1) * pageSize).Take(pageSize));
+    }
+
+    private bool Matches(SurveySessionDto item)
+    {
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var term = filter.Trim();
+            if (item.Code.IndexOf(term, StringComparison.OrdinalIgnoreCase) < 0 &&
+                item.Name.IndexOf(term, StringComparison.OrdinalIgnoreCase) < 0)
+                return false;
+        }
+        if (!string.IsNullOrWhiteSpace(statusFilter) &&
+            !string.Equals(item.Status, statusFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+        return true;
+    }
+
     private async Task LoadAsync()
     {
         isLoading = true;
-        try { sessions.Clear(); sessions.AddRange(await Work.GetSessionsAsync()); locations.Clear(); locations.AddRange(await Work.GetLocationsAsync()); }
+        try
+        {
+            sessions.Clear(); sessions.AddRange(await Work.GetSessionsAsync());
+            locations.Clear(); locations.AddRange(await Work.GetLocationsAsync());
+            loaded = true;
+            ApplyPage();
+        }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }

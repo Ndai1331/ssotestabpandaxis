@@ -59,9 +59,9 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
         var configured = _configuration["App:ClientUrl"];
         if (!string.IsNullOrWhiteSpace(configured))
         {
-            return configured.TrimEnd('/') + "/";
+            return configured.TrimEnd('/') + "/workspace";
         }
 
-        return "https://hcs.localhost/";
+        return "https://hcs.localhost/workspace";
     }
 }

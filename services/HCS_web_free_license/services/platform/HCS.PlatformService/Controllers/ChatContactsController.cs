@@ -31,10 +31,7 @@ public sealed class ChatContactsController(
             .Select(user => new ChatContactDto(
                 user.Id,
                 user.UserName,
-                // Vietnamese display order: family name (Surname) then given name (Name).
-                string.Join(' ', new[] { user.Surname, user.Name }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim() is { Length: > 0 } displayName
-                    ? displayName
-                    : user.UserName,
+                UserDisplayNames.FromPerson(user.Surname, user.Name, user.UserName),
                 user.IsActive))
             .ToArray();
     }

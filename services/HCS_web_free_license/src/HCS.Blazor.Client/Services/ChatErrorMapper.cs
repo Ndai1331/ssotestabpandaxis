@@ -14,6 +14,12 @@ public static class ChatErrorMapper
             return localizer[fallbackKey].Value;
         }
 
+        if (api.ResponseBody?.Contains("AdminTransferRequired", StringComparison.OrdinalIgnoreCase) == true)
+            return localizer["Collaboration:AdminTransferRequired"].Value;
+
+        if (api.ResponseBody?.Contains("WorkSubjectNotProvisioned", StringComparison.OrdinalIgnoreCase) == true)
+            return localizer["Chat:WorkSubjectNotProvisioned"].Value;
+
         return api.StatusCode switch
         {
             HttpStatusCode.Unauthorized => localizer["Catalog:Unauthorized"].Value,

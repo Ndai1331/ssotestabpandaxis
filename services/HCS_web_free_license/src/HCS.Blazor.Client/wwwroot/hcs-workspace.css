@@ -43,7 +43,6 @@
 }
 
 .hcs-workspace .hcs-ws-filter-dates .form-control,
-.hcs-workspace .hcs-ws-filter-dates .flatpickr-input,
 .hcs-workspace .hcs-ws-filter-dates .b-is-datepicker,
 .hcs-workspace .hcs-ws-filter-dates .b-is-datepicker .form-control {
     height: 36px;
@@ -55,7 +54,7 @@
 
 .hcs-workspace .hcs-ws-search {
     align-items: center;
-    background: var(--ws-pink);
+    background: var(--hcs-primary, #3d5cff);
     border: 0;
     border-radius: 5px;
     color: #fff;
@@ -67,7 +66,7 @@
     padding: 0 1.1rem;
 }
 
-.hcs-workspace .hcs-ws-search:hover { background: #d4356b; color: #fff; }
+.hcs-workspace .hcs-ws-search:hover { background: #2f4ae6; color: #fff; }
 
 .hcs-workspace .hcs-ws-kpis {
     display: grid;
@@ -161,7 +160,7 @@
 
 .hcs-workspace .hcs-ws-action {
     align-items: center;
-    background: var(--ws-pink);
+    background: var(--hcs-primary, #3d5cff);
     border: 0;
     border-radius: 5px;
     color: #fff;
@@ -173,7 +172,7 @@
     white-space: nowrap;
 }
 
-.hcs-workspace .hcs-ws-action:hover { background: #d4356b; color: #fff; }
+.hcs-workspace .hcs-ws-action:hover { background: #2f4ae6; color: #fff; }
 
 .hcs-workspace .hcs-ws-card-body {
     flex: 1;

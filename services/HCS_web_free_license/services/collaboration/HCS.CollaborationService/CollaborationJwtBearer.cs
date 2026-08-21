@@ -5,8 +5,9 @@ using Volo.Abp.Security.Claims;
 namespace HCS.CollaborationService;
 
 /// <summary>
-/// Aligns JwtBearer with the public AuthServer issuer used on access tokens.
-/// Docker reaches that issuer through Caddy's development certificate.
+    /// Aligns JwtBearer with the public AuthServer issuer used on access tokens.
+    /// OpenIddict keeps JWT names (`sub`, `role`, `preferred_username`, `given_name`).
+    /// ABP ICurrentUser defaults to ClaimTypes.NameIdentifier until these are aligned.
 /// </summary>
 public static class CollaborationJwtBearer
 {
@@ -26,13 +27,17 @@ public static class CollaborationJwtBearer
     }
 
     /// <summary>
-    /// OpenIddict keeps JWT names (`sub`, `role`). ABP ICurrentUser defaults to
-    /// ClaimTypes.NameIdentifier, so CurrentUser.Id is null until these are aligned.
+    /// OpenIddict keeps JWT names (`sub`, `role`, `preferred_username`, `given_name`).
+    /// ABP ICurrentUser defaults to ClaimTypes.NameIdentifier until these are aligned.
     /// </summary>
     public static void AlignAbpClaimTypes()
     {
         AbpClaimTypes.UserId = JwtSubjectClaim;
         AbpClaimTypes.Role = JwtRoleClaim;
+        AbpClaimTypes.UserName = "preferred_username";
+        AbpClaimTypes.Name = "given_name";
+        AbpClaimTypes.SurName = "family_name";
+        AbpClaimTypes.Email = "email";
     }
 
     public static void Configure(JwtBearerOptions options, IConfiguration configuration)

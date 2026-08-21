@@ -105,7 +105,7 @@ public sealed class OrganizationCatalogClientTests
 
         Assert.Equal(HttpMethod.Post, handler.Request!.Method);
         Assert.Equal("/api/organization/positions", handler.Request.RequestUri!.PathAndQuery);
-        using var json = JsonDocument.Parse(await handler.Request.Content!.ReadAsStringAsync());
+        using var json = JsonDocument.Parse(handler.RequestBody!);
         Assert.Equal("DIR", json.RootElement.GetProperty("code").GetString());
         Assert.Equal(10, json.RootElement.GetProperty("signOrder").GetInt32());
         Assert.True(json.RootElement.GetProperty("isActive").GetBoolean());
@@ -145,12 +145,15 @@ public sealed class OrganizationCatalogClientTests
     {
         public HttpRequestMessage? Request { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             Request = request;
-            return Task.FromResult(responder(request));
+            RequestBody = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
+            return responder(request);
         }
+
+        public string? RequestBody { get; private set; }
     }
 }

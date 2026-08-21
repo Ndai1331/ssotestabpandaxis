@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,9 +9,10 @@ using Microsoft.AspNetCore.SignalR.Client;
 namespace HCS.Blazor.Client.Collaboration;
 
 /// <summary>
-/// Owns the one browser SignalR connection used by the Chat workspace. Its negotiate
-/// request is routed through <see cref="Authentication.BffHttpMessageHandler"/>, so the BFF
-/// antiforgery header and credential mode are applied before the WebSocket upgrade.
+/// Owns the one browser SignalR connection for chat messaging and presence.
+/// Started from the main layout (via <c>NotificationToast</c>) so a user is online on any HCS page,
+/// not only while the Chat workspace is open. Negotiate goes through
+/// <see cref="Authentication.BffHttpMessageHandler"/> for BFF antiforgery + credentials.
 /// </summary>
 public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDisposable
 {
@@ -20,6 +22,8 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
     public event Func<Task>? Changed;
     public event Func<ChatMessageDto, Task>? MessageReceived;
     public event Func<Guid, Guid, Task>? MessageDeleted;
+    public event Func<PresenceChangedDto, Task>? PresenceChanged;
+    public event Func<IReadOnlyList<Guid>, Task>? PresenceSnapshot;
     public event Func<HubConnectionState, Task>? StatusChanged;
 
     public Guid? ActiveConversationId { get; set; }
@@ -28,11 +32,6 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
     public async Task EnsureStartedAsync(CancellationToken cancellationToken = default)
     {
-        if (connection?.State is HubConnectionState.Connected or HubConnectionState.Connecting or HubConnectionState.Reconnecting)
-        {
-            return;
-        }
-
         await startLock.WaitAsync(cancellationToken);
         try
         {
@@ -51,8 +50,13 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
                 connection.On<ChatMessageDto>("ReceiveMessage", NotifyMessageAsync);
                 connection.On<ChatDeletedPayload>("MessageDeleted", NotifyDeletedAsync);
+                connection.On<PresenceChangedDto>("PresenceChanged", NotifyPresenceChangedAsync);
                 connection.Reconnecting += _ => NotifyStatusAsync(HubConnectionState.Reconnecting);
-                connection.Reconnected += _ => NotifyStatusAsync(HubConnectionState.Connected);
+                connection.Reconnected += async _ =>
+                {
+                    await NotifyStatusAsync(HubConnectionState.Connected);
+                    await RefreshPresenceSnapshotAsync(CancellationToken.None);
+                };
                 connection.Closed += _ => NotifyStatusAsync(HubConnectionState.Disconnected);
             }
 
@@ -69,6 +73,14 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
                     throw;
                 }
             }
+
+            // Always re-fetch when connected so late subscribers (ChatWorkspace after layout
+            // already started the hub) receive users who were already online — PresenceChanged
+            // only fires on offline→online transitions.
+            if (connection.State == HubConnectionState.Connected)
+            {
+                await RefreshPresenceSnapshotAsync(cancellationToken);
+            }
         }
         finally
         {
@@ -84,6 +96,24 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
         }
 
         startLock.Dispose();
+    }
+
+    private async Task RefreshPresenceSnapshotAsync(CancellationToken cancellationToken)
+    {
+        if (connection is null || connection.State != HubConnectionState.Connected)
+        {
+            return;
+        }
+
+        try
+        {
+            var ids = await connection.InvokeAsync<Guid[]>("GetOnlineUserIds", cancellationToken);
+            await NotifyPresenceSnapshotAsync(ids ?? []);
+        }
+        catch
+        {
+            // Presence is best-effort; chat messaging still works without a snapshot.
+        }
     }
 
     private async Task NotifyMessageAsync(ChatMessageDto message)
@@ -112,6 +142,34 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
         }
 
         await NotifyChangedAsync();
+    }
+
+    private async Task NotifyPresenceChangedAsync(PresenceChangedDto change)
+    {
+        var handlers = PresenceChanged;
+        if (handlers is null)
+        {
+            return;
+        }
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Func<PresenceChangedDto, Task>>())
+        {
+            await handler(change);
+        }
+    }
+
+    private async Task NotifyPresenceSnapshotAsync(IReadOnlyList<Guid> userIds)
+    {
+        var handlers = PresenceSnapshot;
+        if (handlers is null)
+        {
+            return;
+        }
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Func<IReadOnlyList<Guid>, Task>>())
+        {
+            await handler(userIds);
+        }
     }
 
     private async Task NotifyChangedAsync()

@@ -14,16 +14,20 @@
             </Button>
         </div>
     </header>
-    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
-            <Field Class="mb-0 flex-grow-1">
-                <FieldLabel>@L["Feature:SurveySessions"]</FieldLabel>
-                <Select TValue="string" @bind-Value="selectedSessionId" @bind-Value:after="LoadResultsAsync">
-                    <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
-                    @foreach (var session in sessions) { <SelectItem Value="@session.Id.ToString()">@($"{session.Code} — {session.Name}")</SelectItem> }
-                </Select>
-            </Field>
-            <Button Color="Color.Primary" Class="align-self-end" Clicked="LoadResultsAsync"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
+            <Addons Class="hcs-catalog-search">
+                <Addon AddonType="AddonType.Body">
+                    <Select TValue="string" @bind-Value="selectedSessionId">
+                        <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
+                        @foreach (var session in sessions) { <SelectItem Value="@session.Id.ToString()">@($"{session.Code} — {session.Name}")</SelectItem> }
+                    </Select>
+                </Addon>
+                <Addon AddonType="AddonType.End">
+                    <Button Color="Color.Primary" Clicked="LoadResultsAsync"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
+                </Addon>
+            </Addons>
+            <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
         </div>
     </CardBody></Card>
     <Card Class="hcs-catalog-grid-card mb-4"><CardBody>
@@ -145,6 +149,13 @@
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
     private async Task OpenSubmit() { form.CriteriaId = ""; form.Score = 0; form.Comment = ""; if (modal is not null) await modal.Show(); }
+    private Task ResetSearchAsync()
+    {
+        selectedSessionId = "";
+        results.Clear();
+        files.Clear();
+        return Task.CompletedTask;
+    }
     private async Task LoadResultsAsync()
     {
         results.Clear(); files.Clear();

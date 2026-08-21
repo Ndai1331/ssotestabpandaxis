@@ -12,7 +12,6 @@
 <section class="hcs-document-page">
     <header class="hcs-document-page__header">
         <div>
-            <p class="hcs-document-page__eyebrow">@L["Menu:ProjectsAndTasks"]</p>
             <h1>@(IsCreate ? L["Feature:ProjectCreate"] : (detail?.Project.Name ?? L["Feature:ProjectDetail"]))</h1>
             @if (detail is not null)
             {
@@ -49,32 +48,42 @@
             <Card>
                 <CardHeader><strong>@L["Feature:Members"]</strong></CardHeader>
                 <CardBody>
-                    <div class="hcs-form-row">
-                        <Field>
-                            <FieldLabel>@L["Feature:Member"]</FieldLabel>
-                            <CatalogSelect2 Value="memberUserId"
-                                            ValueChanged="value => memberUserId = value"
-                                            Placeholder="@L["Chat:SelectContacts"]"
-                                            SelectedText="@Name(memberUserId)"
-                                            Search="SearchContactsAsync" />
-                        </Field>
-                        <Field>
-                            <FieldLabel>@L["Feature:Role"]</FieldLabel>
-                            <Select TValue="string" @bind-Value="memberRole">
-                                <SelectItem Value="@("Member")">Member</SelectItem>
-                                <SelectItem Value="@("Manager")">Manager</SelectItem>
-                            </Select>
-                        </Field>
-                        <Button Color="Color.Primary" Clicked="AddMemberAsync">@L["Feature:AddMember"]</Button>
+                    <div class="hcs-catalog-form">
+                        <div class="hcs-form-row hcs-form-row--with-action">
+                            <Field>
+                                <FieldLabel>@L["Feature:Member"]</FieldLabel>
+                                <CatalogSelect2 Value="memberUserId"
+                                                ValueChanged="value => memberUserId = value"
+                                                Placeholder="@L["Chat:SelectContacts"]"
+                                                SelectedText="@Name(memberUserId)"
+                                                Search="SearchContactsAsync" />
+                            </Field>
+                            <Field>
+                                <FieldLabel>@L["Feature:Role"]</FieldLabel>
+                                <Select TValue="string" @bind-Value="memberRole">
+                                    <SelectItem Value="@("Member")">@L["Work:ProjectRole.Member"]</SelectItem>
+                                    <SelectItem Value="@("Supervisor")">@L["Work:ProjectRole.Supervisor"]</SelectItem>
+                                    <SelectItem Value="@("Manager")">@L["Work:ProjectRole.Manager"]</SelectItem>
+                                </Select>
+                            </Field>
+                            <div class="hcs-form-row__action">
+                                <span class="hcs-form-row__action-spacer" aria-hidden="true">@L["Feature:AddMember"]</span>
+                                <Button Color="Color.Primary" Class="hcs-form-row__action-btn" Clicked="AddMemberAsync">@L["Feature:AddMember"]</Button>
+                            </div>
+                        </div>
                     </div>
                     @if (detail.Members.Count == 0) { <p class="mt-3 mb-0">@L["Feature:NoMembers"]</p> }
                     else {
-                        <ul class="list-group mt-3">
+                        <ul class="hcs-member-list">
                             @foreach (var member in detail.Members)
                             {
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>@Name(member.UserId) · @member.Role</span>
-                                    <Button Color="Color.Danger" Size="Size.Small" Outline="true" Clicked="() => RemoveMemberAsync(member)">@L["Catalog:Delete"]</Button>
+                                <li class="hcs-member-list__item">
+                                    <span class="hcs-member-list__meta">
+                                        <strong class="hcs-member-list__name">@Name(member.UserId)</strong>
+                                        <span class="hcs-member-list__sep" aria-hidden="true">·</span>
+                                        <span class="hcs-member-list__role">@ProjectRoleLabel(member.Role)</span>
+                                    </span>
+                                    <Button Color="Color.Danger" Size="Size.Small" Outline="true" Class="hcs-member-list__remove" Clicked="() => RemoveMemberAsync(member)">@L["Catalog:Delete"]</Button>
                                 </li>
                             }
                         </ul>
@@ -118,8 +127,8 @@
         </div>
         <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="projectForm.Description" autocomplete="off"></textarea></Field>
         <div class="hcs-form-row hcs-form-row--equal">
-            <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="projectForm.StartDate" /></Field>
-            <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="projectForm.EndDate" /></Field>
+            <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="projectForm.StartDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
+            <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="projectForm.EndDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
         </div>
         <div class="hcs-form-row hcs-form-row--equal">
             <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
@@ -252,6 +261,14 @@
         return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false);
     }
     private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private string ProjectRoleLabel(string role) => role switch
+    {
+        "Manager" => L["Work:ProjectRole.Manager"],
+        "Supervisor" => L["Work:ProjectRole.Supervisor"],
+        "Member" => L["Work:ProjectRole.Member"],
+        _ => role
+    };
 
     private sealed class ProjectForm
     {

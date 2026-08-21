@@ -87,6 +87,9 @@ public sealed class WorkflowsController(IWorkflowAppService workflows) : Control
     }
     [HttpPost("instances"), Authorize(Policy = Documents.DocumentPermissions.WorkflowStart)]
     public Task<WorkflowInstanceDto> Start(StartWorkflowRequest input, CancellationToken cancellationToken) => workflows.StartAsync(input, cancellationToken);
+    [HttpGet("definitions/{id:guid}/assignee-candidates"), Authorize(Policy = Documents.DocumentPermissions.WorkflowStart)]
+    public Task<IReadOnlyList<WorkflowStepCandidateGroupDto>> GetAssigneeCandidates(Guid id, CancellationToken cancellationToken) =>
+        workflows.GetAssigneeCandidatesAsync(id, cancellationToken);
     [HttpPost("tasks/{taskId:guid}/decision"), Authorize(Policy = Documents.DocumentPermissions.WorkflowDecide)]
     public Task<WorkflowInstanceDto> Decide(Guid taskId, DecideApprovalTaskRequest input, CancellationToken cancellationToken) => workflows.DecideAsync(taskId, input, cancellationToken);
     [HttpPost("instances/{id:guid}/resubmit"), Authorize(Policy = Documents.DocumentPermissions.WorkflowStart)]

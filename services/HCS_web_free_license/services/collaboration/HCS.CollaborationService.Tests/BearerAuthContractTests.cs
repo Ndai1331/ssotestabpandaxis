@@ -50,6 +50,9 @@ public sealed class BearerAuthContractTests
         options.TokenValidationParameters.RoleClaimType.ShouldBe(CollaborationJwtBearer.JwtRoleClaim);
         Volo.Abp.Security.Claims.AbpClaimTypes.UserId.ShouldBe(CollaborationJwtBearer.JwtSubjectClaim);
         Volo.Abp.Security.Claims.AbpClaimTypes.Role.ShouldBe(CollaborationJwtBearer.JwtRoleClaim);
+        Volo.Abp.Security.Claims.AbpClaimTypes.UserName.ShouldBe("preferred_username");
+        Volo.Abp.Security.Claims.AbpClaimTypes.Name.ShouldBe("given_name");
+        Volo.Abp.Security.Claims.AbpClaimTypes.SurName.ShouldBe("family_name");
         options.BackchannelHttpHandler.ShouldNotBeNull();
         CollaborationJwtBearer.ResolveIssuers(configuration)
             .ShouldContain("https://auth.hcs.localhost/");

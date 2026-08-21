@@ -372,15 +372,20 @@
     text-decoration: none;
 }
 
-.hcs-notification-dot {
-    background: #ed477d;
+.hcs-icon-badge {
+    background: var(--hcs-primary);
     border: 2px solid #fff;
-    border-radius: 50%;
-    height: .55rem;
+    border-radius: 999px;
+    color: #fff;
+    font-size: .62rem;
+    font-weight: 700;
+    line-height: 1;
+    min-width: 1.1rem;
+    padding: .14rem .28rem;
     position: absolute;
-    right: .55rem;
-    top: .55rem;
-    width: .55rem;
+    right: .1rem;
+    top: .1rem;
+    text-align: center;
 }
 
 .hcs-user-menu {
@@ -395,6 +400,17 @@
     list-style: none;
     min-height: 2.75rem;
     padding: 0 .2rem;
+    position: relative;
+    z-index: 45;
+}
+
+/* Invisible full-screen hit target: click outside closes <details> (native summary toggle). */
+.hcs-user-menu[open] summary::before {
+    content: "";
+    cursor: default;
+    inset: 0;
+    position: fixed;
+    z-index: -1;
 }
 
 .hcs-user-menu summary::-webkit-details-marker {
@@ -466,7 +482,7 @@
     transform: translateY(.35rem);
     transition: opacity .18s var(--hcs-ease), transform .18s var(--hcs-ease), visibility .18s;
     visibility: hidden;
-    z-index: 45;
+    z-index: 46;
 }
 
 .hcs-user-menu[open] > .hcs-user-menu__panel,
@@ -570,7 +586,7 @@
     max-width: none;
     min-height: 0;
     overflow: hidden;
-    padding: 0;
+    padding: 1.5rem clamp(.9rem, 3vw, 2.5rem);
     width: 100%;
 }
 
@@ -578,7 +594,7 @@
 @media (max-width: 1280px) {
     .hcs-top-nav {
         gap: 0;
-        justify-content: flex-start;
+        justify-content: center;
         max-width: none;
     }
 
@@ -657,7 +673,7 @@
         gap: .15rem;
         height: auto;
         inset: var(--hcs-header-top-h) 0 auto;
-        justify-content: flex-start;
+        justify-content: center;
         max-height: min(78dvh, 36rem);
         max-width: none;
         opacity: 0;
@@ -685,7 +701,7 @@
         border-bottom: 0;
         border-radius: 5px;
         font-size: .95rem;
-        justify-content: flex-start;
+        justify-content: flex-center;
         min-height: 2.85rem;
         padding: .55rem .7rem;
         width: 100%;

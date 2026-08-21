@@ -1,12 +1,14 @@
 ---
 type: meta
 title: "Hot Cache"
-updated: 2026-07-25T17:21:00
+updated: 2026-08-20T15:30:00
 ---
 
 # Hot Cache — BD Second Brain
 
 ## Last Updated
+2026-08-20 — **HCS Free PDF + document-detail + signing UI:** Blazorise.PdfViewer 2.3.0 (`HcsPdfFrame`, không iframe; không gắn `pdfviewer.js` classic). Modal bước: `UserSelect2` / `CatalogSelect2` role. Upload DOCX: MIME theo đuôi (đuôi thắng declared MIME), convert fail không rollback. Document-detail 1 Card 6/6. Nút action văn bản border=icon. Signing filter 3 hàng LICENSE + modal ký ExtraLarge+PDF. Tests DocumentService 52. Rebuild `blazor` + `document`; hard refresh `/document-detail`, `/workflow-detail`, `/manage-documents`, `/document-signing`.
+2026-08-20 — **HCS Free UI/UX increment COMPLETE:** (1) PDF iframe `HcsPdfFrame` (2) Wizard 3 bước + RoleInSubmitterOu via Platform HTTP (3) Chat leave/`transferAdminTo` + icon User/Group/Project/Task (4) Toast title≠body + badge chuông/chat (5) Signing tabs All/ToMe/ByMe trên DataGrid (6) Login→`/workspace` + `--hcs-primary` (7) Project Manager/Supervisor/Member + `HcsDatePicker`. Tests: Collaboration 30, Document 45, Work 39. Hard refresh `/workspace`.
 2026-08-19 — **HCS Free document/signing UI parity DONE:** SourceType reload; LibreOffice convert on DocumentService only (`INSTALL_LIBREOFFICE=true` trên image `document`); wizard 2-col Word+PDF; step tables; signing tabs/colors/Excel CSV; WorkflowInfoModal; Giao việc from PDF preview. DocumentService Tests 43/43. Rebuild document + blazor; hard refresh.
 2026-08-19 — **HCS Tab copy Mã→Tên:** Blazorise `TextInput` + `Immediate=true` copy giá trị khi Tab. Fix: cặp form (catalog Mã/Tên, task, user, lịch…) dùng `HcsIsolatedTextInput` (input HTML native, `oninput` riêng). Search filter vẫn Blazorise. Cấm `@bind-Value:event="onchange"` trên Blazorise. Rebuild `blazor`, hard refresh `/document-types`.
 2026-08-19 — **DocumentService không lưu loại quy trình:** log `POST /api/workflows/kinds` 500, payload `code:"" name:""`. Root cause: `@bind-Value:event="onchange"` trên Blazorise `TextInput` không gọi `ValueChanged` → Code/Name không bind. Fix: bỏ `:event="onchange"`, giữ `Immediate=false`. Rebuild container `blazor`, hard refresh.
@@ -31,6 +33,7 @@ updated: 2026-07-25T17:21:00
 ## Code Structure Cheatsheet
 - **Directus lab SoT:** `services/directus-main-v11` + `docker-compose.bd-lab.yml` (PG+Redis+KC+Axis)
 - **Directus v12 archive:** `services/directus-main/ARCHIVE.md` — không chạy lab
+- **HCS Free runtime:** `services/HCS_web_free_license/` (Blazor+BFF+AuthServer+DocumentService+CollaborationService+WorkManagementService+PlatformService)
 - **ABP** `services/abp-blazor` — AuthServer `:44372` federate KC; Blazor `:44306`
 - **Bootstrap** `scripts/keycloak_bootstrap_bd_realm.py` (re-run after KC recreate)
 - **Handoff** `docs/handoff/phase1-sso-context.md` ← dán vào prompt chat mới
@@ -44,6 +47,7 @@ updated: 2026-07-25T17:21:00
 - `prompt=login` bật → dễ đổi user; silent SSO 2-app cần tắt prompt hoặc test có chủ đích
 
 ## Active Threads / Open Plans
+- **HCS Free Phase 3 UI:** `plans/260813-1200-hcs-free-feature-parity/` — **UI slice DONE (2026-08-20)**, Phase 2 handoff next (`260814-1000` Blazorise localization)
 - **HCS→MS:** `plans/260724-1555-hcs-layered-to-microservice/` — cook Phase 01 foundation trước
 - **Elsa WorkflowService:** `plans/260724-1542-elsa-workflow-service/` — orthogonal; `:44395`
 - **SSO Phase 2:** Zimbra LDAP User Federation

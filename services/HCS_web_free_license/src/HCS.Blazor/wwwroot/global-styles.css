@@ -287,7 +287,6 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 .hcs-app-shell .hcs-action-button,
 .hcs-app-shell .b-is-datepicker,
 .hcs-app-shell .b-is-datepicker .form-control,
-.hcs-app-shell .flatpickr-input,
 .hcs-app-shell .numeric-picker,
 .hcs-app-shell .select2-container .select2-selection,
 .hcs-app-shell .hcs-status-badge,
@@ -317,7 +316,6 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 }
 
 .hcs-app-shell .hcs-avatar,
-.hcs-app-shell .hcs-notification-dot,
 .hcs-app-shell .hcs-icon-button,
 .hcs-boot-screen__spinner {
     border-radius: 50% !important;
@@ -330,7 +328,7 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     max-width: none;
     min-height: 0;
     overflow: hidden;
-    padding: 0;
+    padding: 1.5rem clamp(.9rem, 3vw, 2.5rem);
 }
 
 

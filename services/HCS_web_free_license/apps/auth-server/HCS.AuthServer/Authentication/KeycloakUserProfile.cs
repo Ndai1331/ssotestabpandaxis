@@ -6,7 +6,10 @@ public sealed record KeycloakUserProfile(
     string Subject,
     string UserName,
     string? VerifiedEmail,
-    IReadOnlyList<string> Roles)
+    IReadOnlyList<string> Roles,
+    string? GivenName = null,
+    string? FamilyName = null,
+    string? FullName = null)
 {
     public static KeycloakUserProfile FromPrincipal(ClaimsPrincipal principal, IReadOnlyList<string> roles)
     {
@@ -19,6 +22,11 @@ public sealed record KeycloakUserProfile(
             principal.FindFirst("email_verified")?.Value,
             bool.TrueString,
             StringComparison.OrdinalIgnoreCase);
+        var givenName = principal.FindFirst("given_name")?.Value
+                        ?? principal.FindFirst(ClaimTypes.GivenName)?.Value;
+        var familyName = principal.FindFirst("family_name")?.Value
+                         ?? principal.FindFirst(ClaimTypes.Surname)?.Value;
+        var fullName = principal.FindFirst("name")?.Value;
 
         if (string.IsNullOrWhiteSpace(subject))
         {
@@ -34,7 +42,10 @@ public sealed record KeycloakUserProfile(
             subject.Trim(),
             userName.Trim(),
             emailVerified && !string.IsNullOrWhiteSpace(email) ? email.Trim() : null,
-            roles.Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
+            roles.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            string.IsNullOrWhiteSpace(givenName) ? null : givenName.Trim(),
+            string.IsNullOrWhiteSpace(familyName) ? null : familyName.Trim(),
+            string.IsNullOrWhiteSpace(fullName) ? null : fullName.Trim());
     }
 }
 

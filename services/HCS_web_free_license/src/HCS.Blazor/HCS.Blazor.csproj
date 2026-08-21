@@ -20,6 +20,7 @@
     <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
     <PackageReference Include="Blazorise.Bootstrap5" Version="2.3.0" />
     <PackageReference Include="Blazorise.Icons.FontAwesome" Version="2.3.0" />
+    <PackageReference Include="Blazorise.PdfViewer" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>

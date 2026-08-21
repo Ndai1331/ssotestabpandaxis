@@ -98,6 +98,33 @@ public sealed class PermissionClaimResolverTests
             Assert.Contains(OpenIddictConstants.Destinations.AccessToken, claim.GetDestinations()));
     }
 
+    [Fact]
+    public async Task Handler_SendsProfileNameClaimsToAccessToken()
+    {
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim("preferred_username", "doctor"),
+            new Claim("name", "Nguyễn Văn A"),
+            new Claim("given_name", "Văn A"),
+            new Claim("family_name", "Nguyễn")
+        ], "test"));
+        var context = new OpenIddictServerEvents.ProcessSignInContext(new OpenIddictServerTransaction())
+        {
+            Principal = principal
+        };
+
+        await new PermissionClaimsHandler(new StaticPermissionClaimResolver())
+            .HandleAsync(context);
+
+        Assert.Contains(OpenIddictConstants.Destinations.AccessToken,
+            principal.FindFirst("name")!.GetDestinations());
+        Assert.Contains(OpenIddictConstants.Destinations.AccessToken,
+            principal.FindFirst("given_name")!.GetDestinations());
+        Assert.Contains(OpenIddictConstants.Destinations.AccessToken,
+            principal.FindFirst("family_name")!.GetDestinations());
+        Assert.Equal("Nguyễn Văn A", principal.FindFirst("name")?.Value);
+    }
+
     private static ClaimsPrincipal CreatePrincipal(params string[] roles) =>
         new(new ClaimsIdentity(
             roles.Select(role => new Claim(AbpClaimTypes.Role, role)),

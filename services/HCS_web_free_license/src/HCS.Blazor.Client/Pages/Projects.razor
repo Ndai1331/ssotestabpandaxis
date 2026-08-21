@@ -3,6 +3,7 @@
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
 @inject OrganizationCatalogClient Catalog
+@inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
 @inject IJSRuntime JsRuntime
@@ -25,7 +26,7 @@
             </Button>
         </div>
     </header>
-    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
             <Addons Class="hcs-catalog-search">
                 <Addon AddonType="AddonType.Body">
@@ -98,6 +99,11 @@
                                 <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--edit" Title="@L["Catalog:Edit"]" Clicked="() => Edit(cell.Item)"><Icon Name="@IconName.Edit" /></Button>
                                 <Button Color="Color.Success" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--tasks" Title="@L["Menu:Tasks"]" Clicked="@(() => Navigation.NavigateTo($"/project-detail/{cell.Item.Id}"))"><Icon Name="@IconName.List" /></Button>
                                 <Button Color="Color.Info" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--members" Title="@L["Work:Members"]" Clicked="@(() => Navigation.NavigateTo($"/project-detail/{cell.Item.Id}"))"><Icon Name="@IconName.Users" /></Button>
+                                <AuthorizeView Policy="Collaboration.Chat">
+                                    <Authorized>
+                                        <Button Color="Color.Info" Outline="true" Size="Size.Small" Class="hcs-action-button" Title="@L["Chat:OpenProjectChat"]" Clicked="() => OpenProjectChatAsync(cell.Item)" Disabled="@isOpeningChat"><Icon Name="@IconName.Comment" /></Button>
+                                    </Authorized>
+                                </AuthorizeView>
                                 <Button Color="Color.Danger" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--delete" Title="@L["Catalog:Delete"]" Clicked="() => DeleteAsync(cell.Item)"><Icon Name="@IconName.Delete" /></Button>
                             </div>
                         </DisplayTemplate>
@@ -122,8 +128,8 @@
                 </div>
                 <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
                 <div class="hcs-form-row hcs-form-row--equal">
-                    <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.StartDate" /></Field>
-                    <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><DatePicker TValue="DateTime" @bind-Value="form.EndDate" /></Field>
+                    <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="form.StartDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
+                    <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="form.EndDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
                 </div>
                 <div class="hcs-form-row hcs-form-row--equal">
                     <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
@@ -157,7 +163,7 @@
     private ProjectTaskCreateModal? createTaskModal;
     private Guid? editingId;
     private string? filter, status;
-    private bool isLoading, isSaving, showFilters;
+    private bool isLoading, isSaving, showFilters, isOpeningChat;
     private int totalCount, pageSize = 20, currentPage = 1;
 
     protected override async Task OnInitializedAsync()
@@ -196,6 +202,63 @@
 
     private void Edit(ProjectDto item) => Navigation.NavigateTo($"/project-detail/{item.Id}");
     private Task OpenCreateTask() => createTaskModal?.ShowAsync() ?? Task.CompletedTask;
+
+    private async Task OpenProjectChatAsync(ProjectDto project)
+    {
+        if (isOpeningChat) return;
+        isOpeningChat = true;
+        try
+        {
+            await Work.SyncProjectChatAccessAsync(project.Id);
+            var conversation = await Chat.FindByProjectIdAsync(project.Id);
+            if (conversation is null)
+            {
+                var detail = await Work.GetProjectAsync(project.Id);
+                var memberIds = detail.Members.Where(x => x.IsActive).Select(x => x.UserId).Distinct().ToList();
+                conversation = await CreateProjectConversationWithRetryAsync(project, memberIds);
+                await NotifySuccessAsync(L["Chat:ProjectChatCreated"]);
+            }
+            Navigation.NavigateTo($"/chat/{conversation.Id}");
+        }
+        catch (Exception ex)
+        {
+            if (ex is CollaborationApiException api &&
+                api.ResponseBody?.Contains("WorkSubjectNotProvisioned", StringComparison.OrdinalIgnoreCase) == true)
+                await NotifyErrorAsync(L["Chat:WorkSubjectNotProvisioned"]);
+            else if (ex is CollaborationApiException { StatusCode: System.Net.HttpStatusCode.Forbidden })
+                await NotifyErrorAsync(L["Chat:YouAreNotAMemberOfThisProjectChat"]);
+            else
+                await NotifyErrorAsync(ChatErrorMapper.From(L, ex, "Chat:ProjectChatCreateFailed"));
+        }
+        finally { isOpeningChat = false; }
+    }
+
+    private async Task<ConversationDto> CreateProjectConversationWithRetryAsync(ProjectDto project, IReadOnlyList<Guid> memberIds)
+    {
+        CollaborationApiException? lastProvisioned = null;
+        for (var attempt = 0; attempt < 4; attempt++)
+        {
+            try
+            {
+                return await Chat.CreateConversationAsync(new CreateConversationInput
+                {
+                    Type = ConversationType.Project,
+                    ProjectId = project.Id,
+                    Name = project.Name,
+                    MemberUserIds = memberIds
+                });
+            }
+            catch (CollaborationApiException api) when (
+                api.ResponseBody?.Contains("WorkSubjectNotProvisioned", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                lastProvisioned = api;
+                await Task.Delay(800);
+                await Work.SyncProjectChatAccessAsync(project.Id);
+            }
+        }
+        if (lastProvisioned is not null) throw lastProvisioned;
+        throw new InvalidOperationException("Project chat could not be created.");
+    }
 
     private async Task SaveAsync()
     {

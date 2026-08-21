@@ -16,6 +16,13 @@ public sealed class ChatController(CollaborationAppService app, CollaborationAtt
     [HttpGet("conversations")]
     public Task<IReadOnlyList<ConversationDto>> GetConversations([FromQuery] ConversationType? type, [FromQuery] bool pinnedOnly, CancellationToken ct) => app.GetConversationsAsync(type, pinnedOnly, ct);
 
+    [HttpGet("conversations/by-project/{projectId:guid}")]
+    public async Task<ActionResult<ConversationDto>> FindByProject(Guid projectId, CancellationToken ct)
+    {
+        var found = await app.FindConversationByProjectIdAsync(projectId, ct);
+        return found is null ? NotFound() : Ok(found);
+    }
+
     [HttpGet("conversations/{id:guid}")]
     public Task<ConversationDto> GetConversation(Guid id, CancellationToken ct) => app.GetConversationAsync(id, ct);
 
@@ -35,7 +42,7 @@ public sealed class ChatController(CollaborationAppService app, CollaborationAtt
     public Task SetRole(Guid id, Guid userId, [FromBody] MemberRoleInput input, CancellationToken ct) => app.SetMemberRoleAsync(id, userId, input.Role, ct);
 
     [HttpPost("conversations/{id:guid}/leave")]
-    public Task Leave(Guid id, [FromBody] LeaveInput input, CancellationToken ct) => app.LeaveAsync(id, input.TransferAdminTo, ct);
+    public Task Leave(Guid id, [FromBody] LeaveInput? input, CancellationToken ct) => app.LeaveAsync(id, input?.TransferAdminTo, ct);
 
     [HttpGet("conversations/{id:guid}/permissions")]
     public Task<ConversationPermissionDto> Permissions(Guid id, CancellationToken ct) => app.GetPermissionsAsync(id, ct);

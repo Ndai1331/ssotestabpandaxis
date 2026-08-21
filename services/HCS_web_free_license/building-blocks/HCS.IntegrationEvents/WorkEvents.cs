@@ -8,5 +8,15 @@ public sealed record ProjectTaskChangedEto(
     Guid TaskId,
     string ChangeType,
     string Status,
-    Guid? AssigneeUserId)
+    Guid? AssigneeUserId,
+    string? Title = null)
+    : IntegrationEvent(EventId, OccurredAtUtc, CorrelationId);
+
+public sealed record ProjectMemberAssignedEto(
+    Guid EventId,
+    DateTimeOffset OccurredAtUtc,
+    string? CorrelationId,
+    Guid ProjectId,
+    Guid UserId,
+    string ProjectName)
     : IntegrationEvent(EventId, OccurredAtUtc, CorrelationId);

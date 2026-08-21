@@ -82,6 +82,13 @@ public sealed class HcsDocumentServiceModule : AbpModule
         context.Services.AddSingleton<IDocxToPdfConverter, LibreOfficeDocxToPdfConverter>();
         context.Services.AddScoped<IDocumentAppService, DocumentAppService>();
         context.Services.AddScoped<IWorkflowAppService, WorkflowAppService>();
+        context.Services.AddScoped<IWorkflowAssigneeResolver, HttpWorkflowAssigneeResolver>();
+        context.Services.AddHttpClient("HCS.Platform", client =>
+        {
+            var baseUrl = configuration["Services:Platform:BaseUrl"];
+            if (!string.IsNullOrWhiteSpace(baseUrl))
+                client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+        });
         context.Services.AddScoped<ISigningAppService, SigningAppService>();
         context.Services.AddScoped<DocumentFileService>();
         context.Services.AddScoped<ISigningSecretProtector, DataProtectionSigningSecretProtector>();

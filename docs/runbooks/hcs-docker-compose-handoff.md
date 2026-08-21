@@ -48,6 +48,14 @@ Keycloak lab tiếp tục chạy tại `http://localhost:5110`. Client `hcs-free
 4. Chạy `./scripts/docker-up.sh`, kiểm tra `docker compose ps` và `curl -k -I https://hcs.localhost/bff/login`.
 5. Rollback ứng dụng: dùng image tag trước đó trong Compose, `docker compose up -d`. Database migration là forward-only; backup volume PostgreSQL trước migration có thay đổi schema.
 
+## Ubuntu 24 — 2 server (production/intranet)
+
+Tách PostgreSQL/Redis/RabbitMQ/MinIO sang `10.17.227.64` và app + Nginx + Keycloak sang `10.17.227.58`. Không dùng Caddy. Hướng dẫn đầy đủ (3 domain, UFW, Let's Encrypt DNS-01, Nginx):
+
+[`../../services/HCS_web_free_license/docs/runbooks/hcs-ubuntu24-two-server.md`](../../services/HCS_web_free_license/docs/runbooks/hcs-ubuntu24-two-server.md)
+
+File Compose/Nginx: `services/HCS_web_free_license/deploy/ubuntu/`.
+
 ## Kubernetes (chỉ khôi phục khi cần)
 
 Kubernetes không còn là runtime mặc định. Dữ liệu cũ vẫn tồn tại trong namespace `hcs` nhưng workload được scale về 0. Khôi phục chỉ khi có chủ đích:

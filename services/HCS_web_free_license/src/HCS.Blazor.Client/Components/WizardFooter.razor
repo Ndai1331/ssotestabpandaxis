@@ -21,9 +21,9 @@
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public bool SaveDisabled { get; set; }
 
-    private static readonly string[] Steps = ["step1", "step2", "step3", "step4"];
+    private static readonly string[] Steps = ["step1", "step2", "step3"];
     private bool IsFirst => SelectedStep == "step1";
-    private bool IsLast => SelectedStep == "step4";
+    private bool IsLast => SelectedStep == "step3";
 
     private Task Previous() => Move(-1);
     private Task Next() => Move(1);

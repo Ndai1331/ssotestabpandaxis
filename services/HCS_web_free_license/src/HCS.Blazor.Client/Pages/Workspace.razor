@@ -11,13 +11,13 @@
     <div class="hcs-ws-filter">
         <span class="hcs-ws-filter-label"><i class="fa fa-calendar-day" aria-hidden="true"></i> @L["Work:FilterByDateRange"]</span>
         <div class="hcs-ws-filter-dates">
-            <DatePicker TValue="DateTime?"
-                        InputMode="DateInputMode.Date"
-                        SelectionMode="DateInputSelectionMode.Range"
-                        Dates="@selectedDates"
-                        DatesChanged="OnRangeChanged"
-                        DisplayFormat="dd/MM/yyyy"
-                        Placeholder="@L["Work:SelectDateRange"]" />
+            <HcsDatePicker TValue="IReadOnlyList<DateTime?>"
+                           Value="selectedDates"
+                           ValueChanged="OnRangeChanged"
+                           InputMode="DateInputMode.Date"
+                           SelectionMode="DateInputSelectionMode.Range"
+                           DisplayFormat="dd/MM/yyyy"
+                           Placeholder="@L["Work:SelectDateRange"]" />
         </div>
         <button type="button" class="hcs-ws-search" @onclick="LoadAsync" disabled="@isLoading">
             <i class="fa fa-search" aria-hidden="true"></i> @L["Catalog:SearchButton"]
@@ -91,12 +91,12 @@
                         @foreach (var item in notifications)
                         {
                             <a class="hcs-ws-notif-row text-decoration-none @(item.IsRead ? null : "is-unread")" href="@(string.IsNullOrWhiteSpace(item.Link) ? "/workspace" : item.Link)">
-                                <span class="@(item.IsRead ? null : "hcs-ws-ndot")"></span>
-                                <div>
-                                    <div class="hcs-ws-n-title">@item.Title</div>
-                                    <div class="hcs-ws-n-detail">@item.Body</div>
+                                <span class="@(item.IsRead ? null : "hcs-ws-ndot")" aria-hidden="true"></span>
+                                <div class="hcs-ws-notif-content">
+                                    <div class="hcs-ws-n-title">@NotificationText.Localize(L, item.Title)</div>
+                                    <div class="hcs-ws-n-detail">@NotificationText.Localize(L, item.Body)</div>
                                 </div>
-                                <span class="hcs-ws-n-time">@item.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                                <time class="hcs-ws-n-time" datetime="@item.CreatedAt.ToUniversalTime().ToString("O")">@NotificationText.FormatLocal(item.CreatedAt, "dd/MM HH:mm")</time>
                             </a>
                         }
                     </div>
@@ -343,7 +343,14 @@
                 .Where(x => x.DueDate >= from && x.StartDate <= to));
             try { documents.Clear(); documents.AddRange((await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 20))).Items); } catch { documents.Clear(); }
             try { workflows.Clear(); workflows.AddRange(await Documents.GetInstancesAsync()); } catch { workflows.Clear(); }
-            try { notifications.Clear(); notifications.AddRange(await Chat.GetNotificationsAsync()); } catch { notifications.Clear(); }
+            try
+            {
+                notifications.Clear();
+                notifications.AddRange((await Chat.GetNotificationsAsync())
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ThenByDescending(x => x.Id));
+            }
+            catch { notifications.Clear(); }
             if (!week.Contains(selectedDay.Date)) selectedDay = DateTime.Today;
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
