@@ -19,30 +19,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
 
-    <AbpStyles BundleName="@BlazorLeptonXLiteThemeBundles.Styles.Global" WebAssemblyStyleFiles="GlobalStyles" />
+    <AbpStyles BundleName="@BlazorLeptonXLiteThemeBundles.Styles.Global" />
 
     <link href="HCS.Blazor.styles.css" rel="stylesheet"/>
     <link href="HCS.Blazor.Client.styles.css" rel="stylesheet"/>
     <link href="main.css" rel="stylesheet"/>
     <link href="libs/select2/css/select2.min.css" rel="stylesheet"/>
     <link href="_content/Blazorise.PdfViewer/vendors/pdf_viewer.min.css" rel="stylesheet"/>
-    <style>
-        html, body.abp-application-layout { background: #f5f8f7 !important; color: #19334c; margin: 0; }
-        .hcs-boot-screen { align-items: center; background: radial-gradient(circle at 92% 8%, rgba(61, 92, 255, .14), transparent 18rem), linear-gradient(135deg, #edf0ef 0%, #e6ebe9 100%); color: #19334c; display: grid; font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif; inset: 0; justify-items: center; place-content: center; position: fixed; z-index: 2000; }
-        .hcs-boot-screen__card { text-align: center; width: min(22rem, calc(100vw - 2rem)); }
-        .hcs-boot-screen__logo { display: block; height: auto; margin: 0 auto; max-width: 5.5rem; }
-        .hcs-boot-screen__spinner { animation: hcs-boot-spin .7s linear infinite; border: .22rem solid #d7e2e8; border-radius: 50%; border-top-color: #3d5cff; height: 2.35rem; margin: 1.15rem auto .9rem; width: 2.35rem; }
-        .hcs-boot-screen__title { color: #173b56; font-size: 1.2rem; font-weight: 750; margin: 0 0 .2rem; }
-        .hcs-boot-screen__brand { color: #3d5cff; font-size: .78rem; font-weight: 800; letter-spacing: .08em; margin: 0 0 .55rem; text-transform: uppercase; }
-        .hcs-boot-screen__hint { color: #6d8596; display: flex; font-size: .95rem; justify-content: center; margin: 0; }
-        .hcs-boot-screen__hint span { animation: hcs-boot-letter-jump 2.6s ease-in-out infinite; animation-delay: calc(var(--i) * .07s); display: inline-block; }
-        @@keyframes hcs-boot-letter-jump { 0%, 18%, 100% { transform: translateY(0); } 8% { transform: translateY(-.42em); } }
-        @@media (prefers-reduced-motion: reduce) { .hcs-boot-screen__hint span { animation: none; } }
-        @@keyframes hcs-boot-spin { to { transform: rotate(360deg); } }
-        body:has(.hcs-app-shell) .hcs-boot-screen { opacity: 0; pointer-events: none; visibility: hidden; }
-        #blazorise-license-banner-host { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; height: 0 !important; overflow: hidden !important; }
-    </style>
-
     <HeadOutlet />
 </head>
 <body class="abp-application-layout @rtl">
@@ -91,11 +74,6 @@
 
 @code{
     private const string HintText = "Vui lòng đợi trong giây lát…";
-
-    private List<string> GlobalStyles =>
-    [
-        "main.css"
-    ];
 
     private List<string> GlobalScripts =>
     [

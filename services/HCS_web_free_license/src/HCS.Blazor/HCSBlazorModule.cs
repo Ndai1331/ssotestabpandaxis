@@ -249,15 +249,8 @@ public sealed class HCSBlazorModule : AbpModule
             options.Parameters.InteractiveAuto = true;
             options.Parameters["LeptonXTheme.Layout"] = "side-menu";
 
-            options.StyleBundles.Configure(LeptonXLiteThemeBundles.Styles.Global,
-                bundle => bundle.AddFiles("/global-styles.css"));
             options.ScriptBundles.Configure(LeptonXLiteThemeBundles.Scripts.Global,
                 bundle => bundle.AddFiles("/global-scripts.js"));
-            options.StyleBundles.Configure(BlazorLeptonXLiteThemeBundles.Styles.Global,
-                bundle => bundle.AddFiles("/global-styles.css"));
-
-            options.StyleBundles.Get(BlazorWebAssemblyStandardBundles.Styles.Global)
-                .AddContributors(typeof(HCSStyleBundleContributor));
             options.ScriptBundles.Get(BlazorWebAssemblyStandardBundles.Scripts.Global)
                 .AddContributors(typeof(HCSScriptBundleContributor));
         });
