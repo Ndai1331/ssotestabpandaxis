@@ -51,20 +51,20 @@ coverage/
 !services/abp-blazor/services/*/
 !services/abp-blazor/services/*/*/
 !services/abp-blazor/services/*/*/Data/
-!services/abp-blazor/services/*/*/Data/**
+!services/abp-blazor/services/*/*/Data/**/*.cs
 # HCS Community source code also uses Data/ for DbContexts, factories, and migrations.
 !services/HCS_web_free_license/src/HCS.Domain/Data/
-!services/HCS_web_free_license/src/HCS.Domain/Data/**
+!services/HCS_web_free_license/src/HCS.Domain/Data/**/*.cs
 !services/HCS_web_free_license/services/document/HCS.DocumentService/Data/
-!services/HCS_web_free_license/services/document/HCS.DocumentService/Data/**
+!services/HCS_web_free_license/services/document/HCS.DocumentService/Data/**/*.cs
 !services/HCS_web_free_license/services/organization/HCS.OrganizationService/Data/
-!services/HCS_web_free_license/services/organization/HCS.OrganizationService/Data/**
+!services/HCS_web_free_license/services/organization/HCS.OrganizationService/Data/**/*.cs
 !services/HCS_web_free_license/services/organization/HCS.OrganizationService.Host/Data/
-!services/HCS_web_free_license/services/organization/HCS.OrganizationService.Host/Data/**
+!services/HCS_web_free_license/services/organization/HCS.OrganizationService.Host/Data/**/*.cs
 !services/HCS_web_free_license/services/work-management/HCS.WorkManagementService/Data/
-!services/HCS_web_free_license/services/work-management/HCS.WorkManagementService/Data/**
+!services/HCS_web_free_license/services/work-management/HCS.WorkManagementService/Data/**/*.cs
 !services/HCS_web_free_license/services/collaboration/HCS.CollaborationService/Data/
-!services/HCS_web_free_license/services/collaboration/HCS.CollaborationService/Data/**
+!services/HCS_web_free_license/services/collaboration/HCS.CollaborationService/Data/**/*.cs
 **/uploads/
 
 # Cursor / Claude local (keep skills in repo; ignore heavy caches)
