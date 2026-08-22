@@ -47,11 +47,24 @@ coverage/
 
 # Docker / local data (named volumes live outside; ignore bind data if any)
 **/data/
-# Keep ABP microservice EF Core Data/ (DbContext + migrations) in git
+# Keep ABP microservice EF Core Data/ (DbContext + migrations) in git.
 !services/abp-blazor/services/*/
 !services/abp-blazor/services/*/*/
 !services/abp-blazor/services/*/*/Data/
 !services/abp-blazor/services/*/*/Data/**
+# HCS Community source code also uses Data/ for DbContexts, factories, and migrations.
+!services/HCS_web_free_license/src/HCS.Domain/Data/
+!services/HCS_web_free_license/src/HCS.Domain/Data/**
+!services/HCS_web_free_license/services/document/HCS.DocumentService/Data/
+!services/HCS_web_free_license/services/document/HCS.DocumentService/Data/**
+!services/HCS_web_free_license/services/organization/HCS.OrganizationService/Data/
+!services/HCS_web_free_license/services/organization/HCS.OrganizationService/Data/**
+!services/HCS_web_free_license/services/organization/HCS.OrganizationService.Host/Data/
+!services/HCS_web_free_license/services/organization/HCS.OrganizationService.Host/Data/**
+!services/HCS_web_free_license/services/work-management/HCS.WorkManagementService/Data/
+!services/HCS_web_free_license/services/work-management/HCS.WorkManagementService/Data/**
+!services/HCS_web_free_license/services/collaboration/HCS.CollaborationService/Data/
+!services/HCS_web_free_license/services/collaboration/HCS.CollaborationService/Data/**
 **/uploads/
 
 # Cursor / Claude local (keep skills in repo; ignore heavy caches)

@@ -63,6 +63,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify HCS source tree
+        working-directory: ${{ env.HCS_ROOT }}
+        run: |
+          for source_file in \
+            src/HCS.Domain/Data/IHCSDbSchemaMigrator.cs \
+            services/document/HCS.DocumentService/Data/DocumentServiceDbContext.cs \
+            services/organization/HCS.OrganizationService/Data/OrganizationDbContext.cs \
+            services/organization/HCS.OrganizationService.Host/Data/OrganizationDbContextFactory.cs \
+            services/work-management/HCS.WorkManagementService/Data/WorkManagementDbContext.cs \
+            services/collaboration/HCS.CollaborationService/Data/CollaborationDbContext.cs
+          do
+            if [[ ! -f "$source_file" ]]; then
+              echo "::error file=$source_file::Required HCS source file is missing from the checkout"
+              exit 1
+            fi
+          done
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -82,7 +99,9 @@ jobs:
         if: matrix.abp_libs
         working-directory: ${{ env.HCS_ROOT }}/apps/auth-server/HCS.AuthServer
         run: |
-          npm install -g @abp/cli
+          dotnet tool install --global Volo.Abp.Studio.Cli --version 3.0.8
+          export PATH="$HOME/.dotnet/tools:$PATH"
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           yarn install --frozen-lockfile
           YARN_IGNORE_ENGINES=1 abp install-libs
 
