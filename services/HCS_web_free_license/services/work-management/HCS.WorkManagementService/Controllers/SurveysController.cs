@@ -8,6 +8,45 @@ namespace HCS.WorkManagementService.Controllers;
 [ApiController, Authorize(Policy = WorkPermissions.Surveys), Route("api/surveys")]
 public sealed class SurveysController(SurveyAppService service, WorkAssetService assets) : ControllerBase
 {
+    [AllowAnonymous]
+    [HttpGet("public/locations/{locationId:guid}")]
+    public Task<SurveyLocationDto> GetPublicLocation(Guid locationId, CancellationToken ct) => service.GetPublicLocationAsync(locationId, ct);
+
+    [AllowAnonymous]
+    [HttpGet("public/criteria")]
+    public Task<List<SurveyCriteriaDto>> GetPublicCriteria(Guid locationId, CancellationToken ct) => service.GetPublicCriteriaAsync(locationId, ct);
+
+    [AllowAnonymous]
+    [HttpPost("public/sessions")]
+    public Task<SurveySessionDto> CreatePublicSession(CreatePublicSurveySessionDto input, CancellationToken ct) => service.CreatePublicSessionAsync(input, ct);
+
+    [AllowAnonymous]
+    [HttpPost("public/sessions/{sessionId:guid}/results")]
+    public Task<List<SurveyResultDto>> SubmitPublicResults(Guid sessionId, List<SubmitSurveyResultDto> input, CancellationToken ct) =>
+        service.SubmitPublicResultsAsync(sessionId, input, ct);
+
+    [AllowAnonymous]
+    [HttpPost("public/sessions/{sessionId:guid}/files"), RequestSizeLimit(WorkAssetService.MaxFileSize)]
+    public async Task<SurveyFileReferenceDto> UploadPublic(Guid sessionId, IFormFile file, CancellationToken ct)
+    {
+        await using var stream = file.OpenReadStream();
+        return await assets.SavePublicSurveyFileAsync(sessionId, stream, file.FileName, file.ContentType, file.Length, ct);
+    }
+
+    [Authorize(Policy = WorkPermissions.Surveys)]
+    [HttpGet("results/statistics")]
+    public Task<SurveyResultStatisticsDto> GetStatistics(Guid? locationId, CancellationToken ct) => service.GetStatisticsAsync(locationId, ct);
+
+    [Authorize(Policy = WorkPermissions.Surveys)]
+    [HttpGet("results/summaries")]
+    public Task<PagedWorkDto<SurveyResultSessionSummaryDto>> GetResultSummaries(Guid? locationId, int skip = 0, int take = 20, CancellationToken ct = default) =>
+        service.GetResultSummariesAsync(locationId, skip, take, ct);
+
+    [Authorize(Policy = WorkPermissions.Surveys)]
+    [HttpGet("results/{sessionId:guid}/details")]
+    public Task<List<SurveyResultSessionDetailDto>> GetResultDetails(Guid sessionId, Guid? locationId, CancellationToken ct) =>
+        service.GetResultDetailsAsync(sessionId, locationId, ct);
+
     [HttpGet("criteria")]
     public Task<List<SurveyCriteriaDto>> GetCriteria(CancellationToken ct) => service.GetCriteriaAsync(ct);
     [HttpPost("criteria"), Authorize(Policy = WorkPermissions.SurveyManagement)]

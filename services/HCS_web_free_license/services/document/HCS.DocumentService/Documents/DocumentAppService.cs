@@ -41,7 +41,7 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         };
         if (!string.IsNullOrWhiteSpace(filter))
         {
-            var value = filter.Trim();
+            var value = filter.Trim().ToLowerInvariant();
             query = query.Where(x => EF.Functions.ILike(x.Number, $"%{value}%") ||
                                      EF.Functions.ILike(x.Title, $"%{value}%"));
         }

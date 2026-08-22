@@ -103,7 +103,9 @@ services:
       # Public browser traffic remains terminated as HTTPS by Caddy.
       AuthServer__RequireHttpsMetadata: "false"
       Authentication__Keycloak__Enabled: "true"
-      Authentication__Keycloak__Authority: http://host.docker.internal:5110/realms/bd
+      # Browser OIDC redirects must use localhost; metadata is fetched via host.docker.internal.
+      Authentication__Keycloak__Authority: http://localhost:5110/realms/bd
+      Authentication__Keycloak__MetadataAddress: http://host.docker.internal:5110/realms/bd/.well-known/openid-configuration
       Authentication__Keycloak__ClientId: hcs-free-auth
       Authentication__Keycloak__ClientSecret: ${HCS_KEYCLOAK_CLIENT_SECRET}
       Authentication__Keycloak__RequireHttpsMetadata: "false"

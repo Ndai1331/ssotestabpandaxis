@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@using HCS.Blazor.Client.Account
 @using HCS.Localization
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.Extensions.Configuration
@@ -7,6 +8,7 @@
 @inject IConfiguration Configuration
 @inject NavigationManager Navigation
 @inject IStringLocalizer<HCSResource> Localizer
+@inject AccountProfileClient Account
 @implements IDisposable
 
 <div class="hcs-app-shell">
@@ -57,19 +59,18 @@
                                     <strong>@DisplayName(authenticationState.User)</strong>
                                     <small>@RoleName(authenticationState.User)</small>
                                 </span>
-                                <span class="hcs-avatar" aria-hidden="true">@Initials(authenticationState.User)</span>
+                                @AvatarMarkup(authenticationState.User, large: false)
                                 <i class="fa fa-chevron-down" aria-hidden="true"></i>
                             </summary>
                             <div class="hcs-user-menu__panel">
                                 <div class="hcs-user-menu__identity">
-                                    <span class="hcs-avatar hcs-avatar--large">@Initials(authenticationState.User)</span>
+                                    @AvatarMarkup(authenticationState.User, large: true)
                                     <span>
                                         <strong>@DisplayName(authenticationState.User)</strong>
                                         <small>@Email(authenticationState.User)</small>
                                     </span>
                                 </div>
-                                <a href="/workspace" @onclick="CloseMenus"><i class="fa fa-house" aria-hidden="true"></i> @Localizer["Auth:Workspace"]</a>
-                                <a href="https://auth.hcs.localhost/Account/Manage" target="_blank" rel="noopener" @onclick="CloseUserMenu"><i class="fa fa-user-gear" aria-hidden="true"></i> @Localizer["Auth:ManageAccount"]</a>
+                                <a href="/account" @onclick="CloseUserMenu"><i class="fa fa-user-gear" aria-hidden="true"></i> @Localizer["Auth:ManageAccount"]</a>
                                 <button class="hcs-user-menu__action hcs-user-menu__action--danger" type="button" @onclick="Logout" disabled="@isLoggingOut">
                                     <i class="fa @(isLoggingOut ? "fa-spinner fa-spin" : "fa-right-from-bracket")" aria-hidden="true"></i>
                                     @(isLoggingOut ? Localizer["Auth:LogoutProgress"] : Localizer["Auth:Logout"])
@@ -210,10 +211,20 @@
     private NotificationToast? notificationToast;
     private int unreadNotifications;
     private int unreadChat;
+    private string? avatarDataUrl;
 
     protected override void OnInitialized()
     {
         Navigation.LocationChanged += OnLocationChanged;
+        Account.AvatarChanged += OnAvatarChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ReloadAvatarQuietAsync();
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
@@ -221,20 +232,48 @@
         userMenuOpen = false;
         mobileNavOpen = false;
         expandedSection = null;
+        _ = ReloadAvatarQuietAsync();
         _ = InvokeAsync(StateHasChanged);
     }
 
-    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+    private async Task ReloadAvatarQuietAsync()
+    {
+        try
+        {
+            var content = await Account.TryGetAvatarAsync();
+            avatarDataUrl = content?.ToDataUrl();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Keep initials fallback when avatar cannot be loaded.
+        }
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+        Account.AvatarChanged -= OnAvatarChanged;
+    }
+
+    private void OnAvatarChanged(object? sender, EventArgs args) => _ = ReloadAvatarQuietAsync();
 
     private void ToggleUserMenu() => userMenuOpen = !userMenuOpen;
 
     private void CloseUserMenu() => userMenuOpen = false;
 
-    private void CloseMenus()
+    private RenderFragment AvatarMarkup(System.Security.Claims.ClaimsPrincipal user, bool large) => __builder =>
     {
-        userMenuOpen = false;
-        CloseMobileNav();
-    }
+        var css = large ? "hcs-avatar hcs-avatar--large" : "hcs-avatar";
+        if (!string.IsNullOrWhiteSpace(avatarDataUrl))
+        {
+            <img class="@css hcs-avatar--image" src="@avatarDataUrl" alt="" aria-hidden="true" />
+        }
+        else
+        {
+            <span class="@css" aria-hidden="true">@Initials(user)</span>
+        }
+    };
 
     private RenderFragment Menu(string key, string icon, string label, params (string Href, string Icon, string Text)[] items) => __builder =>
     {

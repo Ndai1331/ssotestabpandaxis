@@ -39,25 +39,6 @@ internal static class BffEndpoints
 
         endpoints.MapGet("/bff/user", (HttpContext context, ClaimsPrincipal user) =>
         {
-            // #region agent log
-            var cookieHeader = context.Request.Headers.Cookie.ToString();
-            var cookieNames = cookieHeader.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(part => part.Split('=', 2)[0])
-                .Where(name => name.StartsWith(".HCS.Bff", StringComparison.Ordinal))
-                .ToArray();
-            _ = AgentDebugLog.WriteAsync(
-                "A,B,C",
-                "BffEndpoints.cs:/bff/user",
-                "bff/user auth probe",
-                new
-                {
-                    isAuthenticated = user.Identity?.IsAuthenticated == true,
-                    cookieHeaderLength = cookieHeader.Length,
-                    hcsBffCookieNames = cookieNames,
-                    hasChunkMarker = cookieNames.Contains(".HCS.Bff"),
-                    chunkCount = cookieNames.Count(name => name.StartsWith(".HCS.BffC", StringComparison.Ordinal))
-                });
-            // #endregion
             return Results.Ok(new
             {
                 isAuthenticated = user.Identity?.IsAuthenticated == true,

@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using HCS.CollaborationService.Contracts;
+using HCS.Blazor.Client.Services;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -28,7 +29,7 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
         int take = 30,
         CancellationToken cancellationToken = default) =>
         GetAsync<IReadOnlyList<ChatContactDto>>(
-            $"api/chat/contacts?search={Uri.EscapeDataString(search?.Trim() ?? string.Empty)}&take={Math.Clamp(take, 1, 50)}",
+            $"api/chat/contacts?search={Uri.EscapeDataString(SearchText.Normalize(search))}&take={Math.Clamp(take, 1, 50)}",
             cancellationToken);
 
     public Task<IReadOnlyList<ConversationDto>> GetConversationsAsync(CancellationToken cancellationToken = default) =>

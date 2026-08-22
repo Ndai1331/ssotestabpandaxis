@@ -55,6 +55,19 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         return new DocumentFileContent(bytes, contentType, fileName);
     }
 
+    public async Task<DocumentFileContent> GetWatermarkedFileContentAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().GetAsync(
+            $"/api/documents/{documentId:D}/files/{fileId:D}/watermarked-content", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/pdf";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? "document-watermarked.pdf";
+        return new DocumentFileContent(bytes, contentType, fileName);
+    }
+
     public async Task<DocumentFileDto> UploadFileAsync(Guid documentId, IBrowserFile file, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
@@ -181,8 +194,56 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
             ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
     }
 
+    public async Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string fileName, IBrowserFile? file = null,
+        Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(fileName), "fileName");
+        if (file is not null)
+        {
+            await using var stream = file.OpenReadStream(2 * 1024 * 1024, cancellationToken);
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+                string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+            content.Add(fileContent, "file", file.Name);
+            using var responseWithFile = await CreateClient().PutAsync(
+                SigningUserUri($"/api/signing/signatures/{id:D}", userId), content, cancellationToken);
+            await EnsureSuccessAsync(responseWithFile, cancellationToken);
+            return await responseWithFile.Content.ReadFromJsonAsync<UserSignatureDto>(cancellationToken: cancellationToken)
+                ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+        }
+
+        using var response = await CreateClient().PutAsync(
+            SigningUserUri($"/api/signing/signatures/{id:D}", userId), content, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<UserSignatureDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+
+    public async Task<UserSignatureDto> SetDefaultSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().PutAsync(
+            SigningUserUri($"/api/signing/signatures/{id:D}/default", userId), content: null, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<UserSignatureDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+
     public Task DeleteSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Delete, SigningUserUri($"/api/signing/signatures/{id:D}", userId), null, cancellationToken);
+
+    public async Task<DocumentFileContent> GetSignatureContentAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().GetAsync(
+            SigningUserUri($"/api/signing/signatures/{id:D}/content", userId), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/png";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? "signature.png";
+        return new DocumentFileContent(bytes, contentType, fileName);
+    }
 
     private static string SigningUserUri(string path, Guid? userId) =>
         userId is { } id ? $"{path}{(path.Contains('?') ? "&" : "?")}userId={id:D}" : path;
@@ -196,7 +257,7 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
             $"mine={query.Mine.ToString().ToLowerInvariant()}"
         };
         if (!string.IsNullOrWhiteSpace(query.Filter))
-            parameters.Add($"filter={Uri.EscapeDataString(query.Filter.Trim())}");
+            parameters.Add($"filter={Uri.EscapeDataString(SearchText.Normalize(query.Filter))}");
         if (!string.IsNullOrWhiteSpace(query.Status))
             parameters.Add($"status={Uri.EscapeDataString(query.Status.Trim())}");
         if (query.SourceType is { } sourceType)

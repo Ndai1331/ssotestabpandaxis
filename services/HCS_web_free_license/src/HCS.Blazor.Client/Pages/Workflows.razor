@@ -157,7 +157,7 @@
         else ApplyPage();
     }
 
-    private void ApplySearch() { search = filter; currentPage = 1; ApplyPage(); }
+    private void ApplySearch() { search = SearchText.Normalize(filter); currentPage = 1; ApplyPage(); }
     private void ResetSearch() { filter = search = activeFilter = ""; kindId = null; showFilters = false; currentPage = 1; ApplyPage(); }
     private Task OnKindChanged(Guid? value) { kindId = value; currentPage = 1; ApplyPage(); return Task.CompletedTask; }
     private void OnActiveChanged() { currentPage = 1; ApplyPage(); }
@@ -217,6 +217,7 @@
     private string KindName(Guid? id) => id is null ? "" : kinds.FirstOrDefault(x => x.Id == id)?.Name ?? "";
     private Task<CatalogSelect2SearchResponse> SearchKindsAsync(string term, int page)
     {
+        term = SearchText.Normalize(term);
         var found = kinds.Where(x => string.IsNullOrWhiteSpace(term)
             || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
             || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();

@@ -39,34 +39,41 @@
                     <div class="hcs-ws-card-icon" style="background:#fef0f5;color:#e8437a;"><i class="fa fa-calendar-days"></i></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Work:Calendar"]</div>
-                        <div class="hcs-ws-card-sub">@L["Work:Total"] @selectedDayEvents.Count @L["Work:Events"]</div>
+                        <div class="hcs-ws-card-sub">@L["Work:Total"] @visibleDaysEvents.Count @L["Work:Events"]</div>
                     </div>
                 </div>
             </header>
             <div class="hcs-ws-card-body">
                 <div class="hcs-ws-week">
-                    @foreach (var day in week)
+                    @foreach (var day in visibleDays)
                     {
+                        var hasEvents = events.Any(x => x.StartTime.ToLocalTime().Date == day.Date);
                         <div class="hcs-ws-day">
                             <span class="hcs-ws-wd">@day.ToString("ddd")</span>
                             <button type="button" class="hcs-ws-dn @(day.Date == selectedDay.Date ? "is-today" : null)" @onclick="() => selectedDay = day">@day.Day</button>
-                            <span class="hcs-ws-dot @(events.Any(x => x.StartTime.ToLocalTime().Date == day.Date) ? null : "is-empty")"></span>
+                            <span class="hcs-ws-dot @(hasEvents ? null : "is-empty")"></span>
                         </div>
                     }
                 </div>
-                @if (selectedDayEvents.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoUpcomingEvents"]</div> }
+                @if (visibleDaysEvents.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoUpcomingEvents"]</div> }
                 else
                 {
                     <div class="hcs-ws-ev">
-                        @foreach (var item in selectedDayEvents)
+                        @foreach (var group in visibleDaysEvents.GroupBy(x => x.StartTime.ToLocalTime().Date).OrderBy(g => g.Key))
                         {
-                            <div class="hcs-ws-ev-row">
-                                <span class="hcs-ws-ev-accent"></span>
-                                <div class="hcs-ws-ev-body">
-                                    <div class="hcs-ws-ev-name">@item.Title</div>
-                                    <div class="hcs-ws-ev-meta"><i class="fa fa-clock me-1"></i>@item.StartTime.ToLocalTime().ToString("HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")@ProjectLabel(item)</div>
-                                </div>
-                                <a class="hcs-ws-view" href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@L["Work:View"]</a>
+                            <div class="hcs-ws-ev-day @(group.Key == selectedDay.Date ? "is-selected" : null)">
+                                <div class="hcs-ws-ev-day-label">@group.Key.ToString("ddd dd/MM")</div>
+                                @foreach (var item in group.OrderBy(x => x.StartTime))
+                                {
+                                    <div class="hcs-ws-ev-row">
+                                        <span class="hcs-ws-ev-accent"></span>
+                                        <div class="hcs-ws-ev-body">
+                                            <div class="hcs-ws-ev-name">@item.Title</div>
+                                            <div class="hcs-ws-ev-meta"><i class="fa fa-clock me-1"></i>@item.StartTime.ToLocalTime().ToString("HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")@ProjectLabel(item)</div>
+                                        </div>
+                                        <a class="hcs-ws-view" href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@L["Work:View"]</a>
+                                    </div>
+                                }
                             </div>
                         }
                     </div>
@@ -297,8 +304,15 @@
     private DateTime selectedDay = DateTime.Today;
     private bool isLoading;
 
-    private IEnumerable<DateTime> week => Enumerable.Range(0, 7).Select(offset => fromDate.Date.AddDays(offset));
-    private List<CalendarEventDto> selectedDayEvents => events.Where(x => x.StartTime.ToLocalTime().Date == selectedDay.Date).ToList();
+    private IReadOnlyList<DateTime> visibleDays => Enumerable.Range(0, 10).Select(offset => fromDate.Date.AddDays(offset)).ToList();
+    private List<CalendarEventDto> visibleDaysEvents => events
+        .Where(x =>
+        {
+            var date = x.StartTime.ToLocalTime().Date;
+            return date >= visibleDays[0] && date <= visibleDays[^1];
+        })
+        .OrderBy(x => x.StartTime)
+        .ToList();
     private List<ProjectTaskDto> myTasks => tasks.Where(x => x.Status is not "Completed" and not "Cancelled").ToList();
     private IReadOnlyList<(string Label, int Count, int Percent, string Color)> workflowGroups
     {
@@ -351,7 +365,8 @@
                     .ThenByDescending(x => x.Id));
             }
             catch { notifications.Clear(); }
-            if (!week.Contains(selectedDay.Date)) selectedDay = DateTime.Today;
+            if (!visibleDays.Contains(selectedDay.Date))
+                selectedDay = visibleDays.Contains(DateTime.Today) ? DateTime.Today : fromDate.Date;
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }

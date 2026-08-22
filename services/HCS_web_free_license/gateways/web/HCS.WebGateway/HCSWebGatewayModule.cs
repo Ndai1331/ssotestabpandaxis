@@ -50,7 +50,8 @@ public sealed class HCSWebGatewayModule : AbpModule
             options.AddPolicy("HCS.Proxy", policy => policy.RequireAssertion(authorizationContext =>
             {
                 if (authorizationContext.Resource is HttpContext httpContext &&
-                    BffRequestPolicy.IsAnonymousBootstrapPath(httpContext.Request.Path))
+                    (BffRequestPolicy.IsAnonymousBootstrapPath(httpContext.Request.Path) ||
+                     BffRequestPolicy.IsAnonymousSurveyPath(httpContext.Request.Path)))
                 {
                     return true;
                 }
@@ -200,50 +201,10 @@ public sealed class HCSWebGatewayModule : AbpModule
                 options.Cookie.Domain = cookieDomain;
                 options.ExpireTimeSpan = TimeSpan.FromHours(8);
                 options.SlidingExpiration = true;
-                options.Events.OnSigningIn = signingInContext =>
-                {
-                    // #region agent log
-                    _ = AgentDebugLog.WriteAsync(
-                        "A,B",
-                        "HCSWebGatewayModule.cs:OnSigningIn",
-                        "BFF session cookie issuing",
-                        new
-                        {
-                            cookieName = options.Cookie.Name,
-                            sameSite = options.Cookie.SameSite.ToString(),
-                            securePolicy = options.Cookie.SecurePolicy.ToString(),
-                            cookieDomain = options.Cookie.Domain,
-                            path = signingInContext.Request.Path.Value,
-                            method = signingInContext.Request.Method
-                        });
-                    // #endregion
-                    return Task.CompletedTask;
-                };
                 options.Events.OnRedirectToLogin = cookieContext =>
                 {
                     if (BffRequestPolicy.IsProtectedResourcePath(cookieContext.Request.Path))
                     {
-                        // #region agent log
-                        if (cookieContext.Request.Path.StartsWithSegments("/bff/user"))
-                        {
-                            var cookieHeader = cookieContext.Request.Headers.Cookie.ToString();
-                            var cookieNames = cookieHeader.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                                .Select(part => part.Split('=', 2)[0])
-                                .Where(name => name.StartsWith(".HCS.Bff", StringComparison.Ordinal))
-                                .ToArray();
-                            _ = AgentDebugLog.WriteAsync(
-                                "A,B,C",
-                                "HCSWebGatewayModule.cs:OnRedirectToLogin",
-                                "bff/user rejected as anonymous",
-                                new
-                                {
-                                    cookieHeaderLength = cookieHeader.Length,
-                                    hcsBffCookieNames = cookieNames,
-                                    hasChunkMarker = cookieNames.Contains(".HCS.Bff"),
-                                    chunkCount = cookieNames.Count(name => name.StartsWith(".HCS.BffC", StringComparison.Ordinal))
-                                });
-                        }
-                        // #endregion
                         cookieContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         return Task.CompletedTask;
                     }
@@ -301,37 +262,11 @@ public sealed class HCSWebGatewayModule : AbpModule
                 };
                 options.Events.OnRedirectToIdentityProvider = oidcContext =>
                 {
-                    // #region agent log
-                    _ = AgentDebugLog.WriteAsync(
-                        "A",
-                        "HCSWebGatewayModule.cs:OnRedirectToIdentityProvider",
-                        "OIDC challenge redirect",
-                        new
-                        {
-                            responseMode = oidcContext.ProtocolMessage.ResponseMode,
-                            redirectUri = oidcContext.ProtocolMessage.RedirectUri,
-                            responseType = oidcContext.ProtocolMessage.ResponseType
-                        });
-                    // #endregion
                     return Task.CompletedTask;
                 };
                 options.Events.OnTokenValidated = tokenContext =>
                 {
                     var accessToken = tokenContext.TokenEndpointResponse?.AccessToken;
-                    // #region agent log
-                    _ = AgentDebugLog.WriteAsync(
-                        "A,C",
-                        "HCSWebGatewayModule.cs:OnTokenValidated",
-                        "OIDC token validated",
-                        new
-                        {
-                            hasAccessToken = !string.IsNullOrWhiteSpace(accessToken),
-                            hasRefreshToken = !string.IsNullOrWhiteSpace(tokenContext.TokenEndpointResponse?.RefreshToken),
-                            subject = tokenContext.Principal?.FindFirst("sub")?.Value,
-                            path = tokenContext.HttpContext.Request.Path.Value,
-                            method = tokenContext.HttpContext.Request.Method
-                        });
-                    // #endregion
                     if (tokenContext.Principal?.Identity is not ClaimsIdentity identity || string.IsNullOrWhiteSpace(accessToken))
                     {
                         return Task.CompletedTask;
@@ -350,17 +285,6 @@ public sealed class HCSWebGatewayModule : AbpModule
                 };
                 options.Events.OnRemoteFailure = failureContext =>
                 {
-                    // #region agent log
-                    _ = AgentDebugLog.WriteAsync(
-                        "A,E",
-                        "HCSWebGatewayModule.cs:OnRemoteFailure",
-                        "OIDC remote failure",
-                        new
-                        {
-                            failure = failureContext.Failure?.GetType().Name,
-                            message = failureContext.Failure?.Message
-                        });
-                    // #endregion
                     // GET /signin-oidc without state (refresh/bookmark) must not strand the user.
                     failureContext.Response.Redirect(BffDeploymentPolicy.GetGatewayOrigin(configuration).AbsoluteUri);
                     failureContext.HandleResponse();

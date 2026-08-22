@@ -10,6 +10,7 @@ public static class WorkConsts
     public const int NameLength = 256;
     public const int StatusLength = 32;
     public const int TypeLength = 64;
+    public const string CompletedStatus = "Completed";
 }
 
 public sealed class Project : FullAuditedAggregateRoot<Guid>
@@ -85,6 +86,11 @@ public sealed class ProjectTask : FullAuditedAggregateRoot<Guid>
         dueDate = WorkTimestamps.ToUtc(dueDate);
         if (dueDate < startDate) throw new BusinessException("Work:TaskDateRange");
         if (progressPercent is < 0 or > 100) throw new BusinessException("Work:TaskProgressRange");
+        if (progressPercent == 100 || string.Equals(status, WorkConsts.CompletedStatus, StringComparison.OrdinalIgnoreCase))
+        {
+            progressPercent = 100;
+            status = WorkConsts.CompletedStatus;
+        }
         Title = Check.NotNullOrWhiteSpace(title, nameof(title), WorkConsts.NameLength);
         Description = description;
         StartDate = startDate;
@@ -175,36 +181,48 @@ public sealed class CalendarEventParticipant : Entity<Guid>
 public sealed class SurveyCriteria : FullAuditedAggregateRoot<Guid>
 {
     private SurveyCriteria() { }
-    public SurveyCriteria(Guid id, string code, string name, int sortOrder) : base(id)
-        => (Code, Name, SortOrder, IsActive) = (Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength),
-            Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength), sortOrder, true);
+    public SurveyCriteria(Guid id, string code, string name, int sortOrder, Guid? locationId = null, string? image = null) : base(id)
+    {
+        Code = Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength);
+        Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
+        SortOrder = sortOrder; IsActive = true; LocationId = locationId; Image = image;
+    }
     public string Code { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
     public int SortOrder { get; private set; }
     public bool IsActive { get; private set; }
-    public void Change(string name, int sortOrder, bool isActive)
+    public Guid? LocationId { get; private set; }
+    public string? Image { get; private set; }
+    public void Change(string name, int sortOrder, bool isActive, Guid? locationId = null, string? image = null)
     {
         Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
         SortOrder = sortOrder;
         IsActive = isActive;
+        LocationId = locationId;
+        Image = image;
     }
 }
 
 public sealed class SurveyLocation : FullAuditedAggregateRoot<Guid>
 {
     private SurveyLocation() { }
-    public SurveyLocation(Guid id, string code, string name, Guid? organizationUnitId) : base(id)
-        => (Code, Name, OrganizationUnitId, IsActive) = (Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength),
-            Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength), organizationUnitId, true);
+    public SurveyLocation(Guid id, string code, string name, Guid? organizationUnitId, string? description = null) : base(id)
+    {
+        Code = Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength);
+        Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
+        OrganizationUnitId = organizationUnitId; IsActive = true; Description = description;
+    }
     public string Code { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
     public Guid? OrganizationUnitId { get; private set; }
     public bool IsActive { get; private set; }
-    public void Change(string name, Guid? organizationUnitId, bool isActive)
+    public string? Description { get; private set; }
+    public void Change(string name, Guid? organizationUnitId, bool isActive, string? description = null)
     {
         Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
         OrganizationUnitId = organizationUnitId;
         IsActive = isActive;
+        Description = description;
     }
 }
 
@@ -222,6 +240,26 @@ public sealed class SurveySession : FullAuditedAggregateRoot<Guid>
         StartsAt = startsAt; EndsAt = endsAt; LocationId = locationId; Status = "Draft";
         OwnerUserId = ownerUserId == Guid.Empty ? throw new BusinessException("Work:OwnerRequired") : ownerUserId;
     }
+    private SurveySession(Guid id, string code, string name, DateTime startsAt, DateTime endsAt, Guid? locationId,
+        string? fullName, string? phoneNumber, string? patientCode, DateTime surveyTime, string? deviceType, string? note,
+        string sessionDisplay) : base(id)
+    {
+        startsAt = WorkTimestamps.ToUtc(startsAt);
+        endsAt = WorkTimestamps.ToUtc(endsAt);
+        if (endsAt < startsAt) throw new BusinessException("Work:SurveyDateRange");
+        Code = Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength);
+        Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
+        StartsAt = startsAt; EndsAt = endsAt; LocationId = locationId; Status = "Active";
+        OwnerUserId = Guid.Empty; IsPublic = true; FullName = fullName; PhoneNumber = phoneNumber;
+        PatientCode = patientCode; SurveyTime = WorkTimestamps.ToUtc(surveyTime); DeviceType = deviceType;
+        Note = note; SessionDisplay = Check.NotNullOrWhiteSpace(sessionDisplay, nameof(sessionDisplay), WorkConsts.NameLength);
+    }
+    public static SurveySession CreatePublic(Guid id, string code, string name, DateTime startsAt, DateTime endsAt,
+        Guid locationId, string fullName, string phoneNumber, string? patientCode, DateTime surveyTime,
+        string? deviceType, string? note, string sessionDisplay) => new(id, code, name, startsAt, endsAt, locationId,
+        Check.NotNullOrWhiteSpace(fullName, nameof(fullName), WorkConsts.NameLength),
+        Check.NotNullOrWhiteSpace(phoneNumber, nameof(phoneNumber), WorkConsts.CodeLength), patientCode, surveyTime,
+        deviceType, note, sessionDisplay);
     public string Code { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
     public DateTime StartsAt { get; private set; }
@@ -229,6 +267,14 @@ public sealed class SurveySession : FullAuditedAggregateRoot<Guid>
     public string Status { get; private set; } = string.Empty;
     public Guid? LocationId { get; private set; }
     public Guid OwnerUserId { get; private set; }
+    public bool IsPublic { get; private set; }
+    public string? FullName { get; private set; }
+    public string? PhoneNumber { get; private set; }
+    public string? PatientCode { get; private set; }
+    public DateTime? SurveyTime { get; private set; }
+    public string? DeviceType { get; private set; }
+    public string? Note { get; private set; }
+    public string? SessionDisplay { get; private set; }
     public void Change(string name, DateTime startsAt, DateTime endsAt, Guid? locationId)
     {
         startsAt = WorkTimestamps.ToUtc(startsAt);
@@ -255,6 +301,11 @@ public sealed class SurveyResult : FullAuditedAggregateRoot<Guid>
     public Guid? RespondentUserId { get; private set; }
     public decimal Score { get; private set; }
     public string? Comment { get; private set; }
+    public void Change(decimal score, string? comment)
+    {
+        if (score is < 0 or > 100) throw new BusinessException("Work:SurveyScoreRange");
+        Score = score; Comment = comment;
+    }
 }
 
 public sealed class SurveyFileReference : Entity<Guid>

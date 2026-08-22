@@ -12,6 +12,7 @@ x-hcs-image: &hcs-image
   extra_hosts: &public-hosts
     - "host.docker.internal:host-gateway"
     - "${HCS_PUBLIC_HOST}:host-gateway"
+    - "${HCS_API_PUBLIC_HOST}:host-gateway"
     - "${HCS_AUTH_PUBLIC_HOST}:host-gateway"
     - "${HCS_SSO_PUBLIC_HOST}:host-gateway"
   volumes: &certificate-volumes
@@ -47,7 +48,7 @@ x-hcs-image: &hcs-image
 services:
   db-migrator:
     <<: *hcs-image
-    image: hcs/db-migrator:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:db-migrator
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -57,12 +58,12 @@ services:
       <<: *common-env
       Identity__AdminPassword: ${HCS_ADMIN_PASSWORD}
       OpenIddict__Applications__HCS_App__ClientSecret: ${HCS_GATEWAY_CLIENT_SECRET}
-      OpenIddict__Applications__HCS_App__RootUrl: https://${HCS_PUBLIC_HOST}/
-      OpenIddict__Applications__HCS_App__PostLogoutRootUrl: https://${HCS_PUBLIC_HOST}/
+      OpenIddict__Applications__HCS_App__RootUrl: https://${HCS_API_PUBLIC_HOST}
+      OpenIddict__Applications__HCS_App__PostLogoutRootUrl: https://${HCS_PUBLIC_HOST}
 
   auth-server:
     <<: *hcs-image
-    image: hcs/auth-server:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:auth-server
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -73,7 +74,7 @@ services:
       <<: *common-env
       App__SelfUrl: https://${HCS_AUTH_PUBLIC_HOST}
       App__ClientUrl: https://${HCS_PUBLIC_HOST}
-      App__RedirectAllowedUrls: https://${HCS_PUBLIC_HOST},https://${HCS_AUTH_PUBLIC_HOST}
+      App__RedirectAllowedUrls: https://${HCS_PUBLIC_HOST},https://${HCS_API_PUBLIC_HOST},https://${HCS_AUTH_PUBLIC_HOST}
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
       AuthServer__RequireHttpsMetadata: "false"
       Authentication__Keycloak__Enabled: "true"
@@ -84,7 +85,7 @@ services:
 
   web-gateway:
     <<: *hcs-image
-    image: hcs/web-gateway:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:web-gateway
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -98,8 +99,10 @@ services:
       Authentication__ClientSecret: ${HCS_GATEWAY_CLIENT_SECRET}
       Authentication__RequireHttpsMetadata: "true"
       Authentication__AllowUntrustedBackchannelCertificate: "false"
-      Bff__PublicOrigin: https://${HCS_PUBLIC_HOST}
+      Bff__PublicOrigin: https://${HCS_API_PUBLIC_HOST}
+      Bff__CookieDomain: ${Bff__CookieDomain}
       App__CorsOrigins__0: https://${HCS_PUBLIC_HOST}
+      App__CorsOrigins__1: https://${HCS_API_PUBLIC_HOST}
       ReverseProxy__Clusters__Platform__Destinations__primary__Address: http://platform:8080/
       ReverseProxy__Clusters__Organization__Destinations__primary__Address: http://organization:8080/
       ReverseProxy__Clusters__Document__Destinations__primary__Address: http://document:8080/
@@ -109,7 +112,7 @@ services:
 
   blazor:
     <<: *hcs-image
-    image: hcs/blazor:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:blazor
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -118,17 +121,20 @@ services:
         APP_DLL: HCS.Blazor.dll
         PUBLISH_PROPERTIES: /p:BlazorEnableCompression=false
     ports: ["127.0.0.1:8081:8080"]
+    volumes:
+      - ./config/blazor-client.appsettings.json:/app/wwwroot/_content/HCS.Blazor.Client/appsettings.json:ro
     depends_on: { db-migrator: { condition: service_completed_successfully } }
     environment:
       <<: *common-env
       App__SelfUrl: https://${HCS_PUBLIC_HOST}
-      Bff__PublicOrigin: https://${HCS_PUBLIC_HOST}
-      RemoteServices__Default__BaseUrl: http://web-gateway:8080/
+      Bff__PublicOrigin: https://${HCS_API_PUBLIC_HOST}
+      Bff__CookieDomain: ${Bff__CookieDomain}
+      RemoteServices__Default__BaseUrl: https://${HCS_API_PUBLIC_HOST}/
       DataProtection__Redis: ${HCS_DATA_HOST}:6379,password=${HCS_REDIS_PASSWORD},ssl=False
 
   platform:
     <<: *hcs-image
-    image: hcs/platform:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:platform
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -143,7 +149,7 @@ services:
 
   organization:
     <<: *hcs-image
-    image: hcs/organization:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:organization
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -159,7 +165,7 @@ services:
 
   document:
     <<: *hcs-image
-    image: hcs/document:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:document
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -180,7 +186,7 @@ services:
 
   work-management:
     <<: *hcs-image
-    image: hcs/work-management:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:work-management
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
@@ -195,7 +201,7 @@ services:
 
   collaboration:
     <<: *hcs-image
-    image: hcs/collaboration:${HCS_IMAGE_TAG:-ubuntu}
+    image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:collaboration
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile

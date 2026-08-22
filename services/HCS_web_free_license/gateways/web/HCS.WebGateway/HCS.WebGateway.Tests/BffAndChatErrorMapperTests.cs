@@ -19,6 +19,33 @@ public sealed class BffAndChatErrorMapperTests
     }
 
     [Fact]
+    public void Save_business_error_code_is_localized_from_response_body()
+    {
+        var exception = new BffApiException(HttpStatusCode.Forbidden,
+            """{"error":{"code":"Work:DefinitionHasRunningInstances","message":"blocked"}}""");
+        Assert.Equal("Work:DefinitionHasRunningInstances",
+            BffErrorMapper.From(localizer, exception, BffErrorKind.Save));
+    }
+
+    [Fact]
+    public void TryReadErrorCode_reads_abp_remote_service_payload()
+    {
+        Assert.True(BffErrorMapper.TryReadErrorCode(
+            """{"error":{"code":"Work:DefinitionHasRunningInstances","message":"x"}}""",
+            out var code));
+        Assert.Equal("Work:DefinitionHasRunningInstances", code);
+    }
+
+    [Fact]
+    public void TryReadErrorCode_reads_top_level_code()
+    {
+        Assert.True(BffErrorMapper.TryReadErrorCode(
+            """{"code":"Work:DefinitionHasRunningInstances","message":"x"}""",
+            out var code));
+        Assert.Equal("Work:DefinitionHasRunningInstances", code);
+    }
+
+    [Fact]
     public void Chat_unauthorized_is_a_session_message_not_a_missing_grant()
     {
         var exception = new CollaborationApiException(HttpStatusCode.Unauthorized, null);

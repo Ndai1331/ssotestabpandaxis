@@ -229,22 +229,20 @@
                         }
 
                         <div class="hcs-form-row">
-                        <Validation>
-                            <Field>
-                                <FieldLabel>@L["Catalog:Code"] *</FieldLabel>
-                                <HcsIsolatedTextInput @bind-Value="form.Code"
-                                                     Name="hcsCatalogCode"
-                                                     MaxLength="50"
-                                                     Autofocus="true"
-                                                     CssClass="form-control hcs-catalog-input hcs-catalog-input--code" />
-                            </Field>
-                        </Validation>
-                        <Validation>
-                            <Field>
-                                <FieldLabel>@L["Catalog:Name"] *</FieldLabel>
-                                <HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsCatalogName" MaxLength="256" CssClass="form-control hcs-catalog-input" />
-                            </Field>
-                        </Validation>
+                        @* HcsIsolatedTextInput is a plain input — do not wrap in Blazorise Validation
+                           (ValidateAll requires IValidationInput and throws "Input component is not assigned"). *@
+                        <Field>
+                            <FieldLabel>@L["Catalog:Code"] *</FieldLabel>
+                            <HcsIsolatedTextInput @bind-Value="form.Code"
+                                                 Name="hcsCatalogCode"
+                                                 MaxLength="50"
+                                                 Autofocus="true"
+                                                 CssClass="form-control hcs-catalog-input hcs-catalog-input--code" />
+                        </Field>
+                        <Field>
+                            <FieldLabel>@L["Catalog:Name"] *</FieldLabel>
+                            <HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsCatalogName" MaxLength="256" CssClass="form-control hcs-catalog-input" />
+                        </Field>
                         </div>
                         @if (Definition.Kind == OrganizationCatalogKind.Position)
                         {

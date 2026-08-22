@@ -5,7 +5,6 @@
 @inject WorkManagementClient Work
 @inject OrganizationCatalogClient Catalog
 @inject CollaborationClient Chat
-@inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Menu:CalendarEvents"] · HCS</PageTitle>
@@ -13,103 +12,48 @@
     <header class="hcs-catalog-titlebar">
         <div><h1>@L["Feature:CalendarTitle"]</h1></div>
         <div class="hcs-catalog-page__actions">
-            @if (!isListView)
-            {
-                <Button Color="Color.Light" Clicked="PreviousMonth">‹</Button>
-                <strong class="align-self-center">@month.ToString("MMMM yyyy")</strong>
-                <Button Color="Color.Light" Clicked="NextMonth">›</Button>
-            }
-            <Button Color="Color.Light" Outline="@(!isListView)" Clicked="() => isListView = true">@L["Feature:ListView"]</Button>
-            <Button Color="Color.Light" Outline="@isListView" Clicked="() => isListView = false">@L["Feature:CalendarView"]</Button>
             <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
         </div>
     </header>
-    @if (isLoading) { <p>@L["Catalog:Loading"]</p> }
-    else if (isListView)
-    {
-        <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
-            <div class="hcs-catalog-filter-row">
-                <Addons Class="hcs-catalog-search">
-                    <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
-                    <Addon AddonType="AddonType.End">
-                        <Button Color="Color.Primary" Clicked="ApplySearch"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
-                    </Addon>
-                </Addons>
-                <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearch">@L["Catalog:Reset"]</Button>
+    <div class="hcs-cal-toolbar">
+        <div class="hcs-cal-toolbar__nav">
+            <Button Color="Color.Light" Clicked="PrevAsync">@L["Feature:Prev"]</Button>
+            <Button Color="Color.Light" Clicked="NextAsync">@L["Feature:Next"]</Button>
+            <Button Color="Color.Light" Clicked="TodayAsync">@L["Feature:Today"]</Button>
+        </div>
+        <strong class="hcs-cal-toolbar__title">@viewTitle</strong>
+        <div class="hcs-cal-toolbar__views">
+            <Button Color="@(IsView(MonthView) ? Color.Primary : Color.Light)" Clicked="() => SetViewAsync(MonthView)">@L["Feature:MonthView"]</Button>
+            <Button Color="@(IsView(WeekView) ? Color.Primary : Color.Light)" Clicked="() => SetViewAsync(WeekView)">@L["Feature:WeekView"]</Button>
+            <Button Color="@(IsView(DayView) ? Color.Primary : Color.Light)" Clicked="() => SetViewAsync(DayView)">@L["Feature:DayView"]</Button>
+            <Button Color="@(IsView(ListView) ? Color.Primary : Color.Light)" Clicked="() => SetViewAsync(ListView)">@L["Feature:ListView"]</Button>
+        </div>
+    </div>
+    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
+        <div class="hcs-catalog-filter-row">
+            <Addons Class="hcs-catalog-search">
+                <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
+                <Addon AddonType="AddonType.End">
+                    <Button Color="Color.Primary" Clicked="ApplySearch"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
+                </Addon>
+            </Addons>
+            <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearch">@L["Catalog:Reset"]</Button>
+            <div class="hcs-cal-legend" aria-label="@L["Feature:CalendarTitle"]">
+                <span class="hcs-cal-legend__item hcs-cal-legend__item--project">@L["Feature:CalendarLegendProject"]</span>
+                <span class="hcs-cal-legend__item hcs-cal-legend__item--task">@L["Feature:CalendarLegendTask"]</span>
+                <span class="hcs-cal-legend__item hcs-cal-legend__item--event">@L["Feature:CalendarLegendEvent"]</span>
             </div>
-        </CardBody></Card>
-        <Card Class="hcs-catalog-grid-card"><CardBody Class="p-0">
-            @if (VisibleEvents.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2></div> }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 hcs-catalog-grid">
-                        <thead><tr><th>@L["Feature:Event"]</th><th>@L["Feature:Time"]</th><th>@L["Catalog:Status"]</th><th></th></tr></thead>
-                        <tbody>
-                        @foreach (var item in VisibleEvents)
-                        {
-                            <tr>
-                                <td>
-                                    @if (IsTask(item))
-                                    {
-                                        <button type="button" class="btn btn-link p-0 text-start" @onclick="() => OpenTask(item)"><strong>@item.Title</strong></button>
-                                    }
-                                    else
-                                    {
-                                        <a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)"><strong>@item.Title</strong></a>
-                                    }
-                                    <br /><small>@item.EventType</small>
-                                </td>
-                                <td>@item.StartTime.ToLocalTime().ToString("dd/MM HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")</td>
-                                <td>@item.Visibility</td>
-                                <td><Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteAsync(item)">@L["Catalog:Delete"]</Button></td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </CardBody></Card>
-    }
-    else
-    {
-        <Card Class="hcs-catalog-grid-card">
-            <CardBody Class="p-0">
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center mb-0 hcs-calendar-grid">
-                        <thead><tr>@foreach (var day in DayNames) { <th>@day</th> }</tr></thead>
-                        <tbody>
-                        @foreach (var week in Weeks())
-                        {
-                            <tr>
-                            @foreach (var day in week)
-                            {
-                                var daily = events.Where(x => x.StartTime.ToLocalTime().Date == day.Date).ToList();
-                                <td class="@(day.Month == month.Month ? null : "text-muted") @(day.Date == DateTime.Today ? "hcs-calendar-grid__today" : null)">
-                                    <div><strong>@day.Day</strong></div>
-                                    @foreach (var item in daily.Take(3))
-                                    {
-                                        <div>
-                                            @if (IsTask(item))
-                                            {
-                                                <button type="button" class="btn btn-link p-0" @onclick="() => OpenTask(item)">@item.Title</button>
-                                            }
-                                            else
-                                            {
-                                                <a href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@item.Title</a>
-                                            }
-                                        </div>
-                                    }
-                                </td>
-                            }
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                </div>
-            </CardBody>
-        </Card>
-    }
+        </div>
+    </CardBody></Card>
+    @if (isLoading && events.Count == 0) { <p>@L["Catalog:Loading"]</p> }
+    <Card Class="hcs-catalog-grid-card hcs-cal-card">
+        <CardBody Class="p-0">
+            <HcsCalendar @ref="calendar"
+                         Events="MappedEvents"
+                         EventClicked="OnEventClicked"
+                         DatesChanged="OnDatesChanged" />
+        </CardBody>
+    </Card>
 </section>
 <Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal">
     <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:EventCreate"]</ModalTitle><CloseButton /></ModalHeader>
@@ -167,37 +111,39 @@
 </ModalContent></Modal>
 <ProjectTaskViewModal @ref="taskModal" />
 @code {
-    private DateTime month = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private const string MonthView = "dayGridMonth";
+    private const string WeekView = "timeGridWeek";
+    private const string DayView = "timeGridDay";
+    private const string ListView = "listWeek";
+    private HcsCalendar? calendar;
     private readonly List<CalendarEventDto> events = [];
     private readonly List<MasterDataCatalogDto> eventTypes = [];
     private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
-    private readonly EventForm form = new();
+    private EventForm form = new();
     private Modal? modal;
     private ProjectTaskViewModal? taskModal;
     private bool isLoading;
-    private bool isListView;
     private string filter = "", search = "";
-    private IEnumerable<string> DayNames =>
-        CultureInfo.CurrentUICulture.DateTimeFormat.AbbreviatedDayNames
-            .Skip(1).Concat(CultureInfo.CurrentUICulture.DateTimeFormat.AbbreviatedDayNames.Take(1));
+    private string viewType = MonthView;
+    private string viewTitle = "";
+    private string lastRangeKey = "";
+    private DateTime rangeFrom = DateTime.Today.AddDays(-7);
+    private DateTime rangeTo = DateTime.Today.AddMonths(1).AddDays(7);
 
+    private IReadOnlyList<HcsCalendarJsEvent> MappedEvents => CalendarEventDisplay.ToJs(VisibleEvents);
     private List<CalendarEventDto> VisibleEvents => string.IsNullOrWhiteSpace(search)
         ? events
         : events.Where(x => x.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
             || x.EventType.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
 
-    private void ApplySearch() => search = filter;
+    private bool IsView(string view) => viewType == view;
+    private void ApplySearch() => search = SearchText.Normalize(filter);
     private void ResetSearch() { filter = search = ""; }
 
-    protected override Task OnInitializedAsync() => LoadAsync();
-
-    private async Task LoadAsync()
+    protected override async Task OnInitializedAsync()
     {
-        isLoading = true;
         try
         {
-            var from = month.AddDays(-7); var to = month.AddMonths(1).AddDays(7);
-            events.Clear(); events.AddRange(await Work.GetCalendarAsync(from, to));
             if (eventTypes.Count == 0)
             {
                 var page = await Catalog.GetMasterDataAsync("EventType", new OrganizationCatalogQuery(null, true, 0, 100));
@@ -206,28 +152,57 @@
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
+    }
+
+    private Task PrevAsync() => calendar?.PrevAsync() ?? Task.CompletedTask;
+    private Task NextAsync() => calendar?.NextAsync() ?? Task.CompletedTask;
+    private Task TodayAsync() => calendar?.TodayAsync() ?? Task.CompletedTask;
+    private Task SetViewAsync(string view) => calendar?.ChangeViewAsync(view) ?? Task.CompletedTask;
+
+    private async Task OnDatesChanged(HcsCalendarRange range)
+    {
+        viewType = range.ViewType;
+        viewTitle = FormatTitle(range);
+        var key = range.Start + "|" + range.End;
+        if (key == lastRangeKey) return;
+        lastRangeKey = key;
+        rangeFrom = ParseIso(range.Start) ?? rangeFrom;
+        rangeTo = ParseIso(range.End) ?? rangeTo;
+        await LoadEventsAsync();
+    }
+
+    private async Task LoadEventsAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var loaded = await Work.GetCalendarAsync(rangeFrom, rangeTo);
+            events.Clear();
+            events.AddRange(loaded);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
 
-    private Task PreviousMonth() { month = month.AddMonths(-1); return LoadAsync(); }
-    private Task NextMonth() { month = month.AddMonths(1); return LoadAsync(); }
-    private async Task OpenCreate() { form.Reset(); if (modal is not null) await modal.Show(); }
-    private static bool IsTask(CalendarEventDto item) =>
-        string.Equals(item.RelatedType, "TASK", StringComparison.OrdinalIgnoreCase) && Guid.TryParse(item.RelatedId, out _);
-    private Task OpenTask(CalendarEventDto item) =>
-        Guid.TryParse(item.RelatedId, out var id) ? taskModal?.ShowAsync(id) ?? Task.CompletedTask : Task.CompletedTask;
+    private async Task OpenCreate() { form = new(); if (modal is not null) await modal.Show(); }
+
+    private async Task OnEventClicked(string id)
+    {
+        if (!Guid.TryParse(id, out var eventId)) return;
+        var item = events.FirstOrDefault(x => x.Id == eventId);
+        if (item is null) return;
+        if (string.Equals(item.RelatedType, "TASK", StringComparison.OrdinalIgnoreCase) && Guid.TryParse(item.RelatedId, out var taskId))
+        {
+            if (taskModal is not null) await taskModal.ShowAsync(taskId);
+            return;
+        }
+        Navigation.NavigateTo(WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id));
+    }
+
     private void OnRelatedTypeChanged(string value)
     {
         if (!string.Equals(form.RelatedType, value, StringComparison.Ordinal)) form.RelatedId = null;
         form.RelatedType = value;
-    }
-    private IEnumerable<List<DateTime>> Weeks()
-    {
-        var start = month.AddDays(-(((int)month.DayOfWeek + 6) % 7));
-        for (var w = 0; w < 6; w++)
-        {
-            yield return Enumerable.Range(0, 7).Select(d => start.AddDays(w * 7 + d)).ToList();
-        }
     }
     private void Toggle(Guid id, bool selected) { if (selected) form.Participants.Add(id); else form.Participants.Remove(id); }
     private async Task CreateAsync()
@@ -236,15 +211,9 @@
         {
             await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, null, form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
             if (modal is not null) await modal.Hide();
-            await LoadAsync();
+            await LoadEventsAsync();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
-    }
-    private async Task DeleteAsync(CalendarEventDto item)
-    {
-        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Title))) return;
-        try { await Work.DeleteCalendarEventAsync(item.Id); await LoadAsync(); }
-        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private async Task<CatalogSelect2SearchResponse> SearchRelatedAsync(string term, int page)
     {
@@ -261,6 +230,30 @@
             projects.Items.Select(x => new CatalogSelect2Item(x.Id.ToString(), CatalogSelect2Text.CodeName(x.Code, x.Name))).ToList(),
             skip + projects.Items.Count < projects.TotalCount);
     }
+
+    private string FormatTitle(HcsCalendarRange range)
+    {
+        var culture = CultureInfo.CurrentUICulture;
+        var current = ParseIso(range.CurrentStart)?.ToLocalTime() ?? DateTime.Today;
+        return range.ViewType switch
+        {
+            DayView => current.ToString("D", culture),
+            WeekView or ListView => FormatWeekTitle(current, culture),
+            _ => current.ToString("MMMM yyyy", culture).ToUpper(culture)
+        };
+    }
+
+    private static string FormatWeekTitle(DateTime start, CultureInfo culture)
+    {
+        var end = start.AddDays(6);
+        return start.Year == end.Year
+            ? $"{start.ToString("dd MMM", culture)} – {end.ToString("dd MMM yyyy", culture)}"
+            : $"{start.ToString("dd MMM yyyy", culture)} – {end.ToString("dd MMM yyyy", culture)}";
+    }
+
+    private static DateTime? ParseIso(string value) =>
+        DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed) ? parsed : null;
+
     private sealed class EventForm
     {
         public string Title { get; set; } = "";
@@ -272,6 +265,5 @@
         public string RelatedType { get; set; } = "NONE";
         public Guid? RelatedId { get; set; }
         public HashSet<Guid> Participants { get; } = [];
-        public void Reset() { Title = Description = ""; Start = DateTime.Now; End = DateTime.Now.AddHours(1); EventType = "Meeting"; Visibility = "Private"; RelatedType = "NONE"; RelatedId = null; Participants.Clear(); }
     }
 }

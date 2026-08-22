@@ -9,6 +9,8 @@ Keep credentials outside tracked JSON. Set the database connection and Keycloak 
 ```bash
 export ConnectionStrings__Default='Host=localhost;Port=5432;Database=hcs;Username=postgres;Password=...'
 export Authentication__Keycloak__Authority='http://localhost:5110/realms/bd'
+# Docker Compose only — backchannel discovery from the auth-server container:
+# export Authentication__Keycloak__MetadataAddress='http://host.docker.internal:5110/realms/bd/.well-known/openid-configuration'
 export Authentication__Keycloak__ClientId='hcs-free-auth'
 export Authentication__Keycloak__ClientSecret='...'
 export Authentication__Keycloak__Enabled='true'

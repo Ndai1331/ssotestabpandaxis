@@ -93,6 +93,16 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
 
     public Task<List<SurveyCriteriaDto>> GetCriteriaAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<SurveyCriteriaDto>>("/api/surveys/criteria", cancellationToken);
+    public Task<SurveyLocationDto> GetPublicLocationAsync(Guid locationId, CancellationToken cancellationToken = default) =>
+        GetAsync<SurveyLocationDto>($"/api/surveys/public/locations/{locationId:D}", cancellationToken);
+    public Task<List<SurveyCriteriaDto>> GetPublicCriteriaAsync(Guid locationId, CancellationToken cancellationToken = default) =>
+        GetAsync<List<SurveyCriteriaDto>>($"/api/surveys/public/criteria?locationId={locationId:D}", cancellationToken);
+    public Task<SurveySessionDto> CreatePublicSessionAsync(CreatePublicSurveySessionRequest request,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<SurveySessionDto>(HttpMethod.Post, "/api/surveys/public/sessions", request, cancellationToken);
+    public Task<List<SurveyResultDto>> SubmitPublicResultsAsync(Guid sessionId,
+        IReadOnlyList<SubmitSurveyResultRequest> request, CancellationToken cancellationToken = default) =>
+        SendAsync<List<SurveyResultDto>>(HttpMethod.Post, $"/api/surveys/public/sessions/{sessionId:D}/results", request, cancellationToken);
     public Task<SurveyCriteriaDto> CreateCriteriaAsync(CreateSurveyCriteriaRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<SurveyCriteriaDto>(HttpMethod.Post, "/api/surveys/criteria", request, cancellationToken);
     public Task<SurveyCriteriaDto> UpdateCriteriaAsync(Guid id, UpdateSurveyCriteriaRequest request, CancellationToken cancellationToken = default) =>
@@ -142,6 +152,43 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
             ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
     }
 
+    public async Task<SurveyFileDto> UploadPublicSurveyFileAsync(Guid sessionId, IBrowserFile file,
+        CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream(25 * 1024 * 1024, cancellationToken);
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+        content.Add(fileContent, "file", file.Name);
+        using var response = await CreateClient().PostAsync($"/api/surveys/public/sessions/{sessionId:D}/files", content, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SurveyFileDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+
+    public Task<SurveyResultStatisticsDto> GetSurveyStatisticsAsync(Guid? locationId = null,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<SurveyResultStatisticsDto>(
+            locationId.HasValue ? $"/api/surveys/results/statistics?locationId={locationId.Value:D}" : "/api/surveys/results/statistics",
+            cancellationToken);
+
+    public Task<PagedWorkResponse<SurveyResultSessionSummaryDto>> GetSurveyResultSummariesAsync(Guid? locationId = null,
+        int skip = 0, int take = 20, CancellationToken cancellationToken = default)
+    {
+        var uri = $"/api/surveys/results/summaries?skip={Math.Max(0, skip)}&take={Math.Clamp(take, 1, MaxPageSize)}";
+        if (locationId.HasValue) uri += $"&locationId={locationId.Value:D}";
+        return GetAsync<PagedWorkResponse<SurveyResultSessionSummaryDto>>(uri, cancellationToken);
+    }
+
+    public Task<List<SurveyResultSessionDetailDto>> GetSurveyResultDetailsAsync(Guid sessionId, Guid? locationId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = $"/api/surveys/results/{sessionId:D}/details";
+        if (locationId.HasValue) uri += $"?locationId={locationId.Value:D}";
+        return GetAsync<List<SurveyResultSessionDetailDto>>(uri, cancellationToken);
+    }
+
     public Task<DashboardDto> GetDashboardAsync(CancellationToken cancellationToken = default) =>
         GetAsync<DashboardDto>("/api/dashboard", cancellationToken);
 
@@ -158,7 +205,7 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
             $"take={Math.Clamp(query.MaxResultCount, 1, MaxPageSize)}"
         };
         if (!string.IsNullOrWhiteSpace(query.Filter))
-            parameters.Add($"filter={Uri.EscapeDataString(query.Filter.Trim())}");
+            parameters.Add($"filter={Uri.EscapeDataString(SearchText.Normalize(query.Filter))}");
         if (!string.IsNullOrWhiteSpace(query.Status))
             parameters.Add($"status={Uri.EscapeDataString(query.Status.Trim())}");
         return $"{endpoint}?{string.Join('&', parameters)}";

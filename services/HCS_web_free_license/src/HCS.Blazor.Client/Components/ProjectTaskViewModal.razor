@@ -33,7 +33,7 @@
                                 </div>
                                 <div class="hcs-form-row hcs-form-row--equal">
                                     <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                                        <Select TValue="string" @bind-Value="status">
+                                        <Select TValue="string" SelectedValue="@status" SelectedValueChanged="OnStatusChanged">
                                             @foreach (var value in WorkUi.TaskStatuses) { <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem> }
                                         </Select>
                                     </Field>
@@ -151,7 +151,17 @@
     private void OnProgressInput(ChangeEventArgs args)
     {
         if (int.TryParse(args.Value?.ToString(), out var value))
+        {
             progress = Math.Clamp(value, 0, 100);
+            if (progress == 100) status = "Completed";
+        }
+    }
+
+    private Task OnStatusChanged(string value)
+    {
+        status = value;
+        if (string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase)) progress = 100;
+        return Task.CompletedTask;
     }
 
     private async Task SaveAsync()
@@ -228,7 +238,7 @@
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
     }
     private Task<CatalogSelect2SearchResponse> SearchDocumentsAsync(string term, int page)
     {

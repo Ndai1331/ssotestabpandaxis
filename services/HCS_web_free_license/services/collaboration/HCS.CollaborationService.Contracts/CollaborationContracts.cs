@@ -20,7 +20,15 @@ public sealed record ConversationDto(Guid Id, ConversationType Type, string? Nam
 
 public sealed record ConversationMemberDto(Guid UserId, ConversationMemberRole Role, DateTime JoinedAt);
 public sealed record PresenceChangedDto(Guid UserId, bool IsOnline);
-public sealed record ChatContactDto(Guid Id, string UserName, string DisplayName, bool IsActive);
+public sealed record ChatContactDto(
+    Guid Id,
+    string UserName,
+    string DisplayName,
+    bool IsActive,
+    string? Surname = null,
+    string? Name = null,
+    string? PhoneNumber = null,
+    string? AvatarUrl = null);
 public sealed record ConversationPermissionDto(bool CanSend, bool CanManageMembers, bool CanRename, bool CanLeave,
     bool CanModerateMessages = false);
 

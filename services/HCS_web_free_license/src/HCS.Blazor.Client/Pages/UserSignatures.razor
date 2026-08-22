@@ -1,11 +1,8 @@
 @page "/user-signatures"
-@attribute [Authorize(Policy = "Documents.Signing.Execute")]
-@inherits HCSComponentBase
+@attribute [Authorize]
+@inject NavigationManager Navigation
 
-<PageTitle>@L["Menu:UserSignatures"] · HCS</PageTitle>
-<section class="hcs-document-page">
-    <header class="hcs-document-page__header"><div><h1>@L["Feature:UserSignatures"]</h1></div></header>
-    <Card><CardBody>
-        <UserSignaturesPanel />
-    </CardBody></Card>
-</section>
+@code {
+    protected override void OnInitialized() =>
+        Navigation.NavigateTo("/account?tab=signatures", replace: true);
+}

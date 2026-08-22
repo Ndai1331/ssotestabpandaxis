@@ -252,7 +252,7 @@
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
     }
     private async Task<CatalogSelect2SearchResponse> SearchDocumentsAsync(string term, int page)
     {

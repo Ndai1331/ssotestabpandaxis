@@ -1,7 +1,12 @@
 @inject BffAuthenticationStateProvider AuthenticationStateProvider
 @inject Volo.Abp.AspNetCore.Components.Web.Security.ApplicationConfigurationChangedService ApplicationConfigurationChangedService
+@inject NavigationManager Navigation
 
-@if (isChecking)
+@if (IsPublicSurveyRoute)
+{
+    @ChildContent
+}
+else if (isChecking)
 {
     <span class="visually-hidden" role="status">Đang kiểm tra phiên đăng nhập…</span>
 }
@@ -19,6 +24,8 @@ else
 
     private bool isChecking = true;
     private bool isAuthenticated;
+    private bool IsPublicSurveyRoute => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0]
+        .StartsWith("survey-collections/", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task OnInitializedAsync()
     {

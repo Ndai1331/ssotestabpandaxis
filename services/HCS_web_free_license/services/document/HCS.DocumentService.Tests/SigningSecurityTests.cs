@@ -17,6 +17,13 @@ public sealed class SigningSecurityTests
         Assert.True(signature.IsDefault);
         signature.ClearDefault();
         Assert.False(signature.IsDefault);
+        signature.Rename("renamed-signature.png");
+        Assert.Equal("renamed-signature.png", signature.FileName);
+        signature.ReplaceContent("updated-signature.webp", "image/webp", "signatures/b", 24);
+        Assert.Equal("updated-signature.webp", signature.FileName);
+        Assert.Equal("image/webp", signature.ContentType);
+        Assert.Equal("signatures/b", signature.BlobName);
+        Assert.Equal(24, signature.Size);
     }
 
     [Fact]

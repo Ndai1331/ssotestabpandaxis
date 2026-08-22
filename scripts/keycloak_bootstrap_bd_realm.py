@@ -16,6 +16,7 @@ REALM = "bd"
 DIRECTUS_SECRET = os.environ.get("DIRECTUS_CLIENT_SECRET", "bd-directus-lab-secret")
 ABP_SECRET = os.environ.get("ABP_CLIENT_SECRET", "bd-abp-auth-lab-secret")
 HCS_AUTH_SECRET = os.environ.get("HCS_AUTH_CLIENT_SECRET")
+HCS_AUTH_PUBLIC_HOST = os.environ.get("HCS_AUTH_PUBLIC_HOST", "auth.hcs.localhost")
 USER_PASS = os.environ.get("BD_TEST_USER_PASSWORD", "Passw0rd!")
 
 
@@ -237,8 +238,8 @@ def main() -> None:
         token,
         "hcs-free-auth",
         HCS_AUTH_SECRET,
-        ["https://auth.hcs.localhost/signin-oidc"],
-        ["https://auth.hcs.localhost", "+"],
+        [f"https://{HCS_AUTH_PUBLIC_HOST}/signin-oidc"],
+        [f"https://{HCS_AUTH_PUBLIC_HOST}", "+"],
     )
     status, _ = req("GET", f"/realms/{REALM}/.well-known/openid-configuration")
     print()

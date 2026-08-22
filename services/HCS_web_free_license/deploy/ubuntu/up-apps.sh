@@ -34,6 +34,12 @@ wait_port "$HCS_DATA_HOST" 5672
 wait_port "$HCS_DATA_HOST" 9000
 
 cd "$root_dir"
-docker compose --env-file "$env_file" -f "$compose_file" build
+if [[ "$(grep -E '^HCS_PULL_IMAGES=' "$env_file" | tail -n1 | cut -d= -f2- | tr -d '"' | tr -d "'" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
+  echo "Pulling images from Docker Hub (HCS_PULL_IMAGES=true) ..."
+  docker compose --env-file "$env_file" -f "$compose_file" pull
+else
+  echo "Building images on server (HCS_PULL_IMAGES=false) ..."
+  docker compose --env-file "$env_file" -f "$compose_file" build
+fi
 docker compose --env-file "$env_file" -f "$compose_file" up -d
 docker compose --env-file "$env_file" -f "$compose_file" ps

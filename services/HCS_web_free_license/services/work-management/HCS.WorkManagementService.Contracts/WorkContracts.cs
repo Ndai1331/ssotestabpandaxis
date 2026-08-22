@@ -46,20 +46,36 @@ public sealed record UpdateCalendarEventDto(string Title, string? Description, D
     bool AllDay, string EventType, string? Location, string RelatedType, string? RelatedId, string Visibility,
     IReadOnlyList<Guid>? ParticipantUserIds);
 
-public sealed record SurveyCriteriaDto(Guid Id, string Code, string Name, int SortOrder, bool IsActive);
-public sealed record SurveyLocationDto(Guid Id, string Code, string Name, Guid? OrganizationUnitId, bool IsActive);
+public sealed record SurveyCriteriaDto(Guid Id, string Code, string Name, int SortOrder, bool IsActive,
+    Guid? LocationId = null, string? Image = null);
+public sealed record SurveyLocationDto(Guid Id, string Code, string Name, Guid? OrganizationUnitId, bool IsActive,
+    string? Description = null);
 public sealed record SurveySessionDto(Guid Id, string Code, string Name, DateTime StartsAt, DateTime EndsAt,
-    string Status, Guid? LocationId);
+    string Status, Guid? LocationId, string? FullName = null, string? PhoneNumber = null, string? PatientCode = null,
+    DateTime? SurveyTime = null, string? DeviceType = null, string? Note = null, string? SessionDisplay = null);
 public sealed record SurveyResultDto(Guid Id, Guid SessionId, Guid CriteriaId, Guid? RespondentUserId,
     decimal Score, string? Comment);
-public sealed record CreateSurveyCriteriaDto(string Code, string Name, int SortOrder);
-public sealed record UpdateSurveyCriteriaDto(string Name, int SortOrder, bool IsActive);
-public sealed record CreateSurveyLocationDto(string Code, string Name, Guid? OrganizationUnitId);
-public sealed record UpdateSurveyLocationDto(string Name, Guid? OrganizationUnitId, bool IsActive);
+public sealed record CreateSurveyCriteriaDto(string Code, string Name, int SortOrder,
+    Guid? LocationId = null, string? Image = null);
+public sealed record UpdateSurveyCriteriaDto(string Name, int SortOrder, bool IsActive,
+    Guid? LocationId = null, string? Image = null);
+public sealed record CreateSurveyLocationDto(string Code, string Name, Guid? OrganizationUnitId,
+    string? Description = null);
+public sealed record UpdateSurveyLocationDto(string Name, Guid? OrganizationUnitId, bool IsActive,
+    string? Description = null);
 public sealed record CreateSurveySessionDto(string Code, string Name, DateTime StartsAt, DateTime EndsAt, Guid? LocationId);
 public sealed record UpdateSurveySessionDto(string Name, DateTime StartsAt, DateTime EndsAt, Guid? LocationId);
 public sealed record ChangeSurveySessionStatusDto(string Status);
 public sealed record SubmitSurveyResultDto(Guid CriteriaId, Guid? RespondentUserId, decimal Score, string? Comment);
+public sealed record CreatePublicSurveySessionDto(Guid LocationId, string FullName, string PhoneNumber,
+    string? PatientCode, DateTime SurveyTime, string? DeviceType, string? Note, string? SessionDisplay = null);
+public sealed record SurveyResultSessionSummaryDto(Guid SurveyResultId, Guid SurveySessionId, Guid CriteriaId,
+    string SurveyCriteriaName, decimal Score, string? FullName, string? PhoneNumber, string? PatientCode,
+    string? Note, DateTime SurveyTime);
+public sealed record SurveyResultSessionDetailDto(Guid SurveyResultId, Guid SurveySessionId, Guid CriteriaId,
+    string SurveyCriteriaName, decimal Score, string? Comment);
+public sealed record SurveyResultStatisticsDto(int TotalReviews, IReadOnlyDictionary<int, int> ScoreDistribution,
+    IReadOnlyDictionary<string, decimal> CriteriaAverageScores);
 public sealed record SurveyFileReferenceDto(Guid Id, Guid SessionId, string FileName, string ContentType, long Size);
 
 public sealed record DashboardDto(int ActiveProjects, int OpenTasks, int OverdueTasks, int ActiveSurveys,

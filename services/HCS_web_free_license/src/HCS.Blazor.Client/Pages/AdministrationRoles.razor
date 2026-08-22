@@ -1,5 +1,6 @@
 @page "/administration/roles"
 @page "/roles"
+@attribute [Authorize(Roles = "admin")]
 @using HCS.Localization
 @using System.Net
 @using Microsoft.AspNetCore.Components

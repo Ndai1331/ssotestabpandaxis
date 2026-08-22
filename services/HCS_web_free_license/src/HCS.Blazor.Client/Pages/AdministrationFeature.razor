@@ -1,6 +1,7 @@
 @page "/administration/languages"
 @page "/administration/language-texts"
 @page "/administration/audit-logs"
+@attribute [Authorize(Roles = "admin")]
 @using Microsoft.AspNetCore.Components.Routing
 @inject NavigationManager Navigation
 @implements IDisposable

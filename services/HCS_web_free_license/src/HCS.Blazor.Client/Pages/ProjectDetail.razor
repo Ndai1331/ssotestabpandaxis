@@ -13,10 +13,6 @@
     <header class="hcs-document-page__header">
         <div>
             <h1>@(IsCreate ? L["Feature:ProjectCreate"] : (detail?.Project.Name ?? L["Feature:ProjectDetail"]))</h1>
-            @if (detail is not null)
-            {
-                <p>@detail.Project.Code · @L[WorkUi.ProjectStatusKey(detail.Project.Status)] · @WorkUi.FormatRange(detail.Project.StartDate, detail.Project.EndDate)</p>
-            }
         </div>
         <a class="btn btn-outline-primary" href="/projects">@L["Feature:BackToList"]</a>
     </header>
@@ -258,7 +254,7 @@
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false, itemOf: CatalogSelect2Cache.UserItem);
     }
     private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 

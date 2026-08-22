@@ -29,6 +29,8 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
         await SaveBlobAsync(blobName, bytes, cancellationToken);
         try
         {
+            var existingFileIds = document.Files.Select(x => x.Id).ToHashSet();
+            var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
             var file = document.AddFile(fileId, fileName, normalizedType, bytes.Length, Sha256Hex(bytes), blobName, userId, DateTime.UtcNow);
             try
             {
@@ -38,6 +40,7 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
             {
                 logger.LogWarning(ex, "Word-to-PDF conversion failed for {File}; Word file was kept.", fileName);
             }
+            TrackNewChildren(db, document, existingFileIds, existingHistoryIds);
             await db.SaveChangesAsync(cancellationToken);
             return Map(file);
         }
@@ -123,6 +126,16 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
 
     internal static DocumentFileDto Map(DocumentFile file) =>
         new(file.Id, file.FileName, file.ContentType, file.Size, file.Sha256, file.CreationTime, file.PairedFileId);
+
+    internal static void TrackNewChildren(DocumentServiceDbContext db, DocumentAggregate document,
+        IReadOnlySet<Guid> existingFileIds, IReadOnlySet<Guid> existingHistoryIds)
+    {
+        // A file upload mutates an already tracked aggregate. Explicitly add only the
+        // children created by this mutation so EF does not treat them as existing rows
+        // and issue an UPDATE for a key that is not in the database yet.
+        db.DocumentFiles.AddRange(document.Files.Where(x => !existingFileIds.Contains(x.Id)));
+        db.DocumentHistories.AddRange(document.History.Where(x => !existingHistoryIds.Contains(x.Id)));
+    }
 
     public static bool TryNormalizeContentType(string fileName, string? contentType, out string normalized)
     {

@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using HCS.Blazor.Client.Services;
 using Microsoft.Extensions.Http;
 
 namespace HCS.Blazor.Client.Pages.Organization;
@@ -134,7 +135,7 @@ public sealed class OrganizationCatalogClient(IHttpClientFactory httpClientFacto
 
         if (!string.IsNullOrWhiteSpace(query.Filter))
         {
-            parameters.Add($"filter={Uri.EscapeDataString(query.Filter.Trim())}");
+            parameters.Add($"filter={Uri.EscapeDataString(SearchText.Normalize(query.Filter))}");
         }
 
         if (query.IsActive.HasValue)

@@ -70,6 +70,16 @@
           "Volo.Abp.Castle.Core": "10.6.0"
         }
       },
+      "Volo.Abp.BlobStoring.Minio": {
+        "type": "Direct",
+        "requested": "[10.6.0, )",
+        "resolved": "10.6.0",
+        "contentHash": "IlgMzpPKV3IPoLVMpRfE35g53qG/R/oXiFfze9/Z2iQ8v4025/loBA0DySEvhuhSfyauvjzYsAML0g4OgYHXrQ==",
+        "dependencies": {
+          "Minio": "6.0.5",
+          "Volo.Abp.BlobStoring": "10.6.0"
+        }
+      },
       "Volo.Abp.OpenIddict.AspNetCore": {
         "type": "Direct",
         "requested": "[10.6.0, )",
@@ -158,6 +168,11 @@
         "dependencies": {
           "Castle.Core": "4.4.0"
         }
+      },
+      "CommunityToolkit.HighPerformance": {
+        "type": "Transitive",
+        "resolved": "8.4.0",
+        "contentHash": "flxspiBs0G/0GMp7IK2J2ijV9bTG6hEwFc/z6ekHqB6nwRJ4Ry2yLdx+TkbCUYFCl4XhABkAwomeKbT6zM2Zlg=="
       },
       "Duende.IdentityModel": {
         "type": "Transitive",
@@ -458,6 +473,16 @@
         "type": "Transitive",
         "resolved": "1.41.4",
         "contentHash": "fQwTTA2awWICM4xqjkldGTkAEr+U8TfncNdd7CCdQIMo3khCXoFkA1F080Ts8el7oeuRNhRauYjQs8aU0Z6v9Q=="
+      },
+      "Minio": {
+        "type": "Transitive",
+        "resolved": "6.0.5",
+        "contentHash": "AK3JIDZnFZg2Hpkqo6vlzyiEC4OifG+jQbuqpAtXePnIo49G4pNn27THh3DI8s4o84b/MMBQF+n1DEwBNenxsg==",
+        "dependencies": {
+          "CommunityToolkit.HighPerformance": "8.4.0",
+          "System.IO.Hashing": "9.0.4",
+          "System.Reactive": "6.0.1"
+        }
       },
       "Mono.TextTemplating": {
         "type": "Transitive",
@@ -766,6 +791,11 @@
           "Microsoft.IdentityModel.Tokens": "8.0.1"
         }
       },
+      "System.IO.Hashing": {
+        "type": "Transitive",
+        "resolved": "9.0.4",
+        "contentHash": "WogPvgAFqQORFD8Iyha6RZ+/1QB3dsWRWxbwi8/HHVgiGQ8z0oMWpwe8Kk3Ti+Roe+P6a3sBg+WwBfEsyziZKg=="
+      },
       "System.Linq.Dynamic.Core": {
         "type": "Transitive",
         "resolved": "1.6.7",
@@ -778,6 +808,11 @@
         "dependencies": {
           "System.CodeDom": "10.0.9"
         }
+      },
+      "System.Reactive": {
+        "type": "Transitive",
+        "resolved": "6.0.1",
+        "contentHash": "rHaWtKDwCi9qJ3ObKo8LHPMuuwv33YbmQi7TcUK1C264V3MFnOr5Im7QgCTdLniztP3GJyeiSg5x8NqYJFqRmg=="
       },
       "TimeZoneConverter": {
         "type": "Transitive",

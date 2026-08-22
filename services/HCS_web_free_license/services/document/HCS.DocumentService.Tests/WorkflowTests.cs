@@ -15,8 +15,23 @@ public sealed class WorkflowTests
         definition.ReplaceSteps([]);
         Assert.Empty(definition.Steps);
         Assert.Equal(WorkflowSignModes.Sequential, definition.SignMode);
+        Assert.Throws<InvalidOperationException>(() => definition.EnsureStartable());
         Assert.Throws<InvalidOperationException>(() =>
             new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-empty", Now));
+    }
+
+    [Fact]
+    public void Definition_with_only_view_steps_cannot_start()
+    {
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "view-only", "View only", new[]
+        {
+            new WorkflowStepInput("view", "View", 1, "Documents.View", "VIEW")
+        }, Now);
+
+        Assert.DoesNotContain(definition.Steps, step => step.IsBlocking);
+        Assert.Throws<InvalidOperationException>(() => definition.EnsureStartable());
+        Assert.Throws<InvalidOperationException>(() =>
+            new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-view-only", Now));
     }
 
     [Fact]
@@ -131,6 +146,22 @@ public sealed class WorkflowTests
         Assert.Equal("Incoming v2", template.Name);
         Assert.Equal("PDF", template.OutputFormat);
         Assert.Contains("title", template.TemplateJson);
+    }
+
+    [Fact]
+    public void Start_request_requires_exactly_one_document_source()
+    {
+        var workflowId = Guid.NewGuid();
+        var documentId = Guid.NewGuid();
+
+        Assert.True(WorkflowStartRequestRules.HasExactlyOneSource(
+            new StartWorkflowRequest(null, workflowId, "workflow-template", UseWorkflowTemplateFile: true)));
+        Assert.True(WorkflowStartRequestRules.HasExactlyOneSource(
+            new StartWorkflowRequest(documentId, workflowId, "existing-document")));
+        Assert.False(WorkflowStartRequestRules.HasExactlyOneSource(
+            new StartWorkflowRequest(null, workflowId, "no-source")));
+        Assert.False(WorkflowStartRequestRules.HasExactlyOneSource(
+            new StartWorkflowRequest(documentId, workflowId, "two-sources", UseWorkflowTemplateFile: true)));
     }
 
     [Fact]

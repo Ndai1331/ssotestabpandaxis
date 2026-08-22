@@ -168,6 +168,10 @@ public sealed class HCSAuthServerModule : AbpModule
             {
                 options.SignInScheme = IdentityConstants.ExternalScheme;
                 options.Authority = settings.Authority;
+                if (!string.IsNullOrWhiteSpace(settings.MetadataAddress))
+                {
+                    options.MetadataAddress = settings.MetadataAddress;
+                }
                 options.RequireHttpsMetadata = settings.RequireHttpsMetadata;
                 options.ClientId = settings.ClientId;
                 options.ClientSecret = settings.ClientSecret;

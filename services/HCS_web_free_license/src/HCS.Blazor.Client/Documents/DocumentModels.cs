@@ -61,9 +61,9 @@ public sealed record WorkflowViewScopeSelection(string StepCode, List<Guid> Depa
 public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null);
 public sealed record WorkflowStepCandidateGroupDto(string StepCode, string StepName, string AssigneeType, Guid? RoleId,
     List<WorkflowAssigneeCandidateDto> Candidates);
-public sealed record StartWorkflowRequest(Guid DocumentId, Guid DefinitionId, string IdempotencyKey,
+public sealed record StartWorkflowRequest(Guid? DocumentId, Guid DefinitionId, string IdempotencyKey,
     List<WorkflowStepSignerSelection>? Signers = null, List<WorkflowViewScopeSelection>? ViewScopes = null,
-    bool UseTemplateFile = false);
+    bool UseTemplateFile = false, bool UseWorkflowTemplateFile = false);
 public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey, bool Return = false);
 
 public sealed record SigningCredentialDto(Guid Id, int Kind, string Endpoint, string MaskedSecret, DateTime UpdatedAt);

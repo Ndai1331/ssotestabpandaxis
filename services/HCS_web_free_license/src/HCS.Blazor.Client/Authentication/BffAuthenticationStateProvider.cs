@@ -34,60 +34,22 @@ internal sealed class BffAuthenticationStateProvider(IHttpClientFactory httpClie
         {
             using var client = httpClientFactory.CreateClient("HCS.Bff");
             using var response = await client.GetAsync("bff/user");
-            // #region agent log
-            _ = AgentBrowserDebugLog.WriteAsync(
-                "C,A,B",
-                "BffAuthenticationStateProvider.cs:LoadStateAsync",
-                "browser bff/user result",
-                new
-                {
-                    statusCode = (int)response.StatusCode,
-                    reason = response.ReasonPhrase,
-                    requestUri = response.RequestMessage?.RequestUri?.ToString()
-                });
-            // #endregion
             if (!response.IsSuccessStatusCode)
             {
                 return AnonymousState;
             }
 
             var profile = await response.Content.ReadFromJsonAsync<BffUserResponse>(JsonOptions);
-            // #region agent log
-            _ = AgentBrowserDebugLog.WriteAsync(
-                "C,D",
-                "BffAuthenticationStateProvider.cs:LoadStateAsync:profile",
-                "browser bff/user profile",
-                new
-                {
-                    isAuthenticated = profile?.IsAuthenticated == true,
-                    name = profile?.Name,
-                    claimCount = profile?.Claims?.Length ?? 0
-                });
-            // #endregion
             return profile?.IsAuthenticated == true
                 ? CreateAuthenticatedState(profile)
                 : AnonymousState;
         }
-        catch (HttpRequestException exception)
+        catch (HttpRequestException)
         {
-            // #region agent log
-            _ = AgentBrowserDebugLog.WriteAsync(
-                "C,E",
-                "BffAuthenticationStateProvider.cs:LoadStateAsync:HttpRequestException",
-                "browser bff/user transport failure",
-                new { exception.Message });
-            // #endregion
             return AnonymousState;
         }
-        catch (JsonException exception)
+        catch (JsonException)
         {
-            // #region agent log
-            _ = AgentBrowserDebugLog.WriteAsync(
-                "C",
-                "BffAuthenticationStateProvider.cs:LoadStateAsync:JsonException",
-                "browser bff/user json failure",
-                new { exception.Message });
-            // #endregion
             return AnonymousState;
         }
         catch (OperationCanceledException)

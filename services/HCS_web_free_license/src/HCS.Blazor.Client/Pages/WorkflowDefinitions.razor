@@ -128,7 +128,7 @@
         else ApplyPage();
     }
 
-    private void ApplySearch() { search = filter; currentPage = 1; ApplyPage(); }
+    private void ApplySearch() { search = SearchText.Normalize(filter); currentPage = 1; ApplyPage(); }
     private void ResetSearch() { filter = search = activeFilter = ""; showFilters = false; currentPage = 1; ApplyPage(); }
     private void OnActiveChanged() { currentPage = 1; ApplyPage(); }
     private void ApplyPage()

@@ -156,9 +156,12 @@
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
             <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseSignAsync">@L["Catalog:Cancel"]</Button>
-            <Button Color="Color.Warning" Clicked="() => DecideAsync(true, true)">@L["Work:Return"]</Button>
-            <Button Color="Color.Danger" Clicked="() => DecideAsync(false, false)">@L["Feature:Reject"]</Button>
-            <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="ApproveAsync">@L["Feature:Approve"]</Button>
+            @if (CanReturn)
+            {
+                <Button Color="Color.Warning" Clicked="() => DecideAsync(true, true)" Disabled="@isDecisionPending">@L["Work:Return"]</Button>
+            }
+            <Button Color="Color.Danger" Clicked="() => DecideAsync(false, false)" Disabled="@isDecisionPending">@L["Feature:Reject"]</Button>
+            <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="ApproveAsync" Disabled="@isDecisionPending">@L["Feature:Approve"]</Button>
         </ModalFooter>
     </ModalContent>
 </Modal>
@@ -187,6 +190,7 @@
     private string dateFilterField = "IncomingDate";
     private string? signPdfUrl;
     private string filter = "", search = "", inboxFilter = "all";
+    private bool isDecisionPending;
     private int pageSize = 20, currentPage = 1;
 
     private int CountAll => queue.Count;
@@ -251,7 +255,7 @@
         await LoadAsync();
     }
 
-    private void ApplyFilter() { search = filter; currentPage = 1; }
+    private void ApplyFilter() { search = SearchText.Normalize(filter); currentPage = 1; }
     private void OnDateRangeChanged(IReadOnlyList<DateTime?> value) => selectedDates = value ?? [];
     private void OnDateFilterFieldChanged(string value) => dateFilterField = string.IsNullOrWhiteSpace(value) ? "IncomingDate" : value;
     private void OnSubmitterChanged(Guid? value) => submitterId = value;
@@ -315,6 +319,8 @@
         form.FileId = pdf?.Id.ToString() ?? "";
         form.Kind = 0;
         form.Comment = "";
+        form.SignIdempotencyKey = Guid.NewGuid().ToString("N");
+        form.DecisionIdempotencyKey = Guid.NewGuid().ToString("N");
         var signature = signatures.FirstOrDefault(x => x.IsDefault) ?? signatures.FirstOrDefault();
         form.SignatureId = signature?.Id.ToString() ?? "";
         try { report = await Documents.GetSigningReportAsync(item.Document.Id); }
@@ -329,7 +335,7 @@
         if (file is null) return;
         try
         {
-            var content = await Documents.GetFileContentAsync(documentId, file.Id);
+            var content = await Documents.GetWatermarkedFileContentAsync(documentId, file.Id);
             signPdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", "application/pdf", content.Bytes);
         }
         catch { signPdfUrl = null; }
@@ -362,30 +368,46 @@
 
     private async Task ApproveAsync()
     {
-        if (selected is null) return;
+        if (selected is null || isDecisionPending) return;
+        isDecisionPending = true;
         try
         {
-            if (Guid.TryParse(form.FileId, out var fileId))
-                await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, fileId, form.Kind, Guid.NewGuid().ToString("N")));
-            await Documents.DecideAsync(selected.Task.Id, new DecideApprovalTaskRequest(true, CommentOrNull(), Guid.NewGuid().ToString("N")));
+            var currentStep = CurrentStep(selected);
+            var hasFile = Guid.TryParse(form.FileId, out var parsedFileId);
+            if (currentStep?.Type == "SIGN" && !hasFile)
+            {
+                await NotifyErrorAsync(L["Feature:ChooseSigningFile"]);
+                return;
+            }
+            if (currentStep?.Type == "SIGN")
+            {
+                await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, parsedFileId, form.Kind, form.SignIdempotencyKey));
+            }
+            await Documents.DecideAsync(selected.Task.Id,
+                new DecideApprovalTaskRequest(true, CommentOrNull(), form.DecisionIdempotencyKey));
             await CloseSignAsync();
             await NotifySuccessAsync(L["Feature:Approve"]);
             await LoadAsync();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isDecisionPending = false; }
     }
 
     private async Task DecideAsync(bool approve, bool returnStep)
     {
-        if (selected is null) return;
+        if (selected is null || isDecisionPending) return;
+        if (returnStep && !CanReturn) return;
+        isDecisionPending = true;
         try
         {
-            await Documents.DecideAsync(selected.Task.Id, new DecideApprovalTaskRequest(approve, CommentOrNull(), Guid.NewGuid().ToString("N"), Return: returnStep));
+            await Documents.DecideAsync(selected.Task.Id,
+                new DecideApprovalTaskRequest(approve, CommentOrNull(), form.DecisionIdempotencyKey, Return: returnStep));
             await CloseSignAsync();
             await NotifySuccessAsync(returnStep ? L["Work:Return"] : L["Feature:Reject"]);
             await LoadAsync();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isDecisionPending = false; }
     }
 
     private string? CommentOrNull() => string.IsNullOrWhiteSpace(form.Comment) ? null : form.Comment.Trim();
@@ -412,6 +434,10 @@
         var current = step?.Order ?? item.Instance.CurrentStep + 1;
         return $"{current} / {total}";
     }
+    private static WorkflowStepDto? CurrentStep(SigningQueueItem item) =>
+        item.Definition.Steps.FirstOrDefault(x =>
+            string.Equals(x.Code, item.Task.StepCode, StringComparison.OrdinalIgnoreCase));
+    private bool CanReturn => selected is { } item && CurrentStep(item)?.AllowReturn == true;
     private string SubmitterName(SigningQueueItem item)
     {
         if (item.Document.FromUserId is { } from) return ContactName(from);
@@ -444,6 +470,8 @@
         public string FileId { get; set; } = "";
         public string SignatureId { get; set; } = "";
         public string Comment { get; set; } = "";
+        public string SignIdempotencyKey { get; set; } = Guid.NewGuid().ToString("N");
+        public string DecisionIdempotencyKey { get; set; } = Guid.NewGuid().ToString("N");
         public int Kind { get; set; }
     }
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
@@ -451,7 +479,7 @@
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
     }
     private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
     {

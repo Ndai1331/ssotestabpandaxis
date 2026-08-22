@@ -4,6 +4,7 @@ using HCS.DocumentService.Documents;
 using HCS.DocumentService.Storage;
 using HCS.IntegrationEvents.Documents;
 using Microsoft.EntityFrameworkCore;
+using Volo.Abp.Authorization;
 using Volo.Abp.BlobStoring;
 
 namespace HCS.DocumentService.Signing;
@@ -17,6 +18,12 @@ public sealed class SigningAppService(
     IBlobContainer<DocumentBlobContainer> documentBlobs,
     IBlobContainer<SigningBlobContainer> signingBlobs) : ISigningAppService
 {
+    private const long MaxSignatureSize = 2 * 1024 * 1024;
+    private static readonly HashSet<string> AllowedSignatureContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/jpeg", "image/png", "image/webp", "image/gif"
+    };
+
     public async Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var principal = Principal;
@@ -131,15 +138,70 @@ public sealed class SigningAppService(
     public async Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size, Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
-        if (size is <= 0 or > 2 * 1024 * 1024) throw new ArgumentOutOfRangeException(nameof(size));
+        ValidateSignatureFile(fileName, contentType, size);
         var id = Guid.NewGuid();
         var blobName = BlobNamePolicy.UserSignature(targetUserId, id);
         await signingBlobs.SaveAsync(blobName, content, overrideExisting: false, cancellationToken: cancellationToken);
-        var signature = new UserSignature(id, targetUserId, Path.GetFileName(fileName), contentType, blobName, size, DateTime.UtcNow);
+        var signature = new UserSignature(id, targetUserId, Path.GetFileName(fileName), NormalizeSignatureContentType(contentType), blobName, size, DateTime.UtcNow);
         if (!await db.UserSignatures.AnyAsync(x => x.UserId == targetUserId, cancellationToken)) signature.MarkDefault();
         db.UserSignatures.Add(signature);
         try { await db.SaveChangesAsync(cancellationToken); }
         catch { await signingBlobs.DeleteAsync(blobName, cancellationToken: cancellationToken); throw; }
+        return MapSignature(signature);
+    }
+
+    public async Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string? fileName, string? contentType, Stream? content, long? size,
+        Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
+        var signature = await db.UserSignatures.SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
+            ?? throw new KeyNotFoundException("Signature not found.");
+
+        var normalizedFileName = string.IsNullOrWhiteSpace(fileName) ? signature.FileName : Path.GetFileName(fileName.Replace('\\', '/'));
+        if (content is null)
+        {
+            if (string.Equals(normalizedFileName, signature.FileName, StringComparison.Ordinal))
+                throw new ArgumentException("A file name or replacement image is required.");
+
+            signature.Rename(normalizedFileName);
+            await db.SaveChangesAsync(cancellationToken);
+            return MapSignature(signature);
+        }
+
+        var uploadSize = size ?? 0;
+        ValidateSignatureFile(normalizedFileName, contentType, uploadSize);
+        var normalizedContentType = NormalizeSignatureContentType(contentType);
+        var oldBlobName = signature.BlobName;
+        var newBlobName = BlobNamePolicy.UserSignature(targetUserId, Guid.NewGuid());
+        await signingBlobs.SaveAsync(newBlobName, content, overrideExisting: false, cancellationToken: cancellationToken);
+        signature.ReplaceContent(normalizedFileName, normalizedContentType, newBlobName, uploadSize);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            await signingBlobs.DeleteAsync(newBlobName, cancellationToken: cancellationToken);
+            throw;
+        }
+
+        await signingBlobs.DeleteAsync(oldBlobName, cancellationToken: cancellationToken);
+        return MapSignature(signature);
+    }
+
+    public async Task<UserSignatureDto> SetDefaultSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
+        var signature = await db.UserSignatures.SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
+            ?? throw new KeyNotFoundException("Signature not found.");
+        var signatures = await db.UserSignatures.Where(x => x.UserId == targetUserId).ToListAsync(cancellationToken);
+        foreach (var item in signatures)
+        {
+            if (item.Id == signature.Id) item.MarkDefault();
+            else item.ClearDefault();
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
         return MapSignature(signature);
     }
 
@@ -148,23 +210,68 @@ public sealed class SigningAppService(
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         var signature = await db.UserSignatures.SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Signature not found.");
+        List<UserSignature> siblings = signature.IsDefault
+            ? await db.UserSignatures.Where(x => x.UserId == targetUserId && x.Id != id)
+                .OrderByDescending(x => x.CreationTime).ToListAsync(cancellationToken)
+            : [];
+        var replacement = siblings.FirstOrDefault();
         db.UserSignatures.Remove(signature);
+        if (signature.IsDefault)
+        {
+            foreach (var sibling in siblings)
+            {
+                if (sibling.Id == replacement?.Id) sibling.MarkDefault();
+                else sibling.ClearDefault();
+            }
+        }
         await db.SaveChangesAsync(cancellationToken);
         await signingBlobs.DeleteAsync(signature.BlobName, cancellationToken: cancellationToken);
+    }
+
+    public async Task<(Stream Content, string ContentType, string FileName)> OpenSignatureContentAsync(
+        Guid id, Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
+        var signature = await db.UserSignatures.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
+            ?? throw new KeyNotFoundException("Signature not found.");
+        var stream = await signingBlobs.GetAsync(signature.BlobName, cancellationToken);
+        return (stream, signature.ContentType, signature.FileName);
     }
 
     private Guid ResolveTargetUser(Guid? userId, string permission)
     {
         var principal = Principal;
         var current = DocumentAccess.RequireUser(principal);
+        if (userId is null || userId == current)
+        {
+            return current;
+        }
+
         DocumentAccess.RequirePermission(principal, permission);
-        if (userId is null || userId == current) return current;
         if (!DocumentAccess.IsElevated(principal))
-            throw new Volo.Abp.Authorization.AbpAuthorizationException("Managing another user's signatures requires an administrator.");
+        {
+            throw new AbpAuthorizationException("Managing another user's signatures requires an administrator.");
+        }
+
         return userId.Value;
     }
 
     private ClaimsPrincipal Principal => httpContext.HttpContext?.User ?? new ClaimsPrincipal();
+
+    private static void ValidateSignatureFile(string fileName, string? contentType, long size)
+    {
+        if (size is <= 0 or > MaxSignatureSize) throw new ArgumentOutOfRangeException(nameof(size));
+        var normalizedFileName = Path.GetFileName(fileName.Replace('\\', '/')).Trim();
+        if (string.IsNullOrWhiteSpace(normalizedFileName)) throw new ArgumentException("A file name is required.", nameof(fileName));
+        if (normalizedFileName.Length > 256) throw new ArgumentException("The file name is too long.", nameof(fileName));
+        if (!AllowedSignatureContentTypes.Contains(contentType ?? string.Empty))
+            throw new InvalidDataException("Signature files must be JPEG, PNG, WebP, or GIF images.");
+    }
+
+    private static string NormalizeSignatureContentType(string? contentType) =>
+        contentType?.Trim().ToLowerInvariant() ?? throw new InvalidDataException("A signature image content type is required.");
+
     private Task<SigningAttempt?> FindAttemptAsync(Guid userId, SignDocumentRequest input, string key,
         CancellationToken cancellationToken) => db.SigningAttempts.AsNoTracking().SingleOrDefaultAsync(x =>
         x.UserId == userId && x.DocumentId == input.DocumentId && x.FileId == input.FileId &&

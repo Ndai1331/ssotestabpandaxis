@@ -25,7 +25,7 @@ public abstract class IdentityUserRoleAssignmentTests<TStartupModule> : HCSAppli
         {
             UserName = "u" + Guid.NewGuid().ToString("N")[..16],
             Email = $"{Guid.NewGuid():N}@example.com",
-            Password = "1q2w3E*",
+            Password = "Test-password-42!",
             RoleNames = []
         });
 

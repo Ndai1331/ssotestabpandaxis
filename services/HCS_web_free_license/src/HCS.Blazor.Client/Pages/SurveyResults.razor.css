@@ -51,3 +51,63 @@
     font-weight: 700;
     text-align: right;
 }
+
+.hcs-survey-results__location-filter {
+    flex: 1 1 20rem;
+    max-width: 32rem;
+}
+
+.hcs-survey-results__headline {
+    align-items: baseline;
+    background: #f5f8fa;
+    border-radius: .65rem;
+    display: flex;
+    gap: .75rem;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.25rem;
+}
+
+.hcs-survey-results__headline span {
+    color: #355770;
+    font-weight: 600;
+}
+
+.hcs-survey-results__headline strong {
+    color: #d4356b;
+    font-size: 1.75rem;
+}
+
+.hcs-survey-results__section {
+    border-top: 1px solid #e5edf2;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+}
+
+.hcs-survey-results__section h2 {
+    color: #193b57;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.hcs-survey-results__pager {
+    align-items: center;
+    border-top: 1px solid #e5edf2;
+    color: #355770;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-survey-bar {
+        grid-template-columns: minmax(4rem, 7rem) minmax(0, 1fr) 2.5rem;
+    }
+
+    .hcs-survey-results__pager {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: .75rem;
+    }
+}

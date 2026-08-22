@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using HCS.DocumentService.Controllers;
 using HCS.DocumentService.Documents;
+using HCS.DocumentService.Signing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,14 @@ public sealed class ApiContractTests
         AssertHttpPost(typeof(DocumentsController), nameof(DocumentsController.Submit), "{id:guid}/submit");
         AssertHttpPut(typeof(WorkflowsController), nameof(WorkflowsController.UpdateDefinition), "definitions/{id:guid}");
         AssertHttpDelete(typeof(WorkflowsController), nameof(WorkflowsController.DeleteDefinition), "definitions/{id:guid}");
+    }
+
+    [Fact]
+    public void Personal_signature_crud_routes_are_exposed()
+    {
+        AssertHttpPut(typeof(SigningController), nameof(SigningController.UpdateSignature), "signatures/{id:guid}");
+        AssertHttpPut(typeof(SigningController), nameof(SigningController.SetDefaultSignature), "signatures/{id:guid}/default");
+        AssertHttpDelete(typeof(SigningController), nameof(SigningController.DeleteSignature), "signatures/{id:guid}");
     }
 
     [Fact]

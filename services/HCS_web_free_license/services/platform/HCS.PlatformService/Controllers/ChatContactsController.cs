@@ -18,10 +18,11 @@ public sealed class ChatContactsController(
         [FromQuery] int take = 30,
         CancellationToken cancellationToken = default)
     {
+        var normalizedSearch = NormalizeSearch(search);
         var users = await identityUsers.GetListAsync(
             sorting: "UserName",
             maxResultCount: Math.Clamp(take, 1, 50),
-            filter: string.IsNullOrWhiteSpace(search) ? null : search.Trim(),
+            filter: normalizedSearch,
             notActive: false,
             cancellationToken: cancellationToken);
         var currentUserId = currentUser.Id;
@@ -32,7 +33,17 @@ public sealed class ChatContactsController(
                 user.Id,
                 user.UserName,
                 UserDisplayNames.FromPerson(user.Surname, user.Name, user.UserName),
-                user.IsActive))
+                user.IsActive,
+                user.Surname,
+                user.Name,
+                user.PhoneNumber,
+                $"/api/identity/users/{user.Id:D}/avatar"))
             .ToArray();
+    }
+
+    private static string? NormalizeSearch(string? value)
+    {
+        var normalized = value?.Trim().ToLowerInvariant();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 }

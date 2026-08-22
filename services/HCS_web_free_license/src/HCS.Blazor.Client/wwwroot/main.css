@@ -322,6 +322,66 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     border-radius: 50% !important;
 }
 
+.hcs-user-option {
+    align-items: center;
+    display: inline-flex;
+    gap: .6rem;
+    min-width: 0;
+    vertical-align: middle;
+}
+
+.hcs-user-option__avatar {
+    align-items: center;
+    background: #e8efff;
+    border-radius: 50%;
+    color: #3154b8;
+    display: inline-flex;
+    flex: 0 0 2rem;
+    height: 2rem;
+    justify-content: center;
+    object-fit: cover;
+    overflow: hidden;
+    width: 2rem;
+}
+
+.hcs-user-option__copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+}
+
+.hcs-user-option__name,
+.hcs-user-option__phone {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hcs-user-option__phone {
+    color: #718096;
+    font-size: .78rem;
+}
+
+.hcs-workflow-step-meta-row {
+    align-items: end;
+}
+
+.hcs-workflow-step-meta-row > .field:first-child {
+    flex: 1.5 1 0;
+}
+
+.hcs-workflow-step-meta-row > .field:last-child {
+    flex: 1 1 0;
+}
+
+@media (max-width: 575.98px) {
+    .hcs-workflow-step-meta-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) {
     display: flex;
     flex-direction: column;
@@ -1104,8 +1164,13 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 .hcs-catalog-modal .hcs-allow-return .form-check {
     align-items: center;
     display: flex;
+    gap: .45rem;
     margin: 0;
     min-height: 2.4rem;
+}
+
+.hcs-catalog-modal .hcs-assignee-type .form-check-input {
+    margin: 0;
 }
 
 .hcs-catalog-modal .hcs-allow-return {
@@ -1324,6 +1389,231 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-calendar-grid__today {
     background: rgba(13, 110, 253, 0.08) !important;
+}
+
+.hcs-cal-toolbar {
+    align-items: center;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: 1fr auto 1fr;
+    margin: 0 auto .85rem;
+    max-width: 1720px;
+}
+
+.hcs-cal-toolbar__nav,
+.hcs-cal-toolbar__views {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+}
+
+.hcs-cal-toolbar__views {
+    justify-content: flex-end;
+}
+
+.hcs-cal-toolbar__title {
+    color: #3d4a5c;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.hcs-cal-toolbar .btn {
+    min-height: 2.35rem;
+    padding: .4rem .9rem;
+}
+
+.hcs-cal-legend {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem .9rem;
+    margin-left: auto;
+}
+
+.hcs-cal-legend__item {
+    align-items: center;
+    display: inline-flex;
+    font-size: .82rem;
+    font-weight: 700;
+    gap: .4rem;
+}
+
+.hcs-cal-legend__item::before {
+    border-radius: 3px;
+    content: "";
+    display: inline-block;
+    height: .7rem;
+    width: .9rem;
+}
+
+.hcs-cal-legend__item--project {
+    color: #d97706;
+}
+
+.hcs-cal-legend__item--project::before {
+    background: #fff4d6;
+    box-shadow: inset 3px 0 0 #d97706;
+}
+
+.hcs-cal-legend__item--task {
+    color: #0f9d8e;
+}
+
+.hcs-cal-legend__item--task::before {
+    background: #d9f6f3;
+    box-shadow: inset 3px 0 0 #0f9d8e;
+}
+
+.hcs-cal-legend__item--event {
+    color: #3d5cff;
+}
+
+.hcs-cal-legend__item--event::before {
+    background: #e8f0ff;
+    box-shadow: inset 3px 0 0 #3d5cff;
+}
+
+.hcs-cal-card .card-body {
+    overflow: visible;
+}
+
+.hcs-fc {
+    padding: .35rem .5rem .65rem;
+}
+
+.hcs-fc .fc {
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+}
+
+.hcs-fc .fc-theme-standard td,
+.hcs-fc .fc-theme-standard th,
+.hcs-fc .fc-theme-standard .fc-scrollgrid {
+    border-color: #e1e9ee;
+}
+
+.hcs-fc .fc-col-header-cell {
+    background: #f4f7f9;
+}
+
+.hcs-fc .fc-col-header-cell-cushion {
+    color: #4d6d82;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .075em;
+    padding: .55rem .4rem;
+    text-transform: uppercase;
+}
+
+.hcs-fc .fc-daygrid-day-frame {
+    min-height: 7.5rem;
+    padding: .3rem .35rem .45rem;
+}
+
+.hcs-fc .fc-daygrid-day-top {
+    justify-content: flex-end;
+}
+
+.hcs-fc .fc-daygrid-day-number {
+    color: #19334c;
+    font-size: .85rem;
+    font-weight: 700;
+    padding: .15rem .2rem;
+}
+
+.hcs-fc .fc-day-other .fc-daygrid-day-number {
+    color: #9aafbc;
+}
+
+.hcs-fc .fc-day-today {
+    background: transparent !important;
+}
+
+.hcs-fc .fc-day-today .fc-daygrid-day-number {
+    align-items: center;
+    background: #3d5cff;
+    border-radius: 50%;
+    color: #fff;
+    display: inline-flex;
+    height: 1.7rem;
+    justify-content: center;
+    width: 1.7rem;
+}
+
+.hcs-fc .fc-daygrid-event,
+.hcs-fc .fc-timegrid-event,
+.hcs-fc .fc-list-event {
+    border: none !important;
+    border-left: 3px solid currentColor !important;
+    border-radius: 4px !important;
+    cursor: pointer;
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+.hcs-fc .fc-daygrid-event {
+    margin: 1px 2px;
+    padding: 1px 6px;
+}
+
+.hcs-fc .fc-event-title,
+.hcs-fc .fc-event-title-container {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hcs-fc .hcs-cal-event--project {
+    background: #fff4d6 !important;
+    border-left-color: #d97706 !important;
+    color: #d97706 !important;
+}
+
+.hcs-fc .hcs-cal-event--task {
+    background: #d9f6f3 !important;
+    border-left-color: #0f9d8e !important;
+    color: #0f9d8e !important;
+}
+
+.hcs-fc .hcs-cal-event--event {
+    background: #e8f0ff !important;
+    border-left-color: #3d5cff !important;
+    color: #3d5cff !important;
+}
+
+.hcs-fc .fc-timegrid {
+    min-height: 36rem;
+}
+
+.hcs-fc .fc-list {
+    border: 0;
+}
+
+.hcs-fc .fc-list-event:hover td {
+    background: #f5f8fb;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-cal-toolbar {
+        grid-template-columns: 1fr;
+        justify-items: stretch;
+    }
+
+    .hcs-cal-toolbar__nav,
+    .hcs-cal-toolbar__views {
+        justify-content: flex-start;
+    }
+
+    .hcs-cal-toolbar__title {
+        order: -1;
+        text-align: left;
+    }
+
+    .hcs-cal-legend {
+        margin-left: 0;
+    }
 }
 
 .hcs-wizard-footer {
@@ -1743,12 +2033,36 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-workspace .hcs-ws-week {
     display: flex;
-    gap: .35rem;
-    justify-content: space-between;
+    gap: .2rem;
     margin-bottom: .8rem;
+    width: 100%;
 }
 
-.hcs-workspace .hcs-ws-day { align-items: center; display: flex; flex: 1; flex-direction: column; gap: .2rem; }
+.hcs-workspace .hcs-ws-ev-day {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+}
+
+.hcs-workspace .hcs-ws-ev-day-label {
+    color: var(--ws-muted);
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.hcs-workspace .hcs-ws-ev-day.is-selected .hcs-ws-ev-day-label {
+    color: var(--ws-pink);
+}
+
+.hcs-workspace .hcs-ws-day {
+    align-items: center;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: .2rem;
+    min-width: 0;
+}
 .hcs-workspace .hcs-ws-wd { color: var(--ws-faint); font-size: .68rem; text-transform: capitalize; }
 
 .hcs-workspace .hcs-ws-dn {
@@ -2013,4 +2327,9 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     height: 1.7rem;
     justify-content: center;
     width: 1.7rem;
+}
+
+
+.datepicker .datepicker-calendar.dropdown-menu{
+    background-color: #fff !important;
 }

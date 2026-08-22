@@ -116,6 +116,43 @@ namespace HCS.Migrations
                     b.ToTable("HcsAuditRecordProjections", (string)null);
                 });
 
+            modelBuilder.Entity("HCS.Identity.UserAvatar", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BlobName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("LastModificationTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("BlobName")
+                        .IsUnique();
+
+                    b.ToTable("HcsUserAvatars", (string)null);
+                });
+
             modelBuilder.Entity("HCS.Localization.Language", b =>
                 {
                     b.Property<Guid>("Id")

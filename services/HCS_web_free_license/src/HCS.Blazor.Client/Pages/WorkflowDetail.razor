@@ -180,14 +180,18 @@
                     <Field><FieldLabel>@L["Feature:StepCode"]</FieldLabel><HcsIsolatedTextInput @bind-Value="editingStep.Code" Name="hcsStepCode" MaxLength="64" /></Field>
                     <Field><FieldLabel>@L["Feature:StepName"]</FieldLabel><HcsIsolatedTextInput @bind-Value="editingStep.Name" Name="hcsStepName" /></Field>
                 </div>
-                <Field><FieldLabel>@L["Work:StepType"]</FieldLabel>
-                    <Select TValue="string" @bind-Value="editingStep.Type">
-                        <SelectItem Value="@("PROCESS")">@L["Work:StepType.PROCESS"]</SelectItem>
-                        <SelectItem Value="@("SIGN")">@L["Work:StepType.SIGN"]</SelectItem>
-                        <SelectItem Value="@("VIEW")">@L["Work:StepType.VIEW"]</SelectItem>
-                    </Select>
-                </Field>
-                <Field><FieldLabel>@L["Work:SlaDays"]</FieldLabel><NumericPicker TValue="int?" @bind-Value="editingStep.SlaDays" /></Field>
+                <div class="hcs-form-row hcs-workflow-step-meta-row">
+                    <Field><FieldLabel>@L["Work:StepType"]</FieldLabel>
+                        <Select TValue="string" Value="@editingStep.Type" ValueChanged="@OnStepTypeChanged">
+                            <SelectItem Value="@("PROCESS")">@L["Work:StepType.PROCESS"]</SelectItem>
+                            <SelectItem Value="@("SIGN")">@L["Work:StepType.SIGN"]</SelectItem>
+                            <SelectItem Value="@("VIEW")">@L["Work:StepType.VIEW"]</SelectItem>
+                        </Select>
+                    </Field>
+                    <Field><FieldLabel>@L["Work:SlaDays"]</FieldLabel>
+                        <NumericPicker TValue="int?" @bind-Value="editingStep.SlaDays" Min="1" Max="365" Decimals="0" Step="1" />
+                    </Field>
+                </div>
                 <Field Class="hcs-allow-return">
                     <Check TValue="bool" @bind-Checked="editingStep.AllowReturn">@L["Work:AllowReturn"]</Check>
                 </Field>
@@ -201,6 +205,7 @@
                     <Field><FieldLabel>@L["Work:Assignee"]</FieldLabel>
                         <UserSelect2 Multiple="true" Values="editingStep.UserIds"
                                      ValuesChanged="ids => editingStep.UserIds = ids.ToList()"
+                                     SelectedItems="@ContactItems(editingStep.UserIds)"
                                      SelectedTexts="@UserNames(editingStep.UserIds)"
                                      Placeholder="@L["Chat:SelectContacts"]"
                                      Search="SearchContactsAsync" />
@@ -217,18 +222,26 @@
                 {
                     <Field>
                         <FieldLabel>@L["Work:AssigneeType"]</FieldLabel>
-                        <RadioGroup TValue="string" CheckedValue="editingStep.AssigneeType"
-                                    CheckedValueChanged="OnAssigneeTypeChanged" Class="hcs-assignee-type">
-                            <Radio TValue="string" Value="@("SpecificUser")">@L["Work:AssigneeType.SpecificUser"]</Radio>
-                            <Radio TValue="string" Value="@("RoleInSubmitterOu")">@L["Work:AssigneeType.RoleInSubmitterOu"]</Radio>
-                        </RadioGroup>
+                        <div class="hcs-assignee-type">
+                            <label class="form-check">
+                                <input class="form-check-input" type="radio" name="@AssigneeTypeRadioName"
+                                       checked="@(!IsRoleAssignee)"
+                                       @onchange="() => SetAssigneeTypeAsync(SpecificUserAssignee)" />
+                                <span class="form-check-label">@L["Work:AssigneeType.SpecificUser"]</span>
+                            </label>
+                            <label class="form-check">
+                                <input class="form-check-input" type="radio" name="@AssigneeTypeRadioName"
+                                       checked="@IsRoleAssignee"
+                                       @onchange="() => SetAssigneeTypeAsync(RoleInSubmitterOuAssignee)" />
+                                <span class="form-check-label">@L["Work:AssigneeType.RoleInSubmitterOu"]</span>
+                            </label>
+                        </div>
                     </Field>
-                    @if (editingStep.AssigneeType == "RoleInSubmitterOu")
+                    @if (IsRoleAssignee)
                     {
-                        <Field><FieldLabel>@L["Feature:Role"]</FieldLabel>
-                            <CatalogSelect2 @key="roleSelectKey"
-                                            Value="editingStep.RoleId"
-                                            ValueChanged="value => editingStep.RoleId = value"
+                        <Field @key="@($"role-{AssigneeSelectKey}")"><FieldLabel>@L["Feature:Role"]</FieldLabel>
+                            <CatalogSelect2 Value="@editingStep.RoleId"
+                                            ValueChanged="@(value => editingStep.RoleId = value)"
                                             Placeholder="@L["Feature:Role"]"
                                             SelectedText="@RoleName(editingStep.RoleId)"
                                             Search="SearchRolesAsync" />
@@ -236,10 +249,10 @@
                     }
                     else
                     {
-                        <Field><FieldLabel>@L["Work:Assignee"]</FieldLabel>
-                            <UserSelect2 @key="userSelectKey"
-                                         Value="editingStep.AssigneeUserId"
-                                         ValueChanged="value => editingStep.AssigneeUserId = value"
+                        <Field @key="@($"user-{AssigneeSelectKey}")"><FieldLabel>@L["Work:Assignee"]</FieldLabel>
+                            <UserSelect2 Value="@editingStep.AssigneeUserId"
+                                         ValueChanged="@(value => editingStep.AssigneeUserId = value)"
+                                         SelectedItem="@ContactItem(editingStep.AssigneeUserId)"
                                          Placeholder="@L["Chat:SelectContacts"]"
                                          SelectedText="@ContactName(editingStep.AssigneeUserId)"
                                          Search="SearchContactsAsync" />
@@ -276,10 +289,7 @@
         {
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
             if (kinds.Count == 0) kinds.AddRange(await Documents.GetKindsAsync());
-            if (roles.Count == 0)
-            {
-                try { roles.AddRange((await Identity.GetRolesAsync(maxResultCount: 100)).Items); } catch { }
-            }
+            if (roles.Count == 0) roles.AddRange(await LoadRolesAsync());
             if (departmentTree.Count == 0)
             {
                 var departments = await Catalog.GetDepartmentLookupAsync();
@@ -303,6 +313,15 @@
             loaded = true;
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
+    }
+
+    // Users without the identity admin listing permission fall back to their assignable roles.
+    private async Task<IReadOnlyList<IdentityAdminRoleDto>> LoadRolesAsync()
+    {
+        try { return (await Identity.GetRolesAsync(maxResultCount: 100)).Items; }
+        catch { }
+        try { return await Identity.GetAssignableRolesAsync(); }
+        catch { return []; } // Role picker stays empty; save still validates RoleId.
     }
 
     private async Task OnStepChanged(string name)
@@ -456,7 +475,10 @@
     private async Task AddStep()
     {
         isNewStep = true;
-        editingStep = new StepDraft($"step{form.Steps.Count + 1}", L["Feature:StepName"], "PROCESS", "Documents.Workflow.Decide");
+        editingStep = new StepDraft($"step{form.Steps.Count + 1}", L["Feature:StepName"], "PROCESS", "Documents.Workflow.Decide")
+        {
+            SlaDays = 1
+        };
         if (stepModal is not null) await stepModal.Show();
     }
     private async Task EditStep(StepDraft step)
@@ -464,6 +486,16 @@
         isNewStep = false;
         editingStep = step;
         if (stepModal is not null) await stepModal.Show();
+    }
+    private void OnStepTypeChanged(string value)
+    {
+        if (editingStep is null) return;
+        editingStep.Type = value;
+        editingStep.AssigneeUserId = null;
+        editingStep.AssigneeType = value == "VIEW" ? "ScopedAssignee" : "SpecificUser";
+        editingStep.RoleId = null;
+        editingStep.UserIds = [];
+        editingStep.DepartmentIds = [];
     }
     private async Task RemoveStep(StepDraft step)
     {
@@ -579,17 +611,29 @@
     private string KindName(Guid? id) => id is null ? "" : kinds.FirstOrDefault(x => x.Id == id)?.Name ?? "";
     private void GoBackToList() => Navigation.NavigateTo("/workflow-lists");
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private CatalogSelect2Item? ContactItem(Guid? id) =>
+        contacts.FirstOrDefault(x => x.Id == id) is { } contact ? CatalogSelect2Cache.UserItem(contact) : null;
+    private IReadOnlyList<CatalogSelect2Item> ContactItems(IEnumerable<Guid> ids) =>
+        ids.Select(id => ContactItem(id)).OfType<CatalogSelect2Item>().ToList();
     private string RoleName(Guid? id) => CatalogSelect2Cache.TextFor(roles, id, x => x.Id, x => x.Name);
-    private string roleSelectKey => "role-" + (editingStep?.Key.ToString("N") ?? "new");
-    private string userSelectKey => "user-" + (editingStep?.Key.ToString("N") ?? "new");
-    private void OnAssigneeTypeChanged(string value)
+    private const string SpecificUserAssignee = "SpecificUser";
+    private const string RoleInSubmitterOuAssignee = "RoleInSubmitterOu";
+    private string AssigneeTypeRadioName => "hcs-assignee-type-" + (editingStep?.Key.ToString("N") ?? "new");
+    private string AssigneeSelectKey =>
+        (editingStep?.Key.ToString("N") ?? "new") + "-" + (editingStep?.AssigneeType ?? SpecificUserAssignee);
+    private bool IsRoleAssignee => editingStep?.AssigneeType == RoleInSubmitterOuAssignee;
+    private async Task SetAssigneeTypeAsync(string value)
     {
         if (editingStep is null) return;
-        editingStep.AssigneeType = value;
-        if (value == "RoleInSubmitterOu")
+        var next = value == RoleInSubmitterOuAssignee ? RoleInSubmitterOuAssignee : SpecificUserAssignee;
+        if (editingStep.AssigneeType == next) return;
+        editingStep.AssigneeType = next;
+        editingStep.UserIds = [];
+        if (next == RoleInSubmitterOuAssignee)
             editingStep.AssigneeUserId = null;
         else
             editingStep.RoleId = null;
+        await InvokeAsync(StateHasChanged);
     }
     private IReadOnlyList<string> UserNames(IEnumerable<Guid> ids) => CatalogSelect2Cache.TextsFor(contacts, ids, x => x.Id, x => x.DisplayName);
     private Task<CatalogSelect2SearchResponse> SearchRolesAsync(string term, int page)
@@ -606,7 +650,7 @@
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false, itemOf: CatalogSelect2Cache.UserItem);
     }
     public async ValueTask DisposeAsync()
     {
@@ -625,7 +669,7 @@
         public Guid? RoleId { get; set; }
         public List<Guid> UserIds { get; set; } = [];
         public List<Guid> DepartmentIds { get; set; } = [];
-        public int? SlaDays { get; set; }
+        public int? SlaDays { get; set; } = 1;
         public bool AllowReturn { get; set; }
         public bool HasAssignment => AssigneeUserId.HasValue || UserIds.Count > 0 || DepartmentIds.Count > 0 || RoleId.HasValue;
         public static StepDraft From(WorkflowStepDto step)

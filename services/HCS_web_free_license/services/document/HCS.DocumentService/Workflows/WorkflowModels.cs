@@ -86,6 +86,13 @@ public sealed class WorkflowDefinition
     public string SignMode { get; private set; } = WorkflowSignModes.Sequential;
     public DateTime CreationTime { get; private set; }
     public IReadOnlyCollection<WorkflowStep> Steps => _steps;
+    public void EnsureStartable()
+    {
+        if (_steps.Count == 0)
+            throw new InvalidOperationException("Workflow definition has no steps. Add at least one step before starting.");
+        if (!_steps.Any(x => x.IsBlocking))
+            throw new InvalidOperationException("Workflow definition has no blocking step. Add at least one process or sign step before starting.");
+    }
     public void Rename(string name) => Name = Required(name, 256);
     public void SetMetadata(Guid? kindId, string? description, bool isActive, string? signMode = null)
     {
@@ -244,10 +251,10 @@ public sealed class WorkflowInstance
         IReadOnlyDictionary<string, Guid>? assigneeOverrides = null, string? viewScopesJson = null)
     {
         if (string.IsNullOrWhiteSpace(idempotencyKey)) throw new ArgumentException("Idempotency key is required.");
+        definition.EnsureStartable();
         var ordered = definition.Steps.OrderBy(x => x.Order).ToList();
-        if (ordered.Count == 0) throw new InvalidOperationException("A workflow requires at least one step.");
         var first = FirstBlockingIndex(ordered);
-        if (first < 0) throw new InvalidOperationException("A workflow requires at least one blocking step.");
+        if (first < 0) throw new InvalidOperationException("Workflow definition has no blocking step. Add at least one process or sign step before starting.");
         Id = id;
         DocumentId = documentId;
         DefinitionId = definition.Id;

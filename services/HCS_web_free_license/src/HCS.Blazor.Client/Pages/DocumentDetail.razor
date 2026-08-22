@@ -102,6 +102,7 @@
                             <Field>
                                 <FieldLabel>@L["Feature:Assign"]</FieldLabel>
                                 <UserSelect2 Value="assigneeId" ValueChanged="value => assigneeId = value"
+                                             SelectedItem="@ContactItem(assigneeId)"
                                              Placeholder="@L["Chat:SelectContacts"]"
                                              SelectedText="@ContactName(assigneeId)"
                                              Search="SearchContactsAsync" />
@@ -119,6 +120,14 @@
                             </Field>
                             <div class="d-flex gap-2 mb-3">
                                 <Button Color="Color.Primary" Clicked="SubmitAsync" Disabled="@(document?.Status != DocumentStatus.Draft)">@L["Feature:SubmitDocument"]</Button>
+                                <AuthorizeView Policy="Documents.Assign">
+                                    <Authorized>
+                                        @if (document is not null && SourceType is 0 or 1)
+                                        {
+                                            <Button Color="Color.Info" Outline="true" Clicked="OpenSendAsync">@L["Feature:SendDocument"]</Button>
+                                        }
+                                    </Authorized>
+                                </AuthorizeView>
                                 <AuthorizeView Policy="Documents.Workflow.Start">
                                     <Authorized>
                                         <Button Color="Color.Primary" Outline="true" Clicked="OpenSubmitWorkflow">@L["Work:SubmitWorkflow"]</Button>
@@ -172,6 +181,26 @@
     </Card>
 </section>
 <SubmitWorkflowModal @ref="submitModal" OnSubmitted="ReloadExistingAsync" />
+<Modal @ref="sendModal">
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:SendDocument"]</ModalTitle><CloseButton /></ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            <Field>
+                <FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
+                <UserSelect2 Value="sendReceiverId"
+                             ValueChanged="value => sendReceiverId = value"
+                             SelectedItem="@ContactItem(sendReceiverId)"
+                             SelectedText="@ContactName(sendReceiverId)"
+                             Placeholder="@L["Chat:SelectContacts"]"
+                             Search="SearchContactsAsync" />
+            </Field>
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <Button Color="Color.Secondary" Clicked="CloseSendAsync">@L["Catalog:Cancel"]</Button>
+            <Button Color="Color.Primary" Clicked="SendAsync" Disabled="@isSending">@L["Feature:SendDocument"]</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
 @code {
     [Parameter] public Guid DocumentId { get; set; }
     [SupplyParameterFromQuery(Name = "sourceType")] public int? SourceTypeQuery { get; set; }
@@ -183,10 +212,12 @@
     private readonly List<MasterDataCatalogDto> confidentialities = [];
     private readonly List<ChatContactDto> contacts = [];
     private SubmitWorkflowModal? submitModal;
+    private Modal? sendModal;
     private Guid? assigneeId;
     private string responsibility = "reviewer";
     private string? pdfUrl;
-    private bool isSaving;
+    private bool isSaving, isSending;
+    private Guid? sendReceiverId;
     private bool IsCreate => DocumentId == Guid.Empty;
     private int SourceType => SourceTypeQuery is >= 0 and <= 2 ? SourceTypeQuery.Value : 0;
     private string BackHref => $"/manage-documents?sourceType={SourceType}";
@@ -297,7 +328,7 @@
         if (file is null || !DocumentFilePick.IsPdf(file)) return;
         try
         {
-            var content = await Documents.GetFileContentAsync(DocumentId, file.Id);
+            var content = await Documents.GetWatermarkedFileContentAsync(DocumentId, file.Id);
             pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", "application/pdf", content.Bytes);
         }
         catch { pdfUrl = null; }
@@ -315,6 +346,42 @@
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
 
+    private async Task OpenSendAsync()
+    {
+        if (document is null) return;
+        sendReceiverId = null;
+        if (contacts.Count == 0)
+        {
+            try { contacts.AddRange(await Chat.GetContactsAsync(null, 50)); }
+            catch (Exception ex) { await NotifyErrorAsync(ex); return; }
+        }
+        if (sendModal is not null) await sendModal.Show();
+    }
+
+    private async Task CloseSendAsync()
+    {
+        sendReceiverId = null;
+        if (sendModal is not null) await sendModal.Hide();
+    }
+
+    private async Task SendAsync()
+    {
+        if (document is null || sendReceiverId is not { } receiverId)
+        {
+            await NotifyErrorAsync(L["Catalog:TypeRequired"]);
+            return;
+        }
+        isSending = true;
+        try
+        {
+            document = await Documents.SendDocumentAsync(DocumentId, new SendDocumentRequest(receiverId));
+            await CloseSendAsync();
+            await NotifySuccessAsync(L["Catalog:Updated"]);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isSending = false; }
+    }
+
     private async Task SubmitAsync()
     {
         try { document = await Documents.SubmitAsync(DocumentId); await NotifySuccessAsync(L["Feature:SubmitDocument"]); }
@@ -324,6 +391,8 @@
     private Task OpenSubmitWorkflow() => submitModal?.ShowAsync(DocumentId) ?? Task.CompletedTask;
     private void GoBack() => Navigation.NavigateTo(BackHref);
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.Value.ToString("N")[..8];
+    private CatalogSelect2Item? ContactItem(Guid? id) =>
+        id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
     private static string MasterText(IEnumerable<MasterDataCatalogDto> items, Guid? id) =>
         CatalogSelect2Cache.TextFor(items, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
     private async Task<CatalogSelect2SearchResponse> SearchMasterAsync(string type, List<MasterDataCatalogDto> cache, string term, int page)
@@ -340,7 +409,7 @@
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
     }
 
     private async Task RevokePdfAsync()

@@ -32,5 +32,8 @@ public interface ISigningAppService
     Task<SigningReportDto> GetReportAsync(Guid documentId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default);
     Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size, Guid? userId = null, CancellationToken cancellationToken = default);
+    Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string? fileName, string? contentType, Stream? content, long? size, Guid? userId = null, CancellationToken cancellationToken = default);
+    Task<UserSignatureDto> SetDefaultSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);
     Task DeleteSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);
+    Task<(Stream Content, string ContentType, string FileName)> OpenSignatureContentAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);
 }

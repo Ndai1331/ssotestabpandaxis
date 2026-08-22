@@ -18,14 +18,14 @@
                         <AlertDescription>@DocumentName(documentId)</AlertDescription>
                     </Alert>
                 }
-                @if (documentId is null || allowDocumentPicker)
+                @if (allowDocumentPicker && !useWorkflowTemplateFile)
                 {
                     <Field><FieldLabel>@L["Menu:Documents"]</FieldLabel>
                         <CatalogSelect2 Value="documentId"
                                         ValueChanged="OnDocumentChanged"
                                         Placeholder="@L["Feature:ChooseDocument"]"
                                         SelectedText="@DocumentName(documentId)"
-                                        Search="SearchDocumentsAsync" />
+                        Search="SearchDocumentsAsync" />
                     </Field>
                 }
                 <Field><FieldLabel>@L["Work:SelectWorkflow"] <span class="text-danger">*</span></FieldLabel>
@@ -35,24 +35,21 @@
                                     SelectedText="@DefinitionName(definitionId)"
                                     Search="SearchDefinitionsAsync" />
                 </Field>
-                <Card Class="mt-2 mb-2 border-info">
-                    <CardBody>
-                        <Check TValue="bool" @bind-Checked="useTemplateFile" Disabled="@(selectedTemplate?.PdfFileId is null)">
-                            @L["Work:UseTemplateFile"]
-                        </Check>
-                        @if (selected is not null && selectedTemplate?.PdfFileId is null)
-                        {
-                            <p class="form-text mb-0">@L["Work:ConvertPending"]</p>
-                        }
-                        @if (useTemplateFile && selectedTemplate is not null)
-                        {
+                @if (allowDocumentPicker && HasWorkflowTemplateFile)
+                {
+                    <Card Class="mt-2 mb-2 border-info">
+                        <CardBody>
+                            <Check TValue="bool" Checked="useWorkflowTemplateFile"
+                                   CheckedChanged="OnUseWorkflowTemplateFileChanged">
+                                @L["Work:UseTemplateFile"]
+                            </Check>
                             <div class="hcs-template-file-box mt-2">
                                 <i class="fa fa-file-word me-2"></i>
-                                <span>@(selectedTemplate.WordFileName ?? selectedTemplate.PdfFileName ?? selectedTemplate.Name)</span>
+                                <span>@WorkflowTemplateFileName</span>
                             </div>
-                        }
-                    </CardBody>
-                </Card>
+                        </CardBody>
+                    </Card>
+                }
                 @if (selected is not null)
                 {
                     @foreach (var step in selected.Steps.OrderBy(x => x.Order))
@@ -62,7 +59,7 @@
                                 <strong>@step.Name</strong>
                                 <span class="hcs-status-badge hcs-status-badge--info">@L[$"Work:StepType.{step.Type}"]</span>
                             </div>
-                            <p class="text-muted small mb-2">@L["Work:SlaDays"]: @(step.SlaDays ?? 2) @L["Work:Days"]</p>
+                            <p class="text-muted small mb-2">@L["Work:SlaDays"]: @(step.SlaDays ?? 1) @L["Work:Days"]</p>
                             @if (step.Type == "VIEW")
                             {
                                 <p class="text-muted mb-0">@L["Work:AssigneeType.ScopedAssignee"]</p>
@@ -92,6 +89,7 @@
                                 <Field Class="mb-0"><FieldLabel>@L["Work:ChooseSigner"] *</FieldLabel>
                                     <UserSelect2 Value="SignerFor(step.Code)"
                                                  ValueChanged="value => SetSigner(step.Code, value)"
+                                                 SelectedItem="@ContactItem(SignerFor(step.Code))"
                                                  Placeholder="@L["Work:ChooseSigner"]"
                                                  SelectedText="@ContactName(SignerFor(step.Code))"
                                                  Search="SearchContactsAsync" />
@@ -138,11 +136,12 @@
     private readonly Dictionary<string, List<WorkflowAssigneeCandidateDto>> candidatesByStep = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Guid?> signers = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> attachedNames = [];
+    private readonly List<IBrowserFile> pendingFiles = [];
     private Guid? documentId;
     private Guid? definitionId;
     private WorkflowDefinitionDto? selected;
     private WorkflowTemplateDto? selectedTemplate;
-    private bool useTemplateFile;
+    private bool useWorkflowTemplateFile;
     private bool allowDocumentPicker;
     private bool isSaving;
 
@@ -156,7 +155,8 @@
         signers.Clear();
         candidatesByStep.Clear();
         attachedNames.Clear();
-        useTemplateFile = false;
+        pendingFiles.Clear();
+        useWorkflowTemplateFile = false;
         if (definitions.Count == 0) definitions.AddRange(await Documents.GetDefinitionsAsync());
         if (templates.Count == 0)
         {
@@ -179,6 +179,7 @@
     private Task OnDocumentChanged(Guid? value)
     {
         documentId = value;
+        useWorkflowTemplateFile = false;
         return Task.CompletedTask;
     }
 
@@ -186,8 +187,30 @@
     {
         definitionId = value;
         selected = definitions.FirstOrDefault(x => x.Id == value);
-        selectedTemplate = templates.Where(x => x.DefinitionId == value).OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Version).FirstOrDefault();
-        useTemplateFile = selectedTemplate?.PdfFileId is not null;
+        if (value is null)
+        {
+            selectedTemplate = null;
+            useWorkflowTemplateFile = false;
+            signers.Clear();
+            candidatesByStep.Clear();
+            return;
+        }
+        if (selected is null || !IsStartableDefinition(selected))
+        {
+            definitionId = null;
+            selected = null;
+            selectedTemplate = null;
+            useWorkflowTemplateFile = false;
+            signers.Clear();
+            candidatesByStep.Clear();
+            await NotifyErrorAsync(L["Work:WorkflowNotReady"]);
+            return;
+        }
+        selectedTemplate = templates.Where(x => x.DefinitionId == value && x.IsActive)
+            .OrderByDescending(x => x.Version).FirstOrDefault();
+        useWorkflowTemplateFile = allowDocumentPicker && HasWorkflowTemplateFile;
+        if (useWorkflowTemplateFile)
+            documentId = null;
         signers.Clear();
         candidatesByStep.Clear();
         if (selected is null) return;
@@ -211,42 +234,62 @@
     private IReadOnlyList<WorkflowAssigneeCandidateDto> CandidatesFor(string code) =>
         candidatesByStep.TryGetValue(code, out var list) ? list : [];
 
-    private async Task AttachFilesAsync(InputFileChangeEventArgs args)
+    private void OnUseWorkflowTemplateFileChanged(bool value)
     {
-        if (documentId is not { } docId)
+        useWorkflowTemplateFile = value;
+        if (value)
         {
-            await NotifyErrorAsync(L["Feature:ChooseDocument"]);
-            return;
+            documentId = null;
         }
+    }
+
+    private Task AttachFilesAsync(InputFileChangeEventArgs args)
+    {
         foreach (var file in args.GetMultipleFiles(8))
         {
-            try
-            {
-                await Documents.UploadFileAsync(docId, file);
-                attachedNames.Add(file.Name);
-            }
-            catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+            pendingFiles.Add(file);
+            attachedNames.Add(file.Name);
         }
+        return Task.CompletedTask;
+    }
+
+    private async Task UploadPendingFilesAsync(Guid targetDocumentId)
+    {
+        foreach (var file in pendingFiles)
+            await Documents.UploadFileAsync(targetDocumentId, file);
+        pendingFiles.Clear();
     }
 
     private async Task SubmitAsync()
     {
-        if (documentId is not { } docId || definitionId is not { } defId)
+        if (definitionId is not { } defId)
         {
-            await NotifyErrorAsync(L["Catalog:TypeRequired"]);
+            await NotifyErrorAsync(L["Work:SelectWorkflow"]);
+            return;
+        }
+        if (selected is null || !IsStartableDefinition(selected))
+        {
+            await NotifyErrorAsync(L["Work:WorkflowNotReady"]);
+            return;
+        }
+        if (!useWorkflowTemplateFile && documentId is not { })
+        {
+            await NotifyErrorAsync(L["Feature:ChooseDocument"]);
             return;
         }
         isSaving = true;
         try
         {
+            var documentIdForSubmit = useWorkflowTemplateFile ? null : documentId;
             var signerList = signers.Where(x => x.Value.HasValue)
                 .Select(x => new WorkflowStepSignerSelection(x.Key, x.Value!.Value)).ToList();
             var viewScopes = (selected?.Steps ?? [])
                 .Where(x => x.Type == "VIEW")
                 .Select(x => new WorkflowViewScopeSelection(x.Code, x.DepartmentIds ?? [], x.UserIds ?? []))
                 .ToList();
-            await Documents.StartWorkflowAsync(new StartWorkflowRequest(docId, defId, Guid.NewGuid().ToString("N"), signerList, viewScopes,
-                useTemplateFile && selectedTemplate?.PdfFileId is not null));
+            var workflow = await Documents.StartWorkflowAsync(new StartWorkflowRequest(documentIdForSubmit, defId, Guid.NewGuid().ToString("N"), signerList, viewScopes,
+                UseTemplateFile: false, UseWorkflowTemplateFile: useWorkflowTemplateFile));
+            await UploadPendingFilesAsync(workflow.DocumentId);
             await NotifySuccessAsync(L["Work:WorkflowSubmitted"]);
             await HideAsync();
             await OnSubmitted.InvokeAsync();
@@ -257,7 +300,13 @@
 
     private string DefinitionName(Guid? id) => id is null ? "" : definitions.FirstOrDefault(x => x.Id == id)?.Name ?? "";
     private string DocumentName(Guid? id) => id is null ? "" : documents.FirstOrDefault(x => x.Id == id) is { } d ? $"{d.Number} · {d.Title}" : "";
+    private static bool IsStartableDefinition(WorkflowDefinitionDto definition) =>
+        definition.IsActive && definition.Steps.Any(x => !string.Equals(x.Type, "VIEW", StringComparison.OrdinalIgnoreCase));
+    private bool HasWorkflowTemplateFile => selectedTemplate?.PdfFileId is not null || selectedTemplate?.WordFileId is not null;
+    private string WorkflowTemplateFileName => selectedTemplate?.PdfFileName ?? selectedTemplate?.WordFileName ?? selectedTemplate?.Name ?? "";
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private CatalogSelect2Item? ContactItem(Guid? id) =>
+        id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
     private Task<CatalogSelect2SearchResponse> SearchDocumentsAsync(string term, int page)
     {
         var found = documents.Where(x => string.IsNullOrWhiteSpace(term)
@@ -267,14 +316,16 @@
     }
     private Task<CatalogSelect2SearchResponse> SearchDefinitionsAsync(string term, int page)
     {
-        var found = definitions.Where(x => x.IsActive && (string.IsNullOrWhiteSpace(term)
-            || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
-            || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase))).ToList();
-        return Task.FromResult(CatalogSelect2Cache.Merge(definitions, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
+        var available = definitions.Where(IsStartableDefinition).ToList();
+        var query = CatalogSelect2Text.NormalizeSearch(term);
+        var found = available.Where(x => query.Length == 0
+            || CatalogSelect2Text.NormalizeSearch(x.Name).Contains(query, StringComparison.Ordinal)
+            || CatalogSelect2Text.NormalizeSearch(x.Code).Contains(query, StringComparison.Ordinal)).ToList();
+        return Task.FromResult(CatalogSelect2Cache.Merge(available, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
     }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
     }
 }

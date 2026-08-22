@@ -68,6 +68,9 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${HCS_KEYCLOAK_ADMIN:?set HCS_KEYCLOAK_ADMIN}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${HCS_KEYCLOAK_ADMIN_PASSWORD:?set HCS_KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: http://localhost:5110
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/hcs_keycloak
       KC_DB_USERNAME: hcs

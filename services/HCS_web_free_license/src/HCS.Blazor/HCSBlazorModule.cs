@@ -278,7 +278,7 @@ public sealed class HCSBlazorModule : AbpModule
     private void ConfigureMenu(IConfiguration configuration)
     {
         Configure<AbpNavigationOptions>(options =>
-            options.MenuContributors.Add(new HCSMenuContributor(configuration)));
+            options.MenuContributors.Add(new HCSMenuContributor()));
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)

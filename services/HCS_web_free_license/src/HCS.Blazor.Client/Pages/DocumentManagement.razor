@@ -165,6 +165,7 @@
     <ModalBody Class="hcs-catalog-modal__body">
         <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
             <UserSelect2 Value="sendReceiverId" ValueChanged="value => sendReceiverId = value"
+                         SelectedItem="@ContactItem(sendReceiverId)"
                          Placeholder="@L["Chat:SelectContacts"]" SelectedText="@ContactName(sendReceiverId)"
                          Search="SearchContactsAsync" />
         </Field>
@@ -284,9 +285,9 @@
 
     private string? CombinedFilter()
     {
-        if (!string.IsNullOrWhiteSpace(numberFilter)) return numberFilter.Trim();
-        if (!string.IsNullOrWhiteSpace(titleFilter)) return titleFilter.Trim();
-        return string.IsNullOrWhiteSpace(filter) ? null : filter.Trim();
+        if (!string.IsNullOrWhiteSpace(numberFilter)) return SearchText.Normalize(numberFilter);
+        if (!string.IsNullOrWhiteSpace(titleFilter)) return SearchText.Normalize(titleFilter);
+        return SearchText.NormalizeOrNull(filter);
     }
 
     private static Guid? ParseGuid(string value) => Guid.TryParse(value, out var id) ? id : null;
@@ -332,9 +333,11 @@
         _ => "hcs-status-badge--planning"
     };
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private CatalogSelect2Item? ContactItem(Guid? id) =>
+        id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
     }
 }

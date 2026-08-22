@@ -33,6 +33,26 @@ public sealed class DomainInvariantTests
     }
 
     [Fact]
+    public void Task_progress_at_100_promotes_status_to_completed()
+    {
+        var task = new ProjectTask(Guid.NewGuid(), Guid.NewGuid(), null, "T-100", "Task",
+            null, DateTime.UtcNow, DateTime.UtcNow.AddDays(1), "Normal", "InProgress", 100);
+
+        Assert.Equal(WorkConsts.CompletedStatus, task.Status);
+        Assert.Equal(100, task.ProgressPercent);
+    }
+
+    [Fact]
+    public void Task_completed_status_promotes_progress_to_100()
+    {
+        var task = new ProjectTask(Guid.NewGuid(), Guid.NewGuid(), null, "T-done", "Task",
+            null, DateTime.UtcNow, DateTime.UtcNow.AddDays(1), "Normal", WorkConsts.CompletedStatus, 40);
+
+        Assert.Equal(WorkConsts.CompletedStatus, task.Status);
+        Assert.Equal(100, task.ProgressPercent);
+    }
+
+    [Fact]
     public void Project_calendar_event_uses_project_identity()
     {
         var start = DateTime.UtcNow;

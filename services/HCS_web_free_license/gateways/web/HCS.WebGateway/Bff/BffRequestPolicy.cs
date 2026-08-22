@@ -7,6 +7,7 @@ internal static class BffRequestPolicy
         "/api/abp/application-configuration",
         "/api/abp/application-localization"
     ];
+    private const string AnonymousSurveyPrefix = "/api/surveys/public";
     private static readonly string[] ProtectedPrefixes = ["/api", "/hubs"];
     private static readonly string[] SafeMethods = ["GET", "HEAD", "OPTIONS", "TRACE"];
 
@@ -19,6 +20,10 @@ internal static class BffRequestPolicy
     internal static bool IsAnonymousBootstrapPath(PathString path) =>
         AnonymousBootstrapPaths.Any(bootstrap => path.StartsWithSegments(bootstrap, StringComparison.OrdinalIgnoreCase));
 
+    internal static bool IsAnonymousSurveyPath(PathString path) =>
+        path.StartsWithSegments(AnonymousSurveyPrefix, StringComparison.OrdinalIgnoreCase);
+
     internal static bool RequiresAntiforgery(HttpRequest request) =>
-        IsProxyPath(request.Path) && !SafeMethods.Contains(request.Method, StringComparer.OrdinalIgnoreCase);
+        IsProxyPath(request.Path) && !IsAnonymousSurveyPath(request.Path) &&
+        !SafeMethods.Contains(request.Method, StringComparer.OrdinalIgnoreCase);
 }

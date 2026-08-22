@@ -13,7 +13,7 @@ public sealed class BusinessClientContractTests
 
         var actual = WorkManagementClient.BuildListUri("/api/projects", query);
 
-        Assert.Equal("/api/projects?skip=0&take=100&filter=A%26B&status=Active", actual);
+        Assert.Equal("/api/projects?skip=0&take=100&filter=a%26b&status=Active", actual);
     }
 
     [Fact]

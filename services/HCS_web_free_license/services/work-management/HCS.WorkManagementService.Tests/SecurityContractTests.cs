@@ -60,6 +60,30 @@ public sealed class SecurityContractTests
             attribute => attribute.Policy == WorkPermissions.SurveyManagement);
     }
 
+    [Theory]
+    [InlineData(nameof(SurveysController.GetResults))]
+    [InlineData(nameof(SurveysController.Submit))]
+    [InlineData(nameof(SurveysController.GetFiles))]
+    public void Survey_participant_endpoints_inherit_the_survey_policy(string action)
+    {
+        Assert.NotNull(typeof(SurveysController).GetMethod(action));
+        Assert.Contains(typeof(SurveysController).GetCustomAttributes(typeof(AuthorizeAttribute), true)
+                .Cast<AuthorizeAttribute>(),
+            attribute => attribute.Policy == WorkPermissions.Surveys);
+    }
+
+    [Theory]
+    [InlineData(nameof(SurveysController.GetPublicLocation))]
+    [InlineData(nameof(SurveysController.GetPublicCriteria))]
+    [InlineData(nameof(SurveysController.CreatePublicSession))]
+    [InlineData(nameof(SurveysController.SubmitPublicResults))]
+    [InlineData(nameof(SurveysController.UploadPublic))]
+    public void Public_survey_endpoints_are_explicitly_anonymous(string action)
+    {
+        var method = typeof(SurveysController).GetMethod(action)!;
+        Assert.NotNull(method.GetCustomAttributes(typeof(AllowAnonymousAttribute), true).SingleOrDefault());
+    }
+
     [Fact]
     public void Bearer_apis_do_not_auto_validate_antiforgery_cookies()
     {

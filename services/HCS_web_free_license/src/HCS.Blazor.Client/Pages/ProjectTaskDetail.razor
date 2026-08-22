@@ -11,7 +11,6 @@
     <header class="hcs-document-page__header">
         <div>
             <h1>@(form.Title.Length > 0 ? form.Title : L["Feature:TaskDetail"])</h1>
-            @if (detail is not null) { <p>@detail.Task.Code · @L[WorkUi.TaskStatusKey(detail.Task.Status)] · @detail.Task.ProgressPercent%</p> }
         </div>
         <a class="btn btn-outline-primary" href="/tasks">@L["Feature:BackToList"]</a>
     </header>
@@ -48,11 +47,11 @@
                                 </Select>
                             </Field>
                             <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                                <Select TValue="string" @bind-Value="form.Status">
+                                <Select TValue="string" SelectedValue="@form.Status" SelectedValueChanged="OnStatusChanged">
                                     @foreach (var value in WorkUi.TaskStatuses) { <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem> }
                                 </Select>
                             </Field>
-                            <Field><FieldLabel>@L["Feature:Progress"]</FieldLabel><NumericPicker TValue="int" @bind-Value="form.ProgressPercent" Min="0" Max="100" /></Field>
+                            <Field><FieldLabel>@L["Feature:Progress"]</FieldLabel><NumericPicker TValue="int" Value="@form.ProgressPercent" ValueChanged="OnProgressChanged" Min="0" Max="100" /></Field>
                         </div>
                         <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
                         <Button Color="Color.Primary" Clicked="SaveTaskAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
@@ -215,6 +214,20 @@
         finally { isSaving = false; }
     }
 
+    private Task OnStatusChanged(string value)
+    {
+        form.Status = value;
+        if (string.Equals(value, "Completed", StringComparison.OrdinalIgnoreCase)) form.ProgressPercent = 100;
+        return Task.CompletedTask;
+    }
+
+    private Task OnProgressChanged(int value)
+    {
+        form.ProgressPercent = Math.Clamp(value, 0, 100);
+        if (form.ProgressPercent == 100) form.Status = "Completed";
+        return Task.CompletedTask;
+    }
+
     private async Task AddAssignmentAsync()
     {
         if (assigneeId is not { } userId) return;
@@ -270,7 +283,7 @@
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
     }
 
     private sealed class TaskEditForm

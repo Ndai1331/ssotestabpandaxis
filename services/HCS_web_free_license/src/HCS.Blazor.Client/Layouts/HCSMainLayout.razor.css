@@ -467,6 +467,32 @@
     width: 2.7rem;
 }
 
+.hcs-avatar--image {
+    object-fit: cover;
+    padding: 0;
+}
+
+.hcs-account-avatar {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+}
+
+.hcs-signature-preview {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+}
+
+.hcs-signature-preview__image {
+    background: #fff;
+    border: 1px solid var(--hcs-line, #d7e0e6);
+    border-radius: 4px;
+    height: 2.5rem;
+    object-fit: contain;
+    width: 4.5rem;
+}
+
 .hcs-user-menu__panel {
     background: #fff;
     border: 1px solid var(--hcs-line);

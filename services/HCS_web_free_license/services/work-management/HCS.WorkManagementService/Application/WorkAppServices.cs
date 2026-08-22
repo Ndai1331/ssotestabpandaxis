@@ -25,8 +25,9 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         var query = access.VisibleProjects().AsNoTracking();
         if (!string.IsNullOrWhiteSpace(filter))
         {
-            var value = filter.Trim();
-            query = query.Where(x => x.Code.Contains(value) || x.Name.Contains(value));
+            var value = filter.Trim().ToLowerInvariant();
+            query = query.Where(x => EF.Functions.ILike(x.Code, $"%{value}%")
+                                  || EF.Functions.ILike(x.Name, $"%{value}%"));
         }
         if (!string.IsNullOrWhiteSpace(status)) query = query.Where(x => x.Status == status);
         var total = await query.LongCountAsync(ct);
@@ -185,8 +186,9 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         if (projectId.HasValue) query = query.Where(x => x.ProjectId == projectId);
         if (!string.IsNullOrWhiteSpace(filter))
         {
-            var value = filter.Trim();
-            query = query.Where(x => x.Code.Contains(value) || x.Title.Contains(value));
+            var value = filter.Trim().ToLowerInvariant();
+            query = query.Where(x => EF.Functions.ILike(x.Code, $"%{value}%")
+                                  || EF.Functions.ILike(x.Title, $"%{value}%"));
         }
         if (!string.IsNullOrWhiteSpace(status)) query = query.Where(x => x.Status == status);
         var total = await query.LongCountAsync(ct);
@@ -414,20 +416,20 @@ public sealed class CalendarAppService(WorkManagementDbContext db, WorkRecordAut
 public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAuthorization access) : ITransientDependency
 {
     public async Task<List<SurveyCriteriaDto>> GetCriteriaAsync(CancellationToken ct) => await db.SurveyCriteria.AsNoTracking()
-        .OrderBy(x => x.SortOrder).Select(x => new SurveyCriteriaDto(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive)).ToListAsync(ct);
+        .OrderBy(x => x.SortOrder).Select(x => new SurveyCriteriaDto(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive, x.LocationId, x.Image)).ToListAsync(ct);
     public async Task<SurveyCriteriaDto> CreateCriteriaAsync(CreateSurveyCriteriaDto input, CancellationToken ct)
     {
         if (await db.SurveyCriteria.AnyAsync(x => x.Code == input.Code, ct)) throw new BusinessException("Work:DuplicateSurveyCriteria");
-        var x = new SurveyCriteria(Guid.NewGuid(), input.Code, input.Name, input.SortOrder); db.SurveyCriteria.Add(x); await db.SaveChangesAsync(ct);
-        return new(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive);
+        var x = new SurveyCriteria(Guid.NewGuid(), input.Code, input.Name, input.SortOrder, input.LocationId, input.Image); db.SurveyCriteria.Add(x); await db.SaveChangesAsync(ct);
+        return new(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive, x.LocationId, x.Image);
     }
     public async Task<SurveyCriteriaDto> UpdateCriteriaAsync(Guid id, UpdateSurveyCriteriaDto input, CancellationToken ct)
     {
         var x = await db.SurveyCriteria.SingleOrDefaultAsync(c => c.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(SurveyCriteria), id);
-        x.Change(input.Name, input.SortOrder, input.IsActive);
+        x.Change(input.Name, input.SortOrder, input.IsActive, input.LocationId, input.Image);
         await db.SaveChangesAsync(ct);
-        return new(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive);
+        return new(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive, x.LocationId, x.Image);
     }
     public async Task DeleteCriteriaAsync(Guid id, CancellationToken ct)
     {
@@ -438,20 +440,20 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
         await db.SaveChangesAsync(ct);
     }
     public async Task<List<SurveyLocationDto>> GetLocationsAsync(CancellationToken ct) => await db.SurveyLocations.AsNoTracking()
-        .OrderBy(x => x.Code).Select(x => new SurveyLocationDto(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive)).ToListAsync(ct);
+        .OrderBy(x => x.Code).Select(x => new SurveyLocationDto(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive, x.Description)).ToListAsync(ct);
     public async Task<SurveyLocationDto> CreateLocationAsync(CreateSurveyLocationDto input, CancellationToken ct)
     {
         if (await db.SurveyLocations.AnyAsync(x => x.Code == input.Code, ct)) throw new BusinessException("Work:DuplicateSurveyLocation");
-        var x = new SurveyLocation(Guid.NewGuid(), input.Code, input.Name, input.OrganizationUnitId); db.SurveyLocations.Add(x); await db.SaveChangesAsync(ct);
-        return new(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive);
+        var x = new SurveyLocation(Guid.NewGuid(), input.Code, input.Name, input.OrganizationUnitId, input.Description); db.SurveyLocations.Add(x); await db.SaveChangesAsync(ct);
+        return new(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive, x.Description);
     }
     public async Task<SurveyLocationDto> UpdateLocationAsync(Guid id, UpdateSurveyLocationDto input, CancellationToken ct)
     {
         var x = await db.SurveyLocations.SingleOrDefaultAsync(c => c.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(SurveyLocation), id);
-        x.Change(input.Name, input.OrganizationUnitId, input.IsActive);
+        x.Change(input.Name, input.OrganizationUnitId, input.IsActive, input.Description);
         await db.SaveChangesAsync(ct);
-        return new(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive);
+        return new(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive, x.Description);
     }
     public async Task DeleteLocationAsync(Guid id, CancellationToken ct)
     {
@@ -465,9 +467,8 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
     {
         var query = db.SurveySessions.AsNoTracking().AsQueryable();
         if (locationId.HasValue) query = query.Where(x => x.LocationId == locationId);
-        return await query.OrderByDescending(x => x.StartsAt)
-            .Select(x => new SurveySessionDto(x.Id, x.Code, x.Name, x.StartsAt, x.EndsAt, x.Status, x.LocationId))
-            .ToListAsync(ct);
+        var sessions = await query.OrderByDescending(x => x.StartsAt).ToListAsync(ct);
+        return sessions.Select(MapSession).ToList();
     }
     public async Task<SurveySessionDto> CreateSessionAsync(CreateSurveySessionDto input, CancellationToken ct)
     {
@@ -476,7 +477,7 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
             throw new EntityNotFoundException(typeof(SurveyLocation), input.LocationId);
         var x = new SurveySession(Guid.NewGuid(), input.Code, input.Name, input.StartsAt, input.EndsAt, input.LocationId, access.UserId);
         db.SurveySessions.Add(x); db.OutboxMessages.Add(WorkOutbox.Create(new SurveySessionChangedEto(Guid.NewGuid(), DateTime.UtcNow, x.Id, "Created", x.Status), Correlation()));
-        await db.SaveChangesAsync(ct); return new(x.Id, x.Code, x.Name, x.StartsAt, x.EndsAt, x.Status, x.LocationId);
+        await db.SaveChangesAsync(ct); return MapSession(x);
     }
     public async Task<SurveySessionDto> UpdateSessionAsync(Guid id, UpdateSurveySessionDto input, CancellationToken ct)
     {
@@ -488,7 +489,7 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
         x.Change(input.Name, input.StartsAt, input.EndsAt, input.LocationId);
         db.OutboxMessages.Add(WorkOutbox.Create(new SurveySessionChangedEto(Guid.NewGuid(), DateTime.UtcNow, x.Id, "Updated", x.Status), Correlation()));
         await db.SaveChangesAsync(ct);
-        return new(x.Id, x.Code, x.Name, x.StartsAt, x.EndsAt, x.Status, x.LocationId);
+        return MapSession(x);
     }
     public async Task<SurveySessionDto> ChangeSessionStatusAsync(Guid id, ChangeSurveySessionStatusDto input, CancellationToken ct)
     {
@@ -498,7 +499,7 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
         x.ChangeStatus(input.Status);
         db.OutboxMessages.Add(WorkOutbox.Create(new SurveySessionChangedEto(Guid.NewGuid(), DateTime.UtcNow, x.Id, "StatusChanged", x.Status), Correlation()));
         await db.SaveChangesAsync(ct);
-        return new(x.Id, x.Code, x.Name, x.StartsAt, x.EndsAt, x.Status, x.LocationId);
+        return MapSession(x);
     }
     public async Task DeleteSessionAsync(Guid id, CancellationToken ct)
     {
@@ -537,6 +538,143 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
         db.SurveyResults.Add(x); await db.SaveChangesAsync(ct);
         return new(x.Id, x.SessionId, x.CriteriaId, x.RespondentUserId, x.Score, x.Comment);
     }
+
+    public async Task<SurveyLocationDto> GetPublicLocationAsync(Guid locationId, CancellationToken ct)
+    {
+        var location = await db.SurveyLocations.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == locationId && x.IsActive, ct)
+            ?? throw new EntityNotFoundException(typeof(SurveyLocation), locationId);
+        return MapLocation(location);
+    }
+
+    public async Task<List<SurveyCriteriaDto>> GetPublicCriteriaAsync(Guid locationId, CancellationToken ct)
+    {
+        _ = await GetPublicLocationAsync(locationId, ct);
+        return await db.SurveyCriteria.AsNoTracking()
+            .Where(x => x.IsActive && (x.LocationId == null || x.LocationId == locationId))
+            .OrderBy(x => x.SortOrder)
+            .Select(x => new SurveyCriteriaDto(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive, x.LocationId, x.Image))
+            .ToListAsync(ct);
+    }
+
+    public async Task<SurveySessionDto> CreatePublicSessionAsync(CreatePublicSurveySessionDto input, CancellationToken ct)
+    {
+        var fullName = Check.NotNullOrWhiteSpace(input.FullName, nameof(input.FullName), WorkConsts.NameLength).Trim();
+        var phoneNumber = Check.NotNullOrWhiteSpace(input.PhoneNumber, nameof(input.PhoneNumber), 64).Trim();
+        var location = await db.SurveyLocations.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == input.LocationId && x.IsActive, ct)
+            ?? throw new EntityNotFoundException(typeof(SurveyLocation), input.LocationId);
+        var surveyTime = WorkTimestamps.ToUtc(input.SurveyTime);
+        var code = $"PUBLIC-{Guid.NewGuid():N}";
+        var sessionDisplay = string.IsNullOrWhiteSpace(input.SessionDisplay)
+            ? $"{fullName}_{phoneNumber}_{input.LocationId}_{surveyTime:ddMMyyyyHHmm}"
+            : input.SessionDisplay.Trim();
+        var session = SurveySession.CreatePublic(Guid.NewGuid(), code, location.Name,
+            surveyTime.AddMinutes(-1), surveyTime.AddDays(1), input.LocationId,
+            fullName, phoneNumber, input.PatientCode?.Trim(), surveyTime,
+            input.DeviceType?.Trim(), input.Note?.Trim(), sessionDisplay);
+        db.SurveySessions.Add(session);
+        db.OutboxMessages.Add(WorkOutbox.Create(new SurveySessionChangedEto(Guid.NewGuid(), DateTime.UtcNow,
+            session.Id, "Created", session.Status), Correlation()));
+        await db.SaveChangesAsync(ct);
+        return MapSession(session);
+    }
+
+    public async Task<List<SurveyResultDto>> SubmitPublicResultsAsync(Guid sessionId,
+        IReadOnlyList<SubmitSurveyResultDto> inputs, CancellationToken ct)
+    {
+        if (inputs.Count == 0) throw new BusinessException("Work:SurveyResultsRequired");
+        var session = await db.SurveySessions.SingleOrDefaultAsync(x => x.Id == sessionId && x.IsPublic, ct)
+            ?? throw new EntityNotFoundException(typeof(SurveySession), sessionId);
+        if (session.StartsAt > DateTime.UtcNow || session.EndsAt < DateTime.UtcNow)
+            throw new BusinessException("Work:SurveyOutsideActiveWindow");
+        var criteriaIds = inputs.Select(x => x.CriteriaId).Distinct().ToList();
+        var criteria = await db.SurveyCriteria.Where(x => criteriaIds.Contains(x.Id) && x.IsActive &&
+                (x.LocationId == null || x.LocationId == session.LocationId)).ToListAsync(ct);
+        if (criteria.Count != criteriaIds.Count) throw new BusinessException("Work:InvalidSurveyCriteria");
+        var results = new List<SurveyResultDto>();
+        foreach (var input in inputs)
+        {
+            var result = await db.SurveyResults.SingleOrDefaultAsync(x => x.SessionId == sessionId &&
+                x.CriteriaId == input.CriteriaId, ct);
+            if (result is null)
+            {
+                result = new SurveyResult(Guid.NewGuid(), sessionId, input.CriteriaId, null, input.Score, input.Comment);
+                db.SurveyResults.Add(result);
+            }
+            else result.Change(input.Score, input.Comment);
+            results.Add(new(result.Id, result.SessionId, result.CriteriaId, result.RespondentUserId, result.Score, result.Comment));
+        }
+        await db.SaveChangesAsync(ct);
+        return results;
+    }
+
+    public async Task<SurveyResultStatisticsDto> GetStatisticsAsync(Guid? locationId, CancellationToken ct)
+    {
+        var query = from result in db.SurveyResults.AsNoTracking()
+                    join session in db.SurveySessions.AsNoTracking() on result.SessionId equals session.Id
+                    join criteria in db.SurveyCriteria.AsNoTracking() on result.CriteriaId equals criteria.Id
+                    where !locationId.HasValue || session.LocationId == locationId
+                    select new { result.Score, CriteriaId = criteria.Id, CriteriaName = criteria.Name, CriteriaCode = criteria.Code };
+        var rows = await query.ToListAsync(ct);
+        var distribution = Enumerable.Range(0, 6).ToDictionary(star => star, _ => 0);
+        foreach (var row in rows)
+        {
+            var star = row.Score <= 0 ? 0 : Math.Clamp((int)Math.Round(row.Score / 20m, MidpointRounding.AwayFromZero), 1, 5);
+            distribution[star]++;
+        }
+        var averages = rows.GroupBy(x => new { x.CriteriaId, x.CriteriaName, x.CriteriaCode })
+            .Select(x => new
+            {
+                Name = x.Key.CriteriaName,
+                Code = x.Key.CriteriaCode,
+                Average = x.Average(y => y.Score)
+            })
+            .GroupBy(x => x.Name)
+            .SelectMany(group => group.Select(item => new
+            {
+                Name = group.Count() > 1 && !string.IsNullOrWhiteSpace(item.Code)
+                    ? $"{item.Name} ({item.Code})"
+                    : item.Name,
+                item.Average
+            }))
+            .ToDictionary(x => x.Name, x => Math.Round(x.Average, 1));
+        return new(rows.Count, distribution, averages);
+    }
+
+    public async Task<PagedWorkDto<SurveyResultSessionSummaryDto>> GetResultSummariesAsync(Guid? locationId,
+        int skip, int take, CancellationToken ct)
+    {
+        skip = Math.Max(skip, 0); take = Math.Clamp(take, 1, 100);
+        var query = from result in db.SurveyResults.AsNoTracking()
+                    join session in db.SurveySessions.AsNoTracking() on result.SessionId equals session.Id
+                    join criteria in db.SurveyCriteria.AsNoTracking() on result.CriteriaId equals criteria.Id
+                    where !locationId.HasValue || session.LocationId == locationId
+                    orderby session.SurveyTime descending, criteria.Name
+                    select new SurveyResultSessionSummaryDto(result.Id, session.Id, criteria.Id, criteria.Name,
+                        result.Score, session.FullName, session.PhoneNumber, session.PatientCode,
+                        session.Note, session.SurveyTime ?? session.StartsAt);
+        return new(await query.LongCountAsync(ct), await query.Skip(skip).Take(take).ToListAsync(ct));
+    }
+
+    public async Task<List<SurveyResultSessionDetailDto>> GetResultDetailsAsync(Guid sessionId, Guid? locationId,
+        CancellationToken ct)
+    {
+        var validSession = await db.SurveySessions.AnyAsync(x => x.Id == sessionId &&
+            (!locationId.HasValue || x.LocationId == locationId), ct);
+        if (!validSession) throw new EntityNotFoundException(typeof(SurveySession), sessionId);
+        return await (from result in db.SurveyResults.AsNoTracking()
+                      join criteria in db.SurveyCriteria.AsNoTracking() on result.CriteriaId equals criteria.Id
+                      where result.SessionId == sessionId
+                      orderby criteria.Name
+                      select new SurveyResultSessionDetailDto(result.Id, result.SessionId, result.CriteriaId,
+                          criteria.Name, result.Score, result.Comment)).ToListAsync(ct);
+    }
+
+    private static SurveySessionDto MapSession(SurveySession x) => new(x.Id, x.Code, x.Name, x.StartsAt, x.EndsAt,
+        x.Status, x.LocationId, x.FullName, x.PhoneNumber, x.PatientCode, x.SurveyTime, x.DeviceType, x.Note, x.SessionDisplay);
+    private static SurveyLocationDto MapLocation(SurveyLocation x) =>
+        new(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive, x.Description);
     private static string Correlation() => System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
 }
 

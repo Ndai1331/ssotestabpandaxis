@@ -42,6 +42,22 @@ public sealed class UserSignature
     public DateTime CreationTime { get; private set; }
     public void MarkDefault() => IsDefault = true;
     public void ClearDefault() => IsDefault = false;
+    public void Rename(string fileName)
+    {
+        var normalized = Path.GetFileName(fileName.Replace('\\', '/')).Trim();
+        if (string.IsNullOrWhiteSpace(normalized)) throw new ArgumentException("A file name is required.", nameof(fileName));
+        if (normalized.Length > 256) throw new ArgumentException("The file name is too long.", nameof(fileName));
+        FileName = normalized;
+    }
+
+    public void ReplaceContent(string fileName, string contentType, string blobName, long size)
+    {
+        if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size));
+        Rename(fileName);
+        ContentType = contentType.Trim();
+        BlobName = blobName;
+        Size = size;
+    }
 }
 
 public sealed class SigningAttempt

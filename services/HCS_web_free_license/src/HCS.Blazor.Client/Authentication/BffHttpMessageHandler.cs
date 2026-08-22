@@ -21,7 +21,7 @@ public sealed class BffHttpMessageHandler(Uri gatewayBaseAddress) : DelegatingHa
         EnsureGatewayRequest(request);
         request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
-        var requiresAntiforgery = RequiresAntiforgery(request.Method);
+        var requiresAntiforgery = RequiresAntiforgery(request.Method) && !IsAnonymousSurveyRequest(request.RequestUri);
         // A request body may be a streaming upload. Never buffer it merely to retry an
         // antiforgery failure; only small, declared-size payloads are safely replayable.
         var retryRequest = requiresAntiforgery ? await TryCloneReplayableAsync(request, cancellationToken) : null;
@@ -115,6 +115,9 @@ public sealed class BffHttpMessageHandler(Uri gatewayBaseAddress) : DelegatingHa
 
     private static bool RequiresAntiforgery(HttpMethod method) =>
         method != HttpMethod.Get && method != HttpMethod.Head && method != HttpMethod.Options;
+
+    private static bool IsAnonymousSurveyRequest(Uri? uri) =>
+        uri?.AbsolutePath.StartsWith("/api/surveys/public", StringComparison.OrdinalIgnoreCase) == true;
 
     internal static async Task<HttpRequestMessage?> TryCloneReplayableAsync(
         HttpRequestMessage source,

@@ -137,28 +137,14 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task UpdateDefinitionAsync(Guid id, UpdateWorkflowDefinitionRequest input, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowManage);
-        if (await db.WorkflowInstances.AnyAsync(x => x.DefinitionId == id && x.Status == WorkflowInstanceStatus.Running, cancellationToken))
-            throw new InvalidOperationException("A running workflow still uses this definition.");
-        var definition = await db.WorkflowDefinitions.Include(x => x.Steps)
-            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+        // Do not Include(Steps) here: WorkflowDefinitionStepReplacer owns the step lifecycle
+        // and needs the definition loaded without tracked children.
+        var definition = await db.WorkflowDefinitions.SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
         definition.Rename(input.Name);
         definition.SetMetadata(input.KindId, input.Description, input.IsActive, input.SignMode);
-        // Steps are unique per (DefinitionId, Code) and (DefinitionId, Order), so the old rows must be
-        // deleted in their own round trip before the replacements are inserted.
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        db.WorkflowSteps.RemoveRange(definition.Steps.ToList());
+        await WorkflowDefinitionStepReplacer.ReplaceAsync(db, definition, input.Steps, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
-        try
-        {
-            definition.ReplaceSteps(input.Steps);
-        }
-        catch (ArgumentException ex)
-        {
-            throw new InvalidOperationException("Workflow step code, name, and required permission cannot be empty.", ex);
-        }
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task DeleteDefinitionAsync(Guid id, CancellationToken cancellationToken = default)
@@ -272,35 +258,50 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
         DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowStart);
-        var source = await LoadDocumentAsync(input.DocumentId, cancellationToken);
-        DocumentAccess.EnsureCanManage(source, userId, principal);
+        if (!WorkflowStartRequestRules.HasExactlyOneSource(input))
+            throw new InvalidOperationException("Exactly one workflow source document or workflow template file is required.");
+        if (input.UseWorkflowTemplateFile && input.UseTemplateFile)
+            throw new InvalidOperationException("A workflow template file cannot be combined with a source document template file.");
+
+        DocumentAggregate? source = null;
+        if (!input.UseWorkflowTemplateFile)
+        {
+            source = await LoadDocumentAsync(input.DocumentId!.Value, cancellationToken);
+            DocumentAccess.EnsureCanManage(source, userId, principal);
+        }
+
         var existing = await Query().SingleOrDefaultAsync(x => x.IdempotencyKey == input.IdempotencyKey, cancellationToken);
         if (existing is not null) return Map(existing);
         var definition = await db.WorkflowDefinitions.Include(x => x.Steps).SingleOrDefaultAsync(x => x.Id == input.DefinitionId, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
+        definition.EnsureStartable();
         var now = DateTime.UtcNow;
-        var document = source;
-        if (source.SourceType != DocumentSourceType.Workflow)
+        DocumentAggregate document;
+        if (input.UseWorkflowTemplateFile)
+        {
+            document = await CreateWorkflowDocumentFromTemplateAsync(definition, userId, now, cancellationToken);
+            db.Documents.Add(document);
+        }
+        else if (source!.SourceType == DocumentSourceType.Workflow)
+        {
+            document = source;
+        }
+        else
         {
             var number = await NextWorkflowNumberAsync(source.Number, cancellationToken);
             document = source.DuplicateAsWorkflow(Guid.NewGuid(), number, userId, now);
             db.Documents.Add(document);
-            if (input.UseTemplateFile)
-            {
-                var template = await db.WorkflowTemplates.AsNoTracking()
-                    .Where(x => x.DefinitionId == definition.Id && x.IsActive && x.PdfBlobName != null)
+            var template = input.UseTemplateFile
+                ? await db.WorkflowTemplates.AsNoTracking()
+                    .Where(x => x.DefinitionId == definition.Id && x.IsActive && !string.IsNullOrWhiteSpace(x.PdfBlobName))
                     .OrderByDescending(x => x.CreationTime)
-                    .FirstOrDefaultAsync(cancellationToken);
-                if (template?.PdfBlobName is { } blob)
-                {
-                    await using var content = await blobs.GetAsync(blob, cancellationToken: cancellationToken);
-                    await files.AttachBlobAsync(document, template.PdfFileName ?? "template.pdf",
-                        template.PdfContentType ?? "application/pdf", content, userId, now, cancellationToken);
-                }
-                else
-                {
-                    await files.CopyFilesAsync(source, document, userId, now, cancellationToken);
-                }
+                    .FirstOrDefaultAsync(cancellationToken)
+                : null;
+            if (template?.PdfBlobName is { } blob)
+            {
+                await using var content = await blobs.GetAsync(blob, cancellationToken: cancellationToken);
+                await files.AttachBlobAsync(document, template.PdfFileName ?? "template.pdf",
+                    template.PdfContentType ?? "application/pdf", content, userId, now, cancellationToken);
             }
             else
             {
@@ -439,6 +440,34 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             if (candidate.Length > 64) candidate = $"{prefix[..Math.Max(1, 64 - 6)]}-WF{i}";
         }
         return candidate;
+    }
+
+    private async Task<DocumentAggregate> CreateWorkflowDocumentFromTemplateAsync(
+        WorkflowDefinition definition, Guid actorUserId, DateTime now, CancellationToken cancellationToken)
+    {
+        var template = await db.WorkflowTemplates.AsNoTracking()
+            .Where(x => x.DefinitionId == definition.Id && x.IsActive &&
+                        (!string.IsNullOrWhiteSpace(x.PdfBlobName) || !string.IsNullOrWhiteSpace(x.WordBlobName)))
+            .OrderByDescending(x => x.CreationTime)
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new InvalidOperationException("The workflow has no active template file.");
+
+        var blobName = !string.IsNullOrWhiteSpace(template.PdfBlobName)
+            ? template.PdfBlobName!
+            : template.WordBlobName!;
+        var fileName = !string.IsNullOrWhiteSpace(template.PdfFileName)
+            ? template.PdfFileName!
+            : template.WordFileName ?? "workflow-template";
+        var contentType = !string.IsNullOrWhiteSpace(template.PdfContentType)
+            ? template.PdfContentType!
+            : template.WordContentType ?? "application/octet-stream";
+        var number = await NextWorkflowNumberAsync(template.Code, cancellationToken);
+        var document = new DocumentAggregate(Guid.NewGuid(), number, template.Name, null, actorUserId, now,
+            DocumentSourceType.Workflow);
+
+        await using var content = await blobs.GetAsync(blobName, cancellationToken: cancellationToken);
+        await files.AttachBlobAsync(document, fileName, contentType, content, actorUserId, now, cancellationToken);
+        return document;
     }
 
     private async Task TryConvertTemplateWordAsync(WorkflowTemplate template, byte[] docxBytes, CancellationToken cancellationToken)

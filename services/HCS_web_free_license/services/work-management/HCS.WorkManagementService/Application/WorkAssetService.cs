@@ -31,6 +31,23 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
         return Map(item);
     }
 
+    public async Task<SurveyFileReferenceDto> SavePublicSurveyFileAsync(Guid sessionId, Stream stream, string fileName,
+        string contentType, long size, CancellationToken ct)
+    {
+        if (size is <= 0 or > MaxFileSize) throw new BusinessException("Work:InvalidAssetSize");
+        if (!contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            throw new BusinessException("Work:SurveyImageOnly");
+        if (!await db.SurveySessions.AnyAsync(x => x.Id == sessionId && x.IsPublic, ct))
+            throw new EntityNotFoundException(typeof(SurveySession), sessionId);
+        var id = Guid.NewGuid(); var blobName = WorkAssetBlobNamePolicy.Survey(sessionId, id);
+        await blobs.SaveAsync(blobName, stream, overrideExisting: false, cancellationToken: ct);
+        var item = new SurveyFileReference(id, sessionId, Guid.Empty, blobName, Path.GetFileName(fileName), contentType, size);
+        db.SurveyFiles.Add(item);
+        try { await db.SaveChangesAsync(ct); }
+        catch { await blobs.DeleteAsync(blobName, cancellationToken: ct); throw; }
+        return Map(item);
+    }
+
     public async Task<(Stream Stream, SurveyFileReferenceDto File)> GetSurveyFileAsync(Guid fileId, CancellationToken ct)
     {
         var item = await db.SurveyFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == fileId, ct)

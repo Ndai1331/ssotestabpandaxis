@@ -53,7 +53,7 @@
         isLoading = true;
         try
         {
-            var content = await Documents.GetFileContentAsync(documentId, file.Id);
+            var content = await Documents.GetWatermarkedFileContentAsync(documentId, file.Id);
             pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", "application/pdf", content.Bytes);
         }
         catch (Exception ex)

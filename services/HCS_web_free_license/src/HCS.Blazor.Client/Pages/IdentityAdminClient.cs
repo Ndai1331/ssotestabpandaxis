@@ -7,6 +7,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using HCS.Blazor.Client.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HCS.Blazor.Client.Pages;
@@ -206,7 +207,7 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         var query = new StringBuilder(endpoint).Append('?');
         if (!string.IsNullOrWhiteSpace(filter))
         {
-            query.Append("filter=").Append(Uri.EscapeDataString(filter.Trim())).Append('&');
+            query.Append("filter=").Append(Uri.EscapeDataString(SearchText.Normalize(filter))).Append('&');
         }
 
         query.Append("skipCount=").Append(Math.Max(0, skipCount))

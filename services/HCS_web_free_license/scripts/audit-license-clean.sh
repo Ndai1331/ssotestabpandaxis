@@ -9,6 +9,7 @@ scan_files() {
   find "$solution_root" -type f \
     ! -path '*/.git/*' \
     ! -path '*/.abpstudio/*' \
+    ! -path '*/.runtime-build/*' \
     ! -path '*/bin/*' \
     ! -path '*/obj/*' \
     ! -path "$solution_root/scripts/audit-license-clean.sh" \
@@ -49,7 +50,7 @@ report_matches \
   'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY'
 
 certificate_files=$(find "$solution_root" -type f \
-  ! -path '*/.git/*' ! -path '*/bin/*' ! -path '*/obj/*' \
+  ! -path '*/.git/*' ! -path '*/bin/*' ! -path '*/obj/*' ! -path '*/.runtime-build/*' \
   \( -name '*.pfx' -o -name '*.p12' -o -name '*.key' \) -print || true)
 if [[ -n "$certificate_files" ]]; then
   printf 'ERROR: certificate/private-key file detected; mount it at runtime instead\n%s\n' "$certificate_files" >&2
@@ -57,7 +58,7 @@ if [[ -n "$certificate_files" ]]; then
 fi
 
 generated_abp_artifacts=$(find "$solution_root" -type f \
-  ! -path '*/bin/*' ! -path '*/obj/*' \
+  ! -path '*/bin/*' ! -path '*/obj/*' ! -path '*/.runtime-build/*' \
   \( -name '*.abppkg' -o -name '*.abppkg.analyze.json' \) -print || true)
 if [[ -n "$generated_abp_artifacts" ]]; then
   printf 'ERROR: generated ABP Studio artifact detected\n%s\n' "$generated_abp_artifacts" >&2
@@ -73,7 +74,7 @@ report_matches \
   '1q2w3E\*'
 
 connection_candidates=$(scan_files | xargs -0 grep -nE '(^|[;"[:space:]])(Password|Pwd)=[^;"[:space:]]+' 2>/dev/null || true)
-connection_candidates=$(printf '%s\n' "$connection_candidates" | grep -Eiv '(Password|Pwd)=(\.\.\.|<[^>]+>|placeholder|change-me|development-only)' || true)
+connection_candidates=$(printf '%s\n' "$connection_candidates" | grep -Eiv '(Password|Pwd)=(\.\.\.|<[^>]+>|placeholder|change-me|development-only|\$\{[^}]+\})' || true)
 if [[ -n "$connection_candidates" ]]; then
   printf 'ERROR: password-bearing connection string detected\n%s\n' "$connection_candidates" >&2
   failed=1

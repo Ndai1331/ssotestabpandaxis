@@ -11,6 +11,7 @@ public sealed class GatewayConfigurationTests
         new Dictionary<string, string>
         {
             ["/api/abp/{**catch-all}"] = "Platform",
+            ["/api/account/{**catch-all}"] = "Platform",
             ["/api/identity/{**catch-all}"] = "Platform",
             ["/api/permission-management/{**catch-all}"] = "Platform",
             ["/api/setting-management/{**catch-all}"] = "Platform",

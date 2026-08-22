@@ -20,7 +20,7 @@ public sealed class OrganizationCatalogClientTests
             query);
 
         Assert.Equal(
-            "/api/organization/departments?filter=A%26B&isActive=false&skipCount=0&maxResultCount=100",
+            "/api/organization/departments?filter=a%26b&isActive=false&skipCount=0&maxResultCount=100",
             actual);
     }
 
@@ -85,7 +85,7 @@ public sealed class OrganizationCatalogClientTests
         Assert.Equal(1, result.TotalCount);
         Assert.Equal(id, Assert.Single(result.Items).Id);
         Assert.Equal("HR", result.Items[0].Code);
-        Assert.Equal("/api/organization/departments?filter=HR&isActive=true&skipCount=20&maxResultCount=20",
+        Assert.Equal("/api/organization/departments?filter=hr&isActive=true&skipCount=20&maxResultCount=20",
             handler.Request!.RequestUri!.PathAndQuery);
     }
 

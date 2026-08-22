@@ -11,12 +11,22 @@ public partial class OrganizationCatalog
         request = new object();
         validationMessage = string.Empty;
 
+        // Code/Name use HcsIsolatedTextInput (no Blazorise Validation) — enforce required here.
+        if (string.IsNullOrWhiteSpace(form.Code) || string.IsNullOrWhiteSpace(form.Name))
+        {
+            validationMessage = L["Catalog:ValidationError"].Value;
+            return false;
+        }
+
+        var code = form.Code.Trim();
+        var name = form.Name.Trim();
+
         switch (Kind)
         {
             case OrganizationCatalogKind.Department:
                 request = new DepartmentUpsertRequest(
-                    form.Code.Trim(),
-                    form.Name.Trim(),
+                    code,
+                    name,
                     ParseOptionalGuid(form.ParentId),
                     form.SortOrder,
                     form.IsActive);
@@ -30,15 +40,15 @@ public partial class OrganizationCatalog
 
                 request = new UnitUpsertRequest(
                     departmentId,
-                    form.Code.Trim(),
-                    form.Name.Trim(),
+                    code,
+                    name,
                     form.SortOrder,
                     form.IsActive);
                 return true;
             case OrganizationCatalogKind.Position:
                 request = new PositionUpsertRequest(
-                    form.Code.Trim(),
-                    form.Name.Trim(),
+                    code,
+                    name,
                     form.SignOrder,
                     form.SortOrder,
                     form.IsActive);
@@ -53,8 +63,8 @@ public partial class OrganizationCatalog
 
                 request = new MasterDataUpsertRequest(
                     type,
-                    form.Code.Trim(),
-                    form.Name.Trim(),
+                    code,
+                    name,
                     form.SortOrder,
                     form.IsActive);
                 return true;

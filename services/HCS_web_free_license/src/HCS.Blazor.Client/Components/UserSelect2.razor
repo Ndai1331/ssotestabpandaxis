@@ -7,6 +7,9 @@
                 Multiple="Multiple"
                 SelectedText="SelectedText"
                 SelectedTexts="SelectedTexts"
+                SelectedItem="SelectedItem"
+                SelectedItems="SelectedItems"
+                UserTemplate="true"
                 CssClass="hcs-catalog-select2 hcs-user-select2"
                 Search="Search" />
 @code {
@@ -18,5 +21,7 @@
     [Parameter] public string? Placeholder { get; set; }
     [Parameter] public string? SelectedText { get; set; }
     [Parameter] public IReadOnlyList<string>? SelectedTexts { get; set; }
+    [Parameter] public CatalogSelect2Item? SelectedItem { get; set; }
+    [Parameter] public IReadOnlyList<CatalogSelect2Item>? SelectedItems { get; set; }
     [Parameter] public Func<string, int, Task<CatalogSelect2SearchResponse>> Search { get; set; } = default!;
 }

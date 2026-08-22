@@ -154,7 +154,9 @@
         if (document is null) return;
         try
         {
-            var content = await Documents.GetFileContentAsync(document.Id, file.Id);
+            var content = DocumentFilePick.IsPdf(file)
+                ? await Documents.GetWatermarkedFileContentAsync(document.Id, file.Id)
+                : await Documents.GetFileContentAsync(document.Id, file.Id);
             await Js.InvokeVoidAsync("hcsDownloadBytes", file.FileName, content.ContentType, content.Bytes);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }

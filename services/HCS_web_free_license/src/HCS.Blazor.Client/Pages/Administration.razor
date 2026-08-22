@@ -1,6 +1,7 @@
 @page "/administration"
 @page "/users"
 @page "/identity/users-management"
+@attribute [Authorize(Roles = "admin")]
 @using System.Globalization
 @using System.Net
 @using System.Threading

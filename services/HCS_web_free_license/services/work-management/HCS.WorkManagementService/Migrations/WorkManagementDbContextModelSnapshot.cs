@@ -117,12 +117,12 @@ namespace HCS.WorkManagementService.Migrations
 
                     b.HasIndex("OwnerUserId");
 
+                    b.HasIndex("StartTime", "EndTime");
+
                     b.HasIndex("RelatedType", "RelatedId", "EventType")
                         .IsUnique()
-                        .HasFilter("\"RelatedId\" IS NOT NULL AND \"EventType\" IN ('PROJECT', 'TASK')")
-                        .HasDatabaseName("IX_CalendarEvents_SyncedRelated");
-
-                    b.HasIndex("StartTime", "EndTime");
+                        .HasDatabaseName("IX_CalendarEvents_SyncedRelated")
+                        .HasFilter("\"RelatedId\" IS NOT NULL AND \"EventType\" IN ('PROJECT', 'TASK')");
 
                     b.ToTable("CalendarEvents", "hcs_work");
                 });
@@ -519,6 +519,10 @@ namespace HCS.WorkManagementService.Migrations
                         .HasColumnType("text")
                         .HasColumnName("ExtraProperties");
 
+                    b.Property<string>("Image")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -536,6 +540,9 @@ namespace HCS.WorkManagementService.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("LastModifierId");
 
+                    b.Property<Guid?>("LocationId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -548,6 +555,8 @@ namespace HCS.WorkManagementService.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("LocationId");
 
                     b.ToTable("SurveyCriteria", "hcs_work");
                 });
@@ -627,6 +636,10 @@ namespace HCS.WorkManagementService.Migrations
                     b.Property<DateTime?>("DeletionTime")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("DeletionTime");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("ExtraProperties")
                         .IsRequired()
@@ -775,6 +788,10 @@ namespace HCS.WorkManagementService.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("DeletionTime");
 
+                    b.Property<string>("DeviceType")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<DateTime>("EndsAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -783,11 +800,18 @@ namespace HCS.WorkManagementService.Migrations
                         .HasColumnType("text")
                         .HasColumnName("ExtraProperties");
 
+                    b.Property<string>("FullName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("IsDeleted");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastModificationTime")
                         .HasColumnType("timestamp with time zone")
@@ -805,8 +829,24 @@ namespace HCS.WorkManagementService.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<Guid>("OwnerUserId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("PatientCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SessionDisplay")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<DateTime>("StartsAt")
                         .HasColumnType("timestamp with time zone");
@@ -816,10 +856,15 @@ namespace HCS.WorkManagementService.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<DateTime?>("SurveyTime")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("IsPublic");
 
                     b.HasIndex("LocationId");
 
@@ -946,6 +991,14 @@ namespace HCS.WorkManagementService.Migrations
                         .HasForeignKey("ProjectTaskId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("HCS.WorkManagementService.Domain.SurveyCriteria", b =>
+                {
+                    b.HasOne("HCS.WorkManagementService.Domain.SurveyLocation", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("HCS.WorkManagementService.Domain.SurveyFileReference", b =>

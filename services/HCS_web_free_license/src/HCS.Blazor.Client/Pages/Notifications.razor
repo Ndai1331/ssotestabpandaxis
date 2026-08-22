@@ -189,7 +189,7 @@
         if (statusFilter == "read" && !item.IsRead) return false;
         if (string.IsNullOrWhiteSpace(filter)) return true;
 
-        var term = filter.Trim();
+        var term = SearchText.Normalize(filter);
         var title = NotificationText.Localize(L, item.Title);
         var body = NotificationText.Localize(L, item.Body);
         return title.Contains(term, StringComparison.OrdinalIgnoreCase)

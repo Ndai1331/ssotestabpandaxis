@@ -52,7 +52,9 @@ Copy `.env.example` to an untracked `.env`, replace every `change-me`, then star
 docker compose --env-file .env -f etc/docker-compose/local-infra.yml up -d
 ```
 
-The existing BD lab Keycloak remains the preferred server at `http://localhost:5110`. If it is not running, add `--profile keycloak` to the command above to start the optional local Keycloak container on the same port.
+The existing BD lab Keycloak remains the preferred server at `http://localhost:5110`. If it is not running, add `--profile keycloak` to the command above to start the optional local Keycloak container on the same port (includes `KC_HOSTNAME=http://localhost:5110` for browser-safe OIDC URLs).
+
+For Docker Compose runtime (`./scripts/docker-up.sh`), start Keycloak on the host first — see the SSO section in [`../../docs/runbooks/hcs-docker-compose-handoff.md`](../../docs/runbooks/hcs-docker-compose-handoff.md#keycloak--login-sso-bắt-buộc-trước-khi-test).
 
 ### Migration topology
 
@@ -79,7 +81,9 @@ Mở `https://hcs.localhost`. Nếu browser chưa tin local CA của Caddy, tin 
 
 Handoff triển khai và rollback: [`../../docs/runbooks/hcs-docker-compose-handoff.md`](../../docs/runbooks/hcs-docker-compose-handoff.md).
 
-Production 2 server Ubuntu 24 (data `10.17.227.64`, apps `10.17.227.58`, Nginx + Let's Encrypt): [`docs/runbooks/hcs-ubuntu24-two-server.md`](./docs/runbooks/hcs-ubuntu24-two-server.md).
+Production 2 server Ubuntu 24 (data + apps, Docker Hub, Nginx + Let's Encrypt): [`docs/runbooks/deploy-server.md`](./docs/runbooks/deploy-server.md) — **hướng dẫn deploy step-by-step**.
+
+Chi tiết UFW/backup (reference): [`docs/runbooks/hcs-ubuntu24-two-server.md`](./docs/runbooks/hcs-ubuntu24-two-server.md).
 
 ## Browser sign-in and navigation
 

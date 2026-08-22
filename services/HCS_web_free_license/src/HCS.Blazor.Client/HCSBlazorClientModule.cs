@@ -72,6 +72,7 @@ public class HCSBlazorClientModule : AbpModule
         context.Services.AddScoped<IdentityAdminClient>();
         context.Services.AddScoped<CollaborationClient>();
         context.Services.AddScoped<SurveyCatalogCache>();
+        context.Services.AddScoped<Account.AccountProfileClient>();
         context.Services.AddScoped<Work.WorkManagementClient>();
         context.Services.AddScoped<Documents.DocumentClient>();
         ConfigureRouter(context);
@@ -92,7 +93,7 @@ public class HCSBlazorClientModule : AbpModule
     {
         Configure<AbpNavigationOptions>(options =>
         {
-            options.MenuContributors.Add(new HCSMenuContributor(context.Services.GetConfiguration()));
+            options.MenuContributors.Add(new HCSMenuContributor());
         });
     }
 

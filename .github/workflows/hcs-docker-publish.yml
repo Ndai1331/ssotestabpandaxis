@@ -1,0 +1,102 @@
+# Build and push all HCS Community images to Docker Hub on push to main.
+# Images: longnguyen1331/hanhchinhso:<service-name>
+#
+# Required GitHub repository secrets:
+#   DOCKERHUB_USERNAME  (e.g. longnguyen1331)
+#   DOCKERHUB_TOKEN     (Docker Hub access token with Read & Write)
+
+name: HCS Docker Publish
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'services/HCS_web_free_license/**'
+      - '.github/workflows/hcs-docker-publish.yml'
+  workflow_dispatch:
+
+env:
+  HCS_ROOT: services/HCS_web_free_license
+  DOCKER_REGISTRY: longnguyen1331/hanhchinhso
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: db-migrator
+            project: src/HCS.DbMigrator/HCS.DbMigrator.csproj
+            app_dll: HCS.DbMigrator.dll
+          - service: auth-server
+            project: apps/auth-server/HCS.AuthServer/HCS.AuthServer.csproj
+            app_dll: HCS.AuthServer.dll
+            abp_libs: true
+          - service: web-gateway
+            project: gateways/web/HCS.WebGateway/HCS.WebGateway.csproj
+            app_dll: HCS.WebGateway.dll
+          - service: blazor
+            project: src/HCS.Blazor/HCS.Blazor.csproj
+            app_dll: HCS.Blazor.dll
+            publish_properties: /p:BlazorEnableCompression=false
+          - service: platform
+            project: services/platform/HCS.PlatformService/HCS.PlatformService.csproj
+            app_dll: HCS.PlatformService.dll
+          - service: organization
+            project: services/organization/HCS.OrganizationService.Host/HCS.OrganizationService.Host.csproj
+            app_dll: HCS.OrganizationService.Host.dll
+          - service: document
+            project: services/document/HCS.DocumentService/HCS.DocumentService.csproj
+            app_dll: HCS.DocumentService.dll
+            install_libreoffice: true
+          - service: work-management
+            project: services/work-management/HCS.WorkManagementService/HCS.WorkManagementService.csproj
+            app_dll: HCS.WorkManagementService.dll
+          - service: collaboration
+            project: services/collaboration/HCS.CollaborationService/HCS.CollaborationService.csproj
+            app_dll: HCS.CollaborationService.dll
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Node.js (auth-server ABP libs)
+        if: matrix.abp_libs
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ABP static assets (auth-server)
+        if: matrix.abp_libs
+        working-directory: ${{ env.HCS_ROOT }}/apps/auth-server/HCS.AuthServer
+        run: |
+          npm install -g @abp/cli
+          yarn install --frozen-lockfile
+          YARN_IGNORE_ENGINES=1 abp install-libs
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.HCS_ROOT }}
+          file: ${{ env.HCS_ROOT }}/deploy/docker/Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_REGISTRY }}:${{ matrix.service }}
+          build-args: |
+            PROJECT=${{ matrix.project }}
+            APP_DLL=${{ matrix.app_dll }}
+            PUBLISH_PROPERTIES=${{ matrix.publish_properties || '' }}
+            INSTALL_LIBREOFFICE=${{ matrix.install_libreoffice || 'false' }}
+          cache-from: type=gha,scope=hcs-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=hcs-${{ matrix.service }}

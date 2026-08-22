@@ -159,7 +159,7 @@
         else ApplyPage();
     }
 
-    private void ApplyFilter() { search = filter; currentPage = 1; ApplyPage(); }
+    private void ApplyFilter() { search = SearchText.Normalize(filter); currentPage = 1; ApplyPage(); }
     private void ResetSearch() { filter = search = statusFilter = ""; showFilters = false; currentPage = 1; ApplyPage(); }
     private void OnStatusChanged() { currentPage = 1; ApplyPage(); }
     private void ApplyPage()

@@ -5,7 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace HCS.DocumentService.Controllers;
 
 [ApiController, Authorize(Policy = DocumentPermissions.View), Route("api/documents")]
-public sealed class DocumentsController(IDocumentAppService documents, DocumentFileService files) : ControllerBase
+public sealed class DocumentsController(
+    IDocumentAppService documents,
+    DocumentFileService files,
+    DocumentPdfWatermarkService watermarkedFiles) : ControllerBase
 {
     [HttpGet]
     public Task<PagedDocumentsDto> GetList([FromQuery] string? filter, [FromQuery] DocumentStatus? status,
@@ -43,6 +46,12 @@ public sealed class DocumentsController(IDocumentAppService documents, DocumentF
     {
         var result = await files.OpenAuthorizedAsync(id, fileId, cancellationToken);
         return File(result.Content, result.File.ContentType, result.File.FileName, enableRangeProcessing: true);
+    }
+    [HttpGet("{id:guid}/files/{fileId:guid}/watermarked-content")]
+    public async Task<IActionResult> DownloadWatermarked(Guid id, Guid fileId, CancellationToken cancellationToken)
+    {
+        var result = await watermarkedFiles.OpenAsync(id, fileId, cancellationToken);
+        return File(result.Bytes, result.File.ContentType, result.File.FileName);
     }
     [HttpDelete("{id:guid}/files/{fileId:guid}"), Authorize(Policy = DocumentPermissions.ManageFiles)]
     public async Task<IActionResult> DeleteFile(Guid id, Guid fileId, CancellationToken cancellationToken)

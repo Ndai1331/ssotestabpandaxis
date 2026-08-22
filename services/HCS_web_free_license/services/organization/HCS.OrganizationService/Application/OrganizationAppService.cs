@@ -224,8 +224,9 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     {
         if (!string.IsNullOrWhiteSpace(input.Filter))
         {
-            var filter = input.Filter.Trim();
-            query = query.Where(x => x.Code.Contains(filter) || x.Name.Contains(filter));
+            var filter = input.Filter.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Code.ToLower().Contains(filter)
+                                  || x.Name.ToLower().Contains(filter));
         }
         if (input.IsActive.HasValue) query = query.Where(x => x.IsActive == input.IsActive.Value);
         return query;

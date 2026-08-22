@@ -91,6 +91,7 @@ public sealed class HcsDocumentServiceModule : AbpModule
         });
         context.Services.AddScoped<ISigningAppService, SigningAppService>();
         context.Services.AddScoped<DocumentFileService>();
+        context.Services.AddScoped<DocumentPdfWatermarkService>();
         context.Services.AddScoped<ISigningSecretProtector, DataProtectionSigningSecretProtector>();
         context.Services.AddScoped<IDigitalSigningAdapter, ElectronicSigningAdapter>();
         context.Services.AddScoped<IDigitalSigningAdapter>(_ => new UnavailableExternalSigningAdapter(SigningKind.RemoteCa));

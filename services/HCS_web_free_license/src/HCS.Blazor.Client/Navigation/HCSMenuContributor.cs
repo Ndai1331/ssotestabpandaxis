@@ -1,17 +1,13 @@
 using System;
-using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 using HCS.Permissions;
 using Volo.Abp.Account.Localization;
 using Volo.Abp.Authorization.Permissions;
-using Volo.Abp.Identity.Blazor;
-using Volo.Abp.SettingManagement.Blazor.Menus;
 using Volo.Abp.UI.Navigation;
-using Volo.Abp.Users;
 
 namespace HCS.Blazor.Client.Navigation;
 
-public sealed class HCSMenuContributor(IConfiguration configuration) : IMenuContributor
+public sealed class HCSMenuContributor : IMenuContributor
 {
     public Task ConfigureMenuAsync(MenuConfigurationContext context)
     {
@@ -84,23 +80,15 @@ public sealed class HCSMenuContributor(IConfiguration configuration) : IMenuCont
         // Remove default relative Account links that 404 on the BFF UI host.
         context.Menu.Items.RemoveAll(item =>
             !string.IsNullOrWhiteSpace(item.Url) &&
-            item.Url.Contains("/Account/", StringComparison.OrdinalIgnoreCase) &&
-            !item.Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+            item.Url.Contains("/Account/", StringComparison.OrdinalIgnoreCase));
 
         var accountResource = context.GetLocalizer<AccountResource>();
-        var accountUrl = configuration["Bff:AccountUrl"];
-        if (!Uri.TryCreate(accountUrl, UriKind.Absolute, out var accountUri) || accountUri.Scheme != Uri.UriSchemeHttps)
-        {
-            return;
-        }
-
         context.Menu.AddItem(new ApplicationMenuItem(
                 "Account.Manage",
                 accountResource["MyAccount"],
-                accountUri.AbsoluteUri,
+                "/account",
                 "fa fa-user-gear",
-                900,
-                target: "_blank")
+                900)
             .RequireAuthenticated());
     }
 

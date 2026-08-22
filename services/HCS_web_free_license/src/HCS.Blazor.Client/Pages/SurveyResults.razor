@@ -2,185 +2,232 @@
 @attribute [Authorize(Policy = "WorkManagement.Surveys")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
-@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>@L["Feature:SurveyResults"] · HCS</PageTitle>
+
 <section class="hcs-catalog-page">
     <header class="hcs-catalog-titlebar">
-        <div class="min-w-0"><h1>@L["Feature:SurveyResults"]</h1></div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenSubmit" Disabled="@(string.IsNullOrWhiteSpace(selectedSessionId))">
-                <Icon Name="@IconName.Add" /> @L["Catalog:New"]
-            </Button>
-        </div>
+        <div class="min-w-0"><h1>@L["Feature:SurveyResults"]</h1><p class="text-muted mb-0">@L["SurveyResults:Subtitle"]</p></div>
     </header>
-    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
+    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
         <div class="hcs-catalog-filter-row">
-            <Addons Class="hcs-catalog-search">
-                <Addon AddonType="AddonType.Body">
-                    <Select TValue="string" @bind-Value="selectedSessionId">
-                        <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
-                        @foreach (var session in sessions) { <SelectItem Value="@session.Id.ToString()">@($"{session.Code} — {session.Name}")</SelectItem> }
-                    </Select>
-                </Addon>
-                <Addon AddonType="AddonType.End">
-                    <Button Color="Color.Primary" Clicked="LoadResultsAsync"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
-                </Addon>
-            </Addons>
-            <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
+            <div class="hcs-survey-results__location-filter">
+                <label class="form-label" for="survey-location">@L["SurveyLocation"]</label>
+                <select id="survey-location" class="form-control" value="@selectedLocationId" @onchange="OnLocationChanged">
+                    <option value="">@L["All"]</option>
+                    @foreach (var item in locations)
+                    {
+                        <option value="@item.Id.ToString("D")">@item.Name</option>
+                    }
+                </select>
+            </div>
+            <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetAsync">@L["Catalog:Reset"]</Button>
         </div>
     </CardBody></Card>
-    <Card Class="hcs-catalog-grid-card mb-4"><CardBody>
-        @if (isLoading) { <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div> }
-        else if (results.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div> }
+    <Card Class="hcs-catalog-grid-card"><CardBody>
+        @if (isLoading)
+        {
+            <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+        }
         else
         {
             <div class="hcs-survey-tabs" role="tablist">
-                <button type="button" class="@(resultsTab == "chart" ? "is-active" : null)" @onclick='() => resultsTab = "chart"'>@L["Feature:ChartStatistics"]</button>
-                <button type="button" class="@(resultsTab == "detail" ? "is-active" : null)" @onclick='() => resultsTab = "detail"'>@L["Feature:DetailData"]</button>
+                <button type="button" class="@(activeTab == "chart" ? "is-active" : null)" @onclick='() => activeTab = "chart"'>@L["Feature:ChartStatistics"]</button>
+                <button type="button" class="@(activeTab == "detail" ? "is-active" : null)" @onclick='() => activeTab = "detail"'>@L["Feature:DetailData"]</button>
             </div>
-            @if (resultsTab == "chart")
+            @if (activeTab == "chart")
             {
-                var starBuckets = CountByStars();
-                <div class="hcs-survey-charts">
-                    @foreach (var row in CriteriaAverages)
+                <div class="hcs-survey-results__headline"><span>@L["RatingDistributionTotal"]</span><strong>@(statistics?.TotalReviews ?? 0)</strong></div>
+                <div class="hcs-survey-results__section">
+                    <h2>@L["RatingDistribution"]</h2>
+                    @foreach (var star in Enumerable.Range(0, WorkUi.MaxStars + 1).Reverse())
                     {
-                        <div class="hcs-survey-bar">
-                            <span class="hcs-survey-bar__label">@row.Name</span>
-                            <div class="hcs-survey-bar__track" aria-hidden="true"><div class="hcs-survey-bar__fill" style="@($"width:{row.Average:0}%")"></div></div>
-                            <span class="hcs-survey-bar__value">@row.Average.ToString("0.#")</span>
-                        </div>
+                        var count = statistics?.ScoreDistribution.GetValueOrDefault(star) ?? 0;
+                        var total = statistics?.TotalReviews ?? 0;
+                        var width = total == 0 ? 0 : (double)count * 100 / total;
+                        <div class="hcs-survey-bar"><span class="hcs-survey-bar__label">@($"{star}★")</span><div class="hcs-survey-bar__track"><div class="hcs-survey-bar__fill" style="@($"width:{width:0}%")"></div></div><span class="hcs-survey-bar__value">@count</span></div>
                     }
-                    <h2 class="h6 mt-4">@L["Feature:StarRating"]</h2>
-                    <div class="hcs-survey-stars">
-                        @for (var star = 1; star <= starBuckets.Length; star++)
-                        {
-                            var count = starBuckets[star - 1];
-                            var percent = count * 100d / results.Count;
-                            <div class="hcs-survey-bar">
-                                <span class="hcs-survey-bar__label">@($"{star}★")</span>
-                                <div class="hcs-survey-bar__track"><div class="hcs-survey-bar__fill" style="@($"width:{percent:0}%")"></div></div>
-                                <span class="hcs-survey-bar__value">@count</span>
-                            </div>
-                        }
-                    </div>
                 </div>
+                <div class="hcs-survey-results__section">
+                    <h2>@L["CriteriaAverageRating"]</h2>
+                    @if (statistics?.CriteriaAverageScores.Count > 0)
+                    {
+                        @foreach (var item in statistics.CriteriaAverageScores.OrderBy(x => x.Key))
+                        {
+                            var averagePercent = item.Value;
+                            <div class="hcs-survey-bar"><span class="hcs-survey-bar__label">@item.Key</span><div class="hcs-survey-bar__track"><div class="hcs-survey-bar__fill" style="@($"width:{averagePercent:0}%")"></div></div><span class="hcs-survey-bar__value">@($"{averagePercent / 20m:0.#}/5")</span></div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="hcs-empty py-4"><i class="fa fa-inbox"></i><p>@L["NoSurveyData"]</p></div>
+                    }
+                </div>
+            }
+            else if (summaries.Items.Count == 0)
+            {
+                <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["NoSurveyData"]</p></div>
             }
             else
             {
-                <div class="table-responsive"><table class="table table-hover align-middle mb-0 hcs-catalog-grid">
-                    <thead><tr><th></th><th>@L["Menu:SurveyCriterias"]</th><th>@L["Feature:Score"]</th><th>@L["Feature:Comment"]</th></tr></thead>
-                    <tbody>
-                    @foreach (var result in results)
-                    {
-                        <tr>
-                            <td><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" /></td>
-                            <td>@CriteriaName(result.CriteriaId)</td>
-                            <td><span class="hcs-status-badge hcs-status-badge--info">@result.Score</span></td>
-                            <td>@(result.Comment ?? "—")</td>
-                        </tr>
-                    }
-                    </tbody>
-                </table></div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 hcs-catalog-grid">
+                        <thead><tr><th>@L["Feature:StarRating"]</th><th>@L["Menu:SurveyCriterias"]</th><th>@L["FullName"]</th><th>@L["PhoneNumber"]</th><th>@L["SurveyTime"]</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var item in summaries.Items)
+                            {
+                                <tr><td><span class="hcs-status-badge hcs-status-badge--info">@($"{WorkUi.ScoreToStars(item.Score)}★")</span></td><td>@item.SurveyCriteriaName</td><td>@(item.FullName ?? "—")</td><td>@(item.PhoneNumber ?? "—")</td><td>@item.SurveyTime.ToString("dd/MM/yyyy HH:mm")</td><td><button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => OpenDetailAsync(item)"><i class="fa fa-eye me-1"></i>@L["ViewDetail"]</button></td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="hcs-survey-results__pager"><span>@($"{summaries.TotalCount} {L["SurveyResults:Records"]}")</span><div><button type="button" class="btn btn-sm btn-light me-2" @onclick="PreviousPageAsync" disabled="@(page == 0)">@L["Previous"]</button><button type="button" class="btn btn-sm btn-light" @onclick="NextPageAsync" disabled="@(!HasNextPage)">@L["Next"]</button></div></div>
             }
         }
     </CardBody></Card>
-    @if (Guid.TryParse(selectedSessionId, out var sid))
-    {
-        <Card Class="hcs-catalog-grid-card"><CardBody>
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h6 mb-0">@L["Feature:Files"]</h2>
-                <InputFile class="form-control w-auto" OnChange="e => UploadAsync(sid, e)" />
-            </div>
-            @if (files.Count == 0) { <div class="hcs-empty py-4"><i class="fa fa-inbox"></i><p>@L["Catalog:EmptyTitle"]</p></div> }
-            else { <ul class="mb-0">@foreach (var file in files) { <li><a href="@($"/api/surveys/files/{file.Id}/content")" target="_blank" rel="noopener">@file.FileName</a> <small class="text-muted">(@file.Size bytes)</small></li> }</ul> }
-        </CardBody></Card>
-    }
 </section>
 
-<Modal @ref="modal"><ModalContent Centered Class="hcs-catalog-modal">
-    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:SurveyResults"]</ModalTitle><CloseButton /></ModalHeader>
-    <ModalBody Class="hcs-catalog-modal__body">
-        <div class="hcs-catalog-form">
-            <div class="hcs-form-row hcs-form-row--equal">
-                <Field><FieldLabel>@L["Menu:SurveyCriterias"]</FieldLabel>
-                    <Select TValue="string" @bind-Value="form.CriteriaId">
-                        <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
-                        @foreach (var item in criteria) { <SelectItem Value="@item.Id.ToString()">@item.Name</SelectItem> }
-                    </Select>
-                </Field>
-                <Field><FieldLabel>@L["Feature:Score"]</FieldLabel><NumericPicker TValue="decimal" @bind-Value="form.Score" Min="0" Max="100" Decimals="1" /></Field>
+@if (showDetail)
+{
+    <div class="hcs-public-survey__backdrop" role="presentation">
+        <div class="hcs-public-survey__dialog" role="dialog" aria-modal="true" aria-labelledby="survey-detail-title">
+            <div class="hcs-public-survey__dialog-header">
+                <h2 id="survey-detail-title">@L["SurveyDetails"]</h2>
+                <button type="button" class="btn-close" aria-label="@L["Close"]" @onclick="CloseDetail"></button>
             </div>
-            <Field><FieldLabel>@L["Feature:Comment"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Comment" autocomplete="off"></textarea></Field>
+            <div class="hcs-public-survey__dialog-body">
+                @if (selectedSummary is not null)
+                {
+                    <dl class="row mb-4">
+                        <dt class="col-sm-4">@L["FullName"]</dt><dd class="col-sm-8">@(selectedSummary.FullName ?? "—")</dd>
+                        <dt class="col-sm-4">@L["PhoneNumber"]</dt><dd class="col-sm-8">@(selectedSummary.PhoneNumber ?? "—")</dd>
+                        <dt class="col-sm-4">@L["PatientCode"]</dt><dd class="col-sm-8">@(selectedSummary.PatientCode ?? "—")</dd>
+                        <dt class="col-sm-4">@L["Note"]</dt><dd class="col-sm-8">@(selectedSummary.Note ?? "—")</dd>
+                        <dt class="col-sm-4">@L["SurveyTime"]</dt><dd class="col-sm-8">@selectedSummary.SurveyTime.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </dl>
+                }
+                @if (isDetailLoading)
+                {
+                    <div class="hcs-loading py-4"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+                }
+                else if (details.Count == 0)
+                {
+                    <div class="hcs-empty py-4"><p>@L["NoSurveyData"]</p></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle">
+                        <thead><tr><th>@L["Menu:SurveyCriterias"]</th><th>@L["Feature:Score"]</th><th>@L["Feature:Comment"]</th></tr></thead>
+                        <tbody>
+                            @foreach (var item in details)
+                            {
+                                <tr><td>@item.SurveyCriteriaName</td><td>@($"{WorkUi.ScoreToStars(item.Score)}★")</td><td>@(item.Comment ?? "—")</td></tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+            <div class="hcs-public-survey__dialog-footer"><button type="button" class="btn btn-secondary" @onclick="CloseDetail">@L["Close"]</button></div>
         </div>
-    </ModalBody>
-    <ModalFooter Class="hcs-catalog-modal__footer">
-        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button>
-        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SubmitAsync">@L["Catalog:SaveChanges"]</Button>
-    </ModalFooter>
-</ModalContent></Modal>
+    </div>
+}
+
 @code {
-    private readonly List<SurveySessionDto> sessions = [];
-    private readonly List<SurveyCriteriaDto> criteria = [];
-    private readonly List<SurveyResultDto> results = [];
-    private readonly List<SurveyFileDto> files = [];
-    private readonly ResultForm form = new();
-    private Modal? modal;
-    private string selectedSessionId = "";
-    private string resultsTab = "chart";
-    private bool isLoading;
-    private IEnumerable<(string Name, decimal Average)> CriteriaAverages =>
-        results.GroupBy(result => result.CriteriaId)
-            .Select(group => (CriteriaName(group.Key), group.Average(item => item.Score)));
-    // Index 0 holds the 1-star count; scores at or below zero fall into that lowest bucket.
-    private int[] CountByStars()
-    {
-        var buckets = new int[WorkUi.MaxStars];
-        foreach (var result in results)
-        {
-            buckets[Math.Max(WorkUi.ScoreToStars(result.Score), 1) - 1]++;
-        }
-        return buckets;
-    }
+    private const int PageSize = 20;
+    private readonly List<SurveyLocationDto> locations = [];
+    private SurveyResultStatisticsDto? statistics;
+    private PagedWorkResponse<SurveyResultSessionSummaryDto> summaries = new(0, []);
+    private readonly List<SurveyResultSessionDetailDto> details = [];
+    private SurveyResultSessionSummaryDto? selectedSummary;
+    private string selectedLocationId = string.Empty;
+    private string activeTab = "chart";
+    private int page;
+    private bool isLoading = true;
+    private bool isDetailLoading;
+    private bool showDetail;
+
+    private Guid? SelectedLocation => Guid.TryParse(selectedLocationId, out var id) ? id : null;
+    private bool HasNextPage => (page + 1) * PageSize < summaries.TotalCount;
 
     protected override async Task OnInitializedAsync()
     {
-        try { sessions.AddRange(await Work.GetSessionsAsync()); criteria.AddRange(await Work.GetCriteriaAsync()); }
-        catch (Exception ex) { await NotifyErrorAsync(ex); }
-    }
-    private async Task OpenSubmit() { form.CriteriaId = ""; form.Score = 0; form.Comment = ""; if (modal is not null) await modal.Show(); }
-    private Task ResetSearchAsync()
-    {
-        selectedSessionId = "";
-        results.Clear();
-        files.Clear();
-        return Task.CompletedTask;
-    }
-    private async Task LoadResultsAsync()
-    {
-        results.Clear(); files.Clear();
-        if (!Guid.TryParse(selectedSessionId, out var id)) return;
-        isLoading = true;
-        try { results.AddRange(await Work.GetResultsAsync(id)); files.AddRange(await Work.GetSessionFilesAsync(id)); }
-        catch (Exception ex) { await NotifyErrorAsync(ex); }
-        finally { isLoading = false; }
-    }
-    private async Task SubmitAsync()
-    {
-        if (!Guid.TryParse(selectedSessionId, out var sessionId) || !Guid.TryParse(form.CriteriaId, out var criteriaId)) return;
         try
         {
-            await Work.SubmitResultAsync(sessionId, new SubmitSurveyResultRequest(criteriaId, null, form.Score, string.IsNullOrWhiteSpace(form.Comment) ? null : form.Comment));
-            if (modal is not null) await modal.Hide();
-            await LoadResultsAsync();
+            locations.AddRange(await Work.GetLocationsAsync());
+            await LoadAsync();
         }
-        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex);
+            isLoading = false;
+        }
     }
-    private async Task UploadAsync(Guid sessionId, InputFileChangeEventArgs args)
+
+    private async Task OnLocationChanged(ChangeEventArgs args)
     {
-        try { await Work.UploadSurveyFileAsync(sessionId, args.File); await LoadResultsAsync(); }
-        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        selectedLocationId = args.Value?.ToString() ?? string.Empty;
+        page = 0;
+        await LoadAsync();
     }
-    private string CriteriaName(Guid id) => criteria.FirstOrDefault(x => x.Id == id)?.Name ?? id.ToString("N")[..8];
-    private sealed class ResultForm { public string CriteriaId { get; set; } = ""; public decimal Score { get; set; } public string Comment { get; set; } = ""; }
+
+    private async Task ResetAsync()
+    {
+        selectedLocationId = string.Empty;
+        page = 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        try
+        {
+            statistics = await Work.GetSurveyStatisticsAsync(SelectedLocation);
+            summaries = await Work.GetSurveyResultSummariesAsync(SelectedLocation, page * PageSize, PageSize);
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        if (page == 0) return;
+        page--;
+        await LoadAsync();
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (!HasNextPage) return;
+        page++;
+        await LoadAsync();
+    }
+
+    private async Task OpenDetailAsync(SurveyResultSessionSummaryDto item)
+    {
+        selectedSummary = item;
+        details.Clear();
+        showDetail = true;
+        isDetailLoading = true;
+        try
+        {
+            details.AddRange(await Work.GetSurveyResultDetailsAsync(item.SurveySessionId, SelectedLocation));
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex);
+        }
+        finally
+        {
+            isDetailLoading = false;
+        }
+    }
+
+    private void CloseDetail() => showDetail = false;
 }

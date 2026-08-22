@@ -70,6 +70,7 @@
                 </DataGridColumn>
                 <DataGridColumn TItem="SurveyLocationDto" Field="@nameof(SurveyLocationDto.Code)" Caption="@L["Catalog:Code"].Value" />
                 <DataGridColumn TItem="SurveyLocationDto" Field="@nameof(SurveyLocationDto.Name)" Caption="@L["Catalog:Name"].Value" />
+                <DataGridColumn TItem="SurveyLocationDto" Field="@nameof(SurveyLocationDto.Description)" Caption="@L["Feature:Description"].Value" />
                 <DataGridColumn TItem="SurveyLocationDto" Caption="@L["Catalog:Status"].Value">
                     <DisplayTemplate Context="cell">
                         <span class="hcs-status-icon @(cell.Item.IsActive ? "hcs-status-icon--active" : "hcs-status-icon--inactive")" title="@(cell.Item.IsActive ? L["Catalog:Active"].Value : L["Catalog:Inactive"].Value)">
@@ -102,6 +103,7 @@
                 <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsSurveyLocationCode" MaxLength="64" Disabled="@(editingId is not null)" /></Field>
                 <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsSurveyLocationName" /></Field>
             </div>
+            <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
             @if (editingId is not null)
             {
                 <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Catalog:Active"]</Check></Field>
@@ -160,7 +162,7 @@
     {
         if (!string.IsNullOrWhiteSpace(filter))
         {
-            var term = filter.Trim();
+            var term = SearchText.Normalize(filter);
             if (item.Code.IndexOf(term, StringComparison.OrdinalIgnoreCase) < 0 &&
                 item.Name.IndexOf(term, StringComparison.OrdinalIgnoreCase) < 0)
                 return false;
@@ -185,6 +187,7 @@
         editingId = item.Id;
         form.Code = item.Code;
         form.Name = item.Name;
+        form.Description = item.Description ?? "";
         form.IsActive = item.IsActive;
         if (modal is not null) await modal.Show();
     }
@@ -195,9 +198,9 @@
         try
         {
             if (editingId is { } id)
-                await Work.UpdateLocationAsync(id, new UpdateSurveyLocationRequest(form.Name.Trim(), null, form.IsActive));
+                await Work.UpdateLocationAsync(id, new UpdateSurveyLocationRequest(form.Name.Trim(), null, form.IsActive, Blank(form.Description)));
             else
-                await Work.CreateLocationAsync(new CreateSurveyLocationRequest(form.Code.Trim(), form.Name.Trim(), null));
+                await Work.CreateLocationAsync(new CreateSurveyLocationRequest(form.Code.Trim(), form.Name.Trim(), null, Blank(form.Description)));
             await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             await LoadAsync();
@@ -240,11 +243,14 @@
         catch { await UiMessage.Error(L["Catalog:ExportError"]); }
     }
 
+    private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private sealed class LocationForm
     {
         public string Code { get; set; } = "";
         public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
         public bool IsActive { get; set; } = true;
-        public void Reset() { Code = Name = ""; IsActive = true; }
+        public void Reset() { Code = Name = Description = ""; IsActive = true; }
     }
 }

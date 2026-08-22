@@ -1,6 +1,7 @@
 using HCS.EntityFrameworkCore;
 using HCS.Permissions;
 using HCS.PlatformService.Filters;
+using HCS.PlatformService.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
@@ -10,6 +11,8 @@ using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
+using Volo.Abp.BlobStoring;
+using Volo.Abp.BlobStoring.Minio;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict;
 using Volo.Abp.Security.Claims;
@@ -24,6 +27,7 @@ namespace HCS.PlatformService;
     typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreMvcModule),
     typeof(AbpAspNetCoreSerilogModule),
+    typeof(AbpBlobStoringMinioModule),
     typeof(AbpSwashbuckleModule))]
 public sealed class HCSPlatformServiceModule : AbpModule
 {
@@ -87,6 +91,21 @@ public sealed class HCSPlatformServiceModule : AbpModule
 
         Configure<AbpAspNetCoreMvcOptions>(options =>
             options.ConventionalControllers.Create(typeof(HCSApplicationModule).Assembly));
+
+        context.Services.AddHttpContextAccessor();
+
+        var configuration = context.Services.GetConfiguration();
+        Configure<AbpBlobStoringOptions>(options =>
+        {
+            options.Containers.Configure<AvatarBlobContainer>(container => container.UseMinio(minio =>
+            {
+                minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
+                minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
+                minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
+                minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
+                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
+            }));
+        });
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
