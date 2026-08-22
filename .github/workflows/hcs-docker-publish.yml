@@ -102,7 +102,7 @@ jobs:
           dotnet tool install --global Volo.Abp.Studio.Cli --version 3.0.8
           export PATH="$HOME/.dotnet/tools:$PATH"
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
-          yarn install --frozen-lockfile
+          YARN_IGNORE_ENGINES=1 yarn install --frozen-lockfile
           YARN_IGNORE_ENGINES=1 abp install-libs
 
       - name: Build and push ${{ matrix.service }}
