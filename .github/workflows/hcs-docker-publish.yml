@@ -35,6 +35,7 @@ jobs:
             project: apps/auth-server/HCS.AuthServer/HCS.AuthServer.csproj
             app_dll: HCS.AuthServer.dll
             abp_libs: true
+            abp_libs_path: apps/auth-server/HCS.AuthServer
           - service: web-gateway
             project: gateways/web/HCS.WebGateway/HCS.WebGateway.csproj
             app_dll: HCS.WebGateway.dll
@@ -42,6 +43,8 @@ jobs:
             project: src/HCS.Blazor/HCS.Blazor.csproj
             app_dll: HCS.Blazor.dll
             publish_properties: /p:BlazorEnableCompression=false
+            abp_libs: true
+            abp_libs_path: src/HCS.Blazor
           - service: platform
             project: services/platform/HCS.PlatformService/HCS.PlatformService.csproj
             app_dll: HCS.PlatformService.dll
@@ -89,21 +92,30 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set up Node.js (auth-server ABP libs)
+      - name: Set up Node.js (ABP libs)
         if: matrix.abp_libs
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install ABP static assets (auth-server)
+      - name: Install ABP static assets
         if: matrix.abp_libs
-        working-directory: ${{ env.HCS_ROOT }}/apps/auth-server/HCS.AuthServer
+        working-directory: ${{ env.HCS_ROOT }}/${{ matrix.abp_libs_path }}
         run: |
           dotnet tool install --global Volo.Abp.Studio.Cli --version 3.0.8
           export PATH="$HOME/.dotnet/tools:$PATH"
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           YARN_IGNORE_ENGINES=1 yarn install --frozen-lockfile
           YARN_IGNORE_ENGINES=1 abp install-libs
+
+      - name: Verify ABP static assets
+        if: matrix.abp_libs
+        working-directory: ${{ env.HCS_ROOT }}/${{ matrix.abp_libs_path }}
+        run: |
+          if [[ ! -d wwwroot/libs ]] || ! find wwwroot/libs -type f -print -quit | grep -q .; then
+            echo "::error::ABP static assets were not generated under wwwroot/libs"
+            exit 1
+          fi
 
       - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v6
