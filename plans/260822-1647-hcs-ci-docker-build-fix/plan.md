@@ -28,11 +28,12 @@ The repository-wide `**/data/` ignore rule matches source directories named `Dat
 - Run #2 confirmed all non-AuthServer matrix jobs pass; AuthServer failed only in the static-assets step before Docker publish.
 - Run #3 (`32567324363`) completed successfully with all 9 matrix jobs passing.
 - Docker Hub verification found all 9 expected tags under `longnguyen1331/hanhchinhso`.
+- Follow-up review narrowed every `Data/` exception to `*.cs`, preserving ignore rules for local configuration files.
 - GitHub CLI remains unauthenticated locally, but public run metadata and Docker Hub tags verified the remote result.
 
 ## Handoff
 
-- Commits `f0b62727` and `e39444d4` are pushed to `main`.
+- Commits `f0b62727`, `e39444d4`, and `0b60ccd9` are pushed to `main`.
 - Run #3 and all nine Docker Hub tags are verified; no further action is required for this fix.
 
 ## Risks
