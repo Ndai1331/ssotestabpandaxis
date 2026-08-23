@@ -1,11 +1,11 @@
 .hcs-app-shell {
-    --hcs-ink: #19334c;
-    --hcs-muted: #63798b;
-    --hcs-line: #dfe8eb;
-    --hcs-surface: #ffffff;
-    --hcs-bg: #f5f8f7;
-    --hcs-primary: #3d5cff;
-    --hcs-primary-soft: #eef1ff;
+    --hcs-ink: var(--hcs-color-ink, #19334c);
+    --hcs-muted: var(--hcs-color-muted, #63798b);
+    --hcs-line: var(--hcs-color-border, #dfe8eb);
+    --hcs-surface: var(--hcs-color-surface, #ffffff);
+    --hcs-bg: var(--hcs-color-background, #f5f8f7);
+    --hcs-primary: var(--hcs-color-primary, #3d5cff);
+    --hcs-primary-soft: var(--hcs-color-primary-soft, #eef1ff);
     --hcs-header-top-h: 5.25rem;
     --hcs-nav-h: 3.5rem;
     --hcs-header-h: calc(var(--hcs-header-top-h) + var(--hcs-nav-h));
@@ -109,11 +109,11 @@
     display: none;
     flex: 0 0 auto;
     font-size: 1.2rem;
-    height: 2.6rem;
+    height: var(--hcs-touch-target, 2.75rem);
     justify-content: center;
     margin-left: auto;
     order: 2;
-    width: 2.6rem;
+    width: var(--hcs-touch-target, 2.75rem);
 }
 
 .hcs-nav-toggle:hover,
@@ -126,7 +126,7 @@
 .hcs-nav-backdrop {
     background: rgba(16, 36, 52, .35);
     border: 0;
-    inset: var(--hcs-header-h) 0 0;
+    inset: var(--hcs-header-h) 0 env(safe-area-inset-bottom) 0;
     position: fixed;
     z-index: 24;
 }
@@ -302,7 +302,7 @@
     font-size: .86rem;
     font-weight: 560;
     gap: .55rem;
-    min-height: 2.35rem;
+    min-height: var(--hcs-touch-target, 2.75rem);
     padding: .45rem .55rem;
     text-decoration: none;
     transition: background .15s ease, color .15s ease;
@@ -636,25 +636,11 @@
 }
 
 @media (max-width: 1100px) {
-    .hcs-top-nav ::deep .hcs-top-nav__link span,
-    .hcs-nav-menu__trigger span {
-        display: none;
-    }
-
-    .hcs-nav-menu__chevron {
-        display: none;
-    }
-
     .hcs-top-nav ::deep .hcs-top-nav__link,
     .hcs-nav-menu__trigger {
-        justify-content: center;
-        min-width: 2.6rem;
-        padding: 0 .45rem;
-    }
-
-    .hcs-top-nav ::deep .hcs-top-nav__link i,
-    .hcs-nav-menu__trigger > i:first-child {
-        font-size: 1.05rem;
+        font-size: .82rem;
+        min-width: 0;
+        padding: 0 .35rem;
     }
 
     .hcs-user-menu__copy {
@@ -663,7 +649,7 @@
 }
 
 /* ——— Mobile drawer ——— */
-@media (max-width: 860px) {
+@media (max-width: 1100px) {
     .hcs-app-shell {
         --hcs-header-top-h: 3.75rem;
         --hcs-nav-h: 0rem;
@@ -705,7 +691,7 @@
         opacity: 0;
         overflow-x: hidden;
         overflow-y: auto;
-        padding: .65rem .75rem 1rem;
+        padding: .65rem .75rem calc(1rem + env(safe-area-inset-bottom));
         pointer-events: none;
         position: fixed;
         transform: translateY(-.5rem);
@@ -727,7 +713,7 @@
         border-bottom: 0;
         border-radius: 5px;
         font-size: .95rem;
-        justify-content: flex-center;
+        justify-content: flex-start;
         min-height: 2.85rem;
         padding: .55rem .7rem;
         width: 100%;
@@ -804,7 +790,7 @@
 
     .hcs-main-content {
         min-height: calc(100dvh - var(--hcs-header-h));
-        padding: 1rem .85rem 1.5rem;
+        padding: 1rem .85rem calc(1.5rem + env(safe-area-inset-bottom));
     }
 
     .hcs-main-content:has(.hcs-chat-page) {
@@ -824,8 +810,8 @@
     }
 
     .hcs-icon-button {
-        height: 2.35rem;
-        width: 2.35rem;
+        height: var(--hcs-touch-target, 2.75rem);
+        width: var(--hcs-touch-target, 2.75rem);
     }
 }
 

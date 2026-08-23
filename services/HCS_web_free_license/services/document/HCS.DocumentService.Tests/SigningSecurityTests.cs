@@ -12,6 +12,7 @@ public sealed class SigningSecurityTests
         Assert.Throws<ArgumentException>(() => new UserSignature(Guid.NewGuid(), Guid.Empty, "sign.png", "image/png", "signatures/a", 10, DateTime.UtcNow));
         Assert.Throws<ArgumentOutOfRangeException>(() => new UserSignature(Guid.NewGuid(), Guid.NewGuid(), "sign.png", "image/png", "signatures/a", 0, DateTime.UtcNow));
         var signature = new UserSignature(Guid.NewGuid(), Guid.NewGuid(), "sign.png", "image/png", "signatures/a", 12, DateTime.UtcNow);
+        Assert.Equal(UserSignatureType.Electronic, signature.Type);
         Assert.False(signature.IsDefault);
         signature.MarkDefault();
         Assert.True(signature.IsDefault);
@@ -24,6 +25,9 @@ public sealed class SigningSecurityTests
         Assert.Equal("image/webp", signature.ContentType);
         Assert.Equal("signatures/b", signature.BlobName);
         Assert.Equal(24, signature.Size);
+        signature.ChangeType(UserSignatureType.Digital);
+        Assert.Equal(UserSignatureType.Digital, signature.Type);
+        Assert.Throws<ArgumentOutOfRangeException>(() => signature.ChangeType((UserSignatureType)99));
     }
 
     [Fact]

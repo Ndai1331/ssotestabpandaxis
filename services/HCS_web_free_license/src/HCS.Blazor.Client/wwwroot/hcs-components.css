@@ -1,0 +1,572 @@
+/* Shared HCS page primitives. Domain-specific styles stay in main.css. */
+.hcs-app-shell,
+.hcs-auth-login-page {
+    --hcs-focus-ring: 0 0 0 .2rem rgba(61, 92, 255, .22);
+}
+
+.hcs-login-redirect {
+    align-items: center;
+    color: var(--hcs-color-muted);
+    display: flex;
+    gap: var(--hcs-space-3);
+    justify-content: center;
+    min-height: min(60dvh, 24rem);
+    padding: var(--hcs-space-6) var(--hcs-page-gutter);
+    text-align: center;
+}
+
+.hcs-login-redirect__spinner {
+    animation: hcs-login-redirect-spin .8s linear infinite;
+    border: .18rem solid #d7e2e8;
+    border-radius: 50%;
+    border-top-color: var(--hcs-color-primary);
+    display: inline-block;
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+@keyframes hcs-login-redirect-spin {
+    to { transform: rotate(360deg); }
+}
+
+.hcs-app-shell :where(a, button, input, select, textarea, summary):focus-visible,
+.hcs-auth-login-page :where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 3px solid rgba(61, 92, 255, .36);
+    outline-offset: 2px;
+}
+
+.hcs-app-shell .hcs-touch-target,
+.hcs-app-shell .btn,
+.hcs-app-shell button,
+.hcs-app-shell [role="button"] {
+    min-height: var(--hcs-touch-target);
+}
+
+.hcs-app-shell input:not([type="checkbox"]):not([type="radio"]),
+.hcs-app-shell select,
+.hcs-app-shell textarea {
+    font-size: 1rem;
+}
+
+.hcs-page {
+    margin: 0 auto;
+    max-width: var(--hcs-content-max-width);
+    min-width: 0;
+    width: 100%;
+}
+
+.hcs-page__header {
+    align-items: flex-end;
+    display: flex;
+    gap: var(--hcs-space-4);
+    justify-content: space-between;
+    margin-bottom: var(--hcs-space-4);
+}
+
+.hcs-page__header h1,
+.hcs-page__header h2 {
+    color: var(--hcs-color-ink);
+    letter-spacing: -.025em;
+    margin: 0;
+    text-wrap: balance;
+}
+
+.hcs-page__header p {
+    color: var(--hcs-color-muted);
+    margin: var(--hcs-space-2) 0 0;
+    max-width: 65ch;
+}
+
+.hcs-page__actions,
+.hcs-toolbar,
+.hcs-filter-bar,
+.hcs-modal-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--hcs-space-2);
+}
+
+.hcs-page__actions,
+.hcs-modal-actions {
+    justify-content: flex-end;
+}
+
+.hcs-toolbar,
+.hcs-filter-bar {
+    justify-content: space-between;
+    margin-bottom: var(--hcs-space-4);
+}
+
+.hcs-filter-panel {
+    background: var(--hcs-color-surface-muted);
+    border: 1px solid var(--hcs-color-border);
+    border-radius: var(--hcs-radius-md);
+    padding: var(--hcs-space-4);
+}
+
+.hcs-data-surface {
+    background: var(--hcs-color-surface);
+    border: 1px solid var(--hcs-color-border);
+    border-radius: var(--hcs-radius-md);
+    box-shadow: var(--hcs-shadow-sm);
+    min-width: 0;
+}
+
+.hcs-table-wrap {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hcs-table-wrap--scroll {
+    scrollbar-color: #9aafbc transparent;
+    scrollbar-width: thin;
+}
+
+.hcs-table-scroll-hint {
+    color: var(--hcs-color-muted);
+    display: none;
+    font-size: .82rem;
+    margin: 0;
+    padding: 0 var(--hcs-space-4) var(--hcs-space-3);
+}
+
+.hcs-mobile-list {
+    display: grid;
+    gap: var(--hcs-space-3);
+}
+
+.hcs-mobile-list > * {
+    min-width: 0;
+}
+
+.hcs-state {
+    align-items: center;
+    color: var(--hcs-color-muted);
+    display: grid;
+    gap: var(--hcs-space-2);
+    justify-items: center;
+    min-height: 10rem;
+    padding: var(--hcs-space-6) var(--hcs-space-4);
+    text-align: center;
+}
+
+.hcs-state h2,
+.hcs-state p {
+    margin: 0;
+}
+
+.hcs-state h2 {
+    color: var(--hcs-color-ink);
+    font-size: 1.1rem;
+}
+
+.hcs-state--error {
+    color: var(--hcs-color-danger);
+}
+
+.hcs-state--error h2 {
+    color: var(--hcs-color-danger);
+}
+
+.hcs-app-shell .hcs-status-badge,
+.hcs-app-shell .hcs-priority-badge,
+.hcs-app-shell .hcs-progress-badge {
+    line-height: 1.25;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.hcs-app-shell .hcs-icon-button,
+.hcs-app-shell .hcs-nav-toggle,
+.hcs-app-shell .hcs-user-menu summary,
+.hcs-app-shell .hcs-nav-menu__panel a,
+.hcs-app-shell .hcs-nav-menu__trigger {
+    min-height: var(--hcs-touch-target);
+}
+
+.hcs-app-shell .hcs-catalog-grid-card,
+.hcs-app-shell .card {
+    min-width: 0;
+}
+
+/* Contain wide data grids at the data surface. A grid item defaults to its
+   min-content width; without this guard a 900px table can widen the whole
+   .hcs-document-layout and make the page/header appear horizontally clipped. */
+.hcs-app-shell .hcs-document-layout,
+.hcs-app-shell .hcs-document-layout > *,
+.hcs-app-shell .hcs-catalog-page {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.hcs-app-shell .hcs-catalog-grid-card {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.hcs-app-shell .hcs-catalog-grid-card > .card-body,
+.hcs-app-shell .hcs-catalog-grid-card .table-responsive {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hcs-sr-only {
+    border: 0 !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    height: 1px !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    position: absolute !important;
+    white-space: nowrap !important;
+    width: 1px !important;
+}
+
+.hcs-stack {
+    display: grid;
+    gap: var(--hcs-space-4);
+}
+
+.hcs-cluster {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--hcs-space-2);
+}
+
+.hcs-truncate {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hcs-only-mobile {
+    display: none !important;
+}
+
+.hcs-only-desktop {
+    display: block !important;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-only-mobile {
+        display: block !important;
+    }
+
+    .hcs-only-desktop {
+        display: none !important;
+    }
+
+    .hcs-page__header,
+    .hcs-toolbar,
+    .hcs-filter-bar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .hcs-page__header h1 {
+        font-size: clamp(1.5rem, 7vw, 1.85rem);
+    }
+
+    .hcs-page__actions,
+    .hcs-modal-actions {
+        justify-content: stretch;
+        width: 100%;
+    }
+
+    .hcs-page__actions > .btn,
+    .hcs-page__actions > button,
+    .hcs-modal-actions > .btn,
+    .hcs-modal-actions > button {
+        flex: 1 1 12rem;
+    }
+
+    .hcs-filter-panel {
+        padding: var(--hcs-space-3);
+    }
+
+    .hcs-app-shell .hcs-catalog-form .form-control,
+    .hcs-app-shell .hcs-catalog-form .form-select,
+    .hcs-app-shell .hcs-catalog-form .numeric-picker,
+    .hcs-app-shell .hcs-catalog-form .b-is-datepicker,
+    .hcs-app-shell .hcs-catalog-form .b-is-datepicker .form-control,
+    .hcs-app-shell .hcs-document-page input.form-control:not(textarea),
+    .hcs-app-shell .hcs-document-page .form-select,
+    .hcs-app-shell .hcs-catalog-search .form-control,
+    .hcs-app-shell .hcs-catalog-search .input-group-text,
+    .hcs-app-shell .hcs-catalog-search .btn,
+    .hcs-app-shell .hcs-catalog-filter-toggle,
+    .hcs-app-shell .hcs-users-search-input,
+    .hcs-app-shell .hcs-users-search-bar .btn,
+    .hcs-app-shell .hcs-users-filter-toggle {
+        height: auto;
+        max-height: none !important;
+        min-height: var(--hcs-control-height);
+    }
+
+    .hcs-table-scroll-hint {
+        display: block;
+    }
+
+    .hcs-table-wrap--scroll table {
+        min-width: 48rem;
+    }
+
+    .hcs-app-shell .hcs-catalog-grid-card .card-body {
+        padding: var(--hcs-space-4);
+    }
+
+    .hcs-app-shell .hcs-catalog-grid {
+        min-width: 760px;
+    }
+
+    .hcs-app-shell .hcs-catalog-grid td:has(.hcs-row-actions) {
+        background: var(--hcs-color-surface);
+        position: sticky;
+        right: 0;
+        z-index: 2;
+    }
+
+    .hcs-app-shell .hcs-catalog-grid td:has(.hcs-row-actions)::before {
+        background: linear-gradient(90deg, transparent, rgba(49, 72, 88, .08));
+        content: "";
+        inset: 0 auto 0 -.4rem;
+        pointer-events: none;
+        position: absolute;
+        width: .4rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .hcs-app-shell .hcs-catalog-grid-card .card-body {
+        overflow-x: auto;
+    }
+}
+
+/* Cross-page responsive defaults. Keep complex data grids scrollable; opt simple
+   four-column tables into the stacked pattern with .hcs-table-wrap--stacked. */
+.hcs-app-shell .hcs-workspace {
+    --ws-pink: var(--hcs-color-primary);
+    --ws-pink-light: var(--hcs-color-primary-soft);
+    --ws-text: var(--hcs-color-ink);
+    --ws-muted: var(--hcs-color-muted);
+    --ws-faint: #718694;
+    --ws-line: var(--hcs-color-border);
+    --ws-bg: var(--hcs-color-background);
+}
+
+.hcs-app-shell .hcs-workspace :where(.hcs-ws-search, .hcs-ws-action, .hcs-ws-view, .hcs-ws-dn),
+.hcs-app-shell .hcs-chat-page :where(.hcs-chat__compose, .hcs-chat__icon, .hcs-chat__close, .hcs-chat__tabs button),
+.hcs-app-shell .hcs-account-page :where(.hcs-account-tab, .hcs-account-avatar__upload),
+.hcs-app-shell .hcs-notification-panel :where(button, a),
+.hcs-app-shell .hcs-signatures-panel :where(button, label[role="button"]) {
+    min-height: var(--hcs-touch-target);
+}
+
+.hcs-app-shell :where(.hcs-chat__compose, .hcs-chat__icon, .hcs-chat__close) {
+    height: var(--hcs-touch-target);
+    width: var(--hcs-touch-target);
+}
+
+.hcs-app-shell .hcs-chat__tabs button {
+    padding-block: var(--hcs-space-3);
+}
+
+.hcs-app-shell :where(.hcs-chat__contact-filter, .hcs-chat__search, .hcs-chat__composer-field) {
+    font-size: 1rem;
+    min-height: var(--hcs-control-height);
+}
+
+.hcs-app-shell :where(.hcs-table-wrap, .table-responsive, .hcs-users-grid-card .card-body) {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hcs-app-shell :where(.hcs-catalog-grid, .hcs-users-grid) {
+    min-width: 48rem;
+}
+
+.hcs-app-shell :where(.hcs-catalog-grid, .hcs-users-grid) th,
+.hcs-app-shell :where(.hcs-catalog-grid, .hcs-users-grid) td {
+    vertical-align: middle;
+}
+
+.hcs-app-shell :where(.hcs-modal-actions, .hcs-signature-dialog__actions) {
+    gap: var(--hcs-space-2);
+}
+
+.hcs-app-shell .modal-dialog {
+    max-width: min(100% - 2rem, 48rem);
+}
+
+.hcs-app-shell .modal-content {
+    max-height: calc(100dvh - 2rem);
+}
+
+.hcs-app-shell .modal-body {
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.hcs-table-mobile-hint {
+    color: var(--hcs-color-muted);
+    display: none;
+    font-size: .82rem;
+    margin: 0;
+    padding: var(--hcs-space-3) var(--hcs-space-4) 0;
+}
+
+.hcs-table-wrap--stacked table {
+    width: 100%;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-app-shell .hcs-workspace .hcs-ws-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hcs-app-shell .hcs-workspace .hcs-ws-card-hd {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .hcs-app-shell .hcs-workspace .hcs-ws-action {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
+
+    .hcs-app-shell .hcs-chat {
+        border-inline: 0;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hcs-app-shell .hcs-chat--info-open {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hcs-app-shell .hcs-chat__conversations,
+    .hcs-app-shell .hcs-chat__info {
+        display: none;
+    }
+
+    .hcs-app-shell .hcs-chat--info-open .hcs-chat__info {
+        display: flex;
+        inset: var(--hcs-header-h, 4rem) 0 0;
+        position: fixed;
+        z-index: var(--hcs-z-drawer);
+    }
+
+    .hcs-app-shell .hcs-account-tabs {
+        max-width: 100%;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .hcs-app-shell .hcs-account-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .hcs-app-shell .hcs-account-tab {
+        flex: 0 0 max-content;
+    }
+
+    .hcs-app-shell .hcs-users-grid-card .card-body {
+        padding-inline: var(--hcs-space-3);
+    }
+
+    .hcs-table-mobile-hint {
+        display: block;
+    }
+
+    .hcs-table-wrap--stacked {
+        overflow: visible;
+    }
+
+    .hcs-table-wrap--stacked table,
+    .hcs-table-wrap--stacked tbody,
+    .hcs-table-wrap--stacked tr,
+    .hcs-table-wrap--stacked td {
+        display: block;
+        width: 100%;
+    }
+
+    .hcs-table-wrap--stacked thead {
+        height: 1px;
+        overflow: hidden;
+        position: absolute;
+        width: 1px;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .hcs-table-wrap--stacked tbody {
+        display: grid;
+        gap: var(--hcs-space-3);
+        padding: var(--hcs-space-3);
+    }
+
+    .hcs-table-wrap--stacked tr {
+        background: var(--hcs-color-surface);
+        border: 1px solid var(--hcs-color-border);
+        border-radius: var(--hcs-radius-md);
+        box-shadow: var(--hcs-shadow-sm);
+        padding: var(--hcs-space-2) var(--hcs-space-4);
+    }
+
+    .hcs-table-wrap--stacked td {
+        border: 0;
+        display: grid;
+        gap: var(--hcs-space-2);
+        grid-template-columns: minmax(6.5rem, 38%) minmax(0, 1fr);
+        padding: var(--hcs-space-3) 0;
+        text-align: start;
+    }
+
+    .hcs-table-wrap--stacked td + td {
+        border-top: 1px solid var(--hcs-color-border);
+    }
+
+    .hcs-table-wrap--stacked td::before {
+        color: var(--hcs-color-muted);
+        content: attr(data-label);
+        font-size: .78rem;
+        font-weight: 600;
+    }
+}
+
+@media (max-width: 419.98px) {
+    .hcs-app-shell .hcs-workspace .hcs-ws-kpis {
+        grid-template-columns: 1fr;
+    }
+
+    .hcs-table-wrap--stacked td {
+        grid-template-columns: 1fr;
+        gap: var(--hcs-space-1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hcs-app-shell *,
+    .hcs-auth-login-page * {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+    }
+
+    .hcs-login-redirect__spinner {
+        animation: none;
+    }
+}

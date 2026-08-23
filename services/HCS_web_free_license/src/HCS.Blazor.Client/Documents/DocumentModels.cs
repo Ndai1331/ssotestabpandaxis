@@ -8,6 +8,7 @@ public enum DocumentSourceType { Archive = 0, Personal = 1, SentToMe = 2, Workfl
 public enum WorkflowInstanceStatus { Running, Completed, Rejected, Cancelled, Returned }
 public enum ApprovalTaskStatus { Pending, Approved, Rejected, Cancelled, Returned }
 public enum SigningStatus { Pending, Completed, Failed }
+public enum UserSignatureType { Electronic, Digital }
 
 public sealed record PagedDocumentsResponse(long TotalCount, List<DocumentDto> Items);
 
@@ -73,7 +74,8 @@ public sealed record SigningAttemptDto(
     Guid Id, Guid DocumentId, Guid FileId, int Kind, SigningStatus Status, string InputSha256,
     string? OutputSha256, string? Error, DateTime CreationTime, DateTime? CompletedAt);
 public sealed record SigningReportDto(Guid DocumentId, int Completed, int Failed, List<SigningAttemptDto> Attempts);
-public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime);
+public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime,
+    UserSignatureType Type = UserSignatureType.Electronic);
 
 public sealed record DocumentListQuery(string? Filter, string? Status, bool Mine, int SkipCount, int MaxResultCount, int? SourceType = null,
     Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null,

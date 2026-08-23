@@ -25,7 +25,7 @@
 - Primary HCS-specific navigation is Chat (`/chat`), guarded by the `Collaboration.Chat` policy/permission.
 - HCS document/workflow parity now includes normalized lookup filters, user contact Select2 identity details, authorized watermarked PDF previews, and guarded sign/approve/return/reject actions in the Community client.
 - Account management is consolidated at `/account`: profile/password/avatar actions live in the profile tab, while `/account?tab=signatures` provides personal signature image CRUD. `/user-signatures` remains a compatibility redirect; credential signing settings remain at `/signature-settings`.
-- Personal avatars are served through the Platform service and stored in MinIO; personal signature metadata and authorization are handled by the Document service, with signature blobs stored in the `hcs-signing` bucket. Users manage only their own signatures unless the existing elevated permission is present.
+- Personal avatars are served through the Platform service and stored in MinIO; personal signature metadata and authorization are handled by the Document service, with signature blobs stored in the `hcs-signing` bucket. Users manage only their own signatures unless the existing elevated permission is present. Each personal signature is categorized as `Electronic` or `Digital`; legacy rows default to `Electronic` through the Document migration.
 - Runtime details and safe startup/rollback: [`runbooks/hcs-docker-compose-handoff.md`](./runbooks/hcs-docker-compose-handoff.md).
 
 ## Auth target state

@@ -19,16 +19,19 @@ public sealed class SigningCredential
 public sealed class UserSignature
 {
     private UserSignature() { }
-    public UserSignature(Guid id, Guid userId, string fileName, string contentType, string blobName, long size, DateTime now)
+    public UserSignature(Guid id, Guid userId, string fileName, string contentType, string blobName, long size, DateTime now,
+        UserSignatureType type = UserSignatureType.Electronic)
     {
         if (userId == Guid.Empty) throw new ArgumentException("User is required.", nameof(userId));
         if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size));
+        if (!Enum.IsDefined(type)) throw new ArgumentOutOfRangeException(nameof(type));
         Id = id;
         UserId = userId;
         FileName = fileName.Trim();
         ContentType = contentType.Trim();
         BlobName = blobName;
         Size = size;
+        Type = type;
         IsDefault = false;
         CreationTime = now;
     }
@@ -38,10 +41,16 @@ public sealed class UserSignature
     public string ContentType { get; private set; } = string.Empty;
     public string BlobName { get; private set; } = string.Empty;
     public long Size { get; private set; }
+    public UserSignatureType Type { get; private set; }
     public bool IsDefault { get; private set; }
     public DateTime CreationTime { get; private set; }
     public void MarkDefault() => IsDefault = true;
     public void ClearDefault() => IsDefault = false;
+    public void ChangeType(UserSignatureType type)
+    {
+        if (!Enum.IsDefined(type)) throw new ArgumentOutOfRangeException(nameof(type));
+        Type = type;
+    }
     public void Rename(string fileName)
     {
         var normalized = Path.GetFileName(fileName.Replace('\\', '/')).Trim();

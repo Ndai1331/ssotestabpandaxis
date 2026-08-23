@@ -117,7 +117,7 @@
                                         <SelectItem Value="@string.Empty">—</SelectItem>
                                         @foreach (var signature in signatures)
                                         {
-                                            <SelectItem Value="@signature.Id.ToString()">@signature.FileName @(signature.IsDefault ? $"({L["Feature:DefaultSignature"]})" : "")</SelectItem>
+                                            <SelectItem Value="@signature.Id.ToString()">@signature.FileName · @SignatureTypeLabel(signature.Type) @(signature.IsDefault ? $"({L["Feature:DefaultSignature"]})" : "")</SelectItem>
                                         }
                                     </Select>
                                 </Field>
@@ -196,6 +196,12 @@
     private int CountAll => queue.Count;
     private int CountToMe => currentUserId is { } me ? queue.Count(x => x.Task.AssigneeUserId == me) : 0;
     private int CountByMe => currentUserId is not null ? queue.Count(IsSentBy) : 0;
+
+    private string SignatureTypeLabel(UserSignatureType type) => type switch
+    {
+        UserSignatureType.Digital => L["Account:DigitalSignature"].Value,
+        _ => L["Account:ElectronicSignature"].Value
+    };
     private (string Key, string Label, int Count)[] InboxTabs =>
     [
         ("all", L["Feature:SigningAll"], CountAll),

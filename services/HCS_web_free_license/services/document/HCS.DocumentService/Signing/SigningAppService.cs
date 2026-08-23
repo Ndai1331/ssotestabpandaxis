@@ -135,14 +135,16 @@ public sealed class SigningAppService(
         return items.Select(MapSignature).ToList();
     }
 
-    public async Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size, Guid? userId = null, CancellationToken cancellationToken = default)
+    public async Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size,
+        UserSignatureType type = UserSignatureType.Electronic, Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         ValidateSignatureFile(fileName, contentType, size);
+        ValidateSignatureType(type);
         var id = Guid.NewGuid();
         var blobName = BlobNamePolicy.UserSignature(targetUserId, id);
         await signingBlobs.SaveAsync(blobName, content, overrideExisting: false, cancellationToken: cancellationToken);
-        var signature = new UserSignature(id, targetUserId, Path.GetFileName(fileName), NormalizeSignatureContentType(contentType), blobName, size, DateTime.UtcNow);
+        var signature = new UserSignature(id, targetUserId, Path.GetFileName(fileName), NormalizeSignatureContentType(contentType), blobName, size, DateTime.UtcNow, type);
         if (!await db.UserSignatures.AnyAsync(x => x.UserId == targetUserId, cancellationToken)) signature.MarkDefault();
         db.UserSignatures.Add(signature);
         try { await db.SaveChangesAsync(cancellationToken); }
@@ -151,19 +153,24 @@ public sealed class SigningAppService(
     }
 
     public async Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string? fileName, string? contentType, Stream? content, long? size,
-        Guid? userId = null, CancellationToken cancellationToken = default)
+        UserSignatureType? type = null, Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         var signature = await db.UserSignatures.SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Signature not found.");
 
         var normalizedFileName = string.IsNullOrWhiteSpace(fileName) ? signature.FileName : Path.GetFileName(fileName.Replace('\\', '/'));
+        var normalizedType = type ?? signature.Type;
+        ValidateSignatureType(normalizedType);
         if (content is null)
         {
-            if (string.Equals(normalizedFileName, signature.FileName, StringComparison.Ordinal))
+            var fileNameChanged = !string.Equals(normalizedFileName, signature.FileName, StringComparison.Ordinal);
+            var typeChanged = normalizedType != signature.Type;
+            if (!fileNameChanged && !typeChanged)
                 throw new ArgumentException("A file name or replacement image is required.");
 
-            signature.Rename(normalizedFileName);
+            if (fileNameChanged) signature.Rename(normalizedFileName);
+            if (typeChanged) signature.ChangeType(normalizedType);
             await db.SaveChangesAsync(cancellationToken);
             return MapSignature(signature);
         }
@@ -175,6 +182,7 @@ public sealed class SigningAppService(
         var newBlobName = BlobNamePolicy.UserSignature(targetUserId, Guid.NewGuid());
         await signingBlobs.SaveAsync(newBlobName, content, overrideExisting: false, cancellationToken: cancellationToken);
         signature.ReplaceContent(normalizedFileName, normalizedContentType, newBlobName, uploadSize);
+        signature.ChangeType(normalizedType);
         try
         {
             await db.SaveChangesAsync(cancellationToken);
@@ -272,6 +280,11 @@ public sealed class SigningAppService(
     private static string NormalizeSignatureContentType(string? contentType) =>
         contentType?.Trim().ToLowerInvariant() ?? throw new InvalidDataException("A signature image content type is required.");
 
+    private static void ValidateSignatureType(UserSignatureType type)
+    {
+        if (!Enum.IsDefined(type)) throw new ArgumentOutOfRangeException(nameof(type));
+    }
+
     private Task<SigningAttempt?> FindAttemptAsync(Guid userId, SignDocumentRequest input, string key,
         CancellationToken cancellationToken) => db.SigningAttempts.AsNoTracking().SingleOrDefaultAsync(x =>
         x.UserId == userId && x.DocumentId == input.DocumentId && x.FileId == input.FileId &&
@@ -288,7 +301,7 @@ public sealed class SigningAppService(
     private static SigningAttemptDto Map(SigningAttempt x) => new(x.Id, x.DocumentId, x.FileId, x.Kind, x.Status,
         x.InputSha256, x.OutputSha256, x.Error, x.CreationTime, x.CompletedAt);
     private static UserSignatureDto MapSignature(UserSignature x) =>
-        new(x.Id, x.FileName, x.ContentType, x.Size, x.IsDefault, x.CreationTime);
+        new(x.Id, x.FileName, x.ContentType, x.Size, x.IsDefault, x.CreationTime, x.Type);
 }
 
 internal static class SigningFailureSanitizer

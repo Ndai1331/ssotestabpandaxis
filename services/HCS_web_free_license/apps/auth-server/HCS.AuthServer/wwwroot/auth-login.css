@@ -398,3 +398,122 @@ body:has(#LoginInput_UserNameOrEmailAddress) a {
         max-width: 460px;
     }
 }
+
+
+.lpx-brand-name {display :none !important; }
+
+/* Stable HCS hooks layered over the ABP account layout. */
+body:has(.hcs-auth-login-page) {
+    --hcs-login-ink: #19334c;
+    --hcs-login-muted: #63798b;
+    --hcs-login-line: #dfe8eb;
+    --hcs-login-primary: #3d5cff;
+    --hcs-login-primary-strong: #2447df;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(61, 92, 255, .1) 0 2px, transparent 3px) 0 0 / 20px 20px,
+        linear-gradient(145deg, #edf2ff 0%, #f7fbfc 42%, #eef6f8 100%);
+    color: var(--hcs-login-ink);
+}
+
+body:has(.hcs-auth-login-page) .hcs-auth-login-page {
+    margin: 0 auto;
+    max-width: 30rem;
+    padding: 0;
+    width: 100%;
+}
+
+body:has(.hcs-auth-login-page) .hcs-auth-login-card {
+    background: rgba(255, 255, 255, .97);
+    border: 1px solid rgba(50, 113, 142, .14);
+    border-radius: 1rem !important;
+    box-shadow: 0 22px 48px rgba(24, 62, 80, .14) !important;
+    margin: 0 !important;
+    width: 100%;
+}
+
+body:has(.hcs-auth-login-page) .hcs-auth-login-card > .card-body {
+    padding: clamp(1.25rem, 4vw, 2rem) !important;
+}
+
+body:has(.hcs-auth-login-page) .hcs-auth-login-card h1 {
+    color: var(--hcs-login-ink);
+    font: 700 clamp(1.45rem, 4vw, 1.85rem)/1.25 "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+    text-wrap: balance;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-subtitle {
+    color: var(--hcs-login-muted);
+    font-size: .95rem;
+    line-height: 1.55;
+    margin: .55rem 0 1.25rem;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form .form-control,
+body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton,
+body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .btn,
+body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"] {
+    min-height: 2.75rem;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form .form-control {
+    font-size: 1rem;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"] {
+    background: var(--hcs-login-primary);
+    border-color: var(--hcs-login-primary);
+    border-radius: .65rem;
+    font-size: 1rem;
+    font-weight: 700;
+    width: 100%;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"]:hover,
+body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"]:focus-visible,
+body:has(.hcs-auth-login-page) .hcs-login-provider:hover,
+body:has(.hcs-auth-login-page) .hcs-login-provider:focus-visible {
+    background: var(--hcs-login-primary-strong);
+    border-color: var(--hcs-login-primary-strong);
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-language {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle {
+    min-height: 2.75rem;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-external__title {
+    color: var(--hcs-login-ink);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 .5rem;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-provider {
+    margin: 0 .35rem .35rem 0 !important;
+    min-height: 2.75rem;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form button:disabled,
+body:has(.hcs-auth-login-page) .hcs-login-external button:disabled {
+    cursor: wait;
+    opacity: .72;
+}
+
+@media (max-width: 576px) {
+    body:has(.hcs-auth-login-page) .hcs-auth-login-page {
+        max-width: none;
+    }
+
+    body:has(.hcs-auth-login-page) .hcs-login-language {
+        align-items: stretch;
+        grid-template-columns: 1fr;
+    }
+
+    body:has(.hcs-auth-login-page) .hcs-auth-login-card > .card-body {
+        padding: 1.15rem 1rem 1.3rem !important;
+    }
+}

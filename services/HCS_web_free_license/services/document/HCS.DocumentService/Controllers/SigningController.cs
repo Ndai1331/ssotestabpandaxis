@@ -22,24 +22,27 @@ public sealed class SigningController(ISigningAppService signing) : ControllerBa
         signing.GetSignaturesAsync(userId, cancellationToken);
     [HttpPost("signatures")]
     [RequestSizeLimit(2 * 1024 * 1024)]
-    public async Task<UserSignatureDto> UploadSignature(IFormFile file, [FromQuery] Guid? userId, CancellationToken cancellationToken)
+    public async Task<UserSignatureDto> UploadSignature(IFormFile file, [FromForm] UserSignatureType? signatureType,
+        [FromQuery] Guid? userId, CancellationToken cancellationToken)
     {
         await using var stream = file.OpenReadStream();
-        return await signing.UploadSignatureAsync(file.FileName, file.ContentType, stream, file.Length, userId, cancellationToken);
+        return await signing.UploadSignatureAsync(file.FileName, file.ContentType, stream, file.Length,
+            signatureType ?? UserSignatureType.Electronic, userId, cancellationToken);
     }
     [HttpPut("signatures/{id:guid}")]
     [RequestSizeLimit(2 * 1024 * 1024)]
-    public async Task<UserSignatureDto> UpdateSignature(Guid id, [FromForm] string? fileName, [FromForm] IFormFile? file,
+    public async Task<UserSignatureDto> UpdateSignature(Guid id, [FromForm] string? fileName, [FromForm] UserSignatureType? signatureType,
+        [FromForm] IFormFile? file,
         [FromQuery] Guid? userId, CancellationToken cancellationToken)
     {
         if (file is null)
         {
-            return await signing.UpdateSignatureAsync(id, fileName, null, null, null, userId, cancellationToken);
+            return await signing.UpdateSignatureAsync(id, fileName, null, null, null, signatureType, userId, cancellationToken);
         }
 
         await using var stream = file.OpenReadStream();
         return await signing.UpdateSignatureAsync(id, string.IsNullOrWhiteSpace(fileName) ? file.FileName : fileName,
-            file.ContentType, stream, file.Length, userId, cancellationToken);
+            file.ContentType, stream, file.Length, signatureType, userId, cancellationToken);
     }
     [HttpPut("signatures/{id:guid}/default")]
     public Task<UserSignatureDto> SetDefaultSignature(Guid id, [FromQuery] Guid? userId, CancellationToken cancellationToken) =>

@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace HCS.DocumentService.Signing;
 
 public enum SigningKind { Electronic, RemoteCa, Hsm }
+public enum UserSignatureType { Electronic, Digital }
 public enum SigningStatus { Pending, Completed, Failed }
 
 public sealed class ConfigureSigningCredentialRequest
@@ -17,7 +18,8 @@ public sealed class ConfigureSigningCredentialRequest
 }
 
 public sealed record SigningCredentialDto(Guid Id, SigningKind Kind, string Endpoint, string MaskedSecret, DateTime UpdatedAt);
-public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime);
+public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime,
+    UserSignatureType Type = UserSignatureType.Electronic);
 public sealed record SignDocumentRequest(Guid DocumentId, Guid FileId, SigningKind Kind,
     [property: Required, StringLength(128, MinimumLength = 1)] string IdempotencyKey);
 public sealed record SigningAttemptDto(Guid Id, Guid DocumentId, Guid FileId, SigningKind Kind, SigningStatus Status,
@@ -31,8 +33,10 @@ public interface ISigningAppService
     Task<SigningAttemptDto> SignAsync(SignDocumentRequest input, CancellationToken cancellationToken = default);
     Task<SigningReportDto> GetReportAsync(Guid documentId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default);
-    Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size, Guid? userId = null, CancellationToken cancellationToken = default);
-    Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string? fileName, string? contentType, Stream? content, long? size, Guid? userId = null, CancellationToken cancellationToken = default);
+    Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size,
+        UserSignatureType type = UserSignatureType.Electronic, Guid? userId = null, CancellationToken cancellationToken = default);
+    Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string? fileName, string? contentType, Stream? content, long? size,
+        UserSignatureType? type = null, Guid? userId = null, CancellationToken cancellationToken = default);
     Task<UserSignatureDto> SetDefaultSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);
     Task DeleteSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);
     Task<(Stream Content, string ContentType, string FileName)> OpenSignatureContentAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);

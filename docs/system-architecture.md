@@ -52,7 +52,7 @@ flowchart LR
 
 - `/account` is the single profile entry point. The `profile` and `signatures` query tabs are UI deep links, not separate authorization scopes.
 - Avatar and signature content are image-only and capped at 2 MB. Signature self-service resolves the current authenticated user; managing another user remains restricted by the existing elevated policy.
-- `FileName` and `IsDefault` remain in `UserSignature` metadata. The Document service enforces one default per user and selects the newest remaining signature when the default is deleted.
+- `FileName`, `Type` (`Electronic`/`Digital`) and `IsDefault` are persisted in `UserSignature` metadata. The Document service enforces one default per user and selects the newest remaining signature when the default is deleted. Existing rows receive `Electronic` as the migration default.
 
 ---
 

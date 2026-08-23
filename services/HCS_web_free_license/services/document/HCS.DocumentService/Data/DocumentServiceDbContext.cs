@@ -123,6 +123,7 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
             b.Property(x => x.FileName).HasMaxLength(256);
             b.Property(x => x.ContentType).HasMaxLength(128);
             b.Property(x => x.BlobName).HasMaxLength(512);
+            b.Property(x => x.Type).HasDefaultValue(UserSignatureType.Electronic);
             b.HasIndex(x => x.UserId);
         });
         builder.Entity<SigningAttempt>(b => { b.ToTable("SigningAttempts"); b.HasKey(x => x.Id); b.Property(x => x.InputSha256).HasMaxLength(64); b.Property(x => x.OutputSha256).HasMaxLength(64); b.Property(x => x.OutputBlobName).HasMaxLength(512); b.Property(x => x.IdempotencyKey).HasMaxLength(128); b.Property(x => x.Error).HasMaxLength(1000); b.HasIndex(x => new { x.UserId, x.DocumentId, x.FileId, x.Kind, x.IdempotencyKey }).IsUnique(); b.HasIndex(x => new { x.DocumentId, x.CreationTime }); });

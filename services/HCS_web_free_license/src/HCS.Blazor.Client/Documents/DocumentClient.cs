@@ -180,7 +180,8 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<List<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default) =>
         GetAsync<List<UserSignatureDto>>(SigningUserUri("/api/signing/signatures", userId), cancellationToken);
 
-    public async Task<UserSignatureDto> UploadSignatureAsync(IBrowserFile file, Guid? userId = null, CancellationToken cancellationToken = default)
+    public async Task<UserSignatureDto> UploadSignatureAsync(IBrowserFile file, Guid? userId = null,
+        CancellationToken cancellationToken = default, UserSignatureType type = UserSignatureType.Electronic)
     {
         using var content = new MultipartFormDataContent();
         await using var stream = file.OpenReadStream(2 * 1024 * 1024, cancellationToken);
@@ -188,6 +189,7 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(file.ContentType) ? "image/png" : file.ContentType);
         content.Add(fileContent, "file", file.Name);
+        content.Add(new StringContent(type.ToString()), "signatureType");
         using var response = await CreateClient().PostAsync(SigningUserUri("/api/signing/signatures", userId), content, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<UserSignatureDto>(cancellationToken: cancellationToken)
@@ -195,10 +197,14 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     }
 
     public async Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string fileName, IBrowserFile? file = null,
-        Guid? userId = null, CancellationToken cancellationToken = default)
+        Guid? userId = null, CancellationToken cancellationToken = default, UserSignatureType? type = null)
     {
         using var content = new MultipartFormDataContent();
         content.Add(new StringContent(fileName), "fileName");
+        if (type is { } selectedType)
+        {
+            content.Add(new StringContent(selectedType.ToString()), "signatureType");
+        }
         if (file is not null)
         {
             await using var stream = file.OpenReadStream(2 * 1024 * 1024, cancellationToken);

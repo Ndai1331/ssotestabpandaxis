@@ -113,6 +113,7 @@
     right: .15rem;
     transition: transform .2s ease, background-color .2s ease;
     width: 2.75rem;
+    z-index: 2;
 }
 
 .hcs-account-avatar__upload:hover,
@@ -129,11 +130,16 @@
 }
 
 .hcs-account-avatar__input {
-    height: 1px;
-    opacity: 0;
+    border: 0 !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    height: 1px !important;
+    margin: -1px !important;
     overflow: hidden;
-    position: absolute;
-    width: 1px;
+    padding: 0 !important;
+    position: absolute !important;
+    white-space: nowrap;
+    width: 1px !important;
 }
 
 .hcs-account-eyebrow {

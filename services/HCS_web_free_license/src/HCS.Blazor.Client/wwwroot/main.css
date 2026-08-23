@@ -1,8 +1,8 @@
 html,
 body,
 body.abp-application-layout {
-    background: #f5f8f7 !important;
-    color: #19334c;
+    background: var(--hcs-color-background, #f5f8f7) !important;
+    color: var(--hcs-color-ink, #19334c);
     font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif !important;
 }
 
@@ -136,9 +136,9 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 :root {
     --lpx-logo: url('/images/logo/leptonxlite/logo-light-thumbnail.png') !important;
     --lpx-logo-icon: url('/images/logo/leptonxlite/logo-light-thumbnail.png') !important;
-    --hcs-button-max-height: 36px;
-    --hcs-button-compact-height: 32px;
-    --hcs-radius: 5px;
+    --hcs-button-max-height: var(--hcs-control-height-compact, 40px);
+    --hcs-button-compact-height: var(--hcs-control-height-compact, 40px);
+    --hcs-radius: var(--hcs-radius-sm, 5px);
     --bs-body-font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
     --bs-font-sans-serif: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
     --bs-border-radius: 5px;
@@ -413,11 +413,11 @@ body:has(.hcs-chat-page) {
 /* === Catalog styles === */
 /* Shared catalog CRUD chrome used by Organization, Projects, Tasks, Documents. */
 .hcs-catalog-page {
-    --catalog-primary: #3d5cff;
-    --catalog-primary-dark: #2447df;
-    --catalog-ink: #294d68;
-    --catalog-muted: #6d8596;
-    --catalog-line: #e1e9ee;
+    --catalog-primary: var(--hcs-color-primary, #3d5cff);
+    --catalog-primary-dark: var(--hcs-color-primary-strong, #2447df);
+    --catalog-ink: var(--hcs-color-ink, #294d68);
+    --catalog-muted: var(--hcs-color-muted, #6d8596);
+    --catalog-line: var(--hcs-color-border, #e1e9ee);
     --catalog-input: #eef3f7;
     --catalog-green: #48bd73;
     --catalog-danger: #df1e53;
@@ -1650,7 +1650,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 .hcs-document-preview-pane {
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 12rem);
+    min-height: calc(100dvh - 12rem);
 }
 
 .hcs-document-preview-pane .card {
@@ -1673,7 +1673,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-template-split {
     align-items: stretch;
-    min-height: calc(100vh - 16rem);
+    min-height: calc(100dvh - 16rem);
 }
 
 .hcs-template-split .hcs-pdf-pane {
@@ -1691,8 +1691,8 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 .hcs-catalog-modal--pdf .modal-content {
     display: flex;
     flex-direction: column;
-    height: 90vh;
-    max-height: 90vh;
+    height: min(90dvh, 56rem);
+    max-height: calc(100dvh - 2rem);
 }
 
 .hcs-catalog-modal__body--pdf {

@@ -40,10 +40,10 @@
                         <span class="hcs-account-avatar hcs-account-avatar--initials" aria-label="@DisplayName()">@InitialsFromProfile()</span>
                     }
                     <label class="hcs-account-avatar__upload @(isSavingAvatar ? "is-busy" : null)" for="account-avatar-file" title='@L["Account:ChangeAvatar"]'>
-                        <i class="fa fa-camera" aria-hidden="true"></i>
+                        <i class="fa fa-pen" aria-hidden="true"></i>
                         <span class="visually-hidden">@L["Account:ChangeAvatar"]</span>
-                        <InputFile id="account-avatar-file" class="hcs-account-avatar__input" accept="image/jpeg,image/png,image/webp,image/gif" OnChange="UploadAvatarAsync" disabled="@isSavingAvatar" />
                     </label>
+                    <InputFile id="account-avatar-file" class="hcs-account-avatar__input" accept="image/jpeg,image/png,image/webp,image/gif" OnChange="UploadAvatarAsync" disabled="@isSavingAvatar" />
                 </div>
 
                 <div class="hcs-account-hero__identity">

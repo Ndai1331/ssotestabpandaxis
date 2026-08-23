@@ -140,8 +140,9 @@ Sau khi đăng nhập, kiểm tra:
 1. Mở `https://hcs.localhost/account`; profile hiển thị banner, avatar fallback initials và hai tab.
 2. Upload/remove avatar tại tab **Thông tin cá nhân**; header avatar phải cập nhật sau mutation.
 3. Mở `https://hcs.localhost/account?tab=signatures`; upload ảnh hợp lệ dưới 2 MB.
-4. Đổi tên hoặc thay ảnh, đặt mặc định, rồi xóa chữ ký. Khi xóa chữ ký mặc định, chữ ký mới nhất còn lại phải được chọn mặc định.
-5. Mở `/user-signatures` và xác nhận redirect tới `/account?tab=signatures`; `/signature-settings` vẫn mở trang credential riêng.
+4. Chọn **Chữ ký điện tử** hoặc **Chữ ký số** trước khi upload; kiểm tra loại hiển thị đúng trên card và trong dialog sửa.
+5. Đổi tên hoặc thay ảnh, đổi loại, đặt mặc định, rồi xóa chữ ký. Khi xóa chữ ký mặc định, chữ ký mới nhất còn lại phải được chọn mặc định.
+6. Mở `/user-signatures` và xác nhận redirect tới `/account?tab=signatures`; `/signature-settings` vẫn mở trang credential riêng.
 
 Ảnh chữ ký chỉ nhận JPEG/PNG/WebP/GIF và giới hạn 2 MB. Nếu cần kiểm tra MinIO, xem bucket `hcs-avatars` và `hcs-signing`; không dùng `docker compose down -v` vì sẽ xóa dữ liệu local.
 

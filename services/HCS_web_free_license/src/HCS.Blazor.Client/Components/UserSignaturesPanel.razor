@@ -12,11 +12,20 @@
             <h2 id="personal-signatures-title">@L["Account:SignatureSection"]</h2>
             <p class="hcs-form-note">@L["Feature:SignatureImage"]</p>
         </div>
-        <label class="hcs-signature-upload-cta" for="signature-upload-input">
-            <i class="fa fa-cloud-arrow-up" aria-hidden="true"></i>
-            <span>@L["Account:AddSignature"]</span>
-            <InputFile @key="uploadInputKey" id="signature-upload-input" class="hcs-visually-hidden" accept="image/jpeg,image/png,image/webp,image/gif" OnChange="UploadAsync" disabled="@isSaving" />
-        </label>
+        <div class="hcs-signature-upload-controls">
+            <label class="hcs-signature-type-picker" for="signature-upload-type">
+                <span>@L["Account:SignatureType"]</span>
+                <select id="signature-upload-type" @bind="selectedUploadType" disabled="@isSaving">
+                    <option value="@UserSignatureType.Electronic">@L["Account:ElectronicSignature"]</option>
+                    <option value="@UserSignatureType.Digital">@L["Account:DigitalSignature"]</option>
+                </select>
+            </label>
+            <label class="hcs-signature-upload-cta" for="signature-upload-input">
+                <i class="fa fa-cloud-arrow-up" aria-hidden="true"></i>
+                <span>@L["Account:AddSignature"]</span>
+                <InputFile @key="uploadInputKey" id="signature-upload-input" class="hcs-visually-hidden" accept="image/jpeg,image/png,image/webp,image/gif" OnChange="UploadAsync" disabled="@isSaving" />
+            </label>
+        </div>
     </div>
 
     @if (isLoading)
@@ -83,6 +92,7 @@
                             <h3 title="@item.FileName">@item.FileName</h3>
                             <span class="hcs-signature-card__type">@item.ContentType.Replace("image/", "", StringComparison.OrdinalIgnoreCase).ToUpperInvariant()</span>
                         </div>
+                        <span class="hcs-signature-card__kind"><i class="fa fa-fingerprint" aria-hidden="true"></i>@SignatureTypeLabel(item.Type)</span>
                         <dl class="hcs-signature-card__meta">
                             <div><dt>@L["Account:SignatureSize"]</dt><dd>@FormatSize(item.Size)</dd></div>
                             <div><dt>@L["Account:SignatureCreated"]</dt><dd>@FormatDate(item.CreationTime)</dd></div>
@@ -129,6 +139,13 @@
                     <p class="hcs-form-note">@L["Account:SignatureFileNameHint"]</p>
                 </div>
                 <div>
+                    <label class="form-label" for="signature-type">@L["Account:SignatureType"]</label>
+                    <select id="signature-type" class="form-control" @bind="editForm.Type">
+                        <option value="@UserSignatureType.Electronic">@L["Account:ElectronicSignature"]</option>
+                        <option value="@UserSignatureType.Digital">@L["Account:DigitalSignature"]</option>
+                    </select>
+                </div>
+                <div>
                     <label class="form-label" for="signature-replacement-file">@L["Account:ReplaceSignatureImage"]</label>
                     <InputFile @key="editInputKey" id="signature-replacement-file" class="form-control" accept="image/jpeg,image/png,image/webp,image/gif" OnChange="SelectReplacementFile" />
                     @if (replacementFile is not null)
@@ -159,6 +176,7 @@
     private bool isLoading = true;
     private bool loadFailed;
     private bool isSaving;
+    private UserSignatureType selectedUploadType = UserSignatureType.Electronic;
     private int uploadInputKey;
     private int emptyUploadInputKey;
     private int editInputKey;
@@ -203,7 +221,7 @@
         isSaving = true;
         try
         {
-            await Documents.UploadSignatureAsync(args.File, UserId);
+            await Documents.UploadSignatureAsync(args.File, UserId, type: selectedUploadType);
             uploadInputKey++;
             emptyUploadInputKey++;
             await NotifySuccessAsync(L["Catalog:Created"]);
@@ -224,6 +242,7 @@
     {
         editingSignature = item;
         editForm.FileName = item.FileName;
+        editForm.Type = item.Type;
         replacementFile = null;
         editInputKey++;
     }
@@ -251,7 +270,7 @@
         isSaving = true;
         try
         {
-            await Documents.UpdateSignatureAsync(editingSignature.Id, editForm.FileName.Trim(), replacementFile, UserId);
+            await Documents.UpdateSignatureAsync(editingSignature.Id, editForm.FileName.Trim(), replacementFile, UserId, type: editForm.Type);
             editingSignature = null;
             replacementFile = null;
             await NotifySuccessAsync(L["Account:SignatureUpdated"]);
@@ -318,8 +337,15 @@
 
     private static string FormatDate(DateTime value) => value.ToLocalTime().ToString("dd/MM/yyyy", CultureInfo.CurrentCulture);
 
+    private string SignatureTypeLabel(UserSignatureType type) => type switch
+    {
+        UserSignatureType.Digital => L["Account:DigitalSignature"].Value,
+        _ => L["Account:ElectronicSignature"].Value
+    };
+
     private sealed class EditSignatureModel
     {
         public string FileName { get; set; } = "";
+        public UserSignatureType Type { get; set; } = UserSignatureType.Electronic;
     }
 }

@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @using HCS.Blazor.Client.Account
 @using HCS.Localization
+@using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.Localization
@@ -11,7 +12,7 @@
 @inject AccountProfileClient Account
 @implements IDisposable
 
-<div class="hcs-app-shell">
+<div class="hcs-app-shell" @onkeydown="HandleKeyDown">
     <a class="hcs-skip-link" href="#main-content">@Localizer["Menu:SkipToContent"]</a>
     <header class="hcs-header">
         <div class="hcs-header__top">
@@ -21,6 +22,7 @@
             </a>
 
             <button class="hcs-nav-toggle"
+                    @ref="navToggle"
                     type="button"
                     aria-controls="hcs-primary-nav"
                     aria-expanded="@mobileNavOpen.ToString().ToLowerInvariant()"
@@ -189,7 +191,7 @@
 
     @if (mobileNavOpen)
     {
-        <button class="hcs-nav-backdrop" type="button" aria-label="@Localizer["Menu:CloseNav"]" @onclick="CloseMobileNav"></button>
+        <button class="hcs-nav-backdrop" type="button" aria-label="@Localizer["Menu:CloseNav"]" @onclick="CloseMobileNavAndFocus"></button>
     }
 
     <main id="main-content" class="hcs-main-content">@Body</main>
@@ -204,6 +206,7 @@
 
 @code {
     private bool mobileNavOpen;
+    private ElementReference navToggle;
     private bool userMenuOpen;
     private string? expandedSection;
     private bool isLoggingOut;
@@ -340,6 +343,31 @@
         userMenuOpen = false;
         mobileNavOpen = false;
         expandedSection = null;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (!string.Equals(args.Key, "Escape", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var wasMobileNavOpen = mobileNavOpen;
+        if (wasMobileNavOpen || expandedSection is not null || userMenuOpen)
+        {
+            CloseMobileNav();
+
+            if (wasMobileNavOpen)
+            {
+                await navToggle.FocusAsync();
+            }
+        }
+    }
+
+    private async Task CloseMobileNavAndFocus()
+    {
+        CloseMobileNav();
+        await navToggle.FocusAsync();
     }
 
     private bool IsMenuHrefActive(string href)
