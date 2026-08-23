@@ -178,7 +178,7 @@ public sealed class HCSAuthServerModule : AbpModule
                 options.ResponseType = OpenIdConnectResponseType.Code;
                 options.UsePkce = true;
 
-                options.PushedAuthorizationBehavior = PushedAuthorizationBehavior.Disable;
+                // options.PushedAuthorizationBehavior = PushedAuthorizationBehavior.Disable;
 
                 options.SaveTokens = true;
                 options.GetClaimsFromUserInfoEndpoint = true;
