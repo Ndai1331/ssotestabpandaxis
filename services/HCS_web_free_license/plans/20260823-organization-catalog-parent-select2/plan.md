@@ -4,6 +4,8 @@
 
 Đổi các trường liên kết danh mục/phòng ban trong form Organization catalog sang hạ tầng `CatalogSelect2` đang có, giữ nguyên API và hành vi create/edit.
 
+**Status:** Complete
+
 ## Findings
 
 - `src/HCS.Blazor.Client/Pages/Organization/OrganizationCatalog.razor` đang dùng Blazorise `<Select>` cho phòng ban cấp trên và phòng ban của đơn vị.
@@ -29,3 +31,11 @@
 - Build client/host hoặc solution với `--no-restore` nếu dependency đã có.
 - Kiểm tra không còn `<Select>` cho các trường parent/department trong form catalog.
 - Kiểm tra create, edit, clear parent, chọn department cho unit và loại self-parent.
+
+## Verification results
+
+- `./scripts/audit-license-clean.sh` — passed.
+- `dotnet build src/HCS.Blazor.Client/HCS.Blazor.Client.csproj --no-restore` — passed, 0 warnings/errors.
+- `dotnet build src/HCS.Blazor/HCS.Blazor.csproj --no-restore` — passed, 0 warnings/errors.
+- `dotnet test HCS.slnx --no-build --no-restore` — passed; all discovered tests passed.
+- `git diff --check` — passed.
