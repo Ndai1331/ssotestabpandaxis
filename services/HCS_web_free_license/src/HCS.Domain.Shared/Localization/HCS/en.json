@@ -2,6 +2,7 @@
   "Culture": "en",
   "Texts": {
     "AppName": "HCS",
+    "Auth:LoginTitle": "Login into Hanh Chinh So",
     "Permission:HCS": "HCS",
     "Menu:Home": "Home",
     "Menu:PrimaryNav": "Main functions",

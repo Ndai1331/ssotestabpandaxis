@@ -2,6 +2,7 @@
   "Culture": "vi",
   "Texts": {
     "AppName": "HCS",
+    "Auth:LoginTitle": "Đăng nhập Hành Chính Số",
     "Permission:HCS": "HCS",
     "Menu:Home": "Trang chủ",
     "Menu:PrimaryNav": "Chức năng chính",

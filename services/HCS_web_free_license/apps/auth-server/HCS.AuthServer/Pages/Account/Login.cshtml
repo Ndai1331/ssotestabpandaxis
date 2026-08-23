@@ -18,6 +18,7 @@
 @inject ILanguageProvider LanguageProvider
 
 @{
+    ViewBag.Title = HcsL["Auth:LoginTitle"].Value;
     Layout = ThemeManager.CurrentTheme.GetAccountLayout();
     var languages = (await LanguageProvider.GetLanguagesAsync()).ToList();
     var currentLanguage = languages.FirstOrDefault(x => x.CultureName == CultureInfo.CurrentUICulture.Name)
@@ -40,6 +41,12 @@
     <abp-script-bundle name="@typeof(LoginModel).FullName">
         <abp-script src="/Pages/Account/Login.js" />
     </abp-script-bundle>
+}
+
+@section styles
+{
+    <link rel="icon" href="~/favicon.ico" type="image/x-icon" asp-append-version="true" />
+    <link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon" asp-append-version="true" />
 }
 
 @if (Model.ShowRequireMigrateSeedMessage)
