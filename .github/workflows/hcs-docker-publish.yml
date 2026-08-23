@@ -1,4 +1,4 @@
-# Build and push all HCS Community images to Docker Hub on push to main.
+# Build and push selected HCS Community images to Docker Hub on push to main.
 # Images: longnguyen1331/hanhchinhso:<service-name>
 #
 # Required GitHub repository secrets:
@@ -16,51 +16,132 @@ on:
       - 'services/HCS_web_free_license/**'
       - '.github/workflows/hcs-docker-publish.yml'
   workflow_dispatch:
+    inputs:
+      service:
+        description: Service image to build (use all for the complete release set)
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - db-migrator
+          - auth-server
+          - web-gateway
+          - blazor
+          - platform
+          - organization
+          - document
+          - work-management
+          - collaboration
 
 env:
   HCS_ROOT: services/HCS_web_free_license
   DOCKER_REGISTRY: longnguyen1331/hanhchinhso
 
 jobs:
+  prepare:
+    name: Select services to build
+    runs-on: ubuntu-latest
+    outputs:
+      has_work: ${{ steps.resolve.outputs.has_work }}
+      matrix: ${{ steps.resolve.outputs.matrix }}
+    steps:
+      - name: Resolve build selection
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_SERVICE: ${{ inputs.service }}
+          PUSH_COMMIT_MESSAGES_JSON: ${{ toJSON(github.event.commits.*.message) }}
+        run: |
+          set -eo pipefail
+
+          all_matrix=$(cat <<'JSON' | jq -c .
+          {
+            "include": [
+              {"service":"db-migrator","project":"src/HCS.DbMigrator/HCS.DbMigrator.csproj","app_dll":"HCS.DbMigrator.dll"},
+              {"service":"auth-server","project":"apps/auth-server/HCS.AuthServer/HCS.AuthServer.csproj","app_dll":"HCS.AuthServer.dll","abp_libs":true,"abp_libs_path":"apps/auth-server/HCS.AuthServer"},
+              {"service":"web-gateway","project":"gateways/web/HCS.WebGateway/HCS.WebGateway.csproj","app_dll":"HCS.WebGateway.dll"},
+              {"service":"blazor","project":"src/HCS.Blazor/HCS.Blazor.csproj","app_dll":"HCS.Blazor.dll","publish_properties":"/p:BlazorEnableCompression=false","abp_libs":true,"abp_libs_path":"src/HCS.Blazor"},
+              {"service":"platform","project":"services/platform/HCS.PlatformService/HCS.PlatformService.csproj","app_dll":"HCS.PlatformService.dll"},
+              {"service":"organization","project":"services/organization/HCS.OrganizationService.Host/HCS.OrganizationService.Host.csproj","app_dll":"HCS.OrganizationService.Host.dll"},
+              {"service":"document","project":"services/document/HCS.DocumentService/HCS.DocumentService.csproj","app_dll":"HCS.DocumentService.dll","install_libreoffice":true},
+              {"service":"work-management","project":"services/work-management/HCS.WorkManagementService/HCS.WorkManagementService.csproj","app_dll":"HCS.WorkManagementService.dll"},
+              {"service":"collaboration","project":"services/collaboration/HCS.CollaborationService/HCS.CollaborationService.csproj","app_dll":"HCS.CollaborationService.dll"}
+            ]
+          }
+          JSON
+          )
+
+          selected_services=()
+          select_all=false
+
+          add_service() {
+            for existing in "${selected_services[@]}"; do
+              if [[ "$existing" == "$1" ]]; then
+                return
+              fi
+            done
+            selected_services+=("$1")
+          }
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            case "${DISPATCH_SERVICE:-}" in
+              all)
+                select_all=true
+                ;;
+              db-migrator|auth-server|web-gateway|blazor|platform|organization|document|work-management|collaboration)
+                add_service "$DISPATCH_SERVICE"
+                ;;
+              *)
+                echo "::error::Unsupported workflow_dispatch service: ${DISPATCH_SERVICE:-<empty>}"
+                exit 1
+                ;;
+            esac
+          else
+            while IFS= read -r subject; do
+              if [[ "$subject" =~ ^\[all\]([[:space:]]|$) ]]; then
+                select_all=true
+              elif [[ "$subject" =~ ^\[([a-z0-9-]+)\]([[:space:]]|$) ]]; then
+                case "${BASH_REMATCH[1]}" in
+                  db-migrator|auth-server|web-gateway|blazor|platform|organization|document|work-management|collaboration)
+                    add_service "${BASH_REMATCH[1]}"
+                    ;;
+                esac
+              fi
+            done < <(
+              jq -r 'if type == "array" then .[] | if type == "string" then split("\n")[0] else empty end else empty end' \
+                <<< "${PUSH_COMMIT_MESSAGES_JSON:-null}"
+            )
+          fi
+
+          if [[ "$select_all" == true ]]; then
+            matrix="$all_matrix"
+            has_work=true
+            summary=all
+          elif ((${#selected_services[@]} == 0)); then
+            matrix='{"include":[{"service":"__none__","selected":false}]}'
+            has_work=false
+            summary=none
+          else
+            selected_json=$(printf '%s\n' "${selected_services[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')
+            matrix=$(jq -c --argjson selected "$selected_json" \
+              '{include: [.include[] | select(.service as $service | $selected | index($service))]}' \
+              <<< "$all_matrix")
+            has_work=true
+            summary=$(jq -r '[.include[].service] | join(",")' <<< "$matrix")
+          fi
+
+          echo "has_work=$has_work" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "::notice::Selected HCS build scope: $summary"
+
   build-push:
+    needs: prepare
+    if: needs.prepare.outputs.has_work == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - service: db-migrator
-            project: src/HCS.DbMigrator/HCS.DbMigrator.csproj
-            app_dll: HCS.DbMigrator.dll
-          - service: auth-server
-            project: apps/auth-server/HCS.AuthServer/HCS.AuthServer.csproj
-            app_dll: HCS.AuthServer.dll
-            abp_libs: true
-            abp_libs_path: apps/auth-server/HCS.AuthServer
-          - service: web-gateway
-            project: gateways/web/HCS.WebGateway/HCS.WebGateway.csproj
-            app_dll: HCS.WebGateway.dll
-          - service: blazor
-            project: src/HCS.Blazor/HCS.Blazor.csproj
-            app_dll: HCS.Blazor.dll
-            publish_properties: /p:BlazorEnableCompression=false
-            abp_libs: true
-            abp_libs_path: src/HCS.Blazor
-          - service: platform
-            project: services/platform/HCS.PlatformService/HCS.PlatformService.csproj
-            app_dll: HCS.PlatformService.dll
-          - service: organization
-            project: services/organization/HCS.OrganizationService.Host/HCS.OrganizationService.Host.csproj
-            app_dll: HCS.OrganizationService.Host.dll
-          - service: document
-            project: services/document/HCS.DocumentService/HCS.DocumentService.csproj
-            app_dll: HCS.DocumentService.dll
-            install_libreoffice: true
-          - service: work-management
-            project: services/work-management/HCS.WorkManagementService/HCS.WorkManagementService.csproj
-            app_dll: HCS.WorkManagementService.dll
-          - service: collaboration
-            project: services/collaboration/HCS.CollaborationService/HCS.CollaborationService.csproj
-            app_dll: HCS.CollaborationService.dll
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
 
     steps:
       - name: Checkout

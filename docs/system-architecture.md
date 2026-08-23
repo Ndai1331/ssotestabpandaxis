@@ -38,6 +38,22 @@ flowchart TB
   Zimbra -.->|User Federation sync| KC
 ```
 
+### HCS account and signing flow
+
+```mermaid
+flowchart LR
+  Browser[Browser /account] --> BFF[HCS Gateway / BFF]
+  BFF --> Platform[Platform service\nprofile + avatar API]
+  BFF --> Document[Document service\npersonal signatures API]
+  Platform --> AvatarStore[(MinIO hcs-avatars)]
+  Document --> SigningStore[(MinIO hcs-signing)]
+  Document --> DocumentDb[(Document DB\nUserSignature metadata)]
+```
+
+- `/account` is the single profile entry point. The `profile` and `signatures` query tabs are UI deep links, not separate authorization scopes.
+- Avatar and signature content are image-only and capped at 2 MB. Signature self-service resolves the current authenticated user; managing another user remains restricted by the existing elevated policy.
+- `FileName` and `IsDefault` remain in `UserSignature` metadata. The Document service enforces one default per user and selects the newest remaining signature when the default is deleted.
+
 ---
 
 ## Responsibility split
@@ -50,6 +66,8 @@ flowchart TB
 | HCS Blazor UI | Protect routes, render workspace and redirect unauthenticated visitors to the BFF |
 | HCS Web Gateway / BFF | Own browser session, validate return origins, proxy protected API/hub requests |
 | HCS AuthServer | OIDC client of Keycloak and authority used by the BFF |
+| HCS Platform service | Profile updates and authenticated avatar upload/read/delete; avatar binaries in MinIO |
+| HCS Document service | Personal signature list/upload/rename/replace/default/delete/preview; metadata in Document DB and binaries in MinIO |
 
 ---
 

@@ -10,12 +10,30 @@ Bundle **standalone** — không cần clone full repo trên server. Cùng patte
 └── hcs/                 ← Apps: Blazor, Gateway, Auth, microservices, Keycloak
 ```
 
-## Một server vs hai server
+## Kiến trúc HTL Tech (2 server)
 
-| Kịch bản | Folder trên panel | `HCS_DATA_HOST` |
-|----------|-------------------|-----------------|
-| **Một máy** (cms/axis/hcs chung server) | Cả `hcs-data` + `hcs` trên cùng host | IP private của server (vd. `10.17.227.58`) — **không** dùng `127.0.0.1` vì container apps không reach được |
-| **Hai máy** (data tách) | `hcs-data` trên server DB; `hcs` trên server apps | IP private server data trên `.env` của `hcs/` |
+| IP | Vai trò |
+|----|---------|
+| **10.17.227.58** | HCS compose (`hcs/`), Redis, RabbitMQ, Nginx, Keycloak container |
+| **10.17.227.64** | Postgres + MinIO (axis/cms) — **không** chạy `hcs-data` nếu dùng shared |
+
+Folder trên panel:
+
+```
+/www/server/panel/data/compose/
+├── cms/ / axis/     ← .64 (Postgres + MinIO)
+├── hcs-infra/       ← optional: Redis + Rabbit riêng (Baota project thứ 2)
+└── hcs/             ← .58 — apps + Redis + Rabbit (khuyến nghị, một project)
+```
+
+Trước `./up.sh` trên **.58**: mở firewall `.64` cho `5432`, `9000` từ `.58`; tạo DB `hcs_*` trên Postgres `.64`.
+
+## Một server vs hai server (tổng quát)
+
+| Kịch bản | Folder | Ghi chú |
+|----------|--------|---------|
+| **Hai máy** (HTL Tech) | `hcs/` trên `.58` | Postgres/MinIO qua `HCS_POSTGRES_HOST=10.17.227.64` |
+| **Một máy** | `hcs/` (+ optional `hcs-data/`) | `HCS_*_HOST=host.docker.internal`, wait `127.0.0.1` |
 
 ---
 
@@ -66,7 +84,7 @@ chmod 600 .env
 nano .env
 ```
 
-**Copy cùng** mật khẩu data từ `hcs-data/.env`. Domain HTL Tech mẫu đã có sẵn trong `.env.example`.
+**Copy cùng** mật khẩu Postgres/MinIO từ axis stack trên `10.17.227.64` (xem `.env.example`). PFX trong `./.hcs-certs/`.
 
 Chỉnh WASM client nếu cần: `config/blazor-client.appsettings.json`.
 
@@ -74,29 +92,36 @@ Chỉnh WASM client nếu cần: `config/blazor-client.appsettings.json`.
 
 ## Bước 3 — Cert PFX (chỉ server `hcs`)
 
-```bash
-sudo mkdir -p /etc/hcs/certs && sudo chmod 750 /etc/hcs/certs
-# Tạo openiddict.pfx + dataprotection.pfx — xem deploy-server.md § B.3
+Đặt 2 file trong thư mục compose (không commit):
+
+```
+/www/server/panel/data/compose/hcs/.hcs-certs/
+├── openiddict.pfx
+└── dataprotection.pfx
 ```
 
-Đường dẫn trong `.env`: `HCS_OPENIDDICT_PFX=/etc/hcs/certs/openiddict.pfx`.
+Path trong `.env`: `HCS_OPENIDDICT_PFX=/www/server/panel/data/compose/hcs/.hcs-certs/openiddict.pfx`
 
 ---
 
-## Bước 4 — Khởi động stack
+## Bước 4 — Khởi động stack (trên **10.17.227.58**)
 
-**Thứ tự:** data trước, apps sau.
+Postgres + MinIO trên `.64` (axis) — **không** chạy `hcs-data`. Redis + Rabbit **gộp** trong `hcs/docker-compose.yml`.
 
 ```bash
-# Data
-cd /www/server/panel/data/compose/hcs-data
-./up.sh
-
-# Apps (pull Docker Hub + up)
 cd /www/server/panel/data/compose/hcs
-docker login   # nếu Hub private
 ./up.sh
 ```
+
+**Tùy chọn** — tách Redis/Rabbit project Baota riêng:
+
+```bash
+cd /www/server/panel/data/compose/hcs-infra && ./up.sh
+# hcs/.env: HCS_REDIS_HOST=host.docker.internal, HCS_RABBITMQ_HOST=host.docker.internal
+cd /www/server/panel/data/compose/hcs && ./up.sh
+```
+
+Management UI RabbitMQ: `http://127.0.0.1:15672` (user `HCS_RABBITMQ_USER`).
 
 ### Qua Baota Panel UI
 

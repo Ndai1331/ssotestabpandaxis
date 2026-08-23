@@ -10,13 +10,36 @@ compose_file="$root_dir/deploy/ubuntu/docker-compose.apps.yml"
   exit 1
 }
 
-# shellcheck disable=SC1090
-HCS_DATA_HOST=$(grep -E '^HCS_DATA_HOST=' "$env_file" | tail -n1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+env_get() {
+  grep -E "^$1=" "$env_file" | tail -n1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true
+}
+
+HCS_DATA_HOST=$(env_get HCS_DATA_HOST)
 : "${HCS_DATA_HOST:?set HCS_DATA_HOST in .env}"
 
+HCS_POSTGRES_HOST=$(env_get HCS_POSTGRES_HOST)
+HCS_POSTGRES_HOST=${HCS_POSTGRES_HOST:-$HCS_DATA_HOST}
+HCS_POSTGRES_WAIT_HOST=$(env_get HCS_POSTGRES_WAIT_HOST)
+HCS_POSTGRES_WAIT_HOST=${HCS_POSTGRES_WAIT_HOST:-$HCS_POSTGRES_HOST}
+
+HCS_MINIO_HOST=$(env_get HCS_MINIO_HOST)
+HCS_MINIO_HOST=${HCS_MINIO_HOST:-$HCS_DATA_HOST}
+HCS_MINIO_WAIT_HOST=$(env_get HCS_MINIO_WAIT_HOST)
+HCS_MINIO_WAIT_HOST=${HCS_MINIO_WAIT_HOST:-$HCS_MINIO_HOST}
+
+HCS_REDIS_HOST=$(env_get HCS_REDIS_HOST)
+HCS_REDIS_HOST=${HCS_REDIS_HOST:-127.0.0.1}
+HCS_REDIS_WAIT_HOST=$(env_get HCS_REDIS_WAIT_HOST)
+HCS_REDIS_WAIT_HOST=${HCS_REDIS_WAIT_HOST:-$HCS_REDIS_HOST}
+
+HCS_RABBITMQ_HOST=$(env_get HCS_RABBITMQ_HOST)
+HCS_RABBITMQ_HOST=${HCS_RABBITMQ_HOST:-127.0.0.1}
+HCS_RABBITMQ_WAIT_HOST=$(env_get HCS_RABBITMQ_WAIT_HOST)
+HCS_RABBITMQ_WAIT_HOST=${HCS_RABBITMQ_WAIT_HOST:-$HCS_RABBITMQ_HOST}
+
 wait_port() {
-  local host=$1 port=$2
-  echo "Waiting for ${host}:${port} ..."
+  local host=$1 port=$2 label=${3:-}
+  echo "Waiting for ${host}:${port}${label:+ ($label)} ..."
   for _ in $(seq 1 60); do
     if (echo >/dev/tcp/"$host"/"$port") >/dev/null 2>&1; then
       echo "${host}:${port} is reachable"
@@ -24,17 +47,21 @@ wait_port() {
     fi
     sleep 2
   done
-  echo "Timed out waiting for ${host}:${port}" >&2
+  echo "Timed out waiting for ${host}:${port}${label:+ ($label)}" >&2
   return 1
 }
 
-wait_port "$HCS_DATA_HOST" 5432
-wait_port "$HCS_DATA_HOST" 6379
-wait_port "$HCS_DATA_HOST" 5672
-wait_port "$HCS_DATA_HOST" 9000
+if [[ "$(env_get HCS_SKIP_PORT_WAIT | tr '[:upper:]' '[:lower:]')" != "true" ]]; then
+  wait_port "$HCS_POSTGRES_WAIT_HOST" 5432 "postgres"
+  wait_port "$HCS_MINIO_WAIT_HOST" 9000 "minio"
+  wait_port "$HCS_REDIS_WAIT_HOST" 6379 "redis"
+  wait_port "$HCS_RABBITMQ_WAIT_HOST" 5672 "rabbitmq"
+else
+  echo "Skipping port wait (HCS_SKIP_PORT_WAIT=true)"
+fi
 
 cd "$root_dir"
-if [[ "$(grep -E '^HCS_PULL_IMAGES=' "$env_file" | tail -n1 | cut -d= -f2- | tr -d '"' | tr -d "'" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
+if [[ "$(env_get HCS_PULL_IMAGES | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
   echo "Pulling images from Docker Hub (HCS_PULL_IMAGES=true) ..."
   docker compose --env-file "$env_file" -f "$compose_file" pull
 else

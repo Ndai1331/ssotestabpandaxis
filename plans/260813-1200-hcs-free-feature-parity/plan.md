@@ -1,7 +1,7 @@
 ---
 status: in-progress
 blocks: [260814-1000-hcs-blazorise-localization]
-notes: "2026-08-20 PDF/signing UI: Blazorise.PdfViewer 2.3.0 (override iframe ban); Select2 user/role in step modal; DOCX MIME-by-extension; document-detail 6/6 LICENSE layout; action button border=icon; signing 3-row filter + ExtraLarge sign modal. DocumentService tests 52. Rebuild blazor+document; hard refresh."
+notes: "2026-08-21 source audit: survey results read endpoint is owner-protected; all top-nav targets resolve to client routes. Added route-level authorization for Organization, Administration and Reports; removed temporary auth telemetry egress to port 7329. Local verification passed: AuthServer, gateway, Work service + Blazor client builds (0 warnings/errors), Work tests 42/42, Document tests 52/52, gateway tests 109/109, AuthServer tests 18/18. Remaining acceptance evidence: Docker rebuild and fresh authenticated browser CRUD pass; UI/localization plan 260814-1000 remains blocked until then."
 ---
 
 # HCS Free feature parity — menu, auth, catalogs and business modules

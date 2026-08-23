@@ -1,6 +1,6 @@
 # Codebase Summary — BD Workspace
 
-> Updated: 2026-08-10. Local SSO lab only.
+> Updated: 2026-08-22. Local SSO lab only.
 
 ## Meta repo
 
@@ -23,6 +23,9 @@
 - Default runtime: Docker Compose from `services/HCS_web_free_license/`; browser entry is `https://hcs.localhost`.
 - Browser flow: protected Blazor routes → Gateway `/bff/login` → AuthServer → Keycloak; the gateway allows deep-link returns only to configured UI origins.
 - Primary HCS-specific navigation is Chat (`/chat`), guarded by the `Collaboration.Chat` policy/permission.
+- HCS document/workflow parity now includes normalized lookup filters, user contact Select2 identity details, authorized watermarked PDF previews, and guarded sign/approve/return/reject actions in the Community client.
+- Account management is consolidated at `/account`: profile/password/avatar actions live in the profile tab, while `/account?tab=signatures` provides personal signature image CRUD. `/user-signatures` remains a compatibility redirect; credential signing settings remain at `/signature-settings`.
+- Personal avatars are served through the Platform service and stored in MinIO; personal signature metadata and authorization are handled by the Document service, with signature blobs stored in the `hcs-signing` bucket. Users manage only their own signatures unless the existing elevated permission is present.
 - Runtime details and safe startup/rollback: [`runbooks/hcs-docker-compose-handoff.md`](./runbooks/hcs-docker-compose-handoff.md).
 
 ## Auth target state

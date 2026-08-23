@@ -1,7 +1,7 @@
 # BD Platform — Workspace Architecture
 
 > **Mục đích:** Single source of truth cho kiến trúc lab SSO Bình Dương (Directus + HCS Community qua Keycloak).
-> **Cập nhật:** 2026-08-10
+> **Cập nhật:** 2026-08-22
 > **Workspace:** `bd-workspace` (local meta folder — chưa GitHub)  
 > **Diagram:** [`../system-sso-guideline.png`](../system-sso-guideline.png)
 
@@ -99,6 +99,7 @@ Zimbra LDAP/AD ──User Federation──► Keycloak ──map──► Direct
 || hanhchinhso_Identity | Identity Service | IdentityUsers, Roles, Orgs |
 || hanhchinhso_Administration | Administration Service | Permissions, tenants, audit |
 || hanhchinhso_Workflow | WorkflowService | Elsa 3.5 workflow definitions, instances, execution logs |
+|| hanhchinhso_Document | Document Service | UserSignature metadata, file names, default flags and document/signing metadata |
 || ABP other DBs | Other services | Language, AI, GDPR, … |
 
 Mỗi app tự quản lý authorization nội bộ sau khi nhận claims từ token.
@@ -153,6 +154,8 @@ Còn lại:
 || Docker runtime | `docker-compose.yml` | Browser `https://hcs.localhost` |
 
 - `/` requires authentication; `/login` is anonymous only to start the same BFF flow.
+- `/account` is the profile entry point with profile/password/avatar controls and a `?tab=signatures` personal signature grid. `/user-signatures` redirects there for compatibility; `/signature-settings` remains the separate credential-signing configuration page.
+- Profile avatars use the Platform service and MinIO `hcs-avatars`. Personal signature CRUD uses the Document service and MinIO `hcs-signing`; self-service is scoped to the current user, while elevated users retain the existing cross-user permission.
 - The sole HCS-specific main-menu item is Chat (`/chat`), protected by `Collaboration.Chat`; standard Administration entries remain permission-driven.
 - Docker Compose is the default runtime. See [`runbooks/hcs-docker-compose-handoff.md`](./runbooks/hcs-docker-compose-handoff.md) for safe startup and rollback.
 

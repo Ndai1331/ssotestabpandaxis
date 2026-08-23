@@ -23,29 +23,67 @@ x-hcs-image: &hcs-image
     ASPNETCORE_URLS: http://+:8080
     ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
     Urls: http://+:8080
-    ConnectionStrings__Default: Host=${HCS_DATA_HOST};Port=5432;Database=hcs_identity;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
-    ConnectionStrings__Organization: Host=${HCS_DATA_HOST};Port=5432;Database=hcs_organization;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
-    ConnectionStrings__DocumentService: Host=${HCS_DATA_HOST};Port=5432;Database=hcs_document;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
-    ConnectionStrings__WorkManagement: Host=${HCS_DATA_HOST};Port=5432;Database=hcs_work;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
-    ConnectionStrings__Collaboration: Host=${HCS_DATA_HOST};Port=5432;Database=hcs_collaboration;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
-    Redis__Configuration: ${HCS_DATA_HOST}:6379,password=${HCS_REDIS_PASSWORD},ssl=False
-    DataProtection__Redis: ${HCS_DATA_HOST}:6379,password=${HCS_REDIS_PASSWORD},ssl=False
+    ConnectionStrings__Default: Host=${HCS_POSTGRES_HOST:-${HCS_DATA_HOST}};Port=5432;Database=hcs_identity;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
+    ConnectionStrings__Organization: Host=${HCS_POSTGRES_HOST:-${HCS_DATA_HOST}};Port=5432;Database=hcs_organization;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
+    ConnectionStrings__DocumentService: Host=${HCS_POSTGRES_HOST:-${HCS_DATA_HOST}};Port=5432;Database=hcs_document;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
+    ConnectionStrings__WorkManagement: Host=${HCS_POSTGRES_HOST:-${HCS_DATA_HOST}};Port=5432;Database=hcs_work;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
+    ConnectionStrings__Collaboration: Host=${HCS_POSTGRES_HOST:-${HCS_DATA_HOST}};Port=5432;Database=hcs_collaboration;Username=${HCS_POSTGRES_USER:-hcs};Password=${HCS_POSTGRES_PASSWORD}
+    Redis__Configuration: ${HCS_REDIS_HOST:-redis}:6379,password=${HCS_REDIS_PASSWORD},ssl=False
+    DataProtection__Redis: ${HCS_REDIS_HOST:-redis}:6379,password=${HCS_REDIS_PASSWORD},ssl=False
     DataProtection__Certificate__Path: /var/run/hcs-certs/dataprotection.pfx
     DataProtection__Certificate__Password: ${HCS_DATAPROTECTION_PFX_PASSWORD}
     DataProtection__CertificatePath: /var/run/hcs-certs/dataprotection.pfx
     DataProtection__CertificatePassword: ${HCS_DATAPROTECTION_PFX_PASSWORD}
     AuthServer__CertificatePath: /var/run/hcs-certs/openiddict.pfx
     AuthServer__CertificatePassword: ${HCS_OPENIDDICT_PFX_PASSWORD}
-    RabbitMQ__Connections__Default__HostName: ${HCS_DATA_HOST}
+    RabbitMQ__Connections__Default__HostName: ${HCS_RABBITMQ_HOST:-rabbitmq}
     RabbitMQ__Connections__Default__UserName: ${HCS_RABBITMQ_USER}
     RabbitMQ__Connections__Default__Password: ${HCS_RABBITMQ_PASSWORD}
-    Minio__EndPoint: ${HCS_DATA_HOST}:9000
+    Minio__EndPoint: ${HCS_MINIO_HOST:-${HCS_DATA_HOST}}:9000
     Minio__AccessKey: ${HCS_MINIO_ROOT_USER}
     Minio__SecretKey: ${HCS_MINIO_ROOT_PASSWORD}
     Minio__WithSSL: "false"
     Minio__CreateBucketIfNotExists: "true"
 
 services:
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${HCS_REDIS_PASSWORD:?set HCS_REDIS_PASSWORD}
+      - --protected-mode
+      - "yes"
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${HCS_REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${HCS_RABBITMQ_USER:?set HCS_RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${HCS_RABBITMQ_PASSWORD:?set HCS_RABBITMQ_PASSWORD}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
   db-migrator:
     <<: *hcs-image
     image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:db-migrator
@@ -54,6 +92,9 @@ services:
       dockerfile: deploy/docker/Dockerfile
       args: { PROJECT: src/HCS.DbMigrator/HCS.DbMigrator.csproj, APP_DLL: HCS.DbMigrator.dll }
     restart: "no"
+    depends_on:
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
     environment:
       <<: *common-env
       Identity__AdminPassword: ${HCS_ADMIN_PASSWORD}
@@ -130,7 +171,7 @@ services:
       Bff__PublicOrigin: https://${HCS_API_PUBLIC_HOST}
       Bff__CookieDomain: ${Bff__CookieDomain}
       RemoteServices__Default__BaseUrl: https://${HCS_API_PUBLIC_HOST}/
-      DataProtection__Redis: ${HCS_DATA_HOST}:6379,password=${HCS_REDIS_PASSWORD},ssl=False
+      DataProtection__Redis: ${HCS_REDIS_HOST:-redis}:6379,password=${HCS_REDIS_PASSWORD},ssl=False
 
   platform:
     <<: *hcs-image
@@ -227,7 +268,7 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${HCS_KEYCLOAK_ADMIN:?set HCS_KEYCLOAK_ADMIN}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${HCS_KEYCLOAK_ADMIN_PASSWORD:?set HCS_KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://${HCS_DATA_HOST}:5432/hcs_keycloak
+      KC_DB_URL: jdbc:postgresql://${HCS_POSTGRES_HOST:-${HCS_DATA_HOST}}:5432/hcs_keycloak
       KC_DB_USERNAME: ${HCS_POSTGRES_USER:-hcs}
       KC_DB_PASSWORD: ${HCS_POSTGRES_PASSWORD}
       KC_HOSTNAME: https://${HCS_SSO_PUBLIC_HOST}
@@ -243,4 +284,6 @@ services:
       start_period: 60s
 
 volumes:
+  redis-data:
+  rabbitmq-data:
   document-data-protection:
