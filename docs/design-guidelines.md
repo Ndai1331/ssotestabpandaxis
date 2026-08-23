@@ -23,4 +23,5 @@ Phase lab SSO — chưa có brand UI riêng cho BD portal.
 - Bảng đơn giản tối đa 4 cột dùng `.hcs-table-wrap--stacked` cùng `data-label` để chuyển thành card trên mobile. Bảng cần so sánh nhiều cột dùng `.hcs-table-wrap--scroll`, `min-width` và chỉ dẫn “Vuốt ngang để xem thêm”; không tạo horizontal scroll cho page container.
 - Với bảng rộng trong CSS Grid, grid item và data surface phải có `min-width: 0`; đặt `overflow-x: auto` ở card body/table wrapper, không để `min-width` của table làm nở `.hcs-document-layout` hoặc page header.
 - Form nhiều cột chuyển thành một cột dưới 768px. Page header, toolbar, filter và action phụ xếp dọc khi không còn đủ chiều rộng.
+- Desktop navigation cấp 1 phải dùng cùng một flex track cho link trực tiếp và dropdown trigger; parent `.hcs-nav-menu` stretch theo nav và panel cấp 2 neo từ box trigger ổn định. Không căn riêng từng menu bằng margin/pixel offset.
 - Animation chỉ dùng cho `transform`/`opacity` trong 150–300ms và phải giảm/tắt khi `prefers-reduced-motion: reduce`.

@@ -1,11 +1,55 @@
 using System;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
+using HCS.Blazor.Client.Components;
 
 namespace HCS.Blazor.Client.Pages.Organization;
 
 public partial class OrganizationCatalog
 {
+    private void OnParentDepartmentChanged(Guid? id) => form.ParentId = id?.ToString() ?? string.Empty;
+
+    private void OnDepartmentChanged(Guid? id) => form.DepartmentId = id?.ToString() ?? string.Empty;
+
+    private CatalogSelect2Item? DepartmentSelectItem(string value)
+    {
+        if (!Guid.TryParse(value, out var id))
+        {
+            return null;
+        }
+
+        return departmentOptions.FirstOrDefault(item => item.Id == id) is { } department
+            ? new CatalogSelect2Item(department.Id.ToString(), CatalogSelect2Text.CodeName(department.Code, department.Name))
+            : null;
+    }
+
+    private Task<CatalogSelect2SearchResponse> SearchParentDepartmentsAsync(string term, int page) =>
+        SearchDepartmentsAsync(term, page, excludeEditingDepartment: true);
+
+    private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page) =>
+        SearchDepartmentsAsync(term, page, excludeEditingDepartment: false);
+
+    private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(
+        string term,
+        int page,
+        bool excludeEditingDepartment)
+    {
+        var normalizedTerm = CatalogSelect2Text.NormalizeSearch(term);
+        var options = (excludeEditingDepartment ? ParentDepartmentOptions : departmentOptions)
+            .Where(item => normalizedTerm.Length == 0
+                || CatalogSelect2Text.NormalizeSearch(item.Code).Contains(normalizedTerm, StringComparison.Ordinal)
+                || CatalogSelect2Text.NormalizeSearch(item.Name).Contains(normalizedTerm, StringComparison.Ordinal))
+            .ToList();
+
+        return Task.FromResult(CatalogSelect2Cache.Merge(
+            departmentOptions,
+            options,
+            item => item.Id,
+            item => CatalogSelect2Text.CodeName(item.Code, item.Name),
+            more: false));
+    }
+
     private bool TryBuildRequest(out object request, out string validationMessage)
     {
         request = new object();

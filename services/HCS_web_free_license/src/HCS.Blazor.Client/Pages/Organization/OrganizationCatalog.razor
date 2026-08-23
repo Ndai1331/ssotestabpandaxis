@@ -197,35 +197,27 @@
 
                         @if (Definition.Kind == OrganizationCatalogKind.Department)
                         {
-                            <Validation>
-                                <Field>
-                                    <FieldLabel>@L["Catalog:ParentDepartment"]</FieldLabel>
-                                    <Select TValue="string" @bind-Value="form.ParentId" Class="hcs-catalog-select">
-                                        <SelectItem Value="@string.Empty">@L["Catalog:NoParent"]</SelectItem>
-                                        @foreach (var department in ParentDepartmentOptions)
-                                        {
-                                            <SelectItem Value="@department.Id.ToString()">@department.Code — @department.Name</SelectItem>
-                                        }
-                                    </Select>
-                                    <FieldHelp>@L["Catalog:ParentDepartmentHelp"]</FieldHelp>
-                                </Field>
-                            </Validation>
+                            <Field>
+                                <FieldLabel>@L["Catalog:ParentDepartment"]</FieldLabel>
+                                <CatalogSelect2 Value="@ParseOptionalGuid(form.ParentId)"
+                                                ValueChanged="OnParentDepartmentChanged"
+                                                Placeholder="@L["Catalog:NoParent"]"
+                                                SelectedItem="@DepartmentSelectItem(form.ParentId)"
+                                                Search="SearchParentDepartmentsAsync" />
+                                <FieldHelp>@L["Catalog:ParentDepartmentHelp"]</FieldHelp>
+                            </Field>
                         }
 
                         @if (Definition.Kind == OrganizationCatalogKind.Unit)
                         {
-                            <Validation>
-                                <Field>
-                                    <FieldLabel>@L["Catalog:Department"] *</FieldLabel>
-                                    <Select TValue="string" @bind-Value="form.DepartmentId" Class="hcs-catalog-select">
-                                        <SelectItem Value="@string.Empty">@L["Catalog:ChooseDepartment"]</SelectItem>
-                                        @foreach (var department in departmentOptions)
-                                        {
-                                            <SelectItem Value="@department.Id.ToString()">@department.Code — @department.Name</SelectItem>
-                                        }
-                                    </Select>
-                                </Field>
-                            </Validation>
+                            <Field>
+                                <FieldLabel>@L["Catalog:Department"] *</FieldLabel>
+                                <CatalogSelect2 Value="@ParseOptionalGuid(form.DepartmentId)"
+                                                ValueChanged="OnDepartmentChanged"
+                                                Placeholder="@L["Catalog:ChooseDepartment"]"
+                                                SelectedItem="@DepartmentSelectItem(form.DepartmentId)"
+                                                Search="SearchDepartmentsAsync" />
+                            </Field>
                         }
 
                         <div class="hcs-form-row">

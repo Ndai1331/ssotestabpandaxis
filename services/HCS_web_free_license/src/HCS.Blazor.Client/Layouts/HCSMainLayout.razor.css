@@ -134,6 +134,7 @@
 /* ——— Top nav (desktop) ——— */
 .hcs-top-nav {
     align-items: stretch;
+    box-sizing: border-box;
     display: flex;
     flex: 1 1 auto;
     gap: .05rem;
@@ -145,6 +146,19 @@
     min-width: 0;
     overflow: visible;
     width: 100%;
+}
+
+/* Keep direct links and dropdown parents on the same desktop track. The
+   direct NavLink and the button inside .hcs-nav-menu are different flex-item
+   shapes; giving both a stretched parent box prevents level-one labels from
+   drifting and gives level-two panels one stable anchor. */
+.hcs-top-nav > .hcs-nav-menu {
+    align-self: stretch;
+    display: flex;
+}
+
+.hcs-top-nav ::deep .hcs-top-nav__link {
+    align-self: stretch;
 }
 
 .hcs-top-nav ::deep .hcs-top-nav__link,
@@ -161,7 +175,8 @@
     font-size: clamp(.78rem, 1.05vw, .88rem);
     font-weight: 650;
     gap: .4rem;
-    min-height: 100%;
+    height: auto;
+    min-height: 0;
     padding: 0 clamp(.35rem, .9vw, .58rem);
     text-decoration: none;
     transition: color .18s var(--hcs-ease), background .18s var(--hcs-ease), border-color .18s var(--hcs-ease);
@@ -713,6 +728,7 @@
         border-bottom: 0;
         border-radius: 5px;
         font-size: .95rem;
+        height: auto;
         justify-content: flex-start;
         min-height: 2.85rem;
         padding: .55rem .7rem;
@@ -726,6 +742,7 @@
     }
 
     .hcs-nav-menu {
+        flex-direction: column;
         width: 100%;
     }
 

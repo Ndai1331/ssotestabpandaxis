@@ -8,12 +8,14 @@
 @using HCS.CollaborationService.Contracts
 @using HCS.Localization
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.Localization
 @using Microsoft.Extensions.Logging
 @using Volo.Abp.AspNetCore.Components.Messages
 @inject CollaborationClient Client
 @inject ChatRealtimeConnection Realtime
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IConfiguration Configuration
 @inject IStringLocalizer<HCSResource> Localizer
 @inject ILogger<ChatWorkspace> Logger
 @inject IUiMessageService UiMessageService
@@ -288,7 +290,7 @@
                                                     @if (IsImage(attachment))
                                                     {
                                                         <button class="hcs-chat__image" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
-                                                            <img src="@AttachmentUrl(attachment.Id)" alt="@attachment.FileName" />
+                                                            <img src="@AttachmentUrl(attachment.Id)" crossorigin="use-credentials" alt="@attachment.FileName" />
                                                         </button>
                                                     }
                                                     else
@@ -456,7 +458,7 @@
                                     {
                                         <li>
                                             <button class="hcs-chat__media-photo" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
-                                                <img src="@AttachmentUrl(attachment.Id)" alt="@attachment.FileName" />
+                                                <img src="@AttachmentUrl(attachment.Id)" crossorigin="use-credentials" alt="@attachment.FileName" />
                                             </button>
                                         </li>
                                     }
@@ -501,7 +503,7 @@
             <button class="hcs-chat-preview__close" type="button" aria-label="@T("Chat:ClosePreview")" @onclick="ClosePreview" @onclick:stopPropagation><i class="fa fa-xmark" aria-hidden="true"></i></button>
             @if (IsImage(previewAttachment))
             {
-                <img src="@AttachmentUrl(previewAttachment.Id)" alt="@previewAttachment.FileName" @onclick:stopPropagation />
+                <img src="@AttachmentUrl(previewAttachment.Id)" crossorigin="use-credentials" alt="@previewAttachment.FileName" @onclick:stopPropagation />
             }
             <a class="hcs-chat-preview__download" href="@AttachmentUrl(previewAttachment.Id)" target="_blank" rel="noopener" @onclick:stopPropagation>@previewAttachment.FileName</a>
         </div>
@@ -1386,7 +1388,7 @@
         return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
     }
 
-    private static string AttachmentUrl(Guid id) => $"/api/chat/attachments/{id:D}";
+    private string AttachmentUrl(Guid id) => ChatAttachmentUrlBuilder.Build(Configuration, id);
     private string T(string key) => Localizer[key];
 
     private string MapChatError(Exception exception, string fallbackKey)
