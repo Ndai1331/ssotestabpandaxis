@@ -32,6 +32,10 @@
              Link="wwwroot\images\logo\logo.png"
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\..\src\HCS.Blazor\wwwroot\favicon.ico"
+             Link="wwwroot\favicon.ico"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
