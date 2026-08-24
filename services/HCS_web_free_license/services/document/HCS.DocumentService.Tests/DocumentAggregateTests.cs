@@ -91,6 +91,26 @@ public sealed class DocumentAggregateTests
     }
 
     [Fact]
+    public void Workflow_submitter_is_stored_without_overwriting_recipient_department()
+    {
+        var document = Create().DuplicateAsWorkflow(Guid.NewGuid(), "CV-001-WF", null, Now);
+        var submitter = Guid.NewGuid();
+
+        document.SetWorkflowSubmitter(submitter);
+
+        Assert.Equal(submitter, document.FromUserId);
+        Assert.Null(document.OrganizationUnitId);
+    }
+
+    [Fact]
+    public void Generated_document_number_is_date_prefixed_and_compact()
+    {
+        var number = DocumentAppService.GenerateNumber(Now);
+
+        Assert.Matches("^VB-20260803-[A-F0-9]{8}$", number);
+    }
+
+    [Fact]
     public void Reviewer_can_be_assigned_while_the_document_is_in_review()
     {
         var document = Create();
@@ -100,6 +120,18 @@ public sealed class DocumentAggregateTests
         var signer = Guid.NewGuid();
         document.Assign(Guid.NewGuid(), signer, "sign", null, Now, "sign");
         Assert.Contains(document.Assignments, a => a.AssigneeUserId == signer && a.StepCode == "sign");
+    }
+
+    [Fact]
+    public void Review_start_keeps_optional_signing_content_in_history()
+    {
+        var document = Create();
+        document.AddFile(Guid.NewGuid(), "a.pdf", "application/pdf", 10, new string('a', 64), "documents/a", null, Now);
+        document.Submit(null, Now);
+
+        document.StartReview(null, Now, "Nội dung trình ký");
+
+        Assert.Equal("Nội dung trình ký", document.History.Single(x => x.Action == "ReviewStarted").Detail);
     }
 
     [Fact]

@@ -63,3 +63,21 @@ public sealed class UserMappingsController(IOrganizationAppService service) : Or
     [HttpPut("{id:guid}")] public Task<UserOrganizationMappingDto> Update(Guid id, [FromBody] UpsertUserOrganizationMappingDto input, CancellationToken ct) => Service.UpdateUserMappingAsync(id, input, ct);
     [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteUserMappingAsync(id, ct);
 }
+
+[Route("api/organization/user-departments")]
+[Authorize]
+public sealed class UserDepartmentLookupController(IOrganizationAppService service) : OrganizationControllerBase(service)
+{
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<UserDepartmentLookupDto>>> List(
+        [FromQuery] Guid[] userIds, CancellationToken ct)
+    {
+        if (!CanReadLookup()) return Forbid();
+        return Ok(await Service.GetUserDepartmentsAsync(userIds, ct));
+    }
+
+    private bool CanReadLookup() =>
+        User.HasClaim("permission", "Documents.Signing.Execute")
+        || User.HasClaim("permission", "Documents.Workflow.View")
+        || User.HasClaim("permission", OrganizationPermissions.UserMappings);
+}

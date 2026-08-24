@@ -95,11 +95,34 @@
                 <i class="fa fa-house" aria-hidden="true"></i><span>@Localizer["Menu:Workspace"]</span>
             </NavLink>
 
-            @Menu("documents", "fa-file-lines", Localizer["Menu:Documents"].Value,
-                ("/manage-documents?sourceType=0", "fa-folder-open", Localizer["Menu:DocumentList"].Value),
-                ("/manage-documents?sourceType=1", "fa-user", Localizer["Menu:MyDocuments"].Value),
-                ("/manage-documents?sourceType=2", "fa-inbox", Localizer["Menu:DocumentsSentToMe"].Value),
-                ("/document-signing", "fa-signature", Localizer["Menu:DocumentSigning"].Value))
+            <div class="hcs-nav-menu @(IsExpanded("documents") ? "hcs-nav-menu--expanded" : null)"
+                 @onpointerenter="@(() => OnMenuPointerEnter("documents"))">
+                <button class="hcs-nav-menu__trigger" type="button"
+                        aria-expanded="@IsExpanded("documents").ToString().ToLowerInvariant()"
+                        aria-haspopup="true" @onmousedown:preventDefault
+                        @onclick="@(() => ToggleSection("documents"))">
+                    <i class="fa fa-file-lines" aria-hidden="true"></i><span>@Localizer["Menu:Documents"]</span>
+                    <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
+                </button>
+                <div class="hcs-nav-menu__panel" role="menu">
+                    <AuthorizeView Policy="Documents.View">
+                        <Authorized>
+                            <NavLink href="/manage-documents?sourceType=0" @onclick="CloseMobileNav"><i class="fa fa-folder-open" aria-hidden="true"></i>@Localizer["Menu:DocumentList"]</NavLink>
+                            <NavLink href="/manage-documents?sourceType=1" @onclick="CloseMobileNav"><i class="fa fa-user" aria-hidden="true"></i>@Localizer["Menu:MyDocuments"]</NavLink>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="Documents.Assign" Context="canAssignDocuments">
+                        <Authorized>
+                            <AuthorizeView Policy="Documents.View" Context="canViewDocuments">
+                                <Authorized><NavLink href="/manage-documents?sourceType=2" @onclick="CloseMobileNav"><i class="fa fa-inbox" aria-hidden="true"></i>@Localizer["Menu:DocumentsSentToMe"]</NavLink></Authorized>
+                            </AuthorizeView>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="Documents.Signing.Execute">
+                        <Authorized><NavLink href="/document-signing" @onclick="CloseMobileNav"><i class="fa fa-signature" aria-hidden="true"></i>@Localizer["Menu:DocumentSigning"]</NavLink></Authorized>
+                    </AuthorizeView>
+                </div>
+            </div>
 
             @Menu("workflows", "fa-arrow-trend-up", Localizer["Menu:Workflows"].Value,
                 ("/workflow-definitions", "fa-diagram-project", Localizer["Menu:WorkflowDefinitions"].Value),

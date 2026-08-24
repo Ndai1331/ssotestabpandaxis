@@ -17,22 +17,11 @@ on:
       - '.github/workflows/hcs-docker-publish.yml'
   workflow_dispatch:
     inputs:
-      service:
-        description: Service image to build (use all for the complete release set)
+      services:
+        description: "Space-separated service images to build (for example: blazor auth-server gateway)"
         required: true
-        type: choice
+        type: string
         default: all
-        options:
-          - all
-          - db-migrator
-          - auth-server
-          - web-gateway
-          - blazor
-          - platform
-          - organization
-          - document
-          - work-management
-          - collaboration
 
 env:
   HCS_ROOT: services/HCS_web_free_license
@@ -50,7 +39,7 @@ jobs:
         id: resolve
         env:
           EVENT_NAME: ${{ github.event_name }}
-          DISPATCH_SERVICE: ${{ inputs.service }}
+          DISPATCH_SERVICES: ${{ inputs.services }}
           PUSH_COMMIT_MESSAGES_JSON: ${{ toJSON(github.event.commits.*.message) }}
         run: |
           set -eo pipefail
@@ -76,27 +65,41 @@ jobs:
           select_all=false
 
           add_service() {
-            for existing in "${selected_services[@]}"; do
-              if [[ "$existing" == "$1" ]]; then
-                return
-              fi
-            done
+            if ((${#selected_services[@]} > 0)); then
+              for existing in "${selected_services[@]}"; do
+                if [[ "$existing" == "$1" ]]; then
+                  return
+                fi
+              done
+            fi
             selected_services+=("$1")
           }
 
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            case "${DISPATCH_SERVICE:-}" in
-              all)
-                select_all=true
-                ;;
-              db-migrator|auth-server|web-gateway|blazor|platform|organization|document|work-management|collaboration)
-                add_service "$DISPATCH_SERVICE"
-                ;;
-              *)
-                echo "::error::Unsupported workflow_dispatch service: ${DISPATCH_SERVICE:-<empty>}"
-                exit 1
-                ;;
-            esac
+            read -r -a requested_services <<< "${DISPATCH_SERVICES:-}"
+            if ((${#requested_services[@]} == 0)); then
+              echo "::error::Provide at least one service image, or use all."
+              exit 1
+            fi
+
+            for requested_service in "${requested_services[@]}"; do
+              case "$requested_service" in
+                all)
+                  select_all=true
+                  ;;
+                gateway)
+                  add_service web-gateway
+                  ;;
+                db-migrator|auth-server|web-gateway|blazor|platform|organization|document|work-management|collaboration)
+                  add_service "$requested_service"
+                  ;;
+                *)
+                  echo "::error::Unsupported workflow_dispatch service: $requested_service"
+                  echo "::error::Use space-separated values from: all db-migrator auth-server gateway web-gateway blazor platform organization document work-management collaboration"
+                  exit 1
+                  ;;
+              esac
+            done
           else
             while IFS= read -r subject; do
               if [[ "$subject" =~ ^\[all\]([[:space:]]|$) ]]; then

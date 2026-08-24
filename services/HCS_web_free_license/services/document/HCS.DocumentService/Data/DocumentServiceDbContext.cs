@@ -116,13 +116,25 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
         });
         builder.Entity<ApprovalTask>(b => { b.ToTable("ApprovalTasks"); b.HasKey(x => x.Id); b.Property(x => x.StepCode).HasMaxLength(64); b.Property(x => x.DecisionKey).HasMaxLength(128); b.Property(x => x.Comment).HasMaxLength(1000); b.HasIndex(x => x.DecisionKey).IsUnique().HasFilter("\"DecisionKey\" IS NOT NULL"); });
 
-        builder.Entity<SigningCredential>(b => { b.ToTable("SigningCredentials"); b.HasKey(x => x.Id); b.Property(x => x.Endpoint).HasMaxLength(1024); b.Property(x => x.ProtectedSecret).HasMaxLength(4096); b.HasIndex(x => new { x.UserId, x.Kind }).IsUnique(); });
+        builder.Entity<SigningCredential>(b =>
+        {
+            b.ToTable("SigningCredentials"); b.HasKey(x => x.Id);
+            b.Property(x => x.Endpoint).HasMaxLength(1024);
+            b.Property(x => x.ProtectedSecret).HasMaxLength(4096);
+            b.Property(x => x.ProviderCode).HasMaxLength(256);
+            b.Property(x => x.LayoutImageBase64).HasMaxLength(4_000_000);
+            b.HasIndex(x => new { x.UserId, x.Kind }).IsUnique();
+        });
         builder.Entity<UserSignature>(b =>
         {
             b.ToTable("UserSignatures"); b.HasKey(x => x.Id);
             b.Property(x => x.FileName).HasMaxLength(256);
             b.Property(x => x.ContentType).HasMaxLength(128);
             b.Property(x => x.BlobName).HasMaxLength(512);
+            b.Property(x => x.ProviderCode).HasMaxLength(256);
+            b.Property(x => x.TokenRef).HasMaxLength(256);
+            b.Property(x => x.ProtectedSecret).HasMaxLength(4096);
+            b.Property(x => x.SealImageBase64).HasMaxLength(4_000_000);
             b.Property(x => x.Type).HasDefaultValue(UserSignatureType.Electronic);
             b.HasIndex(x => x.UserId);
         });

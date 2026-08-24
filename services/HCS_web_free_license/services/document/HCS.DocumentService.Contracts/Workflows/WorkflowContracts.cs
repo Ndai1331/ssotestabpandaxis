@@ -60,20 +60,23 @@ public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid
     string TemplateJson = "{}", string OutputFormat = "PDF");
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, IReadOnlyList<Guid> DepartmentIds, IReadOnlyList<Guid> UserIds);
-public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null);
+public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null,
+    string? UserName = null);
 public sealed record WorkflowStepCandidateGroupDto(string StepCode, string StepName, string AssigneeType, Guid? RoleId,
     IReadOnlyList<WorkflowAssigneeCandidateDto> Candidates);
 public sealed record StartWorkflowRequest(Guid? DocumentId, Guid DefinitionId, string IdempotencyKey,
     IReadOnlyList<WorkflowStepSignerSelection>? Signers = null,
     IReadOnlyList<WorkflowViewScopeSelection>? ViewScopes = null,
-    bool UseTemplateFile = false, bool UseWorkflowTemplateFile = false);
+    bool UseTemplateFile = false, bool UseWorkflowTemplateFile = false, string? SigningContent = null);
 
 public static class WorkflowStartRequestRules
 {
     public static bool HasExactlyOneSource(StartWorkflowRequest input) =>
         input.UseWorkflowTemplateFile ^ input.DocumentId.HasValue;
 }
-public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey, bool Return = false);
+public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey, bool Return = false,
+    Guid? SigningAttemptId = null, Guid? SigningFileId = null);
+public sealed record ExtendWorkflowDueDateRequest(int AdditionalDays, string? Reason = null);
 public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy,
     DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt);
 public sealed record WorkflowInstanceDto(Guid Id, Guid DocumentId, Guid DefinitionId, WorkflowInstanceStatus Status,
@@ -107,5 +110,6 @@ public interface IWorkflowAppService
         CancellationToken cancellationToken = default);
     Task<WorkflowInstanceDto> StartAsync(StartWorkflowRequest input, CancellationToken cancellationToken = default);
     Task<WorkflowInstanceDto> DecideAsync(Guid taskId, DecideApprovalTaskRequest input, CancellationToken cancellationToken = default);
+    Task<WorkflowInstanceDto> ExtendDueDateAsync(Guid taskId, ExtendWorkflowDueDateRequest input, CancellationToken cancellationToken = default);
     Task<WorkflowInstanceDto> ResubmitAsync(Guid instanceId, string idempotencyKey, CancellationToken cancellationToken = default);
 }

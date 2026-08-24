@@ -123,6 +123,14 @@ public sealed class BffHttpMessageHandler(Uri gatewayBaseAddress) : DelegatingHa
         HttpRequestMessage source,
         CancellationToken cancellationToken)
     {
+        // Multipart content may contain a one-shot browser file stream. Do not read
+        // or serialize it just to prepare an antiforgery retry; the initial request
+        // already carries the freshly fetched token and can be sent as-is.
+        if (source.Content is MultipartFormDataContent)
+        {
+            return null;
+        }
+
         if (source.Content?.Headers.ContentLength is long contentLength && contentLength > MaximumReplayBodyBytes)
         {
             return null;

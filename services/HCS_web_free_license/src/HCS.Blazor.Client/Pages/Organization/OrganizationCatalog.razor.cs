@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Blazorise;
@@ -118,10 +119,14 @@ public partial class OrganizationCatalog : System.IDisposable
         errorCanRetry = canRetry;
     }
 
-    private async Task SetErrorAsync(string message, string titleKey, bool canRetry)
+    private async Task SetErrorAsync(
+        string message,
+        string titleKey,
+        bool canRetry,
+        HttpStatusCode? statusCode = null)
     {
         SetError(message, titleKey, canRetry);
-        await UiMessageService.Error(message);
+        await ShowErrorAsync(message, statusCode);
     }
 
 

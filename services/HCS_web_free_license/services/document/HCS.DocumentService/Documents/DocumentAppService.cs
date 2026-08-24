@@ -65,7 +65,8 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.Create);
         var now = DateTime.UtcNow;
         var sourceType = input.SourceType is DocumentSourceType.Personal ? DocumentSourceType.Personal : DocumentSourceType.Archive;
-        var document = new DocumentAggregate(Guid.NewGuid(), input.Number, input.Title, input.Description, userId, now, sourceType);
+        var number = await ResolveNumberAsync(input.Number, now, cancellationToken);
+        var document = new DocumentAggregate(Guid.NewGuid(), number, input.Title, input.Description, userId, now, sourceType);
         if (input.DocumentTypeId is not null || input.SectorId is not null || input.UrgencyId is not null || input.ConfidentialityId is not null)
             document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, now);
         db.Documents.Add(document);
@@ -167,6 +168,25 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
     private ClaimsPrincipal Principal => httpContext.HttpContext?.User ?? new ClaimsPrincipal();
     private Guid? UserId => Guid.TryParse(httpContext.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
     private string CorrelationId => httpContext.HttpContext?.TraceIdentifier ?? Guid.NewGuid().ToString("N");
+
+    private async Task<string> ResolveNumberAsync(string? requested, DateTime now, CancellationToken cancellationToken)
+    {
+        var normalized = requested?.Trim();
+        if (!string.IsNullOrWhiteSpace(normalized)) return normalized;
+
+        string number;
+        do
+        {
+            number = GenerateNumber(now);
+        }
+        while (await db.Documents.AnyAsync(x => x.Number == number, cancellationToken));
+
+        return number;
+    }
+
+    internal static string GenerateNumber(DateTime now) =>
+        $"VB-{now:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+
     private void AddAudit(string action, Guid id, int status, string? detail, DateTime now)
     {
         var audit = new AuditRecordCapturedEto(Guid.NewGuid(), "HCS.DocumentService", "HCS.DocumentService",

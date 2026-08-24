@@ -70,7 +70,7 @@
                     <DisplayTemplate Context="cell">@SubmitterName(cell.Item)</DisplayTemplate>
                 </DataGridColumn>
                 <DataGridColumn TItem="SigningQueueItem" Caption="@L["Work:FilterDepartment"].Value">
-                    <DisplayTemplate Context="cell">@DepartmentName(cell.Item.Document.OrganizationUnitId)</DisplayTemplate>
+                    <DisplayTemplate Context="cell">@DepartmentName(DepartmentId(cell.Item))</DisplayTemplate>
                 </DataGridColumn>
                 <DataGridColumn TItem="SigningQueueItem" Caption="@L["Catalog:Status"].Value">
                     <DisplayTemplate Context="cell"><span class="hcs-status-badge @StatusClass(cell.Item)">@StatusText(cell.Item)</span></DisplayTemplate>
@@ -132,6 +132,7 @@
                                         <SelectItem Value="0">@L["Feature:Electronic"]</SelectItem>
                                         <SelectItem Value="1">@L["Feature:RemoteCa"]</SelectItem>
                                         <SelectItem Value="2">@L["Feature:Hsm"]</SelectItem>
+                                        <SelectItem Value="3">@L["Feature:UsbToken"]</SelectItem>
                                     </Select>
                                 </Field>
                                 @if (report is not null)
@@ -160,6 +161,10 @@
             {
                 <Button Color="Color.Warning" Clicked="() => DecideAsync(true, true)" Disabled="@isDecisionPending">@L["Work:Return"]</Button>
             }
+            @if (selected?.Task.Status == ApprovalTaskStatus.Pending)
+            {
+                <Button Color="Color.Info" Outline="true" Clicked="ExtendDueDateAsync" Disabled="@isDecisionPending">@L["Work:ExtendDueDate"]</Button>
+            }
             <Button Color="Color.Danger" Clicked="() => DecideAsync(false, false)" Disabled="@isDecisionPending">@L["Feature:Reject"]</Button>
             <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="ApproveAsync" Disabled="@isDecisionPending">@L["Feature:Approve"]</Button>
         </ModalFooter>
@@ -186,12 +191,16 @@
     private SigningQueueItem? previewing;
     private SigningReportDto? report;
     private Guid? currentUserId, submitterId, departmentId;
+    private string currentUserDisplayName = "";
     private IReadOnlyList<DateTime?> selectedDates = [];
     private string dateFilterField = "IncomingDate";
     private string? signPdfUrl;
     private string filter = "", search = "", inboxFilter = "all";
     private bool isDecisionPending;
     private int pageSize = 20, currentPage = 1;
+    private readonly Dictionary<Guid, Guid> submitterDepartmentIds = [];
+    private readonly Dictionary<Guid, string> submitterDisplayNames = [];
+    private readonly Dictionary<Guid, string> departmentNamesById = [];
 
     private int CountAll => queue.Count;
     private int CountToMe => currentUserId is { } me ? queue.Count(x => x.Task.AssigneeUserId == me) : 0;
@@ -231,7 +240,7 @@
             return false;
         if (submitterId is { } user && !IsSubmittedBy(item, user))
             return false;
-        if (departmentId is { } dept && item.Document.OrganizationUnitId != dept)
+        if (departmentId is { } dept && DepartmentId(item) != dept)
             return false;
         if (inboxFilter == "toMe" && currentUserId is { } me && item.Task.AssigneeUserId != me)
             return false;
@@ -251,13 +260,13 @@
     {
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         if (Guid.TryParse(state.User.FindFirst("sub")?.Value, out var userId)) currentUserId = userId;
-        try
-        {
-            contacts.AddRange(await Chat.GetContactsAsync(null, 50));
-            departments.AddRange(await Catalog.GetDepartmentLookupAsync());
-            signatures.AddRange(await Documents.GetSignaturesAsync());
-        }
-        catch { }
+        currentUserDisplayName = UserDisplayNames.FirstReal(
+            state.User.FindFirst("name")?.Value,
+            state.User.Identity?.Name,
+            state.User.FindFirst("preferred_username")?.Value);
+        try { contacts.AddRange(await Chat.GetContactsAsync(null, 50)); } catch { }
+        try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
+        try { signatures.AddRange(await Documents.GetSignaturesAsync()); } catch { }
         await LoadAsync();
     }
 
@@ -312,6 +321,7 @@
                     queue.Add(new SigningQueueItem(document, task, instance, definition));
                 }
             }
+            await LoadSubmitterLookupsAsync();
             if (RelatedId is { } related && queue.FirstOrDefault(x => x.Document.Id == related) is { } match)
                 await OpenSign(match);
         }
@@ -380,6 +390,7 @@
         {
             var currentStep = CurrentStep(selected);
             var hasFile = Guid.TryParse(form.FileId, out var parsedFileId);
+            SigningAttemptDto? signingAttempt = null;
             if (currentStep?.Type == "SIGN" && !hasFile)
             {
                 await NotifyErrorAsync(L["Feature:ChooseSigningFile"]);
@@ -387,10 +398,13 @@
             }
             if (currentStep?.Type == "SIGN")
             {
-                await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, parsedFileId, form.Kind, form.SignIdempotencyKey));
+                Guid? signatureId = Guid.TryParse(form.SignatureId, out var parsedSignatureId) ? parsedSignatureId : null;
+                signingAttempt = await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, parsedFileId, form.Kind,
+                    form.SignIdempotencyKey, signatureId, null, null, CommentOrNull()));
             }
             await Documents.DecideAsync(selected.Task.Id,
-                new DecideApprovalTaskRequest(true, CommentOrNull(), form.DecisionIdempotencyKey));
+                new DecideApprovalTaskRequest(true, CommentOrNull(), form.DecisionIdempotencyKey,
+                    SigningAttemptId: signingAttempt?.Id, SigningFileId: hasFile ? parsedFileId : null));
             await CloseSignAsync();
             await NotifySuccessAsync(L["Feature:Approve"]);
             await LoadAsync();
@@ -416,10 +430,23 @@
         finally { isDecisionPending = false; }
     }
 
+    private async Task ExtendDueDateAsync()
+    {
+        if (selected is null || isDecisionPending) return;
+        isDecisionPending = true;
+        try
+        {
+            await Documents.ExtendDueDateAsync(selected.Task.Id, new ExtendWorkflowDueDateRequest(3, "Gia hạn từ hàng đợi ký"));
+            await NotifySuccessAsync(L["Work:ExtendDueDate"]);
+            await CloseSignAsync();
+            await LoadAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isDecisionPending = false; }
+    }
+
     private string? CommentOrNull() => string.IsNullOrWhiteSpace(form.Comment) ? null : form.Comment.Trim();
-    private static bool IsSubmittedBy(SigningQueueItem item, Guid userId) =>
-        item.Document.FromUserId == userId
-            || item.Document.History.Any(h => h.Action == "Created" && h.ActorUserId == userId);
+    private bool IsSubmittedBy(SigningQueueItem item, Guid userId) => SubmitterId(item) == userId;
     private bool IsSentBy(SigningQueueItem item) => currentUserId is { } me && IsSubmittedBy(item, me);
     private bool IsOverdue(SigningQueueItem item) =>
         item.Task.DueAt is { } due && due < DateTime.UtcNow && item.Task.Status == ApprovalTaskStatus.Pending;
@@ -444,12 +471,11 @@
         item.Definition.Steps.FirstOrDefault(x =>
             string.Equals(x.Code, item.Task.StepCode, StringComparison.OrdinalIgnoreCase));
     private bool CanReturn => selected is { } item && CurrentStep(item)?.AllowReturn == true;
-    private string SubmitterName(SigningQueueItem item)
-    {
-        if (item.Document.FromUserId is { } from) return ContactName(from);
-        var created = item.Document.History.FirstOrDefault(h => h.Action == "Created");
-        return created?.ActorUserId is { } actor ? ContactName(actor) : "—";
-    }
+    private Guid? SubmitterId(SigningQueueItem item) =>
+        item.Document.History.FirstOrDefault(h => h.Action == "Created")?.ActorUserId
+        ?? item.Document.FromUserId;
+    private string SubmitterName(SigningQueueItem item) =>
+        ContactName(SubmitterId(item)) is { Length: > 0 } name ? name : "—";
     private async Task ExportAsync()
     {
         try
@@ -460,7 +486,7 @@
                     item.Document.Number,
                     item.Document.Title,
                     SubmitterName(item),
-                    DepartmentName(item.Document.OrganizationUnitId),
+                    DepartmentName(DepartmentId(item)),
                     StatusText(item),
                     CurrentStepLabel(item),
                     item.Document.CreationTime.ToLocalTime().ToString("dd/MM/yyyy")
@@ -480,8 +506,56 @@
         public string DecisionIdempotencyKey { get; set; } = Guid.NewGuid().ToString("N");
         public int Kind { get; set; }
     }
-    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
-    private string DepartmentName(Guid? id) => id is null ? "" : departments.FirstOrDefault(x => x.Id == id)?.Name ?? "";
+    private Guid? DepartmentId(SigningQueueItem item) =>
+        SubmitterId(item) is { } submitter && submitterDepartmentIds.TryGetValue(submitter, out var department)
+            ? department
+            : null;
+    private string ContactName(Guid? id)
+    {
+        if (id is not { } userId) return "";
+        return contacts.FirstOrDefault(x => x.Id == userId)?.DisplayName
+            ?? submitterDisplayNames.GetValueOrDefault(userId)
+            ?? (currentUserId == userId ? currentUserDisplayName : "")
+            ?? "";
+    }
+    private string DepartmentName(Guid? id)
+    {
+        if (id is not { } departmentId) return "";
+        return departments.FirstOrDefault(x => x.Id == departmentId)?.Name
+            ?? departmentNamesById.GetValueOrDefault(departmentId)
+            ?? "";
+    }
+    private async Task LoadSubmitterLookupsAsync()
+    {
+        var submitterIds = queue.Select(SubmitterId).Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
+        submitterDepartmentIds.Clear();
+        submitterDisplayNames.Clear();
+        departmentNamesById.Clear();
+        if (submitterIds.Length == 0) return;
+
+        try
+        {
+            var users = await Documents.GetWorkflowUserLookupAsync(submitterIds);
+            foreach (var user in users)
+            {
+                var displayName = UserDisplayNames.FirstReal(user.DisplayName, user.UserName);
+                if (!string.IsNullOrWhiteSpace(displayName)) submitterDisplayNames[user.UserId] = displayName;
+            }
+        }
+        catch { }
+
+        try
+        {
+            var departmentsByUser = await Catalog.GetUserDepartmentsAsync(submitterIds);
+            foreach (var result in departmentsByUser)
+            {
+                if (result.DepartmentId is not { } department) continue;
+                submitterDepartmentIds[result.UserId] = department;
+                if (!string.IsNullOrWhiteSpace(result.DepartmentName)) departmentNamesById[department] = result.DepartmentName;
+            }
+        }
+        catch { }
+    }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);

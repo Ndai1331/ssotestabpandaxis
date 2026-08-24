@@ -308,8 +308,15 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
                 await files.CopyFilesAsync(source, document, userId, now, cancellationToken);
             }
         }
+        if (document.SourceType == DocumentSourceType.Workflow && document.FromUserId is null)
+        {
+            var submitterUserId = document.FromUserId
+                ?? document.History.FirstOrDefault(x => x.Action == "Created")?.ActorUserId
+                ?? userId;
+            document.SetWorkflowSubmitter(submitterUserId);
+        }
         if (document.Status == DocumentStatus.Draft) document.Submit(userId, now);
-        document.StartReview(userId, now);
+        document.StartReview(userId, now, input.SigningContent);
         var overrides = (input.Signers ?? [])
             .Where(x => !string.IsNullOrWhiteSpace(x.StepCode))
             .GroupBy(x => x.StepCode, StringComparer.OrdinalIgnoreCase)
@@ -350,9 +357,13 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
                 continue;
             }
 
-            var preset = step.AssigneeUserId is { } assignee
-                ? new[] { new WorkflowAssigneeCandidateDto(assignee, string.Empty) }
-                : Array.Empty<WorkflowAssigneeCandidateDto>();
+            var preset = Array.Empty<WorkflowAssigneeCandidateDto>();
+            if (step.AssigneeUserId is { } assignee)
+            {
+                var candidate = await assigneeResolver.ResolveByUserAsync(assignee, cancellationToken)
+                    ?? new WorkflowAssigneeCandidateDto(assignee, string.Empty);
+                preset = [candidate];
+            }
             groups.Add(new WorkflowStepCandidateGroupDto(step.Code, step.Name, step.AssigneeType, step.RoleId, preset));
         }
 
@@ -375,6 +386,14 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, step.RequiredPermission);
         if (task.AssigneeUserId is { } assignee && assignee != actor && !DocumentAccess.IsElevated(principal))
             throw new UnauthorizedAccessException("Only the assigned user can decide this step.");
+        if (input.Approve && !input.Return && step.Type == WorkflowStepTypes.Sign
+            && (input.SigningAttemptId is not { } signingAttemptId
+                || input.SigningFileId is not { } signingFileId
+                || !await db.SigningAttempts.AnyAsync(x => x.Id == signingAttemptId
+                    && x.DocumentId == instance.DocumentId && x.FileId == signingFileId
+                    && x.UserId == actor && x.Status == HCS.DocumentService.Signing.SigningStatus.Completed
+                    && x.CompletedAt >= task.CreationTime, cancellationToken)))
+            throw new InvalidOperationException("Complete the document signing operation before approving this step.");
         var changed = instance.Decide(taskId, input.Approve, actor, input.Comment, input.IdempotencyKey,
             definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, input.Return);
         if (changed)
@@ -390,6 +409,25 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             AddChangeEvent(instance, DateTime.UtcNow);
             await db.SaveChangesAsync(cancellationToken);
         }
+        return Map(instance);
+    }
+
+    public async Task<WorkflowInstanceDto> ExtendDueDateAsync(Guid taskId, ExtendWorkflowDueDateRequest input, CancellationToken cancellationToken = default)
+    {
+        var principal = Principal;
+        var actor = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowDecide);
+        if (input.AdditionalDays is < 1 or > 365) throw new ArgumentOutOfRangeException(nameof(input.AdditionalDays));
+        var instance = await Query().SingleOrDefaultAsync(x => x.Tasks.Any(t => t.Id == taskId), cancellationToken)
+            ?? throw new KeyNotFoundException("Workflow task not found.");
+        var document = await LoadDocumentAsync(instance.DocumentId, cancellationToken);
+        DocumentAccess.EnsureCanView(document, actor, principal);
+        var task = instance.Tasks.Single(x => x.Id == taskId);
+        if (task.AssigneeUserId is { } assignee && assignee != actor && !DocumentAccess.IsElevated(principal))
+            throw new UnauthorizedAccessException("Only the assigned user can extend this step.");
+        task.ExtendDueDate(input.AdditionalDays, DateTime.UtcNow, input.Reason);
+        AddChangeEvent(instance, DateTime.UtcNow);
+        await db.SaveChangesAsync(cancellationToken);
         return Map(instance);
     }
 

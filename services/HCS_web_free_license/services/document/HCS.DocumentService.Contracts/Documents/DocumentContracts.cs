@@ -20,7 +20,7 @@ public static class DocumentPermissions
     public const string SigningReport = "Documents.Signing.Report";
 }
 
-public sealed record CreateDocumentRequest(string Number, string Title, string? Description,
+public sealed record CreateDocumentRequest(string? Number, string Title, string? Description,
     Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null,
     DocumentSourceType SourceType = DocumentSourceType.Archive);
 public sealed record SendDocumentRequest(Guid? ReceiverUserId = null, Guid? OrganizationUnitId = null);

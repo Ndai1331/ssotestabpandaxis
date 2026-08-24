@@ -66,9 +66,14 @@
                 @foreach (var item in recent)
                 {
                     <li>
-                        <a href="@NotificationText.ResolveLink(item)" @onclick="() => DismissAsync(item)">
-                            <strong>@NotificationText.Localize(L, item.Title)</strong>
-                            <span>@NotificationText.Localize(L, item.Body)</span>
+                        <a class="hcs-notification-panel__item @(item.IsRead ? null : "is-unread")"
+                           href="@NotificationText.ResolveLink(item)"
+                           @onclick="() => DismissAsync(item)">
+                            <span class="hcs-notification-panel__dot @(item.IsRead ? "is-empty" : null)" aria-hidden="true"></span>
+                            <span class="hcs-notification-panel__content">
+                                <strong class="hcs-notification-panel__title">@NotificationText.Localize(L, item.Title)</strong>
+                                <span class="hcs-notification-panel__detail">@NotificationText.Localize(L, item.Body)</span>
+                            </span>
                         </a>
                     </li>
                 }

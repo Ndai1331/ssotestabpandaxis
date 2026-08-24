@@ -33,6 +33,17 @@ public sealed class HCSMenuContributor : IMenuContributor
             Item("HCS.Chat", "Trao đổi", "/chat", "fa fa-comments", 100)
                 .RequirePermissions(HCSPermissions.Collaboration.Chat));
 
+        var documents = Item("HCS.Documents", "Văn bản", icon: "fa fa-file-lines", order: 120);
+        documents.AddItem(Item("HCS.Documents.Archive", "Quản lý tài liệu", "/manage-documents?sourceType=0", "fa fa-folder-open", 10)
+            .RequirePermissions(HCSPermissions.Documents.View));
+        documents.AddItem(Item("HCS.Documents.Personal", "Văn bản của tôi", "/manage-documents?sourceType=1", "fa fa-user", 20)
+            .RequirePermissions(HCSPermissions.Documents.View));
+        documents.AddItem(Item("HCS.Documents.SentToMe", "Văn bản gửi đến tôi", "/manage-documents?sourceType=2", "fa fa-inbox", 30)
+            .RequirePermissions(new[] { HCSPermissions.Documents.View, HCSPermissions.Documents.Assign }));
+        documents.AddItem(Item("HCS.Documents.Signing", "Ký duyệt", "/document-signing", "fa fa-signature", 40)
+            .RequirePermissions(HCSPermissions.Documents.SigningExecute));
+        context.Menu.AddItem(documents);
+
         var workflows = Item("HCS.Workflows", "Quy trình", icon: "fa fa-arrow-trend-up", order: 150);
         workflows.AddItem(Item("HCS.Workflows.Kinds", "Loại quy trình", "/workflow-definitions", "fa fa-diagram-project", 10)
             .RequirePermissions(HCSPermissions.Documents.WorkflowView));

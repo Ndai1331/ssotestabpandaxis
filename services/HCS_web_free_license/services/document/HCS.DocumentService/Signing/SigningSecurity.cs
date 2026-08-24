@@ -20,7 +20,8 @@ public sealed class DataProtectionSigningSecretProtector(IDataProtectionProvider
     public string Unprotect(string protectedValue) => _protector.Unprotect(protectedValue);
 }
 
-public sealed record SigningAdapterRequest(byte[] Content, string InputSha256, string Endpoint, string Secret);
+public sealed record SigningAdapterRequest(byte[] Content, string InputSha256, string Endpoint, string Secret,
+    SigningProviderRequest? ProviderRequest = null);
 public sealed record SigningAdapterResult(byte[] SignedContent, string AdapterId);
 
 public interface IDigitalSigningAdapter

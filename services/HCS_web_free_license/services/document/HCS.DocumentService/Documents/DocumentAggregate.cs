@@ -106,6 +106,16 @@ public sealed class DocumentAggregate
         AddHistory("Sent", fromUserId, receiverUserId?.ToString() ?? organizationUnitId?.ToString(), now);
     }
 
+    public void SetWorkflowSubmitter(Guid submitterUserId)
+    {
+        if (SourceType != DocumentSourceType.Workflow)
+            throw new InvalidOperationException("Only workflow documents can have a workflow submitter.");
+        if (submitterUserId == Guid.Empty)
+            throw new ArgumentException("Submitter is required.", nameof(submitterUserId));
+
+        FromUserId = submitterUserId;
+    }
+
     public void RevokeInbox(Guid actorUserId, DateTime now)
     {
         foreach (var assignment in _assignments.Where(x => x.Responsibility == "VIEW" && x.StepCode == null && x.IsCurrent))
@@ -154,12 +164,12 @@ public sealed class DocumentAggregate
         AddHistory("Submitted", actorUserId, null, now);
     }
 
-    public void StartReview(Guid? actorUserId, DateTime now)
+    public void StartReview(Guid? actorUserId, DateTime now, string? detail = null)
     {
         if (Status is not (DocumentStatus.Submitted or DocumentStatus.InReview))
             throw new InvalidOperationException("The document is not ready for review.");
         Status = DocumentStatus.InReview;
-        AddHistory("ReviewStarted", actorUserId, null, now);
+        AddHistory("ReviewStarted", actorUserId, Trim(detail, 2000), now);
     }
 
     public void CompleteReview(bool approved, Guid? actorUserId, string? detail, DateTime now)

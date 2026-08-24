@@ -92,6 +92,8 @@ public sealed class WorkflowsController(IWorkflowAppService workflows) : Control
         workflows.GetAssigneeCandidatesAsync(id, cancellationToken);
     [HttpPost("tasks/{taskId:guid}/decision"), Authorize(Policy = Documents.DocumentPermissions.WorkflowDecide)]
     public Task<WorkflowInstanceDto> Decide(Guid taskId, DecideApprovalTaskRequest input, CancellationToken cancellationToken) => workflows.DecideAsync(taskId, input, cancellationToken);
+    [HttpPost("tasks/{taskId:guid}/extend"), Authorize(Policy = Documents.DocumentPermissions.WorkflowDecide)]
+    public Task<WorkflowInstanceDto> ExtendDueDate(Guid taskId, ExtendWorkflowDueDateRequest input, CancellationToken cancellationToken) => workflows.ExtendDueDateAsync(taskId, input, cancellationToken);
     [HttpPost("instances/{id:guid}/resubmit"), Authorize(Policy = Documents.DocumentPermissions.WorkflowStart)]
     public Task<WorkflowInstanceDto> Resubmit(Guid id, [FromBody] string idempotencyKey, CancellationToken cancellationToken) =>
         workflows.ResubmitAsync(id, idempotencyKey, cancellationToken);

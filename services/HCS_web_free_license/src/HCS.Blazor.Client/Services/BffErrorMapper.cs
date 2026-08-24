@@ -17,17 +17,25 @@ public static class BffErrorMapper
 {
     public static string From(IStringLocalizer localizer, Exception exception, BffErrorKind kind = BffErrorKind.Load)
     {
-        var (status, body) = exception switch
+        var status = GetStatusCode(exception);
+        var body = exception switch
         {
-            BffApiException bff => ((HttpStatusCode?)bff.StatusCode, bff.ResponseBody),
-            CollaborationApiException collaboration => ((HttpStatusCode?)collaboration.StatusCode, collaboration.ResponseBody),
-            _ => ((HttpStatusCode?)null, (string?)null)
+            BffApiException bff => bff.ResponseBody,
+            CollaborationApiException collaboration => collaboration.ResponseBody,
+            _ => null
         };
         if (TryLocalizeErrorCode(localizer, body, out var localized))
             return localized;
 
         return status is null ? Fallback(localizer, kind) : From(localizer, status.Value, kind);
     }
+
+    public static HttpStatusCode? GetStatusCode(Exception exception) => exception switch
+    {
+        BffApiException bff => bff.StatusCode,
+        CollaborationApiException collaboration => collaboration.StatusCode,
+        _ => null
+    };
 
     public static string From(IStringLocalizer localizer, HttpStatusCode status, BffErrorKind kind = BffErrorKind.Load) =>
         status switch

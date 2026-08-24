@@ -83,7 +83,7 @@
                             {
                                 <label class="hcs-chat__contact">
                                     <input type="checkbox" checked="@selectedContactIds.Contains(contact.Id)" @onchange="args => ToggleContact(contact.Id, args)" />
-                                    <span class="hcs-chat__avatar">@Initials(contact.DisplayName)</span>
+                                    @UserAvatar(contact.Id, contact.DisplayName, avatarUrl: contact.AvatarUrl)
                                     <span><strong>@contact.DisplayName</strong><small>@@@contact.UserName</small></span>
                                 </label>
                             }
@@ -120,19 +120,7 @@
                         @foreach (var conversation in FilteredConversations)
                         {
                             <button class="hcs-chat__conversation @(selected?.Id == conversation.Id ? "active" : null)" type="button" @onclick="() => SelectAsync(conversation)">
-                                <span class="hcs-chat__avatar-wrap">
-                                    <span class="hcs-chat__avatar" aria-hidden="true">
-                                        @if (ConversationTypeIcon(conversation.Type) is { } listIcon)
-                                        {
-                                            <i class="fa @listIcon" aria-hidden="true"></i>
-                                        }
-                                        else
-                                        {
-                                            @ConversationInitials(conversation)
-                                        }
-                                    </span>
-                                    <span class="hcs-chat__presence @(IsConversationOnline(conversation) ? null : "hcs-chat__presence--offline")" title="@(IsConversationOnline(conversation) ? T("Chat:Active") : T("Chat:Offline"))" aria-label="@(IsConversationOnline(conversation) ? T("Chat:Active") : T("Chat:Offline"))"></span>
-                                </span>
+                                @ConversationAvatar(conversation, isOnline: IsConversationOnline(conversation))
                                 <span class="hcs-chat__conversation-copy">
                                     <strong>@ConversationTitle(conversation)</strong>
                                     <small>@(string.IsNullOrWhiteSpace(conversation.LastMessage) ? T("Chat:NoMessages") : conversation.LastMessage)</small>
@@ -165,19 +153,7 @@
                 <header class="hcs-chat__thread-header">
                     <button class="hcs-chat__icon hcs-chat__back" type="button" aria-label="@T("Chat:ConversationList")" @onclick="ShowList"><i class="fa fa-arrow-left" aria-hidden="true"></i></button>
                     <span class="hcs-chat__thread-avatar">
-                        <span class="hcs-chat__avatar-wrap">
-                            <span class="hcs-chat__avatar" aria-hidden="true">
-                                @if (ConversationTypeIcon(selected.Type) is { } threadIcon)
-                                {
-                                    <i class="fa @threadIcon" aria-hidden="true"></i>
-                                }
-                                else
-                                {
-                                    @ConversationInitials(selected)
-                                }
-                            </span>
-                            <span class="hcs-chat__presence @(IsConversationOnline(selected) ? null : "hcs-chat__presence--offline")" title="@(IsConversationOnline(selected) ? T("Chat:Active") : T("Chat:Offline"))" aria-label="@(IsConversationOnline(selected) ? T("Chat:Active") : T("Chat:Offline"))"></span>
-                        </span>
+                        @ConversationAvatar(selected, isOnline: IsConversationOnline(selected))
                     </span>
                     <div class="hcs-chat__thread-title">
                         <h2>@ConversationTitle(selected)</h2>
@@ -425,7 +401,7 @@
                                 {
                                     <label class="hcs-chat__contact">
                                         <input type="checkbox" checked="@selectedMemberIds.Contains(contact.Id)" @onchange="args => ToggleMember(contact.Id, args)" />
-                                        <span class="hcs-chat__avatar hcs-chat__avatar--small">@Initials(contact.DisplayName)</span>
+                                        @UserAvatar(contact.Id, contact.DisplayName, "hcs-chat__avatar--small", avatarUrl: contact.AvatarUrl)
                                         <span><strong>@contact.DisplayName</strong><small>@@@contact.UserName</small></span>
                                     </label>
                                 }
@@ -568,6 +544,7 @@
     private readonly HashSet<Guid> onlineUserIds = [];
     private readonly HashSet<Guid> selectedContactIds = [];
     private readonly HashSet<Guid> selectedMemberIds = [];
+    private readonly HashSet<string> avatarLoadFailures = new(StringComparer.Ordinal);
     private readonly List<IBrowserFile> pendingFiles = [];
     private readonly List<ChatMessageDto> messages = [];
     private IReadOnlyList<ConversationDto> conversations = [];
@@ -1282,6 +1259,11 @@
 
     private string ConversationInitials(ConversationDto conversation) => Initials(ConversationTitle(conversation));
 
+    private Guid? DirectConversationUserId(ConversationDto conversation) =>
+        conversation.Type == ConversationType.User
+            ? conversation.Members.FirstOrDefault(member => member.UserId != currentUserId)?.UserId
+            : null;
+
     private RenderFragment ConversationAvatar(ConversationDto conversation, string extraClass = "", bool? isOnline = null) => builder =>
     {
         builder.OpenElement(0, "span");
@@ -1294,7 +1276,12 @@
         var icon = ConversationTypeIcon(conversation.Type);
         if (icon is null)
         {
-            builder.AddContent(5, ConversationInitials(conversation));
+            var userId = DirectConversationUserId(conversation);
+            AppendAvatarImageOrInitials(
+                builder,
+                5,
+                userId is { } id ? ResolveAvatarUrl(id) : null,
+                ConversationInitials(conversation));
         }
         else
         {
@@ -1313,7 +1300,12 @@
         builder.CloseElement();
     };
 
-    private RenderFragment UserAvatar(Guid userId, string displayName, string extraClass = "", bool? isOnline = null) => builder =>
+    private RenderFragment UserAvatar(
+        Guid userId,
+        string displayName,
+        string extraClass = "",
+        bool? isOnline = null,
+        string? avatarUrl = null) => builder =>
     {
         builder.OpenElement(0, "span");
         builder.AddAttribute(1, "class", AvatarWrapClass(extraClass));
@@ -1322,7 +1314,7 @@
             ? "hcs-chat__avatar"
             : $"hcs-chat__avatar {extraClass}");
         builder.AddAttribute(4, "aria-hidden", "true");
-        builder.AddContent(5, Initials(displayName));
+        AppendAvatarImageOrInitials(builder, 5, ResolveAvatarUrl(userId, avatarUrl), Initials(displayName));
         builder.CloseElement();
         if (isOnline is { } online)
         {
@@ -1331,6 +1323,45 @@
 
         builder.CloseElement();
     };
+
+    private string? ResolveAvatarUrl(Guid userId, string? avatarUrl = null)
+    {
+        if (!string.IsNullOrWhiteSpace(avatarUrl))
+        {
+            return avatarUrl;
+        }
+
+        var contact = contacts.FirstOrDefault(contact => contact.Id == userId);
+        return contact is not null
+            ? contact.AvatarUrl
+            : userId == Guid.Empty ? null : $"/api/identity/users/{userId:D}/avatar";
+    }
+
+    private void AppendAvatarImageOrInitials(
+        Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder,
+        int sequence,
+        string? avatarUrl,
+        string initials)
+    {
+        if (!string.IsNullOrWhiteSpace(avatarUrl) && !avatarLoadFailures.Contains(avatarUrl))
+        {
+            builder.OpenElement(sequence, "img");
+            builder.AddAttribute(sequence + 1, "class", "hcs-chat__avatar-image");
+            builder.AddAttribute(sequence + 2, "src", avatarUrl);
+            builder.AddAttribute(sequence + 3, "alt", "");
+            builder.AddAttribute(sequence + 4, "aria-hidden", "true");
+            builder.AddAttribute(
+                sequence + 5,
+                "onerror",
+                EventCallback.Factory.Create(this, () => MarkAvatarLoadFailure(avatarUrl)));
+            builder.CloseElement();
+            return;
+        }
+
+        builder.AddContent(sequence, initials);
+    }
+
+    private void MarkAvatarLoadFailure(string avatarUrl) => avatarLoadFailures.Add(avatarUrl);
 
     private static string AvatarWrapClass(string extraClass) =>
         extraClass.Contains("hcs-chat__avatar--large", StringComparison.Ordinal)

@@ -271,7 +271,7 @@
                                     <ul class="mb-3">
                                         @foreach (var credential in userCredentials)
                                         {
-                                            <li>@SigningKindName(credential.Kind) · @credential.Endpoint · @credential.MaskedSecret</li>
+                                            <li>@SigningKindName(credential.Kind) · @credential.ProviderCode · @credential.Endpoint · @credential.MaskedSecret</li>
                                         }
                                     </ul>
                                 }
@@ -281,8 +281,10 @@
                                         <SelectItem Value="0">@L["Feature:Electronic"]</SelectItem>
                                         <SelectItem Value="1">@L["Feature:RemoteCa"]</SelectItem>
                                         <SelectItem Value="2">@L["Feature:Hsm"]</SelectItem>
+                                        <SelectItem Value="3">@L["Feature:UsbToken"]</SelectItem>
                                     </Select>
                                 </Field>
+                                <Field><FieldLabel>@L["Feature:ProviderCode"]</FieldLabel><HcsIsolatedTextInput @bind-Value="credentialForm.ProviderCode" Name="hcsUserSigningProviderCode" /></Field>
                                 <Field>
                                     <FieldLabel>@L["Feature:SigningEndpoint"]</FieldLabel>
                                     <HcsIsolatedTextInput @bind-Value="credentialForm.Endpoint" Name="hcsUserSigningEndpoint" Placeholder="https://" />
@@ -291,6 +293,11 @@
                                     <FieldLabel>@L["Feature:SigningSecret"]</FieldLabel>
                                     <HcsIsolatedTextInput @bind-Value="credentialForm.Secret" Name="hcsUserSigningSecret" InputType="password" />
                                 </Field>
+                                <div class="row g-2">
+                                    <div class="col-md-4"><label class="form-label">@L["Feature:SigningTimeout"]</label><input class="form-control" type="number" min="5" max="600" @bind="credentialForm.ApiTimeoutSeconds" /></div>
+                                    <div class="col-md-4"><label class="form-label">@L["Feature:SigningWidth"]</label><input class="form-control" type="number" min="40" max="1000" @bind="credentialForm.SignWidth" /></div>
+                                    <div class="col-md-4"><label class="form-label">@L["Feature:SigningHeight"]</label><input class="form-control" type="number" min="20" max="1000" @bind="credentialForm.SignHeight" /></div>
+                                </div>
                                 <Button Color="Color.Primary" Clicked="SaveUserCredentialAsync" Loading="@isSavingSigning" Disabled="@isSavingSigning">@L["Catalog:SaveChanges"]</Button>
                             </div>
                         </div>
@@ -705,7 +712,14 @@
             if (userCredentials.FirstOrDefault() is { } current)
             {
                 credentialForm.Kind = current.Kind;
+                credentialForm.ProviderCode = current.ProviderCode;
                 credentialForm.Endpoint = current.Endpoint;
+                credentialForm.ApiTimeoutSeconds = current.ApiTimeoutSeconds;
+                credentialForm.SignWidth = current.SignWidth;
+                credentialForm.SignHeight = current.SignHeight;
+                credentialForm.AllowElectronicSign = current.AllowElectronicSign;
+                credentialForm.AllowDigitalSign = current.AllowDigitalSign;
+                credentialForm.RequireOtp = current.RequireOtp;
             }
         }
         catch (Exception exception)
@@ -721,7 +735,9 @@
         try
         {
             await Documents.ConfigureCredentialAsync(
-                new ConfigureSigningCredentialRequest(credentialForm.Kind, credentialForm.Endpoint.Trim(), credentialForm.Secret),
+                new ConfigureSigningCredentialRequest(credentialForm.Kind, credentialForm.Endpoint.Trim(), credentialForm.Secret,
+                    credentialForm.ProviderCode.Trim(), null, credentialForm.ApiTimeoutSeconds, credentialForm.SignWidth,
+                    credentialForm.SignHeight, credentialForm.AllowElectronicSign, credentialForm.AllowDigitalSign, credentialForm.RequireOtp),
                 userId);
             credentialForm.Secret = string.Empty;
             await LoadUserSigningAsync(userId);
@@ -740,20 +756,35 @@
     {
         1 => L["Feature:RemoteCa"],
         2 => L["Feature:Hsm"],
+        3 => L["Feature:UsbToken"],
         _ => L["Feature:Electronic"]
     };
 
     private sealed class SigningForm
     {
         public int Kind { get; set; }
+        public string ProviderCode { get; set; } = string.Empty;
         public string Endpoint { get; set; } = string.Empty;
         public string Secret { get; set; } = string.Empty;
+        public int ApiTimeoutSeconds { get; set; } = 30;
+        public int SignWidth { get; set; } = 150;
+        public int SignHeight { get; set; } = 70;
+        public bool AllowElectronicSign { get; set; } = true;
+        public bool AllowDigitalSign { get; set; } = true;
+        public bool RequireOtp { get; set; }
 
         public void Reset()
         {
             Kind = 0;
+            ProviderCode = string.Empty;
             Endpoint = string.Empty;
             Secret = string.Empty;
+            ApiTimeoutSeconds = 30;
+            SignWidth = 150;
+            SignHeight = 70;
+            AllowElectronicSign = true;
+            AllowDigitalSign = true;
+            RequireOtp = false;
         }
     }
 }

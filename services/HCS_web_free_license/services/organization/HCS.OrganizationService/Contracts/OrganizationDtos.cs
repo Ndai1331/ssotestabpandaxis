@@ -17,6 +17,8 @@ public sealed record MasterDataItemDto(Guid Id, string Type, string Code, string
 public sealed record UserOrganizationMappingDto(
     Guid Id, Guid UserId, Guid DepartmentId, Guid? UnitId, Guid? PositionId, bool IsPrimary);
 
+public sealed record UserDepartmentLookupDto(Guid UserId, Guid? DepartmentId, string? DepartmentName = null);
+
 public sealed class UpsertDepartmentDto
 {
     [Required, StringLength(50)] public string Code { get; set; } = string.Empty;

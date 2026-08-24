@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,6 +44,16 @@ public sealed class OrganizationCatalogClient(IHttpClientFactory httpClientFacto
     public Task<IReadOnlyList<DepartmentCatalogDto>> GetDepartmentLookupAsync(
         CancellationToken cancellationToken = default) =>
         GetLookupAsync<DepartmentCatalogDto>(OrganizationCatalogKind.Department, cancellationToken);
+
+    public async Task<IReadOnlyList<UserDepartmentLookupDto>> GetUserDepartmentsAsync(
+        IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Where(x => x != Guid.Empty).Distinct().Take(200).ToArray();
+        if (ids.Length == 0) return [];
+        var query = string.Join("&", ids.Select(id => $"userIds={id:D}"));
+        return await GetAsync<IReadOnlyList<UserDepartmentLookupDto>>(
+            $"/api/organization/user-departments?{query}", cancellationToken);
+    }
 
     public Task<OrganizationPagedResponse<DepartmentCatalogDto>> SearchDepartmentsAsync(
         string? filter,
@@ -230,3 +241,5 @@ internal sealed class OrganizationCatalogApiException(HttpStatusCode statusCode,
     public HttpStatusCode StatusCode { get; } = statusCode;
     public string? ResponseBody { get; } = responseBody;
 }
+
+public sealed record UserDepartmentLookupDto(Guid UserId, Guid? DepartmentId, string? DepartmentName = null);

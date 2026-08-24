@@ -7,6 +7,7 @@ using HCS.DocumentService.Workflows;
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
@@ -93,9 +94,12 @@ public sealed class HcsDocumentServiceModule : AbpModule
         context.Services.AddScoped<DocumentFileService>();
         context.Services.AddScoped<DocumentPdfWatermarkService>();
         context.Services.AddScoped<ISigningSecretProtector, DataProtectionSigningSecretProtector>();
-        context.Services.AddScoped<IDigitalSigningAdapter, ElectronicSigningAdapter>();
-        context.Services.AddScoped<IDigitalSigningAdapter>(_ => new UnavailableExternalSigningAdapter(SigningKind.RemoteCa));
-        context.Services.AddScoped<IDigitalSigningAdapter>(_ => new UnavailableExternalSigningAdapter(SigningKind.Hsm));
+        context.Services.AddScoped<IDigitalSigningAdapter, LicensedElectronicSigningAdapter>();
+        context.Services.AddScoped<IDigitalSigningAdapter, LicensedRemoteCaSigningAdapter>();
+        context.Services.AddScoped<IDigitalSigningAdapter>(sp => new LicensedBnnSigningAdapter(
+            SigningKind.Hsm, sp.GetRequiredService<ILoggerFactory>()));
+        context.Services.AddScoped<IDigitalSigningAdapter>(sp => new LicensedBnnSigningAdapter(
+            SigningKind.UsbToken, sp.GetRequiredService<ILoggerFactory>()));
         context.Services.AddScoped<IInboxExecutor, EfInboxExecutor>();
         context.Services.AddScoped<ITypedDistributedEventPublisher, AbpTypedDistributedEventPublisher>();
         context.Services.AddScoped<IOutboxEventPublisher, AbpOutboxEventPublisher>();

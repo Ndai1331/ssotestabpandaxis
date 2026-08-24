@@ -357,6 +357,13 @@ public sealed class ApprovalTask
     public DateTime CreationTime { get; private set; }
     public DateTime? DecidedAt { get; private set; }
     public DateTime? DueAt { get; private set; }
+    internal void ExtendDueDate(int additionalDays, DateTime now, string? reason)
+    {
+        if (Status != ApprovalTaskStatus.Pending) throw new InvalidOperationException("Only a pending task can be extended.");
+        if (additionalDays is < 1 or > 365) throw new ArgumentOutOfRangeException(nameof(additionalDays));
+        DueAt = (DueAt ?? now).AddDays(additionalDays);
+        if (!string.IsNullOrWhiteSpace(reason)) Comment = reason.Trim().Length > 1000 ? reason.Trim()[..1000] : reason.Trim();
+    }
     internal void Decide(bool approve, Guid actorUserId, string? comment, string key, DateTime now)
     {
         EnsurePending(key);

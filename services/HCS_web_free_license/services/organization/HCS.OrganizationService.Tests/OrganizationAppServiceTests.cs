@@ -66,6 +66,33 @@ public sealed class OrganizationAppServiceTests : OrganizationTestBase
     }
 
     [Fact]
+    public async Task User_department_lookup_returns_primary_department_and_name()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var scope = ServiceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OrganizationDbContext>();
+        var service = new OrganizationAppService(db, new TestGuidGenerator());
+        var primary = await service.CreateDepartmentAsync(new UpsertDepartmentDto { Code = "PRIMARY", Name = "Primary department" }, ct);
+        var secondary = await service.CreateDepartmentAsync(new UpsertDepartmentDto { Code = "SECONDARY", Name = "Secondary department" }, ct);
+        var userId = Guid.NewGuid();
+
+        await service.CreateUserMappingAsync(new UpsertUserOrganizationMappingDto
+        {
+            UserId = userId, DepartmentId = secondary.Id, IsPrimary = false
+        }, ct);
+        await service.CreateUserMappingAsync(new UpsertUserOrganizationMappingDto
+        {
+            UserId = userId, DepartmentId = primary.Id, IsPrimary = true
+        }, ct);
+
+        var result = (await service.GetUserDepartmentsAsync([userId], ct)).Single();
+
+        result.UserId.ShouldBe(userId);
+        result.DepartmentId.ShouldBe(primary.Id);
+        result.DepartmentName.ShouldBe("Primary department");
+    }
+
+    [Fact]
     public async Task Department_hierarchy_cannot_contain_a_cycle()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -17,6 +17,18 @@ public sealed class OrganizationApiContractTests
         { typeof(UserMappingsController), "api/organization/user-mappings", OrganizationPermissions.UserMappings }
     };
 
+    [Fact]
+    public void User_department_lookup_is_read_only_and_permission_scoped()
+    {
+        var controller = typeof(UserDepartmentLookupController);
+        controller.GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().Single().Template
+            .ShouldBe("api/organization/user-departments");
+        controller.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>().Single().Policy
+            .ShouldBeNull();
+        controller.GetMethods().Count(x => x.GetCustomAttributes(typeof(HttpGetAttribute), true).Length > 0).ShouldBe(1);
+        controller.GetMethods().Count(x => x.GetCustomAttributes(typeof(HttpPostAttribute), true).Length > 0).ShouldBe(0);
+    }
+
     [Theory]
     [MemberData(nameof(Routes))]
     public void Controllers_keep_gateway_routes_and_permission_boundaries(Type controller, string route, string permission)

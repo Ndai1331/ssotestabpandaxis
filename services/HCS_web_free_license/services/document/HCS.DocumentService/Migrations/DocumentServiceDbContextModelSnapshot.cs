@@ -340,6 +340,15 @@ namespace HCS.DocumentService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("AllowDigitalSign")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("AllowElectronicSign")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ApiTimeoutSeconds")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Endpoint")
                         .IsRequired()
                         .HasMaxLength(1024)
@@ -348,10 +357,28 @@ namespace HCS.DocumentService.Migrations
                     b.Property<int>("Kind")
                         .HasColumnType("integer");
 
+                    b.Property<string>("LayoutImageBase64")
+                        .HasMaxLength(4000000)
+                        .HasColumnType("character varying(4000000)");
+
                     b.Property<string>("ProtectedSecret")
                         .IsRequired()
                         .HasMaxLength(4096)
                         .HasColumnType("character varying(4096)");
+
+                    b.Property<string>("ProviderCode")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("RequireOtp")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SignHeight")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SignWidth")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -391,11 +418,32 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsDefault")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("ProtectedSecret")
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)");
+
+                    b.Property<string>("ProviderCode")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("SealImageBase64")
+                        .HasMaxLength(4000000)
+                        .HasColumnType("character varying(4000000)");
+
                     b.Property<long>("Size")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("TokenRef")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<int>("Type")
                         .ValueGeneratedOnAdd()
@@ -404,6 +452,12 @@ namespace HCS.DocumentService.Migrations
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidTo")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

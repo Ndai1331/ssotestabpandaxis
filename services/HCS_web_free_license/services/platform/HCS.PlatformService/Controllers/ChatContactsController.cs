@@ -1,7 +1,9 @@
 using HCS.CollaborationService.Contracts;
+using HCS.EntityFrameworkCore;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Volo.Abp.Identity;
 using Volo.Abp.Users;
 
@@ -10,7 +12,8 @@ namespace HCS.PlatformService.Controllers;
 [ApiController, Authorize(Policy = HCSPermissions.Collaboration.Chat), Route("api/chat/contacts")]
 public sealed class ChatContactsController(
     IIdentityUserRepository identityUsers,
-    ICurrentUser currentUser) : ControllerBase
+    ICurrentUser currentUser,
+    HCSDbContext db) : ControllerBase
 {
     [HttpGet]
     public async Task<IReadOnlyList<ChatContactDto>> GetAsync(
@@ -27,8 +30,17 @@ public sealed class ChatContactsController(
             cancellationToken: cancellationToken);
         var currentUserId = currentUser.Id;
 
-        return users
+        var activeUsers = users
             .Where(user => user.IsActive && (!currentUserId.HasValue || user.Id != currentUserId.Value))
+            .ToArray();
+        var activeUserIds = activeUsers.Select(user => user.Id).ToArray();
+        var avatarUserIds = await db.UserAvatars
+            .AsNoTracking()
+            .Where(avatar => activeUserIds.Contains(avatar.UserId))
+            .Select(avatar => avatar.UserId)
+            .ToHashSetAsync(cancellationToken);
+
+        return activeUsers
             .Select(user => new ChatContactDto(
                 user.Id,
                 user.UserName,
@@ -37,7 +49,9 @@ public sealed class ChatContactsController(
                 user.Surname,
                 user.Name,
                 user.PhoneNumber,
-                $"/api/identity/users/{user.Id:D}/avatar"))
+                avatarUserIds.Contains(user.Id)
+                    ? $"/api/identity/users/{user.Id:D}/avatar"
+                    : null))
             .ToArray();
     }
 

@@ -145,6 +145,30 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
         return new PagedResultDto<UserOrganizationMappingDto>(total, items);
     }
 
+    public virtual async Task<IReadOnlyList<UserDepartmentLookupDto>> GetUserDepartmentsAsync(
+        IReadOnlyCollection<Guid> userIds, CancellationToken ct = default)
+    {
+        var ids = userIds.Where(x => x != Guid.Empty).Distinct().Take(200).ToHashSet();
+        if (ids.Count == 0) return [];
+
+        var mappings = await (from userMapping in _db.UserOrganizationMappings.AsNoTracking()
+                              join department in _db.Departments.AsNoTracking()
+                                  on userMapping.DepartmentId equals department.Id
+                              where ids.Contains(userMapping.UserId)
+                              orderby userMapping.UserId, userMapping.IsPrimary descending, userMapping.CreationTime
+                              select new
+                              {
+                                  userMapping.UserId,
+                                  userMapping.DepartmentId,
+                                  DepartmentName = department.Name
+                              }).ToListAsync(ct);
+
+        return ids.Select(userId => mappings.FirstOrDefault(x => x.UserId == userId) is { } mapping
+                ? new UserDepartmentLookupDto(userId, mapping.DepartmentId, mapping.DepartmentName)
+                : new UserDepartmentLookupDto(userId, null))
+            .ToArray();
+    }
+
     public virtual async Task<UserOrganizationMappingDto> CreateUserMappingAsync(UpsertUserOrganizationMappingDto input, CancellationToken ct = default)
     {
         await ValidateMappingAsync(input, null, ct);

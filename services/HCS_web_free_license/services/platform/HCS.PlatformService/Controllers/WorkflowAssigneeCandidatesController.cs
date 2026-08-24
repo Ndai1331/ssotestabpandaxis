@@ -1,3 +1,4 @@
+using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp.Identity;
@@ -37,9 +38,48 @@ public sealed class WorkflowAssigneeCandidatesController(
             .Select(user => new WorkflowAssigneeCandidateDto(
                 user.Id,
                 DisplayName(user),
-                user.OrganizationUnits.Select(x => x.OrganizationUnitId).FirstOrDefault()))
+                user.OrganizationUnits.Select(x => x.OrganizationUnitId).FirstOrDefault(),
+                user.UserName))
             .DistinctBy(x => x.UserId)
             .ToArray();
+    }
+
+    [HttpGet("lookup")]
+    public async Task<ActionResult<IReadOnlyList<WorkflowAssigneeCandidateDto>>> LookupUsersAsync(
+        [FromQuery] Guid[] userIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (!CanResolveUserLookup()) return Forbid();
+        var ids = userIds.Where(x => x != Guid.Empty).Distinct().Take(200).ToArray();
+        if (ids.Length == 0) return Ok(Array.Empty<WorkflowAssigneeCandidateDto>());
+
+        var users = await Task.WhenAll(ids.Select(id =>
+            identityUsers.FindAsync(id, includeDetails: false, cancellationToken: cancellationToken)));
+        return Ok(users.Where(user => user is { IsActive: true })
+            .Select(user => new WorkflowAssigneeCandidateDto(
+                user!.Id, DisplayName(user), null, user.UserName))
+            .ToArray());
+    }
+
+    [HttpGet("{userId:guid}")]
+    public async Task<ActionResult<WorkflowAssigneeCandidateDto>> GetUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (userId == Guid.Empty)
+            return NotFound();
+        if (!User.HasClaim("permission", HCSPermissions.Documents.WorkflowStart))
+            return Forbid();
+
+        var user = await identityUsers.FindAsync(userId, includeDetails: true, cancellationToken: cancellationToken);
+        if (user is null || !user.IsActive)
+            return NotFound();
+
+        return Ok(new WorkflowAssigneeCandidateDto(
+            user.Id,
+            DisplayName(user),
+            user.OrganizationUnits.Select(x => x.OrganizationUnitId).FirstOrDefault(),
+            user.UserName));
     }
 
     private static string DisplayName(IdentityUser user)
@@ -47,6 +87,12 @@ public sealed class WorkflowAssigneeCandidatesController(
         var name = string.Join(' ', new[] { user.Surname, user.Name }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim();
         return string.IsNullOrWhiteSpace(name) ? user.UserName : name;
     }
+
+    private bool CanResolveUserLookup() =>
+        User.HasClaim("permission", HCSPermissions.Documents.SigningExecute)
+        || User.HasClaim("permission", HCSPermissions.Documents.WorkflowStart)
+        || User.HasClaim("permission", HCSPermissions.Collaboration.Chat);
 }
 
-public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId);
+public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId,
+    string? UserName = null);

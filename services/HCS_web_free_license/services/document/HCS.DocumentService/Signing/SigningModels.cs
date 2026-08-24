@@ -3,24 +3,57 @@ namespace HCS.DocumentService.Signing;
 public sealed class SigningCredential
 {
     private SigningCredential() { }
-    public SigningCredential(Guid id, Guid userId, SigningKind kind, string endpoint, string protectedSecret, DateTime now)
-        => (Id, UserId, Kind, Endpoint, ProtectedSecret, UpdatedAt) =
-            (id, userId, kind, endpoint.Trim(), protectedSecret, now);
+    public SigningCredential(Guid id, Guid userId, SigningKind kind, string endpoint, string protectedSecret, DateTime now,
+        string? providerCode = null, string? layoutImageBase64 = null, int apiTimeoutSeconds = 30,
+        int signWidth = 150, int signHeight = 70, bool allowElectronicSign = true,
+        bool allowDigitalSign = true, bool requireOtp = false)
+    {
+        Id = id;
+        UserId = userId;
+        Kind = kind;
+        Replace(endpoint, protectedSecret, now, providerCode, layoutImageBase64, apiTimeoutSeconds,
+            signWidth, signHeight, allowElectronicSign, allowDigitalSign, requireOtp);
+    }
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
     public SigningKind Kind { get; private set; }
     public string Endpoint { get; private set; } = string.Empty;
     public string ProtectedSecret { get; private set; } = string.Empty;
+    public string ProviderCode { get; private set; } = string.Empty;
+    public string? LayoutImageBase64 { get; private set; }
+    public int ApiTimeoutSeconds { get; private set; } = 30;
+    public int SignWidth { get; private set; } = 150;
+    public int SignHeight { get; private set; } = 70;
+    public bool AllowElectronicSign { get; private set; } = true;
+    public bool AllowDigitalSign { get; private set; } = true;
+    public bool RequireOtp { get; private set; }
     public DateTime UpdatedAt { get; private set; }
-    public void Replace(string endpoint, string protectedSecret, DateTime now)
-        => (Endpoint, ProtectedSecret, UpdatedAt) = (endpoint.Trim(), protectedSecret, now);
+    public void Replace(string endpoint, string protectedSecret, DateTime now,
+        string? providerCode = null, string? layoutImageBase64 = null, int apiTimeoutSeconds = 30,
+        int signWidth = 150, int signHeight = 70, bool allowElectronicSign = true,
+        bool allowDigitalSign = true, bool requireOtp = false)
+    {
+        Endpoint = endpoint.Trim();
+        ProtectedSecret = protectedSecret;
+        ProviderCode = providerCode?.Trim() ?? string.Empty;
+        LayoutImageBase64 = string.IsNullOrWhiteSpace(layoutImageBase64) ? null : layoutImageBase64.Trim();
+        ApiTimeoutSeconds = Math.Clamp(apiTimeoutSeconds, 5, 600);
+        SignWidth = Math.Clamp(signWidth, 40, 1000);
+        SignHeight = Math.Clamp(signHeight, 20, 1000);
+        AllowElectronicSign = allowElectronicSign;
+        AllowDigitalSign = allowDigitalSign;
+        RequireOtp = requireOtp;
+        UpdatedAt = now;
+    }
 }
 
 public sealed class UserSignature
 {
     private UserSignature() { }
     public UserSignature(Guid id, Guid userId, string fileName, string contentType, string blobName, long size, DateTime now,
-        UserSignatureType type = UserSignatureType.Electronic)
+        UserSignatureType type = UserSignatureType.Electronic, string? providerCode = null, string? tokenRef = null,
+        string? protectedSecret = null, string? sealImageBase64 = null, DateTime? validFrom = null,
+        DateTime? validTo = null, bool isActive = true)
     {
         if (userId == Guid.Empty) throw new ArgumentException("User is required.", nameof(userId));
         if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size));
@@ -32,6 +65,13 @@ public sealed class UserSignature
         BlobName = blobName;
         Size = size;
         Type = type;
+        ProviderCode = providerCode?.Trim() ?? string.Empty;
+        TokenRef = tokenRef?.Trim() ?? string.Empty;
+        ProtectedSecret = protectedSecret;
+        SealImageBase64 = string.IsNullOrWhiteSpace(sealImageBase64) ? null : sealImageBase64.Trim();
+        ValidFrom = validFrom;
+        ValidTo = validTo;
+        IsActive = isActive;
         IsDefault = false;
         CreationTime = now;
     }
@@ -42,6 +82,13 @@ public sealed class UserSignature
     public string BlobName { get; private set; } = string.Empty;
     public long Size { get; private set; }
     public UserSignatureType Type { get; private set; }
+    public string ProviderCode { get; private set; } = string.Empty;
+    public string TokenRef { get; private set; } = string.Empty;
+    public string? ProtectedSecret { get; private set; }
+    public string? SealImageBase64 { get; private set; }
+    public DateTime? ValidFrom { get; private set; }
+    public DateTime? ValidTo { get; private set; }
+    public bool IsActive { get; private set; } = true;
     public bool IsDefault { get; private set; }
     public DateTime CreationTime { get; private set; }
     public void MarkDefault() => IsDefault = true;
@@ -50,6 +97,27 @@ public sealed class UserSignature
     {
         if (!Enum.IsDefined(type)) throw new ArgumentOutOfRangeException(nameof(type));
         Type = type;
+    }
+    public void UpdateMetadata(string? providerCode, string? tokenRef, string? protectedSecret,
+        string? sealImageBase64, DateTime? validFrom, DateTime? validTo, bool? isActive)
+    {
+        if (validFrom.HasValue && validTo.HasValue && validFrom > validTo)
+            throw new ArgumentException("Signature validity range is invalid.");
+        ProviderCode = providerCode?.Trim() ?? ProviderCode;
+        TokenRef = tokenRef?.Trim() ?? TokenRef;
+        if (protectedSecret is not null) ProtectedSecret = protectedSecret;
+        if (sealImageBase64 is not null) SealImageBase64 = string.IsNullOrWhiteSpace(sealImageBase64) ? null : sealImageBase64.Trim();
+        ValidFrom = validFrom;
+        ValidTo = validTo;
+        if (isActive.HasValue) IsActive = isActive.Value;
+    }
+
+    public void ClearDigitalMetadata()
+    {
+        ProviderCode = string.Empty;
+        TokenRef = string.Empty;
+        ProtectedSecret = null;
+        SealImageBase64 = null;
     }
     public void Rename(string fileName)
     {

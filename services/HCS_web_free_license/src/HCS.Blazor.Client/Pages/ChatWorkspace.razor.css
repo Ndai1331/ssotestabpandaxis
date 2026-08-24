@@ -419,7 +419,7 @@
     position: relative;
 }
 
-.hcs-chat__avatar {
+::deep .hcs-chat__avatar {
     align-items: center;
     background: var(--chat-avatar);
     border-radius: 50%;
@@ -430,20 +430,28 @@
     font-weight: 800;
     height: 2.3rem;
     justify-content: center;
+    overflow: hidden;
     width: 2.3rem;
 }
 
-.hcs-chat__avatar .fa {
+::deep .hcs-chat__avatar-image {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+::deep .hcs-chat__avatar .fa {
     font-size: .9rem;
 }
 
-.hcs-chat__avatar--small {
+::deep .hcs-chat__avatar--small {
     font-size: .62rem;
     height: 1.9rem;
     width: 1.9rem;
 }
 
-.hcs-chat__avatar--large {
+::deep .hcs-chat__avatar--large {
     font-size: 1rem;
     height: 4.5rem;
     width: 4.5rem;
@@ -477,7 +485,7 @@
     margin-top: .15rem;
 }
 
-/* ::deep: presence/avatar-wrap are often built via RenderFragment and lack the scope attribute */
+/* ::deep: avatar/presence/avatar-wrap are often built via RenderFragment and lack the scope attribute */
 ::deep .hcs-chat__avatar-wrap {
     display: inline-flex;
     flex: 0 0 auto;

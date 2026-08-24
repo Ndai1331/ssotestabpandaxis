@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
+using Volo.Abp;
 using HCS.DocumentService.Integration;
 using HCS.DocumentService.Documents;
 using HCS.DocumentService.Storage;
@@ -24,6 +26,9 @@ public sealed class SigningAppService(
         "image/jpeg", "image/png", "image/webp", "image/gif"
     };
 
+    private sealed record ResolvedSignatureMetadata(string ProviderCode, string TokenRef,
+        string? ProtectedSecret, string? SealImageBase64);
+
     public async Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var principal = Principal;
@@ -37,17 +42,32 @@ public sealed class SigningAppService(
     {
         var principal = Principal;
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningConfigure);
-        if (!Uri.TryCreate(input.Endpoint, UriKind.Absolute, out var endpoint) || endpoint.Scheme != Uri.UriSchemeHttps)
-            throw new ArgumentException("Signing endpoint must be an absolute HTTPS URI.");
+        if (!Enum.IsDefined(input.Kind)) throw new ArgumentOutOfRangeException(nameof(input.Kind));
+        if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(input.ProviderCode))
+            throw new ArgumentException("Provider code is required for external signing.", nameof(input));
+        if (!Uri.TryCreate(input.Endpoint, UriKind.Absolute, out var endpoint)
+            || (endpoint.Scheme != Uri.UriSchemeHttps && endpoint.Scheme != Uri.UriSchemeHttp))
+            throw new ArgumentException("Signing endpoint must be an absolute HTTP or HTTPS URI.");
         EnsureEndpointAllowed(endpoint);
-        var protectedSecret = secretProtector.Protect(input.ConsumeSecret());
         var credential = await db.SigningCredentials.SingleOrDefaultAsync(x => x.UserId == targetUserId && x.Kind == input.Kind, cancellationToken);
+        var rawSecret = input.ConsumeSecret();
+        if (credential is null && input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(rawSecret))
+            throw new ArgumentException("A signing secret is required for a new provider configuration.", nameof(input));
+        var protectedSecret = string.IsNullOrWhiteSpace(rawSecret)
+            ? credential?.ProtectedSecret ?? string.Empty
+            : secretProtector.Protect(rawSecret);
+        var layoutImage = input.LayoutImageBase64 ?? credential?.LayoutImageBase64;
+        ValidateOptionalImage(layoutImage);
         if (credential is null)
         {
-            credential = new SigningCredential(Guid.NewGuid(), targetUserId, input.Kind, endpoint.ToString(), protectedSecret, DateTime.UtcNow);
+            credential = new SigningCredential(Guid.NewGuid(), targetUserId, input.Kind, endpoint.ToString(), protectedSecret, DateTime.UtcNow,
+                input.ProviderCode, layoutImage, input.ApiTimeoutSeconds, input.SignWidth, input.SignHeight,
+                input.AllowElectronicSign, input.AllowDigitalSign, input.RequireOtp);
             db.SigningCredentials.Add(credential);
         }
-        else credential.Replace(endpoint.ToString(), protectedSecret, DateTime.UtcNow);
+        else credential.Replace(endpoint.ToString(), protectedSecret, DateTime.UtcNow,
+            input.ProviderCode, layoutImage, input.ApiTimeoutSeconds, input.SignWidth, input.SignHeight,
+            input.AllowElectronicSign, input.AllowDigitalSign, input.RequireOtp);
         await db.SaveChangesAsync(cancellationToken);
         return Map(credential);
     }
@@ -57,6 +77,7 @@ public sealed class SigningAppService(
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
         DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningExecute);
+        if (!Enum.IsDefined(input.Kind)) throw new ArgumentOutOfRangeException(nameof(input.Kind));
         var key = input.IdempotencyKey?.Trim();
         if (string.IsNullOrWhiteSpace(key) || key.Length > 128)
             throw new ArgumentException("A valid idempotency key is required.", nameof(input));
@@ -69,7 +90,34 @@ public sealed class SigningAppService(
         var file = await db.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == input.FileId && x.DocumentId == input.DocumentId && !x.IsPendingDeletion, cancellationToken)
             ?? throw new KeyNotFoundException("Document file not found.");
         var credential = await db.SigningCredentials.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId && x.Kind == input.Kind, cancellationToken);
-        if (input.Kind != SigningKind.Electronic && credential is null) throw new InvalidOperationException("Signing credential is not configured.");
+        if (input.Kind != SigningKind.Electronic && credential is null) throw new InvalidOperationException("Signing provider is not configured.");
+        if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(credential!.ProviderCode))
+            throw new InvalidOperationException("The selected signing provider has no provider code.");
+        if (input.Kind == SigningKind.Electronic && credential is { AllowElectronicSign: false })
+            throw new InvalidOperationException("Electronic signing is disabled for this provider.");
+        if (input.Kind != SigningKind.Electronic && credential is { AllowDigitalSign: false })
+            throw new InvalidOperationException("Digital signing is disabled for this provider.");
+        var expectedType = input.Kind == SigningKind.Electronic ? UserSignatureType.Electronic : UserSignatureType.Digital;
+        var signatureQuery = db.UserSignatures.AsNoTracking()
+            .Where(x => x.UserId == userId && x.Type == expectedType && x.IsActive);
+        UserSignature? signature;
+        if (input.SignatureId is { } signatureId)
+        {
+            signature = await signatureQuery.SingleOrDefaultAsync(x => x.Id == signatureId, cancellationToken)
+                ?? throw new KeyNotFoundException("Selected user signature was not found or is inactive.");
+        }
+        else
+        {
+            signature = await signatureQuery.OrderByDescending(x => x.IsDefault).ThenByDescending(x => x.CreationTime)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        if (signature is null) throw new InvalidOperationException("A matching user signature is not configured.");
+        if (credential is not null && !string.IsNullOrWhiteSpace(signature.ProviderCode)
+            && !string.Equals(signature.ProviderCode, credential.ProviderCode, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("The selected signature is configured for a different provider.");
+        var now = DateTime.UtcNow;
+        if (signature.ValidFrom.HasValue && signature.ValidFrom > now) throw new InvalidOperationException("The selected signature is not yet valid.");
+        if (signature.ValidTo.HasValue && signature.ValidTo < now) throw new InvalidOperationException("The selected signature has expired.");
         var attempt = new SigningAttempt(Guid.NewGuid(), input.DocumentId, input.FileId, userId, input.Kind, file.Sha256, key, DateTime.UtcNow);
         db.SigningAttempts.Add(attempt);
         try
@@ -94,8 +142,27 @@ public sealed class SigningAppService(
                 throw new InvalidDataException("Stored file hash does not match its immutable metadata.");
             var adapter = adapters.SingleOrDefault(x => x.Kind == input.Kind)
                 ?? throw new NotSupportedException($"No adapter registered for {input.Kind}.");
+            var signatureImage = await ReadSigningBlobAsync(signature.BlobName, cancellationToken);
+            var secret = !string.IsNullOrWhiteSpace(signature.ProtectedSecret)
+                ? secretProtector.Unprotect(signature.ProtectedSecret)
+                : credential is null ? string.Empty : secretProtector.Unprotect(credential.ProtectedSecret);
+            var placeholder = ResolvePlaceholder(bytes, input.Placeholder);
+            var providerRequest = new SigningProviderRequest(
+                bytes,
+                credential?.Endpoint ?? "https://electronic.local",
+                secret,
+                signature.TokenRef,
+                signatureImage,
+                DecodeImage(signature.SealImageBase64),
+                DecodeImage(credential?.LayoutImageBase64),
+                placeholder,
+                NormalizeBounded(input.SignerName, 256),
+                NormalizeBounded(input.Note, 2000),
+                credential?.SignWidth is > 0 and var width ? width : 150,
+                credential?.SignHeight is > 0 and var height ? height : 70,
+                credential?.ApiTimeoutSeconds is > 0 and var timeout ? timeout : 30);
             var result = await adapter.SignAsync(new SigningAdapterRequest(bytes, actualInputHash,
-                credential?.Endpoint ?? "https://electronic.local", credential is null ? string.Empty : secretProtector.Unprotect(credential.ProtectedSecret)), cancellationToken);
+                providerRequest.Endpoint, secret, providerRequest), cancellationToken);
             var outputHash = ContentHash.Sha256(result.SignedContent);
             var blobName = BlobNamePolicy.Signing(input.DocumentId, attempt.Id);
             await signingBlobs.SaveAsync(blobName, new MemoryStream(result.SignedContent), overrideExisting: false, cancellationToken: cancellationToken);
@@ -136,15 +203,22 @@ public sealed class SigningAppService(
     }
 
     public async Task<UserSignatureDto> UploadSignatureAsync(string fileName, string contentType, Stream content, long size,
-        UserSignatureType type = UserSignatureType.Electronic, Guid? userId = null, CancellationToken cancellationToken = default)
+        UserSignatureType type = UserSignatureType.Electronic, Guid? userId = null, string? providerCode = null,
+        string? tokenRef = null, string? secret = null, string? sealImageBase64 = null,
+        DateTime? validFrom = null, DateTime? validTo = null, bool isActive = true,
+        CancellationToken cancellationToken = default)
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         ValidateSignatureFile(fileName, contentType, size);
         ValidateSignatureType(type);
+        var metadata = await ResolveSignatureMetadataAsync(targetUserId, type, providerCode, tokenRef, secret,
+            sealImageBase64, current: null, cancellationToken);
         var id = Guid.NewGuid();
         var blobName = BlobNamePolicy.UserSignature(targetUserId, id);
         await signingBlobs.SaveAsync(blobName, content, overrideExisting: false, cancellationToken: cancellationToken);
-        var signature = new UserSignature(id, targetUserId, Path.GetFileName(fileName), NormalizeSignatureContentType(contentType), blobName, size, DateTime.UtcNow, type);
+        var signature = new UserSignature(id, targetUserId, Path.GetFileName(fileName), NormalizeSignatureContentType(contentType), blobName, size, DateTime.UtcNow, type,
+            metadata.ProviderCode, metadata.TokenRef, metadata.ProtectedSecret, metadata.SealImageBase64,
+            NormalizeUtc(validFrom), NormalizeUtc(validTo), isActive);
         if (!await db.UserSignatures.AnyAsync(x => x.UserId == targetUserId, cancellationToken)) signature.MarkDefault();
         db.UserSignatures.Add(signature);
         try { await db.SaveChangesAsync(cancellationToken); }
@@ -153,7 +227,10 @@ public sealed class SigningAppService(
     }
 
     public async Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string? fileName, string? contentType, Stream? content, long? size,
-        UserSignatureType? type = null, Guid? userId = null, CancellationToken cancellationToken = default)
+        UserSignatureType? type = null, Guid? userId = null, string? providerCode = null,
+        string? tokenRef = null, string? secret = null, string? sealImageBase64 = null,
+        DateTime? validFrom = null, DateTime? validTo = null, bool? isActive = null,
+        CancellationToken cancellationToken = default)
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         var signature = await db.UserSignatures.SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
@@ -162,15 +239,23 @@ public sealed class SigningAppService(
         var normalizedFileName = string.IsNullOrWhiteSpace(fileName) ? signature.FileName : Path.GetFileName(fileName.Replace('\\', '/'));
         var normalizedType = type ?? signature.Type;
         ValidateSignatureType(normalizedType);
+        var metadata = await ResolveSignatureMetadataAsync(targetUserId, normalizedType, providerCode, tokenRef, secret,
+            sealImageBase64, signature, cancellationToken);
+        var hasMetadata = providerCode is not null || tokenRef is not null || secret is not null || sealImageBase64 is not null
+            || validFrom.HasValue || validTo.HasValue || isActive.HasValue;
         if (content is null)
         {
             var fileNameChanged = !string.Equals(normalizedFileName, signature.FileName, StringComparison.Ordinal);
             var typeChanged = normalizedType != signature.Type;
-            if (!fileNameChanged && !typeChanged)
-                throw new ArgumentException("A file name or replacement image is required.");
+            if (!fileNameChanged && !typeChanged && !hasMetadata)
+                throw new ArgumentException("A file name, replacement image, or signature metadata is required.");
 
             if (fileNameChanged) signature.Rename(normalizedFileName);
             if (typeChanged) signature.ChangeType(normalizedType);
+            if (normalizedType == UserSignatureType.Electronic) signature.ClearDigitalMetadata();
+            else if (hasMetadata || typeChanged)
+                signature.UpdateMetadata(metadata.ProviderCode, metadata.TokenRef, metadata.ProtectedSecret,
+                    metadata.SealImageBase64, NormalizeUtc(validFrom), NormalizeUtc(validTo), isActive);
             await db.SaveChangesAsync(cancellationToken);
             return MapSignature(signature);
         }
@@ -183,6 +268,9 @@ public sealed class SigningAppService(
         await signingBlobs.SaveAsync(newBlobName, content, overrideExisting: false, cancellationToken: cancellationToken);
         signature.ReplaceContent(normalizedFileName, normalizedContentType, newBlobName, uploadSize);
         signature.ChangeType(normalizedType);
+        if (normalizedType == UserSignatureType.Electronic) signature.ClearDigitalMetadata();
+        else signature.UpdateMetadata(metadata.ProviderCode, metadata.TokenRef, metadata.ProtectedSecret,
+            metadata.SealImageBase64, NormalizeUtc(validFrom), NormalizeUtc(validTo), isActive);
         try
         {
             await db.SaveChangesAsync(cancellationToken);
@@ -280,9 +368,106 @@ public sealed class SigningAppService(
     private static string NormalizeSignatureContentType(string? contentType) =>
         contentType?.Trim().ToLowerInvariant() ?? throw new InvalidDataException("A signature image content type is required.");
 
+    private static DateTime? NormalizeUtc(DateTime? value) => value?.ToUniversalTime();
+
+    private static string NormalizeBounded(string? value, int maxLength)
+    {
+        var normalized = value?.Trim() ?? string.Empty;
+        return normalized.Length <= maxLength ? normalized : normalized[..maxLength];
+    }
+
+    private async Task<byte[]> ReadSigningBlobAsync(string blobName, CancellationToken cancellationToken)
+    {
+        await using var stream = await signingBlobs.GetAsync(blobName, cancellationToken);
+        await using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancellationToken);
+        return buffer.ToArray();
+    }
+
+    private static string ResolvePlaceholder(byte[] pdfBytes, string? requested)
+    {
+        if (!string.IsNullOrWhiteSpace(requested)) return NormalizeBounded(requested, 128);
+        if (pdfBytes is { Length: > 0 })
+        {
+            using var document = UglyToad.PdfPig.PdfDocument.Open(pdfBytes);
+            foreach (var page in document.GetPages())
+            {
+                var text = string.Concat(page.Letters.Select(x => x.Value));
+                var match = Regex.Match(text, @"<<Sign\d{1,3}>>", RegexOptions.CultureInvariant);
+                if (match.Success) return match.Value;
+            }
+        }
+        return "<<Sign01>>";
+    }
+
+    private static byte[] DecodeImage(string? base64)
+    {
+        if (string.IsNullOrWhiteSpace(base64)) return [];
+        var value = base64.Trim();
+        var separator = value.IndexOf(',');
+        if (value.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && separator >= 0)
+            value = value[(separator + 1)..];
+        try { return Convert.FromBase64String(value); }
+        catch (FormatException) { throw new InvalidDataException("An image configuration is not valid Base64."); }
+    }
+
+    private static void ValidateOptionalImage(string? base64)
+    {
+        if (string.IsNullOrWhiteSpace(base64)) return;
+        var bytes = DecodeImage(base64);
+        if (bytes.Length > 3 * 1024 * 1024) throw new ArgumentOutOfRangeException(nameof(base64), "The configured image is too large.");
+    }
+
     private static void ValidateSignatureType(UserSignatureType type)
     {
         if (!Enum.IsDefined(type)) throw new ArgumentOutOfRangeException(nameof(type));
+    }
+
+    private async Task<ResolvedSignatureMetadata> ResolveSignatureMetadataAsync(Guid userId, UserSignatureType type,
+        string? providerCode, string? tokenRef, string? secret, string? sealImageBase64, UserSignature? current,
+        CancellationToken cancellationToken)
+    {
+        if (type == UserSignatureType.Electronic)
+            return new ResolvedSignatureMetadata(string.Empty, string.Empty, null, null);
+
+        var normalizedProvider = string.IsNullOrWhiteSpace(providerCode)
+            ? current?.ProviderCode?.Trim() ?? string.Empty
+            : providerCode.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedProvider))
+            throw new ArgumentException("A configured provider must be selected for a digital signature.", nameof(providerCode));
+
+        var providerExists = await db.SigningCredentials.AsNoTracking().AnyAsync(x => x.UserId == userId
+            && x.Kind != SigningKind.Electronic
+            && x.ProviderCode == normalizedProvider, cancellationToken);
+        if (!providerExists)
+            throw new InvalidOperationException("The selected provider is not configured for this user.");
+
+        var normalizedToken = string.IsNullOrWhiteSpace(tokenRef)
+            ? current?.TokenRef?.Trim() ?? string.Empty
+            : tokenRef.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedToken))
+            throw new ArgumentException("A token or API key is required for a digital signature.", nameof(tokenRef));
+
+        string? protectedSecret;
+        if (string.IsNullOrWhiteSpace(secret))
+        {
+            protectedSecret = current?.ProtectedSecret;
+        }
+        else
+        {
+            protectedSecret = secretProtector.Protect(secret);
+        }
+        if (string.IsNullOrWhiteSpace(protectedSecret))
+            throw new ArgumentException("A secret key is required for a digital signature.", nameof(secret));
+
+        var normalizedSeal = string.IsNullOrWhiteSpace(sealImageBase64)
+            ? current?.SealImageBase64
+            : sealImageBase64.Trim();
+        ValidateOptionalImage(normalizedSeal);
+        if (string.IsNullOrWhiteSpace(normalizedSeal))
+            throw new ArgumentException("A seal image is required for a digital signature.", nameof(sealImageBase64));
+
+        return new ResolvedSignatureMetadata(normalizedProvider, normalizedToken, protectedSecret, normalizedSeal);
     }
 
     private Task<SigningAttempt?> FindAttemptAsync(Guid userId, SignDocumentRequest input, string key,
@@ -294,14 +479,17 @@ public sealed class SigningAppService(
         var hosts = configuration.GetSection("Signing:AllowedEndpointHosts").Get<string[]>() ?? [];
         if (hosts.Length == 0 || !hosts.Any(host => string.Equals(host?.Trim(), endpoint.Host,
                 StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException("Signing endpoint is not in the configured allowlist.");
+            throw new BusinessException("Signing:EndpointNotAllowed");
     }
     private string CorrelationId => httpContext.HttpContext?.TraceIdentifier ?? Guid.NewGuid().ToString("N");
-    private static SigningCredentialDto Map(SigningCredential x) => new(x.Id, x.Kind, x.Endpoint, "********", x.UpdatedAt);
+    private static SigningCredentialDto Map(SigningCredential x) => new(x.Id, x.Kind, x.ProviderCode, x.Endpoint, "********",
+        x.ApiTimeoutSeconds, x.SignWidth, x.SignHeight, x.AllowElectronicSign, x.AllowDigitalSign, x.RequireOtp,
+        x.UpdatedAt, !string.IsNullOrWhiteSpace(x.LayoutImageBase64));
     private static SigningAttemptDto Map(SigningAttempt x) => new(x.Id, x.DocumentId, x.FileId, x.Kind, x.Status,
         x.InputSha256, x.OutputSha256, x.Error, x.CreationTime, x.CompletedAt);
     private static UserSignatureDto MapSignature(UserSignature x) =>
-        new(x.Id, x.FileName, x.ContentType, x.Size, x.IsDefault, x.CreationTime, x.Type);
+        new(x.Id, x.FileName, x.ContentType, x.Size, x.IsDefault, x.CreationTime, x.Type,
+            x.ProviderCode, string.Empty, x.ValidFrom, x.ValidTo, x.IsActive, !string.IsNullOrWhiteSpace(x.SealImageBase64));
 }
 
 internal static class SigningFailureSanitizer

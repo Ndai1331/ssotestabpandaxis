@@ -10,6 +10,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime Js
 @using Microsoft.AspNetCore.Components.Forms
+@using System.IO
 @implements IAsyncDisposable
 
 <PageTitle>@DocumentTitle · HCS</PageTitle>
@@ -29,7 +30,14 @@
                     <div class="hcs-catalog-form">
                         <div class="hcs-form-row">
                             <Field><FieldLabel>@L["Feature:DocumentNumber"]</FieldLabel>
-                                <HcsIsolatedTextInput @bind-Value="form.Number" Name="hcsDocumentNumber" MaxLength="64" Disabled="@(!IsCreate)" />
+                                @if (IsCreate)
+                                {
+                                    <div class="form-control-plaintext text-muted">@L["Feature:DocumentNumberAuto"]</div>
+                                }
+                                else
+                                {
+                                    <HcsIsolatedTextInput @bind-Value="form.Number" Name="hcsDocumentNumber" MaxLength="64" Disabled="true" />
+                                }
                             </Field>
                             <Field><FieldLabel>@L["Feature:DocumentTitleField"]</FieldLabel>
                                 <HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsDocumentTitle" />
@@ -60,15 +68,26 @@
                                                 Search="SearchConfidentialitiesAsync" />
                             </Field>
                         </div>
+                        <Field>
+                            <FieldLabel>@L["Feature:Files"]</FieldLabel>
+                            <div class="hcs-dropzone">
+                                @if (IsCreate)
+                                {
+                                    <InputFile class="form-control" OnChange="SelectPendingFileAsync" accept=".docx,.pdf" />
+                                }
+                                else
+                                {
+                                    <InputFile class="form-control" OnChange="UploadAsync" accept=".docx,.pdf" />
+                                }
+                                <p class="hcs-dropzone__hint mb-0">@L["Work:DropFileHere"]</p>
+                                @if (pendingFile is not null)
+                                {
+                                    <small class="text-muted d-block mt-2">@pendingFile.Name</small>
+                                }
+                            </div>
+                        </Field>
                         @if (!IsCreate)
                         {
-                            <Field>
-                                <FieldLabel>@L["Feature:Files"]</FieldLabel>
-                                <div class="hcs-dropzone">
-                                    <InputFile class="form-control" OnChange="UploadAsync" accept=".docx,.pdf" />
-                                    <p class="hcs-dropzone__hint mb-0">@L["Work:DropFileHere"]</p>
-                                </div>
-                            </Field>
                             @if (document?.Files.Count is null or 0)
                             {
                                 <p class="text-muted">@L["Catalog:EmptyTitle"]</p>
@@ -99,25 +118,29 @@
                                     </table>
                                 </div>
                             }
-                            <Field>
-                                <FieldLabel>@L["Feature:Assign"]</FieldLabel>
-                                <UserSelect2 Value="assigneeId" ValueChanged="value => assigneeId = value"
-                                             SelectedItem="@ContactItem(assigneeId)"
-                                             Placeholder="@L["Chat:SelectContacts"]"
-                                             SelectedText="@ContactName(assigneeId)"
-                                             Search="SearchContactsAsync" />
-                                <HcsIsolatedTextInput CssClass="form-control mt-2" @bind-Value="responsibility" Name="hcsDocumentResponsibility" Placeholder="@L["Feature:Responsibility"].Value" />
-                                <Button Color="Color.Primary" Class="mt-2" Clicked="AssignAsync">@L["Feature:Assign"]</Button>
-                                @if (document is not null)
-                                {
-                                    <ul class="mt-3 mb-0">
-                                        @foreach (var assignment in document.Assignments)
+                            <AuthorizeView Policy="Documents.Assign">
+                                <Authorized>
+                                    <Field>
+                                        <FieldLabel>@L["Feature:Assign"]</FieldLabel>
+                                        <UserSelect2 Value="assigneeId" ValueChanged="value => assigneeId = value"
+                                                     SelectedItem="@ContactItem(assigneeId)"
+                                                     Placeholder="@L["Chat:SelectContacts"]"
+                                                     SelectedText="@ContactName(assigneeId)"
+                                                     Search="SearchContactsAsync" />
+                                        <HcsIsolatedTextInput CssClass="form-control mt-2" @bind-Value="responsibility" Name="hcsDocumentResponsibility" Placeholder="@L["Feature:Responsibility"].Value" />
+                                        <Button Color="Color.Primary" Class="mt-2" Clicked="AssignAsync">@L["Feature:Assign"]</Button>
+                                        @if (document is not null)
                                         {
-                                            <li>@ContactName(assignment.AssigneeUserId) · @assignment.Responsibility</li>
+                                            <ul class="mt-3 mb-0">
+                                                @foreach (var assignment in document.Assignments)
+                                                {
+                                                    <li>@ContactName(assignment.AssigneeUserId) · @assignment.Responsibility</li>
+                                                }
+                                            </ul>
                                         }
-                                    </ul>
-                                }
-                            </Field>
+                                    </Field>
+                                </Authorized>
+                            </AuthorizeView>
                             <div class="d-flex gap-2 mb-3">
                                 <Button Color="Color.Primary" Clicked="SubmitAsync" Disabled="@(document?.Status != DocumentStatus.Draft)">@L["Feature:SubmitDocument"]</Button>
                                 <AuthorizeView Policy="Documents.Assign">
@@ -171,6 +194,28 @@
                     {
                         <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(50)" />
                     }
+                    else if (pendingFile is not null)
+                    {
+                        <Card Class="hcs-file-preview-card">
+                            <CardBody>
+                                <i class="fa @FileIcon(pendingFile.Name) hcs-file-preview-card__icon" aria-hidden="true"></i>
+                                <strong class="hcs-file-preview-card__name">@pendingFile.Name</strong>
+                                <span class="hcs-file-preview-card__meta">@FormatFileSize(pendingFile.Size) · @pendingFile.ContentType</span>
+                                <p class="text-muted mb-0">@L["Work:NoPdfAvailable"]</p>
+                            </CardBody>
+                        </Card>
+                    }
+                    else if (previewFile is not null)
+                    {
+                        <Card Class="hcs-file-preview-card">
+                            <CardBody>
+                                <i class="fa @FileIcon(previewFile.FileName) hcs-file-preview-card__icon" aria-hidden="true"></i>
+                                <strong class="hcs-file-preview-card__name">@previewFile.FileName</strong>
+                                <span class="hcs-file-preview-card__meta">@FormatFileSize(previewFile.Size) · @previewFile.ContentType</span>
+                                <p class="text-muted mb-0">@L["Work:NoPdfAvailable"]</p>
+                            </CardBody>
+                        </Card>
+                    }
                     else
                     {
                         <Alert Color="Color.Light" Dismissible="false">@L["Work:NoPdfAvailable"]</Alert>
@@ -216,8 +261,10 @@
     private Guid? assigneeId;
     private string responsibility = "reviewer";
     private string? pdfUrl;
+    private DocumentFileDto? previewFile;
     private bool isSaving, isSending;
     private Guid? sendReceiverId;
+    private IBrowserFile? pendingFile;
     private bool IsCreate => DocumentId == Guid.Empty;
     private int SourceType => SourceTypeQuery is >= 0 and <= 2 ? SourceTypeQuery.Value : 0;
     private string BackHref => $"/manage-documents?sourceType={SourceType}";
@@ -231,6 +278,9 @@
         {
             document = null;
             form.Reset();
+            pendingFile = null;
+            previewFile = null;
+            ApplyCreateDefaults();
             await RevokePdfAsync();
             return;
         }
@@ -247,6 +297,7 @@
             sectors.AddRange((await Catalog.GetMasterDataAsync("Sector", query)).Items);
             urgencies.AddRange((await Catalog.GetMasterDataAsync("UrgencyLevel", query)).Items);
             confidentialities.AddRange((await Catalog.GetMasterDataAsync("ConfidentialityLevel", query)).Items);
+            ApplyCreateDefaults();
         }
         catch { /* catalog permission is optional */ }
         if (contacts.Count == 0)
@@ -268,7 +319,7 @@
             form.SectorId = document.SectorId;
             form.UrgencyId = document.UrgencyId;
             form.ConfidentialityId = document.ConfidentialityId;
-            await LoadPreviewAsync(DocumentFilePick.PreferPdf(document.Files));
+            await LoadPreviewAsync(DocumentFilePick.PreferPdf(document.Files) ?? document.Files.LastOrDefault());
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
@@ -280,12 +331,28 @@
         {
             if (IsCreate)
             {
+                if (pendingFile is null)
+                {
+                    await NotifyErrorAsync(L["Feature:FileRequired"]);
+                    return;
+                }
+
                 var created = await Documents.CreateDocumentAsync(new CreateDocumentRequest(
-                    form.Number.Trim(), form.Title.Trim(), DescriptionOrNull,
+                    null, form.Title.Trim(), DescriptionOrNull,
                     form.DocumentTypeId, form.SectorId, form.UrgencyId, form.ConfidentialityId,
                     SourceType == 1 ? DocumentSourceType.Personal : DocumentSourceType.Archive));
+                try
+                {
+                    await Documents.UploadFileAsync(created.Id, pendingFile);
+                }
+                catch (Exception ex)
+                {
+                    await NotifyErrorAsync(ex, BffErrorKind.Save);
+                    Navigation.NavigateTo($"/document-detail/{created.Id}?sourceType={SourceType}", replace: true);
+                    return;
+                }
                 await NotifySuccessAsync(L["Catalog:Created"]);
-                Navigation.NavigateTo($"/document-detail/{created.Id}?sourceType={SourceType}");
+                Navigation.NavigateTo($"/document-detail/{created.Id}?sourceType={SourceType}", replace: true);
                 return;
             }
             document = await Documents.UpdateDocumentAsync(DocumentId, new UpdateDocumentRequest(
@@ -297,12 +364,32 @@
         finally { isSaving = false; }
     }
 
+    private async Task SelectPendingFileAsync(InputFileChangeEventArgs args)
+    {
+        pendingFile = args.File;
+        previewFile = null;
+        await RevokePdfAsync();
+        if (!IsPdfFile(pendingFile.Name, pendingFile.ContentType)) return;
+
+        try
+        {
+            await using var stream = pendingFile.OpenReadStream(50 * 1024 * 1024);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", "application/pdf", buffer.ToArray());
+        }
+        catch
+        {
+            pdfUrl = null;
+        }
+    }
+
     private async Task UploadAsync(InputFileChangeEventArgs args)
     {
         try
         {
             await Documents.UploadFileAsync(DocumentId, args.File);
-            await NotifySuccessAsync(L["Catalog:Created"]);
+            await NotifySuccessAsync(L["Catalog:Updated"]);
             await ReloadExistingAsync();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
@@ -325,6 +412,7 @@
     private async Task LoadPreviewAsync(DocumentFileDto? file)
     {
         await RevokePdfAsync();
+        previewFile = file;
         if (file is null || !DocumentFilePick.IsPdf(file)) return;
         try
         {
@@ -395,6 +483,14 @@
         id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
     private static string MasterText(IEnumerable<MasterDataCatalogDto> items, Guid? id) =>
         CatalogSelect2Cache.TextFor(items, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+    private static bool IsPdfFile(string fileName, string? contentType) =>
+        contentType?.Contains("pdf", StringComparison.OrdinalIgnoreCase) == true
+        || fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+    private static string FormatFileSize(long size) => size < 1024 * 1024
+        ? $"{Math.Max(1, size / 1024)} KB"
+        : $"{size / (1024d * 1024d):0.##} MB";
+    private static string FileIcon(string fileName) =>
+        fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) ? "fa-file-pdf" : "fa-file-word";
     private async Task<CatalogSelect2SearchResponse> SearchMasterAsync(string type, List<MasterDataCatalogDto> cache, string term, int page)
     {
         var skip = Math.Max(page - 1, 0) * 20;
@@ -406,6 +502,19 @@
     private Task<CatalogSelect2SearchResponse> SearchSectorsAsync(string term, int page) => SearchMasterAsync("Sector", sectors, term, page);
     private Task<CatalogSelect2SearchResponse> SearchUrgenciesAsync(string term, int page) => SearchMasterAsync("UrgencyLevel", urgencies, term, page);
     private Task<CatalogSelect2SearchResponse> SearchConfidentialitiesAsync(string term, int page) => SearchMasterAsync("ConfidentialityLevel", confidentialities, term, page);
+
+    private void ApplyCreateDefaults()
+    {
+        if (!IsCreate) return;
+        form.DocumentTypeId ??= LowestId(documentTypes);
+        form.SectorId ??= LowestId(sectors);
+        form.UrgencyId ??= LowestId(urgencies);
+        form.ConfidentialityId ??= LowestId(confidentialities);
+    }
+
+    private static Guid? LowestId(IEnumerable<MasterDataCatalogDto> items) =>
+        items.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).Select(x => (Guid?)x.Id).FirstOrDefault();
+
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);

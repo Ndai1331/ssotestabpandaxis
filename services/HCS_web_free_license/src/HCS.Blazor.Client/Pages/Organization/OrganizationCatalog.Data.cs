@@ -90,7 +90,7 @@ public partial class OrganizationCatalog
         }
         catch (OrganizationCatalogApiException exception)
         {
-            await SetErrorAsync(GetFriendlyErrorMessage(exception.StatusCode, false), "Catalog:LoadErrorTitle", true);
+            await SetErrorAsync(GetFriendlyErrorMessage(exception.StatusCode, false), "Catalog:LoadErrorTitle", true, exception.StatusCode);
         }
         catch (Exception)
         {
@@ -118,7 +118,7 @@ public partial class OrganizationCatalog
         catch (OrganizationCatalogApiException exception)
         {
             departmentOptions.Clear();
-            await SetErrorAsync(GetFriendlyErrorMessage(exception.StatusCode, false), "Catalog:LoadErrorTitle", true);
+            await SetErrorAsync(GetFriendlyErrorMessage(exception.StatusCode, false), "Catalog:LoadErrorTitle", true, exception.StatusCode);
         }
         catch (Exception)
         {

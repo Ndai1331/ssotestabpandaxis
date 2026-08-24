@@ -9,6 +9,7 @@ public enum WorkflowInstanceStatus { Running, Completed, Rejected, Cancelled, Re
 public enum ApprovalTaskStatus { Pending, Approved, Rejected, Cancelled, Returned }
 public enum SigningStatus { Pending, Completed, Failed }
 public enum UserSignatureType { Electronic, Digital }
+public enum SigningKind { Electronic = 0, RemoteCa = 1, Hsm = 2, UsbToken = 3 }
 
 public sealed record PagedDocumentsResponse(long TotalCount, List<DocumentDto> Items);
 
@@ -26,7 +27,7 @@ public sealed record DocumentDto(
     Guid? FromUserId = null, Guid? OrganizationUnitId = null);
 
 public sealed record CreateDocumentRequest(
-    string Number, string Title, string? Description,
+    string? Number, string Title, string? Description,
     Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId,
     DocumentSourceType SourceType = DocumentSourceType.Archive);
 public sealed record SendDocumentRequest(Guid? ReceiverUserId = null, Guid? OrganizationUnitId = null);
@@ -59,23 +60,33 @@ public sealed record WorkflowInstanceDto(
     List<ApprovalTaskDto> Tasks, DateTime CreationTime);
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, List<Guid> DepartmentIds, List<Guid> UserIds);
-public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null);
+public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null,
+    string? UserName = null);
 public sealed record WorkflowStepCandidateGroupDto(string StepCode, string StepName, string AssigneeType, Guid? RoleId,
     List<WorkflowAssigneeCandidateDto> Candidates);
 public sealed record StartWorkflowRequest(Guid? DocumentId, Guid DefinitionId, string IdempotencyKey,
     List<WorkflowStepSignerSelection>? Signers = null, List<WorkflowViewScopeSelection>? ViewScopes = null,
-    bool UseTemplateFile = false, bool UseWorkflowTemplateFile = false);
-public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey, bool Return = false);
+    bool UseTemplateFile = false, bool UseWorkflowTemplateFile = false, string? SigningContent = null);
+public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, string IdempotencyKey, bool Return = false,
+    Guid? SigningAttemptId = null, Guid? SigningFileId = null);
+public sealed record ExtendWorkflowDueDateRequest(int AdditionalDays, string? Reason = null);
 
-public sealed record SigningCredentialDto(Guid Id, int Kind, string Endpoint, string MaskedSecret, DateTime UpdatedAt);
-public sealed record ConfigureSigningCredentialRequest(int Kind, string Endpoint, string Secret);
-public sealed record SignDocumentRequest(Guid DocumentId, Guid FileId, int Kind, string IdempotencyKey);
+public sealed record SigningCredentialDto(Guid Id, int Kind, string ProviderCode, string Endpoint, string MaskedSecret,
+    int ApiTimeoutSeconds, int SignWidth, int SignHeight, bool AllowElectronicSign, bool AllowDigitalSign,
+    bool RequireOtp, DateTime UpdatedAt, bool HasLayoutImage = false);
+public sealed record ConfigureSigningCredentialRequest(int Kind, string Endpoint, string Secret,
+    string ProviderCode = "", string? LayoutImageBase64 = null, int ApiTimeoutSeconds = 30,
+    int SignWidth = 150, int SignHeight = 70, bool AllowElectronicSign = true,
+    bool AllowDigitalSign = true, bool RequireOtp = false);
+public sealed record SignDocumentRequest(Guid DocumentId, Guid FileId, int Kind, string IdempotencyKey,
+    Guid? SignatureId = null, string? Placeholder = null, string? SignerName = null, string? Note = null);
 public sealed record SigningAttemptDto(
     Guid Id, Guid DocumentId, Guid FileId, int Kind, SigningStatus Status, string InputSha256,
     string? OutputSha256, string? Error, DateTime CreationTime, DateTime? CompletedAt);
 public sealed record SigningReportDto(Guid DocumentId, int Completed, int Failed, List<SigningAttemptDto> Attempts);
 public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime,
-    UserSignatureType Type = UserSignatureType.Electronic);
+    UserSignatureType Type = UserSignatureType.Electronic, string ProviderCode = "", string TokenRef = "",
+    DateTime? ValidFrom = null, DateTime? ValidTo = null, bool IsActive = true, bool HasSealImage = false);
 
 public sealed record DocumentListQuery(string? Filter, string? Status, bool Mine, int SkipCount, int MaxResultCount, int? SourceType = null,
     Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null,

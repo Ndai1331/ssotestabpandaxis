@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -156,11 +157,24 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<List<WorkflowStepCandidateGroupDto>> GetAssigneeCandidatesAsync(Guid definitionId, CancellationToken cancellationToken = default) =>
         GetAsync<List<WorkflowStepCandidateGroupDto>>($"/api/workflows/definitions/{definitionId:D}/assignee-candidates", cancellationToken);
 
+    public Task<List<WorkflowAssigneeCandidateDto>> GetWorkflowUserLookupAsync(
+        IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Where(x => x != Guid.Empty).Distinct().Take(200).ToArray();
+        if (ids.Length == 0) return Task.FromResult(new List<WorkflowAssigneeCandidateDto>());
+        var query = string.Join("&", ids.Select(id => $"userIds={id:D}"));
+        return GetAsync<List<WorkflowAssigneeCandidateDto>>(
+            $"/api/identity/workflow-assignees/lookup?{query}", cancellationToken);
+    }
+
     public Task<WorkflowInstanceDto> StartWorkflowAsync(StartWorkflowRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<WorkflowInstanceDto>(HttpMethod.Post, "/api/workflows/instances", request, cancellationToken);
 
     public Task<WorkflowInstanceDto> DecideAsync(Guid taskId, DecideApprovalTaskRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<WorkflowInstanceDto>(HttpMethod.Post, $"/api/workflows/tasks/{taskId:D}/decision", request, cancellationToken);
+
+    public Task<WorkflowInstanceDto> ExtendDueDateAsync(Guid taskId, ExtendWorkflowDueDateRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<WorkflowInstanceDto>(HttpMethod.Post, $"/api/workflows/tasks/{taskId:D}/extend", request, cancellationToken);
 
     public Task<WorkflowInstanceDto> ResubmitWorkflowAsync(Guid instanceId, string idempotencyKey, CancellationToken cancellationToken = default) =>
         SendAsync<WorkflowInstanceDto>(HttpMethod.Post, $"/api/workflows/instances/{instanceId:D}/resubmit", idempotencyKey, cancellationToken);
@@ -170,6 +184,45 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 
     public Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest request, Guid? userId = null, CancellationToken cancellationToken = default) =>
         SendAsync<SigningCredentialDto>(HttpMethod.Put, SigningUserUri("/api/signing/credentials/current", userId), request, cancellationToken);
+
+    public async Task<SigningCredentialDto> ConfigureCredentialWithLayoutAsync(
+        ConfigureSigningCredentialRequest request, IBrowserFile? layoutImage, Guid? userId = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Keep the normal provider save on the JSON endpoint when no image is being
+        // uploaded. Besides avoiding an unnecessary multipart request, this preserves
+        // the replayable request path used by the BFF antiforgery handler.
+        if (layoutImage is null)
+        {
+            return await ConfigureCredentialAsync(request, userId, cancellationToken);
+        }
+
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(request.Kind.ToString()), "kind");
+        content.Add(new StringContent(request.Endpoint), "endpoint");
+        content.Add(new StringContent(request.Secret), "secret");
+        AddOptional(content, "providerCode", request.ProviderCode);
+        content.Add(new StringContent(request.ApiTimeoutSeconds.ToString()), "apiTimeoutSeconds");
+        content.Add(new StringContent(request.SignWidth.ToString()), "signWidth");
+        content.Add(new StringContent(request.SignHeight.ToString()), "signHeight");
+        content.Add(new StringContent(request.AllowElectronicSign.ToString()), "allowElectronicSign");
+        content.Add(new StringContent(request.AllowDigitalSign.ToString()), "allowDigitalSign");
+        content.Add(new StringContent(request.RequireOtp.ToString()), "requireOtp");
+        if (layoutImage is not null)
+        {
+            await using var stream = layoutImage.OpenReadStream(3 * 1024 * 1024, cancellationToken);
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+                string.IsNullOrWhiteSpace(layoutImage.ContentType) ? "image/png" : layoutImage.ContentType);
+            content.Add(fileContent, "layoutImage", layoutImage.Name);
+        }
+
+        using var response = await CreateClient().PutAsync(
+            SigningUserUri("/api/signing/credentials/current/upload", userId), content, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SigningCredentialDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
 
     public Task<SigningAttemptDto> SignAsync(SignDocumentRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<SigningAttemptDto>(HttpMethod.Post, "/api/signing/attempts", request, cancellationToken);
@@ -181,7 +234,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         GetAsync<List<UserSignatureDto>>(SigningUserUri("/api/signing/signatures", userId), cancellationToken);
 
     public async Task<UserSignatureDto> UploadSignatureAsync(IBrowserFile file, Guid? userId = null,
-        CancellationToken cancellationToken = default, UserSignatureType type = UserSignatureType.Electronic)
+        CancellationToken cancellationToken = default, UserSignatureType type = UserSignatureType.Electronic,
+        string? providerCode = null, string? tokenRef = null, string? secret = null,
+        IBrowserFile? sealImage = null, DateTime? validFrom = null, DateTime? validTo = null, bool isActive = true)
     {
         using var content = new MultipartFormDataContent();
         await using var stream = file.OpenReadStream(2 * 1024 * 1024, cancellationToken);
@@ -190,6 +245,20 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
             string.IsNullOrWhiteSpace(file.ContentType) ? "image/png" : file.ContentType);
         content.Add(fileContent, "file", file.Name);
         content.Add(new StringContent(type.ToString()), "signatureType");
+        AddOptional(content, "providerCode", providerCode);
+        AddOptional(content, "tokenRef", tokenRef);
+        AddOptional(content, "secret", secret);
+        if (sealImage is not null)
+        {
+            await using var sealStream = sealImage.OpenReadStream(2 * 1024 * 1024, cancellationToken);
+            using var sealContent = new StreamContent(sealStream);
+            sealContent.Headers.ContentType = new MediaTypeHeaderValue(
+                string.IsNullOrWhiteSpace(sealImage.ContentType) ? "image/png" : sealImage.ContentType);
+            content.Add(sealContent, "sealImage", sealImage.Name);
+        }
+        AddOptional(content, "validFrom", validFrom?.ToString("O"));
+        AddOptional(content, "validTo", validTo?.ToString("O"));
+        content.Add(new StringContent(isActive.ToString()), "isActive");
         using var response = await CreateClient().PostAsync(SigningUserUri("/api/signing/signatures", userId), content, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<UserSignatureDto>(cancellationToken: cancellationToken)
@@ -197,7 +266,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     }
 
     public async Task<UserSignatureDto> UpdateSignatureAsync(Guid id, string fileName, IBrowserFile? file = null,
-        Guid? userId = null, CancellationToken cancellationToken = default, UserSignatureType? type = null)
+        Guid? userId = null, CancellationToken cancellationToken = default, UserSignatureType? type = null,
+        string? providerCode = null, string? tokenRef = null, string? secret = null,
+        IBrowserFile? sealImage = null, DateTime? validFrom = null, DateTime? validTo = null, bool? isActive = null)
     {
         using var content = new MultipartFormDataContent();
         content.Add(new StringContent(fileName), "fileName");
@@ -205,6 +276,20 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         {
             content.Add(new StringContent(selectedType.ToString()), "signatureType");
         }
+        AddOptional(content, "providerCode", providerCode);
+        AddOptional(content, "tokenRef", tokenRef);
+        AddOptional(content, "secret", secret);
+        if (sealImage is not null)
+        {
+            await using var sealStream = sealImage.OpenReadStream(2 * 1024 * 1024, cancellationToken);
+            using var sealContent = new StreamContent(sealStream);
+            sealContent.Headers.ContentType = new MediaTypeHeaderValue(
+                string.IsNullOrWhiteSpace(sealImage.ContentType) ? "image/png" : sealImage.ContentType);
+            content.Add(sealContent, "sealImage", sealImage.Name);
+        }
+        AddOptional(content, "validFrom", validFrom?.ToString("O"));
+        AddOptional(content, "validTo", validTo?.ToString("O"));
+        if (isActive is { } active) content.Add(new StringContent(active.ToString()), "isActive");
         if (file is not null)
         {
             await using var stream = file.OpenReadStream(2 * 1024 * 1024, cancellationToken);
@@ -253,6 +338,11 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 
     private static string SigningUserUri(string path, Guid? userId) =>
         userId is { } id ? $"{path}{(path.Contains('?') ? "&" : "?")}userId={id:D}" : path;
+
+    private static void AddOptional(MultipartFormDataContent content, string name, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value)) content.Add(new StringContent(value), name);
+    }
 
     internal static string BuildListUri(DocumentListQuery query)
     {

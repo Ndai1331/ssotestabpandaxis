@@ -156,13 +156,13 @@ public partial class OrganizationCatalog
             {
                 var message = GetFriendlyErrorMessage(exception.StatusCode, true);
                 SetError(message, GetErrorTitleKey(exception.StatusCode, true), false);
-                await UiMessageService.Error(message);
+                await ShowErrorAsync(message, exception.StatusCode);
             }
             catch (Exception)
             {
                 var message = L["Catalog:SaveError"].Value;
                 SetError(message, "Catalog:SaveErrorTitle", false);
-                await UiMessageService.Error(message);
+                await ShowErrorAsync(message);
             }
         }
         finally
@@ -196,13 +196,13 @@ public partial class OrganizationCatalog
         {
             var message = GetFriendlyErrorMessage(exception.StatusCode, true);
             SetError(message, GetErrorTitleKey(exception.StatusCode, true), false);
-            await UiMessageService.Error(message);
+            await ShowErrorAsync(message, exception.StatusCode);
         }
         catch (Exception)
         {
             var message = L["Catalog:DeleteError"].Value;
             SetError(message, "Catalog:DeleteErrorTitle", false);
-            await UiMessageService.Error(message);
+            await ShowErrorAsync(message);
         }
         finally
         {

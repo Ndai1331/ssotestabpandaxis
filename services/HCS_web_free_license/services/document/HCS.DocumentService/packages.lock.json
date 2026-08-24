@@ -2,6 +2,27 @@
   "version": 1,
   "dependencies": {
     "net10.0": {
+      "Bnn.Sdk": {
+        "type": "Direct",
+        "requested": "[1.1.3, )",
+        "resolved": "1.1.3",
+        "contentHash": "gOnzN51IWOIk/Jj21yPKqln+lVkCdeOMTVachUQpNuyfQX84czxPRpIF82x7T3+GKryKFTj1VAiWEasE3Zk0eQ==",
+        "dependencies": {
+          "AWSSDK.Core": "3.7.105.20",
+          "Newtonsoft.Json": "13.0.3"
+        }
+      },
+      "Bnn.SignLib": {
+        "type": "Direct",
+        "requested": "[1.2.5, )",
+        "resolved": "1.2.5",
+        "contentHash": "koSWeyirZD+wsvFaAmMF2uzKRK2mh5awmQbC8G4CSnMfA9gJGKuiVTR7tps39TPvZUVaSuQOX96EIAifqr7AZg==",
+        "dependencies": {
+          "Bnn.BouncyCastle": "1.8.8",
+          "Bnn.Itextsharp": "1.1.1",
+          "SkiaSharp": "2.88.9"
+        }
+      },
       "Microsoft.EntityFrameworkCore.Design": {
         "type": "Direct",
         "requested": "[10.0.9, )",
@@ -48,6 +69,12 @@
           "OpenIddict.Validation": "7.5.0"
         }
       },
+      "PdfPig": {
+        "type": "Direct",
+        "requested": "[0.1.13, )",
+        "resolved": "0.1.13",
+        "contentHash": "2AUWNKHbkDr2Ofgi2vVPN/Ya++jhsuHd54xeKveqKOwDiAy2E2QhczOUKyU29ADRHoEJgQUhwHFgtbD6nCZ2WA=="
+      },
       "PDFsharp": {
         "type": "Direct",
         "requested": "[6.2.4, )",
@@ -79,6 +106,22 @@
         "contentHash": "fQGWqVMClCP2yEyTXPIinSr5c+CBGUvBybPxjAGcf7ctDhadFhrQw03Mv8rJ07/wR5PDfFjewf2LimvXCDzpbA==",
         "dependencies": {
           "Serilog": "4.0.0"
+        }
+      },
+      "SixLabors.ImageSharp": {
+        "type": "Direct",
+        "requested": "[3.1.11, )",
+        "resolved": "3.1.11",
+        "contentHash": "JfPLyigLthuE50yi6tMt7Amrenr/fA31t2CvJyhy/kQmfulIBAqo5T/YFUSRHtuYPXRSaUHygFeh6Qd933EoSw=="
+      },
+      "SixLabors.ImageSharp.Drawing": {
+        "type": "Direct",
+        "requested": "[2.1.7, )",
+        "resolved": "2.1.7",
+        "contentHash": "9KwCo9Fa350cx6ckpsy8NqXQZKwir4RQ8Kj0sdCmJA7wsK9FMyfgC527Sn4l/D6bj2ditSHlhS7dGzcgGszvSQ==",
+        "dependencies": {
+          "SixLabors.Fonts": "2.1.3",
+          "SixLabors.ImageSharp": "3.1.11"
         }
       },
       "Volo.Abp.AspNetCore.Mvc": {
@@ -226,6 +269,24 @@
         "dependencies": {
           "Autofac": "6.5.0",
           "Castle.Core": "5.1.1"
+        }
+      },
+      "AWSSDK.Core": {
+        "type": "Transitive",
+        "resolved": "3.7.105.20",
+        "contentHash": "ZHuTxP1J8g91+YSV0YLzm5te5lG+zkiUH/+NDHFpLf1cBD6iw2kUo5AkYEVxfEur1OTdYJxEZ5jDuOBE4pubkg=="
+      },
+      "Bnn.BouncyCastle": {
+        "type": "Transitive",
+        "resolved": "1.8.8",
+        "contentHash": "vz1HvYkYcmzTMVGom4UNBwhXrQHlFMZwqtb8OO9EU9jVC+Mvgfak/syUJy/X2k+5e1cS3sbE37n0fzDJoSkwTQ=="
+      },
+      "Bnn.Itextsharp": {
+        "type": "Transitive",
+        "resolved": "1.1.1",
+        "contentHash": "L+eStcTvTe6T2IAgJukJJtTgWX+q53YkM38kEaL2KhJ8GOd4ASMS4l4qEWMU74zknz9T8fXYfoBDc1CofAlSug==",
+        "dependencies": {
+          "Bnn.BouncyCastle": "1.8.8"
         }
       },
       "Castle.Core": {
@@ -736,6 +797,30 @@
         "dependencies": {
           "Serilog": "4.0.0"
         }
+      },
+      "SixLabors.Fonts": {
+        "type": "Transitive",
+        "resolved": "2.1.3",
+        "contentHash": "ORWbZ5BHrC/LZvo+Y09MnoJq5VUKD85LsYALk+YI7CHFra+m5arCkz00IntDM6SrAiB22bvSdKtKmuCyHOKlqg=="
+      },
+      "SkiaSharp": {
+        "type": "Transitive",
+        "resolved": "2.88.9",
+        "contentHash": "3MD5VHjXXieSHCleRLuaTXmL2pD0mB7CcOB1x2kA1I4bhptf4e3R27iM93264ZYuAq6mkUyX5XbcxnZvMJYc1Q==",
+        "dependencies": {
+          "SkiaSharp.NativeAssets.Win32": "2.88.9",
+          "SkiaSharp.NativeAssets.macOS": "2.88.9"
+        }
+      },
+      "SkiaSharp.NativeAssets.macOS": {
+        "type": "Transitive",
+        "resolved": "2.88.9",
+        "contentHash": "Nv5spmKc4505Ep7oUoJ5vp3KweFpeNqxpyGDWyeEPTX2uR6S6syXIm3gj75dM0YJz7NPvcix48mR5laqs8dPuA=="
+      },
+      "SkiaSharp.NativeAssets.Win32": {
+        "type": "Transitive",
+        "resolved": "2.88.9",
+        "contentHash": "wb2kYgU7iy84nQLYZwMeJXixvK++GoIuECjU4ECaUKNuflyRlJKyiRhN1MAHswvlvzuvkrjRWlK0Za6+kYQK7w=="
       },
       "Swashbuckle.AspNetCore": {
         "type": "Transitive",

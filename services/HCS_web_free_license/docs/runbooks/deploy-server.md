@@ -80,6 +80,8 @@ Workflow: [`.github/workflows/hcs-docker-publish.yml`](../../../.github/workflow
 
 GitHub Secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
 
+Có thể chạy thủ công workflow với input `services` là danh sách image phân cách bằng dấu cách, ví dụ `blazor auth-server gateway`. `gateway` là alias của tag `web-gateway`; dùng `all` để build toàn bộ image.
+
 ---
 
 ## Phần B — Deploy server (step by step)
