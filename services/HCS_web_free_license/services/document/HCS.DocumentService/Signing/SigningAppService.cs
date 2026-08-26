@@ -106,6 +106,8 @@ public sealed class SigningAppService(
         if (existing is not null) return Map(existing);
         var file = await db.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == input.FileId && x.DocumentId == input.DocumentId && !x.IsPendingDeletion, cancellationToken)
             ?? throw new KeyNotFoundException("Document file not found.");
+        if (!IsPdf(file))
+            throw new InvalidOperationException("Only the prepared PDF file can be signed.");
         var credential = await db.SigningCredentials.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId && x.Kind == input.Kind, cancellationToken);
         if (input.Kind != SigningKind.Electronic && credential is null) throw new InvalidOperationException("Signing provider is not configured.");
         if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(credential!.ProviderCode))
@@ -135,7 +137,64 @@ public sealed class SigningAppService(
         var now = DateTime.UtcNow;
         if (signature.ValidFrom.HasValue && signature.ValidFrom > now) throw new InvalidOperationException("The selected signature is not yet valid.");
         if (signature.ValidTo.HasValue && signature.ValidTo < now) throw new InvalidOperationException("The selected signature has expired.");
-        var attempt = new SigningAttempt(Guid.NewGuid(), input.DocumentId, input.FileId, userId, input.Kind, file.Sha256, key, DateTime.UtcNow);
+        byte[] bytes;
+        string actualInputHash;
+        string secret;
+        string placeholder;
+        SigningProviderRequest providerRequest;
+        IDigitalSigningAdapter adapter;
+        try
+        {
+            await using var inputStream = await documentBlobs.GetAsync(file.BlobName, cancellationToken: cancellationToken);
+            await using var buffer = new MemoryStream();
+            await inputStream.CopyToAsync(buffer, cancellationToken);
+            bytes = buffer.ToArray();
+            var storedInputHash = ContentHash.Sha256(bytes);
+            if (!storedInputHash.Equals(file.Sha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Stored file hash does not match its immutable metadata.");
+            adapter = adapters.SingleOrDefault(x => x.Kind == input.Kind)
+                ?? throw new NotSupportedException($"No adapter registered for {input.Kind}.");
+            var signatureImage = await ReadSigningBlobAsync(signature.BlobName, cancellationToken);
+            var protectedSecret = !string.IsNullOrWhiteSpace(signature.ProtectedSecret)
+                ? signature.ProtectedSecret
+                : credential?.ProtectedSecret;
+            secret = string.IsNullOrWhiteSpace(protectedSecret)
+                ? string.Empty
+                : secretProtector.Unprotect(protectedSecret);
+            placeholder = ResolvePlaceholder(bytes, input.Placeholder);
+            var signerName = NormalizeBounded(input.SignerName, 256);
+            if (string.IsNullOrWhiteSpace(signerName))
+                signerName = ResolveCurrentUserName(principal, userId);
+            var note = NormalizeBounded(input.Note, 2000);
+
+            // Merge the workflow name/note fields before invoking the provider so
+            // the provider signs the same bytes that become the document result.
+            var stepOrder = ResolveSigningStepOrder(placeholder);
+            bytes = PdfPlaceholderReplacer.ReplaceApprovalText(bytes, stepOrder, signerName, note);
+
+            actualInputHash = ContentHash.Sha256(bytes);
+            providerRequest = new SigningProviderRequest(
+                bytes,
+                credential?.Endpoint ?? "https://electronic.local",
+                secret,
+                signature.TokenRef,
+                signatureImage,
+                DecodeImage(signature.SealImageBase64),
+                DecodeImage(credential?.LayoutImageBase64),
+                placeholder,
+                signerName,
+                note,
+                credential?.SignWidth is > 0 and var width ? width : 150,
+                credential?.SignHeight is > 0 and var height ? height : 70,
+                credential?.ApiTimeoutSeconds is > 0 and var timeout ? timeout : 30);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            throw new InvalidOperationException("The document could not be prepared for signing.", exception);
+        }
+
+        var attempt = new SigningAttempt(Guid.NewGuid(), input.DocumentId, input.FileId, userId, input.Kind,
+            actualInputHash, key, DateTime.UtcNow);
         db.SigningAttempts.Add(attempt);
         try
         {
@@ -148,51 +207,47 @@ public sealed class SigningAppService(
             if (concurrent is not null) return Map(concurrent);
             throw;
         }
+        string? signingBlobName = null;
+        string? documentBlobName = null;
         try
         {
-            await using var inputStream = await documentBlobs.GetAsync(file.BlobName, cancellationToken: cancellationToken);
-            await using var buffer = new MemoryStream();
-            await inputStream.CopyToAsync(buffer, cancellationToken);
-            var bytes = buffer.ToArray();
-            var actualInputHash = ContentHash.Sha256(bytes);
-            if (!actualInputHash.Equals(file.Sha256, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("Stored file hash does not match its immutable metadata.");
-            var adapter = adapters.SingleOrDefault(x => x.Kind == input.Kind)
-                ?? throw new NotSupportedException($"No adapter registered for {input.Kind}.");
-            var signatureImage = await ReadSigningBlobAsync(signature.BlobName, cancellationToken);
-            var secret = !string.IsNullOrWhiteSpace(signature.ProtectedSecret)
-                ? secretProtector.Unprotect(signature.ProtectedSecret)
-                : credential is null ? string.Empty : secretProtector.Unprotect(credential.ProtectedSecret);
-            var placeholder = ResolvePlaceholder(bytes, input.Placeholder);
-            var providerRequest = new SigningProviderRequest(
-                bytes,
-                credential?.Endpoint ?? "https://electronic.local",
-                secret,
-                signature.TokenRef,
-                signatureImage,
-                DecodeImage(signature.SealImageBase64),
-                DecodeImage(credential?.LayoutImageBase64),
-                placeholder,
-                NormalizeBounded(input.SignerName, 256),
-                NormalizeBounded(input.Note, 2000),
-                credential?.SignWidth is > 0 and var width ? width : 150,
-                credential?.SignHeight is > 0 and var height ? height : 70,
-                credential?.ApiTimeoutSeconds is > 0 and var timeout ? timeout : 30);
             var result = await adapter.SignAsync(new SigningAdapterRequest(bytes, actualInputHash,
                 providerRequest.Endpoint, secret, providerRequest), cancellationToken);
-            var outputHash = ContentHash.Sha256(result.SignedContent);
-            var blobName = BlobNamePolicy.Signing(input.DocumentId, attempt.Id);
-            await signingBlobs.SaveAsync(blobName, new MemoryStream(result.SignedContent), overrideExisting: false, cancellationToken: cancellationToken);
-            attempt.Complete(outputHash, blobName, DateTime.UtcNow);
+            var signedContent = result.SignedContent;
+            if (signedContent is not { Length: > 0 })
+                throw new InvalidDataException("The signing provider returned an empty signed document.");
+            var outputHash = ContentHash.Sha256(signedContent);
+            var outputFile = await db.DocumentFiles.SingleAsync(x => x.Id == input.FileId, cancellationToken);
+            if (!string.Equals(outputFile.Sha256, file.Sha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The document changed while it was being signed. Please retry.");
+
+            signingBlobName = BlobNamePolicy.Signing(input.DocumentId, attempt.Id);
+            await signingBlobs.SaveAsync(signingBlobName, new MemoryStream(signedContent), overrideExisting: false, cancellationToken: cancellationToken);
+            documentBlobName = BlobNamePolicy.Document(input.DocumentId, Guid.NewGuid());
+            await documentBlobs.SaveAsync(documentBlobName, new MemoryStream(signedContent),
+                overrideExisting: false, cancellationToken: cancellationToken);
+            outputFile.ReplaceContent(signedContent.Length, outputHash, documentBlobName);
+            attempt.Complete(outputHash, signingBlobName, DateTime.UtcNow);
             var integrationEvent = new DocumentSignedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, CorrelationId, input.DocumentId,
                 input.FileId, actualInputHash, outputHash, result.AdapterId);
             db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, DateTime.UtcNow));
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            await DeleteBlobIfCreatedAsync(signingBlobs, signingBlobName, cancellationToken);
+            await DeleteBlobIfCreatedAsync(documentBlobs, documentBlobName, cancellationToken);
             attempt.Fail(SigningFailureSanitizer.ToPublicMessage(exception), DateTime.UtcNow);
         }
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            await DeleteBlobIfCreatedAsync(signingBlobs, signingBlobName, cancellationToken);
+            await DeleteBlobIfCreatedAsync(documentBlobs, documentBlobName, cancellationToken);
+            throw;
+        }
         return Map(attempt);
     }
 
@@ -387,10 +442,37 @@ public sealed class SigningAppService(
 
     private static DateTime? NormalizeUtc(DateTime? value) => value?.ToUniversalTime();
 
+    private static bool IsPdf(DocumentFile file) =>
+        file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
+        || file.ContentType.Contains("pdf", StringComparison.OrdinalIgnoreCase);
+
     private static string NormalizeBounded(string? value, int maxLength)
     {
         var normalized = value?.Trim() ?? string.Empty;
         return normalized.Length <= maxLength ? normalized : normalized[..maxLength];
+    }
+
+    private static int ResolveSigningStepOrder(string placeholder)
+    {
+        var match = Regex.Match(placeholder ?? string.Empty, "^<<Sign(?<order>\\d{1,3})>>$",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        return match.Success && int.TryParse(match.Groups["order"].Value, out var order) && order > 0
+            ? order
+            : 1;
+    }
+
+    private static string ResolveCurrentUserName(ClaimsPrincipal principal, Guid userId)
+    {
+        var direct = principal.FindFirst("name")?.Value
+            ?? principal.FindFirst(ClaimTypes.Name)?.Value;
+        if (!string.IsNullOrWhiteSpace(direct)) return NormalizeBounded(direct, 256);
+
+        var given = principal.FindFirst("given_name")?.Value
+            ?? principal.FindFirst(ClaimTypes.GivenName)?.Value;
+        var family = principal.FindFirst("family_name")?.Value
+            ?? principal.FindFirst(ClaimTypes.Surname)?.Value;
+        var composed = string.Join(' ', new[] { family, given }.Where(x => !string.IsNullOrWhiteSpace(x))).Trim();
+        return NormalizeBounded(string.IsNullOrWhiteSpace(composed) ? userId.ToString("N") : composed, 256);
     }
 
     private async Task<byte[]> ReadSigningBlobAsync(string blobName, CancellationToken cancellationToken)
@@ -399,6 +481,21 @@ public sealed class SigningAppService(
         await using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer, cancellationToken);
         return buffer.ToArray();
+    }
+
+    private static async Task DeleteBlobIfCreatedAsync<TContainer>(IBlobContainer<TContainer> container,
+        string? blobName, CancellationToken cancellationToken)
+        where TContainer : class
+    {
+        if (string.IsNullOrWhiteSpace(blobName)) return;
+        try
+        {
+            await container.DeleteAsync(blobName, cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            // Blob cleanup is best effort; the signing attempt remains the audit source of truth.
+        }
     }
 
     private static string ResolvePlaceholder(byte[] pdfBytes, string? requested)

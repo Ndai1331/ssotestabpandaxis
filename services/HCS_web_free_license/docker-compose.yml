@@ -174,6 +174,7 @@ services:
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
       DataProtection__KeysPath: /var/lib/hcs-data-protection
       Services__Platform__BaseUrl: http://platform:8080/
+      Services__Organization__BaseUrl: http://organization:8080/
     volumes:
       - ${HCS_OPENIDDICT_PFX}:/var/run/hcs-certs/openiddict.pfx:ro
       - ${HCS_DATAPROTECTION_PFX}:/var/run/hcs-certs/dataprotection.pfx:ro

@@ -77,6 +77,7 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
     public async Task CopyFilesAsync(DocumentAggregate source, DocumentAggregate target, Guid? actorUserId, DateTime now,
         CancellationToken cancellationToken)
     {
+        var copiedFiles = new Dictionary<Guid, DocumentFile>();
         foreach (var file in source.Files.Where(x => !x.IsPendingDeletion))
         {
             await using var content = await blobs.GetAsync(file.BlobName, cancellationToken: cancellationToken);
@@ -86,7 +87,18 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
             var fileId = Guid.NewGuid();
             var blobName = BlobNamePolicy.Document(target.Id, fileId);
             await blobs.SaveAsync(blobName, copy, overrideExisting: false, cancellationToken: cancellationToken);
-            target.AddFile(fileId, file.FileName, file.ContentType, file.Size, file.Sha256, blobName, actorUserId, now);
+            copiedFiles[file.Id] = target.AddFile(fileId, file.FileName, file.ContentType, file.Size, file.Sha256,
+                blobName, actorUserId, now);
+        }
+
+        foreach (var file in source.Files.Where(x => !x.IsPendingDeletion))
+        {
+            if (file.PairedFileId is { } pairedId
+                && copiedFiles.TryGetValue(file.Id, out var copiedFile)
+                && copiedFiles.TryGetValue(pairedId, out var copiedPair))
+            {
+                copiedFile.SetPairedFileId(copiedPair.Id);
+            }
         }
     }
 

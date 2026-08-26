@@ -221,6 +221,14 @@ public sealed class DocumentFile
     public Guid? PairedFileId { get; private set; }
     internal void MarkPendingDeletion() => IsPendingDeletion = true;
     internal void SetPairedFileId(Guid pairedFileId) => PairedFileId = pairedFileId;
+    internal void ReplaceContent(long size, string sha256, string blobName)
+    {
+        if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size));
+        if (!Hashing.IsSha256(sha256)) throw new ArgumentException("A SHA-256 hex digest is required.", nameof(sha256));
+        Size = size;
+        Sha256 = sha256.ToLowerInvariant();
+        BlobName = blobName;
+    }
 }
 
 public sealed class DocumentAssignment

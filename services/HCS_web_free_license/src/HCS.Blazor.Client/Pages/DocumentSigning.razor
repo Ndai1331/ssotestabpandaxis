@@ -120,7 +120,7 @@
             {
                 <Row Class="hcs-signing-modal-row">
                     <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop">
-                        <Card Class="h-100">
+                        <Card Class="border-none h-100">
                             <CardHeader Class="p-2"><Heading Size="HeadingSize.Is6" Class="fw-bolder mb-0">@ActionModalTitle(selected)</Heading></CardHeader>
                             <CardBody>
                                 <div class="hcs-signing-action-summary mb-3">
@@ -146,27 +146,38 @@
                                 </Field>
                                 @if (IsSignStep(selected))
                                 {
+                                    <Field><FieldLabel>@L["Feature:Kind"]</FieldLabel>
+                                        <Select TValue="int" Value="@form.Kind" ValueChanged="OnSigningKindChanged">
+                                            <SelectItem Value="0">@L["Feature:Electronic"]</SelectItem>
+                                            <SelectItem Value="1">@L["Feature:RemoteCa"]</SelectItem>
+                                            <SelectItem Value="2">@L["Feature:Hsm"]</SelectItem>
+                                            <SelectItem Value="3">@L["Feature:UsbToken"]</SelectItem>
+                                        </Select>
+                                    </Field>
                                     <Field><FieldLabel>@L["Feature:UserSignatures"]</FieldLabel>
                                         <Select TValue="string" @bind-Value="form.SignatureId">
                                             <SelectItem Value="@string.Empty">—</SelectItem>
-                                            @foreach (var signature in signatures)
+                                            @foreach (var signature in SignaturesForSelectedKind)
                                             {
                                                 <SelectItem Value="@signature.Id.ToString()">@signature.FileName · @SignatureTypeLabel(signature.Type) @(signature.IsDefault ? $"({L["Feature:DefaultSignature"]})" : "")</SelectItem>
                                             }
                                         </Select>
+                                        @if (SigningOptionsLoadFailed)
+                                        {
+                                            <div class="form-text text-danger" role="alert">
+                                                @L["Feature:SigningOptionsLoadFailed"]
+                                                <button type="button" class="btn btn-link p-0 align-baseline" @onclick="LoadSigningOptionsAsync" disabled="@isLoadingSigningOptions">@L["Catalog:Retry"]</button>
+                                            </div>
+                                        }
+                                        else if (SignaturesForSelectedKind.Count == 0)
+                                        {
+                                            <FieldHelp>@L["Feature:NoMatchingSignature"]</FieldHelp>
+                                        }
                                     </Field>
                                     <Field><FieldLabel>@L["Feature:Files"]</FieldLabel>
                                         <Select TValue="string" @bind-Value="form.FileId">
                                             <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
                                             @foreach (var file in selected.Document.Files.Where(DocumentFilePick.IsPdf)) { <SelectItem Value="@file.Id.ToString()">@file.FileName</SelectItem> }
-                                        </Select>
-                                    </Field>
-                                    <Field><FieldLabel>@L["Feature:Kind"]</FieldLabel>
-                                        <Select TValue="int" @bind-Value="form.Kind">
-                                            <SelectItem Value="0">@L["Feature:Electronic"]</SelectItem>
-                                            <SelectItem Value="1">@L["Feature:RemoteCa"]</SelectItem>
-                                            <SelectItem Value="2">@L["Feature:Hsm"]</SelectItem>
-                                            <SelectItem Value="3">@L["Feature:UsbToken"]</SelectItem>
                                         </Select>
                                     </Field>
                                 }
@@ -250,7 +261,7 @@
                     <Button Color="Color.Info" Outline="true" Clicked="ExtendDueDateAsync" Disabled="@isDecisionPending">@L["Work:ExtendDueDate"]</Button>
                 }
                 <Button Color="Color.Danger" Clicked="() => DecideAsync(false, false)" Disabled="@isDecisionPending">@L["Feature:Reject"]</Button>
-                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="ApproveAsync" Disabled="@isDecisionPending">@ActionModalTitle(selectedItem)</Button>
+                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="ApproveAsync" Disabled="@(isDecisionPending || !HasValidSelectedSignature)">@ActionModalTitle(selectedItem)</Button>
             }
         </ModalFooter>
     </ModalContent>
@@ -267,6 +278,7 @@
     private readonly List<DepartmentCatalogDto> departments = [];
     private readonly SignForm form = new();
     private readonly List<UserSignatureDto> signatures = [];
+    private readonly List<SigningCredentialDto> signingCredentials = [];
     private Modal? modal;
     private SubmitWorkflowModal? submitModal;
     private DocumentPdfPreviewModal? previewModal;
@@ -291,6 +303,7 @@
     private readonly Dictionary<Guid, Guid> submitterDepartmentIds = [];
     private readonly Dictionary<Guid, string> submitterDisplayNames = [];
     private readonly Dictionary<Guid, string> departmentNamesById = [];
+    private bool signatureOptionsLoadFailed, credentialsLoadFailed, isLoadingSigningOptions;
 
     private int CountAll => queue.Count;
     private int CountToMe => currentUserId is { } me ? queue.Count(x => x.Task.AssigneeUserId == me) : 0;
@@ -301,6 +314,10 @@
         UserSignatureType.Digital => L["Account:DigitalSignature"].Value,
         _ => L["Account:ElectronicSignature"].Value
     };
+    private IReadOnlyList<UserSignatureDto> SignaturesForSelectedKind =>
+        signatures.Where(IsUsableSignatureForSelectedKind).ToList();
+    private bool SigningOptionsLoadFailed => signatureOptionsLoadFailed
+        || (form.Kind != (int)SigningKind.Electronic && credentialsLoadFailed);
     private (string Key, string Label, int Count)[] InboxTabs =>
     [
         ("all", L["Feature:SigningAll"], CountAll),
@@ -356,8 +373,33 @@
             state.User.FindFirst("preferred_username")?.Value);
         try { contacts.AddRange(await Chat.GetContactsAsync(null, 50)); } catch { }
         try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
-        try { signatures.AddRange(await Documents.GetSignaturesAsync()); } catch { }
+        await LoadSigningOptionsAsync();
         await LoadAsync();
+    }
+
+    private async Task LoadSigningOptionsAsync()
+    {
+        isLoadingSigningOptions = true;
+        signatureOptionsLoadFailed = false;
+        credentialsLoadFailed = false;
+        try
+        {
+            var loadedCredentials = await Documents.GetCredentialsAsync();
+            signingCredentials.Clear();
+            signingCredentials.AddRange(loadedCredentials);
+        }
+        catch { credentialsLoadFailed = true; }
+
+        try
+        {
+            var loadedSignatures = await Documents.GetSignaturesAsync();
+            signatures.Clear();
+            signatures.AddRange(loadedSignatures);
+        }
+        catch { signatureOptionsLoadFailed = true; }
+        finally { isLoadingSigningOptions = false; }
+
+        if (selected is not null) SelectDefaultSignatureForSelectedKind();
     }
 
     private void ApplyFilter() { search = SearchText.Normalize(filter); currentPage = 1; }
@@ -452,16 +494,65 @@
         approvalSideTab = "history";
         var pdf = DocumentFilePick.PreferPdf(item.Document.Files);
         form.FileId = pdf?.Id.ToString() ?? "";
-        form.Kind = 0;
+        form.Kind = (int)SigningKind.Electronic;
         form.Comment = "";
         form.SignIdempotencyKey = Guid.NewGuid().ToString("N");
         form.DecisionIdempotencyKey = Guid.NewGuid().ToString("N");
-        var signature = signatures.FirstOrDefault(x => x.IsDefault) ?? signatures.FirstOrDefault();
-        form.SignatureId = signature?.Id.ToString() ?? "";
+        SelectDefaultSignatureForSelectedKind();
         try { report = await Documents.GetSigningReportAsync(item.Document.Id); }
         catch (Exception ex) { report = null; await NotifyErrorAsync(ex); }
         await LoadSignPdfAsync(item.Document.Id, pdf);
         if (modal is not null) await modal.Show();
+    }
+
+    private Task OnSigningKindChanged(int value)
+    {
+        form.Kind = value;
+        SelectDefaultSignatureForSelectedKind();
+        return Task.CompletedTask;
+    }
+
+    private void SelectDefaultSignatureForSelectedKind()
+    {
+        var signature = SignaturesForSelectedKind.FirstOrDefault(x => x.IsDefault)
+            ?? SignaturesForSelectedKind.FirstOrDefault();
+        form.SignatureId = signature?.Id.ToString() ?? "";
+    }
+
+    private bool IsUsableSignatureForSelectedKind(UserSignatureDto signature)
+    {
+        if (!signature.IsActive || signature.Type != SignatureTypeFor(form.Kind)) return false;
+        var now = DateTime.UtcNow;
+        if (signature.ValidFrom is { } validFrom && validFrom > now) return false;
+        if (signature.ValidTo is { } validTo && validTo < now) return false;
+
+        var credential = signingCredentials.FirstOrDefault(x => x.Kind == form.Kind);
+        if (form.Kind == (int)SigningKind.Electronic)
+            return credential?.AllowElectronicSign != false;
+
+        return credential is not null
+            && credential.AllowDigitalSign
+            && !string.IsNullOrWhiteSpace(credential.ProviderCode)
+            && string.Equals(signature.ProviderCode, credential.ProviderCode, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static UserSignatureType SignatureTypeFor(int signingKind) =>
+        signingKind == (int)SigningKind.Electronic ? UserSignatureType.Electronic : UserSignatureType.Digital;
+
+    private bool HasValidSelectedSignature => !IsSignStep(selected)
+        || (!SigningOptionsLoadFailed && TryGetSelectedSignature(out _));
+
+    private bool TryGetSelectedSignature(out Guid signatureId)
+    {
+        if (Guid.TryParse(form.SignatureId, out var parsed)
+            && SignaturesForSelectedKind.Any(signature => signature.Id == parsed))
+        {
+            signatureId = parsed;
+            return true;
+        }
+
+        signatureId = Guid.Empty;
+        return false;
     }
 
     private async Task LoadSignPdfAsync(Guid documentId, DocumentFileDto? file)
@@ -526,7 +617,12 @@
             }
             if (currentStep?.Type == "SIGN")
             {
-                Guid? signatureId = Guid.TryParse(form.SignatureId, out var parsedSignatureId) ? parsedSignatureId : null;
+                if (!TryGetSelectedSignature(out var parsedSignatureId))
+                {
+                    await NotifyErrorAsync(L["Feature:ChooseSignature"]);
+                    return;
+                }
+                Guid? signatureId = parsedSignatureId;
                 signingAttempt = await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, parsedFileId, form.Kind,
                     form.SignIdempotencyKey, signatureId, null, null, CommentOrNull()));
             }

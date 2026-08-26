@@ -12,7 +12,8 @@ namespace HCS.DocumentService.Workflows;
 
 public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContextAccessor httpContext,
     IBlobContainer<DocumentBlobContainer> blobs, DocumentFileService files, IDocxToPdfConverter converter,
-    IWorkflowAssigneeResolver assigneeResolver, ILogger<WorkflowAppService> logger) : IWorkflowAppService
+    IWorkflowAssigneeResolver assigneeResolver, WorkflowSubmissionPreparationService submissionPreparation,
+    ILogger<WorkflowAppService> logger) : IWorkflowAppService
 {
     public async Task<IReadOnlyList<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default)
     {
@@ -293,15 +294,22 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             db.Documents.Add(document);
             var template = input.UseTemplateFile
                 ? await db.WorkflowTemplates.AsNoTracking()
-                    .Where(x => x.DefinitionId == definition.Id && x.IsActive && !string.IsNullOrWhiteSpace(x.PdfBlobName))
+                    .Where(x => x.DefinitionId == definition.Id && x.IsActive &&
+                        (!string.IsNullOrWhiteSpace(x.PdfBlobName) || !string.IsNullOrWhiteSpace(x.WordBlobName)))
                     .OrderByDescending(x => x.CreationTime)
                     .FirstOrDefaultAsync(cancellationToken)
                 : null;
-            if (template?.PdfBlobName is { } blob)
+            if (template is not null)
             {
+                var useWord = !string.IsNullOrWhiteSpace(template.WordBlobName);
+                var blob = useWord ? template.WordBlobName! : template.PdfBlobName!;
                 await using var content = await blobs.GetAsync(blob, cancellationToken: cancellationToken);
-                await files.AttachBlobAsync(document, template.PdfFileName ?? "template.pdf",
-                    template.PdfContentType ?? "application/pdf", content, userId, now, cancellationToken);
+                await files.AttachBlobAsync(document,
+                    useWord ? template.WordFileName ?? "template.docx" : template.PdfFileName ?? "template.pdf",
+                    useWord
+                        ? template.WordContentType ?? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        : template.PdfContentType ?? "application/pdf",
+                    content, userId, now, cancellationToken);
             }
             else
             {
@@ -315,6 +323,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
                 ?? userId;
             document.SetWorkflowSubmitter(submitterUserId);
         }
+        await submissionPreparation.PrepareAsync(document, userId, definition, input.SigningContent, cancellationToken);
         if (document.Status == DocumentStatus.Draft) document.Submit(userId, now);
         document.StartReview(userId, now, input.SigningContent);
         var overrides = (input.Signers ?? [])
@@ -490,15 +499,16 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new InvalidOperationException("The workflow has no active template file.");
 
-        var blobName = !string.IsNullOrWhiteSpace(template.PdfBlobName)
-            ? template.PdfBlobName!
-            : template.WordBlobName!;
-        var fileName = !string.IsNullOrWhiteSpace(template.PdfFileName)
-            ? template.PdfFileName!
-            : template.WordFileName ?? "workflow-template";
-        var contentType = !string.IsNullOrWhiteSpace(template.PdfContentType)
-            ? template.PdfContentType!
-            : template.WordContentType ?? "application/octet-stream";
+        // Keep the Word source when one exists. Submission preparation merges
+        // placeholders in DOCX first and then regenerates the PDF pair.
+        var useWord = !string.IsNullOrWhiteSpace(template.WordBlobName);
+        var blobName = useWord ? template.WordBlobName! : template.PdfBlobName!;
+        var fileName = useWord
+            ? template.WordFileName ?? "workflow-template.docx"
+            : template.PdfFileName ?? "workflow-template.pdf";
+        var contentType = useWord
+            ? template.WordContentType ?? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            : template.PdfContentType ?? "application/pdf";
         var number = await NextWorkflowNumberAsync(template.Code, cancellationToken);
         var document = new DocumentAggregate(Guid.NewGuid(), number, template.Name, null, actorUserId, now,
             DocumentSourceType.Workflow);

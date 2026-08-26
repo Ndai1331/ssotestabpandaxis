@@ -77,7 +77,11 @@ public sealed class UserDepartmentLookupController(IOrganizationAppService servi
     }
 
     private bool CanReadLookup() =>
-        User.HasClaim("permission", "Documents.Signing.Execute")
+        User.IsInRole("admin")
+        || User.IsInRole("lanhdao")
+        || User.IsInRole("bacsi")
+        || User.HasClaim("permission", "Documents.Signing.Execute")
+        || User.HasClaim("permission", "Documents.Workflow.Start")
         || User.HasClaim("permission", "Documents.Workflow.View")
         || User.HasClaim("permission", OrganizationPermissions.UserMappings);
 }

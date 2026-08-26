@@ -61,7 +61,7 @@ public sealed record UserSignatureDto(Guid Id, string FileName, string ContentTy
     UserSignatureType Type = UserSignatureType.Electronic, string ProviderCode = "", string TokenRef = "",
     DateTime? ValidFrom = null, DateTime? ValidTo = null, bool IsActive = true, bool HasSealImage = false);
 public sealed record SignDocumentRequest(Guid DocumentId, Guid FileId, SigningKind Kind,
-    [property: Required, StringLength(128, MinimumLength = 1)] string IdempotencyKey,
+    [param: Required, StringLength(128, MinimumLength = 1)] string IdempotencyKey,
     Guid? SignatureId = null, string? Placeholder = null, string? SignerName = null, string? Note = null);
 public sealed record SigningAttemptDto(Guid Id, Guid DocumentId, Guid FileId, SigningKind Kind, SigningStatus Status,
     string InputSha256, string? OutputSha256, string? Error, DateTime CreationTime, DateTime? CompletedAt);

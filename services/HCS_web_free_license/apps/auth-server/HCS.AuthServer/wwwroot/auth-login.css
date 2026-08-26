@@ -3,7 +3,7 @@ body:has(#LoginInput_UserNameOrEmailAddress) {
     --hcs-login-ink: #1a445c;
     --hcs-login-muted: #5f7a8a;
     --hcs-login-line: #d5e3ea;
-    --hcs-login-primary: #1e7fad;
+    --hcs-login-primary: #00B4A9;
     background:
         radial-gradient(circle at 12% 18%, rgba(73, 188, 213, .18) 0 2px, transparent 3px) 0 0 / 20px 20px,
         linear-gradient(145deg, #e8f4f8 0%, #f7fbfc 42%, #eef6f8 100%);
@@ -286,7 +286,7 @@ body:has(#LoginInput_UserNameOrEmailAddress) .input-group > .btn {
 
 body:has(#LoginInput_UserNameOrEmailAddress) .form-control:focus {
     background: #fff;
-    border-color: #258ab8;
+    border-color: var(--hcs-login-primary);
     box-shadow: 0 0 0 .2rem rgba(37, 138, 184, .14);
 }
 
@@ -407,8 +407,8 @@ body:has(.hcs-auth-login-page) {
     --hcs-login-ink: #19334c;
     --hcs-login-muted: #63798b;
     --hcs-login-line: #dfe8eb;
-    --hcs-login-primary: #3d5cff;
-    --hcs-login-primary-strong: #2447df;
+    --hcs-login-primary: #00B4A9;
+    --hcs-login-primary-strong: #007F7C;
     background:
         radial-gradient(circle at 12% 18%, rgba(61, 92, 255, .1) 0 2px, transparent 3px) 0 0 / 20px 20px,
         linear-gradient(145deg, #edf2ff 0%, #f7fbfc 42%, #eef6f8 100%);

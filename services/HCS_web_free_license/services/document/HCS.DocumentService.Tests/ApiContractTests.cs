@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using HCS.DocumentService.Controllers;
 using HCS.DocumentService.Documents;
 using HCS.DocumentService.Signing;
@@ -54,6 +56,21 @@ public sealed class ApiContractTests
         var index = entity.GetIndexes().Single(x => x.IsUnique && x.Properties.Any(p => p.Name == "IdempotencyKey"));
         Assert.Equal(["UserId", "DocumentId", "FileId", "Kind", "IdempotencyKey"],
             index.Properties.Select(x => x.Name));
+    }
+
+    [Fact]
+    public void Signing_request_validation_is_attached_to_record_constructor_parameter()
+    {
+        var constructor = typeof(SignDocumentRequest).GetConstructors().Single();
+        var parameter = constructor.GetParameters().Single(x => x.Name == "IdempotencyKey");
+
+        Assert.NotNull(parameter.GetCustomAttribute<RequiredAttribute>());
+        var length = parameter.GetCustomAttribute<StringLengthAttribute>();
+        Assert.NotNull(length);
+        Assert.Equal(1, length!.MinimumLength);
+        Assert.Equal(128, length.MaximumLength);
+        Assert.Empty(typeof(SignDocumentRequest).GetProperty("IdempotencyKey")!
+            .GetCustomAttributes<ValidationAttribute>());
     }
 
     [Fact]

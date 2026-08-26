@@ -154,17 +154,23 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
         var mappings = await (from userMapping in _db.UserOrganizationMappings.AsNoTracking()
                               join department in _db.Departments.AsNoTracking()
                                   on userMapping.DepartmentId equals department.Id
+                              join position in _db.Positions.AsNoTracking()
+                                  on userMapping.PositionId equals (Guid?)position.Id into positionJoin
+                              from position in positionJoin.DefaultIfEmpty()
                               where ids.Contains(userMapping.UserId)
                               orderby userMapping.UserId, userMapping.IsPrimary descending, userMapping.CreationTime
                               select new
                               {
                                   userMapping.UserId,
                                   userMapping.DepartmentId,
-                                  DepartmentName = department.Name
+                                  DepartmentName = department.Name,
+                                  userMapping.PositionId,
+                                  PositionName = position == null ? null : position.Name
                               }).ToListAsync(ct);
 
         return ids.Select(userId => mappings.FirstOrDefault(x => x.UserId == userId) is { } mapping
-                ? new UserDepartmentLookupDto(userId, mapping.DepartmentId, mapping.DepartmentName)
+                ? new UserDepartmentLookupDto(userId, mapping.DepartmentId, mapping.DepartmentName,
+                    mapping.PositionId, mapping.PositionName)
                 : new UserDepartmentLookupDto(userId, null))
             .ToArray();
     }

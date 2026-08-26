@@ -86,9 +86,17 @@ public sealed class HcsDocumentServiceModule : AbpModule
         context.Services.AddScoped<IDocumentAppService, DocumentAppService>();
         context.Services.AddScoped<IWorkflowAppService, WorkflowAppService>();
         context.Services.AddScoped<IWorkflowAssigneeResolver, HttpWorkflowAssigneeResolver>();
+        context.Services.AddScoped<IWorkflowUserProfileResolver, HttpWorkflowUserProfileResolver>();
+        context.Services.AddScoped<WorkflowSubmissionPreparationService>();
         context.Services.AddHttpClient("HCS.Platform", client =>
         {
             var baseUrl = configuration["Services:Platform:BaseUrl"];
+            if (!string.IsNullOrWhiteSpace(baseUrl))
+                client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+        });
+        context.Services.AddHttpClient("HCS.Organization", client =>
+        {
+            var baseUrl = configuration["Services:Organization:BaseUrl"];
             if (!string.IsNullOrWhiteSpace(baseUrl))
                 client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         });

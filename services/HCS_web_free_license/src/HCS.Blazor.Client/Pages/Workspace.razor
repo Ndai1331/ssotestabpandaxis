@@ -5,7 +5,6 @@
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
 @inject OrganizationCatalogClient Catalog
-@inject NavigationManager Navigation
 
 <PageTitle>@L["Feature:WorkspaceTitle"] · HCS</PageTitle>
 <section class="hcs-workspace">
@@ -362,63 +361,89 @@
 </Modal>
 
 <Modal @ref="projectDetailModal" Size="ModalSize.ExtraLarge">
-    <ModalContent Centered Class="hcs-catalog-modal">
+    <ModalContent Centered Class="hcs-catalog-modal hcs-workspace-project-detail-modal">
         <ModalHeader Class="hcs-catalog-modal__header">
-            <ModalTitle>@L["Feature:ProjectDetail"]</ModalTitle>
+            <ModalTitle>@(projectDetail?.Project.Name ?? L["Feature:ProjectDetail"])</ModalTitle>
             <CloseButton Clicked="CloseProjectDetailModalAsync" />
         </ModalHeader>
         <ModalBody Class="hcs-catalog-modal__body">
             @if (projectDetail is null)
             {
-                <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+                <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
             }
             else
             {
-                <div class="hcs-workspace-detail-grid">
-                    <Card><CardBody>
-                        <div class="hcs-catalog-desc mb-1">@L["Catalog:Code"]</div><strong>#@projectDetail.Project.Code</strong>
-                        <div class="hcs-catalog-desc mt-3 mb-1">@L["Feature:ProjectName"]</div><strong>@projectDetail.Project.Name</strong>
-                        <div class="hcs-catalog-desc mt-3 mb-1">@L["Feature:Description"]</div><p class="mb-0">@(projectDetail.Project.Description ?? "—")</p>
-                        <div class="hcs-form-row hcs-form-row--equal mt-3">
-                            <div><div class="hcs-catalog-desc">@L["Feature:StartDate"]</div><strong>@projectDetail.Project.StartDate.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
-                            <div><div class="hcs-catalog-desc">@L["Feature:EndDate"]</div><strong>@projectDetail.Project.EndDate.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
-                        </div>
-                        <div class="mt-3"><span class="@WorkUi.ProjectBadgeClass(projectDetail.Project.Status)">@L[WorkUi.ProjectStatusKey(projectDetail.Project.Status)]</span></div>
-                    </CardBody></Card>
-                    <Card><CardBody>
-                        <div class="d-flex justify-content-between align-items-center mb-2"><strong><i class="fa fa-list-check me-1"></i>@L["Menu:Tasks"]</strong><span class="hcs-catalog-code">@projectDetail.Tasks.Count</span></div>
+                <div class="hcs-detail-split hcs-workspace-project-detail__top">
+                    <Card>
+                        <CardHeader><strong>@L["Feature:GeneralInformation"]</strong></CardHeader>
+                        <CardBody>
+                            <div class="hcs-catalog-form hcs-workspace-readonly">
+                                <div class="hcs-form-row">
+                                    <div><div class="hcs-catalog-desc">@L["Catalog:Code"]</div><strong class="hcs-workspace-readonly__value">#@projectDetail.Project.Code</strong></div>
+                                    <div><div class="hcs-catalog-desc">@L["Feature:ProjectName"]</div><strong class="hcs-workspace-readonly__value">@projectDetail.Project.Name</strong></div>
+                                </div>
+                                <div><div class="hcs-catalog-desc">@L["Feature:Description"]</div><p class="hcs-workspace-readonly__description">@(projectDetail.Project.Description ?? "—")</p></div>
+                                <div class="hcs-form-row hcs-form-row--equal">
+                                    <div><div class="hcs-catalog-desc">@L["Feature:StartDate"]</div><strong>@projectDetail.Project.StartDate.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
+                                    <div><div class="hcs-catalog-desc">@L["Feature:EndDate"]</div><strong>@projectDetail.Project.EndDate.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
+                                </div>
+                                <div><div class="hcs-catalog-desc">@L["Catalog:Status"]</div><span class="@WorkUi.ProjectBadgeClass(projectDetail.Project.Status)">@L[WorkUi.ProjectStatusKey(projectDetail.Project.Status)]</span></div>
+                            </div>
+                        </CardBody>
+                    </Card>
+                    <Card>
+                        <CardHeader><div class="d-flex justify-content-between align-items-center"><strong>@L["Feature:Members"]</strong><span class="hcs-catalog-code">@projectDetail.Members.Count</span></div></CardHeader>
+                        <CardBody>
+                            @if (projectDetail.Members.Count == 0) { <p class="text-muted mb-0">@L["Feature:NoMembers"]</p> }
+                            else
+                            {
+                                <ul class="hcs-member-list hcs-workspace-member-list">
+                                    @foreach (var member in projectDetail.Members)
+                                    {
+                                        <li class="hcs-member-list__item">
+                                            <span class="hcs-member-list__meta">
+                                                <strong class="hcs-member-list__name">@MemberName(member.UserId)</strong>
+                                                <span class="hcs-member-list__sep" aria-hidden="true">·</span>
+                                                <span class="hcs-member-list__role">@ProjectRoleLabel(member.Role)</span>
+                                            </span>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </CardBody>
+                    </Card>
+                </div>
+                <Card Class="mt-3">
+                    <CardHeader Class="d-flex justify-content-between align-items-center">
+                        <strong>@L["Menu:Tasks"]</strong>
+                        <span class="hcs-catalog-code">@projectDetail.Tasks.Count</span>
+                    </CardHeader>
+                    <CardBody>
                         @if (projectDetail.Tasks.Count == 0) { <p class="text-muted mb-0">@L["Feature:NoTasks"]</p> }
                         else
                         {
                             <div class="hcs-workspace-detail-list">
                                 @foreach (var task in projectDetail.Tasks.Take(12))
                                 {
-                                    <div class="hcs-workspace-detail-row"><span class="text-truncate">@task.Title</span><span class="@WorkUi.TaskBadgeClass(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span><button type="button" class="hcs-ws-icon-action" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenTaskFromProjectModalAsync(task.Id)"><i class="fa fa-eye" aria-hidden="true"></i></button></div>
+                                    <div class="hcs-workspace-detail-row">
+                                        <span class="text-truncate">@task.Title</span>
+                                        <span class="@WorkUi.TaskBadgeClass(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span>
+                                        <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--preview" Title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" Clicked="() => OpenTaskFromProjectModalAsync(task.Id)">
+                                            <i class="fa fa-eye" aria-hidden="true"></i>
+                                        </Button>
+                                    </div>
                                 }
                             </div>
                         }
-                    </CardBody></Card>
-                </div>
-                <Card Class="mt-3"><CardBody>
-                    <div class="d-flex justify-content-between align-items-center mb-2"><strong><i class="fa fa-users me-1"></i>@L["Work:Members"]</strong><span class="hcs-catalog-code">@projectDetail.Members.Count</span></div>
-                    @if (projectDetail.Members.Count == 0) { <p class="text-muted mb-0">@L["Work:NoMembers"]</p> }
-                    else
-                    {
-                        <div class="hcs-workspace-members">
-                            @foreach (var member in projectDetail.Members)
-                            {
-                                <span class="hcs-workspace-member"><i class="fa fa-user me-1"></i>@MemberName(member.UserId)<small>@member.Role</small></span>
-                            }
-                        </div>
-                    }
-                </CardBody></Card>
+                    </CardBody>
+                </Card>
             }
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
             <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseProjectDetailModalAsync">@L["Catalog:Cancel"]</Button>
             @if (projectDetail is not null)
             {
-                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="OpenProjectRouteAsync"><i class="fa fa-arrow-up-right-from-square me-1"></i>@L["Work:ViewDetail"]</Button>
+                <a class="btn btn-primary hcs-catalog-save" href="@($"/project-detail/{projectDetail.Project.Id}")"><i class="fa fa-arrow-up-right-from-square me-1" aria-hidden="true"></i>@L["Work:ViewDetail"]</a>
             }
         </ModalFooter>
     </ModalContent>
@@ -556,12 +581,6 @@
         memberNames.Clear();
     }
 
-    private Task OpenProjectRouteAsync()
-    {
-        if (projectDetail is not null) Navigation.NavigateTo($"/project-detail/{projectDetail.Project.Id}");
-        return Task.CompletedTask;
-    }
-
     private async Task OpenTaskFromProjectModalAsync(Guid taskId)
     {
         await CloseProjectDetailModalAsync();
@@ -611,6 +630,13 @@
     }
 
     private string MemberName(Guid userId) => memberNames.GetValueOrDefault(userId, userId.ToString("N")[..8]);
+    private string ProjectRoleLabel(string role) => role switch
+    {
+        "Manager" => L["Work:ProjectRole.Manager"],
+        "Supervisor" => L["Work:ProjectRole.Supervisor"],
+        "Member" => L["Work:ProjectRole.Member"],
+        _ => role
+    };
     private string DepartmentSelectText(Guid? id) => CatalogSelect2Cache.TextFor(departments, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
 
     private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)

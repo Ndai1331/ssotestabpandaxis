@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\favicon.ico" />
     <Content Include="..\..\..\src\HCS.Blazor\wwwroot\images\logo\logo.png"
              Link="wwwroot\images\logo\logo.png"
              CopyToOutputDirectory="PreserveNewest"
