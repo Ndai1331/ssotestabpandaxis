@@ -128,14 +128,20 @@
                 @if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
                 else
                 {
-                    <div class="hcs-ws-wf">
-                        @foreach (var group in workflowGroups)
-                        {
-                            <div class="hcs-ws-wf-row">
-                                <div class="hcs-ws-wf-left"><span class="hcs-ws-wf-dot" style="background:@group.Color"></span>@group.Label</div>
-                                <div><span class="hcs-ws-wf-val" style="color:@group.Color">@group.Count</span> <span class="hcs-ws-card-sub">@group.Percent%</span></div>
-                            </div>
-                        }
+                    <div class="hcs-ws-workflow-chart" aria-label="@WorkflowChartSummary()">
+                        <div class="hcs-ws-donut" role="img" aria-label="@WorkflowChartSummary()" style="background:@WorkflowChartStyle">
+                            <span class="hcs-ws-donut-total">@workflows.Count</span>
+                            <span class="hcs-ws-donut-label">@L["Menu:Documents"]</span>
+                        </div>
+                        <div class="hcs-ws-wf" aria-label="@L["Catalog:Status"]">
+                            @foreach (var group in workflowGroups)
+                            {
+                                <div class="hcs-ws-wf-row">
+                                    <div class="hcs-ws-wf-left"><span class="hcs-ws-wf-dot" style="background:@group.Color"></span><span>@group.Label</span></div>
+                                    <div><span class="hcs-ws-wf-val" style="color:@group.Color">@group.Count</span> <span class="hcs-ws-card-sub">@group.Percent%</span></div>
+                                </div>
+                            }
+                        </div>
                     </div>
                 }
             </div>
@@ -160,7 +166,7 @@
                             <div class="hcs-ws-doc-row">
                                 <i class="fa fa-file-lines" style="color:#9ca3af"></i>
                                 <div class="hcs-ws-doc-name">@item.Title</div>
-                                <span class="hcs-status-badge hcs-status-badge--planning">@item.Status</span>
+                                <span class="hcs-status-badge @DocumentStatusUi.BadgeClass(item.Status)">@L[DocumentStatusUi.TextKey(item.Status)]</span>
                                 <a class="hcs-ws-view" href="@($"/document-detail/{item.Id}")">@L["Work:View"]</a>
                                 <button type="button" class="hcs-ws-icon-action" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewDocumentAsync(item.Id)">
                                     <i class="fa fa-eye" aria-hidden="true"></i>
@@ -459,10 +465,28 @@
             {
                 (L["Work:Status.Doing"], "#355dff", x => x.Status == WorkflowInstanceStatus.Running),
                 (L["Work:Status.Done"], "#1d9e75", x => x.Status == WorkflowInstanceStatus.Completed),
-                (L["Work:Status.Cancelled"], "#dc2626", x => x.Status is WorkflowInstanceStatus.Cancelled or WorkflowInstanceStatus.Rejected)
+                (L["Work:Status.Cancelled"], "#dc2626", x => x.Status is WorkflowInstanceStatus.Cancelled or WorkflowInstanceStatus.Rejected or WorkflowInstanceStatus.Returned)
             }.Select(x => (x.Label, workflows.Count(x.Match), (int)Math.Round(100d * workflows.Count(x.Match) / total), x.Color)).ToList();
         }
     }
+    private string WorkflowChartStyle
+    {
+        get
+        {
+            if (workflows.Count == 0) return "conic-gradient(#eef3f7 0 100%)";
+            var cursor = 0d;
+            var stops = workflowGroups.Select(group =>
+            {
+                var next = cursor + 100d * group.Count / workflows.Count;
+                var stop = $"{group.Color} {cursor:0.##}% {next:0.##}%";
+                cursor = next;
+                return stop;
+            });
+            return $"conic-gradient({string.Join(", ", stops)})";
+        }
+    }
+
+    private string WorkflowChartSummary() => string.Join(", ", workflowGroups.Select(group => $"{group.Label}: {group.Count} ({group.Percent}%)"));
 
     protected override Task OnInitializedAsync() => LoadAsync();
 

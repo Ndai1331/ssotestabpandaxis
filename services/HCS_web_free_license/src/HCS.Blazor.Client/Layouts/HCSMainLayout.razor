@@ -212,9 +212,9 @@
 
     </header>
 
-    @if (mobileNavOpen)
+    @if (mobileNavOpen || expandedSection is not null || userMenuOpen)
     {
-        <button class="hcs-nav-backdrop" type="button" aria-label="@Localizer["Menu:CloseNav"]" @onclick="CloseMobileNavAndFocus"></button>
+        <button class="hcs-nav-backdrop @(mobileNavOpen ? "hcs-nav-backdrop--drawer" : "hcs-nav-backdrop--menu")" type="button" aria-label="@Localizer["Menu:CloseNav"]" @onclick="CloseMobileNavAndFocus"></button>
     }
 
     <main id="main-content" class="hcs-main-content" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">@Body</main>

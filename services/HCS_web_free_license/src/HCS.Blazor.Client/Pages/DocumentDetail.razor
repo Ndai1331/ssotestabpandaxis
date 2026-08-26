@@ -18,7 +18,13 @@
     <header class="hcs-catalog-titlebar">
         <div>
             <h1>@(IsCreate ? L["Catalog:Create"] : DocumentTitle)</h1>
-            @if (document is not null) { <p class="mb-0 text-muted">@document.Number · @document.Status</p> }
+            @if (document is not null)
+            {
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <p class="mb-0 text-muted">@document.Number</p>
+                    <span class="hcs-status-badge @DocumentStatusUi.BadgeClass(document.Status)">@L[DocumentStatusUi.TextKey(document.Status)]</span>
+                </div>
+            }
         </div>
         <Button Color="Color.Primary" Outline="true" Clicked="GoBack">@L["Feature:BackToList"]</Button>
     </header>

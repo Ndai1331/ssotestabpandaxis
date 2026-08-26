@@ -349,6 +349,11 @@
     border-color: var(--color-secondary);
 }
 
+.form-check-input:checked {
+    background-color: var(--color-secondary) !important;
+    border-color: var(--color-secondary) !important;
+}
+
 .hcs-permission-row small {
     color: #7990a0;
     font-size: .76rem;

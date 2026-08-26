@@ -168,6 +168,18 @@
 .hcs-main-content:has(.hcs-chat-page) { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
 
 @media (min-width: 1101px) {
+    .hcs-nav-backdrop--menu {
+        background: transparent;
+        border: 0;
+        display: block;
+        inset: var(--hcs-header-height) 0 0;
+        opacity: 1;
+        pointer-events: auto;
+        position: fixed;
+        visibility: visible;
+        z-index: calc(var(--hcs-z-sticky, 100) - 1);
+    }
+
     /* Preserve the open mobile state during a viewport resize. This keeps the
        inert background and visible drawer in sync until the user closes it. */
     .hcs-app-shell--nav-open .hcs-nav-toggle { display: inline-flex; }
@@ -197,6 +209,7 @@
     .hcs-nav-menu__panel ::deep a:hover, .hcs-nav-menu__panel ::deep a:focus-visible, .hcs-nav-menu__panel ::deep a.active, .hcs-nav-menu__panel a:hover, .hcs-nav-menu__panel a:focus-visible, .hcs-nav-menu__panel a.active { background: rgba(255, 255, 255, .12); border-left-color: var(--hcs-color-primary-light, var(--color-primary-light, #E0F7F5)); color: #fff; }
     .hcs-nav-menu__label { color: rgba(255, 255, 255, .72); }
     .hcs-nav-backdrop { background: rgba(26, 26, 46, .48); border: 0; display: block; inset: var(--hcs-header-height) 0 0; opacity: 0; pointer-events: none; position: fixed; transition: opacity var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, var(--hcs-ease)), visibility 0s linear var(--hcs-motion-duration-standard, 200ms); visibility: hidden; z-index: calc(var(--hcs-z-sticky, 100) - 1); }
+    .hcs-nav-backdrop--menu { opacity: 1; pointer-events: auto; visibility: visible; }
     .hcs-app-shell--nav-open .hcs-nav-backdrop { opacity: 1; pointer-events: auto; transition: opacity var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, var(--hcs-ease)), visibility 0s linear 0s; visibility: visible; }
     .hcs-top-nav:not(.hcs-top-nav--open) { pointer-events: none; visibility: hidden; }
     .hcs-top-nav--open { overscroll-behavior: contain; pointer-events: auto; visibility: visible; }

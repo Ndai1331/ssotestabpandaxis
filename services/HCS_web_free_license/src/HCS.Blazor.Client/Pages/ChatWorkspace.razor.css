@@ -250,6 +250,15 @@
     padding: .6rem .75rem .75rem;
 }
 
+.hcs-chat__new--directory {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    max-height: none;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .hcs-chat__new-heading {
     align-items: center;
     display: flex;
@@ -266,6 +275,17 @@
     margin: .25rem 0 .65rem;
     max-height: 10rem;
     overflow-y: auto;
+}
+
+.hcs-chat__new--directory .hcs-chat__contacts {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 0;
+}
+
+.hcs-chat__new--directory > .btn {
+    flex: 0 0 auto;
+    margin-top: auto;
 }
 
 .hcs-chat__member-picker {

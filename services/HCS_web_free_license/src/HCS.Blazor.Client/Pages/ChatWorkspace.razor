@@ -51,7 +51,7 @@
             {
                 var contactListRole = showNewConversation ? "group" : "list";
                 var contactListLabel = showNewConversation ? T("Chat:SelectContacts") : T("Chat:Directory");
-                <section class="hcs-chat__new" aria-labelledby="contact-picker-title">
+                <section class="hcs-chat__new @(leftTab == LeftTab.Contacts && !showNewConversation ? "hcs-chat__new--directory" : null)" aria-labelledby="contact-picker-title">
                     @if (showNewConversation)
                     {
                         <div class="hcs-chat__new-heading">

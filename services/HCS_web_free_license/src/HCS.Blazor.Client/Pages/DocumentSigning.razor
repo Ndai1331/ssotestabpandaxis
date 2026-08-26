@@ -145,31 +145,61 @@
                                 {
                                     <p class="mb-0">@L["Feature:Completed"]: @report.Completed · @L["Feature:Failed"]: @report.Failed</p>
                                 }
-                                <div class="hcs-signing-context mt-3">
-                                    <div class="hcs-signing-context__heading"><strong>@L["Feature:History"]</strong><span class="hcs-catalog-desc">@selected.Document.History.Count</span></div>
-                                    @foreach (var history in selected.Document.History.OrderByDescending(x => x.OccurredAt).Take(5))
-                                    {
-                                        <div class="hcs-signing-context__row"><i class="fa fa-clock-rotate-left" aria-hidden="true"></i><span><strong>@history.Action</strong><small>@SignerName(history.ActorUserId) · @history.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></span></div>
-                                    }
-                                    @if (selected.Document.History.Count == 0) { <span class="hcs-catalog-desc">@L["Catalog:EmptyTitle"]</span> }
-                                    <div class="hcs-signing-context__heading mt-3"><strong>@L["Feature:Files"]</strong><span class="hcs-catalog-desc">@selected.Document.Files.Count</span></div>
-                                    @foreach (var file in selected.Document.Files)
-                                    {
-                                        <div class="hcs-signing-context__row"><i class="fa fa-paperclip" aria-hidden="true"></i><span class="text-truncate">@file.FileName</span><Button Size="Size.Small" Color="Color.Light" Outline="true" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" Clicked="() => PreviewSigningFileAsync(file)"><i class="fa fa-eye" aria-hidden="true"></i></Button></div>
-                                    }
-                                </div>
                             </CardBody>
                         </Card>
                     </Column>
                     <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop">
-                        @if (!string.IsNullOrWhiteSpace(signPdfUrl))
-                        {
-                            <HcsPdfFrame Source="@signPdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(35)" />
-                        }
-                        else
-                        {
-                            <Alert Color="Color.Light" Dismissible="false">@L["Work:NoPdfAvailable"]</Alert>
-                        }
+                        <div class="hcs-signing-side-pane">
+                            <Tabs SelectedTab="@approvalSideTab" SelectedTabChanged="OnApprovalSideTabChanged">
+                                <Items>
+                                    <Tab Name="history"><i class="fa fa-clock-rotate-left me-1" aria-hidden="true"></i>@L["Feature:WorkflowHistory"]</Tab>
+                                    <Tab Name="files"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Feature:Attachments"]</Tab>
+                                </Items>
+                                <Content>
+                                    <TabPanel Name="history">
+                                        @{ var workflowHistory = BuildWorkflowHistory(selected); }
+                                        <div class="hcs-workflow-panel-heading"><strong>@L["Feature:WorkflowHistory"]</strong><span class="hcs-catalog-desc">@workflowHistory.Count</span></div>
+                                        @if (workflowHistory.Count == 0)
+                                        {
+                                            <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
+                                        }
+                                        else
+                                        {
+                                            <ol class="hcs-workflow-history list-unstyled mb-0">
+                                                @foreach (var entry in workflowHistory)
+                                                {
+                                                    <li><span class="hcs-workflow-history__dot" aria-hidden="true"></span><div><strong>@WorkflowHistoryLabel(entry)</strong>@if (!string.IsNullOrWhiteSpace(entry.StepName)) { <span class="hcs-catalog-desc"> · @entry.StepName</span> }<div class="hcs-catalog-desc">@WorkflowActorLabel(entry) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>@if (!string.IsNullOrWhiteSpace(entry.Detail)) { <div class="small">@L["Feature:Comment"]: @entry.Detail</div> }</div></li>
+                                                }
+                                            </ol>
+                                        }
+                                    </TabPanel>
+                                    <TabPanel Name="files">
+                                        <div class="hcs-workflow-panel-heading"><strong>@L["Feature:Attachments"]</strong><span class="hcs-catalog-desc">@selected.Document.Files.Count</span></div>
+                                        @if (selected.Document.Files.Count == 0)
+                                        {
+                                            <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
+                                        }
+                                        else
+                                        {
+                                            <div class="hcs-workflow-files">
+                                                @foreach (var file in selected.Document.Files)
+                                                {
+                                                    <div class="hcs-workflow-file @(signPreviewFile?.Id == file.Id ? "hcs-workflow-file--active" : null)"><div class="min-w-0"><strong class="d-block text-truncate">@file.FileName</strong><span class="hcs-catalog-desc">@file.ContentType · @FormatSize(file.Size)</span></div><Button Size="Size.Small" Color="Color.Primary" Outline="true" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" Clicked="() => PreviewSigningFileAsync(file)"><i class="fa fa-eye" aria-hidden="true"></i></Button></div>
+                                                }
+                                            </div>
+                                            @if (signPreviewFile is not null && !string.IsNullOrWhiteSpace(signPdfUrl))
+                                            {
+                                                <div class="hcs-signing-preview mt-3"><HcsPdfFrame Source="@signPdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(28)" /></div>
+                                            }
+                                            else if (signPreviewFile is not null)
+                                            {
+                                                <div class="hcs-file-preview-card"><i class="fa fa-file-lines" aria-hidden="true"></i><div class="min-w-0"><strong class="d-block text-truncate">@signPreviewFile.FileName</strong><span class="hcs-catalog-desc">@L["Work:PreviewPdfOnly"]</span></div></div>
+                                            }
+                                        }
+                                    </TabPanel>
+                                </Content>
+                            </Tabs>
+                        </div>
                     </Column>
                 </Row>
             }
@@ -192,7 +222,7 @@
 <DocumentPdfPreviewModal @ref="previewModal" ShowAssignTask="true" OnAssignTask="AssignFromPreviewAsync" />
 <ProjectTaskCreateModal @ref="taskModal" />
 <SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
-<WorkflowInfoModal @ref="infoModal" />
+<WorkflowInfoModal @ref="infoModal" OnPreviewFile="PreviewInfoFileAsync" />
 @code {
     [Parameter] public Guid? RelatedId { get; set; }
     private static readonly int[] pageSizes = [10, 20, 50, 100];
@@ -208,6 +238,7 @@
     private WorkflowInfoModal? infoModal;
     private SigningQueueItem? selected;
     private SigningQueueItem? previewing;
+    private SigningQueueItem? infoItem;
     private SigningReportDto? report;
     private Guid? currentUserId, submitterId, departmentId;
     private string currentUserDisplayName = "";
@@ -215,7 +246,10 @@
     private IReadOnlyList<DateTime?> selectedDates = [];
     private string dateFilterField = "IncomingDate";
     private string? signPdfUrl;
+    private DocumentFileDto? signPreviewFile;
+    private string approvalSideTab = "history";
     private string filter = "", search = "", inboxFilter = "all";
+    private readonly Dictionary<Guid, string> workflowUserNames = [];
     private bool isDecisionPending;
     private int pageSize = 20, currentPage = 1;
     private readonly Dictionary<Guid, Guid> submitterDepartmentIds = [];
@@ -315,13 +349,27 @@
     private Task PreviewSigningFileAsync(DocumentFileDto file)
     {
         if (selected is null) return Task.CompletedTask;
-        previewing = selected;
-        return previewModal?.ShowAsync(selected.Document.Id, selected.Document.Files, selected.Document.Title, file.Id) ?? Task.CompletedTask;
+        approvalSideTab = "files";
+        return LoadSignPdfAsync(selected.Document.Id, file);
     }
     private Task AssignFromPreviewAsync() =>
         taskModal?.ShowAsync(linkedDocumentId: previewing?.Document.Id) ?? Task.CompletedTask;
-    private Task OpenInfo(SigningQueueItem item) =>
-        infoModal?.ShowAsync(item.Document, item.Instance, item.Definition) ?? Task.CompletedTask;
+    private Task PreviewInfoFileAsync(DocumentFileDto file)
+    {
+        if (infoItem is null) return Task.CompletedTask;
+        previewing = infoItem;
+        return previewModal?.ShowAsync(infoItem.Document.Id, infoItem.Document.Files, infoItem.Document.Title, file.Id) ?? Task.CompletedTask;
+    }
+    private Task OpenInfo(SigningQueueItem item)
+    {
+        infoItem = item;
+        return infoModal?.ShowAsync(item.Document, item.Instance, item.Definition) ?? Task.CompletedTask;
+    }
+    private Task OnApprovalSideTabChanged(string value)
+    {
+        approvalSideTab = value;
+        return Task.CompletedTask;
+    }
 
     private async Task LoadAsync()
     {
@@ -349,6 +397,7 @@
                 }
             }
             await LoadSubmitterLookupsAsync();
+            await LoadWorkflowUserLookupsAsync();
             if (RelatedId is { } related && queue.FirstOrDefault(x => x.Document.Id == related) is { } match)
                 await OpenSign(match);
         }
@@ -363,6 +412,7 @@
             return;
         }
         selected = item;
+        approvalSideTab = "history";
         var pdf = DocumentFilePick.PreferPdf(item.Document.Files);
         form.FileId = pdf?.Id.ToString() ?? "";
         form.Kind = 0;
@@ -380,7 +430,9 @@
     private async Task LoadSignPdfAsync(Guid documentId, DocumentFileDto? file)
     {
         await RevokeSignPdfAsync();
+        signPreviewFile = file;
         if (file is null) return;
+        if (!DocumentFilePick.IsPdf(file)) return;
         try
         {
             var content = await Documents.GetWatermarkedFileContentAsync(documentId, file.Id);
@@ -392,6 +444,7 @@
     private async Task CloseSignAsync()
     {
         await RevokeSignPdfAsync();
+        signPreviewFile = null;
         if (modal is not null) await modal.Hide();
     }
 
@@ -496,7 +549,7 @@
     private string SignerName(Guid? id)
     {
         if (id is not { } userId) return L["Work:Assignee"].Value;
-        var name = ContactName(userId);
+        var name = workflowUserNames.GetValueOrDefault(userId) ?? ContactName(userId);
         return string.IsNullOrWhiteSpace(name) ? userId.ToString("N")[..8] : name;
     }
     private string CurrentStepLabel(SigningQueueItem item)
@@ -512,11 +565,49 @@
     private bool CanReturn => selected is { } item && CurrentStep(item)?.AllowReturn == true;
     private bool CanActOn(SigningQueueItem item) => isElevated || item.Task.AssigneeUserId is null || item.Task.AssigneeUserId == currentUserId;
     private string SignActionTitle(SigningQueueItem item) => CanActOn(item) ? L["Feature:Approve"].Value : L["Work:OnlyAssignee"].Value;
-    private Guid? SubmitterId(SigningQueueItem item) =>
-        item.Document.History.FirstOrDefault(h => h.Action == "Created")?.ActorUserId
-        ?? item.Document.FromUserId;
+    private Guid? SubmitterId(SigningQueueItem item) => item.Document.FromUserId;
     private string SubmitterName(SigningQueueItem item) =>
         ContactName(SubmitterId(item)) is { Length: > 0 } name ? name : "—";
+
+    private IReadOnlyList<WorkflowHistoryEntry> BuildWorkflowHistory(SigningQueueItem item)
+    {
+        var entries = new List<WorkflowHistoryEntry>
+        {
+            new("Submitted", null, item.Document.FromUserId, item.Instance.CreationTime, null)
+        };
+
+        foreach (var task in item.Instance.Tasks.OrderBy(x => x.DecidedAt ?? DateTime.MaxValue))
+        {
+            var stepName = item.Definition.Steps.FirstOrDefault(x => string.Equals(x.Code, task.StepCode, StringComparison.OrdinalIgnoreCase))?.Name
+                ?? task.StepCode;
+
+            if (task.DecidedAt is { } decidedAt && task.DecidedBy is { } decidedBy)
+            {
+                var kind = task.Status.ToString() switch
+                {
+                    nameof(ApprovalTaskStatus.Approved) => "Approved",
+                    nameof(ApprovalTaskStatus.Rejected) => "Rejected",
+                    nameof(ApprovalTaskStatus.Returned) => "Returned",
+                    nameof(ApprovalTaskStatus.Cancelled) => "Cancelled",
+                    _ => "Pending"
+                };
+                entries.Add(new(kind, stepName, decidedBy, decidedAt, task.Comment));
+            }
+        }
+
+        return entries.OrderByDescending(x => x.OccurredAt).ToList();
+    }
+
+    private string WorkflowHistoryLabel(WorkflowHistoryEntry entry) => L[$"Work:WorkflowHistory.{entry.Kind}"].Value;
+    private string WorkflowActorLabel(WorkflowHistoryEntry entry) => entry.Kind == "Submitted"
+        ? $"{L["Work:WorkflowHistory.Submitter"]}: {SignerName(entry.ActorUserId)}"
+        : $"{L["Work:WorkflowHistory.Actor"]}: {SignerName(entry.ActorUserId)}";
+    private static string FormatSize(long size) => size switch
+    {
+        >= 1024 * 1024 => $"{size / 1024d / 1024d:0.##} MB",
+        >= 1024 => $"{size / 1024d:0.##} KB",
+        _ => $"{size} B"
+    };
     private async Task ExportAsync()
     {
         try
@@ -597,6 +688,26 @@
         }
         catch { }
     }
+
+    private async Task LoadWorkflowUserLookupsAsync()
+    {
+        var ids = queue.SelectMany(item => item.Instance.Tasks.SelectMany(task => new[] { task.DecidedBy, task.AssigneeUserId }))
+            .Concat(queue.Select(item => item.Document.FromUserId))
+            .Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
+        workflowUserNames.Clear();
+        if (ids.Length == 0) return;
+
+        try
+        {
+            var users = await Documents.GetWorkflowUserLookupAsync(ids);
+            foreach (var user in users)
+            {
+                var displayName = UserDisplayNames.FirstReal(user.DisplayName, user.UserName);
+                if (!string.IsNullOrWhiteSpace(displayName)) workflowUserNames[user.UserId] = displayName;
+            }
+        }
+        catch { }
+    }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
@@ -607,4 +718,6 @@
         var found = departments.Where(x => string.IsNullOrWhiteSpace(term) || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
         return Task.FromResult(CatalogSelect2Cache.Merge(departments, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
     }
+
+    private sealed record WorkflowHistoryEntry(string Kind, string? StepName, Guid? ActorUserId, DateTime OccurredAt, string? Detail);
 }

@@ -67,7 +67,7 @@
                                 <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
                                 @foreach (var status in Enum.GetValues<DocumentStatus>())
                                 {
-                                    <SelectItem Value="@status.ToString()">@status</SelectItem>
+                                    <SelectItem Value="@status.ToString()">@L[DocumentStatusUi.TextKey(status)]</SelectItem>
                                 }
                             </Select>
                         </Field>
@@ -146,7 +146,7 @@
                             </DisplayTemplate>
                         </DataGridColumn>
                         <DataGridColumn TItem="DocumentDto" Caption="@L["Catalog:Status"].Value">
-                            <DisplayTemplate Context="cell"><span class="hcs-status-badge @StatusClass(cell.Item.Status)">@cell.Item.Status</span></DisplayTemplate>
+                            <DisplayTemplate Context="cell"><span class="hcs-status-badge @DocumentStatusUi.BadgeClass(cell.Item.Status)">@L[DocumentStatusUi.TextKey(cell.Item.Status)]</span></DisplayTemplate>
                         </DataGridColumn>
                         <DataGridColumn TItem="DocumentDto" Caption="@L["Feature:Files"].Value">
                             <DisplayTemplate Context="cell">@cell.Item.Files.Count</DisplayTemplate>
@@ -324,14 +324,6 @@
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
-    private static string StatusClass(DocumentStatus status) => status switch
-    {
-        DocumentStatus.Approved => "hcs-status-badge--success",
-        DocumentStatus.Rejected => "hcs-status-badge--danger",
-        DocumentStatus.InReview or DocumentStatus.Submitted => "hcs-status-badge--warning",
-        DocumentStatus.Archived => "hcs-status-badge--todo",
-        _ => "hcs-status-badge--planning"
-    };
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
     private CatalogSelect2Item? ContactItem(Guid? id) =>
         id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;

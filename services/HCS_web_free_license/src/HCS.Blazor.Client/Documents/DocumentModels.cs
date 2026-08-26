@@ -11,6 +11,20 @@ public enum SigningStatus { Pending, Completed, Failed }
 public enum UserSignatureType { Electronic, Digital }
 public enum SigningKind { Electronic = 0, RemoteCa = 1, Hsm = 2, UsbToken = 3 }
 
+public static class DocumentStatusUi
+{
+    public static string TextKey(DocumentStatus status) => $"Document:Status.{status}";
+
+    public static string BadgeClass(DocumentStatus status) => status switch
+    {
+        DocumentStatus.Approved => "hcs-status-badge--success",
+        DocumentStatus.Rejected => "hcs-status-badge--danger",
+        DocumentStatus.InReview or DocumentStatus.Submitted => "hcs-status-badge--warning",
+        DocumentStatus.Archived => "hcs-status-badge--todo",
+        _ => "hcs-status-badge--planning"
+    };
+}
+
 public sealed record PagedDocumentsResponse(long TotalCount, List<DocumentDto> Items);
 
 public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null);

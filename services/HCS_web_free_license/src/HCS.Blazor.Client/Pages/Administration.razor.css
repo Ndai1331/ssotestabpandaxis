@@ -400,6 +400,12 @@
     accent-color: var(--color-secondary);
 }
 
+
+.form-check-input:checked {
+    background-color: var(--color-secondary) !important;
+    border-color: var(--color-secondary) !important;
+}
+
 .hcs-user-modal .form-check-input:checked,
 .hcs-permission-modal .form-check-input:checked {
     background-color: var(--color-secondary);

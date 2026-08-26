@@ -56,28 +56,29 @@
                     <div class="min-w-0">
                         <Tabs SelectedTab="@tab" SelectedTabChanged="OnTabChanged">
                             <Items>
-                                <Tab Name="general"><i class="fa fa-clock-rotate-left me-1" aria-hidden="true"></i>@L["Feature:History"]</Tab>
-                                <Tab Name="files"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Feature:Files"]</Tab>
+                                <Tab Name="general"><i class="fa fa-clock-rotate-left me-1" aria-hidden="true"></i>@L["Feature:WorkflowHistory"]</Tab>
+                                <Tab Name="files"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Feature:Attachments"]</Tab>
                             </Items>
                             <Content>
                                 <TabPanel Name="general">
-                                    <div class="hcs-workflow-panel-heading"><strong>@L["Feature:History"]</strong><span class="hcs-catalog-desc">@document.History.Count</span></div>
-                                    @if (document.History.Count == 0)
+                                    @{ var workflowHistory = BuildWorkflowHistory(); }
+                                    <div class="hcs-workflow-panel-heading"><strong>@L["Feature:WorkflowHistory"]</strong><span class="hcs-catalog-desc">@workflowHistory.Count</span></div>
+                                    @if (workflowHistory.Count == 0)
                                     {
                                         <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
                                     }
                                     else
                                     {
                                         <ol class="hcs-workflow-history list-unstyled mb-0">
-                                            @foreach (var entry in document.History.OrderByDescending(x => x.OccurredAt))
+                                            @foreach (var entry in workflowHistory)
                                             {
-                                                <li><span class="hcs-workflow-history__dot" aria-hidden="true"></span><div><strong>@entry.Action</strong><div class="hcs-catalog-desc">@ActorName(entry.ActorUserId) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>@if (!string.IsNullOrWhiteSpace(entry.Detail)) { <div class="small">@entry.Detail</div> }</div></li>
+                                                <li><span class="hcs-workflow-history__dot" aria-hidden="true"></span><div><strong>@WorkflowHistoryLabel(entry)</strong>@if (!string.IsNullOrWhiteSpace(entry.StepName)) { <span class="hcs-catalog-desc"> · @entry.StepName</span> }<div class="hcs-catalog-desc">@WorkflowActorLabel(entry) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>@if (!string.IsNullOrWhiteSpace(entry.Detail)) { <div class="small">@L["Feature:Comment"]: @entry.Detail</div> }</div></li>
                                             }
                                         </ol>
                                     }
                                 </TabPanel>
                                 <TabPanel Name="files">
-                                    <div class="hcs-workflow-panel-heading"><strong>@L["Feature:Files"]</strong><span class="hcs-catalog-desc">@document.Files.Count</span></div>
+                                    <div class="hcs-workflow-panel-heading"><strong>@L["Feature:Attachments"]</strong><span class="hcs-catalog-desc">@document.Files.Count</span></div>
                                     @if (document.Files.Count == 0)
                                     {
                                         <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
@@ -101,11 +102,10 @@
         <ModalFooter Class="hcs-catalog-modal__footer"><Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="HideAsync">@L["Catalog:Cancel"]</Button></ModalFooter>
     </ModalContent>
 </Modal>
-<DocumentPdfPreviewModal @ref="filePreviewModal" />
-
 @code {
+    [Parameter] public EventCallback<DocumentFileDto> OnPreviewFile { get; set; }
+
     private Modal? modal;
-    private DocumentPdfPreviewModal? filePreviewModal;
     private DocumentDto? document;
     private WorkflowInstanceDto? instance;
     private WorkflowDefinitionDto? definition;
@@ -129,8 +129,9 @@
     private async Task LoadUserNamesAsync()
     {
         if (document is null || instance is null) return;
-        var ids = instance.Tasks.SelectMany(x => new[] { x.DecidedBy, x.AssigneeUserId }).Where(x => x.HasValue).Select(x => x!.Value)
-            .Concat(document.History.Where(x => x.ActorUserId.HasValue).Select(x => x.ActorUserId!.Value)).Distinct().ToArray();
+        var ids = instance.Tasks.SelectMany(x => new[] { x.DecidedBy, x.AssigneeUserId }).Where(x => x.HasValue).Select(x => x!.Value).ToList();
+        if (document.FromUserId is { } submitterId) ids.Add(submitterId);
+        ids = ids.Distinct().ToList();
         try
         {
             var users = await Documents.GetWorkflowUserLookupAsync(ids);
@@ -147,6 +148,42 @@
     private string StatusText(ApprovalTaskDto? task) => task is null ? L["Work:Status.Waiting"].Value : L[$"Work:ApprovalStatus.{task.Status}"].Value;
     private string InstanceStatusText(WorkflowInstanceStatus status) => L[$"Work:WorkflowStatus.{status}"].Value;
 
+    private IReadOnlyList<WorkflowHistoryEntry> BuildWorkflowHistory()
+    {
+        if (document is null || instance is null || definition is null) return [];
+
+        var entries = new List<WorkflowHistoryEntry>
+        {
+            new("Submitted", null, document.FromUserId, instance.CreationTime, null)
+        };
+
+        foreach (var task in instance.Tasks.OrderBy(x => x.DecidedAt ?? DateTime.MaxValue))
+        {
+            var stepName = definition.Steps.FirstOrDefault(x => string.Equals(x.Code, task.StepCode, StringComparison.OrdinalIgnoreCase))?.Name
+                ?? task.StepCode;
+
+            if (task.DecidedAt is { } decidedAt && task.DecidedBy is { } decidedBy)
+            {
+                var kind = task.Status.ToString() switch
+                {
+                    nameof(ApprovalTaskStatus.Approved) => "Approved",
+                    nameof(ApprovalTaskStatus.Rejected) => "Rejected",
+                    nameof(ApprovalTaskStatus.Returned) => "Returned",
+                    nameof(ApprovalTaskStatus.Cancelled) => "Cancelled",
+                    _ => "Pending"
+                };
+                entries.Add(new(kind, stepName, decidedBy, decidedAt, task.Comment));
+            }
+        }
+
+        return entries.OrderByDescending(x => x.OccurredAt).ToList();
+    }
+
+    private string WorkflowHistoryLabel(WorkflowHistoryEntry entry) => L[$"Work:WorkflowHistory.{entry.Kind}"].Value;
+    private string WorkflowActorLabel(WorkflowHistoryEntry entry) => entry.Kind == "Submitted"
+        ? $"{L["Work:WorkflowHistory.Submitter"]}: {ActorName(entry.ActorUserId)}"
+        : $"{L["Work:WorkflowHistory.Actor"]}: {ActorName(entry.ActorUserId)}";
+
     private string TimelineClass(ApprovalTaskDto? task) => task?.Status switch
     {
         ApprovalTaskStatus.Approved => "hcs-timeline-step--signed",
@@ -162,12 +199,7 @@
         _ => new MarkupString("<i class=\"fa fa-circle\"></i>")
     };
 
-    private async Task PreviewFileAsync(DocumentFileDto file)
-    {
-        if (document is null) return;
-        if (filePreviewModal is not null)
-            await filePreviewModal.ShowAsync(document.Id, document.Files, document.Title, file.Id);
-    }
+    private Task PreviewFileAsync(DocumentFileDto file) => OnPreviewFile.InvokeAsync(file);
 
     private async Task DownloadAsync(DocumentFileDto file)
     {
@@ -181,4 +213,6 @@
     }
 
     private static string FormatSize(long size) => size switch { >= 1024 * 1024 => $"{size / 1024d / 1024d:0.##} MB", >= 1024 => $"{size / 1024d:0.##} KB", _ => $"{size} B" };
+
+    private sealed record WorkflowHistoryEntry(string Kind, string? StepName, Guid? ActorUserId, DateTime OccurredAt, string? Detail);
 }

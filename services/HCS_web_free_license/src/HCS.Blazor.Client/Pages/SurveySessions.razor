@@ -33,8 +33,8 @@
                     <FieldLabel>@L["Catalog:Status"]</FieldLabel>
                     <Select TValue="string" @bind-Value="statusFilter" @bind-Value:after="SearchAsync">
                         <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                        <SelectItem Value="@("Active")">Active</SelectItem>
-                        <SelectItem Value="@("Closed")">Closed</SelectItem>
+                        <SelectItem Value="@("Active")">@L["Catalog:Active"]</SelectItem>
+                        <SelectItem Value="@("Closed")">@L["Catalog:Closed"]</SelectItem>
                     </Select>
                 </Field>
                 <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
@@ -62,14 +62,14 @@
                     <DisplayTemplate Context="cell">@cell.Item.StartsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @cell.Item.EndsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</DisplayTemplate>
                 </DataGridColumn>
                 <DataGridColumn TItem="SurveySessionDto" Caption="@L["Catalog:Status"].Value">
-                    <DisplayTemplate Context="cell"><span class="hcs-status-badge hcs-status-badge--planning">@cell.Item.Status</span></DisplayTemplate>
+                    <DisplayTemplate Context="cell"><span class="hcs-status-badge @SessionStatusClass(cell.Item.Status)">@SessionStatusText(cell.Item.Status)</span></DisplayTemplate>
                 </DataGridColumn>
                 <DataGridColumn TItem="SurveySessionDto" Caption="@L["Catalog:Actions"].Value">
                     <DisplayTemplate Context="cell">
                         <div class="hcs-row-actions">
                             <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => Edit(cell.Item)"><Icon Name="@IconName.Edit" /></Button>
-                            <Button Size="Size.Small" Color="Color.Success" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(cell.Item, "Active"))">Active</Button>
-                            <Button Size="Size.Small" Color="Color.Secondary" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(cell.Item, "Closed"))">Closed</Button>
+                            <Button Size="Size.Small" Color="Color.Success" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(cell.Item, "Active"))">@L["Catalog:Active"]</Button>
+                            <Button Size="Size.Small" Color="Color.Secondary" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(cell.Item, "Closed"))">@L["Catalog:Closed"]</Button>
                             @if (cell.Item.LocationId is { } locationId)
                             {
                                 <a class="btn btn-sm btn-outline-primary hcs-action-button" href="@($"/survey-collections/{locationId}")">@L["Feature:Collect"]</a>
@@ -193,6 +193,20 @@
         try { await Work.ChangeSessionStatusAsync(session.Id, status); await NotifySuccessAsync(L["Catalog:Updated"]); await LoadAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
+
+    private string SessionStatusText(string status) => status switch
+    {
+        "Active" => L["SurveySession:Status.Active"].Value,
+        "Closed" => L["SurveySession:Status.Closed"].Value,
+        _ => status
+    };
+
+    private static string SessionStatusClass(string status) => status switch
+    {
+        "Active" => "hcs-status-badge--success",
+        "Closed" => "hcs-status-badge--todo",
+        _ => "hcs-status-badge--planning"
+    };
     private async Task DeleteAsync(SurveySessionDto session)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], session.Name))) return;

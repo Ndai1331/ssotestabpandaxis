@@ -52,6 +52,7 @@
         title = string.IsNullOrWhiteSpace(documentTitle) ? L["Work:PdfPreview"] : documentTitle;
         error = null;
         selectedFile = null;
+        isLoading = true;
         await RevokeAsync();
         if (modal is not null) await modal.Show();
         var file = selectedFileId is { } requestedFileId
@@ -61,11 +62,17 @@
         if (file is null)
         {
             error = L["Work:NoPdfAvailable"];
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
             return;
         }
         selectedFile = file;
-        if (!DocumentFilePick.IsPdf(file)) return;
-        isLoading = true;
+        if (!DocumentFilePick.IsPdf(file))
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
         try
         {
             var content = await Documents.GetWatermarkedFileContentAsync(documentId, file.Id);
@@ -78,6 +85,7 @@
         finally
         {
             isLoading = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 
