@@ -27,7 +27,7 @@ body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content {
     align-items: center;
     display: flex;
     justify-content: center;
-    padding: clamp(1.25rem, 5vw, 3rem) clamp(.85rem, 4vw, 1.5rem);
+    padding: clamp(1.25rem, 3vw, 3rem) clamp(.85rem, 2vw, 1.5rem);
 }
 
 /* Give the form real breathing room — ABP often nests a narrow column. */
@@ -54,10 +54,14 @@ body:has(#LoginInput_UserNameOrEmailAddress) .lpx-content > .container > .row > 
 }
 
 /* Brand */
-body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-brand-text {
-    display: grid;
-    justify-items: center;
-    margin: 0 auto 1.35rem;
+body:has(.hcs-auth-login-page) .lpx-login-brand-text {
+    display: none !important;
+}
+
+body:has(.hcs-auth-login-page) .lpx-login-logo,
+body:has(.hcs-auth-login-page) .lpx-login-name,
+body:has(.hcs-auth-login-page) .lpx-login-title {
+    display: none !important;
 }
 
 body:has(#LoginInput_UserNameOrEmailAddress) .lpx-login-logo {
@@ -400,8 +404,6 @@ body:has(#LoginInput_UserNameOrEmailAddress) a {
 }
 
 
-.lpx-brand-name {display :none !important; }
-
 /* Stable HCS hooks layered over the ABP account layout. */
 body:has(.hcs-auth-login-page) {
     --hcs-login-ink: #19334c;
@@ -433,6 +435,19 @@ body:has(.hcs-auth-login-page) .hcs-auth-login-card {
 
 body:has(.hcs-auth-login-page) .hcs-auth-login-card > .card-body {
     padding: clamp(1.25rem, 4vw, 2rem) !important;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-card-brand {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 1.15rem;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-card-logo {
+    display: block;
+    height: clamp(4.5rem, 16vw, 6rem);
+    object-fit: contain;
+    width: clamp(4.5rem, 16vw, 6rem);
 }
 
 body:has(.hcs-auth-login-page) .hcs-auth-login-card h1 {

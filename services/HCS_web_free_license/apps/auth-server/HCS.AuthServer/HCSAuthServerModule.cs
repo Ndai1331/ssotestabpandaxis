@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewComponents;
 using Microsoft.AspNetCore.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -204,6 +206,13 @@ public sealed class HCSAuthServerModule : AbpModule
 
 public sealed class AuthServerFaviconViewComponent : ViewComponent
 {
-    public IViewComponentResult Invoke() =>
-        Content("<link rel=\"icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />");
+    public IViewComponentResult Invoke()
+    {
+        var link = new TagBuilder("link");
+        link.Attributes["rel"] = "icon";
+        link.Attributes["href"] = "/favicon.ico";
+        link.Attributes["type"] = "image/x-icon";
+
+        return new HtmlContentViewComponentResult(link);
+    }
 }
