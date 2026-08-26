@@ -357,7 +357,7 @@ body:has(#LoginInput_UserNameOrEmailAddress) button[type="submit"][name="provide
 }
 
 body:has(#LoginInput_UserNameOrEmailAddress) a {
-    color: #1775a2;
+    color: black;
 }
 
 @media (max-width: 576px) {
@@ -440,7 +440,7 @@ body:has(.hcs-auth-login-page) .hcs-auth-login-card > .card-body {
 body:has(.hcs-auth-login-page) .hcs-login-card-brand {
     display: flex;
     justify-content: center;
-    margin: 0 0 1.15rem;
+    margin: 0 0 1.25rem;
 }
 
 body:has(.hcs-auth-login-page) .hcs-login-card-logo {
@@ -532,3 +532,10 @@ body:has(.hcs-auth-login-page) .hcs-login-external button:disabled {
         padding: 1.15rem 1rem 1.3rem !important;
     }
 }
+
+
+/* custom css */
+
+.dropdown-item.active, .dropdown-item:active{
+    background-color: var(--hcs-login-primary) !important; 
+}   
