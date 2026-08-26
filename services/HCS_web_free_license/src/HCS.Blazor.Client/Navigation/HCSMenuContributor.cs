@@ -29,9 +29,9 @@ public sealed class HCSMenuContributor : IMenuContributor
             Item("HCS.Workspace", "Không gian làm việc", "/workspace", "fa fa-house", 10)
                 .RequireAuthenticated());
 
-        context.Menu.AddItem(
-            Item("HCS.Chat", "Trao đổi", "/chat", "fa fa-comments", 100)
-                .RequirePermissions(HCSPermissions.Collaboration.Chat));
+        // context.Menu.AddItem(
+        //     Item("HCS.Chat", "Trao đổi", "/chat", "fa fa-comments", 100)
+        //         .RequirePermissions(HCSPermissions.Collaboration.Chat));
 
         var documents = Item("HCS.Documents", "Văn bản", icon: "fa fa-file-lines", order: 120);
         documents.AddItem(Item("HCS.Documents.Archive", "Quản lý tài liệu", "/manage-documents?sourceType=0", "fa fa-folder-open", 10)
