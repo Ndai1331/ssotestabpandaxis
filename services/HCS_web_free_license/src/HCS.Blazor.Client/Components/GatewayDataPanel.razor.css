@@ -14,8 +14,7 @@
 .hcs-data-table td { max-width: 22rem; overflow-wrap: anywhere; }
 .hcs-touch-target { min-height: 44px; }
 .hcs-skeleton { display: grid; gap: .75rem; padding: 1rem; }
-.hcs-skeleton span { animation: hcs-skeleton-pulse 1.2s ease-in-out infinite; background: #edf2f1; border-radius: .6rem; height: 3rem; }
-@keyframes hcs-skeleton-pulse { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+.hcs-skeleton span { animation: hcs-motion-skeleton-pulse var(--hcs-motion-duration-skeleton, 1600ms) var(--hcs-motion-ease-ambient, cubic-bezier(.4, 0, .2, 1)) infinite; background: #edf2f1; border-radius: .6rem; height: 3rem; }
 @media (max-width: 767.98px) { .hcs-feature__header { grid-template-columns: auto minmax(0, 1fr); padding: 1rem; } .hcs-feature__header .btn { grid-column: 1 / -1; width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .hcs-skeleton span { animation: none; } }
 

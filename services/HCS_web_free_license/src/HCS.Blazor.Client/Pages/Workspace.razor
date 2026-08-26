@@ -4,6 +4,7 @@
 @inject WorkManagementClient Work
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
+@inject OrganizationCatalogClient Catalog
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Feature:WorkspaceTitle"] · HCS</PageTitle>
@@ -161,6 +162,9 @@
                                 <div class="hcs-ws-doc-name">@item.Title</div>
                                 <span class="hcs-status-badge hcs-status-badge--planning">@item.Status</span>
                                 <a class="hcs-ws-view" href="@($"/document-detail/{item.Id}")">@L["Work:View"]</a>
+                                <button type="button" class="hcs-ws-icon-action" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewDocumentAsync(item.Id)">
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </button>
                             </div>
                         }
                     </div>
@@ -207,7 +211,9 @@
                         <div class="hcs-ws-card-sub">@projects.Count(x => x.Status == "Completed") @L["Work:Of"] @projects.Count @L["Menu:Projects"]</div>
                     </div>
                 </div>
-                <button type="button" class="hcs-ws-action" @onclick='() => Navigation.NavigateTo("/projects")'><i class="fa fa-plus"></i> @L["Work:NewProject"]</button>
+                <AuthorizeView Policy="WorkManagement.Projects">
+                    <Authorized><button type="button" class="hcs-ws-action" @onclick="OpenCreateProjectModalAsync"><i class="fa fa-plus"></i> @L["Work:NewProject"]</button></Authorized>
+                </AuthorizeView>
             </header>
             <div class="hcs-ws-card-body">
                 @if (projects.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoProjectsFound"]</div> }
@@ -217,17 +223,22 @@
                         @foreach (var project in projects.Take(5))
                         {
                             var progress = WorkUi.ProjectProgress(project.Status);
-                            <a class="hcs-ws-proj-row text-decoration-none" href="@($"/project-detail/{project.Id}")">
+                            <div class="hcs-ws-proj-row">
                                 <div class="hcs-ws-proj-top">
-                                    <span class="hcs-ws-proj-name">@project.Name</span>
-                                    <span class="@WorkUi.ProjectBadgeClass(project.Status)">@L[WorkUi.ProjectStatusKey(project.Status)]</span>
+                                    <a class="hcs-ws-proj-name text-decoration-none" href="@($"/project-detail/{project.Id}")">@project.Name</a>
+                                    <div class="hcs-ws-proj-actions">
+                                        <span class="@WorkUi.ProjectBadgeClass(project.Status)">@L[WorkUi.ProjectStatusKey(project.Status)]</span>
+                                        <button type="button" class="hcs-ws-icon-action" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenProjectDetailModalAsync(project.Id)">
+                                            <i class="fa fa-eye" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="hcs-ws-pbar"><div class="hcs-ws-pbf" style="width:@progress%"></div></div>
                                 <div class="hcs-ws-proj-foot">
                                     <span><i class="fa fa-users me-1"></i>@project.MemberCount @L["Work:Members"]</span>
                                     <span>@project.EndDate.ToLocalTime().ToString("dd/MM/yyyy")</span>
                                 </div>
-                            </a>
+                            </div>
                         }
                     </div>
                 }
@@ -253,10 +264,13 @@
                     <div class="hcs-ws-task">
                         @foreach (var task in tasks.Take(6))
                         {
-                            <a class="hcs-ws-task-row text-decoration-none" href="@($"/project-task-detail/{task.Id}")">
-                                <span class="hcs-ws-task-name">@task.Title</span>
+                            <div class="hcs-ws-task-row">
+                                <a class="hcs-ws-task-name text-decoration-none" href="@($"/project-task-detail/{task.Id}")">@task.Title</a>
                                 <span class="@WorkUi.TaskBadgeClass(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span>
-                            </a>
+                                <button type="button" class="hcs-ws-icon-action" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenTaskDetailModalAsync(task.Id)">
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         }
                     </div>
                 }
@@ -271,7 +285,9 @@
                         <div class="hcs-ws-card-sub">@myTasks.Count @L["Menu:Tasks"]</div>
                     </div>
                 </div>
-                <button type="button" class="hcs-ws-action" @onclick='() => Navigation.NavigateTo("/tasks")'><i class="fa fa-plus"></i> @L["Work:NewTask"]</button>
+                <AuthorizeView Policy="WorkManagement.ProjectTasks">
+                    <Authorized><button type="button" class="hcs-ws-action" @onclick="OpenCreateTaskModalAsync"><i class="fa fa-plus"></i> @L["Work:NewTask"]</button></Authorized>
+                </AuthorizeView>
             </header>
             <div class="hcs-ws-card-body">
                 @if (myTasks.Count == 0) { <div class="hcs-ws-empty">@L["Feature:NoTasks"]</div> }
@@ -280,10 +296,13 @@
                     <div class="hcs-ws-task">
                         @foreach (var task in myTasks.Take(6))
                         {
-                            <a class="hcs-ws-task-row text-decoration-none" href="@($"/project-task-detail/{task.Id}")">
-                                <span class="hcs-ws-task-name">@task.Title</span>
+                            <div class="hcs-ws-task-row">
+                                <a class="hcs-ws-task-name text-decoration-none" href="@($"/project-task-detail/{task.Id}")">@task.Title</a>
                                 <span class="@WorkUi.ProgressBadgeClass(task.ProgressPercent)">@task.ProgressPercent%</span>
-                            </a>
+                                <button type="button" class="hcs-ws-icon-action" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenTaskDetailModalAsync(task.Id)">
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         }
                     </div>
                 }
@@ -291,6 +310,113 @@
         </article>
     </div>
 </section>
+
+<ProjectTaskCreateModal @ref="createTaskModal" OnCreated="LoadAsync" />
+<ProjectTaskViewModal @ref="taskViewModal" OnChanged="LoadAsync" OnViewDocument="PreviewTaskDocumentAsync" />
+<DocumentPdfPreviewModal @ref="documentPreviewModal" ShowAssignTask="true" OnAssignTask="AssignPreviewDocumentAsync" />
+
+<Modal @ref="createProjectModal" Size="ModalSize.Large">
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@L["Work:NewProject"]</ModalTitle>
+            <CloseButton Clicked="CloseCreateProjectModalAsync" />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            <div class="hcs-catalog-form">
+                <div class="hcs-form-row">
+                    <Field><FieldLabel>@L["Catalog:Code"] *</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Code" Name="hcsWorkspaceProjectCode" MaxLength="64" /></Field>
+                    <Field><FieldLabel>@L["Feature:ProjectName"] *</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Name" Name="hcsWorkspaceProjectName" /></Field>
+                </div>
+                <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="projectForm.Description"></textarea></Field>
+                <div class="hcs-form-row hcs-form-row--equal">
+                    <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="projectForm.StartDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
+                    <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="projectForm.EndDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
+                </div>
+                <div class="hcs-form-row hcs-form-row--equal">
+                    <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
+                        <Select TValue="string" @bind-Value="projectForm.Status">
+                            @foreach (var value in WorkUi.ProjectStatuses) { <SelectItem Value="@value">@L[WorkUi.ProjectStatusKey(value)]</SelectItem> }
+                        </Select>
+                    </Field>
+                    <Field><FieldLabel>@L["Catalog:Department"]</FieldLabel>
+                        <CatalogSelect2 Value="projectForm.OwnerDepartmentId"
+                                        ValueChanged="value => projectForm.OwnerDepartmentId = value"
+                                        Placeholder="@L["Catalog:SearchPlaceholder"]"
+                                        SelectedText="@DepartmentSelectText(projectForm.OwnerDepartmentId)"
+                                        Search="SearchDepartmentsAsync" />
+                    </Field>
+                </div>
+            </div>
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseCreateProjectModalAsync">@L["Catalog:Cancel"]</Button>
+            <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="CreateProjectAsync" Disabled="@isSavingProject">@L["Catalog:SaveChanges"]</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+<Modal @ref="projectDetailModal" Size="ModalSize.ExtraLarge">
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@L["Feature:ProjectDetail"]</ModalTitle>
+            <CloseButton Clicked="CloseProjectDetailModalAsync" />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            @if (projectDetail is null)
+            {
+                <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+            }
+            else
+            {
+                <div class="hcs-workspace-detail-grid">
+                    <Card><CardBody>
+                        <div class="hcs-catalog-desc mb-1">@L["Catalog:Code"]</div><strong>#@projectDetail.Project.Code</strong>
+                        <div class="hcs-catalog-desc mt-3 mb-1">@L["Feature:ProjectName"]</div><strong>@projectDetail.Project.Name</strong>
+                        <div class="hcs-catalog-desc mt-3 mb-1">@L["Feature:Description"]</div><p class="mb-0">@(projectDetail.Project.Description ?? "—")</p>
+                        <div class="hcs-form-row hcs-form-row--equal mt-3">
+                            <div><div class="hcs-catalog-desc">@L["Feature:StartDate"]</div><strong>@projectDetail.Project.StartDate.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
+                            <div><div class="hcs-catalog-desc">@L["Feature:EndDate"]</div><strong>@projectDetail.Project.EndDate.ToLocalTime().ToString("dd/MM/yyyy")</strong></div>
+                        </div>
+                        <div class="mt-3"><span class="@WorkUi.ProjectBadgeClass(projectDetail.Project.Status)">@L[WorkUi.ProjectStatusKey(projectDetail.Project.Status)]</span></div>
+                    </CardBody></Card>
+                    <Card><CardBody>
+                        <div class="d-flex justify-content-between align-items-center mb-2"><strong><i class="fa fa-list-check me-1"></i>@L["Menu:Tasks"]</strong><span class="hcs-catalog-code">@projectDetail.Tasks.Count</span></div>
+                        @if (projectDetail.Tasks.Count == 0) { <p class="text-muted mb-0">@L["Feature:NoTasks"]</p> }
+                        else
+                        {
+                            <div class="hcs-workspace-detail-list">
+                                @foreach (var task in projectDetail.Tasks.Take(12))
+                                {
+                                    <div class="hcs-workspace-detail-row"><span class="text-truncate">@task.Title</span><span class="@WorkUi.TaskBadgeClass(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span><button type="button" class="hcs-ws-icon-action" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenTaskFromProjectModalAsync(task.Id)"><i class="fa fa-eye" aria-hidden="true"></i></button></div>
+                                }
+                            </div>
+                        }
+                    </CardBody></Card>
+                </div>
+                <Card Class="mt-3"><CardBody>
+                    <div class="d-flex justify-content-between align-items-center mb-2"><strong><i class="fa fa-users me-1"></i>@L["Work:Members"]</strong><span class="hcs-catalog-code">@projectDetail.Members.Count</span></div>
+                    @if (projectDetail.Members.Count == 0) { <p class="text-muted mb-0">@L["Work:NoMembers"]</p> }
+                    else
+                    {
+                        <div class="hcs-workspace-members">
+                            @foreach (var member in projectDetail.Members)
+                            {
+                                <span class="hcs-workspace-member"><i class="fa fa-user me-1"></i>@MemberName(member.UserId)<small>@member.Role</small></span>
+                            }
+                        </div>
+                    }
+                </CardBody></Card>
+            }
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseProjectDetailModalAsync">@L["Catalog:Cancel"]</Button>
+            @if (projectDetail is not null)
+            {
+                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="OpenProjectRouteAsync"><i class="fa fa-arrow-up-right-from-square me-1"></i>@L["Work:ViewDetail"]</Button>
+            }
+        </ModalFooter>
+    </ModalContent>
+</Modal>
 @code {
     private readonly List<CalendarEventDto> events = [];
     private readonly List<ProjectDto> projects = [];
@@ -298,6 +424,16 @@
     private readonly List<DocumentDto> documents = [];
     private readonly List<WorkflowInstanceDto> workflows = [];
     private readonly List<NotificationDto> notifications = [];
+    private readonly List<DepartmentCatalogDto> departments = [];
+    private readonly Dictionary<Guid, string> memberNames = [];
+    private readonly ProjectForm projectForm = new();
+    private ProjectTaskCreateModal? createTaskModal;
+    private ProjectTaskViewModal? taskViewModal;
+    private DocumentPdfPreviewModal? documentPreviewModal;
+    private Modal? createProjectModal;
+    private Modal? projectDetailModal;
+    private ProjectDetailDto? projectDetail;
+    private bool isSavingProject;
     private DateTime fromDate = DateTime.Today;
     private DateTime toDate = DateTime.Today.AddMonths(3);
     private IReadOnlyList<DateTime?> selectedDates = [DateTime.Today, DateTime.Today.AddMonths(3)];
@@ -329,6 +465,137 @@
     }
 
     protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task OpenCreateProjectModalAsync()
+    {
+        projectForm.Reset();
+        if (departments.Count == 0)
+        {
+            try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
+        }
+        if (createProjectModal is not null) await createProjectModal.Show();
+    }
+
+    private async Task CloseCreateProjectModalAsync()
+    {
+        if (createProjectModal is not null) await createProjectModal.Hide();
+        projectForm.Reset();
+    }
+
+    private async Task CreateProjectAsync()
+    {
+        if (string.IsNullOrWhiteSpace(projectForm.Code) || string.IsNullOrWhiteSpace(projectForm.Name))
+        {
+            await NotifyErrorAsync(L["Catalog:CodeNameRequired"]);
+            return;
+        }
+        if (projectForm.EndDate < projectForm.StartDate)
+        {
+            await NotifyErrorAsync(L["Catalog:ValidationError"]);
+            return;
+        }
+        isSavingProject = true;
+        try
+        {
+            await Work.CreateProjectAsync(new CreateProjectRequest(projectForm.Code.Trim(), projectForm.Name.Trim(),
+                string.IsNullOrWhiteSpace(projectForm.Description) ? null : projectForm.Description.Trim(),
+                projectForm.StartDate, projectForm.EndDate, projectForm.Status, projectForm.OwnerDepartmentId));
+            await NotifySuccessAsync(L["Catalog:Created"]);
+            await CloseCreateProjectModalAsync();
+            await LoadAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isSavingProject = false; }
+    }
+
+    private async Task OpenProjectDetailModalAsync(Guid projectId)
+    {
+        projectDetail = null;
+        memberNames.Clear();
+        if (projectDetailModal is not null) await projectDetailModal.Show();
+        try
+        {
+            projectDetail = await Work.GetProjectAsync(projectId);
+            await LoadMemberNamesAsync(projectDetail.Members.Select(x => x.UserId));
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex);
+            await CloseProjectDetailModalAsync();
+        }
+    }
+
+    private async Task CloseProjectDetailModalAsync()
+    {
+        if (projectDetailModal is not null) await projectDetailModal.Hide();
+        projectDetail = null;
+        memberNames.Clear();
+    }
+
+    private Task OpenProjectRouteAsync()
+    {
+        if (projectDetail is not null) Navigation.NavigateTo($"/project-detail/{projectDetail.Project.Id}");
+        return Task.CompletedTask;
+    }
+
+    private async Task OpenTaskFromProjectModalAsync(Guid taskId)
+    {
+        await CloseProjectDetailModalAsync();
+        await OpenTaskDetailModalAsync(taskId);
+    }
+
+    private async Task OpenCreateTaskModalAsync()
+    {
+        if (createTaskModal is not null) await createTaskModal.ShowAsync();
+    }
+
+    private async Task OpenTaskDetailModalAsync(Guid taskId)
+    {
+        if (taskViewModal is not null) await taskViewModal.ShowAsync(taskId);
+    }
+
+    private async Task PreviewDocumentAsync(Guid documentId)
+    {
+        try
+        {
+            var document = await Documents.GetDocumentAsync(documentId);
+            if (documentPreviewModal is not null)
+                await documentPreviewModal.ShowAsync(document.Id, document.Files, document.Title);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
+    }
+
+    private Task PreviewTaskDocumentAsync(Guid documentId) => PreviewDocumentAsync(documentId);
+
+    private async Task AssignPreviewDocumentAsync()
+    {
+        var documentId = documentPreviewModal?.DocumentId;
+        if (documentId is null) return;
+        await documentPreviewModal!.HideAsync();
+        if (createTaskModal is not null) await createTaskModal.ShowAsync(linkedDocumentId: documentId);
+    }
+
+    private async Task LoadMemberNamesAsync(IEnumerable<Guid> userIds)
+    {
+        try
+        {
+            var contacts = await Chat.GetContactsAsync(null, 100);
+            foreach (var contact in contacts.Where(x => userIds.Contains(x.Id)))
+                memberNames[contact.Id] = UserDisplayNames.FirstReal(contact.DisplayName, contact.UserName);
+        }
+        catch { }
+    }
+
+    private string MemberName(Guid userId) => memberNames.GetValueOrDefault(userId, userId.ToString("N")[..8]);
+    private string DepartmentSelectText(Guid? id) => CatalogSelect2Cache.TextFor(departments, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+
+    private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
+    {
+        var skip = Math.Max(page - 1, 0) * 20;
+        var result = await Catalog.SearchDepartmentsAsync(term, skip, 20);
+        return CatalogSelect2Cache.Merge(departments, result.Items, x => x.Id,
+            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+    }
 
     private Task OnRangeChanged(IReadOnlyList<DateTime?> dates)
     {
@@ -392,4 +659,24 @@
             <div class="hcs-ws-kpi-lbl">@label</div>
         </div>
     };
+
+    private sealed class ProjectForm
+    {
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public DateTime EndDate { get; set; } = DateTime.Today.AddMonths(1);
+        public string Status { get; set; } = "Draft";
+        public Guid? OwnerDepartmentId { get; set; }
+
+        public void Reset()
+        {
+            Code = Name = Description = "";
+            StartDate = DateTime.Today;
+            EndDate = DateTime.Today.AddMonths(1);
+            Status = "Draft";
+            OwnerDepartmentId = null;
+        }
+    }
 }

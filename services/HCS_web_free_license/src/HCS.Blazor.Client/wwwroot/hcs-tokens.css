@@ -75,9 +75,27 @@
     --hcs-z-popover: 350;
     --hcs-z-tooltip: 400;
     --hcs-z-notification: 500;
-    --hcs-motion-fast: 150ms;
-    --hcs-motion-normal: 220ms;
-    --hcs-motion-ease: cubic-bezier(.22, 1, .36, 1);
+    /* Corporate motion system: quick feedback, calm entrances, fast exits. */
+    --hcs-motion-duration-instant: 80ms;
+    --hcs-motion-duration-quick: 140ms;
+    --hcs-motion-duration-standard: 200ms;
+    --hcs-motion-duration-slow: 300ms;
+    --hcs-motion-duration-modal: 320ms;
+    --hcs-motion-duration-spinner: 1200ms;
+    --hcs-motion-duration-skeleton: 1600ms;
+    --hcs-motion-stagger: 40ms;
+    --hcs-motion-distance-sm: 4px;
+    --hcs-motion-distance-md: 8px;
+    --hcs-motion-press-scale: .985;
+    --hcs-motion-scrim-opacity: .48;
+    --hcs-motion-ease-standard: cubic-bezier(.2, 0, 0, 1);
+    --hcs-motion-ease-enter: cubic-bezier(.2, 0, 0, 1);
+    --hcs-motion-ease-exit: cubic-bezier(.3, 0, 1, 1);
+    --hcs-motion-ease-ambient: cubic-bezier(.4, 0, .2, 1);
+    /* Compatibility aliases used by existing shell/component styles. */
+    --hcs-motion-fast: var(--hcs-motion-duration-quick);
+    --hcs-motion-normal: var(--hcs-motion-duration-standard);
+    --hcs-motion-ease: var(--hcs-motion-ease-standard);
     --hcs-focus-ring: 0 0 0 .2rem rgba(0, 180, 169, .28);
     --hcs-safe-area-top: env(safe-area-inset-top, 0px);
     --hcs-safe-area-right: env(safe-area-inset-right, 0px);
@@ -95,6 +113,24 @@ button, a, input, select, textarea { touch-action: manipulation; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    :root { --hcs-motion-fast: 0ms; --hcs-motion-normal: 0ms; --hcs-motion-ease: linear; }
+    :root {
+        --hcs-motion-duration-instant: 0ms;
+        --hcs-motion-duration-quick: 0ms;
+        --hcs-motion-duration-standard: 0ms;
+        --hcs-motion-duration-slow: 0ms;
+        --hcs-motion-duration-modal: 0ms;
+        --hcs-motion-duration-spinner: 0ms;
+        --hcs-motion-duration-skeleton: 0ms;
+        --hcs-motion-stagger: 0ms;
+        --hcs-motion-distance-sm: 0px;
+        --hcs-motion-distance-md: 0px;
+        --hcs-motion-fast: 0ms;
+        --hcs-motion-normal: 0ms;
+        --hcs-motion-ease: linear;
+        --hcs-motion-ease-standard: linear;
+        --hcs-motion-ease-enter: linear;
+        --hcs-motion-ease-exit: linear;
+        --hcs-motion-ease-ambient: linear;
+    }
     html { scroll-behavior: auto; }
 }

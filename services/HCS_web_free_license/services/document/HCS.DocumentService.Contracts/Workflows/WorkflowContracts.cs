@@ -78,7 +78,7 @@ public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, st
     Guid? SigningAttemptId = null, Guid? SigningFileId = null);
 public sealed record ExtendWorkflowDueDateRequest(int AdditionalDays, string? Reason = null);
 public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy,
-    DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt);
+    DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt, string? Comment = null);
 public sealed record WorkflowInstanceDto(Guid Id, Guid DocumentId, Guid DefinitionId, WorkflowInstanceStatus Status,
     int CurrentStep, IReadOnlyList<ApprovalTaskDto> Tasks, DateTime CreationTime);
 

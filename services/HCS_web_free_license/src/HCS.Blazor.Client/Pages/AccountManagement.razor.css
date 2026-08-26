@@ -393,7 +393,7 @@
 }
 
 .hcs-account-skeleton {
-    animation: hcs-account-pulse 1.5s ease-in-out infinite;
+    animation: hcs-motion-skeleton-pulse var(--hcs-motion-duration-skeleton, 1600ms) var(--hcs-motion-ease-ambient, cubic-bezier(.4, 0, .2, 1)) infinite;
     background: #e7eef0;
     border-radius: .85rem;
     display: block;
@@ -402,11 +402,6 @@
 .hcs-account-skeleton--hero { height: 19rem; }
 .hcs-account-skeleton--line { height: 3.25rem; width: 35%; }
 .hcs-account-skeleton--body { height: 20rem; }
-
-@keyframes hcs-account-pulse {
-    0%, 100% { opacity: .65; }
-    50% { opacity: 1; }
-}
 
 @media (max-width: 900px) {
     .hcs-account-hero__body {

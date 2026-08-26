@@ -17,7 +17,7 @@ body.abp-application-layout {
     justify-items: center;
     place-content: center;
     position: fixed;
-    transition: opacity .28s ease, visibility .28s ease;
+    transition: opacity var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-exit, cubic-bezier(.3, 0, 1, 1)), visibility var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-exit, cubic-bezier(.3, 0, 1, 1));
     z-index: 2000;
 }
 
@@ -42,7 +42,7 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 }
 
 .hcs-boot-screen__spinner {
-    animation: hcs-boot-spin .7s linear infinite;
+    animation: hcs-boot-spin var(--hcs-motion-duration-spinner, 1200ms) linear infinite;
     border: .22rem solid #d7e2e8;
     border-radius: 50%;
     border-top-color: var(--hcs-color-primary, #00B4A9);
@@ -2368,4 +2368,108 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .d-none {
     display: none !important;
+}
+
+/* Workspace quick actions and detail modals */
+.hcs-workspace .hcs-ws-proj-actions,
+.hcs-workspace .hcs-ws-task-row,
+.hcs-workspace .hcs-ws-doc-row,
+.hcs-workspace .hcs-workspace-detail-row {
+    align-items: center;
+    display: flex;
+    gap: .45rem;
+}
+
+.hcs-workspace .hcs-ws-proj-actions { flex-shrink: 0; }
+.hcs-workspace .hcs-ws-task-row,
+.hcs-workspace .hcs-ws-doc-row { min-width: 0; }
+.hcs-workspace .hcs-ws-task-row .hcs-ws-task-name,
+.hcs-workspace .hcs-ws-doc-row .hcs-ws-doc-name { min-width: 0; }
+.hcs-workspace .hcs-ws-task-row .hcs-ws-task-name { flex: 1; }
+.hcs-workspace .hcs-ws-doc-row .hcs-ws-doc-name { flex: 1; }
+
+.hcs-workspace .hcs-ws-icon-action {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--hcs-color-border, #d9e4ea);
+    border-radius: .35rem;
+    color: var(--hcs-primary, #355dff);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 1.85rem;
+    justify-content: center;
+    padding: 0;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+    width: 1.85rem;
+}
+
+.hcs-workspace .hcs-ws-icon-action:hover,
+.hcs-workspace .hcs-ws-icon-action:focus-visible {
+    background: var(--hcs-primary-soft, #eef1ff);
+    border-color: var(--hcs-primary, #355dff);
+    color: var(--hcs-primary, #355dff);
+    outline: none;
+}
+
+.hcs-workspace-detail-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 1fr);
+}
+
+.hcs-workspace-detail-list { display: flex; flex-direction: column; gap: .45rem; max-height: 18rem; overflow: auto; }
+.hcs-workspace-detail-row { border-bottom: 1px solid var(--hcs-color-border, #e2eaf0); justify-content: space-between; padding: .45rem 0; }
+.hcs-workspace-detail-row > :first-child { flex: 1; min-width: 0; }
+.hcs-workspace-members { display: flex; flex-wrap: wrap; gap: .45rem; }
+.hcs-workspace-member { background: #f7fafc; border: 1px solid #e2eaf0; border-radius: 999px; padding: .35rem .65rem; }
+.hcs-workspace-member small { color: var(--hcs-color-muted, #6d8596); margin-left: .4rem; }
+
+@media (max-width: 767.98px) {
+    .hcs-workspace-detail-grid { grid-template-columns: 1fr; }
+    .hcs-workspace .hcs-ws-doc-row { align-items: flex-start; flex-wrap: wrap; }
+    .hcs-workspace .hcs-ws-doc-row .hcs-ws-doc-name { flex-basis: calc(100% - 2rem); }
+}
+
+.hcs-workflow-summary {
+    align-items: center;
+    background: #f7fafc;
+    border: 1px solid #e2eaf0;
+    border-radius: .55rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: .8rem 1rem;
+}
+.hcs-workflow-summary__meta { align-items: center; color: var(--hcs-color-muted, #6d8596); display: flex; flex-wrap: wrap; gap: .65rem; justify-content: flex-end; }
+.hcs-workflow-step-comment { background: #fffaf0; border-left: 3px solid #f0b429; border-radius: .25rem; font-size: .76rem; margin-top: .4rem; padding: .35rem .5rem; }
+.hcs-workflow-panel-heading { align-items: center; border-bottom: 1px solid var(--hcs-color-border, #e2eaf0); display: flex; justify-content: space-between; margin-bottom: .65rem; padding-bottom: .55rem; }
+.hcs-workflow-history { display: flex; flex-direction: column; gap: .75rem; }
+.hcs-workflow-history li { align-items: flex-start; display: flex; gap: .65rem; }
+.hcs-workflow-history__dot { background: var(--hcs-primary, #355dff); border-radius: 999px; flex: 0 0 auto; height: .55rem; margin-top: .35rem; width: .55rem; }
+.hcs-workflow-files { display: flex; flex-direction: column; gap: .45rem; }
+.hcs-workflow-file { align-items: center; border: 1px solid var(--hcs-color-border, #e2eaf0); border-radius: .45rem; display: flex; gap: .75rem; justify-content: space-between; padding: .55rem .65rem; }
+.hcs-workflow-file > :first-child { flex: 1; min-width: 0; }
+.hcs-file-preview-card { align-items: center; background: #f7fafc; border: 1px solid #e2eaf0; border-radius: .55rem; display: flex; gap: .75rem; justify-content: center; margin: 1rem auto; max-width: 42rem; padding: 1rem; }
+.hcs-file-preview-card > :nth-child(2) { flex: 1; min-width: 0; }
+
+.signing-action-modal .hcs-signing-action-summary { background: #f7fafc; border: 1px solid #e2eaf0; border-radius: .5rem; padding: .7rem .8rem; }
+.signing-action-modal .hcs-signing-action-summary > div { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; }
+.signing-action-modal .hcs-signing-step { border: 1px solid #e2eaf0; border-radius: .45rem; margin-bottom: .45rem; padding: .55rem .65rem; }
+.signing-action-modal .hcs-signing-step--current { border-color: var(--hcs-primary, #355dff); box-shadow: 0 0 0 2px rgba(53, 93, 255, .08); }
+.signing-action-modal .hcs-signing-context { border-top: 1px solid #e2eaf0; padding-top: .75rem; }
+.signing-action-modal .hcs-signing-context__heading { align-items: center; display: flex; justify-content: space-between; margin-bottom: .35rem; }
+.signing-action-modal .hcs-signing-context__row { align-items: center; border-bottom: 1px solid #f0f3f5; display: flex; gap: .5rem; min-width: 0; padding: .35rem 0; }
+.signing-action-modal .hcs-signing-context__row > span { flex: 1; min-width: 0; }
+.signing-action-modal .hcs-signing-context__row small { color: var(--hcs-color-muted, #6d8596); display: block; font-size: .7rem; }
+
+@media (max-width: 767.98px) {
+    .hcs-workflow-summary { align-items: flex-start; flex-direction: column; }
+    .hcs-workflow-summary__meta { justify-content: flex-start; }
+}
+
+
+
+
+.border-none{
+    border: none !important;
 }

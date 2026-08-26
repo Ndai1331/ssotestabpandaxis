@@ -54,9 +54,9 @@
                 <DataGridColumn TItem="SigningQueueItem" Caption="@L["Catalog:Actions"].Value">
                     <DisplayTemplate Context="cell">
                         <div class="hcs-row-actions">
-                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => OpenInfo(cell.Item)" title="@L["Work:WorkflowInfo"]"><i class="fa fa-info-circle"></i></Button>
-                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => PreviewAsync(cell.Item)" title="@L["Work:PdfPreview"]"><i class="fa fa-eye"></i></Button>
-                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--sign" Clicked="() => OpenSign(cell.Item)" title="@L["Feature:Approve"]"><i class="fa fa-signature"></i></Button>
+                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => OpenInfo(cell.Item)" Title="@L["Work:WorkflowInfo"]" aria-label="@L["Work:WorkflowInfo"]"><i class="fa fa-info-circle" aria-hidden="true"></i></Button>
+                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => PreviewAsync(cell.Item)" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]"><i class="fa fa-eye" aria-hidden="true"></i></Button>
+                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--sign" Clicked="() => OpenSign(cell.Item)" Disabled="@(!CanActOn(cell.Item))" Title="@SignActionTitle(cell.Item)" aria-label="@SignActionTitle(cell.Item)"><i class="fa fa-signature" aria-hidden="true"></i></Button>
                         </div>
                     </DisplayTemplate>
                 </DataGridColumn>
@@ -97,15 +97,21 @@
                         <Card Class="h-100">
                             <CardHeader Class="p-2"><Heading Size="HeadingSize.Is6" Class="fw-bolder mb-0">@L["Feature:Approve"]</Heading></CardHeader>
                             <CardBody>
-                                <p class="mb-3"><strong>@selected.Document.Title</strong> · #@selected.Document.Number · @selected.Task.StepCode</p>
+                                <div class="hcs-signing-action-summary mb-3">
+                                    <div><strong>@selected.Document.Title</strong><span class="hcs-catalog-code">#@selected.Document.Number</span></div>
+                                    <div class="hcs-catalog-desc"><span class="hcs-status-badge hcs-status-badge--info">@ApprovalStatusText(selected.Task.Status)</span> · @L["Work:Assignee"]: @SignerName(selected.Task.AssigneeUserId)</div>
+                                </div>
                                 <div class="mb-3">
                                     @foreach (var step in selected.Definition.Steps.OrderBy(x => x.Order))
                                     {
                                         var isCurrent = string.Equals(step.Code, selected.Task.StepCode, StringComparison.OrdinalIgnoreCase);
-                                        <div class="border rounded p-2 mb-2 @(isCurrent ? "border-primary" : null)">
+                                        var stepTask = selected.Instance.Tasks.FirstOrDefault(x => string.Equals(x.StepCode, step.Code, StringComparison.OrdinalIgnoreCase));
+                                        <div class="hcs-signing-step @(isCurrent ? "hcs-signing-step--current" : null)">
                                             <strong>@step.Name</strong>
                                             <span class="hcs-status-badge hcs-status-badge--info ms-1">@L[$"Work:StepType.{step.Type}"]</span>
                                             @if (isCurrent) { <span class="hcs-status-badge hcs-status-badge--success ms-1">@L["Work:CurrentStep"]</span> }
+                                            @if (stepTask is not null) { <span class="hcs-catalog-desc ms-1">@ApprovalStatusText(stepTask.Status)</span> }
+                                            @if (!string.IsNullOrWhiteSpace(stepTask?.Comment)) { <div class="hcs-workflow-step-comment mt-2"><strong>@L["Feature:Comment"]:</strong> @stepTask.Comment</div> }
                                         </div>
                                     }
                                 </div>
@@ -139,6 +145,19 @@
                                 {
                                     <p class="mb-0">@L["Feature:Completed"]: @report.Completed · @L["Feature:Failed"]: @report.Failed</p>
                                 }
+                                <div class="hcs-signing-context mt-3">
+                                    <div class="hcs-signing-context__heading"><strong>@L["Feature:History"]</strong><span class="hcs-catalog-desc">@selected.Document.History.Count</span></div>
+                                    @foreach (var history in selected.Document.History.OrderByDescending(x => x.OccurredAt).Take(5))
+                                    {
+                                        <div class="hcs-signing-context__row"><i class="fa fa-clock-rotate-left" aria-hidden="true"></i><span><strong>@history.Action</strong><small>@SignerName(history.ActorUserId) · @history.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></span></div>
+                                    }
+                                    @if (selected.Document.History.Count == 0) { <span class="hcs-catalog-desc">@L["Catalog:EmptyTitle"]</span> }
+                                    <div class="hcs-signing-context__heading mt-3"><strong>@L["Feature:Files"]</strong><span class="hcs-catalog-desc">@selected.Document.Files.Count</span></div>
+                                    @foreach (var file in selected.Document.Files)
+                                    {
+                                        <div class="hcs-signing-context__row"><i class="fa fa-paperclip" aria-hidden="true"></i><span class="text-truncate">@file.FileName</span><Button Size="Size.Small" Color="Color.Light" Outline="true" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" Clicked="() => PreviewSigningFileAsync(file)"><i class="fa fa-eye" aria-hidden="true"></i></Button></div>
+                                    }
+                                </div>
                             </CardBody>
                         </Card>
                     </Column>
@@ -192,6 +211,7 @@
     private SigningReportDto? report;
     private Guid? currentUserId, submitterId, departmentId;
     private string currentUserDisplayName = "";
+    private bool isElevated;
     private IReadOnlyList<DateTime?> selectedDates = [];
     private string dateFilterField = "IncomingDate";
     private string? signPdfUrl;
@@ -260,6 +280,7 @@
     {
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         if (Guid.TryParse(state.User.FindFirst("sub")?.Value, out var userId)) currentUserId = userId;
+        isElevated = state.User.IsInRole("admin") || state.User.IsInRole("lanhdao");
         currentUserDisplayName = UserDisplayNames.FirstReal(
             state.User.FindFirst("name")?.Value,
             state.User.Identity?.Name,
@@ -290,6 +311,12 @@
     {
         previewing = item;
         return previewModal?.ShowAsync(item.Document.Id, item.Document.Files, item.Document.Title) ?? Task.CompletedTask;
+    }
+    private Task PreviewSigningFileAsync(DocumentFileDto file)
+    {
+        if (selected is null) return Task.CompletedTask;
+        previewing = selected;
+        return previewModal?.ShowAsync(selected.Document.Id, selected.Document.Files, selected.Document.Title, file.Id) ?? Task.CompletedTask;
     }
     private Task AssignFromPreviewAsync() =>
         taskModal?.ShowAsync(linkedDocumentId: previewing?.Document.Id) ?? Task.CompletedTask;
@@ -330,6 +357,11 @@
 
     private async Task OpenSign(SigningQueueItem item)
     {
+        if (!CanActOn(item))
+        {
+            await NotifyErrorAsync(L["Work:OnlyAssignee"]);
+            return;
+        }
         selected = item;
         var pdf = DocumentFilePick.PreferPdf(item.Document.Files);
         form.FileId = pdf?.Id.ToString() ?? "";
@@ -384,7 +416,7 @@
 
     private async Task ApproveAsync()
     {
-        if (selected is null || isDecisionPending) return;
+        if (selected is null || isDecisionPending || !CanActOn(selected)) return;
         isDecisionPending = true;
         try
         {
@@ -415,7 +447,7 @@
 
     private async Task DecideAsync(bool approve, bool returnStep)
     {
-        if (selected is null || isDecisionPending) return;
+        if (selected is null || isDecisionPending || !CanActOn(selected)) return;
         if (returnStep && !CanReturn) return;
         isDecisionPending = true;
         try
@@ -432,7 +464,7 @@
 
     private async Task ExtendDueDateAsync()
     {
-        if (selected is null || isDecisionPending) return;
+        if (selected is null || isDecisionPending || !CanActOn(selected)) return;
         isDecisionPending = true;
         try
         {
@@ -460,6 +492,13 @@
     }
     private string StatusClass(SigningQueueItem item) => StatusOf(item).Css;
     private string StatusText(SigningQueueItem item) => StatusOf(item).Text;
+    private string ApprovalStatusText(ApprovalTaskStatus status) => L[$"Work:ApprovalStatus.{status}"].Value;
+    private string SignerName(Guid? id)
+    {
+        if (id is not { } userId) return L["Work:Assignee"].Value;
+        var name = ContactName(userId);
+        return string.IsNullOrWhiteSpace(name) ? userId.ToString("N")[..8] : name;
+    }
     private string CurrentStepLabel(SigningQueueItem item)
     {
         var total = Math.Max(item.Definition.Steps.Count, 1);
@@ -471,6 +510,8 @@
         item.Definition.Steps.FirstOrDefault(x =>
             string.Equals(x.Code, item.Task.StepCode, StringComparison.OrdinalIgnoreCase));
     private bool CanReturn => selected is { } item && CurrentStep(item)?.AllowReturn == true;
+    private bool CanActOn(SigningQueueItem item) => isElevated || item.Task.AssigneeUserId is null || item.Task.AssigneeUserId == currentUserId;
+    private string SignActionTitle(SigningQueueItem item) => CanActOn(item) ? L["Feature:Approve"].Value : L["Work:OnlyAssignee"].Value;
     private Guid? SubmitterId(SigningQueueItem item) =>
         item.Document.History.FirstOrDefault(h => h.Action == "Created")?.ActorUserId
         ?? item.Document.FromUserId;

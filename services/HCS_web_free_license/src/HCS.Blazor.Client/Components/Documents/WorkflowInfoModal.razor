@@ -8,80 +8,88 @@
             <ModalTitle>@L["Work:WorkflowInfo"]</ModalTitle>
             <CloseButton Clicked="HideAsync" />
         </ModalHeader>
-        <ModalBody Class="hcs-catalog-modal__body">
+        <ModalBody Class="hcs-catalog-modal__body border-none">
             @if (document is null || instance is null || definition is null)
             {
-                <p class="text-muted mb-0">@L["Catalog:EmptyTitle"]</p>
+                <div class="hcs-empty py-4"><i class="fa fa-inbox" aria-hidden="true"></i><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
             }
             else
             {
+                <div class="hcs-workflow-summary mb-3">
+                    <div><strong>@document.Title</strong><span class="hcs-catalog-code">#@document.Number</span></div>
+                    <div class="hcs-workflow-summary__meta">
+                        <span class="hcs-status-badge hcs-status-badge--info">@InstanceStatusText(instance.Status)</span>
+                        <span>@L["Work:CurrentStep"]: @CurrentStepLabel()</span>
+                    </div>
+                </div>
                 <div class="hcs-workflow-info">
-                    <aside class="hcs-workflow-info__timeline">
+                    <aside class="hcs-workflow-info__timeline" aria-label="@L["Work:CurrentStep"]">
                         <h3 class="h6 mb-3">@definition.Name</h3>
-                        @foreach (var step in definition.Steps.OrderBy(x => x.Order))
-                        {
-                            var task = instance.Tasks.FirstOrDefault(x => string.Equals(x.StepCode, step.Code, StringComparison.OrdinalIgnoreCase));
-                            <div class="hcs-timeline-step @TimelineClass(task)">
-                                <span class="hcs-timeline-step__marker">@TimelineIcon(task)</span>
-                                <div>
-                                    <strong>@step.Name</strong>
-                                    <span class="hcs-catalog-desc">@L[$"Work:StepType.{step.Type}"]
-                                        @if (step.SlaDays is { } sla)
+                        <ol class="list-unstyled mb-0">
+                            @foreach (var step in definition.Steps.OrderBy(x => x.Order))
+                            {
+                                var task = instance.Tasks.FirstOrDefault(x => string.Equals(x.StepCode, step.Code, StringComparison.OrdinalIgnoreCase));
+                                var isCurrent = task is not null && string.Equals(task.StepCode, CurrentStepCode(), StringComparison.OrdinalIgnoreCase);
+                                <li class="hcs-timeline-step @TimelineClass(task)" aria-current="@(isCurrent ? "step" : null)">
+                                    <span class="hcs-timeline-step__marker" aria-hidden="true">@TimelineIcon(task)</span>
+                                    <div class="min-w-0">
+                                        <div class="d-flex flex-wrap gap-2 align-items-center"><strong>@step.Name</strong><span class="hcs-status-badge hcs-status-badge--info">@L[$"Work:StepType.{step.Type}"]</span></div>
+                                        <span class="hcs-catalog-desc">@StatusText(task) @if (step.SlaDays is { } sla) { <span> · @sla @L["Work:Days"]</span> }</span>
+                                        @if (task?.DecidedBy is { } actor)
                                         {
-                                            <span> · @sla @L["Work:Days"]</span>
+                                            <div class="hcs-catalog-desc"><i class="fa fa-user-check me-1" aria-hidden="true"></i>@ActorName(actor)</div>
                                         }
-                                    </span>
-                                    @if (IsOverdue(task))
-                                    {
-                                        <span class="hcs-status-badge hcs-status-badge--danger">@L["Work:Overdue"]</span>
-                                    }
-                                </div>
-                            </div>
-                        }
+                                        else if (task?.AssigneeUserId is { } assignee)
+                                        {
+                                            <div class="hcs-catalog-desc"><i class="fa fa-user me-1" aria-hidden="true"></i>@L["Work:Assignee"]: @ActorName(assignee)</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(task?.Comment))
+                                        {
+                                            <div class="hcs-workflow-step-comment"><strong>@L["Feature:Comment"]:</strong> @task.Comment</div>
+                                        }
+                                        @if (IsOverdue(task)) { <span class="hcs-status-badge hcs-status-badge--danger">@L["Work:Overdue"]</span> }
+                                    </div>
+                                </li>
+                            }
+                        </ol>
                     </aside>
-                    <div>
+                    <div class="min-w-0">
                         <Tabs SelectedTab="@tab" SelectedTabChanged="OnTabChanged">
                             <Items>
-                                <Tab Name="general">@L["Feature:GeneralInformation"]</Tab>
-                                <Tab Name="files">@L["Feature:Files"]</Tab>
+                                <Tab Name="general"><i class="fa fa-clock-rotate-left me-1" aria-hidden="true"></i>@L["Feature:History"]</Tab>
+                                <Tab Name="files"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Feature:Files"]</Tab>
                             </Items>
                             <Content>
                                 <TabPanel Name="general">
-                                    <p class="mb-2"><strong>@document.Title</strong> <span class="hcs-catalog-code">#@document.Number</span></p>
-                                    <h4 class="h6 mt-3">@L["Feature:History"]</h4>
+                                    <div class="hcs-workflow-panel-heading"><strong>@L["Feature:History"]</strong><span class="hcs-catalog-desc">@document.History.Count</span></div>
                                     @if (document.History.Count == 0)
                                     {
-                                        <p class="text-muted mb-0">@L["Catalog:EmptyTitle"]</p>
+                                        <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
                                     }
                                     else
                                     {
-                                        <ul class="list-unstyled mb-0">
+                                        <ol class="hcs-workflow-history list-unstyled mb-0">
                                             @foreach (var entry in document.History.OrderByDescending(x => x.OccurredAt))
                                             {
-                                                <li class="mb-2">
-                                                    <strong>@entry.Action</strong>
-                                                    <span class="hcs-catalog-desc">@entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") @entry.Detail</span>
-                                                </li>
+                                                <li><span class="hcs-workflow-history__dot" aria-hidden="true"></span><div><strong>@entry.Action</strong><div class="hcs-catalog-desc">@ActorName(entry.ActorUserId) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>@if (!string.IsNullOrWhiteSpace(entry.Detail)) { <div class="small">@entry.Detail</div> }</div></li>
                                             }
-                                        </ul>
+                                        </ol>
                                     }
                                 </TabPanel>
                                 <TabPanel Name="files">
+                                    <div class="hcs-workflow-panel-heading"><strong>@L["Feature:Files"]</strong><span class="hcs-catalog-desc">@document.Files.Count</span></div>
                                     @if (document.Files.Count == 0)
                                     {
-                                        <p class="text-muted mb-0">@L["Catalog:EmptyTitle"]</p>
+                                        <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
                                     }
                                     else
                                     {
-                                        <ul class="list-group">
+                                        <div class="hcs-workflow-files">
                                             @foreach (var file in document.Files)
                                             {
-                                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                    <span>@file.FileName</span>
-                                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Clicked="() => DownloadAsync(file)">@L["Work:View"]</Button>
-                                                </li>
+                                                <div class="hcs-workflow-file"><div class="min-w-0"><strong class="d-block text-truncate">@file.FileName</strong><span class="hcs-catalog-desc">@file.ContentType · @FormatSize(file.Size)</span></div><div class="hcs-row-actions"><Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" Clicked="() => PreviewFileAsync(file)"><i class="fa fa-eye" aria-hidden="true"></i></Button><Button Size="Size.Small" Color="Color.Light" Outline="true" Title="@L["Chat:DownloadFile"]" aria-label="@L["Chat:DownloadFile"]" Clicked="() => DownloadAsync(file)"><i class="fa fa-download" aria-hidden="true"></i></Button></div></div>
                                             }
-                                        </ul>
+                                        </div>
                                     }
                                 </TabPanel>
                             </Content>
@@ -90,17 +98,19 @@
                 </div>
             }
         </ModalBody>
-        <ModalFooter Class="hcs-catalog-modal__footer">
-            <Button Color="Color.Secondary" Clicked="HideAsync">@L["Catalog:Cancel"]</Button>
-        </ModalFooter>
+        <ModalFooter Class="hcs-catalog-modal__footer"><Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="HideAsync">@L["Catalog:Cancel"]</Button></ModalFooter>
     </ModalContent>
 </Modal>
+<DocumentPdfPreviewModal @ref="filePreviewModal" />
+
 @code {
     private Modal? modal;
+    private DocumentPdfPreviewModal? filePreviewModal;
     private DocumentDto? document;
     private WorkflowInstanceDto? instance;
     private WorkflowDefinitionDto? definition;
     private string tab = "general";
+    private readonly Dictionary<Guid, string> userNames = [];
 
     public async Task ShowAsync(DocumentDto document, WorkflowInstanceDto instance, WorkflowDefinitionDto definition)
     {
@@ -108,45 +118,55 @@
         this.instance = instance;
         this.definition = definition;
         tab = "general";
+        userNames.Clear();
+        await LoadUserNamesAsync();
         if (modal is not null) await modal.Show();
     }
 
     public Task HideAsync() => modal?.Hide() ?? Task.CompletedTask;
-    private Task OnTabChanged(string value)
-    {
-        tab = value;
-        return Task.CompletedTask;
-    }
+    private Task OnTabChanged(string value) { tab = value; return Task.CompletedTask; }
 
-    private static bool IsOverdue(ApprovalTaskDto? task) =>
-        task is { Status: ApprovalTaskStatus.Pending, DueAt: { } due } && due < DateTime.UtcNow;
-
-    private string TimelineClass(ApprovalTaskDto? task)
+    private async Task LoadUserNamesAsync()
     {
-        if (task is null) return "hcs-timeline-step--pending";
-        return task.Status switch
+        if (document is null || instance is null) return;
+        var ids = instance.Tasks.SelectMany(x => new[] { x.DecidedBy, x.AssigneeUserId }).Where(x => x.HasValue).Select(x => x!.Value)
+            .Concat(document.History.Where(x => x.ActorUserId.HasValue).Select(x => x.ActorUserId!.Value)).Distinct().ToArray();
+        try
         {
-            ApprovalTaskStatus.Approved => "hcs-timeline-step--signed",
-            ApprovalTaskStatus.Returned => "hcs-timeline-step--return",
-            ApprovalTaskStatus.Rejected or ApprovalTaskStatus.Cancelled => "hcs-timeline-step--return",
-            ApprovalTaskStatus.Pending when instance is not null && string.Equals(task.StepCode, CurrentStepCode(), StringComparison.OrdinalIgnoreCase)
-                => "hcs-timeline-step--active",
-            _ => "hcs-timeline-step--pending"
-        };
+            var users = await Documents.GetWorkflowUserLookupAsync(ids);
+            foreach (var user in users) userNames[user.UserId] = UserDisplayNames.FirstReal(user.DisplayName, user.UserName);
+        }
+        catch { }
     }
 
-    private string? CurrentStepCode()
-    {
-        if (definition is null || instance is null) return null;
-        var ordered = definition.Steps.OrderBy(x => x.Order).ToList();
-        return ordered.ElementAtOrDefault(instance.CurrentStep)?.Code;
-    }
+    private string ActorName(Guid? id) => id is not { } userId ? L["Work:Assignee"].Value : userNames.GetValueOrDefault(userId, userId.ToString("N")[..8]);
+    private string CurrentStepCode() => definition?.Steps.OrderBy(x => x.Order).ElementAtOrDefault(instance?.CurrentStep ?? -1)?.Code ?? "";
+    private string CurrentStepLabel() => definition?.Steps.OrderBy(x => x.Order).ElementAtOrDefault(instance?.CurrentStep ?? -1)?.Name ?? L["Catalog:EmptyTitle"].Value;
 
-    private MarkupString TimelineIcon(ApprovalTaskDto? task)
+    private static bool IsOverdue(ApprovalTaskDto? task) => task is { Status: ApprovalTaskStatus.Pending, DueAt: { } due } && due < DateTime.UtcNow;
+    private string StatusText(ApprovalTaskDto? task) => task is null ? L["Work:Status.Waiting"].Value : L[$"Work:ApprovalStatus.{task.Status}"].Value;
+    private string InstanceStatusText(WorkflowInstanceStatus status) => L[$"Work:WorkflowStatus.{status}"].Value;
+
+    private string TimelineClass(ApprovalTaskDto? task) => task?.Status switch
     {
-        if (task?.Status == ApprovalTaskStatus.Approved) return new MarkupString("<i class=\"fa fa-check\"></i>");
-        if (task?.Status is ApprovalTaskStatus.Returned or ApprovalTaskStatus.Rejected) return new MarkupString("<i class=\"fa fa-times\"></i>");
-        return new MarkupString("<i class=\"fa fa-circle\"></i>");
+        ApprovalTaskStatus.Approved => "hcs-timeline-step--signed",
+        ApprovalTaskStatus.Returned or ApprovalTaskStatus.Rejected or ApprovalTaskStatus.Cancelled => "hcs-timeline-step--return",
+        ApprovalTaskStatus.Pending when string.Equals(task.StepCode, CurrentStepCode(), StringComparison.OrdinalIgnoreCase) => "hcs-timeline-step--active",
+        _ => "hcs-timeline-step--pending"
+    };
+
+    private static MarkupString TimelineIcon(ApprovalTaskDto? task) => task?.Status switch
+    {
+        ApprovalTaskStatus.Approved => new MarkupString("<i class=\"fa fa-check\"></i>"),
+        ApprovalTaskStatus.Returned or ApprovalTaskStatus.Rejected => new MarkupString("<i class=\"fa fa-times\"></i>"),
+        _ => new MarkupString("<i class=\"fa fa-circle\"></i>")
+    };
+
+    private async Task PreviewFileAsync(DocumentFileDto file)
+    {
+        if (document is null) return;
+        if (filePreviewModal is not null)
+            await filePreviewModal.ShowAsync(document.Id, document.Files, document.Title, file.Id);
     }
 
     private async Task DownloadAsync(DocumentFileDto file)
@@ -154,11 +174,11 @@
         if (document is null) return;
         try
         {
-            var content = DocumentFilePick.IsPdf(file)
-                ? await Documents.GetWatermarkedFileContentAsync(document.Id, file.Id)
-                : await Documents.GetFileContentAsync(document.Id, file.Id);
+            var content = DocumentFilePick.IsPdf(file) ? await Documents.GetWatermarkedFileContentAsync(document.Id, file.Id) : await Documents.GetFileContentAsync(document.Id, file.Id);
             await Js.InvokeVoidAsync("hcsDownloadBytes", file.FileName, content.ContentType, content.Bytes);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
+
+    private static string FormatSize(long size) => size switch { >= 1024 * 1024 => $"{size / 1024d / 1024d:0.##} MB", >= 1024 => $"{size / 1024d:0.##} KB", _ => $"{size} B" };
 }

@@ -118,18 +118,18 @@
                         <DataGridColumn TItem="DocumentDto" Caption="@L["Catalog:Actions"].Value">
                             <DisplayTemplate Context="cell">
                                 <div class="hcs-row-actions">
-                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => PreviewAsync(cell.Item)" Title="@L["Work:PdfPreview"]"><i class="fa fa-eye"></i></Button>
-                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--edit" Clicked="() => Navigation.NavigateTo(DetailHref(cell.Item.Id))" Title="@L["Catalog:Edit"]"><i class="fa fa-pen"></i></Button>
+                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => PreviewAsync(cell.Item)" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]"><i class="fa fa-eye" aria-hidden="true"></i></Button>
+                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--edit" Clicked="() => Navigation.NavigateTo(DetailHref(cell.Item.Id))" Title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]"><i class="fa fa-pen" aria-hidden="true"></i></Button>
                                     @if (CanManage)
                                     {
                                         <AuthorizeView Policy="Documents.Assign">
                                             <Authorized>
-                                                <Button Size="Size.Small" Color="Color.Info" Outline="true" Class="hcs-action-button hcs-action-button--send" Clicked="() => OpenSend(cell.Item)" Title="@L["Feature:SendDocument"]"><i class="fa fa-paper-plane"></i></Button>
+                                                <Button Size="Size.Small" Color="Color.Info" Outline="true" Class="hcs-action-button hcs-action-button--send" Clicked="() => OpenSend(cell.Item)" Title="@L["Feature:SendDocument"]" aria-label="@L["Feature:SendDocument"]"><i class="fa fa-paper-plane" aria-hidden="true"></i></Button>
                                             </Authorized>
                                         </AuthorizeView>
                                         <AuthorizeView Policy="Documents.Workflow.Start">
                                             <Authorized>
-                                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--sign" Clicked="() => OpenSubmit(cell.Item)" Title="@L["Work:SubmitWorkflow"]"><i class="fa fa-signature"></i></Button>
+                                                        <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--sign" Clicked="() => OpenSubmit(cell.Item)" Title="@L["Work:SubmitWorkflow"]" aria-label="@L["Work:SubmitWorkflow"]"><i class="fa fa-signature" aria-hidden="true"></i></Button>
                                             </Authorized>
                                         </AuthorizeView>
                                     }

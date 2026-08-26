@@ -3,6 +3,7 @@
 @inject CollaborationClient Chat
 @inject ChatRealtimeConnection Realtime
 @inject NavigationManager Navigation
+@inject IJSRuntime Js
 @using HCS.Blazor.Client.Collaboration
 @using HCS.CollaborationService.Contracts
 @using System.Threading
@@ -96,16 +97,42 @@
     private readonly List<ChatIncomingToast> chatToasts = [];
     private readonly HashSet<Guid> seen = [];
     private CancellationTokenSource? pollCts;
+    private DotNetObjectReference<NotificationToast>? outsideClickRef;
+    private bool outsideClickBound;
     private bool panelOpen;
     private int unreadCount;
     private int chatUnreadCount;
 
     public int UnreadCount => unreadCount;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        outsideClickRef = DotNetObjectReference.Create(this);
+        await Js.InvokeVoidAsync("hcsNotifications.bindOutsideClick", outsideClickRef);
+        outsideClickBound = true;
+    }
+
     public async Task TogglePanelAsync()
     {
         panelOpen = !panelOpen;
         if (panelOpen) await RefreshAsync(showToasts: false);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task ClosePanelFromOutsideAsync()
+    {
+        if (!panelOpen)
+        {
+            return;
+        }
+
+        panelOpen = false;
         await InvokeAsync(StateHasChanged);
     }
 
@@ -271,10 +298,20 @@
     public async ValueTask DisposeAsync()
     {
         Realtime.MessageReceived -= OnChatMessageAsync;
-        if (pollCts is null) return;
-        await pollCts.CancelAsync();
-        pollCts.Dispose();
-        pollCts = null;
+        if (outsideClickBound)
+        {
+            try { await Js.InvokeVoidAsync("hcsNotifications.unbindOutsideClick"); }
+            catch (JSDisconnectedException) { }
+            catch (TaskCanceledException) { }
+        }
+        outsideClickRef?.Dispose();
+
+        if (pollCts is not null)
+        {
+            await pollCts.CancelAsync();
+            pollCts.Dispose();
+            pollCts = null;
+        }
     }
 
     private sealed record ChatIncomingToast(Guid Id, ChatMessageDto Message);

@@ -90,9 +90,12 @@
                                 <ul class="list-group">
                                     @foreach (var reference in detail.Documents)
                                     {
-                                        <li class="list-group-item d-flex justify-content-between">
-                                            <a href="@($"/document-detail/{reference.DocumentId}")">@(reference.DocumentCode ?? reference.DocumentId.ToString("N")[..8])</a>
-                                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveDocumentAsync(reference)">@L["Catalog:Delete"]</Button>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                                            <a class="text-truncate" href="@($"/document-detail/{reference.DocumentId}")">@(reference.DocumentCode ?? reference.DocumentId.ToString("N")[..8])</a>
+                                            <div class="hcs-row-actions">
+                                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" Clicked="() => OnViewDocument.InvokeAsync(reference.DocumentId)"><i class="fa fa-eye" aria-hidden="true"></i></Button>
+                                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveDocumentAsync(reference)">@L["Catalog:Delete"]</Button>
+                                            </div>
                                         </li>
                                     }
                                 </ul>
@@ -110,6 +113,7 @@
 </Modal>
 @code {
     [Parameter] public EventCallback OnChanged { get; set; }
+    [Parameter] public EventCallback<Guid> OnViewDocument { get; set; }
 
     private Modal? modal;
     private ProjectTaskDetailDto? detail;

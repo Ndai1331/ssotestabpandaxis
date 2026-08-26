@@ -146,7 +146,7 @@
     grid-template-columns: auto minmax(0, 1fr);
     padding: 0.75rem 1rem;
     text-decoration: none;
-    transition: background-color var(--hcs-motion-fast) var(--hcs-motion-ease);
+    transition: background-color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard);
 }
 
 .hcs-notification-panel__list a.is-unread {
@@ -233,3 +233,20 @@
 .hcs-notification-toast__body, .hcs-notification-panel__detail { color: var(--hcs-color-muted, #64748b); }
 .hcs-notification-panel__header, .hcs-notification-panel__footer { border-color: var(--hcs-color-border, #d8e1e8); }
 .hcs-notification-panel__list a:hover, .hcs-notification-panel__list a:focus-visible, .hcs-notification-panel__mark-all:hover, .hcs-notification-panel__mark-all:focus-visible { background: var(--hcs-color-primary-soft, #e7f4f4); }
+
+.hcs-notification-toast {
+    animation: hcs-motion-surface-enter var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-enter, cubic-bezier(.2, 0, 0, 1)) both;
+    transform-origin: top right;
+}
+
+.hcs-notification-panel {
+    animation: hcs-motion-surface-enter var(--hcs-motion-duration-quick, 140ms) var(--hcs-motion-ease-enter, cubic-bezier(.2, 0, 0, 1)) both;
+    transform-origin: top right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hcs-notification-toast,
+    .hcs-notification-panel {
+        animation: none;
+    }
+}

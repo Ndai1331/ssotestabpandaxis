@@ -565,7 +565,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, now));
     }
     internal static WorkflowInstanceDto Map(WorkflowInstance x) => new(x.Id, x.DocumentId, x.DefinitionId, x.Status, x.CurrentStep,
-        x.Tasks.OrderBy(t => t.CreationTime).Select(t => new ApprovalTaskDto(t.Id, t.InstanceId, t.StepCode, t.Status, t.DecidedBy, t.DecidedAt, t.AssigneeUserId, t.DueAt)).ToList(), x.CreationTime);
+        x.Tasks.OrderBy(t => t.CreationTime).Select(t => new ApprovalTaskDto(t.Id, t.InstanceId, t.StepCode, t.Status, t.DecidedBy, t.DecidedAt, t.AssigneeUserId, t.DueAt, t.Comment)).ToList(), x.CreationTime);
     internal static WorkflowDefinitionDto MapDefinition(WorkflowDefinition x) => new(x.Id, x.Code, x.Name, x.KindId, x.Description, x.IsActive,
         x.Steps.OrderBy(step => step.Order).Select(step => new WorkflowStepDto(step.Id, step.Code, step.Name,
             step.Order, step.RequiredPermission, step.Type, step.AssigneeUserId, step.AssigneeType, step.RoleId,

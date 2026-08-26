@@ -17,16 +17,16 @@
     </header>
     <div class="hcs-cal-toolbar">
         <div class="hcs-cal-toolbar__nav">
-            <Button Color="Color.Light" Clicked="PrevAsync">@L["Feature:Prev"]</Button>
-            <Button Color="Color.Light" Clicked="NextAsync">@L["Feature:Next"]</Button>
-            <Button Color="Color.Light" Clicked="TodayAsync">@L["Feature:Today"]</Button>
+            <Button Color="Color.Primary" Outline="true" Class="hcs-cal-toolbar__button" Clicked="PrevAsync">@L["Feature:Prev"]</Button>
+            <Button Color="Color.Primary" Outline="true" Class="hcs-cal-toolbar__button" Clicked="NextAsync">@L["Feature:Next"]</Button>
+            <Button Color="Color.Primary" Outline="true" Class="hcs-cal-toolbar__button" Clicked="TodayAsync">@L["Feature:Today"]</Button>
         </div>
         <strong class="hcs-cal-toolbar__title">@viewTitle</strong>
         <div class="hcs-cal-toolbar__views">
-            <Button Color="@(IsView(MonthView) ? Color.Primary : Color.Light)" Clicked="() => SetViewAsync(MonthView)">@L["Feature:MonthView"]</Button>
-            <Button Color="@(IsView(WeekView) ? Color.Primary : Color.Light)" Clicked="() => SetViewAsync(WeekView)">@L["Feature:WeekView"]</Button>
-            <Button Color="@(IsView(DayView) ? Color.Primary : Color.Light)" Clicked="() => SetViewAsync(DayView)">@L["Feature:DayView"]</Button>
-            <Button Color="@(IsView(ListView) ? Color.Primary : Color.Light)" Clicked="() => SetViewAsync(ListView)">@L["Feature:ListView"]</Button>
+            <Button Color="Color.Primary" Outline="@(!IsView(MonthView))" Clicked="() => SetViewAsync(MonthView)">@L["Feature:MonthView"]</Button>
+            <Button Color="Color.Primary" Outline="@(!IsView(WeekView))" Clicked="() => SetViewAsync(WeekView)">@L["Feature:WeekView"]</Button>
+            <Button Color="Color.Primary" Outline="@(!IsView(DayView))" Clicked="() => SetViewAsync(DayView)">@L["Feature:DayView"]</Button>
+            <Button Color="Color.Primary" Outline="@(!IsView(ListView))" Clicked="() => SetViewAsync(ListView)">@L["Feature:ListView"]</Button>
         </div>
     </div>
     <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
@@ -37,7 +37,7 @@
                     <Button Color="Color.Primary" Clicked="ApplySearch"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
                 </Addon>
             </Addons>
-            <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearch">@L["Catalog:Reset"]</Button>
+            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearch">@L["Catalog:Reset"]</Button>
             <div class="hcs-cal-legend" aria-label="@L["Feature:CalendarTitle"]">
                 <span class="hcs-cal-legend__item hcs-cal-legend__item--project">@L["Feature:CalendarLegendProject"]</span>
                 <span class="hcs-cal-legend__item hcs-cal-legend__item--task">@L["Feature:CalendarLegendTask"]</span>

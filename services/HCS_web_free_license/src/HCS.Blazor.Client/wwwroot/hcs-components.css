@@ -12,7 +12,7 @@
 }
 
 .hcs-login-redirect__spinner {
-    animation: hcs-login-redirect-spin .8s linear infinite;
+    animation: hcs-login-redirect-spin var(--hcs-motion-duration-spinner, 1200ms) linear infinite;
     border: .18rem solid #d7e2e8;
     border-radius: 50%;
     border-top-color: var(--hcs-color-primary);
@@ -666,6 +666,18 @@
 .hcs-app-shell .btn-secondary { background: var(--color-secondary, #007F7C); border-color: var(--color-secondary, #007F7C); color: #fff; }
 .hcs-app-shell .btn-outline-primary { border-color: var(--hcs-color-primary); color: var(--hcs-color-primary); }
 .hcs-app-shell .btn-outline-primary:hover:not(:disabled), .hcs-app-shell .btn-outline-primary:focus-visible { background: var(--hcs-color-primary-soft); border-color: var(--hcs-color-primary); color: var(--hcs-color-primary-strong); }
+.hcs-app-shell .btn-light,
+.hcs-app-shell .btn-outline-light,
+.hcs-app-shell .hcs-catalog-filter-reset,
+.hcs-app-shell .hcs-users-filter-reset { background: transparent; border-color: var(--hcs-color-primary); color: var(--hcs-color-primary); }
+.hcs-app-shell .btn-light:hover:not(:disabled),
+.hcs-app-shell .btn-light:focus-visible,
+.hcs-app-shell .btn-outline-light:hover:not(:disabled),
+.hcs-app-shell .btn-outline-light:focus-visible,
+.hcs-app-shell .hcs-catalog-filter-reset:hover:not(:disabled),
+.hcs-app-shell .hcs-catalog-filter-reset:focus-visible,
+.hcs-app-shell .hcs-users-filter-reset:hover:not(:disabled),
+.hcs-app-shell .hcs-users-filter-reset:focus-visible { background: var(--hcs-color-primary-soft); border-color: var(--hcs-color-primary); color: var(--hcs-color-primary-strong); }
 .hcs-app-shell .btn-danger, .hcs-app-shell .btn-outline-danger { color: var(--hcs-color-danger); }
 .hcs-app-shell .btn-danger { background: var(--hcs-color-danger); border-color: var(--hcs-color-danger); color: #fff; }
 
@@ -713,16 +725,262 @@
     .hcs-app-shell :where(.hcs-page__header, .hcs-document-page__header, .hcs-catalog-titlebar) { align-items: stretch; flex-direction: column; margin-bottom: var(--hcs-space-4); }
     .hcs-app-shell :where(.hcs-page__actions, .hcs-catalog-page__actions) { width: 100%; }
     .hcs-app-shell :where(.hcs-page__actions > .btn, .hcs-catalog-page__actions > .btn) { flex: 1 1 auto; }
-    .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) { padding: 0; }
+    .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) { padding: var(--hcs-space-4) var(--hcs-page-gutter) calc(var(--hcs-space-6) + env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 1100px) {
-    .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) { padding: 0; }
+    .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) { padding: var(--hcs-space-4) var(--hcs-page-gutter) calc(var(--hcs-space-6) + env(safe-area-inset-bottom)); }
 }
 
 .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) {
     height: auto;
     margin-left: 0;
     max-width: none;
-    padding: 0;
+    padding: clamp(1rem, 2.2vw, 2rem) var(--hcs-page-gutter) calc(2rem + env(safe-area-inset-bottom));
+}
+
+.hcs-app-shell .hcs-survey-results__filter-row { align-items: flex-end; gap: var(--hcs-space-3); }
+.hcs-app-shell .hcs-survey-results__location-filter { min-width: 0; }
+.hcs-app-shell .hcs-survey-results__location-filter .select2-container { display: block; width: 100% !important; }
+
+.hcs-app-shell select.hcs-catalog-select2 + .select2-container .select2-selection--single {
+    align-items: center;
+    display: flex;
+    height: var(--hcs-control-height) !important;
+    min-height: var(--hcs-control-height) !important;
+}
+
+.hcs-app-shell select.hcs-catalog-select2 + .select2-container .select2-selection__rendered {
+    line-height: 1.5 !important;
+    padding-inline: .75rem 2.25rem !important;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-app-shell .hcs-survey-results__filter-row { align-items: stretch; }
+    .hcs-app-shell .hcs-survey-results__location-filter { max-width: none; }
+}
+
+/* === Enterprise motion system ===
+   Keep motion purposeful, tokenized and limited to compositor-friendly
+   properties. Component logic owns state; these rules only express it. */
+@keyframes hcs-motion-surface-enter {
+    from {
+        opacity: 0;
+        transform: translate3d(0, var(--hcs-motion-distance-md), 0) scale(.99);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+@keyframes hcs-motion-dashboard-enter {
+    from {
+        opacity: 0;
+        transform: translate3d(0, var(--hcs-motion-distance-md), 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes hcs-motion-validation-enter {
+    from {
+        opacity: 0;
+        transform: translate3d(0, calc(var(--hcs-motion-distance-sm) * -1), 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes hcs-motion-validation-shake {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    25% { transform: translate3d(-3px, 0, 0); }
+    50% { transform: translate3d(3px, 0, 0); }
+    75% { transform: translate3d(-2px, 0, 0); }
+}
+
+@keyframes hcs-motion-skeleton-pulse {
+    0%, 100% { opacity: .62; }
+    50% { opacity: 1; }
+}
+
+.hcs-app-shell .btn,
+.hcs-app-shell .hcs-action-button,
+.hcs-app-shell .hcs-icon-button,
+.hcs-app-shell .hcs-nav-toggle,
+.hcs-app-shell .hcs-ws-action,
+.hcs-app-shell .hcs-ws-icon-action,
+.hcs-app-shell .hcs-ws-view,
+.hcs-app-shell .hcs-signature-button,
+.hcs-app-shell .hcs-signature-upload-cta,
+.hcs-app-shell .hcs-signature-icon-button {
+    transition: background-color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        border-color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        box-shadow var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        opacity var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        transform var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard);
+}
+
+.hcs-app-shell .btn:active:not(:disabled),
+.hcs-app-shell .hcs-action-button:active:not(:disabled),
+.hcs-app-shell .hcs-icon-button:active:not(:disabled),
+.hcs-app-shell .hcs-nav-toggle:active:not(:disabled),
+.hcs-app-shell .hcs-ws-action:active:not(:disabled),
+.hcs-app-shell .hcs-ws-icon-action:active:not(:disabled),
+.hcs-app-shell .hcs-ws-view:active,
+.hcs-app-shell .hcs-signature-button:active:not(:disabled),
+.hcs-app-shell .hcs-signature-upload-cta:active:not(:disabled),
+.hcs-app-shell .hcs-signature-icon-button:active:not(:disabled) {
+    transform: translateY(1px) scale(var(--hcs-motion-press-scale));
+}
+
+.hcs-app-shell .hcs-nav-menu__trigger,
+.hcs-app-shell .hcs-user-menu__panel a,
+.hcs-app-shell .hcs-user-menu__action,
+.hcs-app-shell .hcs-lang-switch__trigger,
+.hcs-app-shell .hcs-lang-switch__item,
+.hcs-app-shell .hcs-nav-menu__panel a,
+.hcs-app-shell .hcs-notification-panel__list a,
+.hcs-app-shell .hcs-notification-panel__mark-all,
+.hcs-app-shell .hcs-account-tab,
+.hcs-app-shell .hcs-user-tabs button,
+.hcs-app-shell .hcs-signing-tab,
+.hcs-app-shell .hcs-chat__tabs button,
+.hcs-app-shell .hcs-survey-tabs button,
+.hcs-app-shell .nav-tabs .nav-link,
+.hcs-app-shell .nav-pills .nav-link {
+    transition: background-color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        border-color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        box-shadow var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        opacity var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        transform var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard);
+}
+
+.hcs-app-shell .hcs-account-tab:active,
+.hcs-app-shell .hcs-user-tabs button:active,
+.hcs-app-shell .hcs-signing-tab:active,
+.hcs-app-shell .hcs-chat__tabs button:active,
+.hcs-app-shell .hcs-survey-tabs button:active,
+.hcs-app-shell .nav-tabs .nav-link:active,
+.hcs-app-shell .nav-pills .nav-link:active {
+    transform: translateY(1px) scale(var(--hcs-motion-press-scale));
+}
+
+.hcs-app-shell .form-control,
+.hcs-app-shell .form-select,
+.hcs-app-shell select,
+.hcs-app-shell textarea,
+.hcs-app-shell .select2-container .select2-selection {
+    transition: background-color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        border-color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        box-shadow var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard),
+        color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard);
+}
+
+.hcs-app-shell .invalid-feedback,
+.hcs-app-shell .validation-message,
+.hcs-app-shell .hcs-account-field-error {
+    animation: hcs-motion-validation-enter var(--hcs-motion-duration-standard) var(--hcs-motion-ease-enter) both;
+}
+
+.hcs-app-shell .is-invalid,
+.hcs-app-shell [aria-invalid="true"] {
+    animation: hcs-motion-validation-shake var(--hcs-motion-duration-standard) var(--hcs-motion-ease-standard) both;
+}
+
+.hcs-app-shell .modal.fade .modal-dialog {
+    transform: translate3d(0, var(--hcs-motion-distance-md), 0) scale(.99);
+    transition: transform var(--hcs-motion-duration-standard) var(--hcs-motion-ease-exit);
+}
+
+.hcs-app-shell .modal.show .modal-dialog {
+    transform: translate3d(0, 0, 0) scale(1);
+    transition-duration: var(--hcs-motion-duration-modal);
+    transition-timing-function: var(--hcs-motion-ease-enter);
+}
+
+.modal-backdrop.fade {
+    opacity: 0;
+    transition: opacity var(--hcs-motion-duration-standard) var(--hcs-motion-ease-standard);
+}
+
+.modal-backdrop.show { opacity: var(--hcs-motion-scrim-opacity); }
+
+.hcs-app-shell .dropdown-menu,
+.hcs-app-shell .hcs-lang-switch__panel,
+.hcs-app-shell .hcs-notification-panel {
+    animation: hcs-motion-surface-enter var(--hcs-motion-duration-quick) var(--hcs-motion-ease-enter) both;
+    transform-origin: top right;
+}
+
+.hcs-app-shell .hcs-chat-modal {
+    animation: hcs-motion-surface-enter var(--hcs-motion-duration-standard) var(--hcs-motion-ease-standard) both;
+}
+
+.hcs-app-shell .hcs-chat-modal__panel {
+    animation: hcs-motion-surface-enter var(--hcs-motion-duration-standard) var(--hcs-motion-ease-enter) both;
+    transform-origin: top center;
+}
+
+.hcs-app-shell .hcs-user-tab-panel:not([hidden]),
+.hcs-app-shell .hcs-account-panel,
+.hcs-app-shell .hcs-signatures-panel {
+    animation: hcs-motion-surface-enter var(--hcs-motion-duration-standard) var(--hcs-motion-ease-enter) both;
+}
+
+.hcs-app-shell .hcs-skeleton span,
+.hcs-app-shell .hcs-account-skeleton,
+.hcs-app-shell .hcs-signature-card--skeleton span {
+    animation: hcs-motion-skeleton-pulse var(--hcs-motion-duration-skeleton) var(--hcs-motion-ease-ambient) infinite;
+}
+
+.hcs-app-shell .hcs-loading {
+    animation: hcs-motion-surface-enter var(--hcs-motion-duration-standard) var(--hcs-motion-ease-enter) both;
+}
+
+.hcs-app-shell .hcs-loading .fa-spin {
+    animation-duration: var(--hcs-motion-duration-spinner);
+}
+
+.hcs-app-shell .hcs-notification-toast {
+    animation: hcs-motion-surface-enter var(--hcs-motion-duration-standard) var(--hcs-motion-ease-enter) both;
+    transform-origin: top right;
+}
+
+.hcs-app-shell .hcs-workspace > .hcs-ws-filter,
+.hcs-app-shell .hcs-workspace > .hcs-ws-kpis,
+.hcs-app-shell .hcs-workspace > .hcs-ws-grid-73,
+.hcs-app-shell .hcs-workspace > .hcs-ws-grid-37 {
+    animation: hcs-motion-dashboard-enter var(--hcs-motion-duration-slow) var(--hcs-motion-ease-enter) both;
+    animation-delay: calc(var(--hcs-motion-stagger) * var(--hcs-motion-index, 0));
+}
+
+.hcs-app-shell .hcs-workspace > .hcs-ws-filter { --hcs-motion-index: 0; }
+.hcs-app-shell .hcs-workspace > .hcs-ws-kpis { --hcs-motion-index: 1; }
+.hcs-app-shell .hcs-workspace > .hcs-ws-grid-73 { --hcs-motion-index: 2; }
+.hcs-app-shell .hcs-workspace > .hcs-ws-grid-37:nth-child(4) { --hcs-motion-index: 3; }
+.hcs-app-shell .hcs-workspace > .hcs-ws-grid-37:nth-child(5) { --hcs-motion-index: 4; }
+.hcs-app-shell .hcs-workspace > .hcs-ws-grid-37:nth-child(6) { --hcs-motion-index: 5; }
+
+@media (prefers-reduced-motion: reduce) {
+    .hcs-app-shell .hcs-workspace > .hcs-ws-filter,
+    .hcs-app-shell .hcs-workspace > .hcs-ws-kpis,
+    .hcs-app-shell .hcs-workspace > .hcs-ws-grid-73,
+    .hcs-app-shell .hcs-workspace > .hcs-ws-grid-37,
+    .hcs-app-shell .hcs-loading,
+    .hcs-app-shell .hcs-notification-toast,
+    .hcs-app-shell .hcs-notification-panel,
+    .hcs-app-shell .hcs-chat-modal,
+    .hcs-app-shell .hcs-chat-modal__panel {
+        animation: none;
+    }
 }

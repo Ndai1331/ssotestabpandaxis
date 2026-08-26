@@ -86,12 +86,6 @@
           "Microsoft.AspNetCore.SignalR.Client.Core": "10.0.9"
         }
       },
-      "Microsoft.DotNet.HotReload.WebAssembly.Browser": {
-        "type": "Direct",
-        "requested": "[10.0.101, )",
-        "resolved": "10.0.101",
-        "contentHash": "30d2d7ti8GiDYf9zg4+w5cvH3jm9HAQMyXzZgCVpEjmh3WLErJazuu2tyoIO75uNYLWPD/NNTTRD9SoPpDiACw=="
-      },
       "Microsoft.NET.ILLink.Tasks": {
         "type": "Direct",
         "requested": "[10.0.1, )",

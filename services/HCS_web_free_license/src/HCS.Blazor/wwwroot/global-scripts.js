@@ -100,3 +100,30 @@ window.hcsSetCulture = (culture) => {
     window.localStorage?.setItem("hcs.culture", selected);
 };
 
+window.hcsNotifications = (() => {
+    let outsideClickHandler = null;
+
+    return {
+        bindOutsideClick(dotNetRef) {
+            this.unbindOutsideClick();
+            outsideClickHandler = (event) => {
+                const target = event.target;
+                if (!(target instanceof Element) || target.closest(".hcs-notification-panel, [data-hcs-notification-trigger]")) {
+                    return;
+                }
+
+                dotNetRef.invokeMethodAsync("ClosePanelFromOutsideAsync").catch(() => { });
+            };
+            document.addEventListener("pointerdown", outsideClickHandler, true);
+        },
+
+        unbindOutsideClick() {
+            if (!outsideClickHandler) {
+                return;
+            }
+
+            document.removeEventListener("pointerdown", outsideClickHandler, true);
+            outsideClickHandler = null;
+        }
+    };
+})();

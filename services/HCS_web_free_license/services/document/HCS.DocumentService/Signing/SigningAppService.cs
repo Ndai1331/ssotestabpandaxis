@@ -4,6 +4,7 @@ using Volo.Abp;
 using HCS.DocumentService.Integration;
 using HCS.DocumentService.Documents;
 using HCS.DocumentService.Storage;
+using HCS.DocumentService.Workflows;
 using HCS.IntegrationEvents.Documents;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp.Authorization;
@@ -85,6 +86,22 @@ public sealed class SigningAppService(
             .SingleOrDefaultAsync(x => x.Id == input.DocumentId, cancellationToken)
             ?? throw new KeyNotFoundException("Document not found.");
         DocumentAccess.EnsureCanView(document, userId, principal);
+        var activeSignTask = await (
+            from task in db.ApprovalTasks.AsNoTracking()
+            join instance in db.WorkflowInstances.AsNoTracking() on task.InstanceId equals instance.Id
+            join step in db.WorkflowSteps.AsNoTracking()
+                on new { instance.DefinitionId, Code = task.StepCode }
+                equals new { DefinitionId = step.DefinitionId, Code = step.Code }
+            where instance.DocumentId == input.DocumentId
+                && instance.Status == WorkflowInstanceStatus.Running
+                && task.Status == ApprovalTaskStatus.Pending
+                && step.Type == WorkflowStepTypes.Sign
+            select new { task.AssigneeUserId })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (activeSignTask?.AssigneeUserId is { } assignee
+            && assignee != userId
+            && !DocumentAccess.IsElevated(principal))
+            throw new UnauthorizedAccessException("Only the assigned user can sign this document.");
         var existing = await FindAttemptAsync(userId, input, key, cancellationToken);
         if (existing is not null) return Map(existing);
         var file = await db.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == input.FileId && x.DocumentId == input.DocumentId && !x.IsPendingDeletion, cancellationToken)

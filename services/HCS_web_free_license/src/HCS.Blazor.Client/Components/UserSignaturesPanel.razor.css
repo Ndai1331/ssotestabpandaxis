@@ -83,7 +83,7 @@
     display: inline-flex;
     justify-content: center;
     min-height: 2.75rem;
-    transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+    transition: background-color var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, cubic-bezier(.2, 0, 0, 1)), border-color var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, cubic-bezier(.2, 0, 0, 1)), color var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, cubic-bezier(.2, 0, 0, 1)), transform var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, cubic-bezier(.2, 0, 0, 1));
 }
 
 .hcs-signature-upload-cta,
@@ -147,7 +147,7 @@
     flex-direction: column;
     min-width: 0;
     overflow: hidden;
-    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+    transition: border-color var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, cubic-bezier(.2, 0, 0, 1)), box-shadow var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, cubic-bezier(.2, 0, 0, 1)), transform var(--hcs-motion-duration-standard, 200ms) var(--hcs-motion-ease-standard, cubic-bezier(.2, 0, 0, 1));
 }
 
 .hcs-signature-card:hover {
@@ -364,7 +364,7 @@
 }
 
 .hcs-signature-card--skeleton span {
-    animation: hcs-signature-pulse 1.5s ease-in-out infinite;
+    animation: hcs-motion-skeleton-pulse var(--hcs-motion-duration-skeleton, 1600ms) var(--hcs-motion-ease-ambient, cubic-bezier(.4, 0, .2, 1)) infinite;
     background: #edf2f1;
     border-radius: .45rem;
     display: block;
@@ -373,11 +373,6 @@
 .hcs-signature-card--skeleton span:first-child { height: 9rem; }
 .hcs-signature-card--skeleton span:nth-child(2) { height: 1.25rem; width: 70%; }
 .hcs-signature-card--skeleton span:last-child { height: 2.75rem; width: 100%; }
-
-@keyframes hcs-signature-pulse {
-    0%, 100% { opacity: .65; }
-    50% { opacity: 1; }
-}
 
 .hcs-signature-dialog-backdrop {
     align-items: center;

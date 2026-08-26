@@ -173,8 +173,8 @@
                 </div>
                 <label><input type="checkbox" @bind="editForm.IsActive" /> @L["Account:IsActive"]</label>
                 <div class="hcs-signature-dialog__actions">
-                    <button type="button" class="hcs-signature-button hcs-signature-button--quiet" @onclick="CloseEdit" disabled="@isSaving">@L["Catalog:Cancel"]</button>
-                    <button type="submit" class="hcs-signature-button hcs-signature-button--primary" disabled="@isSaving">
+                    <button type="button" class="btn btn-secondary hcs-catalog-cancel" @onclick="CloseEdit" disabled="@isSaving">@L["Catalog:Cancel"]</button>
+                    <button type="submit" class="btn btn-primary hcs-catalog-save" disabled="@isSaving">
                         <i class="fa @(isSaving ? "fa-spinner fa-spin" : "fa-floppy-disk")" aria-hidden="true"></i>@L["Catalog:SaveChanges"]
                     </button>
                 </div>

@@ -33,7 +33,7 @@
 
             <div class="hcs-header__actions" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
                 <CultureSelector />
-                <button class="hcs-icon-button" type="button" aria-label='@Localizer["Notifications:Title"]' @onclick="ToggleNotificationsAsync">
+                <button class="hcs-icon-button" type="button" data-hcs-notification-trigger="true" aria-label='@Localizer["Notifications:Title"]' @onclick="ToggleNotificationsAsync">
                     <i class="fa fa-bell" aria-hidden="true"></i>
                     @if (unreadNotifications > 0)
                     {

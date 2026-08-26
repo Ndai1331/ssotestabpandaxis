@@ -54,7 +54,7 @@ public sealed record UpdateWorkflowDefinitionRequest(string Name, List<WorkflowS
 public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid DefinitionId, int Version, bool IsActive, DateTime CreationTime, Guid? WordFileId, string? WordFileName, Guid? PdfFileId, string? PdfFileName, string TemplateJson = "{}", string OutputFormat = "PDF");
 public sealed record CreateWorkflowTemplateRequest(string Code, string Name, Guid DefinitionId, int Version, string TemplateJson, string OutputFormat = "PDF");
 public sealed record UpdateWorkflowTemplateRequest(string Name, string TemplateJson, string OutputFormat = "PDF");
-public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy, DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt = null);
+public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy, DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt = null, string? Comment = null);
 public sealed record WorkflowInstanceDto(
     Guid Id, Guid DocumentId, Guid DefinitionId, WorkflowInstanceStatus Status, int CurrentStep,
     List<ApprovalTaskDto> Tasks, DateTime CreationTime);
