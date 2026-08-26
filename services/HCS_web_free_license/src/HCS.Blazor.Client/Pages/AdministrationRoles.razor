@@ -184,7 +184,7 @@
                             }
                             @if (CanDeleteSelectedRole)
                             {
-                                <Button Color="Color.Danger" Class="hcs-role-delete" Clicked="DeleteSelectedRoleAsync" Loading="@isDeleting" Disabled="@(isDeleting || isSaving || isLoadingPermissions)">
+                                <Button Color="Color.Danger" Class="hcs-role-delete me-2" Clicked="DeleteSelectedRoleAsync" Loading="@isDeleting" Disabled="@(isDeleting || isSaving || isLoadingPermissions)">
                                     <i class="fa fa-trash" aria-hidden="true"></i> @L["Roles:Delete"]
                                 </Button>
                             }

@@ -397,13 +397,13 @@
     height: 1.2rem;
     margin-top: .15rem;
     border-color: #dbe6ed;
-    accent-color: #f42583;
+    accent-color: var(--color-secondary);
 }
 
 .hcs-user-modal .form-check-input:checked,
 .hcs-permission-modal .form-check-input:checked {
-    background-color: #f42583;
-    border-color: #f42583;
+    background-color: var(--color-secondary);
+    border-color: var(--color-secondary);
 }
 
 .hcs-form-note,

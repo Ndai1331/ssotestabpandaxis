@@ -146,8 +146,8 @@
 }
 
 .hcs-role-option.is-active {
-    border-color: #385cff;
-    background: #385cff;
+    border-color: var(--color-primary);
+    background: var(--color-primary);
     color: #fff;
 }
 
@@ -291,8 +291,8 @@
 }
 
 .hcs-permission-groups button.is-active {
-    border-color: #6b5bd4;
-    background: #6b5bd4;
+    border-color: var(--color-secondary);
+    background: var(--color-secondary);
     color: #fff;
     font-weight: 750;
 }
@@ -341,12 +341,12 @@
     height: 1.15rem;
     margin-top: .15rem;
     cursor: pointer;
-    accent-color: #6b5bd4;
+    accent-color: var(--color-secondary);
 }
 
 .hcs-role-permissions-card ::deep .form-check-input:checked {
-    background-color: #6b5bd4;
-    border-color: #6b5bd4;
+    background-color: var(--color-secondary);
+    border-color: var(--color-secondary);
 }
 
 .hcs-permission-row small {

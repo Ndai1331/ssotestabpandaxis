@@ -1,6 +1,6 @@
 .hcs-chat-page {
-    --chat-primary: #3d5cff;
-    --chat-primary-hover: #2f4ae6;
+    --chat-primary: var(--color-primary);
+    --chat-primary-hover: var(--color-primary-dark);
     --chat-primary-rgb: 61, 92, 255;
     --chat-navy: #1e3a5f;
     --chat-ink: #1c2434;
@@ -11,7 +11,7 @@
     --chat-mine: #e0f7fa;
     --chat-theirs: #fef3e2;
     --chat-avatar: #e8edf8;
-    --chat-unread: #3d5cff;
+    --chat-unread: var(--color-primary);
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
