@@ -6,7 +6,7 @@
 
 .hcs-feature__header {
     align-items: center;
-    background: linear-gradient(120deg, #f4f8f7, var(--hcs-color-surface, #fff));
+    background: var(--hcs-color-surface, #fff);
     border: 1px solid #d9e5e2;
     border-radius: var(--hcs-radius-lg, 12px);
     display: grid;

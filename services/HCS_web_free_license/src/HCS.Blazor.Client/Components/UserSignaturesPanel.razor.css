@@ -2,8 +2,8 @@
     --signature-ink: var(--hcs-ink, #19334c);
     --signature-muted: var(--hcs-muted, #63798b);
     --signature-line: var(--hcs-line, #dfe8eb);
-    --signature-primary: var(--hcs-primary, #3d5cff);
-    --signature-primary-soft: var(--hcs-primary-soft, #eef1ff);
+    --signature-primary: var(--hcs-color-primary, #0f6d78);
+    --signature-primary-soft: var(--hcs-color-primary-soft, #e7f4f4);
 }
 
 .hcs-account-eyebrow {
@@ -61,7 +61,7 @@
 .hcs-signature-type-picker select:focus-visible,
 .hcs-signature-dialog__form select:focus-visible {
     border-color: var(--signature-primary);
-    outline: 3px solid rgba(61, 92, 255, .2);
+    outline: 3px solid var(--hcs-color-primary, #0f6d78);
     outline-offset: 1px;
 }
 
@@ -109,7 +109,7 @@
 .hcs-signature-button--primary:focus-visible {
     background: #2447df;
     color: #fff;
-    outline: 3px solid rgba(61, 92, 255, .28);
+    outline: 3px solid var(--hcs-color-primary, #0f6d78);
     outline-offset: 2px;
     transform: translateY(-1px);
 }
@@ -365,8 +365,7 @@
 
 .hcs-signature-card--skeleton span {
     animation: hcs-signature-pulse 1.5s ease-in-out infinite;
-    background: linear-gradient(90deg, #e8eef1 25%, #f6f8f9 50%, #e8eef1 75%);
-    background-size: 200% 100%;
+    background: #edf2f1;
     border-radius: .45rem;
     display: block;
 }
@@ -376,7 +375,8 @@
 .hcs-signature-card--skeleton span:last-child { height: 2.75rem; width: 100%; }
 
 @keyframes hcs-signature-pulse {
-    to { background-position: -200% 0; }
+    0%, 100% { opacity: .65; }
+    50% { opacity: 1; }
 }
 
 .hcs-signature-dialog-backdrop {
@@ -485,3 +485,11 @@
         transition: none;
     }
 }
+
+.hcs-signatures-panel { --signature-ink: var(--hcs-color-ink, #1d2b3a); --signature-muted: var(--hcs-color-muted, #64748b); --signature-line: var(--hcs-color-border, #d8e1e8); --signature-primary: var(--hcs-color-primary, #0f6d78); --signature-primary-soft: var(--hcs-color-primary-soft, #e7f4f4); }
+.hcs-signature-type-picker select, .hcs-signature-card, .hcs-signature-card__preview { border-color: var(--signature-line); }
+.hcs-signature-card { border-radius: var(--hcs-radius-md, 8px); box-shadow: var(--hcs-shadow-sm, 0 1px 2px rgba(19, 47, 70, .05)); }
+.hcs-signature-card:hover { border-color: var(--hcs-color-primary-light, #8cc9c9); box-shadow: var(--hcs-shadow-md, 0 10px 24px rgba(19, 47, 70, .1)); transform: none; }
+.hcs-signature-card.is-default { border-color: var(--hcs-color-primary-light, #8cc9c9); box-shadow: inset 0 .2rem 0 var(--signature-primary); }
+.hcs-signature-upload-cta, .hcs-signature-button--primary { background: var(--signature-primary); }
+.hcs-signature-upload-cta:hover, .hcs-signature-upload-cta:focus-within, .hcs-signature-button--primary:hover, .hcs-signature-button--primary:focus-visible { background: var(--hcs-color-primary-strong, #0b5560); outline: 3px solid var(--hcs-color-primary, #0f6d78); outline-offset: 2px; transform: none; }

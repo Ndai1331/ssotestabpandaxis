@@ -1,8 +1,4 @@
 /* Shared HCS page primitives. Domain-specific styles stay in main.css. */
-.hcs-app-shell,
-.hcs-auth-login-page {
-    --hcs-focus-ring: 0 0 0 .2rem rgba(61, 92, 255, .22);
-}
 
 .hcs-login-redirect {
     align-items: center;
@@ -31,7 +27,7 @@
 
 .hcs-app-shell :where(a, button, input, select, textarea, summary):focus-visible,
 .hcs-auth-login-page :where(a, button, input, select, textarea, summary):focus-visible {
-    outline: 3px solid rgba(61, 92, 255, .36);
+    outline: 3px solid var(--hcs-color-primary, var(--color-primary, #00B4A9));
     outline-offset: 2px;
 }
 
@@ -337,7 +333,7 @@
     }
 
     .hcs-app-shell .hcs-catalog-grid td:has(.hcs-row-actions)::before {
-        background: linear-gradient(90deg, transparent, rgba(49, 72, 88, .08));
+        background: rgba(19, 47, 70, .08);
         content: "";
         inset: 0 auto 0 -.4rem;
         pointer-events: none;
@@ -569,4 +565,164 @@
     .hcs-login-redirect__spinner {
         animation: none;
     }
+}
+
+/* Enterprise visual layer. Keep these selectors on HCS wrappers so the
+   LeptonX and Blazorise packages remain untouched and upgradeable. */
+.hcs-app-shell {
+    color-scheme: light;
+    color: var(--hcs-color-ink);
+    font-family: var(--hcs-font-family);
+
+    /* Bootstrap bridge is scoped to the HCS shell, leaving vendor theme
+       defaults intact for login and other host-owned surfaces. */
+    --bs-primary: var(--hcs-color-primary);
+    --bs-primary-rgb: 0, 180, 169;
+    --bs-secondary: var(--color-secondary, #007F7C);
+    --bs-secondary-rgb: 0, 127, 124;
+    --bs-success: var(--hcs-color-success);
+    --bs-success-rgb: 0, 127, 124;
+    --bs-warning: #d68a23;
+    --bs-warning-rgb: 214, 138, 35;
+    --bs-danger: var(--hcs-color-danger);
+    --bs-danger-rgb: 227, 30, 36;
+    --bs-info: var(--hcs-color-info);
+    --bs-info-rgb: 0, 180, 169;
+    --bs-body-color: var(--hcs-color-ink);
+    --bs-body-bg: var(--hcs-color-background);
+    --bs-border-color: var(--hcs-color-border);
+    --bs-border-radius: 6px;
+    --bs-border-radius-sm: 5px;
+    --bs-border-radius-lg: 8px;
+    --bs-link-color: var(--hcs-color-primary);
+    --bs-link-hover-color: var(--hcs-color-primary-strong);
+}
+
+.hcs-app-shell :where(.hcs-page, .hcs-catalog-page, .hcs-document-page, .hcs-admin-page, .hcs-account-page, .hcs-workspace) {
+    max-width: var(--hcs-content-max-width);
+    min-width: 0;
+    width: 100%;
+}
+
+.hcs-app-shell .hcs-catalog-page {
+    background: transparent;
+    margin: 0 auto;
+    min-height: auto;
+    padding: 0;
+}
+
+.hcs-app-shell :where(.hcs-page__header, .hcs-document-page__header, .hcs-catalog-titlebar) {
+    align-items: flex-end;
+    border-bottom: 1px solid transparent;
+    gap: var(--hcs-space-4);
+    margin-bottom: var(--hcs-space-5);
+}
+
+.hcs-app-shell :where(.hcs-page__header h1, .hcs-page__header h2, .hcs-document-page__header h1, .hcs-catalog-titlebar h1) {
+    color: var(--hcs-color-ink);
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    font-weight: 700;
+    letter-spacing: -.025em;
+    line-height: 1.2;
+}
+
+.hcs-app-shell :where(.hcs-page__header p, .hcs-document-page__header p, .hcs-catalog-titlebar__eyebrow) {
+    color: var(--hcs-color-muted);
+    font-size: .88rem;
+}
+
+.hcs-app-shell :where(.card, .hcs-data-surface, .hcs-catalog-grid-card) {
+    background: var(--hcs-color-surface);
+    border: 1px solid var(--hcs-color-border);
+    border-radius: var(--hcs-radius-md);
+    box-shadow: var(--hcs-shadow-sm);
+}
+
+.hcs-app-shell :where(.card-header, .card-footer) {
+    background: var(--hcs-color-surface);
+    border-color: var(--hcs-color-border);
+    padding: var(--hcs-space-4) var(--hcs-space-5);
+}
+
+.hcs-app-shell :where(.card-header strong, .card-header h2, .card-header h3) {
+    color: var(--hcs-color-ink);
+    font-size: .98rem;
+    font-weight: 700;
+}
+
+.hcs-app-shell :where(.card-body, .hcs-catalog-grid-card .card-body) { padding: var(--hcs-space-5); }
+
+.hcs-app-shell .btn:not(.btn-sm):not(.btn-lg) {
+    border-radius: var(--hcs-radius-sm);
+    font-size: .86rem;
+    font-weight: 600;
+    min-height: var(--hcs-control-height);
+    padding: .55rem .9rem;
+    transition: background var(--hcs-motion-fast) var(--hcs-motion-ease), border-color var(--hcs-motion-fast) var(--hcs-motion-ease), box-shadow var(--hcs-motion-fast) var(--hcs-motion-ease), color var(--hcs-motion-fast) var(--hcs-motion-ease);
+}
+
+.hcs-app-shell .btn-primary { background: var(--hcs-color-primary); border-color: var(--hcs-color-primary); color: #fff; }
+.hcs-app-shell .btn-primary:hover:not(:disabled), .hcs-app-shell .btn-primary:focus-visible { background: var(--hcs-color-primary-strong); border-color: var(--hcs-color-primary-strong); box-shadow: var(--hcs-focus-ring); color: #fff; }
+.hcs-app-shell .btn-secondary { background: var(--color-secondary, #007F7C); border-color: var(--color-secondary, #007F7C); color: #fff; }
+.hcs-app-shell .btn-outline-primary { border-color: var(--hcs-color-primary); color: var(--hcs-color-primary); }
+.hcs-app-shell .btn-outline-primary:hover:not(:disabled), .hcs-app-shell .btn-outline-primary:focus-visible { background: var(--hcs-color-primary-soft); border-color: var(--hcs-color-primary); color: var(--hcs-color-primary-strong); }
+.hcs-app-shell .btn-danger, .hcs-app-shell .btn-outline-danger { color: var(--hcs-color-danger); }
+.hcs-app-shell .btn-danger { background: var(--hcs-color-danger); border-color: var(--hcs-color-danger); color: #fff; }
+
+.hcs-app-shell :where(.form-control, .form-select, select, textarea, .b-is-datepicker .form-control, .select2-container .select2-selection) {
+    background-color: var(--hcs-color-surface);
+    border-color: var(--hcs-color-border);
+    border-radius: var(--hcs-radius-sm);
+    color: var(--hcs-color-ink);
+    min-height: var(--hcs-control-height);
+}
+
+.hcs-app-shell :where(.form-control, .form-select, select, textarea):focus,
+.hcs-app-shell .select2-container--focus .select2-selection,
+.hcs-app-shell .select2-container--open .select2-selection { border-color: var(--hcs-color-primary); box-shadow: var(--hcs-focus-ring); }
+.hcs-app-shell :where(.form-label, .field-label, label) { color: var(--hcs-color-ink); font-size: .82rem; font-weight: 600; }
+.hcs-app-shell :where(.form-text, .invalid-feedback, .validation-message) { font-size: .76rem; }
+.hcs-app-shell .invalid-feedback, .hcs-app-shell .validation-message { color: var(--hcs-color-danger); }
+
+.hcs-app-shell :where(.table, .b-table) { --bs-table-bg: var(--hcs-color-surface); --bs-table-border-color: var(--hcs-color-border); color: var(--hcs-color-ink); margin-bottom: 0; }
+.hcs-app-shell :where(.table, .b-table) > :not(caption) > * > * { padding: .78rem .85rem; vertical-align: middle; }
+.hcs-app-shell :where(.table, .b-table) > thead > tr > th { background: var(--hcs-color-surface-muted); color: var(--hcs-color-muted); font-size: .7rem; font-weight: 800; letter-spacing: .055em; text-transform: uppercase; white-space: nowrap; }
+.hcs-app-shell :where(.table, .b-table) > tbody > tr { transition: background var(--hcs-motion-fast) var(--hcs-motion-ease); }
+.hcs-app-shell :where(.table, .b-table) > tbody > tr:hover { background: #f8fbfc; }
+.hcs-app-shell :where(.table, .b-table) > tbody > tr > td { font-size: .86rem; }
+.hcs-app-shell :where(.table-responsive, .hcs-table-wrap, .hcs-catalog-grid-card .card-body) { scrollbar-color: #a6b8c4 transparent; scrollbar-width: thin; }
+
+.hcs-app-shell .pagination { gap: .25rem; }
+.hcs-app-shell .pagination .page-link { border-color: var(--hcs-color-border); border-radius: var(--hcs-radius-sm); color: var(--hcs-color-ink); min-height: var(--hcs-touch-target); min-width: var(--hcs-touch-target); text-align: center; }
+.hcs-app-shell .pagination .page-item.active .page-link { background: var(--hcs-color-primary); border-color: var(--hcs-color-primary); color: #fff; }
+
+.hcs-app-shell :where(.modal-content, .hcs-catalog-modal) { border: 1px solid var(--hcs-color-border); border-radius: var(--hcs-radius-lg); box-shadow: var(--hcs-shadow-md); overflow: hidden; }
+.hcs-app-shell :where(.modal-header, .hcs-catalog-modal__header, .modal-footer, .hcs-catalog-modal__footer) { background: var(--hcs-color-surface); border-color: var(--hcs-color-border); padding: var(--hcs-space-4) var(--hcs-space-5); }
+.hcs-app-shell :where(.modal-title, .hcs-catalog-modal__header .modal-title) { color: var(--hcs-color-ink); font-size: 1.05rem; font-weight: 700; }
+.hcs-app-shell :where(.modal-body, .hcs-catalog-modal__body) { background: var(--hcs-color-surface); padding: var(--hcs-space-5); }
+.hcs-app-shell :where(.alert) { border-radius: var(--hcs-radius-md); font-size: .86rem; }
+
+.hcs-app-shell :where(.hcs-status-badge, .hcs-priority-badge, .hcs-progress-badge) { border: 1px solid transparent; border-radius: 999px; font-size: .72rem; font-weight: 700; padding: .28rem .55rem; }
+.hcs-app-shell .hcs-status-badge--success, .hcs-app-shell .hcs-progress-badge--done { background: #e3f3ed; color: #12634f; }
+.hcs-app-shell .hcs-status-badge--danger, .hcs-app-shell .hcs-priority-badge--high { background: #fbe8e7; color: #9b2118; }
+.hcs-app-shell .hcs-status-badge--warning, .hcs-app-shell .hcs-priority-badge--normal { background: #fff2d9; color: #8a4d00; }
+.hcs-app-shell .hcs-status-badge--info { background: #e7efff; color: #1d4ed8; }
+
+@media (max-width: 767.98px) {
+    .hcs-app-shell :where(.card-body, .hcs-catalog-grid-card .card-body, .modal-body, .hcs-catalog-modal__body) { padding: var(--hcs-space-4); }
+    .hcs-app-shell :where(.hcs-page__header, .hcs-document-page__header, .hcs-catalog-titlebar) { align-items: stretch; flex-direction: column; margin-bottom: var(--hcs-space-4); }
+    .hcs-app-shell :where(.hcs-page__actions, .hcs-catalog-page__actions) { width: 100%; }
+    .hcs-app-shell :where(.hcs-page__actions > .btn, .hcs-catalog-page__actions > .btn) { flex: 1 1 auto; }
+    .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) { padding: 0; }
+}
+
+@media (max-width: 1100px) {
+    .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) { padding: 0; }
+}
+
+.hcs-app-shell .hcs-main-content:has(.hcs-chat-page) {
+    height: auto;
+    margin-left: 0;
+    max-width: none;
+    padding: 0;
 }

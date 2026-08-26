@@ -16,7 +16,7 @@ Phase lab SSO — chưa có brand UI riêng cho BD portal.
 - Font giao diện: Be Vietnam Pro; body mặc định 16px với line-height tối thiểu 1.5.
 - Dùng token chung trong `services/HCS_web_free_license/src/HCS.Blazor.Client/wwwroot/hcs-tokens.css` và primitive trong `hcs-components.css`; page/domain CSS chỉ giữ phần đặc thù.
 - Spacing theo nhịp 4/8px: 4, 8, 12, 16, 24, 32, 40 và 48px. Page gutter là 16px trên mobile, tăng dần theo viewport.
-- Breakpoint chuẩn: 576px, 768px, 992px và 1200px. App drawer chuyển sang mobile ở khoảng 992px; không thu gọn label navigation ở tablet.
+- Breakpoint chuẩn: 576px, 768px, 992px và 1200px. Riêng HCS shell, top menu desktop dùng trên `>1100px`; app drawer dùng tại và dưới `1100px` (kể cả đúng `1100px`). Không thu gọn label navigation ở tablet.
 - Button, input, menu item, icon button và vùng tương tác chính có kích thước tối thiểu 44px; input text không nhỏ hơn 16px trên mobile.
 - Luôn có `:focus-visible`, trạng thái disabled và thông báo text/icon đi kèm màu trạng thái. Text thường cần contrast tối thiểu 4.5:1.
 - Dùng `min-height: 100dvh`, safe-area inset và một scroll region chính; không dùng `100vh` cho layout mobile.

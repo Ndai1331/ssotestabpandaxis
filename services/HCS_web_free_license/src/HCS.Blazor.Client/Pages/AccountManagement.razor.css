@@ -3,8 +3,8 @@
     --account-muted: var(--hcs-muted, #63798b);
     --account-line: var(--hcs-line, #dfe8eb);
     --account-surface: var(--hcs-surface, #fff);
-    --account-primary: var(--hcs-primary, #3d5cff);
-    --account-primary-soft: var(--hcs-primary-soft, #eef1ff);
+    --account-primary: var(--hcs-color-primary, #0f6d78);
+    --account-primary-soft: var(--hcs-color-primary-soft, #e7f4f4);
     margin: -1.5rem clamp(-2.5rem, -3vw, -.9rem) -2rem;
     min-height: calc(100dvh - var(--hcs-header-h, 8.75rem));
     padding: 1.5rem clamp(.9rem, 3vw, 2.5rem) 3rem;
@@ -27,7 +27,7 @@
 }
 
 .hcs-account-hero__banner {
-    background: linear-gradient(115deg, #d8f0ef 0%, #d8e9fb 48%, #e9e5fc 100%);
+    background: var(--hcs-color-primary-soft, #e7f4f4);
     height: clamp(9rem, 22vw, 14rem);
     overflow: hidden;
     position: relative;
@@ -42,7 +42,7 @@
 }
 
 .hcs-account-hero__shape--one {
-    background: rgba(61, 92, 255, .12);
+    background: rgba(15, 109, 120, .12);
     height: 19rem;
     left: 6%;
     top: -8rem;
@@ -118,8 +118,8 @@
 
 .hcs-account-avatar__upload:hover,
 .hcs-account-avatar__upload:focus-within {
-    background: #2447df;
-    outline: 3px solid rgba(61, 92, 255, .35);
+    background: var(--hcs-color-primary-strong, #0b5560);
+    outline: 3px solid var(--hcs-color-primary, #0f6d78);
     outline-offset: 3px;
     transform: scale(1.05);
 }
@@ -383,7 +383,7 @@
 
 .hcs-account-retry:hover,
 .hcs-account-retry:focus-visible {
-    background: #2447df;
+    background: var(--hcs-color-primary-strong, #0b5560);
     color: #fff;
 }
 
@@ -394,8 +394,7 @@
 
 .hcs-account-skeleton {
     animation: hcs-account-pulse 1.5s ease-in-out infinite;
-    background: linear-gradient(90deg, #e7eef0 25%, #f5f8f7 50%, #e7eef0 75%);
-    background-size: 200% 100%;
+    background: #e7eef0;
     border-radius: .85rem;
     display: block;
 }
@@ -405,7 +404,8 @@
 .hcs-account-skeleton--body { height: 20rem; }
 
 @keyframes hcs-account-pulse {
-    to { background-position: -200% 0; }
+    0%, 100% { opacity: .65; }
+    50% { opacity: 1; }
 }
 
 @media (max-width: 900px) {

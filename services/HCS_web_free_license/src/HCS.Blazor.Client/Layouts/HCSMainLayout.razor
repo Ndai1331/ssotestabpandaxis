@@ -12,11 +12,11 @@
 @inject AccountProfileClient Account
 @implements IDisposable
 
-<div class="hcs-app-shell" @onkeydown="HandleKeyDown">
-    <a class="hcs-skip-link" href="#main-content">@Localizer["Menu:SkipToContent"]</a>
+<div class="hcs-app-shell @(mobileNavOpen ? "hcs-app-shell--nav-open" : null)" @onkeydown="HandleKeyDown">
+    <a class="hcs-skip-link" href="#main-content" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">@Localizer["Menu:SkipToContent"]</a>
     <header class="hcs-header">
         <div class="hcs-header__top">
-            <a class="hcs-brand" href="/workspace" aria-label="HCS - @Localizer["Menu:Workspace"]">
+            <a class="hcs-brand" href="/workspace" aria-label="HCS - @Localizer["Menu:Workspace"]" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
                 <span class="hcs-brand__mark" aria-hidden="true"><img src="/images/logo/logo.png" alt="" width="100" height="70" /></span>
                 <span class="hcs-brand__text"><strong>HCS</strong><small>@Localizer["Brand:Subtitle"]</small></span>
             </a>
@@ -31,7 +31,7 @@
                 <i class="fa @(mobileNavOpen ? "fa-xmark" : "fa-bars")" aria-hidden="true"></i>
             </button>
 
-            <div class="hcs-header__actions">
+            <div class="hcs-header__actions" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
                 <CultureSelector />
                 <button class="hcs-icon-button" type="button" aria-label='@Localizer["Notifications:Title"]' @onclick="ToggleNotificationsAsync">
                     <i class="fa fa-bell" aria-hidden="true"></i>
@@ -217,14 +217,16 @@
         <button class="hcs-nav-backdrop" type="button" aria-label="@Localizer["Menu:CloseNav"]" @onclick="CloseMobileNavAndFocus"></button>
     }
 
-    <main id="main-content" class="hcs-main-content">@Body</main>
-    <AuthorizeView>
-        <Authorized>
-            <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" ChatUnreadCountChanged="OnChatUnreadChanged" />
-        </Authorized>
-    </AuthorizeView>
-    <UiNotificationAlert />
-    <UiMessageAlert />
+    <main id="main-content" class="hcs-main-content" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">@Body</main>
+    <div class="hcs-app-shell__notifications" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
+        <AuthorizeView>
+            <Authorized>
+                <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" ChatUnreadCountChanged="OnChatUnreadChanged" />
+            </Authorized>
+        </AuthorizeView>
+        <UiNotificationAlert />
+        <UiMessageAlert />
+    </div>
 </div>
 
 @code {
@@ -256,10 +258,19 @@
     private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
     {
         userMenuOpen = false;
+        var wasMobileNavOpen = mobileNavOpen;
         mobileNavOpen = false;
         expandedSection = null;
         _ = ReloadAvatarQuietAsync();
-        _ = InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(async () =>
+        {
+            if (wasMobileNavOpen)
+            {
+                await navToggle.FocusAsync();
+            }
+
+            StateHasChanged();
+        });
     }
 
     private async Task ReloadAvatarQuietAsync()
@@ -361,11 +372,17 @@
         }
     }
 
-    private void CloseMobileNav()
+    private async Task CloseMobileNav()
     {
+        var wasMobileNavOpen = mobileNavOpen;
         userMenuOpen = false;
         mobileNavOpen = false;
         expandedSection = null;
+
+        if (wasMobileNavOpen)
+        {
+            await navToggle.FocusAsync();
+        }
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs args)
@@ -375,22 +392,15 @@
             return;
         }
 
-        var wasMobileNavOpen = mobileNavOpen;
-        if (wasMobileNavOpen || expandedSection is not null || userMenuOpen)
+        if (mobileNavOpen || expandedSection is not null || userMenuOpen)
         {
-            CloseMobileNav();
-
-            if (wasMobileNavOpen)
-            {
-                await navToggle.FocusAsync();
-            }
+            await CloseMobileNav();
         }
     }
 
     private async Task CloseMobileNavAndFocus()
     {
-        CloseMobileNav();
-        await navToggle.FocusAsync();
+        await CloseMobileNav();
     }
 
     private bool IsMenuHrefActive(string href)

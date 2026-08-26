@@ -58,6 +58,8 @@
     "Menu:Chat": "Trao đổi",
     "Menu:OpenNav": "Mở menu",
     "Menu:CloseNav": "Đóng menu",
+    "Menu:ExpandSidebar": "Mở rộng thanh bên",
+    "Menu:CollapseSidebar": "Thu gọn thanh bên",
     "Menu:SkipToContent": "Đi đến nội dung",
     "Brand:Subtitle": "Hành chính số",
     "Auth:LanguageVietnameseShort": "VI",

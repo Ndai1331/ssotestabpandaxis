@@ -58,6 +58,8 @@
     "Menu:Chat": "Chat",
     "Menu:OpenNav": "Open menu",
     "Menu:CloseNav": "Close menu",
+    "Menu:ExpandSidebar": "Expand sidebar",
+    "Menu:CollapseSidebar": "Collapse sidebar",
     "Menu:SkipToContent": "Skip to content",
     "Brand:Subtitle": "Digital administration",
     "Auth:LanguageVietnameseShort": "VI",
