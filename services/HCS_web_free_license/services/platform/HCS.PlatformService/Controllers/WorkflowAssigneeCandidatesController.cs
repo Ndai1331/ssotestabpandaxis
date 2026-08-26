@@ -53,9 +53,18 @@ public sealed class WorkflowAssigneeCandidatesController(
         var ids = userIds.Where(x => x != Guid.Empty).Distinct().Take(200).ToArray();
         if (ids.Length == 0) return Ok(Array.Empty<WorkflowAssigneeCandidateDto>());
 
-        var users = await Task.WhenAll(ids.Select(id =>
-            identityUsers.FindAsync(id, includeDetails: false, cancellationToken: cancellationToken)));
-        return Ok(users.Where(user => user is { IsActive: true })
+        // IIdentityUserRepository uses the scoped application DbContext. Do not
+        // run FindAsync calls concurrently here: Task.WhenAll makes EF Core use
+        // the same DbContext from multiple threads and the lookup endpoint then
+        // returns 500, causing the UI to fall back to a short user id.
+        var users = new List<IdentityUser>(ids.Length);
+        foreach (var id in ids)
+        {
+            var user = await identityUsers.FindAsync(id, includeDetails: false, cancellationToken: cancellationToken);
+            if (user is { IsActive: true }) users.Add(user);
+        }
+
+        return Ok(users
             .Select(user => new WorkflowAssigneeCandidateDto(
                 user!.Id, DisplayName(user), null, user.UserName))
             .ToArray());

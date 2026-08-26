@@ -2,6 +2,7 @@ using HCS.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -14,6 +15,7 @@ using Volo.Abp.Account.Web;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite.Bundling;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.Shared;
+using Volo.Abp.AspNetCore.Mvc.UI.Theming;
 using Volo.Abp.AspNetCore.Mvc.UI.Bundling;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
@@ -21,6 +23,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict;
 using Volo.Abp.Security.Claims;
 using Volo.Abp.UI.Navigation.Urls;
+using Volo.Abp.Ui.LayoutHooks;
 
 namespace HCS.AuthServer;
 
@@ -83,6 +86,12 @@ public sealed class HCSAuthServerModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
+
+        Configure<AbpLayoutHookOptions>(options =>
+            options.Add(
+                LayoutHooks.Head.First,
+                typeof(AuthServerFaviconViewComponent),
+                layout: StandardLayouts.Account));
 
         Configure<AbpBundlingOptions>(options =>
             options.StyleBundles.Configure(
@@ -191,4 +200,10 @@ public sealed class HCSAuthServerModule : AbpModule
                 options.Events = KeycloakOpenIdConnectEvents.Create();
             });
     }
+}
+
+public sealed class AuthServerFaviconViewComponent : ViewComponent
+{
+    public IViewComponentResult Invoke() =>
+        Content("<link rel=\"icon\" href=\"/favicon.ico\" type=\"image/x-icon\" />");
 }

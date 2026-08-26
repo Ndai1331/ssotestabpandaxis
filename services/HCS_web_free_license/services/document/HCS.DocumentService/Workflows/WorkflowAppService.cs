@@ -403,6 +403,8 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
                     && x.UserId == actor && x.Status == HCS.DocumentService.Signing.SigningStatus.Completed
                     && x.CompletedAt >= task.CreationTime, cancellationToken)))
             throw new InvalidOperationException("Complete the document signing operation before approving this step.");
+        var existingDocumentHistoryIds = documentForAccess.History.Select(x => x.Id).ToHashSet();
+        var existingDocumentAssignmentIds = documentForAccess.Assignments.Select(x => x.Id).ToHashSet();
         var changed = instance.Decide(taskId, input.Approve, actor, input.Comment, input.IdempotencyKey,
             definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, input.Return);
         if (changed)
@@ -410,11 +412,41 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             if (instance.Status is WorkflowInstanceStatus.Completed or WorkflowInstanceStatus.Rejected)
             {
                 documentForAccess.CompleteReview(instance.Status == WorkflowInstanceStatus.Completed, actor, input.Comment, DateTime.UtcNow);
+
+                var documentEntry = db.Entry(documentForAccess);
+                var loadedVersion = documentEntry.Property(x => x.Version).OriginalValue;
+                var databaseDocument = await db.Documents.AsNoTracking()
+                    .Where(x => x.Id == documentForAccess.Id)
+                    .Select(x => new { x.Status, x.Version })
+                    .SingleAsync(cancellationToken);
+                if (databaseDocument.Status != DocumentStatus.InReview)
+                    throw new DbUpdateConcurrencyException("The document review status changed before the workflow decision was saved.");
+
+                // The decision only changes the document status. Rebase the xmin
+                // token so unrelated document edits made while the task was open
+                // do not make the whole signing decision fail.
+                documentEntry.Property(x => x.Version).OriginalValue = databaseDocument.Version;
+                logger.LogInformation(
+                    "Workflow decision is saving document {DocumentId}: status {Status}, xmin original {OriginalVersion}, current {CurrentVersion}, database {DatabaseVersion}, task {TaskId}, instance {InstanceId}",
+                    documentForAccess.Id,
+                    documentForAccess.Status,
+                    loadedVersion,
+                    documentEntry.Property(x => x.Version).CurrentValue,
+                    databaseDocument.Version,
+                    taskId,
+                    instance.Id);
             }
             else
             {
                 GrantWorkflowAccess(documentForAccess, instance, null, actor, DateTime.UtcNow);
             }
+            // These children are added through the aggregate's private backing
+            // fields. Track them explicitly so EF inserts them instead of
+            // treating their client-generated Guid keys as existing rows.
+            db.DocumentHistories.AddRange(documentForAccess.History
+                .Where(x => !existingDocumentHistoryIds.Contains(x.Id)));
+            db.DocumentAssignments.AddRange(documentForAccess.Assignments
+                .Where(x => !existingDocumentAssignmentIds.Contains(x.Id)));
             AddChangeEvent(instance, DateTime.UtcNow);
             await db.SaveChangesAsync(cancellationToken);
         }

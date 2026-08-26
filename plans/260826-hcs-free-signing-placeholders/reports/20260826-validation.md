@@ -26,6 +26,27 @@ Date: 2026-08-26
 - `./scripts/audit-license-clean.sh` from `services/HCS_web_free_license` — **passed**.
 - Targeted `git diff --check` for the implementation paths — **passed**.
 
+## Runtime fixes verified after the initial report
+
+- The Docker log for `POST /api/signing/attempts` showed .NET 10 rejecting
+  validation metadata placed on the positional-record property. The metadata
+  is now attached to the `IdempotencyKey` constructor parameter and the
+  regression test plus DocumentService suite pass (**67/67**).
+- The Docker log for the approval-management user lookup showed
+  `A second operation was started on this context instance` at
+  `WorkflowAssigneeCandidatesController.LookupUsersAsync`. The endpoint was
+  issuing concurrent `FindAsync` calls against one scoped EF Core context. It
+  now reads the requested users sequentially, so the UI can receive full names
+  instead of its GUID fallback.
+- Platform Release build — **0 warnings, 0 errors**.
+- Docker platform image — **built successfully**; the platform container was
+  recreated and startup logs show it listening on port 8080. No new lookup
+  request was made during this post-restart check, so the browser retry below
+  remains the final smoke test.
+- A signed approval retry is still required from the browser to provide a
+  real provider-backed end-to-end result; the Docker checks above validate the
+  fixed services and startup path.
+
 ## Runtime assumptions and remaining boundary
 
 - `Services:Organization:BaseUrl` must resolve from DocumentService and the forwarded bearer token must be accepted by OrganizationService.
@@ -33,4 +54,3 @@ Date: 2026-08-26
 - PDF replacement is a safe overlay over detectable, contiguous PDF glyphs; it does not rewrite embedded PDF text streams. The original placeholder may remain extractable underneath the whiteout, while the visible document contains the replacement.
 - Blob storage and database writes are coordinated with best-effort cleanup. A full distributed transaction cannot be proven by the current unit tests.
 - The full repository `git diff --check` still reports pre-existing trailing whitespace in `apps/auth-server/HCS.AuthServer/Pages/Account/Login.cshtml`; it is outside this task's implementation paths and was left unchanged.
-
