@@ -15,11 +15,12 @@ fi
 # This proxy occupied the host HTTPS port for the previous Kind ingress.
 docker rm -f hcs-ingress-local >/dev/null 2>&1 || true
 
-docker compose --env-file .env build
+docker compose --env-file .env build document blazor
+# docker compose --env-file .env build
 # docker compose --env-file .env up -d postgres redis rabbitmq minio
 # docker compose --env-file .env up db-migrator
-docker compose --env-file .env up -d auth-server web-gateway blazor platform organization document work-management collaboration caddy
-# docker compose --env-file .env up -d blazor
+# docker compose --env-file .env up -d auth-server web-gateway blazor platform organization document work-management collaboration caddy
+docker compose --env-file .env up -d document blazor
 
 echo "HCS Compose is running at https://hcs.localhost"
 echo "Check status: docker compose ps"

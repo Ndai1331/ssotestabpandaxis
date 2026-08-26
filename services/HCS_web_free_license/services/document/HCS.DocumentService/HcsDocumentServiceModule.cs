@@ -34,6 +34,8 @@ public sealed class HcsDocumentServiceModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
+        PdfSharpFontResolverRegistration.EnsureRegistered();
+
         var configuration = context.Services.GetConfiguration();
         var authority = configuration["AuthServer:Authority"]
             ?? throw new InvalidOperationException("AuthServer:Authority is required.");

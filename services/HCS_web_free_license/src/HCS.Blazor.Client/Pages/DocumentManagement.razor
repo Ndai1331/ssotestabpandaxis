@@ -37,8 +37,8 @@
             }
         </aside>
         <div>
-            <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
-                <div class="hcs-catalog-filter-row">
+            <Card Class="mb-2 hcs-catalog-filter-card hcs-document-filter-card"><CardBody>
+                <div class="hcs-catalog-filter-row hcs-document-filter-row">
                     <Addons Class="hcs-catalog-search">
                         <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
                         <Addon AddonType="AddonType.End">
@@ -52,7 +52,7 @@
                 </div>
                 @if (showFilters)
                 {
-                    <div class="hcs-catalog-advanced-filter">
+                    <div class="hcs-catalog-advanced-filter hcs-document-advanced-filter">
                         <Field>
                             <FieldLabel>@L["Feature:DocumentTitleField"]</FieldLabel>
                             <TextInput @bind-Value="titleFilter" />

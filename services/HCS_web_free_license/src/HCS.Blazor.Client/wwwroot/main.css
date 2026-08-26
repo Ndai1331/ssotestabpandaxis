@@ -1310,6 +1310,60 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     }
 }
 
+/* Document filters: keep the full filter set readable without forcing a horizontal strip. */
+.hcs-document-filter-row {
+    gap: 1rem;
+}
+
+.hcs-document-filter-row .hcs-catalog-filter-toggle {
+    flex: 0 0 13rem;
+    width: 13rem;
+}
+
+.hcs-document-filter-card .hcs-document-advanced-filter {
+    align-items: end;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.hcs-document-filter-card .hcs-document-advanced-filter > .field,
+.hcs-document-filter-card .hcs-document-advanced-filter > .form-group {
+    max-width: none;
+    min-width: 0;
+    width: auto;
+}
+
+.hcs-document-filter-card .hcs-document-advanced-filter > .hcs-catalog-filter-reset {
+    align-self: end;
+    min-width: 0;
+    width: 100%;
+}
+
+@media (min-width: 1440px) {
+    .hcs-document-filter-card .hcs-document-advanced-filter {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1900px) {
+    .hcs-document-filter-card .hcs-document-advanced-filter {
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hcs-document-filter-row .hcs-catalog-filter-toggle {
+        flex-basis: auto;
+        width: 100%;
+    }
+
+    .hcs-document-filter-card .hcs-document-advanced-filter {
+        align-items: stretch;
+        grid-template-columns: 1fr;
+    }
+}
+
 .hcs-status-badge,
 .hcs-priority-badge,
 .hcs-progress-badge {
@@ -1466,12 +1520,12 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-cal-legend__item--event {
-    color: var(--hcs-color-primary, #00B4A9);
+    color: #3d5cff;
 }
 
 .hcs-cal-legend__item--event::before {
     background: #e8f0ff;
-    box-shadow: inset 3px 0 0 var(--hcs-color-primary, #00B4A9);
+    box-shadow: inset 3px 0 0 #3d5cff;
 }
 
 .hcs-cal-card .card-body {
@@ -1577,8 +1631,8 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-fc .hcs-cal-event--event {
     background: #e8f0ff !important;
-    border-left-color: var(--hcs-color-primary, #00B4A9) !important;
-    color: var(--hcs-color-primary, #00B4A9) !important;
+    border-left-color: #3d5cff !important;
+    color: #3d5cff !important;
 }
 
 .hcs-fc .fc-timegrid {
@@ -1667,6 +1721,26 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-document-preview-pane .hcs-pdf-frame--fill {
     flex: 1 1 auto;
+}
+
+/* Keep split document surfaces visually separate while preserving the 50/50 layout. */
+.hcs-document-detail-row,
+.signing-action-modal .hcs-signing-modal-row {
+    --bs-gutter-x: 2rem;
+    --bs-gutter-y: 1.5rem;
+}
+
+.hcs-document-detail-row > *,
+.signing-action-modal .hcs-signing-modal-row > * {
+    min-width: 0;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-document-detail-row,
+    .signing-action-modal .hcs-signing-modal-row {
+        --bs-gutter-x: 0;
+        --bs-gutter-y: 1.5rem;
+    }
 }
 
 .hcs-file-preview-card {
@@ -1777,6 +1851,60 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 .hcs-pill--user {
     background: #dbeafe;
     color: #1d4ed8;
+}
+
+.hcs-signing-grid-loading {
+    overflow-x: auto;
+    padding: 0 2rem 1.35rem;
+}
+
+.hcs-signing-grid-loading__table {
+    min-width: 900px;
+}
+
+.hcs-signing-grid-loading__row {
+    align-items: center;
+    border-bottom: 1px solid var(--catalog-line, #dde4ee);
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 8rem minmax(14rem, 2.1fr) minmax(9rem, 1.2fr) minmax(10rem, 1.2fr) minmax(8rem, 1fr) minmax(9rem, 1.2fr) minmax(7rem, .9fr);
+    min-height: 4.5rem;
+}
+
+.hcs-signing-grid-loading__row--head {
+    min-height: 3rem;
+}
+
+.hcs-signing-grid-loading__row span {
+    animation: hcs-motion-skeleton-pulse var(--hcs-motion-duration-skeleton, 1600ms) var(--hcs-motion-ease-ambient, cubic-bezier(.4, 0, .2, 1)) infinite;
+    background: #edf2f1;
+    border-radius: .35rem;
+    display: block;
+    height: .9rem;
+    width: 82%;
+}
+
+.hcs-signing-grid-loading__row--head span {
+    background: #dce8ea;
+    height: .7rem;
+    width: 68%;
+}
+
+.hcs-signing-grid-loading__row span:first-child {
+    width: 64%;
+}
+
+@media (max-width: 767.98px) {
+    .hcs-signing-grid-loading {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hcs-signing-grid-loading__row span {
+        animation: none;
+    }
 }
 
 .hcs-signing-tabs {

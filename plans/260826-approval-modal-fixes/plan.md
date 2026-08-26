@@ -44,3 +44,45 @@ createdBy: Codex
 - API, auth, routing, decision flow và file persistence không đổi.
 - `dotnet build src/HCS.Blazor.Client/HCS.Blazor.Client.csproj --no-restore` đạt 0 warning / 0 error.
 - `dotnet build services/document/HCS.DocumentService/HCS.DocumentService.csproj --no-restore` đạt 0 warning / 0 error.
+
+## Follow-up: PDF preview fallback
+
+### Diagnosis
+
+- `DocumentSigning.LoadSignPdfAsync` catches every preview exception and sets `signPdfUrl = null`, which renders the generic `Work:PreviewPdfOnly` fallback.
+- Every preview path requests `/watermarked-content`; the document service then runs PdfSharp `PdfReader.Open(... Modify)` and creates an `XFont("Arial", ...)` without a portable font resolver.
+- PDFsharp Core requires a resolvable font on Linux/Docker, so watermark generation can fail before the browser receives PDF bytes.
+
+### Fix scope
+
+- Configure a small embedded PDFsharp fallback font resolver at document-service startup.
+- Keep the existing endpoint, authorization, watermark flow, API shape, routing and authentication unchanged.
+- Surface a meaningful client-side error when a preview request really fails instead of silently rendering the Word-conversion hint.
+
+### Verification
+
+- [x] Document Service build passed with 0 warnings / 0 errors.
+- [x] Blazor Client build passed with 0 warnings / 0 errors.
+- [x] Embedded font resolver test passed (1/1).
+- [x] No API, routing, authentication or business-flow changes introduced.
+
+## Follow-up: signing action visibility parity
+
+### Diagnosis
+
+- `HCS_web_with_license` exposes processing actions only when the current user has a current PENDING assignment (`CanAct` + assignment id), while read-only workflow access opens a view-only modal.
+- `HCS_web_free_license` builds the queue from all pending PROCESS/SIGN tasks visible to the user, but `CanActOn` currently returns true for elevated users, unassigned tasks, or the assigned user.
+- The free modal footer renders Return/Extend/Reject/Approve whenever the modal is open, and the row always renders the signature action; this lets a viewer enter the action modal and see decision buttons.
+
+### Fix scope
+
+- Match the with-license UI policy: only the assigned current user may see/open action controls; viewers keep information/PDF preview only.
+- Distinguish PROCESS and SIGN actions in the reusable signing queue UI; only SIGN shows signing-specific fields and the “Ký duyệt” action label.
+- Keep the free-license API, backend authorization, routing, authentication and decision endpoints unchanged.
+
+### Verification
+
+- [x] Blazor Client build passed with 0 warnings / 0 errors.
+- [x] Existing workflow tests passed (17/17), including SIGN/VIEW step behavior.
+- [x] Relevant diff check passed for `DocumentSigning.razor`.
+- [x] No API, routing, authentication or backend decision logic changed.
