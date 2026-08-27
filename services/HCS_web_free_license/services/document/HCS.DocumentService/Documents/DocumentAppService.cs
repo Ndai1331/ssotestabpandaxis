@@ -159,10 +159,10 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         return Map(document);
     }
 
-    private IQueryable<DocumentAggregate> Query() => db.Documents.AsNoTracking()
+    private IQueryable<DocumentAggregate> Query() => db.Documents.AsNoTracking().AsSplitQuery()
         .Include(x => x.Files).Include(x => x.Assignments).Include(x => x.History);
     private async Task<DocumentAggregate> LoadAsync(Guid id, CancellationToken cancellationToken) =>
-        await db.Documents.Include(x => x.Files).Include(x => x.Assignments).Include(x => x.History)
+        await db.Documents.AsSplitQuery().Include(x => x.Files).Include(x => x.Assignments).Include(x => x.History)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
         ?? throw new KeyNotFoundException("Document not found.");
     private ClaimsPrincipal Principal => httpContext.HttpContext?.User ?? new ClaimsPrincipal();

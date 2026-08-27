@@ -21,6 +21,7 @@ public sealed class ApiContractTests
         AssertHttpGet(typeof(WorkflowsController), nameof(WorkflowsController.GetDefinitions), "definitions");
         AssertHttpGet(typeof(WorkflowsController), nameof(WorkflowsController.GetDefinition), "definitions/{id:guid}");
         AssertHttpGet(typeof(WorkflowsController), nameof(WorkflowsController.GetInstances), "instances");
+        AssertHttpGet(typeof(SigningController), nameof(SigningController.GetQueue), "queue");
         Assert.NotNull(typeof(DocumentsController).GetCustomAttributes(typeof(AuthorizeAttribute), true).Single());
         Assert.NotNull(typeof(WorkflowsController).GetCustomAttributes(typeof(AuthorizeAttribute), true).Single());
         AssertHttpPost(typeof(DocumentsController), nameof(DocumentsController.Submit), "{id:guid}/submit");

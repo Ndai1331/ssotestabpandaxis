@@ -657,7 +657,8 @@
     font-size: .86rem;
     font-weight: 600;
     min-height: var(--hcs-control-height);
-    padding: .55rem .9rem;
+    /* padding: .55rem .9rem; */
+    padding: .9rem;
     transition: background var(--hcs-motion-fast) var(--hcs-motion-ease), border-color var(--hcs-motion-fast) var(--hcs-motion-ease), box-shadow var(--hcs-motion-fast) var(--hcs-motion-ease), color var(--hcs-motion-fast) var(--hcs-motion-ease);
 }
 
@@ -714,7 +715,7 @@
 .hcs-app-shell :where(.modal-body, .hcs-catalog-modal__body) { background: var(--hcs-color-surface); padding: var(--hcs-space-5); }
 .hcs-app-shell :where(.alert) { border-radius: var(--hcs-radius-md); font-size: .86rem; }
 
-.hcs-app-shell :where(.hcs-status-badge, .hcs-priority-badge, .hcs-progress-badge) { border: 1px solid transparent; border-radius: 999px; font-size: .72rem; font-weight: 700; padding: .28rem .55rem; }
+.hcs-app-shell :where(.hcs-status-badge, .hcs-priority-badge, .hcs-progress-badge) { border: 1px solid transparent; border-radius: 999px; font-size: .72rem; font-weight: 700; padding: .55rem; }
 .hcs-app-shell .hcs-status-badge--success, .hcs-app-shell .hcs-progress-badge--done { background: #e3f3ed; color: #12634f; }
 .hcs-app-shell .hcs-status-badge--danger, .hcs-app-shell .hcs-priority-badge--high { background: #fbe8e7; color: #9b2118; }
 .hcs-app-shell .hcs-status-badge--warning, .hcs-app-shell .hcs-priority-badge--normal { background: #fff2d9; color: #8a4d00; }

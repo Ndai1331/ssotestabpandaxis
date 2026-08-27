@@ -7,6 +7,10 @@ namespace HCS.DocumentService.Controllers;
 [ApiController, Authorize, Route("api/signing")]
 public sealed class SigningController(ISigningAppService signing) : ControllerBase
 {
+    [HttpGet("queue"), Authorize(Policy = Documents.DocumentPermissions.SigningExecute)]
+    public Task<IReadOnlyList<SigningQueueItemDto>> GetQueue(CancellationToken cancellationToken) =>
+        signing.GetQueueAsync(cancellationToken);
+
     [HttpGet("credentials/current")]
     public Task<IReadOnlyList<SigningCredentialDto>> GetCurrent([FromQuery] Guid? userId, CancellationToken cancellationToken) =>
         signing.GetCredentialsAsync(userId, cancellationToken);

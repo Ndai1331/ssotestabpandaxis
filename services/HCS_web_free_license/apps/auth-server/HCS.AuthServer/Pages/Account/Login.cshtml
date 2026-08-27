@@ -55,13 +55,18 @@
     <div class="card hcs-auth-login-card mt-3 shadow-sm rounded">
         <div class="card-body p-5">
             <div class="hcs-login-card-brand">
-                <img class="hcs-login-card-logo"
-                     src="/images/logo/logo.png"
-                     alt="HCS — Hành chính số"
-                     width="96"
-                     height="96" />
+                <div class="hcs-login-card-brand__logo">
+                    <img class="hcs-login-card-logo"
+                         src="/images/logo/logo.png"
+                         alt="@HcsL["AppName"] - @HcsL["Brand:Subtitle"]"
+                         width="72"
+                         height="72" />
+                </div>
+                <div class="hcs-login-card-brand__copy">
+                    <strong>@HcsL["AppName"] - @HcsL["Brand:Subtitle"]</strong>
+                    <span>@HcsL["Auth:AccountFallback"]</span>
+                </div>
             </div>
-            @* <h1 id="hcs-login-title">@L["Login"]</h1> *@
         @if (Model.VisibleAlerts.Any())
         {
             <div class="hcs-login-alerts" role="alert" aria-live="assertive">

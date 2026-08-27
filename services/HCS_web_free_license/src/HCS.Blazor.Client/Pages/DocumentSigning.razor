@@ -371,10 +371,22 @@
             state.User.FindFirst("name")?.Value,
             state.User.Identity?.Name,
             state.User.FindFirst("preferred_username")?.Value);
+
+        var contactsTask = LoadContactsAsync();
+        var departmentsTask = LoadDepartmentsAsync();
+        var signingOptionsTask = LoadSigningOptionsAsync();
+        var queueTask = LoadAsync();
+        await Task.WhenAll(contactsTask, departmentsTask, signingOptionsTask, queueTask);
+    }
+
+    private async Task LoadContactsAsync()
+    {
         try { contacts.AddRange(await Chat.GetContactsAsync(null, 50)); } catch { }
+    }
+
+    private async Task LoadDepartmentsAsync()
+    {
         try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
-        await LoadSigningOptionsAsync();
-        await LoadAsync();
     }
 
     private async Task LoadSigningOptionsAsync()
@@ -453,29 +465,10 @@
         isLoading = true;
         try
         {
-            var documents = (await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 3))).Items
-                .ToDictionary(x => x.Id);
-            var definitions = (await Documents.GetDefinitionsAsync()).ToDictionary(x => x.Id);
-            var instances = await Documents.GetInstancesAsync();
-            var blockingCodes = definitions.Values
-                .SelectMany(definition => definition.Steps
-                    .Where(step => step.Type is "SIGN" or "PROCESS")
-                    .Select(step => (definition.Id, step.Code)))
-                .ToHashSet();
+            var items = await Documents.GetSigningQueueAsync();
             queue.Clear();
-            foreach (var instance in instances.Where(x => x.Status == WorkflowInstanceStatus.Running))
-            {
-                if (!documents.TryGetValue(instance.DocumentId, out var document)
-                    || !definitions.TryGetValue(instance.DefinitionId, out var definition))
-                    continue;
-                foreach (var task in instance.Tasks.Where(x => x.Status == ApprovalTaskStatus.Pending))
-                {
-                    if (!blockingCodes.Contains((instance.DefinitionId, task.StepCode))) continue;
-                    queue.Add(new SigningQueueItem(document, task, instance, definition));
-                }
-            }
-            await LoadSubmitterLookupsAsync();
-            await LoadWorkflowUserLookupsAsync();
+            queue.AddRange(items.Select(item => new SigningQueueItem(ToDocumentDto(item.Document), item.Task, item.Instance, item.Definition)));
+            await LoadUserLookupsAsync();
             if (RelatedId is { } related && queue.FirstOrDefault(x => x.Document.Id == related) is { } match)
                 await OpenSign(match);
         }
@@ -778,6 +771,11 @@
     }
 
     private sealed record SigningQueueItem(DocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance, WorkflowDefinitionDto Definition);
+    private static DocumentDto ToDocumentDto(SigningQueueDocumentDto document) => new(
+        document.Id, document.Number, document.Title, document.Description, document.Status,
+        null, null, null, null, document.Files, [], [], document.CreationTime,
+        document.SourceType, null, document.FromUserId, null);
+
     private sealed class SignForm
     {
         public string FileId { get; set; } = "";
@@ -806,53 +804,46 @@
             ?? departmentNamesById.GetValueOrDefault(departmentId)
             ?? "";
     }
-    private async Task LoadSubmitterLookupsAsync()
+    private async Task LoadUserLookupsAsync()
     {
         var submitterIds = queue.Select(SubmitterId).Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
+        var workflowUserIds = queue.SelectMany(item => item.Instance.Tasks.SelectMany(task => new[] { task.DecidedBy, task.AssigneeUserId }))
+            .Concat(queue.Select(item => item.Document.FromUserId))
+            .Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
+        var allUserIds = submitterIds.Concat(workflowUserIds).Distinct().ToArray();
         submitterDepartmentIds.Clear();
         submitterDisplayNames.Clear();
         departmentNamesById.Clear();
-        if (submitterIds.Length == 0) return;
+        workflowUserNames.Clear();
+        if (allUserIds.Length == 0 && submitterIds.Length == 0) return;
+
+        var usersTask = allUserIds.Length == 0
+            ? Task.FromResult(new List<WorkflowAssigneeCandidateDto>())
+            : Documents.GetWorkflowUserLookupAsync(allUserIds);
+        Task<IReadOnlyList<UserDepartmentLookupDto>> departmentsTask = submitterIds.Length == 0
+            ? Task.FromResult<IReadOnlyList<UserDepartmentLookupDto>>([])
+            : Catalog.GetUserDepartmentsAsync(submitterIds);
 
         try
         {
-            var users = await Documents.GetWorkflowUserLookupAsync(submitterIds);
+            var users = await usersTask;
             foreach (var user in users)
             {
                 var displayName = UserDisplayNames.FirstReal(user.DisplayName, user.UserName);
                 if (!string.IsNullOrWhiteSpace(displayName)) submitterDisplayNames[user.UserId] = displayName;
+                if (!string.IsNullOrWhiteSpace(displayName)) workflowUserNames[user.UserId] = displayName;
             }
         }
         catch { }
 
         try
         {
-            var departmentsByUser = await Catalog.GetUserDepartmentsAsync(submitterIds);
+            var departmentsByUser = await departmentsTask;
             foreach (var result in departmentsByUser)
             {
                 if (result.DepartmentId is not { } department) continue;
                 submitterDepartmentIds[result.UserId] = department;
                 if (!string.IsNullOrWhiteSpace(result.DepartmentName)) departmentNamesById[department] = result.DepartmentName;
-            }
-        }
-        catch { }
-    }
-
-    private async Task LoadWorkflowUserLookupsAsync()
-    {
-        var ids = queue.SelectMany(item => item.Instance.Tasks.SelectMany(task => new[] { task.DecidedBy, task.AssigneeUserId }))
-            .Concat(queue.Select(item => item.Document.FromUserId))
-            .Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
-        workflowUserNames.Clear();
-        if (ids.Length == 0) return;
-
-        try
-        {
-            var users = await Documents.GetWorkflowUserLookupAsync(ids);
-            foreach (var user in users)
-            {
-                var displayName = UserDisplayNames.FirstReal(user.DisplayName, user.UserName);
-                if (!string.IsNullOrWhiteSpace(displayName)) workflowUserNames[user.UserId] = displayName;
             }
         }
         catch { }

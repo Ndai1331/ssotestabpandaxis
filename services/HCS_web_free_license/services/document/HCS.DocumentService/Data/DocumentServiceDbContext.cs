@@ -57,8 +57,14 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
             b.Property(x => x.Responsibility).HasMaxLength(128);
             b.Property(x => x.StepCode).HasMaxLength(64);
             b.HasIndex(x => new { x.DocumentId, x.AssigneeUserId, x.Responsibility }).IsUnique();
+            b.HasIndex(x => new { x.AssigneeUserId, x.IsCurrent, x.Responsibility, x.StepCode });
         });
-        builder.Entity<DocumentHistory>(b => { b.ToTable("DocumentHistories"); b.HasKey(x => x.Id); b.Property(x => x.Action).HasMaxLength(128); b.Property(x => x.Detail).HasMaxLength(2000); b.HasIndex(x => new { x.DocumentId, x.OccurredAt }); });
+        builder.Entity<DocumentHistory>(b =>
+        {
+            b.ToTable("DocumentHistories"); b.HasKey(x => x.Id); b.Property(x => x.Action).HasMaxLength(128); b.Property(x => x.Detail).HasMaxLength(2000);
+            b.HasIndex(x => new { x.DocumentId, x.OccurredAt });
+            b.HasIndex(x => new { x.ActorUserId, x.Action, x.DocumentId });
+        });
 
         builder.Entity<WorkflowKind>(b =>
         {
@@ -111,10 +117,16 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
             b.Property(x => x.IdempotencyKey).HasMaxLength(128);
             b.Property(x => x.ViewScopesJson).HasColumnType("jsonb");
             b.HasIndex(x => x.IdempotencyKey).IsUnique();
+            b.HasIndex(x => new { x.Status, x.CreationTime });
             b.HasMany(x => x.Tasks).WithOne().HasForeignKey(x => x.InstanceId).OnDelete(DeleteBehavior.Cascade);
             b.Navigation(x => x.Tasks).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
-        builder.Entity<ApprovalTask>(b => { b.ToTable("ApprovalTasks"); b.HasKey(x => x.Id); b.Property(x => x.StepCode).HasMaxLength(64); b.Property(x => x.DecisionKey).HasMaxLength(128); b.Property(x => x.Comment).HasMaxLength(1000); b.HasIndex(x => x.DecisionKey).IsUnique().HasFilter("\"DecisionKey\" IS NOT NULL"); });
+        builder.Entity<ApprovalTask>(b =>
+        {
+            b.ToTable("ApprovalTasks"); b.HasKey(x => x.Id); b.Property(x => x.StepCode).HasMaxLength(64); b.Property(x => x.DecisionKey).HasMaxLength(128); b.Property(x => x.Comment).HasMaxLength(1000);
+            b.HasIndex(x => x.DecisionKey).IsUnique().HasFilter("\"DecisionKey\" IS NOT NULL");
+            b.HasIndex(x => new { x.AssigneeUserId, x.Status, x.InstanceId });
+        });
 
         builder.Entity<SigningCredential>(b =>
         {

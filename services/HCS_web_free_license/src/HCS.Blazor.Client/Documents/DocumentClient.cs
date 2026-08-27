@@ -16,9 +16,20 @@ namespace HCS.Blazor.Client.Documents;
 public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 {
     public const int MaxPageSize = 100;
+    private const int WorkflowUserLookupBatchSize = 200;
+    private const int MaxWorkflowUserLookupIds = 1_000;
+    private const int MaxCachedWorkflowUsers = 2_000;
+    private static readonly TimeSpan WorkflowUserCacheLifetime = TimeSpan.FromMinutes(5);
+    private readonly Dictionary<Guid, CachedWorkflowUser> workflowUserLookupCache = [];
+    private readonly SemaphoreSlim workflowUserLookupGate = new(1, 1);
+
+    private sealed record CachedWorkflowUser(WorkflowAssigneeCandidateDto User, DateTimeOffset ExpiresAt);
 
     public Task<PagedDocumentsResponse> GetDocumentsAsync(DocumentListQuery query, CancellationToken cancellationToken = default) =>
         GetAsync<PagedDocumentsResponse>(BuildListUri(query), cancellationToken);
+
+    public Task<List<SigningQueueItemDto>> GetSigningQueueAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<SigningQueueItemDto>>("/api/signing/queue", cancellationToken);
 
     public Task<DocumentDto> GetDocumentAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<DocumentDto>($"/api/documents/{id:D}", cancellationToken);
@@ -157,12 +168,45 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<List<WorkflowStepCandidateGroupDto>> GetAssigneeCandidatesAsync(Guid definitionId, CancellationToken cancellationToken = default) =>
         GetAsync<List<WorkflowStepCandidateGroupDto>>($"/api/workflows/definitions/{definitionId:D}/assignee-candidates", cancellationToken);
 
-    public Task<List<WorkflowAssigneeCandidateDto>> GetWorkflowUserLookupAsync(
+    public async Task<List<WorkflowAssigneeCandidateDto>> GetWorkflowUserLookupAsync(
         IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
     {
-        var ids = userIds.Where(x => x != Guid.Empty).Distinct().Take(200).ToArray();
-        if (ids.Length == 0) return Task.FromResult(new List<WorkflowAssigneeCandidateDto>());
-        var query = string.Join("&", ids.Select(id => $"userIds={id:D}"));
+        var ids = userIds.Where(x => x != Guid.Empty).Distinct().Take(MaxWorkflowUserLookupIds).ToArray();
+        if (ids.Length == 0) return [];
+
+        await workflowUserLookupGate.WaitAsync(cancellationToken);
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            foreach (var expiredId in workflowUserLookupCache
+                .Where(pair => pair.Value.ExpiresAt <= now).Select(pair => pair.Key).ToArray())
+                workflowUserLookupCache.Remove(expiredId);
+
+            var uncachedIds = ids.Where(id => !workflowUserLookupCache.ContainsKey(id)).ToArray();
+            if (uncachedIds.Length > 0)
+            {
+                var batches = uncachedIds.Chunk(WorkflowUserLookupBatchSize)
+                    .Select(batch => FetchWorkflowUserLookupBatchAsync(batch, cancellationToken));
+                var responses = await Task.WhenAll(batches);
+                if (workflowUserLookupCache.Count + responses.Sum(response => response.Count) > MaxCachedWorkflowUsers)
+                    workflowUserLookupCache.Clear();
+                foreach (var user in responses.SelectMany(response => response))
+                    workflowUserLookupCache[user.UserId] = new(user, now.Add(WorkflowUserCacheLifetime));
+            }
+
+            return ids.Where(workflowUserLookupCache.ContainsKey)
+                .Select(id => workflowUserLookupCache[id].User).ToList();
+        }
+        finally
+        {
+            workflowUserLookupGate.Release();
+        }
+    }
+
+    private Task<List<WorkflowAssigneeCandidateDto>> FetchWorkflowUserLookupBatchAsync(
+        IEnumerable<Guid> userIds, CancellationToken cancellationToken)
+    {
+        var query = string.Join("&", userIds.Select(id => $"userIds={id:D}"));
         return GetAsync<List<WorkflowAssigneeCandidateDto>>(
             $"/api/identity/workflow-assignees/lookup?{query}", cancellationToken);
     }

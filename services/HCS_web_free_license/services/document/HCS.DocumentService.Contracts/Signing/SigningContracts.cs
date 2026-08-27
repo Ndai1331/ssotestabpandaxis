@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations;
+using HCS.DocumentService.Documents;
+using HCS.DocumentService.Workflows;
 
 namespace HCS.DocumentService.Signing;
 
@@ -66,9 +68,15 @@ public sealed record SignDocumentRequest(Guid DocumentId, Guid FileId, SigningKi
 public sealed record SigningAttemptDto(Guid Id, Guid DocumentId, Guid FileId, SigningKind Kind, SigningStatus Status,
     string InputSha256, string? OutputSha256, string? Error, DateTime CreationTime, DateTime? CompletedAt);
 public sealed record SigningReportDto(Guid DocumentId, int Completed, int Failed, IReadOnlyList<SigningAttemptDto> Attempts);
+public sealed record SigningQueueDocumentDto(Guid Id, string Number, string Title, string? Description, DocumentStatus Status,
+    IReadOnlyList<DocumentFileDto> Files, DateTime CreationTime, DocumentSourceType SourceType = DocumentSourceType.Workflow,
+    Guid? FromUserId = null);
+public sealed record SigningQueueItemDto(SigningQueueDocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance,
+    WorkflowDefinitionDto Definition);
 
 public interface ISigningAppService
 {
+    Task<IReadOnlyList<SigningQueueItemDto>> GetQueueAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default);
     Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest input, Guid? userId = null, CancellationToken cancellationToken = default);
     Task<SigningAttemptDto> SignAsync(SignDocumentRequest input, CancellationToken cancellationToken = default);

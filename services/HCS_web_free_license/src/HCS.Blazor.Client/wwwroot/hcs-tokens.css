@@ -59,9 +59,9 @@
 
     --hcs-content-max-width: 1540px;
     --hcs-page-gutter: clamp(1rem, 3vw, 2.5rem);
-    --hcs-control-height: 2.75rem;
+    --hcs-control-height: 2rem;
     --hcs-control-height-compact: 2.5rem;
-    --hcs-touch-target: 2.75rem;
+    --hcs-touch-target: 2rem;
     --hcs-radius-sm: 5px;
     --hcs-radius-md: 8px;
     --hcs-radius-lg: 12px;

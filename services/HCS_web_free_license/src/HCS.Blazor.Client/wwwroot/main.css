@@ -171,8 +171,8 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     .hcs-app-shell a.btn {
         box-sizing: border-box;
         border-radius: var(--hcs-radius) !important;
-        max-height: var(--hcs-button-max-height);
-        min-height: var(--hcs-button-max-height);
+        max-height: var(--hcs-touch-target);
+        min-height: var(--hcs-touch-target);
         line-height: 1;
     }
 
@@ -2086,7 +2086,9 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     padding: 0 1.1rem;
 }
 
-.hcs-workspace .hcs-ws-search:hover { background: #2f4ae6; color: #fff; }
+.hcs-workspace .hcs-ws-search:hover {
+     background: var(--color-primary-dark, var(--color-primary-dark, #007F7C)); 
+     color: #fff; }
 
 .hcs-workspace .hcs-ws-kpis {
     display: grid;
@@ -2593,6 +2595,93 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     gap: 1.1rem;
 }
 
+.hcs-workspace-project-detail-modal .card {
+    background: var(--hcs-color-surface, #fff);
+    border: 1px solid var(--hcs-color-border, #dde4ee);
+    border-radius: var(--hcs-radius-md, 8px);
+    box-shadow: var(--hcs-shadow-sm, 0 1px 2px rgba(19, 47, 70, .05), 0 4px 12px rgba(19, 47, 70, .04));
+    min-width: 0;
+}
+
+.hcs-workspace-project-detail-modal .card-header {
+    background: var(--hcs-color-surface, #fff);
+    border-color: var(--hcs-color-border, #dde4ee);
+    padding: var(--hcs-space-4, 1rem) var(--hcs-space-5, 1.5rem);
+}
+
+.hcs-workspace-project-detail-modal .card-header strong {
+    color: var(--hcs-color-ink, #1a1a2e);
+    font-size: .98rem;
+    font-weight: 700;
+}
+
+.hcs-workspace-project-detail-modal .card-body {
+    background: var(--hcs-color-surface, #fff);
+    min-width: 0;
+    padding: var(--hcs-space-5, 1.5rem) !important;
+}
+
+.hcs-workspace-project-detail-modal .hcs-catalog-desc {
+    color: #315873;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: .45rem;
+    margin-top: 0;
+}
+
+.hcs-workspace-project-detail-modal .hcs-action-button--preview {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--hcs-color-primary, #00b4a9);
+    border-radius: var(--hcs-radius-sm, 5px);
+    color: var(--hcs-color-primary, #00b4a9);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 2rem !important;
+    justify-content: center;
+    min-height: 2rem !important;
+    min-width: 2rem !important;
+    padding: 0 !important;
+}
+
+.hcs-workspace-project-detail-modal .hcs-action-button--preview:hover,
+.hcs-workspace-project-detail-modal .hcs-action-button--preview:focus-visible {
+    background: var(--hcs-color-primary-soft, #e0f7f5);
+    border-color: var(--hcs-color-primary, #00b4a9);
+    box-shadow: var(--hcs-focus-ring, 0 0 0 .2rem rgba(0, 180, 169, .28));
+    color: var(--hcs-color-primary-strong, #007f7c);
+}
+
+.hcs-workspace-project-detail-modal .hcs-catalog-cancel,
+.hcs-workspace-project-detail-modal .hcs-catalog-save {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    line-height: 1;
+    min-height: 2.75rem !important;
+}
+
+.hcs-workspace-project-detail-modal .hcs-catalog-cancel {
+    background: var(--color-secondary, #007f7c);
+    border-color: var(--color-secondary, #007f7c);
+    color: #fff;
+}
+
+.hcs-workspace-project-detail-modal .hcs-catalog-save {
+    background: var(--hcs-color-primary, #00b4a9);
+    border-color: var(--hcs-color-primary, #00b4a9);
+    color: #fff;
+}
+
+.hcs-workspace-project-detail-modal .hcs-catalog-cancel:hover,
+.hcs-workspace-project-detail-modal .hcs-catalog-cancel:focus-visible,
+.hcs-workspace-project-detail-modal .hcs-catalog-save:hover,
+.hcs-workspace-project-detail-modal .hcs-catalog-save:focus-visible {
+    background: var(--hcs-color-primary-strong, #007f7c);
+    border-color: var(--hcs-color-primary-strong, #007f7c);
+    color: #fff;
+}
+
 .hcs-workspace-readonly__value,
 .hcs-workspace-readonly__description {
     overflow-wrap: anywhere;
@@ -2614,7 +2703,10 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-workspace-detail-list { display: flex; flex-direction: column; gap: .45rem; max-height: 18rem; overflow: auto; }
-.hcs-workspace-project-detail-modal .hcs-workspace-detail-list { overscroll-behavior: contain; }
+.hcs-workspace-project-detail-modal .hcs-workspace-detail-list {
+    max-height: none;
+    overflow: visible;
+}
 .hcs-workspace-project-detail-modal .modal-title { min-width: 0; }
 .hcs-workspace-project-detail-modal .hcs-workspace-detail-row {
     align-items: center;
@@ -2629,6 +2721,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     .hcs-workspace .hcs-ws-donut { max-width: 8.5rem; }
     .hcs-workspace .hcs-ws-doc-row { align-items: flex-start; flex-wrap: wrap; }
     .hcs-workspace .hcs-ws-doc-row .hcs-ws-doc-name { flex-basis: calc(100% - 2rem); }
+    .hcs-workspace-project-detail-modal .card-body { padding: var(--hcs-space-4, 1rem); }
 }
 
 .hcs-workflow-summary {
