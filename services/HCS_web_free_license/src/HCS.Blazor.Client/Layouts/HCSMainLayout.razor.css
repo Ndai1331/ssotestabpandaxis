@@ -81,10 +81,11 @@
 .hcs-icon-button { border-radius: 50%; position: relative; }
 .hcs-icon-button:hover, .hcs-icon-button:focus-visible { background: var(--hcs-primary-soft); color: var(--hcs-primary); }
 .hcs-icon-link { text-decoration: none; }
-.hcs-icon-badge { background: var(--hcs-color-danger, var(--color-accent, #E31E24)); border: 2px solid #fff; border-radius: 999px; color: #fff; font-size: .62rem; font-weight: 700; line-height: 1; min-width: 1.1rem; padding: .14rem .28rem; position: absolute; right: .1rem; top: .1rem; text-align: center; }
+.hcs-icon-badge { background: var(--hcs-color-danger, var(--color-accent, #E31E24)); border: 2px solid #fff; border-radius: 999px; color: #fff; font-size: .62rem; font-weight: 700; line-height: 1; min-width: 1.1rem; padding: .14rem .28rem; position: absolute; right: .1rem; top: -.3rem; text-align: center; }
 
 .hcs-top-nav {
     align-items: stretch;
+    justify-content: center;
     background: var(--hcs-color-sidebar, var(--color-teal-top, #007F7C));
     box-shadow: 0 4px 14px rgba(0, 127, 124, .14);
     display: flex;
@@ -162,10 +163,20 @@
 
 .hcs-nav-backdrop { display: none; }
 
-.hcs-main-content { margin-left: 0; max-width: var(--hcs-content-max-width, 1540px); min-height: calc(100dvh - var(--hcs-header-height)); padding: clamp(1rem, 2.2vw, 2rem) var(--hcs-page-gutter, 2rem) calc(2rem + env(safe-area-inset-bottom)); }
+/* Center the bounded content area when zoom-out makes the viewport wider than the max width. */
+.hcs-main-content { margin: 0 auto; max-width: var(--hcs-content-max-width, 1540px); min-height: calc(100dvh - var(--hcs-header-height)); padding: clamp(1rem, 2.2vw, 2rem) var(--hcs-page-gutter, 2rem) calc(2rem + env(safe-area-inset-bottom)); }
 .hcs-app-shell:has(.hcs-chat-page) { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
 .hcs-app-shell:has(.hcs-chat-page) .hcs-header { flex: 0 0 auto; }
-.hcs-main-content:has(.hcs-chat-page) { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
+.hcs-main-content:has(.hcs-chat-page) {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    margin: 0;
+    max-width: none;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+}
 
 @media (min-width: 1101px) {
     .hcs-nav-backdrop--menu {

@@ -41,7 +41,7 @@
                         <UserSelect2 Value="SubmitterUserId"
                                      ValueChanged="SubmitterUserIdChanged"
                                      Placeholder="@L["Work:FilterSubmitter"]"
-                                     SelectedText="SubmitterText"
+                                     SelectedText="@SubmitterText"
                                      Search="SearchUsers" />
                     </Column>
                 </Row>
@@ -51,7 +51,7 @@
                 <CatalogSelect2 Value="DepartmentId"
                                 ValueChanged="DepartmentIdChanged"
                                 Placeholder="@L["Work:FilterDepartment"]"
-                                SelectedText="DepartmentText"
+                                SelectedText="@DepartmentText"
                                 Search="SearchDepartments" />
             </Column>
         </Row>

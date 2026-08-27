@@ -1,7 +1,7 @@
 using PdfSharp.Drawing;
 using PdfSharp.Pdf.IO;
 using SixLabors.ImageSharp;
-using UglyToad.PdfPig;
+using HCS.DocumentService.Signing;
 
 namespace HCS.DocumentService.Workflows;
 
@@ -75,10 +75,12 @@ internal static class PdfPlaceholderReplacer
         {
             if (hit.Page < 1 || hit.Page > document.PageCount) continue;
             var page = document.Pages[hit.Page - 1];
-            var y = Math.Max(0, page.Height.Point - hit.Y - hit.Height - 3);
-            var x = Math.Max(0, hit.X - 3);
-            var width = Math.Max(12, hit.Width + 6);
-            var height = Math.Max(12, hit.Height + 6);
+            var drawingRect = ClampRect(page, hit.X - 3, page.Height.Point - hit.Y - hit.Height - 3,
+                Math.Max(12, hit.Width + 6), Math.Max(12, hit.Height + 6));
+            var x = drawingRect.X;
+            var y = drawingRect.Y;
+            var width = drawingRect.Width;
+            var height = drawingRect.Height;
             using var graphics = XGraphics.FromPdfPage(page, XGraphicsPdfPageOptions.Append);
             graphics.DrawRectangle(XBrushes.White, new XRect(x, y, width, height));
             if (image)
@@ -110,29 +112,8 @@ internal static class PdfPlaceholderReplacer
 
     internal static PlaceholderHit? FindPlaceholder(byte[] pdfBytes, string placeholder)
     {
-        if (pdfBytes is not { Length: > 0 } || string.IsNullOrWhiteSpace(placeholder)) return null;
-        using var document = PdfDocument.Open(pdfBytes);
-        for (var pageNumber = 1; pageNumber <= document.NumberOfPages; pageNumber++)
-        {
-            var letters = document.GetPage(pageNumber).Letters.ToList();
-            var text = string.Concat(letters.Select(x => x.Value));
-            var index = text.IndexOf(placeholder, StringComparison.Ordinal);
-            if (index < 0 || index + placeholder.Length > letters.Count) continue;
-            var first = letters[index].GlyphRectangle;
-            var left = first.Left;
-            var bottom = first.Bottom;
-            var right = first.Right;
-            var top = first.Top;
-            foreach (var letter in letters.Skip(index + 1).Take(placeholder.Length))
-            {
-                left = Math.Min(left, letter.GlyphRectangle.Left);
-                bottom = Math.Min(bottom, letter.GlyphRectangle.Bottom);
-                right = Math.Max(right, letter.GlyphRectangle.Right);
-                top = Math.Max(top, letter.GlyphRectangle.Top);
-            }
-            return new PlaceholderHit(pageNumber, left, bottom, right - left, top - bottom);
-        }
-        return null;
+        var hit = PdfPlaceholderLocator.Find(pdfBytes, placeholder);
+        return hit is null ? null : new PlaceholderHit(hit.Page, hit.X, hit.Y, hit.Width, hit.Height);
     }
 
     private static string PlainText(string? value)
@@ -143,5 +124,16 @@ internal static class PdfPlaceholderReplacer
             .Replace("<br />", "\n", StringComparison.OrdinalIgnoreCase);
         text = System.Text.RegularExpressions.Regex.Replace(text, "<[^>]*>", " ");
         return System.Net.WebUtility.HtmlDecode(text).Trim();
+    }
+
+    private static XRect ClampRect(PdfSharp.Pdf.PdfPage page, double x, double y, double width, double height)
+    {
+        var pageWidth = page.Width.Point;
+        var pageHeight = page.Height.Point;
+        var left = Math.Clamp(double.IsFinite(x) ? x : 0, 0, pageWidth);
+        var bottom = Math.Clamp(double.IsFinite(y) ? y : 0, 0, pageHeight);
+        var right = Math.Clamp(left + Math.Max(1, double.IsFinite(width) ? width : 1), left, pageWidth);
+        var top = Math.Clamp(bottom + Math.Max(1, double.IsFinite(height) ? height : 1), bottom, pageHeight);
+        return new XRect(left, bottom, Math.Max(1, right - left), Math.Max(1, top - bottom));
     }
 }

@@ -57,6 +57,20 @@ public sealed class SigningSecurityTests
             new SigningAdapterRequest([], new string('a', 64), "https://electronic.local", ""), default));
     }
 
+    [Fact]
+    public async Task Word_prepared_electronic_content_is_not_overlayed_again_in_pdf()
+    {
+        var content = new byte[] { 1, 2, 3 };
+        var providerRequest = new SigningProviderRequest(content, "https://electronic.local", "", "",
+            [], [], [], "<<Sign02>>", "Nguyễn Văn A", "", 150, 70, 30, WordPrepared: true);
+
+        var result = await new LicensedElectronicSigningAdapter().SignAsync(
+            new SigningAdapterRequest(content, new string('a', 64), providerRequest.Endpoint, "", providerRequest), default);
+
+        Assert.Same(content, result.SignedContent);
+        Assert.Equal("electronic-docx-v1", result.AdapterId);
+    }
+
     [Theory]
     [InlineData(SigningKind.RemoteCa)]
     [InlineData(SigningKind.Hsm)]

@@ -41,5 +41,6 @@
     <!-- Provider helpers are vendored under this project so Docker builds remain
          self-contained while preserving the licensed runtime wire/PDF behavior. -->
     <EmbeddedResource Include="Signing/ProviderShared/BnnSoftSigns/*.png" />
+    <EmbeddedResource Include="Signing/ProviderShared/electronic-signature-layout*.png" />
   </ItemGroup>
 </Project>

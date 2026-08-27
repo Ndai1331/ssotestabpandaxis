@@ -59,27 +59,19 @@
                                     </Select>
                                 </Field>
                             </div>
-                            @if (createdId is null)
-                            {
-                                <Field><FieldLabel>@L["Feature:Assignments"]</FieldLabel>
-                                    <UserSelect2 Value="assigneeId"
-                                                 ValueChanged="value => assigneeId = value"
-                                                 Placeholder="@L["Chat:SelectContacts"]"
-                                                 SelectedText="@ContactName(assigneeId)"
-                                                 Search="SearchContactsAsync" />
-                                </Field>
-                            }
                         </div>
                     </TabPanel>
                     <TabPanel Name="assignments">
                         <Field>
+                            <FieldLabel>@L["Feature:ChooseAssignee"]</FieldLabel>
                             <UserSelect2 Value="assigneeId"
                                          ValueChanged="value => assigneeId = value"
-                                         Placeholder="@L["Chat:SelectContacts"]"
+                                         Placeholder="@L["Feature:ChooseAssignee"]"
+                                         SelectedItem="@ContactItem(assigneeId)"
                                          SelectedText="@ContactName(assigneeId)"
                                          Search="SearchContactsAsync" />
                         </Field>
-                        <Button Color="Color.Primary" Clicked="AddAssignmentAsync">@L["Feature:Assign"]</Button>
+                        <Button Color="Color.Primary" Clicked="AddAssignmentAsync" Disabled="@isAssigning">@L["Feature:Assign"]</Button>
                     </TabPanel>
                     <TabPanel Name="documents">
                         <Field>
@@ -118,7 +110,7 @@
     private Guid? projectId, selectedProjectId, parentTaskId, createdId, assigneeId, documentId, linkedDocumentId;
     private string tab = "general", code = "", title = "", description = "", priority = "Normal", status = "New";
     private DateTime startDate = DateTime.Today, dueDate = DateTime.Today.AddDays(7);
-    private bool isSaving;
+    private bool isSaving, isAssigning;
 
     public async Task ShowAsync(Guid? fixedProjectId = null, Guid? parentId = null, Guid? linkedDocumentId = null)
     {
@@ -181,7 +173,6 @@
     {
         var id = projectId ?? selectedProjectId;
         if (id is not { } project) { await NotifyErrorAsync(L["Feature:ChooseProject"]); return; }
-        if (assigneeId is null) { await NotifyErrorAsync(L["Feature:RequireAssignee"]); return; }
         isSaving = true;
         Guid? newId = null;
         try
@@ -191,7 +182,6 @@
                 string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
                 startDate, dueDate, priority, status, 0));
             newId = created.Id;
-            await Work.AddAssignmentAsync(created.Id, new AddTaskAssignmentRequest(assigneeId.Value, "Assignee"));
             createdId = created.Id;
             if (linkedDocumentId is { } linked)
             {
@@ -214,9 +204,21 @@
 
     private async Task AddAssignmentAsync()
     {
-        if (createdId is not { } taskId || assigneeId is not { } userId) return;
-        try { await Work.AddAssignmentAsync(taskId, new AddTaskAssignmentRequest(userId, "Assignee")); }
+        if (createdId is not { } taskId) return;
+        if (assigneeId is not { } userId)
+        {
+            await NotifyErrorAsync(L["Feature:ChooseAssignee"]);
+            return;
+        }
+        isAssigning = true;
+        try
+        {
+            await Work.AddAssignmentAsync(taskId, new AddTaskAssignmentRequest(userId, "Assignee"));
+            assigneeId = null;
+            await NotifySuccessAsync(L["Feature:AssignmentAdded"]);
+        }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isAssigning = false; }
     }
 
     private async Task AddDocumentAsync()
@@ -248,6 +250,9 @@
             x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
     }
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private CatalogSelect2Item? ContactItem(Guid? id) => id is { } userId
+        ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault()
+        : null;
     private string DocumentName(Guid? id) => id is null ? "" : documents.FirstOrDefault(x => x.Id == id) is { } d ? $"{d.Number} · {d.Title}" : "";
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {

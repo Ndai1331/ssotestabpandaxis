@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Volo.Abp;
+using HCS.DocumentService.Conversion;
 using HCS.DocumentService.Integration;
 using HCS.DocumentService.Documents;
 using HCS.DocumentService.Storage;
@@ -17,9 +18,11 @@ public sealed class SigningAppService(
     IHttpContextAccessor httpContext,
     IConfiguration configuration,
     ISigningSecretProtector secretProtector,
-    IEnumerable<IDigitalSigningAdapter> adapters,
+    ISigningProviderFactory providerFactory,
     IBlobContainer<DocumentBlobContainer> documentBlobs,
-    IBlobContainer<SigningBlobContainer> signingBlobs) : ISigningAppService
+    IBlobContainer<SigningBlobContainer> signingBlobs,
+    IDocxToPdfConverter converter,
+    DocumentFileService documentFiles) : ISigningAppService
 {
     private const long MaxSignatureSize = 2 * 1024 * 1024;
     private static readonly HashSet<string> AllowedSignatureContentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -29,6 +32,21 @@ public sealed class SigningAppService(
 
     private sealed record ResolvedSignatureMetadata(string ProviderCode, string TokenRef,
         string? ProtectedSecret, string? SealImageBase64);
+
+    public Task<IReadOnlyList<SigningProviderDefinitionDto>> GetProviderDefinitionsAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<SigningProviderDefinitionDto>>(
+            providerFactory.Definitions.Select(definition => new SigningProviderDefinitionDto(
+                definition.Code,
+                definition.DisplayName,
+                definition.SupportedKinds.ToList(),
+                definition.DefaultEndpoint,
+                definition.RequiresLayoutImage,
+                definition.RequiresSealImage,
+                definition.RequiresBase64Secret,
+                definition.DefaultApiTimeoutSeconds,
+                definition.DefaultSignWidth,
+                definition.DefaultSignHeight)).ToList());
 
     public async Task<IReadOnlyList<SigningQueueItemDto>> GetQueueAsync(CancellationToken cancellationToken = default)
     {
@@ -99,9 +117,16 @@ public sealed class SigningAppService(
         var principal = Principal;
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningConfigure);
         if (!Enum.IsDefined(input.Kind)) throw new ArgumentOutOfRangeException(nameof(input.Kind));
-        if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(input.ProviderCode))
+        var providerCode = input.Kind == SigningKind.Electronic
+            ? input.ProviderCode.Trim()
+            : SigningProviderCodes.Normalize(input.ProviderCode);
+        var providerDefaults = providerFactory.GetDefinition(input.Kind, providerCode);
+        if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(providerCode))
             throw new ArgumentException("Provider code is required for external signing.", nameof(input));
-        if (!Uri.TryCreate(input.Endpoint, UriKind.Absolute, out var endpoint)
+        var endpointValue = string.IsNullOrWhiteSpace(input.Endpoint)
+            ? providerDefaults.DefaultEndpoint
+            : input.Endpoint.Trim();
+        if (!Uri.TryCreate(endpointValue, UriKind.Absolute, out var endpoint)
             || (endpoint.Scheme != Uri.UriSchemeHttps && endpoint.Scheme != Uri.UriSchemeHttp))
             throw new ArgumentException("Signing endpoint must be an absolute HTTP or HTTPS URI.");
         EnsureEndpointAllowed(endpoint);
@@ -114,15 +139,22 @@ public sealed class SigningAppService(
             : secretProtector.Protect(rawSecret);
         var layoutImage = input.LayoutImageBase64 ?? credential?.LayoutImageBase64;
         ValidateOptionalImage(layoutImage);
+        var timeoutSeconds = input.ApiTimeoutSeconds > 0
+            ? input.ApiTimeoutSeconds
+            : providerDefaults.DefaultApiTimeoutSeconds;
+        if (providerDefaults.RequiresBase64Secret)
+            timeoutSeconds = Math.Clamp(timeoutSeconds, 30, 240);
+        var signWidth = input.SignWidth > 0 ? input.SignWidth : providerDefaults.DefaultSignWidth;
+        var signHeight = input.SignHeight > 0 ? input.SignHeight : providerDefaults.DefaultSignHeight;
         if (credential is null)
         {
             credential = new SigningCredential(Guid.NewGuid(), targetUserId, input.Kind, endpoint.ToString(), protectedSecret, DateTime.UtcNow,
-                input.ProviderCode, layoutImage, input.ApiTimeoutSeconds, input.SignWidth, input.SignHeight,
+                providerCode, layoutImage, timeoutSeconds, signWidth, signHeight,
                 input.AllowElectronicSign, input.AllowDigitalSign, input.RequireOtp);
             db.SigningCredentials.Add(credential);
         }
         else credential.Replace(endpoint.ToString(), protectedSecret, DateTime.UtcNow,
-            input.ProviderCode, layoutImage, input.ApiTimeoutSeconds, input.SignWidth, input.SignHeight,
+            providerCode, layoutImage, timeoutSeconds, signWidth, signHeight,
             input.AllowElectronicSign, input.AllowDigitalSign, input.RequireOtp);
         await db.SaveChangesAsync(cancellationToken);
         return Map(credential);
@@ -192,7 +224,13 @@ public sealed class SigningAppService(
         var now = DateTime.UtcNow;
         if (signature.ValidFrom.HasValue && signature.ValidFrom > now) throw new InvalidOperationException("The selected signature is not yet valid.");
         if (signature.ValidTo.HasValue && signature.ValidTo < now) throw new InvalidOperationException("The selected signature has expired.");
+        var pairedWordFile = file.PairedFileId is { } pairedFileId
+            ? await db.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == pairedFileId
+                && x.DocumentId == input.DocumentId && !x.IsPendingDeletion && IsWord(x), cancellationToken)
+            : null;
         byte[] bytes;
+        byte[]? preparedWordBytes = null;
+        var wordPrepared = false;
         string actualInputHash;
         string secret;
         string placeholder;
@@ -207,9 +245,12 @@ public sealed class SigningAppService(
             var storedInputHash = ContentHash.Sha256(bytes);
             if (!storedInputHash.Equals(file.Sha256, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Stored file hash does not match its immutable metadata.");
-            adapter = adapters.SingleOrDefault(x => x.Kind == input.Kind)
-                ?? throw new NotSupportedException($"No adapter registered for {input.Kind}.");
+            var providerDefaults = providerFactory.GetDefinition(input.Kind, credential?.ProviderCode);
+            if (providerDefaults.RequiresLayoutImage && string.IsNullOrWhiteSpace(credential?.LayoutImageBase64))
+                throw new InvalidOperationException("The selected signing provider requires a layout image.");
+            adapter = providerFactory.GetAdapter(input.Kind, credential?.ProviderCode);
             var signatureImage = await ReadSigningBlobAsync(signature.BlobName, cancellationToken);
+            var layoutImage = DecodeImage(credential?.LayoutImageBase64);
             var protectedSecret = !string.IsNullOrWhiteSpace(signature.ProtectedSecret)
                 ? signature.ProtectedSecret
                 : credential?.ProtectedSecret;
@@ -222,10 +263,34 @@ public sealed class SigningAppService(
                 signerName = ResolveCurrentUserName(principal, userId);
             var note = NormalizeBounded(input.Note, 2000);
 
-            // Merge the workflow name/note fields before invoking the provider so
-            // the provider signs the same bytes that become the document result.
             var stepOrder = ResolveSigningStepOrder(placeholder);
-            bytes = PdfPlaceholderReplacer.ReplaceApprovalText(bytes, stepOrder, signerName, note);
+            if (pairedWordFile is not null)
+            {
+                await using var wordInputStream = await documentBlobs.GetAsync(pairedWordFile.BlobName,
+                    cancellationToken: cancellationToken);
+                await using var wordBuffer = new MemoryStream();
+                await wordInputStream.CopyToAsync(wordBuffer, cancellationToken);
+                var sourceWordBytes = wordBuffer.ToArray();
+                var electronicImage = input.Kind == SigningKind.Electronic
+                    ? layoutImage is { Length: > 0 }
+                        ? PdfSigningDrawing.ComposeSignatureWithLayout(signatureImage, layoutImage)
+                        : ElectronicSignatureLayoutComposer.Compose(signatureImage)
+                    : signatureImage;
+                preparedWordBytes = WordFirstSigningDocumentBuilder.Replace(sourceWordBytes, input.Kind,
+                    electronicImage, stepOrder, signerName, note);
+                if (!converter.IsAvailable)
+                    throw new InvalidOperationException("LibreOffice is required to prepare the Word signing document.");
+                bytes = await converter.ConvertAsync(preparedWordBytes, cancellationToken)
+                    ?? throw new InvalidOperationException("The Word signing document could not be converted to PDF.");
+                if (bytes.Length == 0)
+                    throw new InvalidOperationException("The Word signing document could not be converted to PDF.");
+                wordPrepared = true;
+            }
+            else
+            {
+                // Legacy PDF-only documents keep the compatibility overlay path.
+                bytes = PdfPlaceholderReplacer.ReplaceApprovalText(bytes, stepOrder, signerName, note);
+            }
 
             actualInputHash = ContentHash.Sha256(bytes);
             providerRequest = new SigningProviderRequest(
@@ -235,13 +300,14 @@ public sealed class SigningAppService(
                 signature.TokenRef,
                 signatureImage,
                 DecodeImage(signature.SealImageBase64),
-                DecodeImage(credential?.LayoutImageBase64),
+                layoutImage,
                 placeholder,
                 signerName,
                 note,
                 credential?.SignWidth is > 0 and var width ? width : 150,
                 credential?.SignHeight is > 0 and var height ? height : 70,
-                credential?.ApiTimeoutSeconds is > 0 and var timeout ? timeout : 30);
+                credential?.ApiTimeoutSeconds is > 0 and var timeout ? timeout : 30,
+                wordPrepared);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -263,7 +329,7 @@ public sealed class SigningAppService(
             throw;
         }
         string? signingBlobName = null;
-        string? documentBlobName = null;
+        var documentBlobNames = new List<string>();
         try
         {
             var result = await adapter.SignAsync(new SigningAdapterRequest(bytes, actualInputHash,
@@ -278,10 +344,25 @@ public sealed class SigningAppService(
 
             signingBlobName = BlobNamePolicy.Signing(input.DocumentId, attempt.Id);
             await signingBlobs.SaveAsync(signingBlobName, new MemoryStream(signedContent), overrideExisting: false, cancellationToken: cancellationToken);
-            documentBlobName = BlobNamePolicy.Document(input.DocumentId, Guid.NewGuid());
-            await documentBlobs.SaveAsync(documentBlobName, new MemoryStream(signedContent),
-                overrideExisting: false, cancellationToken: cancellationToken);
-            outputFile.ReplaceContent(signedContent.Length, outputHash, documentBlobName);
+            if (wordPrepared)
+            {
+                var trackedDocument = await db.Documents.Include(x => x.Files).Include(x => x.History)
+                    .SingleAsync(x => x.Id == input.DocumentId, cancellationToken);
+                var pair = await documentFiles.AddDocxPdfPairAsync(trackedDocument, preparedWordBytes!, signedContent,
+                    BuildDerivedFileName(pairedWordFile!.FileName, "-Sign", ResolveSigningStepOrder(placeholder), ".docx"),
+                    BuildDerivedFileName(file.FileName, "-Sign", ResolveSigningStepOrder(placeholder), ".pdf"),
+                    userId, DateTime.UtcNow, cancellationToken);
+                documentBlobNames.Add(pair.WordBlobName);
+                documentBlobNames.Add(pair.PdfBlobName);
+            }
+            else
+            {
+                var documentBlobName = BlobNamePolicy.Document(input.DocumentId, Guid.NewGuid());
+                await documentBlobs.SaveAsync(documentBlobName, new MemoryStream(signedContent),
+                    overrideExisting: false, cancellationToken: cancellationToken);
+                documentBlobNames.Add(documentBlobName);
+                outputFile.ReplaceContent(signedContent.Length, outputHash, documentBlobName);
+            }
             attempt.Complete(outputHash, signingBlobName, DateTime.UtcNow);
             var integrationEvent = new DocumentSignedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, CorrelationId, input.DocumentId,
                 input.FileId, actualInputHash, outputHash, result.AdapterId);
@@ -290,7 +371,8 @@ public sealed class SigningAppService(
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             await DeleteBlobIfCreatedAsync(signingBlobs, signingBlobName, cancellationToken);
-            await DeleteBlobIfCreatedAsync(documentBlobs, documentBlobName, cancellationToken);
+            foreach (var documentBlobName in documentBlobNames)
+                await DeleteBlobIfCreatedAsync(documentBlobs, documentBlobName, cancellationToken);
             attempt.Fail(SigningFailureSanitizer.ToPublicMessage(exception), DateTime.UtcNow);
         }
         try
@@ -300,7 +382,8 @@ public sealed class SigningAppService(
         catch
         {
             await DeleteBlobIfCreatedAsync(signingBlobs, signingBlobName, cancellationToken);
-            await DeleteBlobIfCreatedAsync(documentBlobs, documentBlobName, cancellationToken);
+            foreach (var documentBlobName in documentBlobNames)
+                await DeleteBlobIfCreatedAsync(documentBlobs, documentBlobName, cancellationToken);
             throw;
         }
         return Map(attempt);
@@ -501,6 +584,22 @@ public sealed class SigningAppService(
         file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
         || file.ContentType.Contains("pdf", StringComparison.OrdinalIgnoreCase);
 
+    private static bool IsWord(DocumentFile file) =>
+        file.FileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(file.ContentType,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            StringComparison.OrdinalIgnoreCase);
+
+    private static string BuildDerivedFileName(string fileName, string suffix, int stepOrder, string extension)
+    {
+        var stem = Path.GetFileNameWithoutExtension(fileName);
+        if (string.IsNullOrWhiteSpace(stem)) stem = "workflow";
+        var stepSuffix = $"{suffix}{stepOrder:D2}";
+        var maxStemLength = Math.Max(1, 256 - stepSuffix.Length - extension.Length);
+        if (stem.Length > maxStemLength) stem = stem[..maxStemLength];
+        return $"{stem}{stepSuffix}{extension}";
+    }
+
     private static string NormalizeBounded(string? value, int maxLength)
     {
         var normalized = value?.Trim() ?? string.Empty;
@@ -599,17 +698,18 @@ public sealed class SigningAppService(
         if (type == UserSignatureType.Electronic)
             return new ResolvedSignatureMetadata(string.Empty, string.Empty, null, null);
 
-        var normalizedProvider = string.IsNullOrWhiteSpace(providerCode)
+        var normalizedProvider = SigningProviderCodes.Normalize(string.IsNullOrWhiteSpace(providerCode)
             ? current?.ProviderCode?.Trim() ?? string.Empty
-            : providerCode.Trim();
+            : providerCode);
         if (string.IsNullOrWhiteSpace(normalizedProvider))
             throw new ArgumentException("A configured provider must be selected for a digital signature.", nameof(providerCode));
 
-        var providerExists = await db.SigningCredentials.AsNoTracking().AnyAsync(x => x.UserId == userId
+        var credential = await db.SigningCredentials.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId
             && x.Kind != SigningKind.Electronic
-            && x.ProviderCode == normalizedProvider, cancellationToken);
-        if (!providerExists)
+            && x.ProviderCode.ToUpper() == normalizedProvider, cancellationToken);
+        if (credential is null)
             throw new InvalidOperationException("The selected provider is not configured for this user.");
+        var providerDefaults = providerFactory.GetDefinition(credential.Kind, normalizedProvider);
 
         var normalizedToken = string.IsNullOrWhiteSpace(tokenRef)
             ? current?.TokenRef?.Trim() ?? string.Empty
@@ -633,7 +733,7 @@ public sealed class SigningAppService(
             ? current?.SealImageBase64
             : sealImageBase64.Trim();
         ValidateOptionalImage(normalizedSeal);
-        if (string.IsNullOrWhiteSpace(normalizedSeal))
+        if (providerDefaults.RequiresSealImage && string.IsNullOrWhiteSpace(normalizedSeal))
             throw new ArgumentException("A seal image is required for a digital signature.", nameof(sealImageBase64));
 
         return new ResolvedSignatureMetadata(normalizedProvider, normalizedToken, protectedSecret, normalizedSeal);

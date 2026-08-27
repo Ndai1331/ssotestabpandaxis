@@ -110,6 +110,7 @@ public sealed class HcsDocumentServiceModule : AbpModule
             SigningKind.Hsm, sp.GetRequiredService<ILoggerFactory>()));
         context.Services.AddScoped<IDigitalSigningAdapter>(sp => new LicensedBnnSigningAdapter(
             SigningKind.UsbToken, sp.GetRequiredService<ILoggerFactory>()));
+        context.Services.AddScoped<ISigningProviderFactory, SigningProviderFactory>();
         context.Services.AddScoped<IInboxExecutor, EfInboxExecutor>();
         context.Services.AddScoped<ITypedDistributedEventPublisher, AbpTypedDistributedEventPublisher>();
         context.Services.AddScoped<IOutboxEventPublisher, AbpOutboxEventPublisher>();

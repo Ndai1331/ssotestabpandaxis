@@ -60,6 +60,24 @@
         return $root;
     }
 
+    function userSelectionTemplate(item) {
+        if (!item || !item.id) return item && item.text ? $("<span></span>").text(item.text) : "";
+        var $root = $("<span class='hcs-user-option hcs-user-option--selection'></span>");
+        if (item.avatarUrl) {
+            var $avatar = $("<img class='hcs-user-option__avatar' alt='' loading='lazy'>").attr("src", item.avatarUrl);
+            $avatar.on("error", function () {
+                $(this).replaceWith($("<span class='hcs-user-option__avatar hcs-user-option__avatar--initials'></span>").text(initials(item)));
+            });
+            $avatar.appendTo($root);
+        } else {
+            $("<span class='hcs-user-option__avatar hcs-user-option__avatar--initials'></span>").text(initials(item)).appendTo($root);
+        }
+        var $copy = $("<span class='hcs-user-option__copy'></span>");
+        $("<span class='hcs-user-option__name'></span>").text(item.text || "").appendTo($copy);
+        $copy.appendTo($root);
+        return $root;
+    }
+
     function bindChange($el, dotNetRef) {
         $el.off("change.hcsCatalogSelect2");
         $el.on("change.hcsCatalogSelect2", function () {
@@ -92,7 +110,7 @@
             dropdownParent: dropdownParent,
             minimumInputLength: typeof options.minimumInputLength === "number" ? options.minimumInputLength : 0,
             templateResult: userTemplateEnabled ? userTemplate : undefined,
-            templateSelection: userTemplateEnabled ? userTemplate : undefined,
+            templateSelection: userTemplateEnabled ? userSelectionTemplate : undefined,
             escapeMarkup: function (markup) { return markup; },
             ajax: {
                 delay: 250,

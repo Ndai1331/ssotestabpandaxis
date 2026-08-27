@@ -8,7 +8,6 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using UglyToad.PdfPig;
 
 namespace HCS.DocumentService.Signing;
 
@@ -30,7 +29,8 @@ public sealed record SigningProviderRequest(
     string Note,
     int Width,
     int Height,
-    int TimeoutSeconds);
+    int TimeoutSeconds,
+    bool WordPrepared = false);
 
 public sealed class LicensedElectronicSigningAdapter : IDigitalSigningAdapter
 {
@@ -41,6 +41,13 @@ public sealed class LicensedElectronicSigningAdapter : IDigitalSigningAdapter
         cancellationToken.ThrowIfCancellationRequested();
         var providerRequest = request.ProviderRequest
             ?? throw new InvalidOperationException("Electronic signing configuration is missing.");
+        if (providerRequest.WordPrepared)
+        {
+            // The signature image and approval text were already placed in DOCX
+            // and converted to this PDF. A second PDF overlay would cover the
+            // layout and is the cause of the SignXX format regression.
+            return Task.FromResult(new SigningAdapterResult(providerRequest.Content, "electronic-docx-v1"));
+        }
         return Task.FromResult(new SigningAdapterResult(
             PdfSigningDrawing.ApplyElectronic(providerRequest), "electronic-pdfsharp-v1"));
     }
@@ -144,27 +151,8 @@ internal static class PdfSigningDrawing
 
     public static PlaceholderHit? FindPlaceholder(byte[] pdfBytes, string placeholder)
     {
-        if (pdfBytes is not { Length: > 0 } || string.IsNullOrWhiteSpace(placeholder)) return null;
-        using var document = PdfDocument.Open(pdfBytes);
-        for (var pageNumber = 1; pageNumber <= document.NumberOfPages; pageNumber++)
-        {
-            var page = document.GetPage(pageNumber);
-            var letters = page.Letters.ToList();
-            var text = string.Concat(letters.Select(x => x.Value));
-            var index = text.IndexOf(placeholder, StringComparison.Ordinal);
-            if (index < 0 || index + placeholder.Length > letters.Count) continue;
-            var first = letters[index].GlyphRectangle;
-            var left = first.Left; var bottom = first.Bottom; var right = first.Right; var top = first.Top;
-            foreach (var letter in letters.Skip(index + 1).Take(placeholder.Length))
-            {
-                left = Math.Min(left, letter.GlyphRectangle.Left);
-                bottom = Math.Min(bottom, letter.GlyphRectangle.Bottom);
-                right = Math.Max(right, letter.GlyphRectangle.Right);
-                top = Math.Max(top, letter.GlyphRectangle.Top);
-            }
-            return new PlaceholderHit(pageNumber, left, bottom, right - left, top - bottom);
-        }
-        return null;
+        var hit = PdfPlaceholderLocator.Find(pdfBytes, placeholder);
+        return hit is null ? null : new PlaceholderHit(hit.Page, hit.X, hit.Y, hit.Width, hit.Height);
     }
 
     public static byte[] ApplyElectronic(SigningProviderRequest request)
@@ -178,13 +166,20 @@ internal static class PdfSigningDrawing
         using var pdf = PdfReader.Open(input, PdfDocumentOpenMode.Modify);
         var page = pdf.Pages[hit.Page - 1];
         var pageHeight = page.Height.Point;
-        var x = Math.Max(0, hit.X - 4);
-        var y = Math.Max(0, pageHeight - hit.Y - hit.Height - 4);
-        var width = Math.Max(hit.Width, request.Width);
-        var height = Math.Max(hit.Height, request.Height);
+        var requestedWidth = Math.Max(hit.Width, request.Width);
+        var requestedHeight = Math.Max(hit.Height, request.Height);
+        var drawingRect = ClampRect(page, hit.X - 4, pageHeight - hit.Y - hit.Height - 4,
+            requestedWidth, requestedHeight);
+        var x = drawingRect.X;
+        var y = drawingRect.Y;
+        var width = drawingRect.Width;
+        var height = drawingRect.Height;
         using var graphics = XGraphics.FromPdfPage(page, XGraphicsPdfPageOptions.Append);
         graphics.DrawRectangle(XBrushes.White, new XRect(x, y, width, height));
-        var signatureImage = NormalizeToPng(ComposeSignatureWithLayout(request.SignatureImage, request.LayoutImage));
+        var composedSignature = request.LayoutImage is { Length: > 0 }
+            ? ComposeSignatureWithLayout(request.SignatureImage, request.LayoutImage)
+            : ElectronicSignatureLayoutComposer.Compose(request.SignatureImage);
+        var signatureImage = NormalizeToPng(composedSignature);
         using var imageStream = new MemoryStream(signatureImage);
         using var image = XImage.FromStream(imageStream);
         var aspect = image.PixelHeight == 0 ? 1d : (double)image.PixelWidth / image.PixelHeight;
@@ -214,9 +209,10 @@ internal static class PdfSigningDrawing
         using var input = new MemoryStream(pdfBytes);
         using var pdf = PdfReader.Open(input, PdfDocumentOpenMode.Modify);
         var page = pdf.Pages[hit.Page - 1];
-        var y = Math.Max(0, page.Height.Point - hit.Y - hit.Height - 3);
+        var drawingRect = ClampRect(page, hit.X - 3, page.Height.Point - hit.Y - hit.Height - 3,
+            hit.Width + 6, hit.Height + 6);
         using var graphics = XGraphics.FromPdfPage(page, XGraphicsPdfPageOptions.Append);
-        graphics.DrawRectangle(XBrushes.White, new XRect(Math.Max(0, hit.X - 3), y, hit.Width + 6, hit.Height + 6));
+        graphics.DrawRectangle(XBrushes.White, drawingRect);
         using var output = new MemoryStream();
         pdf.Save(output, false);
         return output.ToArray();
@@ -262,5 +258,16 @@ internal static class PdfSigningDrawing
         {
             return imageBytes;
         }
+    }
+
+    private static XRect ClampRect(PdfSharp.Pdf.PdfPage page, double x, double y, double width, double height)
+    {
+        var pageWidth = page.Width.Point;
+        var pageHeight = page.Height.Point;
+        var left = Math.Clamp(double.IsFinite(x) ? x : 0, 0, pageWidth);
+        var bottom = Math.Clamp(double.IsFinite(y) ? y : 0, 0, pageHeight);
+        var right = Math.Clamp(left + Math.Max(1, double.IsFinite(width) ? width : 1), left, pageWidth);
+        var top = Math.Clamp(bottom + Math.Max(1, double.IsFinite(height) ? height : 1), bottom, pageHeight);
+        return new XRect(left, bottom, Math.Max(1, right - left), Math.Max(1, top - bottom));
     }
 }

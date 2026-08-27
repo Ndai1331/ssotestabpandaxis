@@ -1,8 +1,8 @@
 ---
 title: "Audit logs tra cứu và chi tiết"
 description: "Xây trang tra cứu nhật ký kiểm toán cho HCS với bộ lọc server-side, bảng dense và modal chi tiết qua BFF."
-status: planned
-progress: 0%
+status: completed
+progress: 100%
 priority: P1
 effort: 3-5d
 branch: main
@@ -12,7 +12,7 @@ blocks: []
 created: 2026-08-27
 ---
 
-# Kế hoạch page Audit Logs
+# Kế hoạch page Audit Logs — đã hoàn tất
 
 ## Phân biệt nguồn yêu cầu
 
@@ -21,9 +21,9 @@ created: 2026-08-27
 
 ## Overview
 
-Backend đã có projection audit tập trung, application service, controller GET /api/audit-logs và GET /api/audit-logs/{id}. Gateway đã proxy /api/audit-logs/{**catch-all} về Platform.
+Đã hoàn tất backend contract/query và page Blazor chuyên biệt qua BFF cho GET /api/audit-logs và GET /api/audit-logs/{id}. Gateway route hiện hữu được giữ nguyên.
 
-UI hiện tại chỉ là AdministrationFeature + GatewayDataPanel, đọc JSON động tối đa 100 dòng; chưa có filter, phân trang, sort, detail, field mapping hoặc trạng thái tra cứu chuyên biệt.
+UI đã thay thế panel JSON động bằng typed client, filter server-side, phân trang/sort ổn định, detail modal, localization vi/en và trạng thái loading/empty/error/retry.
 
 Kế hoạch dùng projection làm read model tập trung. Blazor chỉ gọi BFF, không gọi trực tiếp service/database. Read model là eventual-consistent vì audit records đi qua outbox/event bus.
 
@@ -41,9 +41,9 @@ Không làm trong MVP: sửa/xóa log, realtime streaming, dashboard biểu đ�
 
 | Phase | Deliverable | Status |
 |---|---|---|
-| Phase 01 — Contract và read query | Contract lọc, projection mapping, query/index/security hardening | Planned |
-| Phase 02 — Blazor page và detail | Typed BFF client, page, filter, table, modal, localization/CSS | Planned |
-| Phase 03 — Test và smoke verification | Test matrix, build, runtime smoke check và docs handoff | Planned |
+| Phase 01 — Contract và read query | Contract lọc, projection mapping, query/index/security hardening | Completed |
+| Phase 02 — Blazor page và detail | Typed BFF client, page, filter, table, modal, localization/CSS | Completed |
+| Phase 03 — Test và smoke verification | Test matrix, build, review và verification handoff | Completed |
 
 Chi tiết: phase-01-audit-contract-and-query.md, phase-02-blazor-audit-page.md, phase-03-verification-and-documentation.md.
 
@@ -55,6 +55,26 @@ Chi tiết: phase-01-audit-contract-and-query.md, phase-02-blazor-audit-page.md,
 - Client IP hiện lấy từ RemoteIpAddress; phải kiểm tra forwarded headers qua Caddy/YARP và chỉ trust proxy đã cấu hình.
 - UserName cần smoke test để xác nhận là họ tên hiển thị thay vì subject/username. Nếu không đạt, bổ sung claim resolver ở phase 01.
 - EntityChanges hiện chỉ là summary; before/after property values là backlog riêng vì có rủi ro PII/secret.
+
+## Finalization status
+
+- **Implementation:** Completed — backend query/contract, capture metadata, typed BFF client, Audit Logs page/detail, localization và responsive/accessibility states đã triển khai.
+- **Validation:** PASS — license/secret audit, navigation/mobile checks, build, test, `git diff --check` và implementation review.
+- **Acceptance:** Đạt toàn bộ MVP acceptance; không còn phase hoặc task implementation chưa hoàn tất.
+
+## Known limitations and operating conditions
+
+- **AuthServer/Platform:** projection hiện chỉ nhận custom audit event từ Organization, Document, Work Management và Collaboration. AuthServer và Platform vẫn ghi native `AbpAuditLogs`, chưa phát event vào `HcsAuditRecordProjections`; vì vậy log của hai hệ thống này không xuất hiện trong page. Không dùng fake data hoặc ghép database để che gap; đây là follow-up coverage riêng.
+- **Multi-tenant:** event/projection/query hiện chưa có `TenantId` và chưa áp tenant predicate. MVP chỉ được coi là hợp lệ trong local/single-tenant hoặc môi trường đã chấp nhận không có tenant isolation. Trước khi bật multi-tenant phải bổ sung tenant context vào capture/event/projection và enforce scope ở server.
+- **Consistency/network:** dữ liệu qua outbox/projection có eventual consistency; IP hiển thị dựa trên `RemoteIpAddress` và cần hạ tầng proxy/forwarded-header được cấu hình đúng.
+
+## Acceptance đã xác nhận
+
+- [x] Filter kết hợp, server-side paging, page size tối đa 100 và allow-list sort/tie-break hoạt động.
+- [x] Keyword/field filter, date end-exclusive, null/fallback, detail malformed JSON và exception sanitizer có hành vi xác định.
+- [x] Server permission `HCS.AuditViewer`, BFF typed endpoint, 401/403/error/retry và không lộ secret/body/token được giữ đúng.
+- [x] Page/detail, localization, responsive layout, keyboard/focus states và refresh eventual-consistency note đã hoàn tất.
+- [x] Test/build/review/license/diff gates PASS; working tree ngoài plan/report được giữ nguyên.
 
 Nếu contract/index/schema thay đổi thì chạy migration Platform trước khi test query mới. Gateway route hiện có được giữ nguyên; không cần route mới. User/role phải được cấp HCS.AuditViewer.
 
@@ -68,6 +88,4 @@ Nếu contract/index/schema thay đổi thì chạy migration Platform trước 
 
 ## Handoff
 
-Sau khi duyệt plan, chạy cook tự động với file:
-
-/ck:cook --auto /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/plans/260827-1034-audit-logs-page/plan.md
+Đã chạy `/ck:cook --auto` trên plan này. Feature đã hoàn tất trong working tree; chưa stage, commit hoặc push để bảo toàn các thay đổi khác của user. Khi cần tạo commit riêng, dùng message gợi ý: `feat(auditing): add admin audit log viewer`.

@@ -2,9 +2,13 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using HCS.DocumentService.Documents;
+using HCS.DocumentService.Signing;
 using HCS.DocumentService.Workflows;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace HCS.DocumentService.Tests;
 
@@ -42,6 +46,39 @@ public sealed class WorkflowPlaceholderTests
         Assert.DoesNotContain("<<FullName02>>", text);
         Assert.DoesNotContain("<<NoteContent02>>", text);
         Assert.DoesNotContain("<<NoteContent>>", text);
+    }
+
+    [Fact]
+    public void Word_first_electronic_signing_replaces_the_step_image_and_text()
+    {
+        var source = CreateDocx("<<Sign02>>|<<FullName02>>|<<NoteContent02>>");
+
+        var result = WordFirstSigningDocumentBuilder.Replace(source, SigningKind.Electronic,
+            CreatePng(640, 200), 2, "Trần Thị B", "Đã kiểm tra hồ sơ");
+
+        var text = ReadBodyText(result);
+        Assert.DoesNotContain("<<Sign02>>", text);
+        Assert.DoesNotContain("<<FullName02>>", text);
+        Assert.DoesNotContain("<<NoteContent02>>", text);
+        Assert.Contains("Trần Thị B", text);
+        Assert.Equal(1, ReadImagePartCount(result));
+    }
+
+    [Fact]
+    public void Word_first_digital_signing_replaces_text_but_keeps_the_provider_placeholder()
+    {
+        var source = CreateDocx("<<Sign02>>|<<FullName02>>|<<NoteContent02>>");
+
+        var result = WordFirstSigningDocumentBuilder.Replace(source, SigningKind.RemoteCa,
+            CreatePng(640, 200), 2, "Trần Thị B", "Đã kiểm tra hồ sơ");
+
+        var text = ReadBodyText(result);
+        Assert.Contains("<<Sign02>>", text);
+        Assert.Contains("Trần Thị B", text);
+        Assert.Contains("Đã kiểm tra hồ sơ", text);
+        Assert.DoesNotContain("<<FullName02>>", text);
+        Assert.DoesNotContain("<<NoteContent02>>", text);
+        Assert.Equal(0, ReadImagePartCount(result));
     }
 
     [Fact]
@@ -84,6 +121,22 @@ public sealed class WorkflowPlaceholderTests
             document.Save(stream, false);
         }
         return stream.ToArray();
+    }
+
+    private static byte[] CreatePng(int width, int height)
+    {
+        using var image = new Image<Rgba32>(width, height);
+        image[0, 0] = new Rgba32(0, 0, 0, 255);
+        using var stream = new MemoryStream();
+        image.Save(stream, new PngEncoder());
+        return stream.ToArray();
+    }
+
+    private static int ReadImagePartCount(byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes);
+        using var document = WordprocessingDocument.Open(stream, false);
+        return document.MainDocumentPart?.ImageParts.Count() ?? 0;
     }
 
     private static string ReadBodyText(byte[] bytes)

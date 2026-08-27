@@ -151,7 +151,7 @@
                     <div><label class="form-label">@L["Feature:SigningSecret"]</label><input class="form-control" type="password" @bind="editForm.Secret" autocomplete="new-password" required="@isCreateOpen" /></div>
                     <div>
                         <label class="form-label">@L["Account:SealImage"]</label>
-                        <InputFile @key="sealInputKey" class="form-control" accept="image/jpeg,image/png,image/webp" OnChange="SelectSealAsync" required="@isCreateOpen" />
+                        <InputFile @key="sealInputKey" class="form-control" accept="image/jpeg,image/png,image/webp" OnChange="SelectSealAsync" required="@(isCreateOpen && IsSealImageRequired)" />
                         @if (sealFile is not null) { <p class="hcs-form-note"><i class="fa fa-stamp" aria-hidden="true"></i>@sealFile.Name</p> }
                     </div>
                 }
@@ -403,6 +403,12 @@
         .GroupBy(x => x.Id, StringComparer.OrdinalIgnoreCase)
         .Select(x => x.First())
         .ToList();
+
+    private bool IsSealImageRequired =>
+        editForm.Type == UserSignatureType.Digital
+        && providerCredentials.FirstOrDefault(credential =>
+            string.Equals(credential.ProviderCode, editForm.ProviderCode, StringComparison.OrdinalIgnoreCase))?.Kind
+            is 2 or 3;
 
     private Task<CatalogSelect2SearchResponse> SearchProvidersAsync(string term, int page)
     {

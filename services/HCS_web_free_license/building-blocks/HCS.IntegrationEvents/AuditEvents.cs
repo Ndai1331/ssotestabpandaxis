@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Volo.Abp.EventBus;
 
 namespace HCS.IntegrationEvents.Auditing;
@@ -40,6 +41,31 @@ public sealed record AuditEntityChangeCapturedEto(
     string ChangeType,
     string? EntityId,
     string? EntityTypeFullName);
+
+public static class AuditUserNameResolver
+{
+    public static string? Resolve(ClaimsPrincipal? principal)
+    {
+        if (principal is null)
+        {
+            return null;
+        }
+
+        var fullName = principal.FindFirst("name")?.Value;
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            return fullName.Trim();
+        }
+
+        var givenName = principal.FindFirst("given_name")?.Value?.Trim();
+        var familyName = principal.FindFirst("family_name")?.Value?.Trim();
+        var composedName = string.Join(' ', new[] { familyName, givenName }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
+        return string.IsNullOrWhiteSpace(composedName)
+            ? principal.FindFirst("preferred_username")?.Value?.Trim() ?? principal.Identity?.Name
+            : composedName;
+    }
+}
 
 /// <summary>
 /// Converts server exceptions into a stable, non-sensitive value that is safe to project

@@ -59,6 +59,17 @@ public sealed record SigningCredentialDto(Guid Id, SigningKind Kind, string Prov
     public SigningCredentialDto(Guid id, SigningKind kind, string endpoint, string maskedSecret, DateTime updatedAt)
         : this(id, kind, string.Empty, endpoint, maskedSecret, 30, 150, 70, true, true, false, updatedAt, false) { }
 }
+public sealed record SigningProviderDefinitionDto(
+    string Code,
+    string DisplayName,
+    IReadOnlyList<SigningKind> SupportedKinds,
+    string? DefaultEndpoint,
+    bool RequiresLayoutImage,
+    bool RequiresSealImage,
+    bool RequiresBase64Secret,
+    int DefaultApiTimeoutSeconds,
+    int DefaultSignWidth,
+    int DefaultSignHeight);
 public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime,
     UserSignatureType Type = UserSignatureType.Electronic, string ProviderCode = "", string TokenRef = "",
     DateTime? ValidFrom = null, DateTime? ValidTo = null, bool IsActive = true, bool HasSealImage = false);
@@ -77,6 +88,7 @@ public sealed record SigningQueueItemDto(SigningQueueDocumentDto Document, Appro
 public interface ISigningAppService
 {
     Task<IReadOnlyList<SigningQueueItemDto>> GetQueueAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SigningProviderDefinitionDto>> GetProviderDefinitionsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default);
     Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest input, Guid? userId = null, CancellationToken cancellationToken = default);
     Task<SigningAttemptDto> SignAsync(SignDocumentRequest input, CancellationToken cancellationToken = default);

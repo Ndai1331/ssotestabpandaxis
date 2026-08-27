@@ -41,6 +41,8 @@ body:has(.hcs-auth-login-page) .lpx-content > .container {
     margin: 0 auto;
     max-width: min(36.5rem, 100%);
     padding-left: 0;
+    align-content: center;
+    justify-content: center;
     padding-right: 0;
     width: 100%;
 }

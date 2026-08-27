@@ -1,5 +1,8 @@
 # Phase 02 — Blazor page và detail
 
+**Status:** Completed
+**Progress:** 100%
+
 ## Mục tiêu
 
 Thay màn hình JSON động hiện tại bằng page Audit Logs chuyên biệt, giữ mật độ dữ liệu gần screenshot nhưng có thể tra cứu thật qua BFF, phân trang server-side và xem detail.
@@ -15,18 +18,15 @@ Thay màn hình JSON động hiện tại bằng page Audit Logs chuyên biệt,
 - Tokens/CSS: src/HCS.Blazor.Client/wwwroot/hcs-tokens.css, main.css, hcs-components.css
 - Localization: src/HCS.Domain.Shared/Localization/HCS/vi.json và en.json
 
-## Kiến trúc và file dự kiến
+## Kiến trúc đã triển khai
 
-Tạo typed client dùng named client HCS.Bff và DTO dùng chung:
+- [x] Typed client dùng named client `HCS.Bff` và DTO dùng chung.
+- [x] Page `/administration/audit-logs` thay panel JSON động; filter, paging, sorting, detail modal/drawer và retry đã hoạt động.
+- [x] Localization vi/en, status text/color, null fallback, sanitized detail rendering và accessibility labels đã bổ sung.
+- [x] Responsive table scroll, modal body scroll, loading/empty/error states, request cancellation và stale-result guard đã triển khai.
+- [x] Route language cũ được giữ; gateway route và server permission không bị thay đổi.
 
-- Tạo: src/HCS.Blazor.Client/Auditing/AuditLogClient.cs
-- Tạo: src/HCS.Blazor.Client/Pages/AuditLogs.razor
-- Tạo: src/HCS.Blazor.Client/Pages/AuditLogs.razor.cs
-- Tạo: src/HCS.Blazor.Client/Pages/AuditLogs.razor.css
-- Sửa: src/HCS.Blazor.Client/HCSBlazorClientModule.cs để register client
-- Sửa: src/HCS.Blazor.Client/Pages/AdministrationFeature.razor để bỏ route audit cũ, giữ nguyên routes ngôn ngữ
-- Sửa: localization vi/en cho title, filter, status, detail, empty/error và accessibility label
-- Kiểm tra: HCSMainLayout menu vẫn dẫn đúng route; không cần đổi gateway route
+Files implementation: `src/HCS.Blazor.Client/Auditing/AuditLogClient.cs`, `src/HCS.Blazor.Client/Pages/AuditLogs.razor`, `src/HCS.Blazor.Client/Pages/AuditLogs.razor.cs`, `src/HCS.Blazor.Client/Pages/AuditLogs.razor.css`, module registration, AdministrationFeature route cleanup và localization vi/en.
 
 Không mở rộng GatewayDataPanel thành component audit. Component generic đó không có contract typed, filter, paging hoặc detail lifecycle phù hợp.
 
@@ -82,10 +82,10 @@ Page dùng route /administration/audit-logs và policy/permission HCS.AuditViewe
 - Kiểm tra 375, 768 và 1440px; ở mobile ưu tiên horizontal scroll có affordance hoặc chuyển metadata thành block rõ ràng.
 - Tôn trọng prefers-reduced-motion và không dùng animation để truyền đạt trạng thái duy nhất.
 
-## Acceptance
+## Acceptance đã đạt
 
-- Page gọi đúng BFF typed endpoint, không còn dữ liệu fake/dynamic JSON.
-- Filter, sort, paging và detail hoạt động; lỗi 401/403/5xx có thông báo và retry.
-- Các field yêu cầu tra cứu có trên row hoặc detail; browser nằm trong detail.
-- UI giữ được filter trong phiên tra cứu, không gửi request theo từng phím, không rò secret.
-- Localization vi/en không còn chuỗi hiển thị audit hard-code; keyboard và responsive smoke pass.
+- [x] Page gọi đúng BFF typed endpoint, không còn dữ liệu fake/dynamic JSON.
+- [x] Filter, sort, paging và detail hoạt động; lỗi 401/403/5xx có thông báo và retry.
+- [x] Các field yêu cầu tra cứu có trên row hoặc detail; browser nằm trong detail.
+- [x] UI giữ filter trong phiên tra cứu, không gửi request theo từng phím, không rò secret.
+- [x] Localization vi/en không còn chuỗi hiển thị audit hard-code; keyboard và responsive smoke pass.

@@ -103,7 +103,7 @@ public sealed class HttpAuditOutboxMiddleware(RequestDelegate next, ILogger<Http
     {
         var userIdValue = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.User.FindFirstValue("sub");
         var audit = new AuditRecordCapturedEto(Guid.NewGuid(), "HCS.OrganizationService", "HCS.OrganizationService",
-            Guid.TryParse(userIdValue, out var userId) ? userId : null, context.User.Identity?.Name, started,
+            Guid.TryParse(userIdValue, out var userId) ? userId : null, AuditUserNameResolver.Resolve(context.User), started,
             (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), context.GetEndpoint()?.DisplayName,
             context.Request.Method, context.Request.Path, failure is null ? context.Response.StatusCode : 500,
             context.TraceIdentifier, context.Connection.RemoteIpAddress?.ToString(), context.Request.Headers.UserAgent,

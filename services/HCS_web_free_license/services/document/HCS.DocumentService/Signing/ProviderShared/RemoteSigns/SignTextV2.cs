@@ -197,9 +197,8 @@ public sealed class SignTextV2
                         if ((int)resp.StatusCode == 401)
                         {
                             _logger?.LogWarning(
-                                "[SIGN_V2] Unauthorized (401). Date={Date} AuthPrefix={AuthPrefix}",
-                                dateHeader,
-                                authorizationValue[..Math.Min(80, authorizationValue.Length)]);
+                                "[SIGN_V2] Unauthorized (401). Date={Date} AuthScheme=HmacSHA256",
+                                dateHeader);
                         }
                     }
                     catch (OperationCanceledException ex)

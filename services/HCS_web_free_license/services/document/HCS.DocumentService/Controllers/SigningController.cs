@@ -11,6 +11,10 @@ public sealed class SigningController(ISigningAppService signing) : ControllerBa
     public Task<IReadOnlyList<SigningQueueItemDto>> GetQueue(CancellationToken cancellationToken) =>
         signing.GetQueueAsync(cancellationToken);
 
+    [HttpGet("provider-definitions")]
+    public Task<IReadOnlyList<SigningProviderDefinitionDto>> GetProviderDefinitions(CancellationToken cancellationToken) =>
+        signing.GetProviderDefinitionsAsync(cancellationToken);
+
     [HttpGet("credentials/current")]
     public Task<IReadOnlyList<SigningCredentialDto>> GetCurrent([FromQuery] Guid? userId, CancellationToken cancellationToken) =>
         signing.GetCredentialsAsync(userId, cancellationToken);

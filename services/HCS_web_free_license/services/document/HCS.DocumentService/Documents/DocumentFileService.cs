@@ -112,6 +112,48 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
         document.AddFile(fileId, fileName, contentType, bytes.Length, Sha256Hex(bytes), blobName, actorUserId, now);
     }
 
+    /// <summary>
+    /// Stores a newly rendered DOCX/PDF pair without mutating either source file.
+    /// The pair is attached to the same document and linked in both directions so
+    /// subsequent signing steps can continue from the Word working copy.
+    /// </summary>
+    public async Task<(DocumentFile WordFile, DocumentFile PdfFile, string WordBlobName, string PdfBlobName)>
+        AddDocxPdfPairAsync(DocumentAggregate document, byte[] docxBytes, byte[] pdfBytes,
+            string docxFileName, string pdfFileName, Guid? actorUserId, DateTime now,
+            CancellationToken cancellationToken)
+    {
+        if (docxBytes is not { Length: > 0 }) throw new ArgumentException("DOCX content is required.", nameof(docxBytes));
+        if (pdfBytes is not { Length: > 0 }) throw new ArgumentException("PDF content is required.", nameof(pdfBytes));
+
+        var wordId = Guid.NewGuid();
+        var pdfId = Guid.NewGuid();
+        var wordBlobName = BlobNamePolicy.Document(document.Id, wordId);
+        var pdfBlobName = BlobNamePolicy.Document(document.Id, pdfId);
+        try
+        {
+            await SaveBlobAsync(wordBlobName, docxBytes, cancellationToken);
+            await SaveBlobAsync(pdfBlobName, pdfBytes, cancellationToken);
+
+            var existingFileIds = document.Files.Select(x => x.Id).ToHashSet();
+            var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
+            var wordFile = document.AddFile(wordId, docxFileName,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", docxBytes.Length,
+                Sha256Hex(docxBytes), wordBlobName, actorUserId, now);
+            var pdfFile = document.AddFile(pdfId, pdfFileName, "application/pdf", pdfBytes.Length,
+                Sha256Hex(pdfBytes), pdfBlobName, actorUserId, now);
+            wordFile.SetPairedFileId(pdfFile.Id);
+            pdfFile.SetPairedFileId(wordFile.Id);
+            TrackNewChildren(db, document, existingFileIds, existingHistoryIds);
+            return (wordFile, pdfFile, wordBlobName, pdfBlobName);
+        }
+        catch
+        {
+            await DeleteBlobIfCreatedAsync(wordBlobName, cancellationToken);
+            await DeleteBlobIfCreatedAsync(pdfBlobName, cancellationToken);
+            throw;
+        }
+    }
+
     private async Task TryAttachConvertedPdfAsync(DocumentAggregate document, DocumentFile wordFile, byte[] docxBytes,
         Guid? actorUserId, CancellationToken cancellationToken)
     {
@@ -192,6 +234,18 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
     {
         await using var stream = new MemoryStream(bytes);
         await blobs.SaveAsync(blobName, stream, overrideExisting: false, cancellationToken: cancellationToken);
+    }
+
+    private async Task DeleteBlobIfCreatedAsync(string blobName, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await blobs.DeleteAsync(blobName, cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            // Blob cleanup is best effort; the transaction has not been committed yet.
+        }
     }
 
     private static async Task<byte[]> ReadAllBytesAsync(Stream content, CancellationToken cancellationToken)

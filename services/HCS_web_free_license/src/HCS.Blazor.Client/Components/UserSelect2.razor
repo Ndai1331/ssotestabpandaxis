@@ -1,17 +1,18 @@
 @inherits HCSComponentBase
 
-<CatalogSelect2 Value="Value"
-                ValueChanged="ValueChanged"
-                Values="Values"
-                ValuesChanged="ValuesChanged"
-                Multiple="Multiple"
-                SelectedText="SelectedText"
-                SelectedTexts="SelectedTexts"
-                SelectedItem="SelectedItem"
-                SelectedItems="SelectedItems"
+<CatalogSelect2 Value="@Value"
+                ValueChanged="@ValueChanged"
+                Values="@Values"
+                ValuesChanged="@ValuesChanged"
+                Multiple="@Multiple"
+                Placeholder="@(string.IsNullOrWhiteSpace(Placeholder) ? L["Catalog:PleaseSelect"].Value : Placeholder)"
+                SelectedText="@SelectedText"
+                SelectedTexts="@SelectedTexts"
+                SelectedItem="@SelectedItem"
+                SelectedItems="@SelectedItems"
                 UserTemplate="true"
                 CssClass="hcs-catalog-select2 hcs-user-select2"
-                Search="Search" />
+                Search="@Search" />
 
 
                 

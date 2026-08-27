@@ -1,24 +1,23 @@
 # Phase 03 — Verification và documentation
 
+**Status:** Completed
+**Progress:** 100%
+
 ## Mục tiêu
 
 Chứng minh page tra cứu đúng dữ liệu, đúng quyền, không lộ thông tin nhạy cảm và không làm hỏng các thay đổi đang có trong working tree.
 
-## Automated checks
+## Automated checks — PASS
 
-Chạy theo thứ tự phù hợp với dependency và ghi lại kết quả:
+Kết quả finalization:
 
-1. License hygiene:
-
-   ./scripts/audit-license-clean.sh
-
-2. Build các project bị ảnh hưởng bằng no-restore sau khi dependency đã sẵn sàng; sau đó build solution nếu thời gian/môi trường cho phép.
-
-3. Test solution bằng no-build hoặc test project bị ảnh hưởng. Không bỏ qua test vì có thay đổi contract/migration.
-
-4. Kiểm tra whitespace/diff:
-
-   git diff --check
+- [x] `./scripts/audit-license-clean.sh` — PASS.
+- [x] `./scripts/audit-navigation-layout.sh` — PASS.
+- [x] `./scripts/audit-mobile-layout.sh` — PASS.
+- [x] `dotnet build HCS.slnx --no-restore` — PASS.
+- [x] `dotnet test HCS.slnx --no-build` — PASS.
+- [x] `git diff --check` — PASS.
+- [x] Implementation/code review — PASS; không còn blocker trong phạm vi MVP.
 
 Không reset, stash hoặc ghi đè các thay đổi không thuộc feature audit logs.
 
@@ -39,7 +38,7 @@ Không reset, stash hoặc ghi đè các thay đổi không thuộc feature audi
 
 Ưu tiên unit/integration test cho input normalization, query predicate, mapping, detail fallback và permission; bổ sung migration/model test nếu index/schema thay đổi.
 
-## Runtime smoke test
+## Runtime smoke test — PASS
 
 Qua https://hcs.localhost với account được cấp HCS.AuditViewer:
 
@@ -51,7 +50,9 @@ Qua https://hcs.localhost với account được cấp HCS.AuditViewer:
 6. Kiểm tra 375/768/1440px, keyboard-only, focus modal, Escape, screen-reader label cơ bản và prefers-reduced-motion.
 7. Đối chiếu timezone hiển thị với timezone đã thống nhất. Kiểm tra IP sau proxy không bị ghi thành IP proxy hoặc header giả mạo.
 
-Ghi rõ nếu AuthServer/Platform không có row. Đây là giới hạn coverage đã biết của projection hiện tại, không được “sửa” bằng fake data.
+- [x] Flow page/filter/paging/sort/detail, lỗi/retry, quyền, responsive và accessibility smoke đã pass.
+- [x] AuthServer/Platform không có row trong projection; gap được ghi nhận đúng theo thiết kế, không dùng fake data.
+- [x] Multi-tenant condition được ghi nhận: chưa có `TenantId`/tenant predicate, chỉ vận hành single-tenant/local cho MVP.
 
 ## Documentation handoff
 
@@ -64,11 +65,11 @@ Nếu triển khai thật, tạo hoặc cập nhật runbook tại docs/runbooks
 - retention/PII guidance và các field tuyệt đối không hiển thị;
 - backlog bao phủ Platform/AuthServer, export, retention và entity before/after nếu cần.
 
-Cập nhật roadmap/changelog chỉ khi repository đã có tài liệu tương ứng; không tạo tài liệu trùng lặp.
+Cập nhật roadmap/changelog chỉ khi repository đã có tài liệu tương ứng; trong task này chỉ sync plan và report liên quan, không sửa product docs/source code.
 
-## Acceptance
+## Acceptance đã đạt
 
-- Automated checks, build, test và license audit có kết quả ghi nhận.
-- Runtime smoke pass cho quyền, filter/paging/sort/detail, lỗi, responsive và accessibility.
-- Có evidence về dữ liệu thực từ event/projection; không dùng mock để che coverage gap.
-- Working tree vẫn bảo toàn các thay đổi trước đó; report nêu rõ unresolved questions.
+- [x] Automated checks, build, test, review và license audit có kết quả PASS.
+- [x] Runtime smoke pass cho quyền, filter/paging/sort/detail, lỗi, responsive và accessibility.
+- [x] Có evidence về dữ liệu thực từ event/projection; không dùng mock để che coverage gap.
+- [x] Working tree bảo toàn thay đổi trước đó; report nêu rõ limitation AuthServer/Platform và multi-tenant condition.

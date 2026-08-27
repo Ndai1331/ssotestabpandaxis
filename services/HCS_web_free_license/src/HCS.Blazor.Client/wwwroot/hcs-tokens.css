@@ -62,6 +62,16 @@
     --hcs-control-height: 2rem;
     --hcs-control-height-compact: 2.5rem;
     --hcs-touch-target: 2rem;
+    /* Shared geometry for Bootstrap/Blazorise buttons and button links. */
+    --hcs-button-height: 2.5rem;
+    --hcs-button-height-sm: 2rem;
+    --hcs-button-padding-y: .5rem;
+    --hcs-button-padding-x: 1rem;
+    --hcs-button-padding-y-sm: .375rem;
+    --hcs-button-padding-x-sm: .75rem;
+    --hcs-button-line-height: 1.25;
+    --hcs-action-button-size: 2.7rem;
+    --hcs-action-button-padding: .45rem;
     --hcs-radius-sm: 5px;
     --hcs-radius-md: 8px;
     --hcs-radius-lg: 12px;
@@ -109,7 +119,12 @@ body { background: var(--hcs-color-background); color: var(--hcs-color-ink); fon
 button, a, input, select, textarea { touch-action: manipulation; }
 
 @media (max-width: 767.98px) {
-    :root { --hcs-page-gutter: 1rem; --hcs-control-height: 2.75rem; }
+    :root {
+        --hcs-page-gutter: 1rem;
+        --hcs-control-height: 2.75rem;
+        --hcs-button-height: 2.75rem;
+        --hcs-button-height-sm: 2.75rem;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

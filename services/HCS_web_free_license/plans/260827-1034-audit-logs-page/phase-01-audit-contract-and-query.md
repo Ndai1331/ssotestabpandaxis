@@ -1,5 +1,8 @@
 # Phase 01 — Contract và read query
 
+**Status:** Completed
+**Progress:** 100%
+
 ## Mục tiêu
 
 Chuẩn hóa contract và query server-side cho một read model audit tập trung. Phase này chịu trách nhiệm bảo đảm dữ liệu đủ để tra cứu, an toàn khi hiển thị và không tạo thêm đường truy cập trực tiếp tới database/service.
@@ -14,30 +17,21 @@ Chuẩn hóa contract và query server-side cho một read model audit tập tru
 - Gateway route: gateways/web/HCS.WebGateway/appsettings.json
 - Capture event: building-blocks/HCS.IntegrationEvents/AuditEvents.cs
 
-## Việc cần làm
+## Đã hoàn tất
 
-1. Mở rộng GetAuditLogsInput theo hướng tương thích ngược:
+- [x] Mở rộng `GetAuditLogsInput` theo hướng tương thích ngược với keyword tổng hợp, field filters, HTTP method/IP/browser/service/application/exception, URL; page mới dùng `EndTimeExclusive`, còn `EndTime` giữ semantics inclusive cũ.
+- [x] Chuẩn hóa page size mặc định 20, giới hạn tuyệt đối 100, skip bound và normalize/trim độ dài input.
+- [x] Bổ sung `ApplicationName` vào row DTO; resolver display name ưu tiên claim `name`, fallback given/family name rồi username/identity.
+- [x] Allow-list sort theo status/duration/user/time/service/application và luôn thêm `Id` làm tie-breaker.
+- [x] Query `AsNoTracking`/projection tối thiểu, count trước page, filter kết hợp và empty page an toàn.
+- [x] Detail deserialize malformed JSON an toàn, log server-side có kiểm soát, sanitize exception và loại parameters khỏi response.
+- [x] Giữ `HCS.AuditViewer` tại application service là server authority duy nhất; route/gateway hiện hữu không tạo vòng audit.
 
-   - keyword tổng hợp cho user/display name, user id, IP, browser, action, URL/path, service, application và correlation ID;
-   - exact hoặc allow-list filter cho user id, status, HTTP method, IP, source service, application và has-exception;
-   - thời gian UTC với quy ước start inclusive/end exclusive;
-   - page size mặc định 20, giới hạn tuyệt đối 100; trim và giới hạn độ dài chuỗi.
+## Coverage và limitation đã chốt
 
-2. Bổ sung ApplicationName vào row DTO hoặc một field hiển thị tương đương. User display name dùng giá trị có sẵn trước, fallback theo thứ tự UserName/UserId/—; không đổi ý nghĩa dữ liệu lịch sử âm thầm.
+MVP đọc projection hiện tại, bao phủ event từ Organization, Document, Work Management và Collaboration. Platform/AuthServer chỉ ghi `AbpAuditLogs`, chưa phát event vào projection nên không xuất hiện ở endpoint. Đây là follow-up coverage, không query nhiều database hoặc ghép dữ liệu trong browser.
 
-3. Chuẩn hóa sort bằng allow-list (ExecutionTime, HttpStatusCode, ExecutionDuration, UserName, SourceService, ApplicationName) và luôn thêm Id làm tie-breaker. Không nối trực tiếp tên cột từ request vào LINQ/SQL.
-
-4. Triển khai query trên HcsAuditRecordProjections với AsNoTracking, projection chỉ lấy các field cần cho row, count trước page, và tránh load JSON action/entity ở list. Bảo đảm empty page sau khi xóa/lọc vẫn trả response hợp lệ.
-
-5. Tối ưu index nếu đo đạc cho thấy cần: execution time, correlation ID, user ID và composite source service/action đã có; cân nhắc index cho status/IP/application chỉ sau khi kiểm tra execution plan và volume thực tế. Tạo migration/snapshot nếu schema thay đổi.
-
-6. Detail phải deserialize ActionsJson/EntityChangesJson theo kiểu an toàn: malformed JSON trả danh sách rỗng và log server-side có kiểm soát, không trả raw JsonException cho người dùng. Giữ sanitizer cho exception; tuyệt đối không thêm request/response body, access token, cookie hoặc secret vào DTO.
-
-7. Xác nhận permission HCS.AuditViewer tại application service là authority duy nhất. Kiểm tra route /api/audit-logs không bị audit lại thành vòng lặp hoặc tạo dữ liệu rác.
-
-## Coverage và dữ liệu cần chốt
-
-MVP đọc projection hiện tại, bao phủ các event từ Organization, Document, Work Management và Collaboration. Platform/AuthServer hiện chỉ ghi AbpAuditLogs, nên các dòng AuthServer như screenshot chưa tự động xuất hiện ở endpoint này. Nếu acceptance bắt buộc bao phủ cả Platform/AuthServer, tạo follow-up để phát event cùng schema và đưa vào projection; không query nhiều database hoặc ghép dữ liệu trong browser.
+Projection/event/query chưa mang `TenantId` và chưa có tenant predicate. Do đó phase này chỉ được vận hành trong local/single-tenant hoặc khi tenant isolation không nằm trong scope; multi-tenant phải bổ sung tenant propagation và server scope trước khi enable.
 
 Kiểm tra RemoteIpAddress sau Caddy/YARP/forwarded headers. Chỉ tin proxy đã cấu hình; không dùng header client tùy ý làm IP xác thực. Smoke test phải xác nhận UserName là họ tên mong muốn, không phải subject/username. Nếu không đạt, bổ sung resolver claim/display name ở capture boundary và test backward compatibility.
 
@@ -51,13 +45,13 @@ Kiểm tra RemoteIpAddress sau Caddy/YARP/forwarded headers. Chỉ tin proxy đ�
 - Test: test/HCS.EntityFrameworkCore.Tests/EntityFrameworkCore/PlatformFeatureTests.cs hoặc test project phù hợp
 - Chỉ kiểm tra, không sửa nếu không cần: controller và gateway route
 
-## Acceptance
+## Acceptance đã đạt
 
-- Filter kết hợp không làm mất điều kiện; page/sort ổn định và không vượt 100 row.
-- Tìm được theo user, IP, API, action, service, application, status, method, correlation và exception state.
-- Date range, null field, malformed detail JSON và record không có user đều có hành vi xác định.
-- Unauthorized/forbidden bị chặn ở server; không lộ secret hoặc raw exception.
-- Test projection/event deduplication và query/index pass.
+- [x] Filter kết hợp không làm mất điều kiện; page/sort ổn định và không vượt 100 row.
+- [x] Tìm được theo user, IP, API, action, service, application, status, method, correlation và exception state.
+- [x] Date range, null field, malformed detail JSON và record không có user đều có hành vi xác định.
+- [x] Unauthorized/forbidden bị chặn ở server; không lộ secret hoặc raw exception.
+- [x] Test projection/event deduplication và query/index pass.
 
 ## Rủi ro
 

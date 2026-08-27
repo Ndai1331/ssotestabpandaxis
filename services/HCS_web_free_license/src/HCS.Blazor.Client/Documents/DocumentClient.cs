@@ -226,6 +226,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<List<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default) =>
         GetAsync<List<SigningCredentialDto>>(SigningUserUri("/api/signing/credentials/current", userId), cancellationToken);
 
+    public Task<List<SigningProviderDefinitionDto>> GetSigningProviderDefinitionsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<SigningProviderDefinitionDto>>("/api/signing/provider-definitions", cancellationToken);
+
     public Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest request, Guid? userId = null, CancellationToken cancellationToken = default) =>
         SendAsync<SigningCredentialDto>(HttpMethod.Put, SigningUserUri("/api/signing/credentials/current", userId), request, cancellationToken);
 

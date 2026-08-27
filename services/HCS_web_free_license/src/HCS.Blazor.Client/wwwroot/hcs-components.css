@@ -653,13 +653,97 @@
 .hcs-app-shell :where(.card-body, .hcs-catalog-grid-card .card-body) { padding: var(--hcs-space-5); }
 
 .hcs-app-shell .btn:not(.btn-sm):not(.btn-lg) {
+    align-items: center;
+    box-sizing: border-box;
     border-radius: var(--hcs-radius-sm);
+    display: inline-flex;
     font-size: .86rem;
     font-weight: 600;
-    min-height: var(--hcs-control-height);
-    /* padding: .55rem .9rem; */
-    padding: .9rem;
+    justify-content: center;
+    line-height: var(--hcs-button-line-height);
+    max-height: none;
+    min-height: var(--hcs-button-height);
     transition: background var(--hcs-motion-fast) var(--hcs-motion-ease), border-color var(--hcs-motion-fast) var(--hcs-motion-ease), box-shadow var(--hcs-motion-fast) var(--hcs-motion-ease), color var(--hcs-motion-fast) var(--hcs-motion-ease);
+}
+
+/* Keep small button and anchor variants on the same baseline as Blazorise
+   buttons. Explicit Bootstrap spacing utilities remain opt-in overrides. */
+.hcs-app-shell .btn.btn-sm {
+    align-items: center;
+    box-sizing: border-box;
+    display: inline-flex;
+    justify-content: center;
+    line-height: var(--hcs-button-line-height);
+    max-height: none;
+    min-height: var(--hcs-button-height-sm);
+}
+
+.hcs-app-shell .btn:not(.btn-sm):not(.btn-lg):not(.p-0):not(.px-0):not(.py-0) {
+    padding: var(--hcs-button-padding-y) var(--hcs-button-padding-x);
+}
+
+.hcs-app-shell .btn.btn-sm:not(.p-0):not(.px-0):not(.py-0) {
+    padding: var(--hcs-button-padding-y-sm) var(--hcs-button-padding-x-sm);
+}
+
+.hcs-app-shell .btn.p-0,
+.hcs-app-shell .btn:not(.btn-sm):not(.btn-lg).p-0 {
+    align-items: center;
+    display: inline-flex;
+    line-height: var(--hcs-button-line-height);
+    min-height: var(--hcs-button-height-sm);
+    padding: 0;
+}
+
+.hcs-app-shell .btn:not(.btn-sm):not(.btn-lg).px-0 {
+    padding-block: var(--hcs-button-padding-y);
+    padding-inline: 0;
+}
+
+.hcs-app-shell .btn:not(.btn-sm):not(.btn-lg).py-0 {
+    padding-block: 0;
+    padding-inline: var(--hcs-button-padding-x);
+}
+
+.hcs-app-shell .btn.btn-sm.px-0 {
+    padding-block: var(--hcs-button-padding-y-sm);
+    padding-inline: 0;
+}
+
+.hcs-app-shell .btn.btn-sm.py-0 {
+    padding-block: 0;
+    padding-inline: var(--hcs-button-padding-x-sm);
+}
+
+/* Grid items stretch by default; standalone form actions should size to their
+   content so an <a class="btn"> and a <Button> look identical. */
+.hcs-app-shell .hcs-catalog-form > .btn {
+    justify-self: start;
+    max-width: 100%;
+}
+
+/* Icon/text actions in data rows use one predictable hit area across pages. */
+.hcs-app-shell .hcs-row-actions > .btn,
+.hcs-app-shell .hcs-action-button {
+    align-items: center;
+    box-sizing: border-box;
+    display: inline-flex;
+    justify-content: center;
+    line-height: 1;
+    max-height: none;
+    min-height: var(--hcs-action-button-size);
+    min-width: var(--hcs-action-button-size);
+    padding: var(--hcs-action-button-padding);
+}
+
+/* The kanban overflow trigger is icon-only, but still needs the same usable
+   hit area as other small controls. */
+.hcs-app-shell .hcs-kanban-menu__toggle {
+    height: var(--hcs-button-height-sm);
+    max-height: none;
+    min-height: var(--hcs-button-height-sm);
+    padding: 0 !important;
+    width: var(--hcs-button-height-sm);
 }
 
 .hcs-app-shell .btn-primary { background: var(--hcs-color-primary); border-color: var(--hcs-color-primary); color: #fff; }
@@ -746,14 +830,50 @@
 
 .hcs-app-shell select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     align-items: center;
+    box-sizing: border-box;
     display: flex;
-    height: var(--hcs-control-height) !important;
-    min-height: var(--hcs-control-height) !important;
+    height: var(--hcs-button-max-height) !important;
+    max-height: var(--hcs-button-max-height) !important;
+    min-height: var(--hcs-button-max-height) !important;
+    overflow: hidden;
 }
 
 .hcs-app-shell select.hcs-catalog-select2 + .select2-container .select2-selection__rendered {
-    line-height: 1.5 !important;
+    align-items: center;
+    display: flex;
+    height: 100%;
+    line-height: 1 !important;
+    min-width: 0;
+    overflow: hidden;
     padding-inline: .75rem 2.25rem !important;
+    width: 100%;
+}
+
+.hcs-app-shell select.hcs-user-select2 + .select2-container .hcs-user-option {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.hcs-app-shell select.hcs-user-select2 + .select2-container .select2-selection--single .hcs-user-option__avatar {
+    flex: 0 0 28px;
+    height: 28px;
+    width: 28px;
+}
+
+.hcs-app-shell select.hcs-user-select2 + .select2-container .select2-selection--single .hcs-user-option__copy {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.hcs-app-shell select.hcs-user-select2 + .select2-container .select2-selection--single .hcs-user-option__name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 @media (max-width: 767.98px) {

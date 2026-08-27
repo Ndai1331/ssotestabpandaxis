@@ -21,7 +21,7 @@ public sealed class HttpAuditOutboxMiddleware(RequestDelegate next, IServiceScop
                 var db = scope.ServiceProvider.GetRequiredService<WorkManagementDbContext>();
                 var userIdText = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.User.FindFirstValue("sub");
                 var audit = new AuditRecordCapturedEto(Guid.NewGuid(), "HCS.WorkManagementService", "HCS.WorkManagementService",
-                    Guid.TryParse(userIdText, out var userId) ? userId : null, context.User.Identity?.Name, started,
+            Guid.TryParse(userIdText, out var userId) ? userId : null, AuditUserNameResolver.Resolve(context.User), started,
                     (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), context.GetEndpoint()?.DisplayName,
                     context.Request.Method, context.Request.Path, failure is null ? context.Response.StatusCode : 500,
                     context.TraceIdentifier, context.Connection.RemoteIpAddress?.ToString(), context.Request.Headers.UserAgent,

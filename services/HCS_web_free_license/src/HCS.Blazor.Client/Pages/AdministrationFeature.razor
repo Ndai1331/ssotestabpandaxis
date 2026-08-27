@@ -1,6 +1,5 @@
 @page "/administration/languages"
 @page "/administration/language-texts"
-@page "/administration/audit-logs"
 @attribute [Authorize(Roles = "admin")]
 @using Microsoft.AspNetCore.Components.Routing
 @inject NavigationManager Navigation
@@ -51,10 +50,10 @@
                 "/api/language-management/language-texts",
                 "fa fa-spell-check"),
             _ => new(
-                "Nhật ký kiểm toán",
-                "Lọc hoạt động theo người dùng, thời gian, trạng thái và correlation ID.",
-                "/api/audit-logs",
-                "fa fa-clipboard-list")
+                "Ngôn ngữ",
+                "Bật, tắt và chọn ngôn ngữ mặc định của hệ thống.",
+                "/api/language-management/languages",
+                "fa fa-language")
         };
     }
 

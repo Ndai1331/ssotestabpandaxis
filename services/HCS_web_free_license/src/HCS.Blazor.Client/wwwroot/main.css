@@ -171,9 +171,6 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     .hcs-app-shell a.btn {
         box-sizing: border-box;
         border-radius: var(--hcs-radius) !important;
-        max-height: var(--hcs-touch-target);
-        min-height: var(--hcs-touch-target);
-        line-height: 1;
     }
 
     .hcs-app-shell .hcs-catalog-create,
@@ -539,8 +536,6 @@ body:has(.hcs-chat-page) {
     border-radius: 5px;
     font-size: .95rem;
     font-weight: 700;
-    min-height: 2.85rem;
-    padding: .62rem 1.05rem;
     transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
 }
 
@@ -1094,9 +1089,10 @@ body:has(.hcs-chat-page) {
 }
 
 select.hcs-catalog-select2 + .select2-container .select2-selection--single {
-    height: 38px !important;
-    max-height: 36px;
-    min-height: 38px !important;
+    box-sizing: border-box;
+    height: var(--hcs-control-height) !important;
+    max-height: var(--hcs-control-height) !important;
+    min-height: var(--hcs-control-height) !important;
 }
 
 .hcs-catalog-form .form-control:focus,
@@ -1276,12 +1272,6 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 @media (min-width: 768px) {
-    .hcs-catalog-page .btn {
-        max-height: 36px;
-        min-height: 36px;
-        padding-block: .3rem;
-    }
-
     .hcs-app-shell .hcs-catalog-page .hcs-catalog-search .btn,
     .hcs-app-shell .hcs-catalog-page .hcs-catalog-filter-toggle,
     .hcs-app-shell .hcs-catalog-page .hcs-catalog-advanced-filter .form-select,
@@ -1289,8 +1279,6 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
         height: var(--hcs-button-max-height);
         max-height: var(--hcs-button-max-height) !important;
         min-height: var(--hcs-button-max-height) !important;
-        padding-top: 0;
-        padding-bottom: 0;
     }
 
     .hcs-app-shell .hcs-catalog-page .hcs-catalog-search .input-group-text,
@@ -1302,12 +1290,6 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
         padding-bottom: 0;
     }
 
-    .hcs-catalog-page .hcs-catalog-create,
-    .hcs-catalog-page .hcs-catalog-export {
-        max-height: 32px;
-        min-height: 32px;
-        padding-block: .18rem;
-    }
 }
 
 /* Document filters: keep the full filter set readable without forcing a horizontal strip. */
@@ -1547,11 +1529,11 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-fc .fc-col-header-cell {
-    background: #f4f7f9;
+    background: var(--color-primary);
 }
 
 .hcs-fc .fc-col-header-cell-cushion {
-    color: #4d6d82;
+    color: white;
     font-size: .78rem;
     font-weight: 800;
     letter-spacing: .075em;
@@ -2593,6 +2575,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-workspace-project-detail-modal .hcs-workspace-readonly {
     gap: 1.1rem;
+    padding : 1rem;
 }
 
 .hcs-workspace-project-detail-modal .card {
@@ -2693,7 +2676,8 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-workspace-member-list {
-    margin-top: 1rem;
+    /* margin-top: 1rem; */
+    padding: 1rem;
 }
 
 .hcs-workspace-project-detail-modal .modal-title,
@@ -2706,6 +2690,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 .hcs-workspace-project-detail-modal .hcs-workspace-detail-list {
     max-height: none;
     overflow: visible;
+    padding: 1rem;
 }
 .hcs-workspace-project-detail-modal .modal-title { min-width: 0; }
 .hcs-workspace-project-detail-modal .hcs-workspace-detail-row {

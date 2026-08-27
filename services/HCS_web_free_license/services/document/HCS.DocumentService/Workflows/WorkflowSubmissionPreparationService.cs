@@ -13,7 +13,8 @@ public sealed class WorkflowSubmissionPreparationService(
     IBlobContainer<DocumentBlobContainer> documentBlobs,
     IBlobContainer<SigningBlobContainer> signingBlobs,
     IDocxToPdfConverter converter,
-    IWorkflowUserProfileResolver profileResolver)
+    IWorkflowUserProfileResolver profileResolver,
+    DocumentFileService files)
 {
     public async Task PrepareAsync(DocumentAggregate document, Guid actorUserId, WorkflowDefinition definition,
         string? signingContent, CancellationToken cancellationToken = default)
@@ -50,7 +51,7 @@ public sealed class WorkflowSubmissionPreparationService(
 
         var file = document.Files.Where(x => !x.IsPendingDeletion)
             .OrderByDescending(x => IsWord(x))
-            .ThenBy(x => x.CreationTime)
+            .ThenByDescending(x => x.CreationTime)
             .FirstOrDefault();
         if (file is null)
             throw new InvalidOperationException("A document file is required before presenting the document for signing.");
@@ -76,6 +77,7 @@ public sealed class WorkflowSubmissionPreparationService(
         var signatureBytes = signatureBuffer.ToArray();
         if (signatureBytes.Length == 0)
             throw new InvalidOperationException("The submitter's electronic signature image is empty.");
+        var renderedSignatureBytes = ElectronicSignatureLayoutComposer.Compose(signatureBytes);
 
         await using var fileStream = await documentBlobs.GetAsync(file.BlobName, cancellationToken);
         await using var fileBuffer = new MemoryStream();
@@ -86,8 +88,8 @@ public sealed class WorkflowSubmissionPreparationService(
         {
             if (string.IsNullOrWhiteSpace(signingContent))
                 throw new InvalidOperationException("Signing content is required for a Word signing document.");
-            await PrepareWordAsync(document, file, sourceBytes, signatureBytes, fullName, profile,
-                signingContent, now, createdBlobNames, cancellationToken);
+            await PrepareWordAsync(document, actorUserId, file, sourceBytes, renderedSignatureBytes, fullName,
+                profile, signingContent, now, createdBlobNames, cancellationToken);
         }
         else if (IsPdf(file))
         {
@@ -100,6 +102,7 @@ public sealed class WorkflowSubmissionPreparationService(
 
     private async Task PrepareWordAsync(
         DocumentAggregate document,
+        Guid actorUserId,
         DocumentFile wordFile,
         byte[] sourceBytes,
         byte[] signatureBytes,
@@ -119,21 +122,26 @@ public sealed class WorkflowSubmissionPreparationService(
         if (pdfBytes.Length == 0)
             throw new InvalidOperationException("The Word signing document could not be converted to PDF.");
 
-        await ReplaceBlobAsync(wordFile, replacedWord, createdBlobNames, cancellationToken);
-        var pdfFile = document.Files.FirstOrDefault(x => x.Id == wordFile.PairedFileId && IsPdf(x));
-        if (pdfFile is not null)
+        // Keep the uploaded/template Word and its original PDF immutable. The
+        // rendered submission is a new pair and becomes the next signing input.
+        if (sourceBytes.AsSpan().SequenceEqual(replacedWord))
         {
-            await ReplaceBlobAsync(pdfFile, pdfBytes, createdBlobNames, cancellationToken);
+            if (document.Files.Any(x => x.Id == wordFile.PairedFileId && IsPdf(x))) return;
+            var generatedPdfId = Guid.NewGuid();
+            var generatedPdfBlob = await SaveBlobAsync(document.Id, pdfBytes, createdBlobNames, cancellationToken);
+            var generatedPdf = document.AddFile(generatedPdfId,
+                BuildDerivedFileName(wordFile.FileName, "-prepared", ".pdf"), "application/pdf", pdfBytes.Length,
+                Sha256Hex(pdfBytes), generatedPdfBlob, actorUserId, now);
+            wordFile.SetPairedFileId(generatedPdf.Id);
+            generatedPdf.SetPairedFileId(wordFile.Id);
             return;
         }
-
-        var generatedPdfId = Guid.NewGuid();
-        var blobName = await SaveBlobAsync(document.Id, pdfBytes, createdBlobNames, cancellationToken);
-        var generatedPdf = document.AddFile(generatedPdfId,
-            Path.ChangeExtension(wordFile.FileName, ".pdf") ?? "workflow.pdf", "application/pdf", pdfBytes.Length,
-            Sha256Hex(pdfBytes), blobName, null, now);
-        wordFile.SetPairedFileId(generatedPdf.Id);
-        generatedPdf.SetPairedFileId(wordFile.Id);
+        var pair = await files.AddDocxPdfPairAsync(document, replacedWord, pdfBytes,
+            BuildDerivedFileName(wordFile.FileName, "-prepared", ".docx"),
+            BuildDerivedFileName(wordFile.FileName, "-prepared", ".pdf"),
+            actorUserId, now, cancellationToken);
+        createdBlobNames.Add(pair.WordBlobName);
+        createdBlobNames.Add(pair.PdfBlobName);
     }
 
     private async Task ReplaceBlobAsync(DocumentFile file, byte[] bytes, List<string> createdBlobNames,
@@ -163,4 +171,13 @@ public sealed class WorkflowSubmissionPreparationService(
         || string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase);
 
     private static string Sha256Hex(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+
+    private static string BuildDerivedFileName(string fileName, string suffix, string extension)
+    {
+        var stem = Path.GetFileNameWithoutExtension(fileName);
+        if (string.IsNullOrWhiteSpace(stem)) stem = "workflow";
+        var maxStemLength = Math.Max(1, 256 - suffix.Length - extension.Length);
+        if (stem.Length > maxStemLength) stem = stem[..maxStemLength];
+        return $"{stem}{suffix}{extension}";
+    }
 }

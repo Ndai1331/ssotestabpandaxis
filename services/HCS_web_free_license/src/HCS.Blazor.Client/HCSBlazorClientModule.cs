@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using HCS.Blazor.Client.Navigation;
 using HCS.Blazor.Client.Authentication;
+using HCS.Blazor.Client.Auditing;
 using HCS.Blazor.Client.Collaboration;
 using HCS.Blazor.Client.Pages.Organization;
 using HCS.Blazor.Client.Pages;
@@ -73,6 +74,7 @@ public class HCSBlazorClientModule : AbpModule
         ConfigureMessageLocalization();
         context.Services.AddScoped<OrganizationCatalogClient>();
         context.Services.AddScoped<IdentityAdminClient>();
+        context.Services.AddScoped<AuditLogClient>();
         context.Services.AddScoped<CollaborationClient>();
         context.Services.AddScoped<SurveyCatalogCache>();
         context.Services.AddScoped<Account.AccountProfileClient>();
