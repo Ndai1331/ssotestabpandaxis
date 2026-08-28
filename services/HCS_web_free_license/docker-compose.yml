@@ -151,6 +151,8 @@ services:
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
+      RabbitMQ__EventBus__ClientName: HCS.PlatformService
+      RabbitMQ__EventBus__ExchangeName: hcs
   organization:
     <<: *hcs-image
     build: { context: ., dockerfile: deploy/docker/Dockerfile, args: { PROJECT: services/organization/HCS.OrganizationService.Host/HCS.OrganizationService.Host.csproj, APP_DLL: HCS.OrganizationService.Host.dll } }

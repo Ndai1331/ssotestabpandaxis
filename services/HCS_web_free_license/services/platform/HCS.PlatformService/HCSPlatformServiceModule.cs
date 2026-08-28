@@ -17,6 +17,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict;
 using Volo.Abp.Security.Claims;
 using Volo.Abp.Swashbuckle;
+using Volo.Abp.EventBus.RabbitMq;
 
 namespace HCS.PlatformService;
 
@@ -28,6 +29,7 @@ namespace HCS.PlatformService;
     typeof(AbpAspNetCoreMvcModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBlobStoringMinioModule),
+    typeof(AbpEventBusRabbitMqModule),
     typeof(AbpSwashbuckleModule))]
 public sealed class HCSPlatformServiceModule : AbpModule
 {

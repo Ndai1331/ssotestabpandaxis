@@ -21,11 +21,11 @@ public static class Program
 
             await builder.AddApplicationAsync<HCSPlatformServiceModule>();
             var app = builder.Build();
-            await app.InitializeApplicationAsync();
             await using (var scope = app.Services.CreateAsyncScope())
             {
                 await scope.ServiceProvider.GetRequiredService<HCSDbContext>().Database.MigrateAsync();
             }
+            await app.InitializeApplicationAsync();
             await app.RunAsync();
             return 0;
         }

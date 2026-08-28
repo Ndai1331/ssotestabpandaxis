@@ -18,15 +18,62 @@ Menu hiện vẫn nằm trong admin shell. Vì vậy admin không có `HCS.Audit
 Organization / Document / Work Management / Collaboration
   -> AuditRecordCapturedEto (hcs.audit.record.v1)
   -> service outbox + RabbitMQ/event bus
-  -> AuditRecordIntegrationEventHandler
+  -> Platform consumer queue (HCS.PlatformService)
+  -> AbpEventInbox + AuditRecordIntegrationEventHandler
   -> HcsAuditRecordProjections
   -> Platform AuditViewerAppService
   -> Web Gateway/BFF -> Blazor page
 ```
 
-Projection được cập nhật bất đồng bộ. Request nghiệp vụ thành công không có nghĩa là dòng đã xuất hiện ngay trong màn hình; outbox, RabbitMQ hoặc retry backlog có thể tạo độ trễ. Dùng **Refresh**, ghi nhận thời điểm refresh, và chờ một khoảng ngắn trước khi kết luận event bị mất. Không query nhiều database hoặc ghép native audit logs trong browser để bù dữ liệu.
+Projection được cập nhật bất đồng bộ. Request nghiệp vụ thành công không có nghĩa là dòng đã xuất hiện ngay trong màn hình; outbox, RabbitMQ, inbox hoặc retry backlog có thể tạo độ trễ. Dùng **Refresh**, ghi nhận thời điểm refresh, và chờ một khoảng ngắn trước khi kết luận event bị mất. Không query nhiều database hoặc ghép native audit logs trong browser để bù dữ liệu.
 
-Migration tạo bảng `HcsAuditRecordProjections` cùng các index cho `ExecutionTime`, `UserId`, `CorrelationId` và `(SourceService, ActionName)`. Projection hiện không backfill từ `AbpAuditLogs` và không có retention/archive/partition policy trong slice này.
+Migration tạo `HcsAuditRecordProjections`, `AbpEventInbox` và các index cho `ExecutionTime`, `UserId`, `CorrelationId` và `(SourceService, ActionName)`. Projection hiện không backfill từ `AbpAuditLogs` và không có retention/archive/partition policy trong slice này.
+
+### Kiểm tra queue, outbox, inbox và projection
+
+Các thành phần có ý nghĩa vận hành khác nhau; không coi một trạng thái đơn lẻ là bằng chứng cho toàn bộ flow:
+
+| Thành phần | Dấu hiệu bình thường | Ý nghĩa khi chẩn đoán |
+|---|---|---|
+| Producer outbox | `OutboxMessages` của producer có `PublishedAt`, không có pending/dead-letter bất thường | Event đã được ghi bền vững cùng request và worker đã publish. `PublishedAt` chỉ chứng minh producer publish thành công, không chứng minh Platform đã consume. |
+| RabbitMQ | Có queue `HCS.PlatformService`, có consumer; `messages` giảm sau request mới | Queue phải được bind vào exchange `hcs` cho event `hcs.audit.record.v1`. Không có consumer thì event mới không thể vào inbox/projection. |
+| Platform inbox | `AbpEventInbox` có row của event mới, `HandledTime` được điền; retry không tăng liên tục | Event đã tới consumer và được ABP theo dõi durable. `RetryCount`/`NextRetryTime` hoặc row chưa handled cho thấy consumer đang lỗi/chờ retry. |
+| Projection | `HcsAuditRecordProjections` có đúng một row theo `Id` của event mới | Handler đã ghi read model. Handler idempotent; duplicate event ID không tạo thêm projection row. |
+
+Trong local Docker, bắt đầu từ topology và queue:
+
+```bash
+docker compose ps
+docker compose exec -T rabbitmq rabbitmqctl list_queues name messages consumers
+```
+
+Queue cần thấy là `HCS.PlatformService` và consumer count phải lớn hơn `0`. Nếu queue có message nhưng consumer bằng `0`, kiểm tra log Platform và cấu hình `RabbitMQ:EventBus:ClientName=HCS.PlatformService`, `RabbitMQ:EventBus:ExchangeName=hcs` trước khi kiểm tra projection.
+
+Kiểm tra inbox/projection trong database `hcs_identity`:
+
+```bash
+docker compose exec -T postgres psql -U hcs -d hcs_identity -c \
+  'SELECT "EventName", "Status", "HandledTime", "RetryCount", "NextRetryTime" FROM "AbpEventInbox" ORDER BY "CreationTime" DESC LIMIT 20;'
+docker compose exec -T postgres psql -U hcs -d hcs_identity -c \
+  'SELECT COUNT(*) AS projection_rows, MAX("ExecutionTime") AS newest_execution FROM "HcsAuditRecordProjections";'
+```
+
+Producer outbox nằm ở các database/bảng sau; thay tên bảng vào truy vấn tương tự và lọc `EventName = 'hcs.audit.record.v1'`:
+
+| Producer | Database | Bảng |
+|---|---|---|
+| Organization | `hcs_organization` | `hcs_organization."OutboxMessages"` |
+| Document | `hcs_document` | `document."OutboxMessages"` |
+| Work Management | `hcs_work` | `hcs_work."OutboxMessages"` |
+| Collaboration | `hcs_collaboration` | `public."CollaborationOutbox"` |
+
+Tập trung kiểm tra ba trạng thái: `PublishedAt IS NULL AND DeadLetteredAt IS NULL` là pending; `DeadLetteredAt IS NOT NULL` cần xem `LastError`; `PublishedAt IS NOT NULL` là đã publish nhưng vẫn phải kiểm tra queue → inbox → projection. Sau mỗi lần kiểm tra nên tạo **một request mới** từ Organization, Document, Work Management hoặc Collaboration, chờ worker/consumer xử lý, rồi đối chiếu event ID qua các lớp và gọi lại `GET /api/audit-logs`.
+
+### Event đã publish trước khi có consumer không tự backfill
+
+Event đã publish và outbox đã đánh dấu `PublishedAt` trước khi queue/consumer `HCS.PlatformService` tồn tại không tự được publish lại. RabbitMQ không giữ lại event đã publish vào exchange cho một queue được tạo/bind về sau; vì vậy việc thêm consumer chỉ sửa flow cho event mới (hoặc message cũ vẫn còn thực sự nằm trong queue), không làm hồi sinh các event đã trôi qua.
+
+Muốn khôi phục lịch sử phải có quy trình replay/backfill riêng, có kiểm soát từ payload outbox còn lưu hoặc nguồn native phù hợp (`AbpAuditLogs`). Không tự sửa `HcsAuditRecordProjections`, không chèn fake rows và không coi việc restart consumer là backfill. Đây cũng là lý do số liệu trước khi fix có thể vẫn không xuất hiện trong page dù outbox báo đã publish.
 
 ## Coverage hiện tại
 
@@ -37,7 +84,7 @@ Migration tạo bảng `HcsAuditRecordProjections` cùng các index cho `Executi
 | Work Management | HTTP audit outbox middleware | HTTP requests đi qua middleware. |
 | Collaboration | HTTP audit outbox middleware | HTTP requests đi qua middleware; hub/background activity không mặc định được bao phủ. |
 
-Platform và AuthServer hiện dùng native ABP auditing (`AbpAuditLogs`) nhưng không phát `AuditRecordCapturedEto` vào projection này. Vì vậy login, Identity/Permission API và các request trực tiếp của Platform/AuthServer có thể có trong `AbpAuditLogs` nhưng không xuất hiện tại `/api/audit-logs`. Blazor host cũng không phải producer của read model này. Đây là coverage gap đã biết, không phải lỗi filter; nếu cần audit toàn hệ thống phải có follow-up phát cùng schema và chính sách backfill riêng.
+Platform và AuthServer hiện dùng native ABP auditing (`AbpAuditLogs`) cho hoạt động do chính chúng phát sinh; Platform là consumer của custom event từ các producer khác, không phải producer tự động đưa native audit vào projection này. Vì vậy login, Identity/Permission API và các request trực tiếp của Platform/AuthServer có thể có trong `AbpAuditLogs` nhưng không xuất hiện tại `/api/audit-logs`. Blazor host cũng không phải producer của read model này. Đây là coverage gap đã biết, không phải lỗi filter; nếu cần audit toàn hệ thống phải có follow-up phát cùng schema và chính sách backfill riêng.
 
 Các giới hạn capture cần nhớ:
 
@@ -115,7 +162,7 @@ Các bảo vệ hiện có:
 4. Kiểm tra end time là exclusive: record đúng tại mốc kết thúc không nằm trong kết quả; start time vẫn inclusive.
 5. Kiểm tra sort status/user/time/duration, page size 20/50/100, chuyển trang và reset. Xác nhận request list không chứa JSON detail.
 6. Mở một detail và xác nhận browser, exception sanitized, nested actions/entity changes; parameters không xuất hiện.
-7. Sau một request ở Organization, Document, Work Management hoặc Collaboration, Refresh và chờ projection đồng bộ. Không dùng một request Platform/AuthServer để kiểm tra coverage của read model.
+7. Sau một request mới ở Organization, Document, Work Management hoặc Collaboration, kiểm tra queue `HCS.PlatformService`, inbox/projection rồi Refresh và chờ projection đồng bộ. Không dùng một request Platform/AuthServer để kiểm tra coverage của read model; event cũ đã publish trước khi consumer tồn tại cũng không phải dữ liệu kiểm tra hợp lệ cho flow mới.
 8. Thử account không có permission: page/API phải bị từ chối (`403` cho session đã xác thực; `401` khi chưa xác thực). Sau khi đổi permission, sign out/in lại.
 
 ## Troubleshooting
@@ -124,8 +171,10 @@ Các bảo vệ hiện có:
 |---|---|
 | `401` hoặc bị quay lại login | Kiểm tra BFF session/OIDC; sign in lại. Nếu vừa đổi auth/config, hard-refresh và lấy lại antiforgery/session cookie. |
 | `403` với admin | Cấp `HCS.AuditViewer`, sign out/in để refresh claims. Không mở quyền bằng cách bỏ attribute khỏi UI; server app service là boundary. |
-| Dòng mới chưa xuất hiện | Chạy `docker compose ps`; kiểm tra RabbitMQ, outbox/inbox và Platform logs, sau đó Refresh. Xem backlog/retry trước khi kết luận mất event. |
+| Dòng mới chưa xuất hiện | Chạy `docker compose ps`; xác nhận queue `HCS.PlatformService` có consumer, rồi kiểm tra producer outbox → `AbpEventInbox` → `HcsAuditRecordProjections` và Platform logs. Sau đó Refresh; xem backlog/retry trước khi kết luận mất event. |
+| Queue Platform không có hoặc consumer bằng 0 | Kiểm tra Platform đã bật `Volo.Abp.EventBus.RabbitMQ`, module `AbpEventBusRabbitMqModule`, `ClientName=HCS.PlatformService`, exchange `hcs`, rồi rebuild/restart Platform. Chỉ kiểm tra lại bằng một event mới. |
 | Có dữ liệu nhưng thiếu Platform/AuthServer | Đây là gap đã biết: kiểm tra native `AbpAuditLogs`; projection hiện không đọc trực tiếp và không backfill bảng native. |
+| Outbox báo published nhưng inbox/projection vẫn không tăng | `PublishedAt` không chứng minh consumer đã xử lý. Kiểm tra queue binding/consumer, `AbpEventInbox.HandledTime`, `RetryCount` và `NextRetryTime`; event đã publish trước khi queue tồn tại không tự backfill. |
 | IP hiển thị IP proxy/container | Kiểm tra Caddy/YARP và forwarded-header configuration. Chỉ tin proxy allow-list; không coi header client tùy ý là IP xác thực. |
 | Correlation không nối được qua các service | Capture hiện dùng `TraceIdentifier`; kiểm tra từng hop và log server, không giả định ID đã được propagate end-to-end. |
 | Detail không có actions/entity changes | Record có thể không có detail, JSON cũ/malformed hoặc event producer không gửi nested data. Kiểm tra warning của `AuditViewerAppService`; UI cố ý trả danh sách rỗng. |

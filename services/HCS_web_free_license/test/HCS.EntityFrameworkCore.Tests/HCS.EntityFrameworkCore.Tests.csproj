@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\HCS.EntityFrameworkCore\HCS.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\HCS.Application.Tests\HCS.Application.Tests.csproj" />
+    <ProjectReference Include="..\..\services\platform\HCS.PlatformService\HCS.PlatformService.csproj" />
   </ItemGroup>
 
   <ItemGroup>

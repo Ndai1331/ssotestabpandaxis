@@ -7,7 +7,7 @@
 
 Chứng minh page tra cứu đúng dữ liệu, đúng quyền, không lộ thông tin nhạy cảm và không làm hỏng các thay đổi đang có trong working tree.
 
-## Automated checks — PASS
+## Automated checks — PASS (code-level)
 
 Kết quả finalization:
 
@@ -20,6 +20,8 @@ Kết quả finalization:
 - [x] Implementation/code review — PASS; không còn blocker trong phạm vi MVP.
 
 Không reset, stash hoặc ghi đè các thay đổi không thuộc feature audit logs.
+
+Runtime RabbitMQ consumer được kiểm tra riêng trong Phase 04; các gate code-level vẫn giữ vai trò regression cho contract/query/page.
 
 ## Test matrix backend
 
@@ -38,21 +40,23 @@ Không reset, stash hoặc ghi đè các thay đổi không thuộc feature audi
 
 Ưu tiên unit/integration test cho input normalization, query predicate, mapping, detail fallback và permission; bổ sung migration/model test nếu index/schema thay đổi.
 
-## Runtime smoke test — PASS
+## Runtime smoke test — PASS (local runtime, 2026-08-28)
 
-Qua https://hcs.localhost với account được cấp HCS.AuditViewer:
+HTTP route/auth đã được kiểm tra: page chưa đăng nhập redirect về BFF login và `/api/audit-logs` trả `401`. Baseline trước fix cho thấy native audit và producer outbox có dữ liệu thật, nhưng page read model chưa có dữ liệu:
 
-1. Mở Administration > Audit Logs, refresh, đổi page size, sort và mở detail.
-2. Tạo hoặc thực hiện một request thành công và một request lỗi trong các service đã capture; chờ outbox/event handler xử lý rồi xác nhận row có user, IP, method, URL, service, application, status, duration và correlation.
-3. Tìm lần lượt theo keyword, IP, API, action, service, status, method, date range và exception; kiểm tra Reset.
-4. Đăng nhập account admin không có HCS.AuditViewer và account không phải admin; xác nhận menu/page/403 theo quyết định quyền.
-5. Kiểm tra service unavailable/5xx, Retry, stale result khi submit liên tiếp và logout/401.
-6. Kiểm tra 375/768/1440px, keyboard-only, focus modal, Escape, screen-reader label cơ bản và prefers-reduced-motion.
-7. Đối chiếu timezone hiển thị với timezone đã thống nhất. Kiểm tra IP sau proxy không bị ghi thành IP proxy hoặc header giả mạo.
+1. `hcs_identity."AbpAuditLogs"` có 325 rows; `AbpAuditLogActions` có 356 rows.
+2. Organization/Document/Work Management/Collaboration đã publish lần lượt 1,299/1,964/1,282/21,752 audit events; pending/dead-letter đều 0.
+3. `hcs_identity."AbpEventInbox"` và `hcs_identity."HcsAuditRecordProjections"` đều 0 rows.
+4. RabbitMQ có queue của bốn producer nhưng không có queue consumer tương ứng cho Platform.
+5. Outbox payload đã có request query/CRUD (`GET`, `POST`, `PUT`, `DELETE`) cùng user, IP, API path, service và application, nhưng chưa được project vào page.
 
-- [x] Flow page/filter/paging/sort/detail, lỗi/retry, quyền, responsive và accessibility smoke đã pass.
-- [x] AuthServer/Platform không có row trong projection; gap được ghi nhận đúng theo thiết kế, không dùng fake data.
+- [x] Sau fix, queue `HCS.PlatformService` có `consumers=1`; một smoke event hợp lệ đi qua producer outbox → RabbitMQ → `AbpEventInbox` (`2 handled`, `0 pending`) → `HcsAuditRecordProjections` (`1 row`). Republish cùng event ID giữ projection ở `1 row`.
+- [x] Auth boundary vẫn đúng: anonymous page redirect về BFF login và anonymous `/api/audit-logs` trả `401`; projection đã sẵn sàng cho authenticated viewer.
+- [ ] Interactive authenticated BFF/page query chưa chạy trong smoke vì không có session đăng nhập; cần account có `HCS.AuditViewer` nếu muốn xác nhận UI sau restart.
+- [x] AuthServer/Platform coverage gap và không dùng fake data được xác nhận.
 - [x] Multi-tenant condition được ghi nhận: chưa có `TenantId`/tenant predicate, chỉ vận hành single-tenant/local cho MVP.
+
+Chi tiết evidence và root cause: `plans/reports/20260828-audit-logs-runtime-trace.md`.
 
 ## Documentation handoff
 
@@ -69,7 +73,8 @@ Cập nhật roadmap/changelog chỉ khi repository đã có tài liệu tương
 
 ## Acceptance đã đạt
 
-- [x] Automated checks, build, test, review và license audit có kết quả PASS.
-- [x] Runtime smoke pass cho quyền, filter/paging/sort/detail, lỗi, responsive và accessibility.
-- [x] Có evidence về dữ liệu thực từ event/projection; không dùng mock để che coverage gap.
+- [x] Automated checks, build, test, review và license audit có kết quả PASS ở code-level.
+- [x] Runtime smoke xác nhận queue, inbox, projection và duplicate handling sau khi wiring consumer.
+- [ ] Interactive authenticated page smoke cho quyền, filter/paging/sort/detail cần chạy với BFF session thật.
+- [x] Có evidence từ producer outbox thật và smoke event đi qua dispatcher; không chèn trực tiếp fake row vào projection để che delivery gap.
 - [x] Working tree bảo toàn thay đổi trước đó; report nêu rõ limitation AuthServer/Platform và multi-tenant condition.

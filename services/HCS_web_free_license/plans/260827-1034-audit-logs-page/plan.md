@@ -44,8 +44,9 @@ Không làm trong MVP: sửa/xóa log, realtime streaming, dashboard biểu đ�
 | Phase 01 — Contract và read query | Contract lọc, projection mapping, query/index/security hardening | Completed |
 | Phase 02 — Blazor page và detail | Typed BFF client, page, filter, table, modal, localization/CSS | Completed |
 | Phase 03 — Test và smoke verification | Test matrix, build, review và verification handoff | Completed |
+| Phase 04 — Runtime event consumer fix | Platform RabbitMQ consumer, inbox/projection runtime verification và duplicate handling | Completed |
 
-Chi tiết: phase-01-audit-contract-and-query.md, phase-02-blazor-audit-page.md, phase-03-verification-and-documentation.md.
+Chi tiết: phase-01-audit-contract-and-query.md, phase-02-blazor-audit-page.md, phase-03-verification-and-documentation.md, phase-04-runtime-event-consumer-fix.md.
 
 ## Findings and dependencies
 
@@ -59,14 +60,15 @@ Chi tiết: phase-01-audit-contract-and-query.md, phase-02-blazor-audit-page.md,
 ## Finalization status
 
 - **Implementation:** Completed — backend query/contract, capture metadata, typed BFF client, Audit Logs page/detail, localization và responsive/accessibility states đã triển khai.
-- **Validation:** PASS — license/secret audit, navigation/mobile checks, build, test, `git diff --check` và implementation review.
-- **Acceptance:** Đạt toàn bộ MVP acceptance; không còn phase hoặc task implementation chưa hoàn tất.
+- **Validation:** PASS — code gates (license/secret audit, navigation/mobile checks, build, test, `git diff --check` và implementation review) cùng runtime evidence ngày 2026-08-28: queue `HCS.PlatformService` có `consumers=1`, `AbpEventInbox` có `2` handled/`0` pending, `HcsAuditRecordProjections` có `1` row, duplicate republish vẫn giữ projection `1`, Platform build `0/0`, targeted tests `9/9`, license PASS.
+- **Acceptance:** Đạt toàn bộ MVP acceptance; bản vá runtime consumer/projection đã hoàn tất và duplicate handling đã được xác nhận.
 
 ## Known limitations and operating conditions
 
 - **AuthServer/Platform:** projection hiện chỉ nhận custom audit event từ Organization, Document, Work Management và Collaboration. AuthServer và Platform vẫn ghi native `AbpAuditLogs`, chưa phát event vào `HcsAuditRecordProjections`; vì vậy log của hai hệ thống này không xuất hiện trong page. Không dùng fake data hoặc ghép database để che gap; đây là follow-up coverage riêng.
 - **Multi-tenant:** event/projection/query hiện chưa có `TenantId` và chưa áp tenant predicate. MVP chỉ được coi là hợp lệ trong local/single-tenant hoặc môi trường đã chấp nhận không có tenant isolation. Trước khi bật multi-tenant phải bổ sung tenant context vào capture/event/projection và enforce scope ở server.
 - **Consistency/network:** dữ liệu qua outbox/projection có eventual consistency; IP hiển thị dựa trên `RemoteIpAddress` và cần hạ tầng proxy/forwarded-header được cấu hình đúng.
+- **Runtime wiring:** Đã hoàn tất module/consumer RabbitMQ cho Platform. Runtime hiện có queue `HCS.PlatformService` với `consumers=1`; `AbpEventInbox` xử lý `2` event với `0` pending và `HcsAuditRecordProjections` có `1` row. Duplicate republish giữ projection ở `1` row.
 
 ## Acceptance đã xác nhận
 
@@ -75,6 +77,7 @@ Chi tiết: phase-01-audit-contract-and-query.md, phase-02-blazor-audit-page.md,
 - [x] Server permission `HCS.AuditViewer`, BFF typed endpoint, 401/403/error/retry và không lộ secret/body/token được giữ đúng.
 - [x] Page/detail, localization, responsive layout, keyboard/focus states và refresh eventual-consistency note đã hoàn tất.
 - [x] Test/build/review/license/diff gates PASS; working tree ngoài plan/report được giữ nguyên.
+- [x] Runtime trace xác nhận event đi đến `HcsAuditRecordProjections`; projection có `1` row và duplicate republish không tạo row trùng.
 
 Nếu contract/index/schema thay đổi thì chạy migration Platform trước khi test query mới. Gateway route hiện có được giữ nguyên; không cần route mới. User/role phải được cấp HCS.AuditViewer.
 

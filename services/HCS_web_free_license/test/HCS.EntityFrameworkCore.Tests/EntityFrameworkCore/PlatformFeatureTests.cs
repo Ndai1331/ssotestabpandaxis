@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 using HCS.Auditing;
 using HCS.Localization;
 using HCS.IntegrationEvents.Auditing;
+using HCS.PlatformService;
 using Shouldly;
+using Volo.Abp.EventBus.RabbitMq;
+using Volo.Abp.Modularity;
 using Xunit;
 
 namespace HCS.EntityFrameworkCore;
@@ -197,6 +200,18 @@ public class PlatformFeatureTests : HCSEntityFrameworkCoreTestBase
         ], "test"));
 
         AuditUserNameResolver.Resolve(principal).ShouldBe("Nguyễn Văn A");
+    }
+
+    [Fact]
+    public void Should_Register_RabbitMq_Event_Bus_For_Audit_Projection()
+    {
+        var dependencies = typeof(HCSPlatformServiceModule)
+            .GetCustomAttributes(typeof(DependsOnAttribute), inherit: false)
+            .Cast<DependsOnAttribute>()
+            .SelectMany(attribute => attribute.GetDependedTypes())
+            .ToArray();
+
+        dependencies.ShouldContain(typeof(AbpEventBusRabbitMqModule));
     }
 
     private static AuditRecordCapturedEto CreateAuditRecord(

@@ -80,6 +80,16 @@
           "Volo.Abp.BlobStoring": "10.6.0"
         }
       },
+      "Volo.Abp.EventBus.RabbitMQ": {
+        "type": "Direct",
+        "requested": "[10.6.0, )",
+        "resolved": "10.6.0",
+        "contentHash": "BMWPWQPeTjFA1fCI1FTvHiIWv/Kp/OksIAt41tkse019wf8+/uGJ9FGfFxZ6XyrH9P61ZErW/zaJmH9nsbsFtw==",
+        "dependencies": {
+          "Volo.Abp.EventBus": "10.6.0",
+          "Volo.Abp.RabbitMQ": "10.6.0"
+        }
+      },
       "Volo.Abp.OpenIddict.AspNetCore": {
         "type": "Direct",
         "requested": "[10.6.0, )",
@@ -631,6 +641,11 @@
         "dependencies": {
           "Polly.Core": "8.4.2"
         }
+      },
+      "RabbitMQ.Client": {
+        "type": "Transitive",
+        "resolved": "7.1.2",
+        "contentHash": "y3c6ulgULScWthHw5PLM1ShHRLhxg0vCtzX/hh61gRgNecL3ZC3WoBW2HYHoXOVRqTl99Br9E7CZEytGZEsCyQ=="
       },
       "Riok.Mapperly": {
         "type": "Transitive",
@@ -1713,6 +1728,16 @@
         "dependencies": {
           "Volo.Abp.AspNetCore.Mvc": "10.6.0",
           "Volo.Abp.PermissionManagement.Application.Contracts": "10.6.0"
+        }
+      },
+      "Volo.Abp.RabbitMQ": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "5W/goNHWqnITIiV2pTB/wrhLytC3njMvvBJ37oS8jjJec/vmLyl/5ogMZIYyb6gIGGrP296tYYKtSgX0dWbmeQ==",
+        "dependencies": {
+          "RabbitMQ.Client": "7.1.2",
+          "Volo.Abp.Json": "10.6.0",
+          "Volo.Abp.Threading": "10.6.0"
         }
       },
       "Volo.Abp.Security": {
