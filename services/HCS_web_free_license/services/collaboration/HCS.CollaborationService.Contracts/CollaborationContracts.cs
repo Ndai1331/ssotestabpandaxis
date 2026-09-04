@@ -12,6 +12,7 @@ public static partial class CollaborationPermissions
     public const string Chat = "Collaboration.Chat";
     public const string Notifications = "Collaboration.Notifications";
     public const string Administration = "Collaboration.Administration";
+    public const string Realtime = "Collaboration.Realtime";
 }
 
 public sealed record ConversationDto(Guid Id, ConversationType Type, string? Name, string? Description,
@@ -142,6 +143,14 @@ public static class NotificationLocalization
     public const string ProjectAssignedBody = "Notification:ProjectAssignedBody";
     public const string GenericTitle = "Notification:Generic";
     public const string GenericBody = "Notification:GenericBody";
+    public const string SocialCommentTitle = "Notification:SocialComment";
+    public const string SocialCommentBody = "Notification:SocialCommentBody";
+    public const string SocialReplyTitle = "Notification:SocialReply";
+    public const string SocialReplyBody = "Notification:SocialReplyBody";
+    public const string SocialReactionTitle = "Notification:SocialReaction";
+    public const string SocialReactionBody = "Notification:SocialReactionBody";
+    public const string SocialCommentReactionTitle = "Notification:SocialCommentReaction";
+    public const string SocialCommentReactionBody = "Notification:SocialCommentReactionBody";
 
     private const char Separator = '\u001f';
 
@@ -194,6 +203,22 @@ public static class NotificationLocalization
         (GenericTitle, false) => "Notification",
         (GenericBody, true) => "Thông báo cho {0}",
         (GenericBody, false) => "Notification for {0}",
+        (SocialCommentTitle, true) => "Bài viết có bình luận mới",
+        (SocialCommentTitle, false) => "Your post has a new comment",
+        (SocialCommentBody, true) => "{0} đã bình luận về bài viết của bạn",
+        (SocialCommentBody, false) => "{0} commented on your post",
+        (SocialReplyTitle, true) => "Bình luận có phản hồi mới",
+        (SocialReplyTitle, false) => "Your comment has a new reply",
+        (SocialReplyBody, true) => "{0} đã phản hồi bình luận của bạn",
+        (SocialReplyBody, false) => "{0} replied to your comment",
+        (SocialReactionTitle, true) => "Bài viết có tương tác mới",
+        (SocialReactionTitle, false) => "Your post has a new reaction",
+        (SocialReactionBody, true) => "{0} đã tương tác với bài viết của bạn",
+        (SocialReactionBody, false) => "{0} reacted to your post",
+        (SocialCommentReactionTitle, true) => "Bình luận có tương tác mới",
+        (SocialCommentReactionTitle, false) => "Your comment has a new reaction",
+        (SocialCommentReactionBody, true) => "{0} đã tương tác với bình luận của bạn",
+        (SocialCommentReactionBody, false) => "{0} reacted to your comment",
         _ => key
     };
 }

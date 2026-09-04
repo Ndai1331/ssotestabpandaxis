@@ -104,9 +104,15 @@ public sealed class SecurityDurabilityTests
     }
 
     [Fact]
-    public void Chat_hub_requires_the_chat_policy()
+    public void Collaboration_hub_allows_realtime_and_keeps_chat_methods_protected()
     {
         typeof(ChatHub).GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
+            .Single().Policy.ShouldBe(CollaborationPermissions.Realtime);
+        typeof(ChatHub).GetMethod(nameof(ChatHub.Subscribe))!
+            .GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
+            .Single().Policy.ShouldBe(CollaborationPermissions.Chat);
+        typeof(ChatHub).GetMethod(nameof(ChatHub.GetOnlineUserIds))!
+            .GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
             .Single().Policy.ShouldBe(CollaborationPermissions.Chat);
     }
 

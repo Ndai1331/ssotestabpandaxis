@@ -22,6 +22,7 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
     public event Func<Task>? Changed;
     public event Func<ChatMessageDto, Task>? MessageReceived;
     public event Func<Guid, Guid, Task>? MessageDeleted;
+    public event Func<NotificationDto, Task>? NotificationReceived;
     public event Func<PresenceChangedDto, Task>? PresenceChanged;
     public event Func<IReadOnlyList<Guid>, Task>? PresenceSnapshot;
     public event Func<HubConnectionState, Task>? StatusChanged;
@@ -45,11 +46,19 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
                             InnerHandler = innerHandler
                         };
                     })
-                    .WithAutomaticReconnect()
+                    .WithAutomaticReconnect(new[]
+                    {
+                        TimeSpan.Zero,
+                        TimeSpan.FromSeconds(2),
+                        TimeSpan.FromSeconds(5),
+                        TimeSpan.FromSeconds(10),
+                        TimeSpan.FromSeconds(30)
+                    })
                     .Build();
 
                 connection.On<ChatMessageDto>("ReceiveMessage", NotifyMessageAsync);
                 connection.On<ChatDeletedPayload>("MessageDeleted", NotifyDeletedAsync);
+                connection.On<NotificationDto>("NotificationReceived", NotifyNotificationAsync);
                 connection.On<PresenceChangedDto>("PresenceChanged", NotifyPresenceChangedAsync);
                 connection.Reconnecting += _ => NotifyStatusAsync(HubConnectionState.Reconnecting);
                 connection.Reconnected += async _ =>
@@ -138,6 +147,20 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
             foreach (var handler in deleted.GetInvocationList().Cast<Func<Guid, Guid, Task>>())
             {
                 await handler(payload.ConversationId, payload.MessageId);
+            }
+        }
+
+        await NotifyChangedAsync();
+    }
+
+    private async Task NotifyNotificationAsync(NotificationDto notification)
+    {
+        var handlers = NotificationReceived;
+        if (handlers is not null)
+        {
+            foreach (var handler in handlers.GetInvocationList().Cast<Func<NotificationDto, Task>>())
+            {
+                await handler(notification);
             }
         }
 

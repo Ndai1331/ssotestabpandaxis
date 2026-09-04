@@ -31,6 +31,22 @@ public sealed class ApiContractTests
             .Cast<HttpGetAttribute>().Single().Template.ShouldBe("feed");
         typeof(SocialController).GetMethod(nameof(SocialController.ProfilePosts))!.GetParameters()
             .ShouldContain(parameter => parameter.Name == "visibility" && parameter.ParameterType == typeof(SocialPostVisibility?));
+        typeof(SocialController).GetMethod(nameof(SocialController.Feed))!.GetParameters()
+            .ShouldContain(parameter => parameter.Name == "keyword" && parameter.ParameterType == typeof(string));
+        typeof(SocialController).GetMethod(nameof(SocialController.ProfilePosts))!.GetParameters()
+            .ShouldContain(parameter => parameter.Name == "from" && parameter.ParameterType == typeof(DateOnly?));
+        typeof(SocialController).GetMethod(nameof(SocialController.ProfilePosts))!.GetParameters()
+            .ShouldContain(parameter => parameter.Name == "to" && parameter.ParameterType == typeof(DateOnly?));
+        typeof(SocialController).GetMethod(nameof(SocialController.ProfilePosts))!.GetParameters()
+            .ShouldContain(parameter => parameter.Name == "hashtag" && parameter.ParameterType == typeof(string));
+        typeof(SocialController).GetMethod(nameof(SocialController.Feed))!.GetParameters()
+            .ShouldContain(parameter => parameter.Name == "postId" && parameter.ParameterType == typeof(Guid?));
+        typeof(SocialController).GetMethod(nameof(SocialController.ReactToPost))!.GetCustomAttributes(typeof(HttpPostAttribute), true)
+            .Cast<HttpPostAttribute>().Single().Template.ShouldBe("posts/{postId:guid}/reactions");
+        typeof(SocialController).GetMethod(nameof(SocialController.ReactToComment))!.GetCustomAttributes(typeof(HttpPostAttribute), true)
+            .Cast<HttpPostAttribute>().Single().Template.ShouldBe("comments/{commentId:guid}/reactions");
+        typeof(SocialController).GetMethod(nameof(SocialController.SharePost))!.GetCustomAttributes(typeof(HttpPostAttribute), true)
+            .Cast<HttpPostAttribute>().Single().Template.ShouldBe("posts/{postId:guid}/shares");
         typeof(SocialMediaStore).IsAssignableTo(typeof(ITransientDependency)).ShouldBeTrue();
         typeof(SocialPostAppService).IsSealed.ShouldBeFalse();
         typeof(SocialCommentAppService).IsSealed.ShouldBeFalse();
@@ -60,6 +76,13 @@ public sealed class ApiContractTests
             .ShouldContain(attribute => attribute.Template == "unread-count");
         typeof(NotificationController).GetMethod(nameof(NotificationController.UnreadCount))!.GetCustomAttributes(typeof(HttpGetAttribute), true)
             .Cast<HttpGetAttribute>().ShouldContain(attribute => attribute.Template == "unread-count");
+    }
+
+    [Fact]
+    public void Notification_routes_use_the_realtime_channel()
+    {
+        typeof(NotificationController).GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>().Single().Policy.ShouldBe(CollaborationPermissions.Realtime);
     }
 
     [Fact]

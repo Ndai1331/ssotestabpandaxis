@@ -2,11 +2,13 @@
 @page "/social/profile"
 @using Microsoft.AspNetCore.Components.Routing
 @using System.Threading
+@using System.Globalization
 @attribute [Authorize(Policy = CollaborationPermissions.Social)]
 @inherits HCSComponentBase
 @inject SocialClient Social
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JS
 
 <PageTitle>@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"]) · HCS</PageTitle>
 
@@ -42,6 +44,42 @@
             <i class="fa fa-lock" aria-hidden="true"></i>@L["Social:Internal"]
         </button>
     </nav>
+
+    <form class="hcs-social-search" @onsubmit="ApplySearchAsync" @onsubmit:preventDefault>
+        <div class="hcs-social-search__heading">
+            <i class="fa fa-magnifying-glass" aria-hidden="true"></i>
+            <span>@L["Social:SearchTitle"]</span>
+        </div>
+        <div class="hcs-social-search__field hcs-social-search__field--keyword">
+            <label for="social-search-keyword">@L["Social:Keyword"]</label>
+            <input id="social-search-keyword" class="form-control" @bind="keywordInput"
+                   placeholder='@L["Social:KeywordPlaceholder"]' autocomplete="off" />
+        </div>
+        <div class="hcs-social-search__field">
+            <label for="social-search-from">@L["Social:FromDate"]</label>
+            <input id="social-search-from" class="form-control" type="date" @bind="fromDateInput" />
+        </div>
+        <div class="hcs-social-search__field">
+            <label for="social-search-to">@L["Social:ToDate"]</label>
+            <input id="social-search-to" class="form-control" type="date" @bind="toDateInput" />
+        </div>
+        <div class="hcs-social-search__field">
+            <label for="social-search-hashtag">@L["Social:Hashtag"]</label>
+            <input id="social-search-hashtag" class="form-control" @bind="hashtagInput"
+                   placeholder="#hcs" autocomplete="off" />
+        </div>
+        <div class="hcs-social-search__actions">
+            <button class="hcs-social-search__submit" type="submit">
+                <i class="fa fa-search" aria-hidden="true"></i>@L["Social:Search"]
+            </button>
+            <button class="hcs-social-search__clear" type="button" @onclick="ClearSearchAsync"
+                    disabled="@(!HasSearchFilters())">@L["Social:ClearSearch"]</button>
+        </div>
+    </form>
+    @if (!string.IsNullOrWhiteSpace(searchError))
+    {
+        <p class="hcs-social-search__error" role="alert"><i class="fa fa-triangle-exclamation" aria-hidden="true"></i>@searchError</p>
+    }
 
     <div class="hcs-social-layout">
         <main class="hcs-social-stream">
@@ -159,9 +197,70 @@
                             </div>
                         }
 
+                        @if (post.LinkPreview is { } linkPreview)
+                        {
+                            <a class="hcs-social-link-preview @(string.IsNullOrWhiteSpace(linkPreview.ImageUrl) ? "is-text-only" : null)"
+                               href="@linkPreview.Url" target="_blank" rel="noopener noreferrer">
+                                @if (!string.IsNullOrWhiteSpace(linkPreview.ImageUrl))
+                                {
+                                    <img src="@linkPreview.ImageUrl" loading="lazy" referrerpolicy="no-referrer" alt="@(linkPreview.Title ?? linkPreview.Url)" />
+                                }
+                                <span class="hcs-social-link-preview__body">
+                                    <small>@(linkPreview.SiteName ?? L["Social:LinkPreview"])</small>
+                                    <strong>@(linkPreview.Title ?? linkPreview.Url)</strong>
+                                    @if (!string.IsNullOrWhiteSpace(linkPreview.Description))
+                                    {
+                                        <span>@linkPreview.Description</span>
+                                    }
+                                    <small class="hcs-social-link-preview__url">@linkPreview.Url</small>
+                                </span>
+                            </a>
+                        }
+
+                        <div class="hcs-social-post__engagement">
+                            <div class="hcs-social-reaction-summary" aria-label='@L["Social:ReactionSummary"]'>
+                                @foreach (var reaction in post.Reactions.Counts.Take(3))
+                                {
+                                    <span title='@ReactionLabel(reaction.Type)'>
+                                        <i class="fa @ReactionIcon(reaction.Type)" aria-hidden="true"></i>@reaction.Count
+                                    </span>
+                                }
+                                @if (post.Reactions.TotalCount > 0)
+                                {
+                                    <span>@post.Reactions.TotalCount</span>
+                                }
+                            </div>
+                            <span class="hcs-social-engagement-counts">
+                                @if (post.CommentCount > 0)
+                                {
+                                    <span>@post.CommentCount @L["Social:Comments"]</span>
+                                }
+                                @if (post.ShareCount > 0)
+                                {
+                                    <span>@post.ShareCount @L["Social:Shares"]</span>
+                                }
+                            </span>
+                        </div>
                         <div class="hcs-social-post__footer">
+                            <div class="hcs-social-reaction-actions" aria-label='@L["Social:React"]'>
+                                @foreach (var reactionType in ReactionTypes)
+                                {
+                                    <button type="button"
+                                            class="hcs-social-reaction-button @(post.Reactions.CurrentUserReaction == reactionType ? "is-selected" : null)"
+                                            @onclick="() => ReactToPostAsync(post, reactionType)"
+                                            disabled="@(reactionLoadingPostId == post.Id)"
+                                            title='@ReactionLabel(reactionType)'
+                                            aria-label='@ReactionLabel(reactionType)'>
+                                        <i class="fa @ReactionIcon(reactionType)" aria-hidden="true"></i>
+                                    </button>
+                                }
+                            </div>
                             <button type="button" class="hcs-social-comment-toggle" @onclick="() => ToggleCommentsAsync(post)">
-                                <i class="fa fa-comment" aria-hidden="true"></i>@post.CommentCount @L["Social:Comments"]
+                                <i class="fa fa-comment" aria-hidden="true"></i>@L["Social:Comment"]
+                            </button>
+                            <button type="button" class="hcs-social-share-button" @onclick="() => SharePostAsync(post)"
+                                    disabled="@(shareLoadingPostId == post.Id)" aria-label='@L["Social:Share"]'>
+                                <i class="fa @(shareLoadingPostId == post.Id ? "fa-spinner fa-spin" : "fa-share-nodes")" aria-hidden="true"></i>@L["Social:Share"]
                             </button>
                         </div>
 
@@ -186,6 +285,23 @@
                                                 <div class="hcs-social-comment__actions">
                                                     <time datetime="@comment.CreatedAt.ToString("O")">@comment.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
                                                     <button type="button" @onclick="() => BeginReply(post, comment)">@L["Social:Reply"]</button>
+                                                </div>
+                                                <div class="hcs-social-comment__reaction-actions" aria-label='@L["Social:React"]'>
+                                                    @foreach (var reactionType in ReactionTypes)
+                                                    {
+                                                        <button type="button"
+                                                                class="hcs-social-comment-reaction @(comment.Reactions.CurrentUserReaction == reactionType ? "is-selected" : null)"
+                                                                @onclick="() => ReactToCommentAsync(post, comment, reactionType)"
+                                                                disabled="@(reactionLoadingCommentId == comment.Id)"
+                                                                title='@ReactionLabel(reactionType)'
+                                                                aria-label='@ReactionLabel(reactionType)'>
+                                                            <i class="fa @ReactionIcon(reactionType)" aria-hidden="true"></i>
+                                                            @if (comment.Reactions.Counts.FirstOrDefault(item => item.Type == reactionType) is { } reactionCount)
+                                                            {
+                                                                <span>@reactionCount.Count</span>
+                                                            }
+                                                        </button>
+                                                    }
                                                 </div>
                                             </div>
                                         </article>
@@ -249,6 +365,7 @@
     private readonly HashSet<Guid> expandedPostIds = [];
     private readonly List<UploadSocialMediaResult> uploadedMedia = [];
     private readonly SemaphoreSlim routeLoadGate = new(1, 1);
+    private static readonly SocialReactionType[] ReactionTypes = Enum.GetValues<SocialReactionType>();
     private bool isProfile;
     private bool routeLoaded;
     private bool isLoading;
@@ -256,10 +373,18 @@
     private bool isPosting;
     private bool isUploadingMedia;
     private bool isSubmittingComment;
+    private Guid? reactionLoadingPostId;
+    private Guid? reactionLoadingCommentId;
+    private Guid? shareLoadingPostId;
     private string content = string.Empty;
     private string commentDraft = string.Empty;
+    private string keywordInput = string.Empty;
+    private DateTime? fromDateInput;
+    private DateTime? toDateInput;
+    private string hashtagInput = string.Empty;
     private SocialPostVisibility visibility = SocialPostVisibility.Public;
     private string? loadError;
+    private string? searchError;
     private Guid? commentLoadingPostId;
     private Guid? commentErrorPostId;
     private Guid? replyingToPostId;
@@ -267,7 +392,13 @@
     private long totalCount;
     private string currentDisplayName = "HCS";
     private SocialPostVisibility? visibilityFilter;
+    private Guid? selectedPostId;
+    private Guid? pendingScrollPostId;
     private string routeStateKey = string.Empty;
+    private string keywordFilter = string.Empty;
+    private DateOnly? fromDateFilter;
+    private DateOnly? toDateFilter;
+    private string hashtagFilter = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -303,6 +434,17 @@
 
             isProfile = route.IsProfile;
             visibilityFilter = route.Visibility;
+            selectedPostId = route.PostId;
+            pendingScrollPostId = route.PostId;
+            keywordFilter = route.Keyword;
+            fromDateFilter = route.From;
+            toDateFilter = route.To;
+            hashtagFilter = route.Hashtag;
+            keywordInput = keywordFilter;
+            fromDateInput = fromDateFilter?.ToDateTime(TimeOnly.MinValue);
+            toDateInput = toDateFilter?.ToDateTime(TimeOnly.MinValue);
+            hashtagInput = hashtagFilter;
+            searchError = null;
             routeStateKey = route.Key;
             await LoadAsync();
         }
@@ -320,8 +462,10 @@
         try
         {
             var result = isProfile
-                ? await Social.GetProfilePostsAsync(visibility: visibilityFilter)
-                : await Social.GetFeedAsync();
+                    ? await Social.GetProfilePostsAsync(visibility: visibilityFilter, keyword: keywordFilter,
+                    from: fromDateFilter, to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId)
+                : await Social.GetFeedAsync(keyword: keywordFilter, from: fromDateFilter,
+                    to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId);
             posts.Clear();
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
@@ -345,8 +489,10 @@
         try
         {
             var result = isProfile
-                ? await Social.GetProfilePostsAsync(posts.Count, visibility: visibilityFilter)
-                : await Social.GetFeedAsync(posts.Count);
+                ? await Social.GetProfilePostsAsync(posts.Count, visibility: visibilityFilter, keyword: keywordFilter,
+                    from: fromDateFilter, to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId)
+                : await Social.GetFeedAsync(posts.Count, keyword: keywordFilter, from: fromDateFilter,
+                    to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId);
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
         }
@@ -354,15 +500,107 @@
         finally { isLoadingMore = false; }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (pendingScrollPostId is not { } postId)
+            return;
+
+        pendingScrollPostId = null;
+        await JS.InvokeVoidAsync("hcsSocial.scrollToPost", postId.ToString("D"));
+    }
+
+    private async Task ReactToPostAsync(SocialPostDto post, SocialReactionType reactionType)
+    {
+        if (reactionLoadingPostId.HasValue || shareLoadingPostId.HasValue)
+            return;
+
+        reactionLoadingPostId = post.Id;
+        try
+        {
+            var result = await Social.ReactToPostAsync(post.Id, reactionType,
+                post.Reactions.CurrentUserReaction == reactionType);
+            var index = posts.FindIndex(item => item.Id == post.Id);
+            if (index >= 0)
+                posts[index] = posts[index] with { Reactions = result.Reactions };
+        }
+        catch { await NotifyErrorAsync(L["Social:ReactionError"]); }
+        finally { reactionLoadingPostId = null; }
+    }
+
+    private async Task ReactToCommentAsync(SocialPostDto post, SocialCommentDto comment,
+        SocialReactionType reactionType)
+    {
+        if (reactionLoadingCommentId.HasValue)
+            return;
+
+        reactionLoadingCommentId = comment.Id;
+        try
+        {
+            var result = await Social.ReactToCommentAsync(comment.Id, reactionType,
+                comment.Reactions.CurrentUserReaction == reactionType);
+            if (commentsByPost.TryGetValue(post.Id, out var current))
+            {
+                var comments = current.ToArray();
+                var index = Array.FindIndex(comments, item => item.Id == comment.Id);
+                if (index >= 0)
+                {
+                    comments[index] = comments[index] with { Reactions = result.Reactions };
+                    commentsByPost[post.Id] = comments;
+                }
+            }
+        }
+        catch { await NotifyErrorAsync(L["Social:ReactionError"]); }
+        finally { reactionLoadingCommentId = null; }
+    }
+
+    private async Task SharePostAsync(SocialPostDto post)
+    {
+        if (shareLoadingPostId.HasValue || reactionLoadingPostId.HasValue)
+            return;
+
+        shareLoadingPostId = post.Id;
+        try
+        {
+            var result = await Social.SharePostAsync(post.Id);
+            var index = posts.FindIndex(item => item.Id == post.Id);
+            if (index >= 0)
+                posts[index] = posts[index] with { ShareCount = result.ShareCount };
+
+            var shareUrl = new Uri(new Uri(Navigation.BaseUri), result.ShareUrl).ToString();
+            var outcome = await JS.InvokeAsync<string>("hcsSocial.share", shareUrl,
+                post.LinkPreview?.Title ?? L["Social:Title"].Value, post.Text);
+            if (outcome == "copied")
+                await NotifySuccessAsync(L["Social:ShareCopied"]);
+            else if (outcome == "shared")
+                await NotifySuccessAsync(L["Social:ShareCompleted"]);
+            else if (outcome == "failed")
+                await NotifyErrorAsync(L["Social:ShareError"]);
+        }
+        catch { await NotifyErrorAsync(L["Social:ShareError"]); }
+        finally { shareLoadingPostId = null; }
+    }
+
+    private string ReactionLabel(SocialReactionType reactionType) =>
+        L[$"Social:Reaction:{reactionType}"].Value;
+
+    private static string ReactionIcon(SocialReactionType reactionType) => reactionType switch
+    {
+        SocialReactionType.Like => "fa-thumbs-up",
+        SocialReactionType.Love => "fa-heart",
+        SocialReactionType.Haha => "fa-face-laugh",
+        SocialReactionType.Wow => "fa-face-surprise",
+        SocialReactionType.Sad => "fa-face-sad-cry",
+        SocialReactionType.Angry => "fa-face-angry",
+        _ => "fa-thumbs-up"
+    };
+
     private async Task SelectVisibilityAsync(SocialPostVisibility? selectedVisibility)
     {
         var target = isProfile
-            ? selectedVisibility.HasValue
-                ? $"/social/profile?visibility={selectedVisibility.Value.ToString().ToLowerInvariant()}"
-                : "/social/profile"
-            : selectedVisibility == SocialPostVisibility.Internal
-                ? "/social/profile?visibility=internal"
-                : "/social";
+            ? BuildViewUri(true, selectedVisibility, keywordFilter, fromDateFilter, toDateFilter, hashtagFilter)
+            : BuildViewUri(selectedVisibility == SocialPostVisibility.Internal,
+                selectedVisibility == SocialPostVisibility.Internal ? SocialPostVisibility.Internal : SocialPostVisibility.Public,
+                keywordFilter, fromDateFilter, toDateFilter, hashtagFilter);
         var targetKey = BuildRouteStateKey(target);
 
         if (targetKey == routeStateKey)
@@ -374,20 +612,84 @@
         Navigation.NavigateTo(target);
     }
 
+    private async Task ApplySearchAsync()
+    {
+        searchError = null;
+        DateOnly? from = fromDateInput.HasValue ? DateOnly.FromDateTime(fromDateInput.Value) : null;
+        DateOnly? to = toDateInput.HasValue ? DateOnly.FromDateTime(toDateInput.Value) : null;
+
+        if (from.HasValue && to.HasValue && from.Value > to.Value)
+        {
+            searchError = L["Social:InvalidDateRange"].Value;
+            return;
+        }
+
+        keywordFilter = keywordInput.Trim();
+        fromDateFilter = from;
+        toDateFilter = to;
+        hashtagFilter = hashtagInput.Trim();
+        var target = BuildViewUri(isProfile, visibilityFilter, keywordFilter, fromDateFilter, toDateFilter, hashtagFilter);
+        if (BuildRouteStateKey(target) == routeStateKey)
+            await ReloadForCurrentRouteAsync(force: true);
+        else
+            Navigation.NavigateTo(target);
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        keywordInput = string.Empty;
+        fromDateInput = null;
+        toDateInput = null;
+        hashtagInput = string.Empty;
+        keywordFilter = string.Empty;
+        fromDateFilter = null;
+        toDateFilter = null;
+        hashtagFilter = string.Empty;
+        searchError = null;
+        var target = BuildViewUri(isProfile, visibilityFilter, keywordFilter, fromDateFilter, toDateFilter, hashtagFilter);
+        if (BuildRouteStateKey(target) == routeStateKey)
+            await ReloadForCurrentRouteAsync(force: true);
+        else
+            Navigation.NavigateTo(target);
+    }
+
+    private bool HasSearchFilters() => !string.IsNullOrWhiteSpace(keywordInput) ||
+        fromDateInput.HasValue || toDateInput.HasValue ||
+        !string.IsNullOrWhiteSpace(hashtagInput);
+
     private bool IsVisibilitySelected(SocialPostVisibility? selectedVisibility) => visibilityFilter == selectedVisibility;
 
-    private (bool IsProfile, SocialPostVisibility? Visibility, string Key) ReadRouteState()
+    private (bool IsProfile, SocialPostVisibility? Visibility, Guid? PostId, string Keyword, DateOnly? From,
+        DateOnly? To, string Hashtag, string Key) ReadRouteState()
     {
         var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
         var queryStart = relative.IndexOf('?');
         var path = (queryStart >= 0 ? relative[..queryStart] : relative).Trim('/');
         var isCurrentProfile = path.EndsWith("social/profile", StringComparison.OrdinalIgnoreCase);
         var selectedVisibility = isCurrentProfile ? ReadVisibility(relative, queryStart) : SocialPostVisibility.Public;
-        return (isCurrentProfile, selectedVisibility,
-            BuildRouteStateKey(isCurrentProfile, selectedVisibility));
+        var postId = ReadGuid(ReadQueryValue(relative, queryStart, "post"));
+        var keyword = ReadQueryValue(relative, queryStart, "keyword") ?? string.Empty;
+        var from = ReadDate(ReadQueryValue(relative, queryStart, "from"));
+        var to = ReadDate(ReadQueryValue(relative, queryStart, "to"));
+        var hashtag = ReadQueryValue(relative, queryStart, "hashtag") ?? string.Empty;
+        return (isCurrentProfile, selectedVisibility, postId, keyword, from, to, hashtag,
+            BuildRouteStateKey(isCurrentProfile, selectedVisibility, keyword, from, to, hashtag, postId));
     }
 
     private static SocialPostVisibility? ReadVisibility(string relative, int queryStart)
+    {
+        var value = ReadQueryValue(relative, queryStart, "visibility");
+        return Enum.TryParse<SocialPostVisibility>(value, true, out var visibility) ? visibility : null;
+    }
+
+    private static DateOnly? ReadDate(string? value) =>
+        DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var date) ? date : null;
+
+    private static Guid? ReadGuid(string? value) =>
+        Guid.TryParse(value, out var id) ? id : null;
+
+    private static string? ReadQueryValue(string relative, int queryStart, string key)
     {
         if (queryStart < 0)
             return null;
@@ -396,19 +698,16 @@
         foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
             var pair = part.Split('=', 2);
-            if (pair.Length != 2 || !pair[0].Equals("visibility", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var value = Uri.UnescapeDataString(pair[1]);
-            if (Enum.TryParse<SocialPostVisibility>(value, true, out var visibility))
-                return visibility;
+            if (pair.Length == 2 && pair[0].Equals(key, StringComparison.OrdinalIgnoreCase))
+                return Uri.UnescapeDataString(pair[1].Replace('+', ' '));
         }
 
         return null;
     }
 
-    private static string BuildRouteStateKey(bool profile, SocialPostVisibility? selectedVisibility) =>
-        $"{(profile ? "profile" : "feed")}:{selectedVisibility?.ToString() ?? "all"}";
+    private static string BuildRouteStateKey(bool profile, SocialPostVisibility? selectedVisibility,
+        string keyword = "", DateOnly? from = null, DateOnly? to = null, string hashtag = "", Guid? postId = null) =>
+        $"{(profile ? "profile" : "feed")}:{selectedVisibility?.ToString() ?? "all"}|post={postId}|q={keyword}|from={from?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}|to={to?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}|tag={hashtag}";
 
     private static string BuildRouteStateKey(string target)
     {
@@ -416,7 +715,38 @@
         var path = (queryStart >= 0 ? target[..queryStart] : target).Trim('/');
         var isTargetProfile = path.Equals("social/profile", StringComparison.OrdinalIgnoreCase);
         SocialPostVisibility? selectedVisibility = isTargetProfile ? ReadVisibility(target, queryStart) : SocialPostVisibility.Public;
-        return BuildRouteStateKey(isTargetProfile, selectedVisibility);
+        var postId = ReadGuid(ReadQueryValue(target, queryStart, "post"));
+        return BuildRouteStateKey(isTargetProfile, selectedVisibility,
+            ReadQueryValue(target, queryStart, "keyword") ?? string.Empty,
+            ReadDate(ReadQueryValue(target, queryStart, "from")),
+            ReadDate(ReadQueryValue(target, queryStart, "to")),
+            ReadQueryValue(target, queryStart, "hashtag") ?? string.Empty, postId);
+    }
+
+    private static string BuildViewUri(bool profile, SocialPostVisibility? selectedVisibility,
+        string? keyword = null, DateOnly? from = null, DateOnly? to = null, string? hashtag = null, Guid? postId = null)
+    {
+        var uri = profile
+            ? "/social/profile"
+            : "/social";
+        if (profile && selectedVisibility.HasValue)
+            uri += $"?visibility={selectedVisibility.Value.ToString().ToLowerInvariant()}";
+
+        var parameters = new List<string>();
+        if (!string.IsNullOrWhiteSpace(keyword))
+            parameters.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+        if (from.HasValue)
+            parameters.Add($"from={from.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+        if (to.HasValue)
+            parameters.Add($"to={to.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+        if (!string.IsNullOrWhiteSpace(hashtag))
+            parameters.Add($"hashtag={Uri.EscapeDataString(hashtag.Trim())}");
+        if (postId.HasValue)
+            parameters.Add($"post={postId.Value:D}");
+
+        if (parameters.Count > 0)
+            uri += uri.Contains('?') ? "&" : "?";
+        return uri + string.Join('&', parameters);
     }
 
     private async Task UploadMediaAsync(InputFileChangeEventArgs args)

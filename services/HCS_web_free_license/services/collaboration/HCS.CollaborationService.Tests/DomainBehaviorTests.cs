@@ -112,4 +112,12 @@ public sealed class DomainBehaviorTests
         NotificationLocalization.Format(NotificationLocalization.ChatTitle, "en").ShouldBe("You have a new message");
         NotificationLocalization.Format("Bạn có tin nhắn mới", "en").ShouldBe("Bạn có tin nhắn mới");
     }
+
+    [Fact]
+    public void Social_notifications_are_localized_with_the_actor_name()
+    {
+        var body = NotificationLocalization.Encode(NotificationLocalization.SocialReactionBody, "Nguyễn Văn A");
+        NotificationLocalization.Format(body, "vi").ShouldBe("Nguyễn Văn A đã tương tác với bài viết của bạn");
+        NotificationLocalization.Format(body, "en").ShouldBe("Nguyễn Văn A reacted to your post");
+    }
 }

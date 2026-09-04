@@ -39,7 +39,10 @@
             </div>
             <div class="hcs-notification-toast__body">
                 <p>@NotificationText.Localize(L, item.Body)</p>
-                <a class="btn btn-sm btn-primary" href="@NotificationText.ResolveLink(item)" @onclick="() => DismissAsync(item)">@L["Work:ViewDetail"]</a>
+                <a class="btn btn-sm btn-primary" href="@NotificationText.ResolveLink(item)"
+                   @onclick="() => OpenNotificationAsync(item)" @onclick:preventDefault>
+                    @L["Work:ViewDetail"]
+                </a>
             </div>
         </div>
     }
@@ -69,7 +72,7 @@
                     <li>
                         <a class="hcs-notification-panel__item @(item.IsRead ? null : "is-unread")"
                            href="@NotificationText.ResolveLink(item)"
-                           @onclick="() => DismissAsync(item)">
+                           @onclick="() => OpenNotificationAsync(item)" @onclick:preventDefault>
                             <span class="hcs-notification-panel__dot @(item.IsRead ? "is-empty" : null)" aria-hidden="true"></span>
                             <span class="hcs-notification-panel__content">
                                 <strong class="hcs-notification-panel__title">@NotificationText.Localize(L, item.Title)</strong>
@@ -96,9 +99,14 @@
     private readonly List<NotificationDto> recent = [];
     private readonly List<ChatIncomingToast> chatToasts = [];
     private readonly HashSet<Guid> seen = [];
+    private readonly Queue<Guid> seenOrder = [];
+    private readonly SemaphoreSlim refreshGate = new(1, 1);
+    private CancellationTokenSource? lifecycleCts;
+    private Task? pollTask;
     private CancellationTokenSource? pollCts;
     private DotNetObjectReference<NotificationToast>? outsideClickRef;
     private bool outsideClickBound;
+    private bool disposed;
     private bool panelOpen;
     private int unreadCount;
     private int chatUnreadCount;
@@ -120,7 +128,7 @@
     public async Task TogglePanelAsync()
     {
         panelOpen = !panelOpen;
-        if (panelOpen) await RefreshAsync(showToasts: false);
+        if (panelOpen) await RefreshAsync(showToasts: false, loadItems: true, cancellationToken: CancellationToken.None);
         await InvokeAsync(StateHasChanged);
     }
 
@@ -132,21 +140,32 @@
             return;
         }
 
-        panelOpen = false;
-        await InvokeAsync(StateHasChanged);
+        await InvokeAsync(() =>
+        {
+            if (!panelOpen || disposed)
+                return;
+            panelOpen = false;
+            StateHasChanged();
+        });
     }
 
     protected override async Task OnInitializedAsync()
     {
         Realtime.MessageReceived += OnChatMessageAsync;
+        Realtime.NotificationReceived += OnNotificationAsync;
+        Realtime.StatusChanged += OnRealtimeStatusAsync;
+        lifecycleCts = new CancellationTokenSource();
         pollCts = new CancellationTokenSource();
         try { await Realtime.EnsureStartedAsync(); }
         catch { /* polling still covers workflow notifications */ }
-        _ = PollAsync(pollCts.Token);
+        pollTask = PollAsync(pollCts.Token);
     }
 
     private async Task OnChatMessageAsync(ChatMessageDto message)
     {
+        if (disposed)
+            return;
+
         if (Realtime.ActiveConversationId == message.ConversationId)
         {
             return;
@@ -154,6 +173,8 @@
 
         await InvokeAsync(() =>
         {
+            if (disposed)
+                return;
             var toast = new ChatIncomingToast(Guid.NewGuid(), message);
             chatToasts.Insert(0, toast);
             if (chatToasts.Count > 4)
@@ -163,114 +184,223 @@
 
             StateHasChanged();
             _ = AutoDismissChatAsync(toast.Id);
-            _ = RefreshChatUnreadAsync();
+            _ = RefreshChatUnreadAsync(lifecycleCts?.Token ?? CancellationToken.None);
         });
+    }
+
+    private async Task OnNotificationAsync(NotificationDto notification)
+    {
+        if (disposed)
+            return;
+
+        await InvokeAsync(async () =>
+        {
+            if (disposed || !TryRemember(notification.Id))
+                return;
+
+            recent.RemoveAll(item => item.Id == notification.Id);
+            recent.Insert(0, notification);
+            if (recent.Count > 8)
+                recent.RemoveRange(8, recent.Count - 8);
+
+            unreadCount++;
+            await UnreadCountChanged.InvokeAsync(unreadCount);
+            toasts.Insert(0, notification);
+            if (toasts.Count > 5)
+                toasts.RemoveRange(5, toasts.Count - 5);
+
+            StateHasChanged();
+            _ = AutoDismissAsync(notification.Id);
+        });
+    }
+
+    private async Task OnRealtimeStatusAsync(Microsoft.AspNetCore.SignalR.Client.HubConnectionState state)
+    {
+        var cts = lifecycleCts;
+        if (!disposed && state == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected
+            && cts is not null && !cts.IsCancellationRequested)
+            await RefreshAsync(showToasts: false, loadItems: true, cancellationToken: cts.Token);
     }
 
     private async Task PollAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            try { await RefreshAsync(showToasts: true); }
+            try { await RefreshAsync(showToasts: true, loadItems: false, cancellationToken: cancellationToken); }
             catch { /* keep polling */ }
-            try { await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken); }
+            try { await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken); }
             catch (OperationCanceledException) { return; }
         }
     }
 
-    private async Task RefreshAsync(bool showToasts)
+    private async Task RefreshAsync(bool showToasts, bool loadItems, CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<NotificationDto> items;
-        int nextCount;
+        var entered = false;
         try
         {
-            items = await Chat.GetNotificationsAsync(unreadOnly: true, skip: 0, take: 20);
-            nextCount = await Chat.GetNotificationUnreadCountAsync();
-        }
-        catch { return; }
+            await refreshGate.WaitAsync(cancellationToken);
+            entered = true;
+            var previousUnreadCount = 0;
+            await InvokeAsync(() => previousUnreadCount = unreadCount);
+            var nextCount = await Chat.GetNotificationUnreadCountAsync(cancellationToken);
+            var shouldLoadItems = loadItems || nextCount != previousUnreadCount;
+            IReadOnlyList<NotificationDto> items = [];
+            if (shouldLoadItems)
+                items = await Chat.GetNotificationsAsync(unreadOnly: true, skip: 0, take: 20,
+                    cancellationToken: cancellationToken);
 
-        recent.Clear();
-        recent.AddRange(items.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(8));
-        if (nextCount != unreadCount)
-        {
-            unreadCount = nextCount;
-            await UnreadCountChanged.InvokeAsync(unreadCount);
-        }
-
-        await RefreshChatUnreadAsync();
-
-        if (showToasts)
-        {
-            foreach (var item in items)
+            var nextChatUnreadCount = await GetChatUnreadCountAsync(cancellationToken);
+            await InvokeAsync(async () =>
             {
-                if (!seen.Add(item.Id)) continue;
-                // SignalR already surfaces incoming chat; skip the persisted duplicate popup.
-                if (ChatNotificationRules.IsChatLink(item.Link)) continue;
-                toasts.Insert(0, item);
-                _ = AutoDismissAsync(item.Id);
-            }
-            if (toasts.Count > 5) toasts.RemoveRange(5, toasts.Count - 5);
-        }
-        else
-        {
-            foreach (var item in items) seen.Add(item.Id);
-        }
+                if (disposed)
+                    return;
+                if (shouldLoadItems)
+                {
+                    recent.Clear();
+                    recent.AddRange(items.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(8));
+                }
 
-        await InvokeAsync(StateHasChanged);
+                if (nextCount != unreadCount)
+                {
+                    unreadCount = nextCount;
+                    await UnreadCountChanged.InvokeAsync(unreadCount);
+                }
+
+                if (nextChatUnreadCount != chatUnreadCount)
+                {
+                    chatUnreadCount = nextChatUnreadCount;
+                    await ChatUnreadCountChanged.InvokeAsync(chatUnreadCount);
+                }
+
+                if (showToasts)
+                {
+                    foreach (var item in items)
+                    {
+                        if (!TryRemember(item.Id)) continue;
+                        // SignalR already surfaces incoming chat; skip the persisted duplicate popup.
+                        if (ChatNotificationRules.IsChatLink(item.Link)) continue;
+                        toasts.Insert(0, item);
+                        _ = AutoDismissAsync(item.Id);
+                    }
+                    if (toasts.Count > 5) toasts.RemoveRange(5, toasts.Count - 5);
+                }
+
+                StateHasChanged();
+            });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch { }
+        finally
+        {
+            if (entered)
+                refreshGate.Release();
+        }
     }
 
-    private async Task RefreshChatUnreadAsync()
+    private async Task RefreshChatUnreadAsync(CancellationToken cancellationToken)
     {
         int nextCount;
-        try { nextCount = await Chat.GetUnreadCountAsync(); }
+        try { nextCount = await GetChatUnreadCountAsync(cancellationToken); }
         catch { return; }
 
-        if (nextCount == chatUnreadCount)
+        await InvokeAsync(async () =>
         {
-            return;
-        }
+            if (disposed || nextCount == chatUnreadCount)
+                return;
+            chatUnreadCount = nextCount;
+            await ChatUnreadCountChanged.InvokeAsync(chatUnreadCount);
+            StateHasChanged();
+        });
+    }
 
-        chatUnreadCount = nextCount;
-        await ChatUnreadCountChanged.InvokeAsync(chatUnreadCount);
+    private async Task<int> GetChatUnreadCountAsync(CancellationToken cancellationToken)
+    {
+        try { return await Chat.GetUnreadCountAsync(cancellationToken); }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch { return chatUnreadCount; }
     }
 
     private async Task AutoDismissAsync(Guid id)
     {
-        try { await Task.Delay(8000, pollCts?.Token ?? CancellationToken.None); }
+        try { await Task.Delay(8000, lifecycleCts?.Token ?? CancellationToken.None); }
         catch (OperationCanceledException) { return; }
-        var match = toasts.FirstOrDefault(x => x.Id == id);
-        if (match is not null) toasts.Remove(match);
-        await InvokeAsync(StateHasChanged);
+        if (disposed)
+            return;
+        await InvokeAsync(() =>
+        {
+            if (disposed)
+                return;
+            toasts.RemoveAll(item => item.Id == id);
+            StateHasChanged();
+        });
     }
 
     private async Task DismissAsync(NotificationDto item)
     {
-        toasts.RemoveAll(x => x.Id == item.Id);
+        if (disposed)
+            return;
         try { await Chat.MarkNotificationReadAsync(item.Id); } catch { }
-        recent.RemoveAll(x => x.Id == item.Id);
-        unreadCount = Math.Max(0, unreadCount - 1);
-        await UnreadCountChanged.InvokeAsync(unreadCount);
-        panelOpen = false;
+        await InvokeAsync(async () =>
+        {
+            if (disposed)
+                return;
+            toasts.RemoveAll(x => x.Id == item.Id);
+            recent.RemoveAll(x => x.Id == item.Id);
+            unreadCount = Math.Max(0, unreadCount - 1);
+            await UnreadCountChanged.InvokeAsync(unreadCount);
+            panelOpen = false;
+            StateHasChanged();
+        });
+    }
+
+    private async Task OpenNotificationAsync(NotificationDto item)
+    {
+        var link = NotificationText.ResolveLink(item);
+        await DismissAsync(item);
+        Navigation.NavigateTo(link);
+    }
+
+    private bool TryRemember(Guid id)
+    {
+        if (!seen.Add(id))
+            return false;
+
+        seenOrder.Enqueue(id);
+        while (seenOrder.Count > 500)
+            seen.Remove(seenOrder.Dequeue());
+        return true;
     }
 
     private async Task MarkAllReadAsync()
     {
         try { await Chat.MarkAllNotificationsReadAsync(); } catch { return; }
-        toasts.Clear();
-        recent.Clear();
-        unreadCount = 0;
-        await UnreadCountChanged.InvokeAsync(unreadCount);
-        await InvokeAsync(StateHasChanged);
+        await InvokeAsync(async () =>
+        {
+            if (disposed)
+                return;
+            toasts.Clear();
+            recent.Clear();
+            unreadCount = 0;
+            await UnreadCountChanged.InvokeAsync(unreadCount);
+            StateHasChanged();
+        });
     }
 
     private void ClosePanel() => panelOpen = false;
 
     private async Task AutoDismissChatAsync(Guid id)
     {
-        try { await Task.Delay(6000, pollCts?.Token ?? CancellationToken.None); }
+        try { await Task.Delay(6000, lifecycleCts?.Token ?? CancellationToken.None); }
         catch (OperationCanceledException) { return; }
-        chatToasts.RemoveAll(item => item.Id == id);
-        await InvokeAsync(StateHasChanged);
+        if (disposed)
+            return;
+        await InvokeAsync(() =>
+        {
+            if (disposed)
+                return;
+            chatToasts.RemoveAll(item => item.Id == id);
+            StateHasChanged();
+        });
     }
 
     private void DismissChat(Guid id) => chatToasts.RemoveAll(item => item.Id == id);
@@ -297,7 +427,12 @@
 
     public async ValueTask DisposeAsync()
     {
+        if (disposed)
+            return;
+        disposed = true;
         Realtime.MessageReceived -= OnChatMessageAsync;
+        Realtime.NotificationReceived -= OnNotificationAsync;
+        Realtime.StatusChanged -= OnRealtimeStatusAsync;
         if (outsideClickBound)
         {
             try { await Js.InvokeVoidAsync("hcsNotifications.unbindOutsideClick"); }
@@ -306,12 +441,24 @@
         }
         outsideClickRef?.Dispose();
 
+        lifecycleCts?.Cancel();
+        lifecycleCts?.Dispose();
+        lifecycleCts = null;
         if (pollCts is not null)
         {
             await pollCts.CancelAsync();
             pollCts.Dispose();
             pollCts = null;
         }
+        if (pollTask is not null)
+        {
+            try { await pollTask; }
+            catch (OperationCanceledException) { }
+            pollTask = null;
+        }
+        await refreshGate.WaitAsync();
+        refreshGate.Release();
+        refreshGate.Dispose();
     }
 
     private sealed record ChatIncomingToast(Guid Id, ChatMessageDto Message);

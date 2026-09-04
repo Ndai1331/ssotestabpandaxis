@@ -16,12 +16,16 @@ public sealed class SocialController(
 {
     [HttpGet("feed")]
     public Task<PagedSocialPostsDto> Feed([FromQuery] int skip = 0, [FromQuery] int take = 20,
-        CancellationToken ct = default) => posts.GetFeedAsync(skip, take, ct);
+        [FromQuery] string? keyword = null, [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null,
+        [FromQuery] string? hashtag = null, [FromQuery] Guid? postId = null, CancellationToken ct = default) =>
+        posts.GetFeedAsync(skip, take, keyword, from, to, hashtag, postId, ct);
 
     [HttpGet("profile/posts")]
     public Task<PagedSocialPostsDto> ProfilePosts([FromQuery] int skip = 0, [FromQuery] int take = 20,
-        [FromQuery] SocialPostVisibility? visibility = null, CancellationToken ct = default) =>
-        posts.GetProfilePostsAsync(skip, take, visibility, ct);
+        [FromQuery] SocialPostVisibility? visibility = null, [FromQuery] string? keyword = null,
+        [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, [FromQuery] string? hashtag = null,
+        [FromQuery] Guid? postId = null, CancellationToken ct = default) =>
+        posts.GetProfilePostsAsync(skip, take, visibility, keyword, from, to, hashtag, postId, ct);
 
     [HttpPost("posts")]
     public Task<SocialPostDto> CreatePost(CreateSocialPostInput input, CancellationToken ct) => posts.CreateAsync(input, ct);
@@ -31,6 +35,17 @@ public sealed class SocialController(
 
     [HttpPost("posts/{postId:guid}/comments")]
     public Task<SocialCommentDto> AddComment(Guid postId, CreateSocialCommentInput input, CancellationToken ct) => comments.CreateAsync(postId, input, ct);
+
+    [HttpPost("posts/{postId:guid}/reactions")]
+    public Task<SocialReactionStateDto> ReactToPost(Guid postId, SetSocialReactionInput input, CancellationToken ct) =>
+        posts.ReactAsync(postId, input, ct);
+
+    [HttpPost("comments/{commentId:guid}/reactions")]
+    public Task<SocialReactionStateDto> ReactToComment(Guid commentId, SetSocialReactionInput input, CancellationToken ct) =>
+        comments.ReactAsync(commentId, input, ct);
+
+    [HttpPost("posts/{postId:guid}/shares")]
+    public Task<SocialShareResultDto> SharePost(Guid postId, CancellationToken ct) => posts.ShareAsync(postId, ct);
 
     [HttpPost("uploads")]
     [RequestSizeLimit(26_214_400)]

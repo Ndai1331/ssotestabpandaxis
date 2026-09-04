@@ -8,6 +8,7 @@ using HCS.CollaborationService.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using System.Net;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
@@ -37,12 +38,18 @@ public sealed class HCSCollaborationServiceModule : AbpModule
 
         context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options => CollaborationJwtBearer.Configure(options, configuration));
+        context.Services.AddHttpContextAccessor();
         Configure<AbpAntiForgeryOptions>(BearerApiAntiforgery.DisableCookieValidation);
         context.Services.AddAuthorization(options =>
         {
             options.AddPolicy(CollaborationPermissions.Chat, p => p.RequireClaim("permission", CollaborationPermissions.Chat));
             options.AddPolicy(CollaborationPermissions.Social, p => p.RequireClaim("permission", CollaborationPermissions.Social));
-            options.AddPolicy(CollaborationPermissions.Notifications, p => p.RequireClaim("permission", CollaborationPermissions.Notifications));
+            options.AddPolicy(CollaborationPermissions.Notifications, p =>
+                p.RequireClaim("permission", CollaborationPermissions.Notifications));
+            options.AddPolicy(CollaborationPermissions.Realtime, p => p.RequireAssertion(context =>
+                HasPermission(context.User, CollaborationPermissions.Notifications)
+                || HasPermission(context.User, CollaborationPermissions.Social)
+                || HasPermission(context.User, CollaborationPermissions.Chat)));
             options.AddPolicy(CollaborationPermissions.Administration, p => p.RequireClaim("permission", CollaborationPermissions.Administration));
         });
         context.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
@@ -55,6 +62,14 @@ public sealed class HCSCollaborationServiceModule : AbpModule
                 options.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal(
                     configuration["Redis:SignalRChannel"] ?? "hcs-collaboration"));
         context.Services.AddHttpClient<IPushSender, FirebasePushSender>();
+        context.Services.AddHttpClient<SocialLinkPreviewFetcher>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(6);
+        }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = false,
+            AutomaticDecompression = DecompressionMethods.All
+        });
         context.Services.AddTransient<IChatRealtimeNotifier, SignalRChatRealtimeNotifier>();
         context.Services.AddHostedService<CollaborationOutboxDispatcher>();
         context.Services.AddHostedService<PushDeliveryWorker>();
@@ -85,6 +100,9 @@ public sealed class HCSCollaborationServiceModule : AbpModule
             options.CustomSchemaIds(type => type.FullName);
         });
     }
+
+    private static bool HasPermission(System.Security.Claims.ClaimsPrincipal user, string permission) =>
+        user.HasClaim("permission", permission);
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {

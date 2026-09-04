@@ -25,6 +25,9 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
     public DbSet<SocialPost> SocialPosts => Set<SocialPost>();
     public DbSet<SocialPostMedia> SocialPostMedia => Set<SocialPostMedia>();
     public DbSet<SocialPostComment> SocialPostComments => Set<SocialPostComment>();
+    public DbSet<SocialPostReaction> SocialPostReactions => Set<SocialPostReaction>();
+    public DbSet<SocialCommentReaction> SocialCommentReactions => Set<SocialCommentReaction>();
+    public DbSet<SocialPostShare> SocialPostShares => Set<SocialPostShare>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -121,10 +124,19 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
             b.ToTable("CollaborationSocialPosts"); b.ConfigureByConvention();
             b.Property(x => x.AuthorName).HasMaxLength(256);
             b.Property(x => x.Text).HasMaxLength(4000);
+            b.Property(x => x.Hashtags).HasMaxLength(8192);
+            b.Property(x => x.LinkUrl).HasMaxLength(2048);
+            b.Property(x => x.LinkTitle).HasMaxLength(512);
+            b.Property(x => x.LinkDescription).HasMaxLength(2000);
+            b.Property(x => x.LinkSiteName).HasMaxLength(256);
+            b.Property(x => x.LinkImageUrl).HasMaxLength(2048);
             b.HasIndex(x => new { x.Visibility, x.CreationTime, x.Id });
             b.HasIndex(x => x.AuthorUserId);
+            b.HasIndex(x => x.Hashtags);
             b.HasMany(x => x.Media).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
             b.HasMany(x => x.Comments).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
+            b.HasMany(x => x.Reactions).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
+            b.HasMany(x => x.Shares).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
         });
         builder.Entity<SocialPostMedia>(b =>
         {
@@ -142,6 +154,25 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
             b.Property(x => x.Text).HasMaxLength(2000);
             b.HasIndex(x => new { x.PostId, x.CreationTime, x.Id });
             b.HasIndex(x => x.ParentCommentId);
+            b.HasMany(x => x.Reactions).WithOne().HasForeignKey(x => x.CommentId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<SocialPostReaction>(b =>
+        {
+            b.ToTable("CollaborationSocialPostReactions"); b.ConfigureByConvention();
+            b.HasIndex(x => new { x.PostId, x.UserId }).IsUnique();
+            b.HasIndex(x => new { x.PostId, x.ReactionType });
+        });
+        builder.Entity<SocialCommentReaction>(b =>
+        {
+            b.ToTable("CollaborationSocialCommentReactions"); b.ConfigureByConvention();
+            b.HasIndex(x => new { x.CommentId, x.UserId }).IsUnique();
+            b.HasIndex(x => new { x.CommentId, x.ReactionType });
+        });
+        builder.Entity<SocialPostShare>(b =>
+        {
+            b.ToTable("CollaborationSocialPostShares"); b.ConfigureByConvention();
+            b.HasIndex(x => new { x.PostId, x.UserId }).IsUnique();
+            b.HasIndex(x => x.PostId);
         });
     }
 }

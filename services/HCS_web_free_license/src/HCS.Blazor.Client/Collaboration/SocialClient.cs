@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -24,17 +25,21 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
         PropertyNameCaseInsensitive = true
     };
 
-    public Task<PagedSocialPostsDto> GetFeedAsync(int skip = 0, int take = 20, CancellationToken ct = default) =>
-        GetAsync<PagedSocialPostsDto>($"api/social/feed?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}", ct);
+    public Task<PagedSocialPostsDto> GetFeedAsync(int skip = 0, int take = 20, string? keyword = null,
+        DateOnly? from = null, DateOnly? to = null, string? hashtag = null, Guid? postId = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedSocialPostsDto>(BuildSearchUri($"api/social/feed?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}",
+            keyword, from, to, hashtag, postId), ct);
 
     public Task<PagedSocialPostsDto> GetProfilePostsAsync(int skip = 0, int take = 20,
-        SocialPostVisibility? visibility = null, CancellationToken ct = default)
+        SocialPostVisibility? visibility = null, string? keyword = null, DateOnly? from = null,
+        DateOnly? to = null, string? hashtag = null, Guid? postId = null, CancellationToken ct = default)
     {
         var uri = $"api/social/profile/posts?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}";
         if (visibility.HasValue)
             uri += $"&visibility={visibility.Value.ToString().ToLowerInvariant()}";
 
-        return GetAsync<PagedSocialPostsDto>(uri, ct);
+        return GetAsync<PagedSocialPostsDto>(BuildSearchUri(uri, keyword, from, to, hashtag, postId), ct);
     }
 
     public Task<IReadOnlyList<SocialCommentDto>> GetCommentsAsync(Guid postId, CancellationToken ct = default) =>
@@ -45,6 +50,19 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
 
     public Task<SocialCommentDto> CreateCommentAsync(Guid postId, CreateSocialCommentInput input, CancellationToken ct = default) =>
         SendAsync<CreateSocialCommentInput, SocialCommentDto>(HttpMethod.Post, $"api/social/posts/{postId:D}/comments", input, ct);
+
+    public Task<SocialReactionStateDto> ReactToPostAsync(Guid postId, SocialReactionType reactionType,
+        bool remove = false, CancellationToken ct = default) =>
+        SendAsync<SetSocialReactionInput, SocialReactionStateDto>(HttpMethod.Post, $"api/social/posts/{postId:D}/reactions",
+            new SetSocialReactionInput { ReactionType = reactionType, Remove = remove }, ct);
+
+    public Task<SocialReactionStateDto> ReactToCommentAsync(Guid commentId, SocialReactionType reactionType,
+        bool remove = false, CancellationToken ct = default) =>
+        SendAsync<SetSocialReactionInput, SocialReactionStateDto>(HttpMethod.Post, $"api/social/comments/{commentId:D}/reactions",
+            new SetSocialReactionInput { ReactionType = reactionType, Remove = remove }, ct);
+
+    public Task<SocialShareResultDto> SharePostAsync(Guid postId, CancellationToken ct = default) =>
+        SendAsync<object, SocialShareResultDto>(HttpMethod.Post, $"api/social/posts/{postId:D}/shares", new { }, ct);
 
     public Task DeleteUnattachedMediaAsync(Guid mediaId, CancellationToken ct = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"api/social/media/{mediaId:D}", ct);
@@ -102,6 +120,23 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
     {
         using var response = await CreateClient().SendAsync(new HttpRequestMessage(method, uri), ct);
         await EnsureSuccessAsync(response, ct);
+    }
+
+    private static string BuildSearchUri(string uri, string? keyword, DateOnly? from, DateOnly? to, string? hashtag, Guid? postId)
+    {
+        var parameters = new List<string>();
+        if (!string.IsNullOrWhiteSpace(keyword))
+            parameters.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+        if (from.HasValue)
+            parameters.Add($"from={from.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+        if (to.HasValue)
+            parameters.Add($"to={to.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+        if (!string.IsNullOrWhiteSpace(hashtag))
+            parameters.Add($"hashtag={Uri.EscapeDataString(hashtag.Trim())}");
+        if (postId.HasValue)
+            parameters.Add($"postId={postId.Value:D}");
+
+        return parameters.Count == 0 ? uri : $"{uri}&{string.Join('&', parameters)}";
     }
 
     private HttpClient CreateClient() => httpClientFactory.CreateClient("HCS.Bff");

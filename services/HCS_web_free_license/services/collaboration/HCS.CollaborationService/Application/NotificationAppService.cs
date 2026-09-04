@@ -4,6 +4,7 @@ using HCS.CollaborationService.Data;
 using HCS.CollaborationService.Domain;
 using HCS.CollaborationService.Integration;
 using HCS.IntegrationEvents.Collaboration;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp;
 using Volo.Abp.Application.Services;
@@ -15,14 +16,17 @@ using Volo.Abp.Users;
 namespace HCS.CollaborationService.Application;
 
 public class NotificationAppService(CollaborationDbContext db, ICurrentUser currentUser,
-    IGuidGenerator guidGenerator, IClock clock) : ApplicationService
+    IGuidGenerator guidGenerator, IClock clock, IHttpContextAccessor httpContextAccessor) : ApplicationService
 {
     private Guid UserId => currentUser.Id ?? throw new AbpAuthorizationException();
+    private bool CanReadGeneralNotifications => httpContextAccessor.HttpContext?.User
+        .HasClaim("permission", CollaborationPermissions.Notifications) == true;
 
     public async Task<IReadOnlyList<NotificationDto>> GetMineAsync(bool unreadOnly, int skip, int take, CancellationToken ct = default)
     {
         var me = UserId;
         take = Math.Clamp(take, 1, 100);
+        var socialOnly = !CanReadGeneralNotifications;
         // Prefer receiver time; fall back to notification when legacy rows left CreationTime at default.
         var epoch = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var query = from receiver in db.NotificationReceivers.AsNoTracking()
@@ -31,6 +35,7 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
                     let createdAt = receiver.CreationTime >= epoch ? receiver.CreationTime
                         : notification.CreationTime >= epoch ? notification.CreationTime
                         : receiver.CreationTime
+                    where !socialOnly || SocialNotificationKinds.TitleKeys.Contains(notification.Title)
                     orderby createdAt descending, notification.Id descending
                     select new NotificationDto(notification.Id, receiver.UserId, notification.Title, notification.Body,
                         notification.Link, receiver.IsRead, createdAt);
@@ -40,8 +45,12 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
     public Task<int> CountMineAsync(bool unreadOnly, CancellationToken ct = default)
     {
         var me = UserId;
+        var socialOnly = !CanReadGeneralNotifications;
         return db.NotificationReceivers.AsNoTracking()
-            .CountAsync(x => x.UserId == me && (!unreadOnly || !x.IsRead), ct);
+            .Where(x => x.UserId == me && (!unreadOnly || !x.IsRead))
+            .Where(x => !socialOnly || db.Notifications.Any(notification =>
+                notification.Id == x.NotificationId && SocialNotificationKinds.TitleKeys.Contains(notification.Title)))
+            .CountAsync(ct);
     }
 
     public Task<int> CountUnreadAsync(CancellationToken ct = default) => CountMineAsync(unreadOnly: true, ct);
@@ -67,7 +76,10 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
     public async Task MarkReadAsync(Guid notificationId, CancellationToken ct = default)
     {
         var me = UserId;
-        var receiver = await db.NotificationReceivers.SingleOrDefaultAsync(x => x.NotificationId == notificationId && x.UserId == me, ct)
+        var socialOnly = !CanReadGeneralNotifications;
+        var receiver = await db.NotificationReceivers.SingleOrDefaultAsync(x => x.NotificationId == notificationId && x.UserId == me
+            && (!socialOnly || db.Notifications.Any(notification =>
+                notification.Id == x.NotificationId && SocialNotificationKinds.TitleKeys.Contains(notification.Title))), ct)
             ?? throw new BusinessException("Collaboration:NotificationNotFound");
         receiver.MarkRead(clock.Now.ToUniversalTime()); await db.SaveChangesAsync(ct);
     }
@@ -75,9 +87,12 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
     public async Task MarkAllReadAsync(CancellationToken ct = default)
     {
         var me = UserId;
+        var socialOnly = !CanReadGeneralNotifications;
         var now = clock.Now.ToUniversalTime();
         var unread = await db.NotificationReceivers
             .Where(x => x.UserId == me && !x.IsRead)
+            .Where(x => !socialOnly || db.Notifications.Any(notification =>
+                notification.Id == x.NotificationId && SocialNotificationKinds.TitleKeys.Contains(notification.Title)))
             .ToListAsync(ct);
         if (unread.Count == 0) return;
         foreach (var receiver in unread)

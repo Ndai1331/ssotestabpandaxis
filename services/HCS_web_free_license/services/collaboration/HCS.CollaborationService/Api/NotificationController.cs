@@ -6,7 +6,7 @@ using Volo.Abp.AspNetCore.Mvc;
 
 namespace HCS.CollaborationService.Api;
 
-[ApiController, Authorize(Policy = CollaborationPermissions.Notifications), Route("api/notifications")]
+[ApiController, Authorize(Policy = CollaborationPermissions.Realtime), Route("api/notifications")]
 public sealed class NotificationController(NotificationAppService app) : AbpControllerBase
 {
     [HttpGet]

@@ -31,4 +31,29 @@ public sealed class SocialDomainTests
         var comment = new SocialPostComment(Guid.NewGuid(), postId, Guid.NewGuid(), "Author", "Reply", parentId);
         comment.ParentCommentId.ShouldBe(parentId);
     }
+
+    [Fact]
+    public void Post_rules_extract_links_and_index_hashtags_without_partial_matches()
+    {
+        SocialPostRules.ExtractFirstUrl("Read https://example.com/news?id=1. ")
+            .ShouldBe("https://example.com/news?id=1");
+        SocialPostRules.ExtractFirstUrl("www.example.com").ShouldBeNull();
+
+        SocialPostRules.ExtractHashtags("#HCS #nội_bộ #HCS")
+            .ShouldBe(new[] { "hcs", "nội_bộ" });
+        SocialPostRules.BuildHashtagIndex("#hcs #internal").ShouldBe("|hcs||internal|");
+        SocialPostRules.NormalizeHashtag(" #HCS ").ShouldBe("hcs");
+        SocialPostRules.NormalizeHashtag("#bad tag").ShouldBeNull();
+    }
+
+    [Fact]
+    public void Reaction_rules_allow_toggle_and_replacement_values_only()
+    {
+        var reaction = new SocialPostReaction(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), SocialReactionType.Like);
+        reaction.ReactionType.ShouldBe(SocialReactionType.Like);
+        reaction.ChangeTo(SocialReactionType.Love);
+        reaction.ReactionType.ShouldBe(SocialReactionType.Love);
+        Should.Throw<BusinessException>(() => reaction.ChangeTo((SocialReactionType)99));
+        Should.Throw<BusinessException>(() => new SocialCommentReaction(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), (SocialReactionType)99));
+    }
 }

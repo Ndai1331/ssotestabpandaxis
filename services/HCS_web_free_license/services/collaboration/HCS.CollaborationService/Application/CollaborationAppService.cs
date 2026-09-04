@@ -459,4 +459,5 @@ public interface IChatRealtimeNotifier
 {
     Task MessageSentAsync(ChatMessageDto message, IEnumerable<Guid> recipientUserIds, CancellationToken ct = default);
     Task MessageDeletedAsync(Guid conversationId, Guid messageId, IEnumerable<Guid> recipientUserIds, CancellationToken ct = default);
+    Task NotificationSentAsync(NotificationDto notification, CancellationToken ct = default);
 }
