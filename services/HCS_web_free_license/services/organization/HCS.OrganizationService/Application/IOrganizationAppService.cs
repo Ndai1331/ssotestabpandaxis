@@ -25,6 +25,41 @@ public interface IOrganizationAppService
     Task<MasterDataItemDto> UpdateMasterDataAsync(Guid id, UpsertMasterDataItemDto input, CancellationToken ct = default);
     Task DeleteMasterDataAsync(Guid id, CancellationToken ct = default);
 
+    Task<PagedResultDto<Icd10Dto>> GetIcd10Async(OrganizationListInput input, CancellationToken ct = default);
+    Task<Icd10Dto> CreateIcd10Async(UpsertIcd10Dto input, CancellationToken ct = default);
+    Task<Icd10Dto> UpdateIcd10Async(Guid id, UpsertIcd10Dto input, CancellationToken ct = default);
+    Task DeleteIcd10Async(Guid id, CancellationToken ct = default);
+
+    Task<PagedResultDto<BloodPressureRangeDto>> GetBloodPressureRangesAsync(OrganizationListInput input, CancellationToken ct = default);
+    Task<BloodPressureRangeDto> CreateBloodPressureRangeAsync(UpsertBloodPressureRangeDto input, CancellationToken ct = default);
+    Task<BloodPressureRangeDto> UpdateBloodPressureRangeAsync(Guid id, UpsertBloodPressureRangeDto input, CancellationToken ct = default);
+    Task DeleteBloodPressureRangeAsync(Guid id, CancellationToken ct = default);
+
+    Task<PagedResultDto<BloodGlucoseRangeDto>> GetBloodGlucoseRangesAsync(OrganizationListInput input, CancellationToken ct = default);
+    Task<BloodGlucoseRangeDto> CreateBloodGlucoseRangeAsync(UpsertBloodGlucoseRangeDto input, CancellationToken ct = default);
+    Task<BloodGlucoseRangeDto> UpdateBloodGlucoseRangeAsync(Guid id, UpsertBloodGlucoseRangeDto input, CancellationToken ct = default);
+    Task DeleteBloodGlucoseRangeAsync(Guid id, CancellationToken ct = default);
+
+    Task<PagedResultDto<BmiRangeDto>> GetBmiRangesAsync(OrganizationListInput input, CancellationToken ct = default);
+    Task<BmiRangeDto> CreateBmiRangeAsync(UpsertBmiRangeDto input, CancellationToken ct = default);
+    Task<BmiRangeDto> UpdateBmiRangeAsync(Guid id, UpsertBmiRangeDto input, CancellationToken ct = default);
+    Task DeleteBmiRangeAsync(Guid id, CancellationToken ct = default);
+
+    Task<PagedResultDto<CountryDto>> GetCountriesAsync(OrganizationListInput input, CancellationToken ct = default);
+    Task<CountryDto> CreateCountryAsync(UpsertCountryDto input, CancellationToken ct = default);
+    Task<CountryDto> UpdateCountryAsync(Guid id, UpsertCountryDto input, CancellationToken ct = default);
+    Task DeleteCountryAsync(Guid id, CancellationToken ct = default);
+
+    Task<PagedResultDto<ProvinceDto>> GetProvincesAsync(OrganizationListInput input, CancellationToken ct = default);
+    Task<ProvinceDto> CreateProvinceAsync(UpsertProvinceDto input, CancellationToken ct = default);
+    Task<ProvinceDto> UpdateProvinceAsync(Guid id, UpsertProvinceDto input, CancellationToken ct = default);
+    Task DeleteProvinceAsync(Guid id, CancellationToken ct = default);
+
+    Task<PagedResultDto<CommuneDto>> GetCommunesAsync(OrganizationListInput input, CancellationToken ct = default);
+    Task<CommuneDto> CreateCommuneAsync(UpsertCommuneDto input, CancellationToken ct = default);
+    Task<CommuneDto> UpdateCommuneAsync(Guid id, UpsertCommuneDto input, CancellationToken ct = default);
+    Task DeleteCommuneAsync(Guid id, CancellationToken ct = default);
+
     Task<PagedResultDto<UserOrganizationMappingDto>> GetUserMappingsAsync(Guid? userId, int skipCount, int maxResultCount, CancellationToken ct = default);
     Task<IReadOnlyList<UserDepartmentLookupDto>> GetUserDepartmentsAsync(
         IReadOnlyCollection<Guid> userIds, CancellationToken ct = default);

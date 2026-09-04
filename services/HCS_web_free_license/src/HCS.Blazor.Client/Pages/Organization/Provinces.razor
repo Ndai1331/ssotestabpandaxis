@@ -1,0 +1,6 @@
+@page "/provinces"
+@attribute [Authorize(Policy = "HCS.Catalogs.Provinces")]
+@inherits HCSComponentBase
+
+<PageTitle>@L["Catalog:ProvinceTitle"] · HCS</PageTitle>
+<ReferenceCatalog Kind="ReferenceCatalogKind.Province" />

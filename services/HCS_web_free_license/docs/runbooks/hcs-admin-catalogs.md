@@ -16,15 +16,17 @@ The same admin shell now includes `/administration` (or `/users`) for Identity u
 1. Confirm the menu only shows catalog links allowed by the current permission claims.
 2. Open `/departments`, `/unit-lists`, `/positions`, and `/master-datas`.
 3. Open each typed master-data route: `/document-types`, `/sectors`, `/urgency-levels`, `/confidentiality-levels`, `/processing-methods`, `/document-status`, `/signing-methods`, and `/event-types`. Confirm `/even-types` still resolves as an alias.
-4. On each catalog, verify the empty, loading, retry/error, server paging, text filter, active-status filter, reset, create, edit, confirmation-delete, and success-message states.
-5. For departments, confirm parent options display `Code — Name` and a self-parent choice is not available. For units, confirm the department dropdown displays `Code — Name` and no GUID input is shown.
-6. On a typed master-data route, inspect the network request and confirm `type` is the fixed allow-listed value. On `/master-datas`, confirm a user can only choose one of the eight allow-listed values.
-7. Submit a duplicate code and confirm the UI shows a friendly conflict message. Confirm invalid sign order is rejected outside `0–100`.
-8. Remove one catalog permission, start a fresh session, and confirm the menu item is hidden, the direct route renders `NotAuthorized`, and the corresponding API returns `403`.
-9. Repeat the critical list/form actions at desktop and mobile widths. The grid may scroll horizontally on narrow screens; action buttons must remain reachable and labelled.
-10. Open `/administration`, verify user search and server paging, then create → assign role → edit → delete. Confirm duplicate username/email returns a friendly conflict message and a second click during save does not send a duplicate request.
-11. Open **Vai trò & quyền**, select the permission group, toggle individual/all permissions, save, then sign out/in before checking the changed claims. Confirm a non-admin receives `403` from the Platform Identity/Permission APIs.
-12. In the create/edit modal, verify the position and department values use `Code — Name`; do not enter GUIDs manually. The email-confirmed and force-password-change controls are intentionally read-only because the ABP Community Identity DTO does not accept those fields.
+4. Open `/icd10`, `/blood-pressure`, `/blood-glucose`, and `/bmi`. Verify the requested clinical fields, boolean controls, sort order, and that invalid min/max ranges are rejected.
+5. Open `/countries`, `/provinces`, and `/communes`. Verify province selection is filtered by country, commune selection is filtered by province, and parent values display `Code — Name` without raw GUID input.
+6. On each catalog, verify the empty, loading, retry/error, server paging, text filter, reset, create, edit, confirmation-delete, and success-message states. The legacy catalogs also include their active-status filter.
+7. For departments, confirm parent options display `Code — Name` and a self-parent choice is not available. For units, confirm the department dropdown displays `Code — Name` and no GUID input is shown.
+8. On a typed master-data route, inspect the network request and confirm `type` is the fixed allow-listed value. On `/master-datas`, confirm a user can only choose one of the eight allow-listed values.
+9. Submit a duplicate code and confirm the UI shows a friendly conflict message. Confirm invalid sign order is rejected outside `0–100` and invalid health ranges are rejected.
+10. Remove one catalog permission, start a fresh session, and confirm the menu item is hidden, the direct route renders `NotAuthorized`, and the corresponding API returns `403`.
+11. Repeat the critical list/form actions at desktop and mobile widths. The grid may scroll horizontally on narrow screens; action buttons must remain reachable and labelled.
+12. Open `/administration`, verify user search and server paging, then create → assign role → edit → delete. Confirm duplicate username/email returns a friendly conflict message and a second click during save does not send a duplicate request.
+13. Open **Vai trò & quyền**, select the permission group, toggle individual/all permissions, save, then sign out/in before checking the changed claims. Confirm a non-admin receives `403` from the Platform Identity/Permission APIs.
+14. In the create/edit modal, verify the position and department values use `Code — Name`; do not enter GUIDs manually. The email-confirmed and force-password-change controls are intentionally read-only because the ABP Community Identity DTO does not accept those fields.
 
 ## Targeted verification commands
 

@@ -54,6 +54,76 @@ public sealed class MasterDataController(IOrganizationAppService service) : Orga
     [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteMasterDataAsync(id, ct);
 }
 
+[Route("api/organization/icd10")]
+[Authorize(OrganizationPermissions.Icd10)]
+public sealed class Icd10Controller(IOrganizationAppService service) : OrganizationControllerBase(service)
+{
+    [HttpGet] public Task<PagedResultDto<Icd10Dto>> List([FromQuery] OrganizationListInput input, CancellationToken ct) => Service.GetIcd10Async(input, ct);
+    [HttpPost] public Task<Icd10Dto> Create([FromBody] UpsertIcd10Dto input, CancellationToken ct) => Service.CreateIcd10Async(input, ct);
+    [HttpPut("{id:guid}")] public Task<Icd10Dto> Update(Guid id, [FromBody] UpsertIcd10Dto input, CancellationToken ct) => Service.UpdateIcd10Async(id, input, ct);
+    [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteIcd10Async(id, ct);
+}
+
+[Route("api/organization/blood-pressure")]
+[Authorize(OrganizationPermissions.BloodPressure)]
+public sealed class BloodPressureController(IOrganizationAppService service) : OrganizationControllerBase(service)
+{
+    [HttpGet] public Task<PagedResultDto<BloodPressureRangeDto>> List([FromQuery] OrganizationListInput input, CancellationToken ct) => Service.GetBloodPressureRangesAsync(input, ct);
+    [HttpPost] public Task<BloodPressureRangeDto> Create([FromBody] UpsertBloodPressureRangeDto input, CancellationToken ct) => Service.CreateBloodPressureRangeAsync(input, ct);
+    [HttpPut("{id:guid}")] public Task<BloodPressureRangeDto> Update(Guid id, [FromBody] UpsertBloodPressureRangeDto input, CancellationToken ct) => Service.UpdateBloodPressureRangeAsync(id, input, ct);
+    [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteBloodPressureRangeAsync(id, ct);
+}
+
+[Route("api/organization/blood-glucose")]
+[Authorize(OrganizationPermissions.BloodGlucose)]
+public sealed class BloodGlucoseController(IOrganizationAppService service) : OrganizationControllerBase(service)
+{
+    [HttpGet] public Task<PagedResultDto<BloodGlucoseRangeDto>> List([FromQuery] OrganizationListInput input, CancellationToken ct) => Service.GetBloodGlucoseRangesAsync(input, ct);
+    [HttpPost] public Task<BloodGlucoseRangeDto> Create([FromBody] UpsertBloodGlucoseRangeDto input, CancellationToken ct) => Service.CreateBloodGlucoseRangeAsync(input, ct);
+    [HttpPut("{id:guid}")] public Task<BloodGlucoseRangeDto> Update(Guid id, [FromBody] UpsertBloodGlucoseRangeDto input, CancellationToken ct) => Service.UpdateBloodGlucoseRangeAsync(id, input, ct);
+    [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteBloodGlucoseRangeAsync(id, ct);
+}
+
+[Route("api/organization/bmi")]
+[Authorize(OrganizationPermissions.Bmi)]
+public sealed class BmiController(IOrganizationAppService service) : OrganizationControllerBase(service)
+{
+    [HttpGet] public Task<PagedResultDto<BmiRangeDto>> List([FromQuery] OrganizationListInput input, CancellationToken ct) => Service.GetBmiRangesAsync(input, ct);
+    [HttpPost] public Task<BmiRangeDto> Create([FromBody] UpsertBmiRangeDto input, CancellationToken ct) => Service.CreateBmiRangeAsync(input, ct);
+    [HttpPut("{id:guid}")] public Task<BmiRangeDto> Update(Guid id, [FromBody] UpsertBmiRangeDto input, CancellationToken ct) => Service.UpdateBmiRangeAsync(id, input, ct);
+    [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteBmiRangeAsync(id, ct);
+}
+
+[Route("api/organization/countries")]
+[Authorize(OrganizationPermissions.Countries)]
+public sealed class CountriesController(IOrganizationAppService service) : OrganizationControllerBase(service)
+{
+    [HttpGet] public Task<PagedResultDto<CountryDto>> List([FromQuery] OrganizationListInput input, CancellationToken ct) => Service.GetCountriesAsync(input, ct);
+    [HttpPost] public Task<CountryDto> Create([FromBody] UpsertCountryDto input, CancellationToken ct) => Service.CreateCountryAsync(input, ct);
+    [HttpPut("{id:guid}")] public Task<CountryDto> Update(Guid id, [FromBody] UpsertCountryDto input, CancellationToken ct) => Service.UpdateCountryAsync(id, input, ct);
+    [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteCountryAsync(id, ct);
+}
+
+[Route("api/organization/provinces")]
+[Authorize(OrganizationPermissions.Provinces)]
+public sealed class ProvincesController(IOrganizationAppService service) : OrganizationControllerBase(service)
+{
+    [HttpGet] public Task<PagedResultDto<ProvinceDto>> List([FromQuery] OrganizationListInput input, CancellationToken ct) => Service.GetProvincesAsync(input, ct);
+    [HttpPost] public Task<ProvinceDto> Create([FromBody] UpsertProvinceDto input, CancellationToken ct) => Service.CreateProvinceAsync(input, ct);
+    [HttpPut("{id:guid}")] public Task<ProvinceDto> Update(Guid id, [FromBody] UpsertProvinceDto input, CancellationToken ct) => Service.UpdateProvinceAsync(id, input, ct);
+    [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteProvinceAsync(id, ct);
+}
+
+[Route("api/organization/communes")]
+[Authorize(OrganizationPermissions.Communes)]
+public sealed class CommunesController(IOrganizationAppService service) : OrganizationControllerBase(service)
+{
+    [HttpGet] public Task<PagedResultDto<CommuneDto>> List([FromQuery] OrganizationListInput input, CancellationToken ct) => Service.GetCommunesAsync(input, ct);
+    [HttpPost] public Task<CommuneDto> Create([FromBody] UpsertCommuneDto input, CancellationToken ct) => Service.CreateCommuneAsync(input, ct);
+    [HttpPut("{id:guid}")] public Task<CommuneDto> Update(Guid id, [FromBody] UpsertCommuneDto input, CancellationToken ct) => Service.UpdateCommuneAsync(id, input, ct);
+    [HttpDelete("{id:guid}")] public Task Delete(Guid id, CancellationToken ct) => Service.DeleteCommuneAsync(id, ct);
+}
+
 [Route("api/organization/user-mappings")]
 [Authorize(OrganizationPermissions.UserMappings)]
 public sealed class UserMappingsController(IOrganizationAppService service) : OrganizationControllerBase(service)

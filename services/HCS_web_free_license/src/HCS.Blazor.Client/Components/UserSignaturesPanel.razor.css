@@ -66,8 +66,8 @@
 }
 
 .hcs-signatures-panel__toolbar h2 {
-    color: var(--signature-ink);
-    font-size: 1.35rem;
+    color: var(--hcs-color-heading, var(--signature-primary));
+    font-size: var(--hcs-font-size-section-title, 1.1rem);
     margin: 0;
 }
 
@@ -228,8 +228,8 @@
 }
 
 .hcs-signature-card__title-row h3 {
-    color: var(--signature-ink);
-    font-size: .98rem;
+    color: var(--hcs-color-heading, var(--signature-primary));
+    font-size: var(--hcs-font-size-card-title, .98rem);
     line-height: 1.4;
     margin: 0;
     min-width: 0;
@@ -337,8 +337,8 @@
 }
 
 .hcs-signatures-empty h3 {
-    color: var(--signature-ink);
-    font-size: 1.05rem;
+    color: var(--hcs-color-heading, var(--signature-primary));
+    font-size: var(--hcs-font-size-card-title, .98rem);
     margin: 0;
 }
 
@@ -407,8 +407,8 @@
 }
 
 .hcs-signature-dialog__header h2 {
-    color: var(--signature-ink);
-    font-size: 1.25rem;
+    color: var(--hcs-color-heading, var(--signature-primary));
+    font-size: var(--hcs-font-size-section-title, 1.1rem);
     margin: 0;
 }
 

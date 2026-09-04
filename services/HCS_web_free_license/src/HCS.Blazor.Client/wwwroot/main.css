@@ -52,8 +52,8 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 }
 
 .hcs-boot-screen__title {
-    color: #173b56;
-    font-size: 1.2rem;
+    color: var(--hcs-color-heading, var(--color-primary, #00B4A9));
+    font-size: var(--hcs-font-size-section-title, 1.1rem);
     font-weight: 750;
     letter-spacing: -.02em;
     margin: 0 0 .2rem;
@@ -121,7 +121,7 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 }
 
 #blazor-error-ui .reload {
-    color: #0d6efd;
+    color: var(--hcs-color-link, var(--color-primary, #00B4A9));
     text-decoration: underline;
 }
 
@@ -444,8 +444,8 @@ body:has(.hcs-chat-page) {
 }
 
 .hcs-catalog-titlebar h1 {
-    color: #173b56;
-    font-size: clamp(1.65rem, 2.5vw, 2.25rem);
+    color: var(--hcs-color-heading, var(--color-primary, #00B4A9));
+    font-size: var(--hcs-font-size-title, clamp(1.25rem, 1.6vw, 1.6rem));
     font-weight: 750;
     letter-spacing: -.025em;
     margin: 0;
@@ -783,8 +783,8 @@ body:has(.hcs-chat-page) {
 }
 
 .hcs-catalog-page .hcs-row-actions .hcs-action-button--preview {
-    border-color: #0d6efd;
-    color: #0d6efd;
+    border-color: var(--hcs-color-primary, var(--color-primary, #00B4A9));
+    color: var(--hcs-color-primary, var(--color-primary, #00B4A9));
 }
 
 .hcs-catalog-page .hcs-row-actions .hcs-action-button--edit {
@@ -841,9 +841,10 @@ body:has(.hcs-chat-page) {
     margin-bottom: .8rem;
 }
 
+.hcs-empty h1,
 .hcs-empty h2 {
-    color: var(--catalog-ink);
-    font-size: 1.2rem;
+    color: var(--hcs-color-heading, var(--color-primary, #00B4A9));
+    font-size: var(--hcs-font-size-section-title, 1.1rem);
     font-weight: 750;
 }
 
@@ -860,8 +861,8 @@ body:has(.hcs-chat-page) {
 }
 
 .hcs-catalog-modal__header .modal-title {
-    color: #173b56;
-    font-size: 1.65rem;
+    color: var(--hcs-color-heading, var(--color-primary, #00B4A9));
+    font-size: var(--hcs-font-size-section-title, 1.1rem);
     font-weight: 750;
 }
 
@@ -1422,7 +1423,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-calendar-grid__today {
-    background: rgba(13, 110, 253, 0.08) !important;
+    background: rgba(0, 180, 169, .08) !important;
 }
 
 .hcs-cal-toolbar {
@@ -1446,7 +1447,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-cal-toolbar__title {
-    color: #3d4a5c;
+    color: var(--hcs-color-heading, var(--color-primary, #00B4A9));
     font-size: 1.05rem;
     font-weight: 800;
     letter-spacing: .06em;
@@ -1748,7 +1749,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-file-preview-card__name {
-    color: #173b56;
+    color: var(--hcs-color-heading, var(--color-primary, #00B4A9));
     max-width: 100%;
     overflow-wrap: anywhere;
 }
@@ -2420,6 +2421,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-kanban-hd h2 {
+    color: var(--hcs-color-heading, var(--color-primary, #00B4A9));
     font-size: .92rem;
     font-weight: 750;
     margin: 0;
@@ -2593,7 +2595,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-workspace-project-detail-modal .card-header strong {
-    color: var(--hcs-color-ink, #1a1a2e);
+    color: var(--hcs-color-heading, var(--color-primary, #00B4A9));
     font-size: .98rem;
     font-weight: 700;
 }

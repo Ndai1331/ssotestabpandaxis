@@ -42,6 +42,13 @@ public static class HCSPermissions
         public const string DocumentStatuses = HCSCatalogPermissions.DocumentStatuses;
         public const string SigningMethods = HCSCatalogPermissions.SigningMethods;
         public const string EventTypes = HCSCatalogPermissions.EventTypes;
+        public const string Icd10 = HCSCatalogPermissions.Icd10;
+        public const string BloodPressure = HCSCatalogPermissions.BloodPressure;
+        public const string BloodGlucose = HCSCatalogPermissions.BloodGlucose;
+        public const string Bmi = HCSCatalogPermissions.Bmi;
+        public const string Countries = HCSCatalogPermissions.Countries;
+        public const string Provinces = HCSCatalogPermissions.Provinces;
+        public const string Communes = HCSCatalogPermissions.Communes;
     }
 
     // These permission names are consumed by the standalone Work Management API.
@@ -107,6 +114,7 @@ public static class HCSPermissions
     {
         public const string Default = "Collaboration";
         public const string Chat = Default + ".Chat";
+        public const string Social = Default + ".Social";
         public const string Notifications = Default + ".Notifications";
         public const string Administration = Default + ".Administration";
     }

@@ -14,6 +14,13 @@ public sealed class OrganizationApiContractTests
         { typeof(UnitsController), "api/organization/units", OrganizationPermissions.Units },
         { typeof(PositionsController), "api/organization/positions", OrganizationPermissions.Positions },
         { typeof(MasterDataController), "api/organization/master-data", OrganizationPermissions.MasterData },
+        { typeof(Icd10Controller), "api/organization/icd10", OrganizationPermissions.Icd10 },
+        { typeof(BloodPressureController), "api/organization/blood-pressure", OrganizationPermissions.BloodPressure },
+        { typeof(BloodGlucoseController), "api/organization/blood-glucose", OrganizationPermissions.BloodGlucose },
+        { typeof(BmiController), "api/organization/bmi", OrganizationPermissions.Bmi },
+        { typeof(CountriesController), "api/organization/countries", OrganizationPermissions.Countries },
+        { typeof(ProvincesController), "api/organization/provinces", OrganizationPermissions.Provinces },
+        { typeof(CommunesController), "api/organization/communes", OrganizationPermissions.Communes },
         { typeof(UserMappingsController), "api/organization/user-mappings", OrganizationPermissions.UserMappings }
     };
 

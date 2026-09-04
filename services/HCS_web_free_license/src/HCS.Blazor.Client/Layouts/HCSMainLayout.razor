@@ -95,6 +95,36 @@
                 <i class="fa fa-house" aria-hidden="true"></i><span>@Localizer["Menu:Workspace"]</span>
             </NavLink>
 
+            <AuthorizeView Context="authenticationState">
+                <Authorized>
+                    @if (CanOpenSocialNavigation(authenticationState.User))
+                    {
+                        <div class="hcs-nav-menu @(IsExpanded("social") ? "hcs-nav-menu--expanded" : null)"
+                             @onpointerenter="@(() => OnMenuPointerEnter("social"))">
+                            <button class="hcs-nav-menu__trigger" type="button"
+                                    aria-expanded="@IsExpanded("social").ToString().ToLowerInvariant()"
+                                    aria-haspopup="true" @onmousedown:preventDefault
+                                    @onclick="@(() => ToggleSection("social"))">
+                                <i class="fa fa-users" aria-hidden="true"></i><span>@Localizer["Menu:Social"]</span>
+                                <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
+                            </button>
+                            <div class="hcs-nav-menu__panel" role="menu">
+                                <AuthorizeView Policy="Collaboration.Social">
+                                    <Authorized>
+                                        <NavLink href="/social" @onclick="CloseMobileNav"><i class="fa fa-newspaper" aria-hidden="true"></i>@Localizer["Menu:SocialPosts"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                                <AuthorizeView Policy="Collaboration.Chat">
+                                    <Authorized>
+                                        <NavLink href="/chat" @onclick="CloseMobileNav"><i class="fa fa-comments" aria-hidden="true"></i>@Localizer["Menu:SocialChat"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                        </div>
+                    }
+                </Authorized>
+            </AuthorizeView>
+
             <div class="hcs-nav-menu @(IsExpanded("documents") ? "hcs-nav-menu--expanded" : null)"
                  @onpointerenter="@(() => OnMenuPointerEnter("documents"))">
                 <button class="hcs-nav-menu__trigger" type="button"
@@ -183,6 +213,29 @@
                             <NavLink href="/positions" @onclick="CloseMobileNav"><i class="fa fa-id-badge" aria-hidden="true"></i>@Localizer["Menu:Positions"]</NavLink>
                         </Authorized>
                     </AuthorizeView>
+                    <p class="hcs-nav-menu__label">@Localizer["Menu:HealthCatalogs"]</p>
+                    <AuthorizeView Policy="HCS.Catalogs.ICD10">
+                        <Authorized><NavLink href="/icd10" @onclick="CloseMobileNav"><i class="fa fa-heart-pulse" aria-hidden="true"></i>@Localizer["Menu:ICD10"]</NavLink></Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="HCS.Catalogs.BloodPressure">
+                        <Authorized><NavLink href="/blood-pressure" @onclick="CloseMobileNav"><i class="fa fa-heart-circle-plus" aria-hidden="true"></i>@Localizer["Menu:BloodPressure"]</NavLink></Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="HCS.Catalogs.BloodGlucose">
+                        <Authorized><NavLink href="/blood-glucose" @onclick="CloseMobileNav"><i class="fa fa-droplet" aria-hidden="true"></i>@Localizer["Menu:BloodGlucose"]</NavLink></Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="HCS.Catalogs.BMI">
+                        <Authorized><NavLink href="/bmi" @onclick="CloseMobileNav"><i class="fa fa-weight-scale" aria-hidden="true"></i>@Localizer["Menu:BMI"]</NavLink></Authorized>
+                    </AuthorizeView>
+                    <p class="hcs-nav-menu__label">@Localizer["Menu:LocationCatalogs"]</p>
+                    <AuthorizeView Policy="HCS.Catalogs.Countries">
+                        <Authorized><NavLink href="/countries" @onclick="CloseMobileNav"><i class="fa fa-earth-americas" aria-hidden="true"></i>@Localizer["Menu:Countries"]</NavLink></Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="HCS.Catalogs.Provinces">
+                        <Authorized><NavLink href="/provinces" @onclick="CloseMobileNav"><i class="fa fa-map-location-dot" aria-hidden="true"></i>@Localizer["Menu:Provinces"]</NavLink></Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="HCS.Catalogs.Communes">
+                        <Authorized><NavLink href="/communes" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:Communes"]</NavLink></Authorized>
+                    </AuthorizeView>
                     <p class="hcs-nav-menu__label">@Localizer["Menu:SurveyCatalogs"]</p>
                     <NavLink href="/survey-locations" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:SurveyLocations"]</NavLink>
                     <NavLink href="/survey-criterias" @onclick="CloseMobileNav"><i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]</NavLink>
@@ -201,13 +254,6 @@
                 </Authorized>
             </AuthorizeView>
 
-            <AuthorizeView Policy="Collaboration.Chat">
-                <Authorized>
-                    <NavLink class="hcs-top-nav__link" href="/chat" @onclick="CloseMobileNav">
-                        <i class="fa fa-comments" aria-hidden="true"></i><span>@Localizer["Menu:Chat"]</span>
-                    </NavLink>
-                </Authorized>
-            </AuthorizeView>
         </nav>
 
     </header>
@@ -240,6 +286,10 @@
     private int unreadNotifications;
     private int unreadChat;
     private string? avatarDataUrl;
+
+    private static bool CanOpenSocialNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        user.HasClaim("permission", CollaborationPermissions.Social)
+        || user.HasClaim("permission", CollaborationPermissions.Chat);
 
     protected override void OnInitialized()
     {

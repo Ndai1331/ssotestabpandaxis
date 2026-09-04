@@ -52,8 +52,8 @@
 }
 
 .hcs-public-survey__criteria-card h2 {
-    color: #193b57;
-    font-size: 1.05rem;
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-card-title, .98rem);
     margin: .8rem 0;
     text-align: center;
 }
@@ -94,6 +94,12 @@
     max-width: 680px;
     padding: 3rem 1.5rem;
     text-align: center;
+}
+
+.hcs-public-survey__thank-you h1 {
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-title, clamp(1.25rem, 1.6vw, 1.6rem));
+    margin: 0 0 .75rem;
 }
 
 .hcs-public-survey__thank-you-icon {
@@ -143,8 +149,8 @@
 }
 
 .hcs-public-survey__dialog-header h2 {
-    color: #193b57;
-    font-size: 1.25rem;
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-section-title, 1.1rem);
     margin: 0;
 }
 

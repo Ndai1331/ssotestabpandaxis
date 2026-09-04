@@ -163,6 +163,69 @@ public sealed class OrganizationAppServiceTests : OrganizationTestBase
     }
 
     [Fact]
+    public async Task Health_ranges_validate_minimum_and_maximum_values()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var scope = ServiceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OrganizationDbContext>();
+        var service = new OrganizationAppService(db, new TestGuidGenerator());
+
+        var exception = await Should.ThrowAsync<BusinessException>(() =>
+            service.CreateBloodGlucoseRangeAsync(new UpsertBloodGlucoseRangeDto
+            {
+                Title = "Invalid", MinValue = 8.1m, MaxValue = 5.2m
+            }, ct));
+
+        exception.Code.ShouldBe(OrganizationErrorCodes.InvalidRange);
+        db.BloodGlucoseRanges.Count().ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Province_and_commune_lists_include_parent_codes()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var scope = ServiceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OrganizationDbContext>();
+        var service = new OrganizationAppService(db, new TestGuidGenerator());
+        var country = await service.CreateCountryAsync(new UpsertCountryDto
+        {
+            Code = "VN", Name = "Việt Nam", CountryCode = "VNM"
+        }, ct);
+        var province = await service.CreateProvinceAsync(new UpsertProvinceDto
+        {
+            Code = "BD", Name = "Bình Dương", CountryId = country.Id
+        }, ct);
+        var commune = await service.CreateCommuneAsync(new UpsertCommuneDto
+        {
+            Code = "TDM", Name = "Thủ Dầu Một", ProvinceId = province.Id
+        }, ct);
+
+        var provinceResult = await service.GetProvincesAsync(new OrganizationListInput(), ct);
+        var communeResult = await service.GetCommunesAsync(new OrganizationListInput(), ct);
+
+        provinceResult.Items.Single().CountryCode.ShouldBe("VN");
+        communeResult.Items.Single().ProvinceCode.ShouldBe("BD");
+        commune.Id.ShouldNotBe(Guid.Empty);
+    }
+
+    [Fact]
+    public async Task Province_rejects_an_unknown_country()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var scope = ServiceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OrganizationDbContext>();
+        var service = new OrganizationAppService(db, new TestGuidGenerator());
+
+        var exception = await Should.ThrowAsync<BusinessException>(() =>
+            service.CreateProvinceAsync(new UpsertProvinceDto
+            {
+                Code = "P1", Name = "Province", CountryId = Guid.NewGuid()
+            }, ct));
+
+        exception.Code.ShouldBe(OrganizationErrorCodes.InvalidCountry);
+    }
+
+    [Fact]
     public async Task Duplicate_non_primary_user_mapping_is_rejected_before_database_write()
     {
         var ct = TestContext.Current.CancellationToken;

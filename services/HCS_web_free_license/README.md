@@ -101,6 +101,8 @@ The shell uses a two-row horizontal top menu above `1100px`; at and below `1100p
 
 The main-menu entry **Trao đổi** (`/chat`) and the header chat shortcut require `Collaboration.Chat`. The page uses the free Collaboration contracts through the BFF and provides user/group creation, conversation list, paged messages, text/attachment sending, pin/rename/leave actions, member information, unread/read state, SignalR updates and REST retry fallback. User lookup is exposed as the least-privilege `GET /api/chat/contacts` Platform projection (`Id`, username, display name and active state), not the admin Identity list. Collaboration, MinIO, RabbitMQ/outbox and SignalR must be healthy for full attachment/realtime behavior; text/list UI still shows explicit loading, empty, forbidden and retry states when those dependencies are unavailable.
 
+The **Mạng xã hội** area (`/social`) requires `Collaboration.Social`. It provides a newest-first public feed, text/image/video posts, `Public`/`Internal` visibility, comments and replies, plus `/social/profile` for the current user's posts. In the MVP, public posts are visible to every authenticated HCS user; internal posts are visible only to their author on the personal page. Media is stored in the Collaboration MinIO `hcs-social` container and is always downloaded through an authorization-checked BFF route.
+
 An authenticated user without the permission sees an access-denied view rather than another login redirect. After granting or revoking Collaboration permissions, sign out/in again so the BFF session receives fresh permission claims.
 
 ## Organization catalog CRUD (Blazorise)
@@ -109,8 +111,10 @@ The first free-license admin slice now has a shared Blazorise catalog shell and 
 
 - `/departments`, `/unit-lists`, and `/positions`;
 - `/master-datas` plus `/document-types`, `/sectors`, `/urgency-levels`, `/confidentiality-levels`, `/processing-methods`, `/document-status`, `/signing-methods`, and `/event-types`.
+- `/icd10`, `/blood-pressure`, `/blood-glucose`, and `/bmi` for health reference ranges;
+- `/countries`, `/provinces`, and `/communes` for cascading location catalogs.
 
-The legacy `/even-types` route remains as a compatibility alias. Each page checks its matching `HCS.Organization.*` permission, uses server-side paging/filtering (`20` rows by default, `100` maximum), and keeps department/parent selection in typed dropdowns instead of accepting raw GUID input. The shared form uses allow-listed master-data type selects and Active/Inactive selects; a typed route locks its type to that route. The API contract remains unchanged.
+The legacy `/even-types` route remains as a compatibility alias. Each page checks its matching `HCS.Organization.*` permission, uses server-side paging/filtering (`20` rows by default, `100` maximum), and keeps department/parent selection in typed dropdowns instead of accepting raw GUID input. The health and location catalogs use the same shell, with decimal range validation for glucose/BMI and cascading country → province → commune selection displaying `Code — Name`. The shared form uses allow-listed master-data type selects and Active/Inactive selects; a typed route locks its type to that route. The new catalog API is backed by the Organization migration `AddHealthAndLocationCatalogs`.
 
 For a local smoke check, sign in at `https://hcs.localhost`, open the routes above as an `admin`, and verify create → filter/page → edit → delete. Unsafe catalog calls are CSRF-checked once at the BFF; the internal Organization controllers deliberately do not require a second service-local antiforgery cookie/token. After rebuilding the gateway, hard-refresh or sign in again if the old antiforgery cookie is rejected. Re-login after changing role grants so the BFF session receives fresh permission claims. The detailed checklist is in [`docs/runbooks/hcs-admin-catalogs.md`](./docs/runbooks/hcs-admin-catalogs.md).
 

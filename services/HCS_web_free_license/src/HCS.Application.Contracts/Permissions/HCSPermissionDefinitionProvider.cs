@@ -33,6 +33,13 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.DocumentStatuses, L("Permission:Catalogs.DocumentStatuses")));
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.SigningMethods, L("Permission:Catalogs.SigningMethods")));
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.EventTypes, L("Permission:Catalogs.EventTypes")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Icd10, L("Permission:Catalogs.ICD10")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.BloodPressure, L("Permission:Catalogs.BloodPressure")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.BloodGlucose, L("Permission:Catalogs.BloodGlucose")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Bmi, L("Permission:Catalogs.BMI")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Countries, L("Permission:Catalogs.Countries")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Provinces, L("Permission:Catalogs.Provinces")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Communes, L("Permission:Catalogs.Communes")));
 
         var workManagement = context.AddGroup(HCSPermissions.WorkManagement.Default, L("Permission:WorkManagement"));
         workManagement.AddPermission(HCSPermissions.WorkManagement.Projects, L("Permission:WorkManagement.Projects"));
@@ -59,6 +66,7 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
 
         var collaboration = context.AddGroup(HCSPermissions.Collaboration.Default, L("Permission:Collaboration"));
         collaboration.AddPermission(HCSPermissions.Collaboration.Chat, L("Permission:Collaboration.Chat"));
+        collaboration.AddPermission(HCSPermissions.Collaboration.Social, L("Permission:Collaboration.Social"));
         collaboration.AddPermission(HCSPermissions.Collaboration.Notifications, L("Permission:Collaboration.Notifications"));
         collaboration.AddPermission(HCSPermissions.Collaboration.Administration, L("Permission:Collaboration.Administration"));
     }

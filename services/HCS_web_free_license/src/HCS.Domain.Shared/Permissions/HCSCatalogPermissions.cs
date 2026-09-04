@@ -12,6 +12,13 @@ public static class HCSCatalogPermissions
     public const string DocumentStatuses = Group + ".DocumentStatuses";
     public const string SigningMethods = Group + ".SigningMethods";
     public const string EventTypes = Group + ".EventTypes";
+    public const string Icd10 = Group + ".ICD10";
+    public const string BloodPressure = Group + ".BloodPressure";
+    public const string BloodGlucose = Group + ".BloodGlucose";
+    public const string Bmi = Group + ".BMI";
+    public const string Countries = Group + ".Countries";
+    public const string Provinces = Group + ".Provinces";
+    public const string Communes = Group + ".Communes";
 
     public static readonly string[] All =
     [
@@ -23,7 +30,14 @@ public static class HCSCatalogPermissions
         ProcessingMethods,
         DocumentStatuses,
         SigningMethods,
-        EventTypes
+        EventTypes,
+        Icd10,
+        BloodPressure,
+        BloodGlucose,
+        Bmi,
+        Countries,
+        Provinces,
+        Communes
     ];
 
     public static readonly string[] AllWithCrud = [.. HcsCrudPermissions.Expand(All)];

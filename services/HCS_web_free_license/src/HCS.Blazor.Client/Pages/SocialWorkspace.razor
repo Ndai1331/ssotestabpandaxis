@@ -1,0 +1,420 @@
+@page "/social"
+@page "/social/profile"
+@attribute [Authorize(Policy = CollaborationPermissions.Social)]
+@inherits HCSComponentBase
+@inject SocialClient Social
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"]) · HCS</PageTitle>
+
+<section class="hcs-social-page" aria-labelledby="social-title">
+    <header class="hcs-social-hero">
+        <div>
+            <p class="hcs-social-eyebrow"><i class="fa fa-users" aria-hidden="true"></i> HCS Community</p>
+            <h1 id="social-title">@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"])</h1>
+            <p>@(isProfile ? L["Social:ProfileSubtitle"] : L["Social:Subtitle"])</p>
+        </div>
+        <a class="hcs-social-outline-button" href="@(isProfile ? "/social" : "/social/profile")">
+            <i class="fa @(isProfile ? "fa-house" : "fa-user")" aria-hidden="true"></i>
+            @(isProfile ? L["Social:BackToFeed"] : L["Social:OpenProfile"])
+        </a>
+    </header>
+
+    <div class="hcs-social-layout">
+        <main class="hcs-social-stream">
+            <section class="hcs-social-composer" aria-labelledby="social-composer-title">
+                <div class="hcs-social-card-heading">
+                    <div class="hcs-social-avatar hcs-social-avatar--accent" aria-hidden="true">@Initials(CurrentDisplayName())</div>
+                    <div>
+                        <h2 id="social-composer-title">@L["Social:ComposerTitle"]</h2>
+                        <p>@L["Social:ContentLabel"]</p>
+                    </div>
+                </div>
+                <form class="hcs-social-composer__form" @onsubmit="CreatePostAsync" @onsubmit:preventDefault>
+                    <label class="visually-hidden" for="social-content">@L["Social:ContentLabel"]</label>
+                    <textarea id="social-content" class="form-control" rows="3" @bind="content" @bind:event="oninput"
+                              placeholder='@L["Social:ContentPlaceholder"]' disabled="@isPosting"></textarea>
+                    <div class="hcs-social-composer__controls">
+                        <div class="hcs-social-visibility">
+                            <label for="social-visibility">@L["Social:VisibilityLabel"]</label>
+                            <select id="social-visibility" class="form-select" @bind="visibility" disabled="@isPosting">
+                                <option value="@SocialPostVisibility.Public">@L["Social:Public"]</option>
+                                <option value="@SocialPostVisibility.Internal">@L["Social:Internal"]</option>
+                            </select>
+                        </div>
+                        <label class="hcs-social-media-picker" for="social-media">
+                            <i class="fa fa-photo-film" aria-hidden="true"></i>@L["Social:ChooseMedia"]
+                            <InputFile id="social-media" class="visually-hidden" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
+                                       multiple OnChange="UploadMediaAsync" disabled="@(isPosting || isUploadingMedia)" />
+                        </label>
+                        <button class="hcs-social-submit" type="submit" disabled="@(isPosting || isUploadingMedia || (string.IsNullOrWhiteSpace(content) && uploadedMedia.Count == 0))">
+                            <i class="fa @(isPosting ? "fa-spinner fa-spin" : "fa-paper-plane")" aria-hidden="true"></i>
+                            @(isPosting ? L["Social:Posting"] : L["Social:Post"])
+                        </button>
+                    </div>
+                </form>
+                @if (isUploadingMedia)
+                {
+                    <p class="hcs-social-progress" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Posting"]</p>
+                }
+                @if (uploadedMedia.Count > 0)
+                {
+                    <div class="hcs-social-selected-media" aria-label='@L["Social:SelectedMedia"]'>
+                        @foreach (var media in uploadedMedia)
+                        {
+                            <span class="hcs-social-media-chip">
+                                <i class="fa @(media.Kind == SocialMediaKind.Video ? "fa-video" : "fa-image")" aria-hidden="true"></i>
+                                <span>@media.FileName</span>
+                                <button type="button" title='@L["Social:RemoveMedia"]' aria-label='@L["Social:RemoveMedia"] @media.FileName'
+                                        @onclick="() => RemoveMediaAsync(media)" disabled="@isPosting">
+                                    <i class="fa fa-xmark" aria-hidden="true"></i>
+                                </button>
+                            </span>
+                        }
+                    </div>
+                }
+            </section>
+
+            @if (isLoading)
+            {
+                <div class="hcs-social-state" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Loading"]</div>
+            }
+            else if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <div class="hcs-social-state hcs-social-state--error" role="alert">
+                    <i class="fa fa-triangle-exclamation" aria-hidden="true"></i><span>@loadError</span>
+                    <button type="button" @onclick="LoadAsync">@L["Chat:Retry"]</button>
+                </div>
+            }
+            else if (posts.Count == 0)
+            {
+                <div class="hcs-social-state hcs-social-state--empty">
+                    <i class="fa fa-comments" aria-hidden="true"></i>
+                    <h2>@(isProfile ? L["Social:EmptyProfile"] : L["Social:EmptyFeed"])</h2>
+                    <p>@L["Social:ComposerTitle"]</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var post in posts)
+                {
+                    <article class="hcs-social-post" aria-labelledby="post-@post.Id">
+                        <header class="hcs-social-post__header">
+                            <div class="hcs-social-avatar" aria-hidden="true">@Initials(post.AuthorName)</div>
+                            <div class="hcs-social-post__author">
+                                <h2 id="post-@post.Id">@post.AuthorName</h2>
+                                <time datetime="@post.CreatedAt.ToString("O")" title="@post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")">
+                                    @post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                </time>
+                            </div>
+                            <span class="hcs-social-visibility-badge @(post.Visibility == SocialPostVisibility.Internal ? "is-internal" : null)">
+                                <i class="fa @(post.Visibility == SocialPostVisibility.Internal ? "fa-lock" : "fa-globe")" aria-hidden="true"></i>
+                                @(post.Visibility == SocialPostVisibility.Internal ? L["Social:Internal"] : L["Social:Public"])
+                            </span>
+                        </header>
+
+                        @if (!string.IsNullOrWhiteSpace(post.Text))
+                        {
+                            <p class="hcs-social-post__text">@post.Text</p>
+                        }
+                        @if (post.Media.Count > 0)
+                        {
+                            <div class="hcs-social-media-grid @(post.Media.Count == 1 ? "is-single" : null)">
+                                @foreach (var media in post.Media)
+                                {
+                                    @if (media.Kind == SocialMediaKind.Video)
+                                    {
+                                        <video controls preload="metadata" aria-label="@media.FileName">
+                                            <source src="@media.Url" type="@media.ContentType" />
+                                        </video>
+                                    }
+                                    else
+                                    {
+                                        <img src="@media.Url" loading="lazy" alt="@media.FileName" />
+                                    }
+                                }
+                            </div>
+                        }
+
+                        <div class="hcs-social-post__footer">
+                            <button type="button" class="hcs-social-comment-toggle" @onclick="() => ToggleCommentsAsync(post)">
+                                <i class="fa fa-comment" aria-hidden="true"></i>@post.CommentCount @L["Social:Comments"]
+                            </button>
+                        </div>
+
+                        @if (expandedPostIds.Contains(post.Id))
+                        {
+                            <section class="hcs-social-comments" aria-label='@L["Social:Comment"]'>
+                                @if (commentLoadingPostId == post.Id)
+                                {
+                                    <p class="hcs-social-comments__state" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:LoadingComments"]</p>
+                                }
+                                else if (commentsByPost.TryGetValue(post.Id, out var comments) && comments.Count > 0)
+                                {
+                                    @foreach (var comment in comments)
+                                    {
+                                        <article class="hcs-social-comment @(comment.ParentCommentId.HasValue ? "is-reply" : null)">
+                                            <div class="hcs-social-avatar hcs-social-avatar--small" aria-hidden="true">@Initials(comment.AuthorName)</div>
+                                            <div class="hcs-social-comment__body">
+                                                <div class="hcs-social-comment__bubble">
+                                                    <strong>@comment.AuthorName</strong>
+                                                    <p>@comment.Text</p>
+                                                </div>
+                                                <div class="hcs-social-comment__actions">
+                                                    <time datetime="@comment.CreatedAt.ToString("O")">@comment.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
+                                                    <button type="button" @onclick="() => BeginReply(post, comment)">@L["Social:Reply"]</button>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="hcs-social-comments__state">@L["Social:EmptyComments"]</p>
+                                }
+
+                                @if (commentErrorPostId == post.Id)
+                                {
+                                    <p class="hcs-social-inline-error" role="alert">@L["Social:CommentError"]</p>
+                                }
+                                <form class="hcs-social-comment-form" @onsubmit="() => SubmitCommentAsync(post.Id)" @onsubmit:preventDefault>
+                                    @if (replyingToPostId == post.Id && replyingToCommentId.HasValue)
+                                    {
+                                        <div class="hcs-social-replying">
+                                            <span><i class="fa fa-reply" aria-hidden="true"></i>@L["Social:ReplyingTo"]</span>
+                                            <button type="button" @onclick="CancelReply">@L["Social:CancelReply"]</button>
+                                        </div>
+                                    }
+                                    <label class="visually-hidden" for="comment-@post.Id">@L["Social:Comment"]</label>
+                                    <textarea id="comment-@post.Id" class="form-control" rows="2" @bind="commentDraft" @bind:event="oninput"
+                                              placeholder='@L["Social:CommentPlaceholder"]' disabled="@isSubmittingComment"></textarea>
+                                    <button class="hcs-social-comment-submit" type="submit" disabled="@(isSubmittingComment || string.IsNullOrWhiteSpace(commentDraft))">
+                                        <i class="fa @(isSubmittingComment ? "fa-spinner fa-spin" : "fa-paper-plane")" aria-hidden="true"></i>@L["Social:SendComment"]
+                                    </button>
+                                </form>
+                            </section>
+                        }
+                    </article>
+                }
+                @if (posts.Count < totalCount)
+                {
+                    <button type="button" class="hcs-social-load-more" @onclick="LoadMoreAsync" disabled="@isLoadingMore">
+                        <i class="fa @(isLoadingMore ? "fa-spinner fa-spin" : "fa-arrow-down")" aria-hidden="true"></i>
+                        @(isLoadingMore ? L["Social:Loading"] : L["Chat:OlderMessages"])
+                    </button>
+                }
+            }
+        </main>
+
+        <aside class="hcs-social-aside" aria-label="HCS Community">
+            <div class="hcs-social-aside__card">
+                <span class="hcs-social-aside__icon" aria-hidden="true"><i class="fa fa-shield-heart"></i></span>
+                <h2>@L["Social:Internal"]</h2>
+                <p>@L["Social:InternalHint"]</p>
+            </div>
+            <div class="hcs-social-aside__card hcs-social-aside__card--soft">
+                <span class="hcs-social-aside__icon" aria-hidden="true"><i class="fa fa-circle-info"></i></span>
+                <p>@L["Social:PublicHint"]</p>
+            </div>
+        </aside>
+    </div>
+</section>
+
+@code {
+    private readonly List<SocialPostDto> posts = [];
+    private readonly Dictionary<Guid, IReadOnlyList<SocialCommentDto>> commentsByPost = [];
+    private readonly HashSet<Guid> expandedPostIds = [];
+    private readonly List<UploadSocialMediaResult> uploadedMedia = [];
+    private bool isProfile;
+    private bool routeLoaded;
+    private bool isLoading;
+    private bool isLoadingMore;
+    private bool isPosting;
+    private bool isUploadingMedia;
+    private bool isSubmittingComment;
+    private string content = string.Empty;
+    private string commentDraft = string.Empty;
+    private SocialPostVisibility visibility = SocialPostVisibility.Public;
+    private string? loadError;
+    private Guid? commentLoadingPostId;
+    private Guid? commentErrorPostId;
+    private Guid? replyingToPostId;
+    private Guid? replyingToCommentId;
+    private long totalCount;
+    private string currentDisplayName = "HCS";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentDisplayName = authenticationState.User.FindFirst("name")?.Value
+            ?? authenticationState.User.Identity?.Name ?? L["Auth:UserFallback"].Value;
+        var profileRoute = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/').EndsWith("/social/profile", StringComparison.OrdinalIgnoreCase);
+        if (!routeLoaded || profileRoute != isProfile)
+        {
+            isProfile = profileRoute;
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+        try
+        {
+            var result = isProfile ? await Social.GetProfilePostsAsync() : await Social.GetFeedAsync();
+            posts.Clear();
+            posts.AddRange(result.Items);
+            totalCount = result.TotalCount;
+            commentsByPost.Clear();
+            expandedPostIds.Clear();
+            routeLoaded = true;
+        }
+        catch
+        {
+            posts.Clear();
+            totalCount = 0;
+            loadError = L["Social:LoadError"].Value;
+        }
+        finally { isLoading = false; }
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        if (isLoadingMore || posts.Count >= totalCount) return;
+        isLoadingMore = true;
+        try
+        {
+            var result = isProfile ? await Social.GetProfilePostsAsync(posts.Count) : await Social.GetFeedAsync(posts.Count);
+            posts.AddRange(result.Items);
+            totalCount = result.TotalCount;
+        }
+        catch { loadError = L["Social:LoadError"].Value; }
+        finally { isLoadingMore = false; }
+    }
+
+    private async Task UploadMediaAsync(InputFileChangeEventArgs args)
+    {
+        if (isUploadingMedia) return;
+        isUploadingMedia = true;
+        try
+        {
+            var remaining = SocialPostRules.MaxMediaItems - uploadedMedia.Count;
+            if (remaining <= 0) return;
+            foreach (var file in args.GetMultipleFiles(remaining))
+            {
+                if (file.Size > 25 * 1024 * 1024)
+                {
+                    await NotifyErrorAsync(L["Social:MediaTooLarge"]);
+                    continue;
+                }
+
+                try { uploadedMedia.Add(await Social.UploadMediaAsync(file)); }
+                catch (CollaborationApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.RequestEntityTooLarge)
+                { await NotifyErrorAsync(L["Social:MediaTooLarge"]); }
+                catch { await NotifyErrorAsync(L["Social:UploadError"]); }
+            }
+        }
+        catch { await NotifyErrorAsync(L["Social:UploadError"]); }
+        finally { isUploadingMedia = false; }
+    }
+
+    private async Task RemoveMediaAsync(UploadSocialMediaResult media)
+    {
+        try
+        {
+            await Social.DeleteUnattachedMediaAsync(media.Id);
+            uploadedMedia.RemoveAll(item => item.Id == media.Id);
+        }
+        catch { await NotifyErrorAsync(L["Social:UploadError"]); }
+    }
+
+    private async Task CreatePostAsync()
+    {
+        if (isPosting || (string.IsNullOrWhiteSpace(content) && uploadedMedia.Count == 0)) return;
+        isPosting = true;
+        try
+        {
+            await Social.CreatePostAsync(new CreateSocialPostInput
+            {
+                Text = content,
+                Visibility = visibility,
+                MediaIds = uploadedMedia.Select(media => media.Id).ToArray()
+            });
+            content = string.Empty;
+            uploadedMedia.Clear();
+            await LoadAsync();
+        }
+        catch { await NotifyErrorAsync(L["Social:PostError"]); }
+        finally { isPosting = false; }
+    }
+
+    private async Task ToggleCommentsAsync(SocialPostDto post)
+    {
+        if (!expandedPostIds.Add(post.Id))
+        {
+            expandedPostIds.Remove(post.Id);
+            return;
+        }
+        if (commentsByPost.ContainsKey(post.Id)) return;
+        commentLoadingPostId = post.Id;
+        commentErrorPostId = null;
+        try { commentsByPost[post.Id] = await Social.GetCommentsAsync(post.Id); }
+        catch { commentErrorPostId = post.Id; }
+        finally { commentLoadingPostId = null; }
+    }
+
+    private void BeginReply(SocialPostDto post, SocialCommentDto comment)
+    {
+        expandedPostIds.Add(post.Id);
+        replyingToPostId = post.Id;
+        replyingToCommentId = comment.Id;
+        commentDraft = string.Empty;
+    }
+
+    private void CancelReply()
+    {
+        replyingToPostId = null;
+        replyingToCommentId = null;
+        commentDraft = string.Empty;
+    }
+
+    private async Task SubmitCommentAsync(Guid postId)
+    {
+        if (isSubmittingComment || string.IsNullOrWhiteSpace(commentDraft)) return;
+        isSubmittingComment = true;
+        commentErrorPostId = null;
+        try
+        {
+            var parentId = replyingToPostId == postId ? replyingToCommentId : null;
+            var comment = await Social.CreateCommentAsync(postId, new CreateSocialCommentInput
+            {
+                Text = commentDraft,
+                ParentCommentId = parentId
+            });
+            var current = commentsByPost.GetValueOrDefault(postId, []);
+            commentsByPost[postId] = current.Append(comment).ToArray();
+            var index = posts.FindIndex(post => post.Id == postId);
+            if (index >= 0) posts[index] = posts[index] with { CommentCount = posts[index].CommentCount + 1 };
+            commentDraft = string.Empty;
+            CancelReply();
+        }
+        catch { commentErrorPostId = postId; }
+        finally { isSubmittingComment = false; }
+    }
+
+    private string CurrentDisplayName() => currentDisplayName;
+
+    private static string Initials(string? value)
+    {
+        var parts = (value ?? "?").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+        {
+            return "?";
+        }
+
+        return parts.Length == 1 ? parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant()
+            : string.Concat(parts[0][0], parts[^1][0]).ToUpperInvariant();
+    }
+}

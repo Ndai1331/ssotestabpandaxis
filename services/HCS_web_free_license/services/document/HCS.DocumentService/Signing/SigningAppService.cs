@@ -225,9 +225,11 @@ public sealed class SigningAppService(
         if (signature.ValidFrom.HasValue && signature.ValidFrom > now) throw new InvalidOperationException("The selected signature is not yet valid.");
         if (signature.ValidTo.HasValue && signature.ValidTo < now) throw new InvalidOperationException("The selected signature has expired.");
         var pairedWordFile = file.PairedFileId is { } pairedFileId
-            ? await db.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == pairedFileId
-                && x.DocumentId == input.DocumentId && !x.IsPendingDeletion && IsWord(x), cancellationToken)
+            ? await QueryPairedFile(db.DocumentFiles.AsNoTracking(), pairedFileId, input.DocumentId)
+                .SingleOrDefaultAsync(cancellationToken)
             : null;
+        if (pairedWordFile is not null && !IsWord(pairedWordFile))
+            pairedWordFile = null;
         byte[] bytes;
         byte[]? preparedWordBytes = null;
         var wordPrepared = false;
@@ -589,6 +591,10 @@ public sealed class SigningAppService(
         || string.Equals(file.ContentType,
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             StringComparison.OrdinalIgnoreCase);
+
+    internal static IQueryable<DocumentFile> QueryPairedFile(IQueryable<DocumentFile> files,
+        Guid fileId, Guid documentId) => files.Where(x => x.Id == fileId
+            && x.DocumentId == documentId && !x.IsPendingDeletion);
 
     private static string BuildDerivedFileName(string fileName, string suffix, int stepOrder, string extension)
     {

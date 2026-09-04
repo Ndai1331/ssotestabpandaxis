@@ -7,7 +7,7 @@ public enum ConversationMemberRole { Member = 0, Admin = 1 }
 public enum AttachmentKind { File = 0, Image = 1, Video = 2, Audio = 3 }
 public enum NotificationStatus { Pending = 0, Delivered = 1, Failed = 2 }
 
-public static class CollaborationPermissions
+public static partial class CollaborationPermissions
 {
     public const string Chat = "Collaboration.Chat";
     public const string Notifications = "Collaboration.Notifications";

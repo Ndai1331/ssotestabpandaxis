@@ -529,6 +529,146 @@ namespace HCS.CollaborationService.Data.Migrations
                     b.ToTable("CollaborationPushDeviceTokens", (string)null);
                 });
 
+            modelBuilder.Entity("HCS.CollaborationService.Domain.SocialPost", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("AuthorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("ConcurrencyStamp");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<string>("ExtraProperties")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ExtraProperties");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int>("Visibility")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorUserId");
+
+                    b.HasIndex("Visibility", "CreationTime", "Id");
+
+                    b.ToTable("CollaborationSocialPosts", (string)null);
+                });
+
+            modelBuilder.Entity("HCS.CollaborationService.Domain.SocialPostComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("AuthorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<Guid?>("ParentCommentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.HasIndex("PostId", "CreationTime", "Id");
+
+                    b.ToTable("CollaborationSocialPostComments", (string)null);
+                });
+
+            modelBuilder.Entity("HCS.CollaborationService.Domain.SocialPostMedia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BlobName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("PostId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("UploadedByUserId", "PostId");
+
+                    b.ToTable("CollaborationSocialPostMedia", (string)null);
+                });
+
             modelBuilder.Entity("HCS.CollaborationService.Domain.WorkSubjectMemberProjection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -628,6 +768,23 @@ namespace HCS.CollaborationService.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("HCS.CollaborationService.Domain.SocialPostComment", b =>
+                {
+                    b.HasOne("HCS.CollaborationService.Domain.SocialPost", null)
+                        .WithMany("Comments")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HCS.CollaborationService.Domain.SocialPostMedia", b =>
+                {
+                    b.HasOne("HCS.CollaborationService.Domain.SocialPost", null)
+                        .WithMany("Media")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
             modelBuilder.Entity("HCS.CollaborationService.Domain.WorkSubjectMemberProjection", b =>
                 {
                     b.HasOne("HCS.CollaborationService.Domain.WorkSubjectProjection", null)
@@ -645,6 +802,13 @@ namespace HCS.CollaborationService.Data.Migrations
             modelBuilder.Entity("HCS.CollaborationService.Domain.Conversation", b =>
                 {
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("HCS.CollaborationService.Domain.SocialPost", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("HCS.CollaborationService.Domain.WorkSubjectProjection", b =>

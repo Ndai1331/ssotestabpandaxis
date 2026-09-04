@@ -1,0 +1,6 @@
+@page "/bmi"
+@attribute [Authorize(Policy = "HCS.Catalogs.BMI")]
+@inherits HCSComponentBase
+
+<PageTitle>@L["Catalog:BMITitle"] · HCS</PageTitle>
+<ReferenceCatalog Kind="ReferenceCatalogKind.Bmi" />

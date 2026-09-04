@@ -1,0 +1,6 @@
+@page "/icd10"
+@attribute [Authorize(Policy = "HCS.Catalogs.ICD10")]
+@inherits HCSComponentBase
+
+<PageTitle>@L["Catalog:ICD10Title"] · HCS</PageTitle>
+<ReferenceCatalog Kind="ReferenceCatalogKind.Icd10" />

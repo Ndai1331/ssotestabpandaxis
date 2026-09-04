@@ -33,7 +33,7 @@
 }
 
 .hcs-notification-toast__header i {
-    color: #3d5cff;
+    color: var(--hcs-color-primary);
 }
 
 .hcs-notification-toast__header strong {
@@ -110,7 +110,7 @@
 }
 
 .hcs-notification-panel__view-all {
-    color: #3d5cff;
+    color: var(--hcs-color-link);
     font-size: 0.8rem;
     font-weight: 600;
     text-decoration: none;
@@ -119,7 +119,7 @@
 
 .hcs-notification-panel__view-all:hover,
 .hcs-notification-panel__view-all:focus-visible {
-    color: #2b45d6;
+    color: var(--hcs-color-link-hover);
     text-decoration: underline;
 }
 
@@ -186,7 +186,7 @@
 }
 
 .hcs-notification-panel__title {
-    color: var(--hcs-color-ink);
+    color: var(--hcs-color-heading);
     font-size: 0.95rem;
     font-weight: 650;
     line-height: 1.35;
@@ -211,7 +211,7 @@
     background: transparent;
     border: 0;
     border-radius: 0.5rem;
-    color: #3d5cff;
+    color: var(--hcs-color-link);
     cursor: pointer;
     display: block;
     font-size: 0.85rem;
@@ -224,7 +224,7 @@
 .hcs-notification-panel__mark-all:hover,
 .hcs-notification-panel__mark-all:focus-visible {
     background: #f4f7fb;
-    color: #2b45d6;
+    color: var(--hcs-color-link-hover);
 }
 
 .hcs-notification-toast, .hcs-notification-panel { border-color: var(--hcs-color-border, #d8e1e8); border-radius: var(--hcs-radius-md, 8px); box-shadow: var(--hcs-shadow-md, 0 10px 24px rgba(19, 47, 70, .1)); }

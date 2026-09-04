@@ -41,6 +41,7 @@ public sealed class HCSCollaborationServiceModule : AbpModule
         context.Services.AddAuthorization(options =>
         {
             options.AddPolicy(CollaborationPermissions.Chat, p => p.RequireClaim("permission", CollaborationPermissions.Chat));
+            options.AddPolicy(CollaborationPermissions.Social, p => p.RequireClaim("permission", CollaborationPermissions.Social));
             options.AddPolicy(CollaborationPermissions.Notifications, p => p.RequireClaim("permission", CollaborationPermissions.Notifications));
             options.AddPolicy(CollaborationPermissions.Administration, p => p.RequireClaim("permission", CollaborationPermissions.Administration));
         });
@@ -66,6 +67,16 @@ public sealed class HCSCollaborationServiceModule : AbpModule
                 minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
                 minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
                 minio.PresignedGetExpirySeconds = configuration.GetValue("AttachmentPolicy:PresignedLifetimeSeconds", 300);
+            })));
+        Configure<AbpBlobStoringOptions>(options => options.Containers.Configure<SocialMediaContainer>(container =>
+            container.UseMinio(minio =>
+            {
+                minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
+                minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
+                minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
+                minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
+                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
+                minio.PresignedGetExpirySeconds = configuration.GetValue("SocialPolicy:PresignedLifetimeSeconds", 300);
             })));
         context.Services.AddHealthChecks().AddDbContextCheck<CollaborationDbContext>("hcs_collaboration");
         context.Services.AddAbpSwaggerGen(options =>

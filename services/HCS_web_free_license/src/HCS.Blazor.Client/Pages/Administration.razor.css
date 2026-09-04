@@ -13,8 +13,8 @@
 
 .hcs-users-heading h1 {
     margin: 0;
-    color: #0d304c;
-    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-title, clamp(1.25rem, 1.6vw, 1.6rem));
     font-weight: 750;
 }
 
@@ -263,8 +263,8 @@
 
 .hcs-user-modal .modal-title,
 .hcs-permission-modal .modal-title {
-    color: #0e304c;
-    font-size: 1.6rem;
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-section-title, 1.1rem);
     font-weight: 750;
 }
 
@@ -327,8 +327,8 @@
 
 .hcs-user-signing__title {
     margin: .35rem 0 0;
-    color: #0e304c;
-    font-size: 1.05rem;
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-card-title, .98rem);
     font-weight: 700;
 }
 

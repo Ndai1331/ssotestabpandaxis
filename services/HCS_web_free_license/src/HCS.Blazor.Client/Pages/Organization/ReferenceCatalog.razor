@@ -1,0 +1,295 @@
+@using Blazorise.DataGrid
+@using HCS.Permissions
+@using Microsoft.AspNetCore.Authorization
+@inherits HCSComponentBase
+
+@if (isAuthorized)
+{
+    <section class="hcs-feature hcs-catalog-page" aria-labelledby="reference-catalog-title">
+        <header class="hcs-catalog-titlebar">
+            <div class="min-w-0">
+                <p class="visually-hidden">@L["Catalog:Section"]</p>
+                <h1 id="reference-catalog-title">@Definition.Title</h1>
+                <p class="visually-hidden">@Definition.Description</p>
+            </div>
+            <div class="hcs-catalog-page__actions">
+                <Button Color="Color.Primary" Outline="true" Clicked="ExportCurrentPageAsync" Disabled="@(!rows.Any() || isLoading)">
+                    <i class="fa fa-download me-1" aria-hidden="true"></i> @L["Catalog:Export"]
+                </Button>
+                @if (canCreate)
+                {
+                    <Button Color="Color.Primary" Clicked="OpenCreateModalAsync" Disabled="@isSaving">
+                        <Icon Name="@IconName.Add" /> @L["Catalog:New"]
+                    </Button>
+                }
+            </div>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <Alert Color="Color.Danger" Visible="true" Class="mb-3">@errorMessage</Alert>
+        }
+
+        <Card Class="mb-2 hcs-catalog-filter-card">
+            <CardBody>
+                <div class="hcs-catalog-filter-row">
+                    <Addons Class="hcs-catalog-search">
+                        <Addon AddonType="AddonType.Body">
+                            <TextInput @bind-Value="filterText" Autofocus="true" Placeholder="@L["Catalog:SearchPlaceholder"].Value" />
+                        </Addon>
+                        <Addon AddonType="AddonType.End">
+                            <Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading">
+                                <i class="fa fa-search me-1" aria-hidden="true"></i> @L["Catalog:SearchButton"]
+                            </Button>
+                        </Addon>
+                    </Addons>
+                    <Button Color="Color.Primary" Outline="true" Clicked="ResetSearchAsync" Disabled="@isLoading">
+                        <i class="fa fa-rotate-left me-1" aria-hidden="true"></i> @L["Catalog:Reset"]
+                    </Button>
+                </div>
+            </CardBody>
+        </Card>
+
+        <Card Class="hcs-catalog-grid-card">
+            <CardBody>
+                <DataGrid TItem="ReferenceCatalogRow" @ref="dataGrid" Data="@rows" ReadData="OnDataGridReadAsync"
+                          TotalItems="@totalCount" ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes"
+                          PageSize="@pageSize" Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
+                    <EmptyTemplate>
+                        <div class="hcs-empty py-5">
+                            <i class="fa fa-inbox" aria-hidden="true"></i>
+                            <h2>@L["Catalog:EmptyTitle"]</h2>
+                            <p>@L["Catalog:EmptyDescription"]</p>
+                        </div>
+                    </EmptyTemplate>
+                    <LoadingTemplate>
+                        <div class="hcs-loading py-5" role="status" aria-live="polite">
+                            <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+                            <span>@L["Catalog:Loading"]</span>
+                        </div>
+                    </LoadingTemplate>
+                    <DataGridColumns>
+                        <DataGridColumn TItem="ReferenceCatalogRow" Caption="">
+                            <DisplayTemplate><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" aria-hidden="true" /></DisplayTemplate>
+                        </DataGridColumn>
+                        @if (IsCodeCatalog)
+                        {
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Code" Caption='@L["Catalog:Code"].Value' />
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Name" Caption='@L["Catalog:Name"].Value' />
+                        }
+                        @if (Kind == ReferenceCatalogKind.Icd10)
+                        {
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="DiseaseGroup" Caption='@L["Catalog:DiseaseGroup"].Value' />
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:Chronic"].Value'>
+                                <DisplayTemplate Context="cell">@(cell.Item.IsChronic ? L["Catalog:Yes"] : L["Catalog:No"])</DisplayTemplate>
+                            </DataGridColumn>
+                        }
+                        @if (Kind is ReferenceCatalogKind.BloodPressure)
+                        {
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:HATT"].Value'>
+                                <DisplayTemplate Context="cell">@FormatRange(cell.Item.HATTMin, cell.Item.HATTMax)</DisplayTemplate>
+                            </DataGridColumn>
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:HATTr"].Value'>
+                                <DisplayTemplate Context="cell">@FormatRange(cell.Item.HATTrMin, cell.Item.HATTrMax)</DisplayTemplate>
+                            </DataGridColumn>
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Title" Caption='@L["Catalog:Title"].Value' />
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Description" Caption='@L["Catalog:Description"].Value' />
+                        }
+                        @if (Kind == ReferenceCatalogKind.BloodGlucose)
+                        {
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Title" Caption='@L["Catalog:Title"].Value' />
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:Minimum"].Value'><DisplayTemplate Context="cell">@FormatDecimal(cell.Item.MinValue)</DisplayTemplate></DataGridColumn>
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:Maximum"].Value'><DisplayTemplate Context="cell">@FormatDecimal(cell.Item.MaxValue)</DisplayTemplate></DataGridColumn>
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:BeforeMeal"].Value'><DisplayTemplate Context="cell">@(cell.Item.BeforeMeal ? L["Catalog:Yes"] : L["Catalog:No"])</DisplayTemplate></DataGridColumn>
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Description" Caption='@L["Catalog:Description"].Value' />
+                        }
+                        @if (Kind == ReferenceCatalogKind.Bmi)
+                        {
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Title" Caption='@L["Catalog:Title"].Value' />
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Gender" Caption='@L["Catalog:Gender"].Value' />
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:Minimum"].Value'><DisplayTemplate Context="cell">@FormatDecimal(cell.Item.MinValue)</DisplayTemplate></DataGridColumn>
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:Maximum"].Value'><DisplayTemplate Context="cell">@FormatDecimal(cell.Item.MaxValue)</DisplayTemplate></DataGridColumn>
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Description" Caption='@L["Catalog:Description"].Value' />
+                        }
+                        @if (Kind == ReferenceCatalogKind.Country)
+                        {
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="CountryCode" Caption='@L["Catalog:CountryCode"].Value' />
+                        }
+                        @if (Kind is ReferenceCatalogKind.Province or ReferenceCatalogKind.Commune)
+                        {
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@ParentColumnTitle'>
+                                <DisplayTemplate Context="cell">@cell.Item.ParentCode</DisplayTemplate>
+                            </DataGridColumn>
+                        }
+                        <DataGridColumn TItem="ReferenceCatalogRow" Field="SortOrder" Caption='@L["Catalog:SortOrder"].Value' />
+                        @if (canUpdate || canDelete)
+                        {
+                            <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:Actions"].Value'>
+                                <DisplayTemplate Context="cell">
+                                    <div class="hcs-row-actions" @onclick:stopPropagation="true">
+                                        @if (canUpdate)
+                                        {
+                                            <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--edit" Title='@L["Catalog:Edit"].Value' Clicked="@(() => OpenEditModalAsync(cell.Item))"><Icon Name="@IconName.Edit" /><span class="visually-hidden">@L["Catalog:Edit"]</span></Button>
+                                        }
+                                        @if (canDelete)
+                                        {
+                                            <Button Color="Color.Danger" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--delete" Title='@L["Catalog:Delete"].Value' Clicked="@(() => DeleteAsync(cell.Item))" Disabled="@isDeleting.Contains(cell.Item.Id)"><Icon Name="@IconName.Delete" /><span class="visually-hidden">@L["Catalog:Delete"]</span></Button>
+                                        }
+                                    </div>
+                                </DisplayTemplate>
+                            </DataGridColumn>
+                        }
+                    </DataGridColumns>
+                </DataGrid>
+            </CardBody>
+        </Card>
+    </section>
+
+    <Modal @ref="editModal" Size="ModalSize.Large">
+        <ModalContent Centered="true" Class="hcs-catalog-modal">
+            <ModalHeader Class="hcs-catalog-modal__header">
+                <ModalTitle>@(editingId.HasValue ? L["Catalog:EditTitle"] : L["Catalog:CreateTitle"]) @Definition.Title</ModalTitle>
+                <CloseButton Clicked="CloseModalAsync" />
+            </ModalHeader>
+            <ModalBody Class="hcs-catalog-modal__body">
+                <div class="hcs-catalog-form">
+                    @if (Kind == ReferenceCatalogKind.Icd10)
+                    {
+                        <div class="hcs-form-row">
+                            @TextField(L["Catalog:Code"].Value, "referenceCode", 50, true, form.Code, EventCallback.Factory.Create<string?>(this, value => form.Code = value ?? string.Empty), true)
+                            @TextField(L["Catalog:Name"].Value, "referenceName", 256, true, form.Name, EventCallback.Factory.Create<string?>(this, value => form.Name = value ?? string.Empty))
+                        </div>
+                        <div class="hcs-form-row">
+                            @TextField(L["Catalog:DiseaseGroup"].Value, "diseaseGroup", 256, true, form.DiseaseGroup, EventCallback.Factory.Create<string?>(this, value => form.DiseaseGroup = value ?? string.Empty))
+                            <Field Class="hcs-catalog-active-field"><Check TValue="bool" @bind-Checked="form.IsChronic">@L["Catalog:Chronic"]</Check></Field>
+                        </div>
+                    }
+                    @if (Kind == ReferenceCatalogKind.BloodPressure)
+                    {
+                        <div class="hcs-form-row">@NumericField(L["Catalog:HATTMin"].Value, form.HATTMin, EventCallback.Factory.Create<int>(this, value => form.HATTMin = value), 1000)@NumericField(L["Catalog:HATTMax"].Value, form.HATTMax, EventCallback.Factory.Create<int>(this, value => form.HATTMax = value), 1000)</div>
+                        <div class="hcs-form-row">@NumericField(L["Catalog:HATTrMin"].Value, form.HATTrMin, EventCallback.Factory.Create<int>(this, value => form.HATTrMin = value), 1000)@NumericField(L["Catalog:HATTrMax"].Value, form.HATTrMax, EventCallback.Factory.Create<int>(this, value => form.HATTrMax = value), 1000)</div>
+                        @TextField(L["Catalog:Title"].Value, "bloodPressureTitle", 256, true, form.Title, EventCallback.Factory.Create<string?>(this, value => form.Title = value ?? string.Empty), true)
+                        @DescriptionField(form.Description, EventCallback.Factory.Create<string?>(this, value => form.Description = value ?? string.Empty))
+                    }
+                    @if (Kind == ReferenceCatalogKind.BloodGlucose)
+                    {
+                        @TextField(L["Catalog:Title"].Value, "bloodGlucoseTitle", 256, true, form.Title, EventCallback.Factory.Create<string?>(this, value => form.Title = value ?? string.Empty), true)
+                        <div class="hcs-form-row">@DecimalField(L["Catalog:Minimum"].Value, form.MinValue, EventCallback.Factory.Create<decimal>(this, value => form.MinValue = value))@DecimalField(L["Catalog:Maximum"].Value, form.MaxValue, EventCallback.Factory.Create<decimal>(this, value => form.MaxValue = value))</div>
+                        @DescriptionField(form.Description, EventCallback.Factory.Create<string?>(this, value => form.Description = value ?? string.Empty))
+                        <Field Class="hcs-catalog-active-field"><Check TValue="bool" @bind-Checked="form.BeforeMeal">@L["Catalog:BeforeMeal"]</Check></Field>
+                    }
+                    @if (Kind == ReferenceCatalogKind.Bmi)
+                    {
+                        @TextField(L["Catalog:Title"].Value, "bmiTitle", 256, true, form.Title, EventCallback.Factory.Create<string?>(this, value => form.Title = value ?? string.Empty), true)
+                        <Field><FieldLabel>@L["Catalog:Gender"] *</FieldLabel><Select TValue="string" @bind-Value="form.Gender"><SelectItem Value="@string.Empty">@L["Catalog:ChooseGender"]</SelectItem><SelectItem Value="@("Male")">@L["Catalog:Male"]</SelectItem><SelectItem Value="@("Female")">@L["Catalog:Female"]</SelectItem><SelectItem Value="@("Other")">@L["Catalog:Other"]</SelectItem></Select></Field>
+                        <div class="hcs-form-row">@DecimalField(L["Catalog:Minimum"].Value, form.MinValue, EventCallback.Factory.Create<decimal>(this, value => form.MinValue = value))@DecimalField(L["Catalog:Maximum"].Value, form.MaxValue, EventCallback.Factory.Create<decimal>(this, value => form.MaxValue = value))</div>
+                        @DescriptionField(form.Description, EventCallback.Factory.Create<string?>(this, value => form.Description = value ?? string.Empty))
+                    }
+                    @if (Kind == ReferenceCatalogKind.Country)
+                    {
+                        <div class="hcs-form-row">@TextField(L["Catalog:Code"].Value, "countryCode", 50, true, form.Code, EventCallback.Factory.Create<string?>(this, value => form.Code = value ?? string.Empty), true)@TextField(L["Catalog:Name"].Value, "countryName", 256, true, form.Name, EventCallback.Factory.Create<string?>(this, value => form.Name = value ?? string.Empty))</div>
+                        @TextField(L["Catalog:CountryCode"].Value, "countryIsoCode", 10, true, form.CountryCode, EventCallback.Factory.Create<string?>(this, value => form.CountryCode = value ?? string.Empty))
+                    }
+                    @if (Kind == ReferenceCatalogKind.Province)
+                    {
+                        <div class="hcs-form-row">@TextField(L["Catalog:Code"].Value, "provinceCode", 50, true, form.Code, EventCallback.Factory.Create<string?>(this, value => form.Code = value ?? string.Empty), true)@TextField(L["Catalog:Name"].Value, "provinceName", 256, true, form.Name, EventCallback.Factory.Create<string?>(this, value => form.Name = value ?? string.Empty))</div>
+                        @ParentSelect(L["Catalog:Country"].Value, L["Catalog:ChooseCountry"].Value, form.ParentId, EventCallback.Factory.Create<string>(this, value => form.ParentId = value), countryOptions.Select(x => new ReferenceSelectItem(x.Id.ToString(), $"{x.Code} — {x.Name}")))
+                    }
+                    @if (Kind == ReferenceCatalogKind.Commune)
+                    {
+                        <div class="hcs-form-row">@TextField(L["Catalog:Code"].Value, "communeCode", 50, true, form.Code, EventCallback.Factory.Create<string?>(this, value => form.Code = value ?? string.Empty), true)@TextField(L["Catalog:Name"].Value, "communeName", 256, true, form.Name, EventCallback.Factory.Create<string?>(this, value => form.Name = value ?? string.Empty))</div>
+                        @ParentSelect(L["Catalog:Province"].Value, L["Catalog:ChooseProvince"].Value, form.ParentId, EventCallback.Factory.Create<string>(this, value => form.ParentId = value), provinceOptions.Select(x => new ReferenceSelectItem(x.Id.ToString(), $"{x.Code} — {x.Name}")))
+                    }
+                    @NumericField(L["Catalog:SortOrder"].Value, form.SortOrder, EventCallback.Factory.Create<int>(this, value => form.SortOrder = value))
+                </div>
+                @if (!string.IsNullOrWhiteSpace(validationMessage))
+                {
+                    <Alert Color="Color.Warning" Visible="true" Class="mt-3">@validationMessage</Alert>
+                }
+            </ModalBody>
+            <ModalFooter Class="hcs-catalog-modal__footer">
+                <Button Color="Color.Secondary" Clicked="CloseModalAsync">@L["Catalog:Cancel"]</Button>
+                <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isSaving" Disabled="@isSaving">@(editingId.HasValue ? L["Catalog:SaveChanges"] : L["Catalog:Create"])</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+}
+else
+{
+    <div class="hcs-empty py-5"><i class="fa fa-lock" aria-hidden="true"></i><h2>@L["Catalog:ForbiddenTitle"]</h2><p>@L["Catalog:ForbiddenDescription"]</p></div>
+}
+
+@code {
+    private RenderFragment TextField(string label, string name, int maxLength, bool required, string? value, EventCallback<string?> valueChanged, bool autofocus = false) => builder =>
+    {
+        builder.OpenComponent<Field>(0);
+        builder.AddAttribute(1, "ChildContent", (RenderFragment)(fieldBuilder =>
+        {
+            fieldBuilder.OpenComponent<FieldLabel>(0);
+            fieldBuilder.AddAttribute(1, "ChildContent", (RenderFragment)(labelBuilder => labelBuilder.AddContent(0, label + (required ? " *" : string.Empty))));
+            fieldBuilder.CloseComponent();
+            fieldBuilder.OpenComponent<HcsIsolatedTextInput>(2); fieldBuilder.AddAttribute(3, "Value", value); fieldBuilder.AddAttribute(4, "ValueChanged", valueChanged); fieldBuilder.AddAttribute(5, "Name", name); fieldBuilder.AddAttribute(6, "MaxLength", maxLength); fieldBuilder.AddAttribute(7, "Autofocus", autofocus); fieldBuilder.AddAttribute(8, "CssClass", "form-control hcs-catalog-input"); fieldBuilder.CloseComponent();
+        }));
+        builder.CloseComponent();
+    };
+
+    private RenderFragment NumericField(string label, int value, EventCallback<int> valueChanged, int max = 10000) => builder =>
+    {
+        builder.OpenComponent<Field>(0);
+        builder.AddAttribute(1, "ChildContent", (RenderFragment)(fieldBuilder =>
+        {
+            fieldBuilder.OpenComponent<FieldLabel>(0);
+            fieldBuilder.AddAttribute(1, "ChildContent", (RenderFragment)(labelBuilder => labelBuilder.AddContent(0, label)));
+            fieldBuilder.CloseComponent();
+            fieldBuilder.OpenComponent<NumericPicker<int>>(2); fieldBuilder.AddAttribute(3, "Value", value); fieldBuilder.AddAttribute(4, "ValueChanged", valueChanged); fieldBuilder.AddAttribute(5, "Min", 0); fieldBuilder.AddAttribute(6, "Max", max); fieldBuilder.AddAttribute(7, "Decimals", 0); fieldBuilder.AddAttribute(8, "Class", "hcs-catalog-input"); fieldBuilder.CloseComponent();
+        }));
+        builder.CloseComponent();
+    };
+
+    private RenderFragment DecimalField(string label, decimal value, EventCallback<decimal> valueChanged) => builder =>
+    {
+        builder.OpenComponent<Field>(0);
+        builder.AddAttribute(1, "ChildContent", (RenderFragment)(fieldBuilder =>
+        {
+            fieldBuilder.OpenComponent<FieldLabel>(0);
+            fieldBuilder.AddAttribute(1, "ChildContent", (RenderFragment)(labelBuilder => labelBuilder.AddContent(0, label)));
+            fieldBuilder.CloseComponent();
+            fieldBuilder.OpenComponent<NumericPicker<decimal>>(2); fieldBuilder.AddAttribute(3, "Value", value); fieldBuilder.AddAttribute(4, "ValueChanged", valueChanged); fieldBuilder.AddAttribute(5, "Min", 0m); fieldBuilder.AddAttribute(6, "Max", 1000000m); fieldBuilder.AddAttribute(7, "Decimals", 2); fieldBuilder.AddAttribute(8, "Class", "hcs-catalog-input"); fieldBuilder.CloseComponent();
+        }));
+        builder.CloseComponent();
+    };
+
+    private RenderFragment DescriptionField(string value, EventCallback<string?> valueChanged) => builder =>
+    {
+        builder.OpenComponent<Field>(0);
+        builder.AddAttribute(1, "ChildContent", (RenderFragment)(fieldBuilder =>
+        {
+            fieldBuilder.OpenComponent<FieldLabel>(0);
+            fieldBuilder.AddAttribute(1, "ChildContent", (RenderFragment)(labelBuilder => labelBuilder.AddContent(0, L["Catalog:Description"].Value)));
+            fieldBuilder.CloseComponent();
+            fieldBuilder.OpenElement(2, "textarea"); fieldBuilder.AddAttribute(3, "class", "form-control hcs-catalog-input"); fieldBuilder.AddAttribute(4, "rows", 3); fieldBuilder.AddAttribute(5, "maxlength", 2000); fieldBuilder.AddAttribute(6, "value", value); fieldBuilder.AddAttribute(7, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, e => valueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty))); fieldBuilder.CloseElement();
+        }));
+        builder.CloseComponent();
+    };
+
+    private RenderFragment ParentSelect(string label, string placeholder, string value, EventCallback<string> valueChanged, IEnumerable<ReferenceSelectItem> items) => builder =>
+    {
+        builder.OpenComponent<Field>(0);
+        builder.AddAttribute(1, "ChildContent", (RenderFragment)(fieldBuilder =>
+        {
+            fieldBuilder.OpenComponent<FieldLabel>(0);
+            fieldBuilder.AddAttribute(1, "ChildContent", (RenderFragment)(labelBuilder => labelBuilder.AddContent(0, label + " *")));
+            fieldBuilder.CloseComponent();
+            fieldBuilder.OpenComponent<Select<string>>(2); fieldBuilder.AddAttribute(3, "Value", value); fieldBuilder.AddAttribute(4, "ValueChanged", valueChanged); fieldBuilder.AddAttribute(5, "Class", "hcs-catalog-select");
+            fieldBuilder.AddAttribute(6, "ChildContent", (RenderFragment)(selectBuilder =>
+            {
+                selectBuilder.OpenComponent<SelectItem<string>>(0); selectBuilder.AddAttribute(1, "Value", string.Empty); selectBuilder.AddContent(2, placeholder); selectBuilder.CloseComponent();
+                var index = 3; foreach (var item in items) { selectBuilder.OpenComponent<SelectItem<string>>(index++); selectBuilder.AddAttribute(index++, "Value", item.Value); selectBuilder.AddContent(index++, item.Text); selectBuilder.CloseComponent(); }
+            }));
+            fieldBuilder.CloseComponent();
+        }));
+        builder.CloseComponent();
+    };
+
+    private sealed record ReferenceSelectItem(string Value, string Text);
+}

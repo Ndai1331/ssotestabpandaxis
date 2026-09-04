@@ -48,6 +48,28 @@ public sealed class OrganizationCatalogClientTests
     }
 
     [Theory]
+    [InlineData(ReferenceCatalogKind.Icd10, "/api/organization/icd10")]
+    [InlineData(ReferenceCatalogKind.BloodPressure, "/api/organization/blood-pressure")]
+    [InlineData(ReferenceCatalogKind.BloodGlucose, "/api/organization/blood-glucose")]
+    [InlineData(ReferenceCatalogKind.Bmi, "/api/organization/bmi")]
+    [InlineData(ReferenceCatalogKind.Country, "/api/organization/countries")]
+    [InlineData(ReferenceCatalogKind.Province, "/api/organization/provinces")]
+    [InlineData(ReferenceCatalogKind.Commune, "/api/organization/communes")]
+    public void Maps_reference_catalog_kind_to_its_api_endpoint(ReferenceCatalogKind kind, string expected)
+    {
+        Assert.Equal(expected, ReferenceCatalogClient.Endpoint(kind));
+    }
+
+    [Fact]
+    public void Builds_reference_catalog_url_with_a_normalized_filter_and_page_bounds()
+    {
+        var actual = ReferenceCatalogClient.BuildListUri(
+            ReferenceCatalogKind.Bmi, new ReferenceCatalogQuery("  Nam & nữ  ", -10, 500));
+
+        Assert.Equal("/api/organization/bmi?filter=nam%20%26%20n%E1%BB%AF&skipCount=0&maxResultCount=100", actual);
+    }
+
+    [Theory]
     [InlineData("document-types", "DocumentType")]
     [InlineData("sectors", "Sector")]
     [InlineData("urgency-levels", "UrgencyLevel")]

@@ -17,6 +17,13 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
     public DbSet<Unit> Units => Set<Unit>();
     public DbSet<Position> Positions => Set<Position>();
     public DbSet<MasterDataItem> MasterDataItems => Set<MasterDataItem>();
+    public DbSet<Icd10> Icd10s => Set<Icd10>();
+    public DbSet<BloodPressureRange> BloodPressureRanges => Set<BloodPressureRange>();
+    public DbSet<BloodGlucoseRange> BloodGlucoseRanges => Set<BloodGlucoseRange>();
+    public DbSet<BmiRange> BmiRanges => Set<BmiRange>();
+    public DbSet<Country> Countries => Set<Country>();
+    public DbSet<Province> Provinces => Set<Province>();
+    public DbSet<Commune> Communes => Set<Commune>();
     public DbSet<UserOrganizationMapping> UserOrganizationMappings => Set<UserOrganizationMapping>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
@@ -32,6 +39,56 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
         ConfigureCoded<Unit>(builder, "Units");
         ConfigureCoded<Position>(builder, "Positions");
         ConfigureCoded<MasterDataItem>(builder, "MasterDataItems", uniqueCode: false);
+        ConfigureCodedReference<Icd10>(builder, "Icd10");
+        ConfigureTitledReference<BloodPressureRange>(builder, "BloodPressureRanges");
+        ConfigureTitledReference<BloodGlucoseRange>(builder, "BloodGlucoseRanges");
+        ConfigureTitledReference<BmiRange>(builder, "BmiRanges");
+        ConfigureCodedReference<Country>(builder, "Countries");
+        ConfigureCodedReference<Province>(builder, "Provinces");
+        ConfigureCodedReference<Commune>(builder, "Communes");
+
+        builder.Entity<Icd10>(b =>
+        {
+            b.Property(x => x.DiseaseGroup).IsRequired().HasMaxLength(OrganizationConsts.MaxDiseaseGroupLength);
+            b.Property(x => x.IsChronic).IsRequired();
+            b.HasIndex(x => x.Code).IsUnique();
+        });
+        builder.Entity<BloodPressureRange>(b =>
+        {
+            b.Property(x => x.HATTMin).IsRequired();
+            b.Property(x => x.HATTMax).IsRequired();
+            b.Property(x => x.HATTrMin).IsRequired();
+            b.Property(x => x.HATTrMax).IsRequired();
+        });
+        builder.Entity<BloodGlucoseRange>(b =>
+        {
+            b.Property(x => x.MinValue).HasPrecision(18, 2).IsRequired();
+            b.Property(x => x.MaxValue).HasPrecision(18, 2).IsRequired();
+            b.Property(x => x.BeforeMeal).IsRequired();
+        });
+        builder.Entity<BmiRange>(b =>
+        {
+            b.Property(x => x.Gender).IsRequired().HasMaxLength(OrganizationConsts.MaxGenderLength);
+            b.Property(x => x.MinValue).HasPrecision(18, 2).IsRequired();
+            b.Property(x => x.MaxValue).HasPrecision(18, 2).IsRequired();
+        });
+        builder.Entity<Country>(b =>
+        {
+            b.Property(x => x.CountryCode).IsRequired().HasMaxLength(OrganizationConsts.MaxCountryCodeLength);
+            b.HasIndex(x => x.CountryCode).IsUnique();
+        });
+        builder.Entity<Province>(b =>
+        {
+            b.Property(x => x.CountryId).IsRequired();
+            b.HasIndex(x => x.CountryId);
+            b.HasOne<Country>().WithMany().HasForeignKey(x => x.CountryId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<Commune>(b =>
+        {
+            b.Property(x => x.ProvinceId).IsRequired();
+            b.HasIndex(x => x.ProvinceId);
+            b.HasOne<Province>().WithMany().HasForeignKey(x => x.ProvinceId).OnDelete(DeleteBehavior.Restrict);
+        });
 
         builder.Entity<Department>(b =>
         {
@@ -93,6 +150,33 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
             b.Property(x => x.Name).IsRequired().HasMaxLength(OrganizationConsts.MaxNameLength);
             b.Property(x => x.SortOrder).IsRequired();
             if (uniqueCode) b.HasIndex(x => x.Code).IsUnique();
+        });
+    }
+
+    private static void ConfigureCodedReference<TEntity>(ModelBuilder builder, string table)
+        where TEntity : CodedReferenceAggregate
+    {
+        builder.Entity<TEntity>(b =>
+        {
+            b.ToTable(table);
+            b.ConfigureByConvention();
+            b.Property(x => x.Code).IsRequired().HasMaxLength(OrganizationConsts.MaxCodeLength);
+            b.Property(x => x.Name).IsRequired().HasMaxLength(OrganizationConsts.MaxNameLength);
+            b.Property(x => x.SortOrder).IsRequired();
+            b.HasIndex(x => x.Code).IsUnique();
+        });
+    }
+
+    private static void ConfigureTitledReference<TEntity>(ModelBuilder builder, string table)
+        where TEntity : TitledReferenceAggregate
+    {
+        builder.Entity<TEntity>(b =>
+        {
+            b.ToTable(table);
+            b.ConfigureByConvention();
+            b.Property(x => x.Title).IsRequired().HasMaxLength(OrganizationConsts.MaxTitleLength);
+            b.Property(x => x.Description).IsRequired().HasMaxLength(OrganizationConsts.MaxDescriptionLength);
+            b.Property(x => x.SortOrder).IsRequired();
         });
     }
 }

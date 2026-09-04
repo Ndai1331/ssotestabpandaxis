@@ -29,9 +29,13 @@ public sealed class HCSMenuContributor : IMenuContributor
             Item("HCS.Workspace", "Không gian làm việc", "/workspace", "fa fa-house", 10)
                 .RequireAuthenticated());
 
-        // context.Menu.AddItem(
-        //     Item("HCS.Chat", "Trao đổi", "/chat", "fa fa-comments", 100)
-        //         .RequirePermissions(HCSPermissions.Collaboration.Chat));
+        var social = Item("HCS.Social", "Mạng xã hội", icon: "fa fa-users", order: 90)
+            .RequirePermissions(false, HCSPermissions.Collaboration.Social, HCSPermissions.Collaboration.Chat);
+        social.AddItem(Item("HCS.Social.Posts", "Các bài đăng", "/social", "fa fa-newspaper", 10)
+            .RequirePermissions(HCSPermissions.Collaboration.Social));
+        social.AddItem(Item("HCS.Social.Chat", "Chat", "/chat", "fa fa-comments", 20)
+            .RequirePermissions(HCSPermissions.Collaboration.Chat));
+        context.Menu.AddItem(social);
 
         var documents = Item("HCS.Documents", "Văn bản", icon: "fa fa-file-lines", order: 120);
         documents.AddItem(Item("HCS.Documents.Archive", "Quản lý tài liệu", "/manage-documents?sourceType=0", "fa fa-folder-open", 10)

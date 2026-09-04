@@ -34,6 +34,7 @@ public sealed class GatewayConfigurationTests
             ["/api/reports/{**catch-all}"] = "WorkManagement",
             ["/api/dashboard/{**catch-all}"] = "WorkManagement",
             ["/api/chat/{**catch-all}"] = "Collaboration",
+            ["/api/social/{**catch-all}"] = "Collaboration",
             ["/api/notifications/{**catch-all}"] = "Collaboration",
             ["/hubs/chat/{**catch-all}"] = "Collaboration"
         };

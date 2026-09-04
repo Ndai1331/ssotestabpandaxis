@@ -92,8 +92,11 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
         var document = await LoadAsync(id, cancellationToken);
         DocumentAccess.EnsureCanManage(document, userId, principal);
+        var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
+        var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         document.Update(input.Title, input.Description, userId, DateTime.UtcNow);
         document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, DateTime.UtcNow);
+        TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentUpdated", id, 200, null, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
         return Map(document);
@@ -106,6 +109,8 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
         var document = await LoadAsync(id, cancellationToken);
         DocumentAccess.EnsureCanManage(document, userId, principal);
+        var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
+        var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         var now = DateTime.UtcNow;
         var before = document.Assignments.Count;
         var assignment = document.Assign(Guid.NewGuid(), input.AssigneeUserId, input.Responsibility, userId, now);
@@ -115,6 +120,7 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
                 assignment.Id, input.AssigneeUserId, null, assignment.Responsibility);
             db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, now));
         }
+        TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentAssigned", id, 200, input.Responsibility, now);
         await db.SaveChangesAsync(cancellationToken);
         return Map(document);
@@ -127,7 +133,10 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
         var document = await LoadAsync(id, cancellationToken);
         DocumentAccess.EnsureCanManage(document, userId, principal);
+        var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
+        var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         document.Submit(userId, DateTime.UtcNow);
+        TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentSubmitted", id, 200, null, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
         return Map(document);
@@ -140,7 +149,10 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
         var document = await LoadAsync(id, cancellationToken);
         DocumentAccess.EnsureCanManage(document, userId, principal);
+        var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
+        var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         document.Send(input.ReceiverUserId, input.OrganizationUnitId, userId, DateTime.UtcNow);
+        TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentSent", id, 200, input.ReceiverUserId?.ToString() ?? input.OrganizationUnitId?.ToString(), DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
         return Map(document);
@@ -153,7 +165,10 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
         var document = await LoadAsync(id, cancellationToken);
         DocumentAccess.EnsureCanManage(document, userId, principal);
+        var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
+        var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         document.RevokeInbox(userId, DateTime.UtcNow);
+        TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentRevoked", id, 200, null, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
         return Map(document);
@@ -168,6 +183,16 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
     private ClaimsPrincipal Principal => httpContext.HttpContext?.User ?? new ClaimsPrincipal();
     private Guid? UserId => Guid.TryParse(httpContext.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
     private string CorrelationId => httpContext.HttpContext?.TraceIdentifier ?? Guid.NewGuid().ToString("N");
+
+    internal static void TrackNewChildren(DocumentServiceDbContext db, DocumentAggregate document,
+        IReadOnlySet<Guid> existingAssignmentIds, IReadOnlySet<Guid> existingHistoryIds)
+    {
+        // Aggregate methods append client-generated Guid children through private
+        // backing fields. Track only children created by this request so EF inserts
+        // them instead of treating non-empty keys as existing rows.
+        db.DocumentAssignments.AddRange(document.Assignments.Where(x => !existingAssignmentIds.Contains(x.Id)));
+        db.DocumentHistories.AddRange(document.History.Where(x => !existingHistoryIds.Contains(x.Id)));
+    }
 
     private async Task<string> ResolveNumberAsync(string? requested, DateTime now, CancellationToken cancellationToken)
     {

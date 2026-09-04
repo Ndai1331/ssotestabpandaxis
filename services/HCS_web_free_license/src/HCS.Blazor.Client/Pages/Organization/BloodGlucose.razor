@@ -1,0 +1,6 @@
+@page "/blood-glucose"
+@attribute [Authorize(Policy = "HCS.Catalogs.BloodGlucose")]
+@inherits HCSComponentBase
+
+<PageTitle>@L["Catalog:BloodGlucoseTitle"] · HCS</PageTitle>
+<ReferenceCatalog Kind="ReferenceCatalogKind.BloodGlucose" />

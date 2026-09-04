@@ -16,8 +16,8 @@
 }
 
 .hcs-feature__header h1 {
-    color: var(--hcs-color-ink, #19334c);
-    font-size: clamp(1.65rem, 5vw, 2.5rem);
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-title, clamp(1.25rem, 1.6vw, 1.6rem));
     letter-spacing: -.03em;
     margin: 0;
     text-wrap: balance;

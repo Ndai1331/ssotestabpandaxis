@@ -135,6 +135,265 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     public virtual Task DeleteMasterDataAsync(Guid id, CancellationToken ct = default) => DeleteAsync(_db.MasterDataItems, id, ct);
 
+    public virtual async Task<PagedResultDto<Icd10Dto>> GetIcd10Async(OrganizationListInput input, CancellationToken ct = default)
+    {
+        var query = _db.Icd10s.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(input.Filter))
+        {
+            var filter = input.Filter.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Code.ToLower().Contains(filter)
+                || x.Name.ToLower().Contains(filter)
+                || x.DiseaseGroup.ToLower().Contains(filter));
+        }
+
+        return await PageReferenceAsync(query.OrderBy(x => x.SortOrder).ThenBy(x => x.Code), input,
+            x => new Icd10Dto(x.Id, x.Code, x.Name, x.DiseaseGroup, x.IsChronic, x.SortOrder), ct);
+    }
+
+    public virtual async Task<Icd10Dto> CreateIcd10Async(UpsertIcd10Dto input, CancellationToken ct = default)
+    {
+        await EnsureReferenceUniqueCodeAsync(_db.Icd10s, input.Code, null, ct);
+        var entity = new Icd10(_guidGenerator.Create(), input.Code, input.Name, input.DiseaseGroup, input.IsChronic, input.SortOrder);
+        _db.Icd10s.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual async Task<Icd10Dto> UpdateIcd10Async(Guid id, UpsertIcd10Dto input, CancellationToken ct = default)
+    {
+        var entity = await _db.Icd10s.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(Icd10), id);
+        await EnsureReferenceUniqueCodeAsync(_db.Icd10s, input.Code, id, ct);
+        entity.Update(input.Code, input.Name, input.DiseaseGroup, input.IsChronic, input.SortOrder);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual Task DeleteIcd10Async(Guid id, CancellationToken ct = default) => DeleteAsync(_db.Icd10s, id, ct);
+
+    public virtual async Task<PagedResultDto<BloodPressureRangeDto>> GetBloodPressureRangesAsync(OrganizationListInput input, CancellationToken ct = default)
+    {
+        var query = _db.BloodPressureRanges.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(input.Filter))
+        {
+            var filter = input.Filter.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Title.ToLower().Contains(filter) || x.Description.ToLower().Contains(filter));
+        }
+
+        return await PageReferenceAsync(query.OrderBy(x => x.SortOrder).ThenBy(x => x.Title), input,
+            x => new BloodPressureRangeDto(x.Id, x.HATTMin, x.HATTMax, x.HATTrMin, x.HATTrMax, x.Title, x.Description, x.SortOrder), ct);
+    }
+
+    public virtual async Task<BloodPressureRangeDto> CreateBloodPressureRangeAsync(UpsertBloodPressureRangeDto input, CancellationToken ct = default)
+    {
+        var entity = new BloodPressureRange(_guidGenerator.Create(), input.HATTMin, input.HATTMax,
+            input.HATTrMin, input.HATTrMax, input.Title, input.Description, input.SortOrder);
+        _db.BloodPressureRanges.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual async Task<BloodPressureRangeDto> UpdateBloodPressureRangeAsync(Guid id, UpsertBloodPressureRangeDto input, CancellationToken ct = default)
+    {
+        var entity = await _db.BloodPressureRanges.FindAsync([id], ct)
+            ?? throw new EntityNotFoundException(typeof(BloodPressureRange), id);
+        entity.Update(input.HATTMin, input.HATTMax, input.HATTrMin, input.HATTrMax,
+            input.Title, input.Description, input.SortOrder);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual Task DeleteBloodPressureRangeAsync(Guid id, CancellationToken ct = default) => DeleteAsync(_db.BloodPressureRanges, id, ct);
+
+    public virtual async Task<PagedResultDto<BloodGlucoseRangeDto>> GetBloodGlucoseRangesAsync(OrganizationListInput input, CancellationToken ct = default)
+    {
+        var query = _db.BloodGlucoseRanges.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(input.Filter))
+        {
+            var filter = input.Filter.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Title.ToLower().Contains(filter) || x.Description.ToLower().Contains(filter));
+        }
+
+        return await PageReferenceAsync(query.OrderBy(x => x.SortOrder).ThenBy(x => x.Title), input,
+            x => new BloodGlucoseRangeDto(x.Id, x.Title, x.MinValue, x.MaxValue, x.Description, x.BeforeMeal, x.SortOrder), ct);
+    }
+
+    public virtual async Task<BloodGlucoseRangeDto> CreateBloodGlucoseRangeAsync(UpsertBloodGlucoseRangeDto input, CancellationToken ct = default)
+    {
+        var entity = new BloodGlucoseRange(_guidGenerator.Create(), input.Title, input.MinValue, input.MaxValue,
+            input.Description, input.BeforeMeal, input.SortOrder);
+        _db.BloodGlucoseRanges.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual async Task<BloodGlucoseRangeDto> UpdateBloodGlucoseRangeAsync(Guid id, UpsertBloodGlucoseRangeDto input, CancellationToken ct = default)
+    {
+        var entity = await _db.BloodGlucoseRanges.FindAsync([id], ct)
+            ?? throw new EntityNotFoundException(typeof(BloodGlucoseRange), id);
+        entity.Update(input.Title, input.MinValue, input.MaxValue, input.Description, input.BeforeMeal, input.SortOrder);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual Task DeleteBloodGlucoseRangeAsync(Guid id, CancellationToken ct = default) => DeleteAsync(_db.BloodGlucoseRanges, id, ct);
+
+    public virtual async Task<PagedResultDto<BmiRangeDto>> GetBmiRangesAsync(OrganizationListInput input, CancellationToken ct = default)
+    {
+        var query = _db.BmiRanges.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(input.Filter))
+        {
+            var filter = input.Filter.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Title.ToLower().Contains(filter)
+                || x.Gender.ToLower().Contains(filter)
+                || x.Description.ToLower().Contains(filter));
+        }
+
+        return await PageReferenceAsync(query.OrderBy(x => x.SortOrder).ThenBy(x => x.Title), input,
+            x => new BmiRangeDto(x.Id, x.Title, x.Gender, x.MinValue, x.MaxValue, x.Description, x.SortOrder), ct);
+    }
+
+    public virtual async Task<BmiRangeDto> CreateBmiRangeAsync(UpsertBmiRangeDto input, CancellationToken ct = default)
+    {
+        var entity = new BmiRange(_guidGenerator.Create(), input.Title, input.Gender, input.MinValue, input.MaxValue,
+            input.Description, input.SortOrder);
+        _db.BmiRanges.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual async Task<BmiRangeDto> UpdateBmiRangeAsync(Guid id, UpsertBmiRangeDto input, CancellationToken ct = default)
+    {
+        var entity = await _db.BmiRanges.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(BmiRange), id);
+        entity.Update(input.Title, input.Gender, input.MinValue, input.MaxValue, input.Description, input.SortOrder);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual Task DeleteBmiRangeAsync(Guid id, CancellationToken ct = default) => DeleteAsync(_db.BmiRanges, id, ct);
+
+    public virtual async Task<PagedResultDto<CountryDto>> GetCountriesAsync(OrganizationListInput input, CancellationToken ct = default)
+    {
+        var query = _db.Countries.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(input.Filter))
+        {
+            var filter = input.Filter.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Code.ToLower().Contains(filter)
+                || x.Name.ToLower().Contains(filter)
+                || x.CountryCode.ToLower().Contains(filter));
+        }
+
+        return await PageReferenceAsync(query.OrderBy(x => x.SortOrder).ThenBy(x => x.Name), input,
+            x => new CountryDto(x.Id, x.Code, x.Name, x.CountryCode, x.SortOrder), ct);
+    }
+
+    public virtual async Task<CountryDto> CreateCountryAsync(UpsertCountryDto input, CancellationToken ct = default)
+    {
+        await EnsureReferenceUniqueCodeAsync(_db.Countries, input.Code, null, ct);
+        var entity = new Country(_guidGenerator.Create(), input.Code, input.Name, input.CountryCode, input.SortOrder);
+        _db.Countries.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual async Task<CountryDto> UpdateCountryAsync(Guid id, UpsertCountryDto input, CancellationToken ct = default)
+    {
+        var entity = await _db.Countries.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(Country), id);
+        await EnsureReferenceUniqueCodeAsync(_db.Countries, input.Code, id, ct);
+        entity.Update(input.Code, input.Name, input.CountryCode, input.SortOrder);
+        await _db.SaveChangesAsync(ct);
+        return Map(entity);
+    }
+
+    public virtual async Task DeleteCountryAsync(Guid id, CancellationToken ct = default)
+    {
+        if (await _db.Provinces.AnyAsync(x => x.CountryId == id, ct))
+            throw new BusinessException(OrganizationErrorCodes.ReferenceInUse);
+        await DeleteAsync(_db.Countries, id, ct);
+    }
+
+    public virtual async Task<PagedResultDto<ProvinceDto>> GetProvincesAsync(OrganizationListInput input, CancellationToken ct = default)
+    {
+        var query = from province in _db.Provinces.AsNoTracking()
+                    join country in _db.Countries.AsNoTracking() on province.CountryId equals country.Id
+                    select new { Item = province, CountryCode = country.Code };
+        if (!string.IsNullOrWhiteSpace(input.Filter))
+        {
+            var filter = input.Filter.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Item.Code.ToLower().Contains(filter)
+                || x.Item.Name.ToLower().Contains(filter)
+                || x.CountryCode.ToLower().Contains(filter));
+        }
+
+        return await PageReferenceAsync(query.OrderBy(x => x.Item.SortOrder).ThenBy(x => x.Item.Name), input,
+            x => new ProvinceDto(x.Item.Id, x.Item.Code, x.Item.Name, x.Item.CountryId, x.CountryCode, x.Item.SortOrder), ct);
+    }
+
+    public virtual async Task<ProvinceDto> CreateProvinceAsync(UpsertProvinceDto input, CancellationToken ct = default)
+    {
+        await EnsureCountryExistsAsync(input.CountryId, ct);
+        await EnsureReferenceUniqueCodeAsync(_db.Provinces, input.Code, null, ct);
+        var entity = new Province(_guidGenerator.Create(), input.Code, input.Name, input.CountryId, input.SortOrder);
+        _db.Provinces.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return await GetProvinceAsync(entity.Id, ct);
+    }
+
+    public virtual async Task<ProvinceDto> UpdateProvinceAsync(Guid id, UpsertProvinceDto input, CancellationToken ct = default)
+    {
+        var entity = await _db.Provinces.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(Province), id);
+        await EnsureCountryExistsAsync(input.CountryId, ct);
+        await EnsureReferenceUniqueCodeAsync(_db.Provinces, input.Code, id, ct);
+        entity.Update(input.Code, input.Name, input.CountryId, input.SortOrder);
+        await _db.SaveChangesAsync(ct);
+        return await GetProvinceAsync(entity.Id, ct);
+    }
+
+    public virtual async Task DeleteProvinceAsync(Guid id, CancellationToken ct = default)
+    {
+        if (await _db.Communes.AnyAsync(x => x.ProvinceId == id, ct))
+            throw new BusinessException(OrganizationErrorCodes.ReferenceInUse);
+        await DeleteAsync(_db.Provinces, id, ct);
+    }
+
+    public virtual async Task<PagedResultDto<CommuneDto>> GetCommunesAsync(OrganizationListInput input, CancellationToken ct = default)
+    {
+        var query = from commune in _db.Communes.AsNoTracking()
+                    join province in _db.Provinces.AsNoTracking() on commune.ProvinceId equals province.Id
+                    select new { Item = commune, ProvinceCode = province.Code };
+        if (!string.IsNullOrWhiteSpace(input.Filter))
+        {
+            var filter = input.Filter.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Item.Code.ToLower().Contains(filter)
+                || x.Item.Name.ToLower().Contains(filter)
+                || x.ProvinceCode.ToLower().Contains(filter));
+        }
+
+        return await PageReferenceAsync(query.OrderBy(x => x.Item.SortOrder).ThenBy(x => x.Item.Name), input,
+            x => new CommuneDto(x.Item.Id, x.Item.Code, x.Item.Name, x.Item.ProvinceId, x.ProvinceCode, x.Item.SortOrder), ct);
+    }
+
+    public virtual async Task<CommuneDto> CreateCommuneAsync(UpsertCommuneDto input, CancellationToken ct = default)
+    {
+        await EnsureProvinceExistsAsync(input.ProvinceId, ct);
+        await EnsureReferenceUniqueCodeAsync(_db.Communes, input.Code, null, ct);
+        var entity = new Commune(_guidGenerator.Create(), input.Code, input.Name, input.ProvinceId, input.SortOrder);
+        _db.Communes.Add(entity);
+        await _db.SaveChangesAsync(ct);
+        return await GetCommuneAsync(entity.Id, ct);
+    }
+
+    public virtual async Task<CommuneDto> UpdateCommuneAsync(Guid id, UpsertCommuneDto input, CancellationToken ct = default)
+    {
+        var entity = await _db.Communes.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(Commune), id);
+        await EnsureProvinceExistsAsync(input.ProvinceId, ct);
+        await EnsureReferenceUniqueCodeAsync(_db.Communes, input.Code, id, ct);
+        entity.Update(input.Code, input.Name, input.ProvinceId, input.SortOrder);
+        await _db.SaveChangesAsync(ct);
+        return await GetCommuneAsync(entity.Id, ct);
+    }
+
+    public virtual async Task DeleteCommuneAsync(Guid id, CancellationToken ct = default) => await DeleteAsync(_db.Communes, id, ct);
+
     public virtual async Task<PagedResultDto<UserOrganizationMappingDto>> GetUserMappingsAsync(Guid? userId, int skipCount, int maxResultCount, CancellationToken ct = default)
     {
         var query = _db.UserOrganizationMappings.AsNoTracking();
@@ -250,6 +509,44 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
             throw new BusinessException(OrganizationErrorCodes.InvalidMasterDataType).WithData("Type", type ?? string.Empty);
     }
 
+    private static async Task EnsureReferenceUniqueCodeAsync<TEntity>(DbSet<TEntity> set, string code, Guid? currentId, CancellationToken ct)
+        where TEntity : CodedReferenceAggregate
+    {
+        var normalized = code.Trim();
+        if (await set.AnyAsync(x => x.Code == normalized && x.Id != currentId, ct))
+            throw new BusinessException(OrganizationErrorCodes.DuplicateCode).WithData("Code", normalized);
+    }
+
+    private async Task EnsureCountryExistsAsync(Guid countryId, CancellationToken ct)
+    {
+        if (countryId == Guid.Empty || !await _db.Countries.AnyAsync(x => x.Id == countryId, ct))
+            throw new BusinessException(OrganizationErrorCodes.InvalidCountry).WithData("CountryId", countryId);
+    }
+
+    private async Task EnsureProvinceExistsAsync(Guid provinceId, CancellationToken ct)
+    {
+        if (provinceId == Guid.Empty || !await _db.Provinces.AnyAsync(x => x.Id == provinceId, ct))
+            throw new BusinessException(OrganizationErrorCodes.InvalidProvince).WithData("ProvinceId", provinceId);
+    }
+
+    private async Task<ProvinceDto> GetProvinceAsync(Guid id, CancellationToken ct)
+    {
+        return await (from province in _db.Provinces.AsNoTracking()
+                      join country in _db.Countries.AsNoTracking() on province.CountryId equals country.Id
+                      where province.Id == id
+                      select new ProvinceDto(province.Id, province.Code, province.Name,
+                          province.CountryId, country.Code, province.SortOrder)).SingleAsync(ct);
+    }
+
+    private async Task<CommuneDto> GetCommuneAsync(Guid id, CancellationToken ct)
+    {
+        return await (from commune in _db.Communes.AsNoTracking()
+                      join province in _db.Provinces.AsNoTracking() on commune.ProvinceId equals province.Id
+                      where commune.Id == id
+                      select new CommuneDto(commune.Id, commune.Code, commune.Name,
+                          commune.ProvinceId, province.Code, commune.SortOrder)).SingleAsync(ct);
+    }
+
     private static IQueryable<TEntity> Filter<TEntity>(IQueryable<TEntity> query, OrganizationListInput input) where TEntity : CodedAggregate
     {
         if (!string.IsNullOrWhiteSpace(input.Filter))
@@ -271,6 +568,16 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
         return new PagedResultDto<TDto>(total, items);
     }
 
+    private static async Task<PagedResultDto<TDto>> PageReferenceAsync<TEntity, TDto>(IQueryable<TEntity> query,
+        OrganizationListInput input, System.Linq.Expressions.Expression<Func<TEntity, TDto>> selector, CancellationToken ct)
+    {
+        var total = await query.LongCountAsync(ct);
+        var items = await query.Skip(Math.Max(0, input.SkipCount))
+            .Take(Math.Clamp(input.MaxResultCount, 1, 100))
+            .Select(selector).ToListAsync(ct);
+        return new PagedResultDto<TDto>(total, items);
+    }
+
     private async Task DeleteAsync<TEntity>(DbSet<TEntity> set, Guid id, CancellationToken ct) where TEntity : class
     {
         var entity = await set.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(TEntity), id);
@@ -282,5 +589,13 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     private static UnitDto Map(Unit x) => new(x.Id, x.DepartmentId, x.Code, x.Name, x.SortOrder, x.IsActive);
     private static PositionDto Map(Position x) => new(x.Id, x.Code, x.Name, x.SignOrder, x.SortOrder, x.IsActive);
     private static MasterDataItemDto Map(MasterDataItem x) => new(x.Id, x.Type, x.Code, x.Name, x.SortOrder, x.IsActive);
+    private static Icd10Dto Map(Icd10 x) => new(x.Id, x.Code, x.Name, x.DiseaseGroup, x.IsChronic, x.SortOrder);
+    private static BloodPressureRangeDto Map(BloodPressureRange x) => new(x.Id, x.HATTMin, x.HATTMax,
+        x.HATTrMin, x.HATTrMax, x.Title, x.Description, x.SortOrder);
+    private static BloodGlucoseRangeDto Map(BloodGlucoseRange x) => new(x.Id, x.Title, x.MinValue, x.MaxValue,
+        x.Description, x.BeforeMeal, x.SortOrder);
+    private static BmiRangeDto Map(BmiRange x) => new(x.Id, x.Title, x.Gender, x.MinValue, x.MaxValue,
+        x.Description, x.SortOrder);
+    private static CountryDto Map(Country x) => new(x.Id, x.Code, x.Name, x.CountryCode, x.SortOrder);
     private static UserOrganizationMappingDto Map(UserOrganizationMapping x) => new(x.Id, x.UserId, x.DepartmentId, x.UnitId, x.PositionId, x.IsPrimary);
 }

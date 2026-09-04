@@ -1,5 +1,6 @@
 using HCS.CollaborationService.Api;
 using HCS.CollaborationService.Application;
+using HCS.CollaborationService.Contracts;
 using HCS.CollaborationService.Hubs;
 using HCS.CollaborationService.Storage;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,19 @@ public sealed class ApiContractTests
         typeof(ChatController).GetMethod(nameof(ChatController.PinMessage))!.GetCustomAttributes(typeof(HttpPutAttribute), true).ShouldNotBeEmpty();
         typeof(ChatController).GetMethod(nameof(ChatController.Search))!.GetParameters().ShouldContain(p => p.Name == "pinnedOnly");
         typeof(NotificationController).GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().Single().Template.ShouldBe("api/notifications");
+    }
+
+    [Fact]
+    public void Social_routes_use_the_social_permission_and_media_store_is_transient()
+    {
+        typeof(SocialController).GetCustomAttributes(typeof(RouteAttribute), true).Cast<RouteAttribute>().Single().Template.ShouldBe("api/social");
+        typeof(SocialController).GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true)
+            .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>().Single().Policy.ShouldBe(CollaborationPermissions.Social);
+        typeof(SocialController).GetMethod(nameof(SocialController.Feed))!.GetCustomAttributes(typeof(HttpGetAttribute), true)
+            .Cast<HttpGetAttribute>().Single().Template.ShouldBe("feed");
+        typeof(SocialMediaStore).IsAssignableTo(typeof(ITransientDependency)).ShouldBeTrue();
+        typeof(SocialPostAppService).IsSealed.ShouldBeFalse();
+        typeof(SocialCommentAppService).IsSealed.ShouldBeFalse();
     }
 
     [Fact]

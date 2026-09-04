@@ -61,7 +61,8 @@
 
 .hcs-page__header h1,
 .hcs-page__header h2 {
-    color: var(--hcs-color-ink);
+    color: var(--hcs-color-heading);
+    font-size: var(--hcs-font-size-title);
     letter-spacing: -.025em;
     margin: 0;
     text-wrap: balance;
@@ -156,8 +157,8 @@
 }
 
 .hcs-state h2 {
-    color: var(--hcs-color-ink);
-    font-size: 1.1rem;
+    color: var(--hcs-color-heading);
+    font-size: var(--hcs-font-size-section-title);
 }
 
 .hcs-state--error {
@@ -270,7 +271,7 @@
     }
 
     .hcs-page__header h1 {
-        font-size: clamp(1.5rem, 7vw, 1.85rem);
+        font-size: var(--hcs-font-size-title);
     }
 
     .hcs-page__actions,
@@ -589,13 +590,30 @@
     --bs-info: var(--hcs-color-info);
     --bs-info-rgb: 0, 180, 169;
     --bs-body-color: var(--hcs-color-ink);
+    --bs-body-color-rgb: 26, 26, 46;
     --bs-body-bg: var(--hcs-color-background);
     --bs-border-color: var(--hcs-color-border);
+    --bs-heading-color: var(--hcs-color-heading);
     --bs-border-radius: 6px;
     --bs-border-radius-sm: 5px;
     --bs-border-radius-lg: 8px;
-    --bs-link-color: var(--hcs-color-primary);
-    --bs-link-hover-color: var(--hcs-color-primary-strong);
+    --bs-link-color: var(--hcs-color-link);
+    --bs-link-color-rgb: 0, 180, 169;
+    --bs-link-hover-color: var(--hcs-color-link-hover);
+    --bs-link-hover-color-rgb: 0, 127, 124;
+    --bs-focus-ring-color: rgba(0, 180, 169, .28);
+}
+
+/* Bootstrap resolves anchor colors from the RGB variables above. Keep
+   ordinary content links on the HCS primary scale while preserving the
+   branded shell, button, menu and preview-link treatments. */
+.hcs-app-shell :where(a[href]:not(.btn):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)) {
+    color: var(--hcs-color-link);
+}
+
+.hcs-app-shell :where(a[href]:not(.btn):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)):hover,
+.hcs-app-shell :where(a[href]:not(.btn):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)):focus-visible {
+    color: var(--hcs-color-link-hover);
 }
 
 .hcs-app-shell :where(.hcs-page, .hcs-catalog-page, .hcs-document-page, .hcs-admin-page, .hcs-account-page, .hcs-workspace) {
@@ -619,8 +637,8 @@
 }
 
 .hcs-app-shell :where(.hcs-page__header h1, .hcs-page__header h2, .hcs-document-page__header h1, .hcs-catalog-titlebar h1) {
-    color: var(--hcs-color-ink);
-    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    color: var(--hcs-color-heading);
+    font-size: var(--hcs-font-size-title);
     font-weight: 700;
     letter-spacing: -.025em;
     line-height: 1.2;
@@ -645,9 +663,18 @@
 }
 
 .hcs-app-shell :where(.card-header strong, .card-header h2, .card-header h3) {
-    color: var(--hcs-color-ink);
-    font-size: .98rem;
+    color: var(--hcs-color-heading);
+    font-size: var(--hcs-font-size-card-title);
     font-weight: 700;
+}
+
+.hcs-app-shell :where(.hcs-ws-card-title, .hcs-kanban-title, .hcs-workflow-panel-heading > strong) {
+    color: var(--hcs-color-heading);
+}
+
+.hcs-app-shell :where(.hcs-provider-card h2, .hcs-document-list h2) {
+    color: var(--hcs-color-heading);
+    font-size: var(--hcs-font-size-card-title);
 }
 
 .hcs-app-shell :where(.card-body, .hcs-catalog-grid-card .card-body) { padding: var(--hcs-space-5); }
@@ -795,7 +822,7 @@
 
 .hcs-app-shell :where(.modal-content, .hcs-catalog-modal) { border: 1px solid var(--hcs-color-border); border-radius: var(--hcs-radius-lg); box-shadow: var(--hcs-shadow-md); overflow: hidden; }
 .hcs-app-shell :where(.modal-header, .hcs-catalog-modal__header, .modal-footer, .hcs-catalog-modal__footer) { background: var(--hcs-color-surface); border-color: var(--hcs-color-border); padding: var(--hcs-space-4) var(--hcs-space-5); }
-.hcs-app-shell :where(.modal-title, .hcs-catalog-modal__header .modal-title) { color: var(--hcs-color-ink); font-size: 1.05rem; font-weight: 700; }
+.hcs-app-shell :where(.modal-title, .hcs-catalog-modal__header .modal-title) { color: var(--hcs-color-heading); font-size: var(--hcs-font-size-card-title); font-weight: 700; }
 .hcs-app-shell :where(.modal-body, .hcs-catalog-modal__body) { background: var(--hcs-color-surface); padding: var(--hcs-space-5); }
 .hcs-app-shell :where(.alert) { border-radius: var(--hcs-radius-md); font-size: .86rem; }
 

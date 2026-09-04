@@ -1,0 +1,6 @@
+@page "/communes"
+@attribute [Authorize(Policy = "HCS.Catalogs.Communes")]
+@inherits HCSComponentBase
+
+<PageTitle>@L["Catalog:CommuneTitle"] · HCS</PageTitle>
+<ReferenceCatalog Kind="ReferenceCatalogKind.Commune" />

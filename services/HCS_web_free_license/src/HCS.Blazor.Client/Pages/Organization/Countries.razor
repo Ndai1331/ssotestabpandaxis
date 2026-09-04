@@ -1,0 +1,6 @@
+@page "/countries"
+@attribute [Authorize(Policy = "HCS.Catalogs.Countries")]
+@inherits HCSComponentBase
+
+<PageTitle>@L["Catalog:CountryTitle"] · HCS</PageTitle>
+<ReferenceCatalog Kind="ReferenceCatalogKind.Country" />

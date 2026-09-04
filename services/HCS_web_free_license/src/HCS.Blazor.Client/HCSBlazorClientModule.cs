@@ -73,9 +73,11 @@ public class HCSBlazorClientModule : AbpModule
         ConfigureBlazorise(context);
         ConfigureMessageLocalization();
         context.Services.AddScoped<OrganizationCatalogClient>();
+        context.Services.AddScoped<ReferenceCatalogClient>();
         context.Services.AddScoped<IdentityAdminClient>();
         context.Services.AddScoped<AuditLogClient>();
         context.Services.AddScoped<CollaborationClient>();
+        context.Services.AddScoped<SocialClient>();
         context.Services.AddScoped<SurveyCatalogCache>();
         context.Services.AddScoped<Account.AccountProfileClient>();
         context.Services.AddScoped<Work.WorkManagementClient>();

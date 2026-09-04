@@ -85,8 +85,8 @@
 }
 
 .hcs-survey-results__section h2 {
-    color: #193b57;
-    font-size: 1rem;
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-card-title, .98rem);
     margin-bottom: 1rem;
 }
 

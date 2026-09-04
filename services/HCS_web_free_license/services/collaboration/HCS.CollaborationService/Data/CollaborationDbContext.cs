@@ -22,6 +22,9 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
     public DbSet<PushDelivery> PushDeliveries => Set<PushDelivery>();
     public DbSet<WorkSubjectProjection> WorkSubjects => Set<WorkSubjectProjection>();
     public DbSet<WorkSubjectMemberProjection> WorkSubjectMembers => Set<WorkSubjectMemberProjection>();
+    public DbSet<SocialPost> SocialPosts => Set<SocialPost>();
+    public DbSet<SocialPostMedia> SocialPostMedia => Set<SocialPostMedia>();
+    public DbSet<SocialPostComment> SocialPostComments => Set<SocialPostComment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -112,6 +115,33 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
         {
             b.ToTable("CollaborationWorkSubjectMembers");
             b.HasIndex(x => new { x.SubjectId, x.UserId }).IsUnique(); b.HasIndex(x => x.UserId);
+        });
+        builder.Entity<SocialPost>(b =>
+        {
+            b.ToTable("CollaborationSocialPosts"); b.ConfigureByConvention();
+            b.Property(x => x.AuthorName).HasMaxLength(256);
+            b.Property(x => x.Text).HasMaxLength(4000);
+            b.HasIndex(x => new { x.Visibility, x.CreationTime, x.Id });
+            b.HasIndex(x => x.AuthorUserId);
+            b.HasMany(x => x.Media).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
+            b.HasMany(x => x.Comments).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<SocialPostMedia>(b =>
+        {
+            b.ToTable("CollaborationSocialPostMedia"); b.ConfigureByConvention();
+            b.Property(x => x.BlobName).HasMaxLength(512);
+            b.Property(x => x.FileName).HasMaxLength(256);
+            b.Property(x => x.ContentType).HasMaxLength(128);
+            b.HasIndex(x => x.PostId);
+            b.HasIndex(x => new { x.UploadedByUserId, x.PostId });
+        });
+        builder.Entity<SocialPostComment>(b =>
+        {
+            b.ToTable("CollaborationSocialPostComments"); b.ConfigureByConvention();
+            b.Property(x => x.AuthorName).HasMaxLength(256);
+            b.Property(x => x.Text).HasMaxLength(2000);
+            b.HasIndex(x => new { x.PostId, x.CreationTime, x.Id });
+            b.HasIndex(x => x.ParentCommentId);
         });
     }
 }

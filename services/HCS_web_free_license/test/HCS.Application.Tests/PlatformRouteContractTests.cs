@@ -1,8 +1,10 @@
+using HCS.Auditing;
 using HCS.Controllers.Auditing;
 using HCS.Controllers.Localization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace HCS;
@@ -21,5 +23,16 @@ public sealed class PlatformRouteContractTests
 
         Assert.Contains(legacyRoute, routes);
         Assert.Contains(gatewayRoute, routes);
+    }
+
+    [Fact]
+    public void Audit_list_input_is_bound_from_query_only()
+    {
+        var parameter = typeof(AuditViewerController)
+            .GetMethod(nameof(AuditViewerController.GetListAsync))!
+            .GetParameters()
+            .Single(parameter => parameter.ParameterType == typeof(GetAuditLogsInput));
+
+        Assert.NotNull(parameter.GetCustomAttribute<FromQueryAttribute>());
     }
 }

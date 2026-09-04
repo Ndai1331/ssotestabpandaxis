@@ -15,7 +15,7 @@ public class AuditViewerController : HCSController, IAuditViewerAppService
     public AuditViewerController(IAuditViewerAppService service) => _service = service;
 
     [HttpGet]
-    public Task<PagedResultDto<AuditLogDto>> GetListAsync(GetAuditLogsInput input) => _service.GetListAsync(input);
+    public Task<PagedResultDto<AuditLogDto>> GetListAsync([FromQuery] GetAuditLogsInput input) => _service.GetListAsync(input);
 
     [HttpGet("{id:guid}")]
     public Task<AuditLogDetailDto> GetAsync(Guid id) => _service.GetAsync(id);

@@ -1,0 +1,6 @@
+@page "/blood-pressure"
+@attribute [Authorize(Policy = "HCS.Catalogs.BloodPressure")]
+@inherits HCSComponentBase
+
+<PageTitle>@L["Catalog:BloodPressureTitle"] · HCS</PageTitle>
+<ReferenceCatalog Kind="ReferenceCatalogKind.BloodPressure" />
