@@ -27,8 +27,15 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
     public Task<PagedSocialPostsDto> GetFeedAsync(int skip = 0, int take = 20, CancellationToken ct = default) =>
         GetAsync<PagedSocialPostsDto>($"api/social/feed?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}", ct);
 
-    public Task<PagedSocialPostsDto> GetProfilePostsAsync(int skip = 0, int take = 20, CancellationToken ct = default) =>
-        GetAsync<PagedSocialPostsDto>($"api/social/profile/posts?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}", ct);
+    public Task<PagedSocialPostsDto> GetProfilePostsAsync(int skip = 0, int take = 20,
+        SocialPostVisibility? visibility = null, CancellationToken ct = default)
+    {
+        var uri = $"api/social/profile/posts?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}";
+        if (visibility.HasValue)
+            uri += $"&visibility={visibility.Value.ToString().ToLowerInvariant()}";
+
+        return GetAsync<PagedSocialPostsDto>(uri, ct);
+    }
 
     public Task<IReadOnlyList<SocialCommentDto>> GetCommentsAsync(Guid postId, CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<SocialCommentDto>>($"api/social/posts/{postId:D}/comments", ct);

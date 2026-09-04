@@ -53,6 +53,39 @@
 .hcs-social-outline-button:hover,
 .hcs-social-outline-button:focus-visible { background: rgba(255,255,255,.16); color: #fff; }
 
+.hcs-social-scope-tabs {
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--hcs-radius-lg);
+    box-shadow: var(--hcs-shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    margin-bottom: 1.25rem;
+    padding: .45rem;
+}
+.hcs-social-scope-tabs__label { color: var(--color-muted); font-size: .78rem; font-weight: 700; margin: 0 .35rem 0 .55rem; }
+.hcs-social-scope-tab {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--hcs-radius-md);
+    color: var(--color-muted);
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 700;
+    gap: .4rem;
+    min-height: 2.5rem;
+    padding: .5rem .8rem;
+}
+.hcs-social-scope-tab:hover,
+.hcs-social-scope-tab:focus-visible { background: var(--color-primary-light); color: var(--color-secondary); }
+.hcs-social-scope-tab.is-active { background: var(--color-secondary); color: #fff; }
+.hcs-social-scope-tab.is-active:focus-visible { outline-color: var(--color-secondary); }
+
 .hcs-social-layout { align-items: start; display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr) 17rem; }
 .hcs-social-stream { display: grid; gap: 1rem; min-width: 0; }
 .hcs-social-composer,
@@ -179,6 +212,9 @@
     .hcs-social-page { padding-top: 1rem; }
     .hcs-social-hero { align-items: flex-start; flex-direction: column; padding: 1.25rem; }
     .hcs-social-outline-button { width: 100%; }
+    .hcs-social-scope-tabs { align-items: stretch; flex-direction: column; }
+    .hcs-social-scope-tabs__label { margin: .3rem .55rem .05rem; }
+    .hcs-social-scope-tab { justify-content: center; width: 100%; }
     .hcs-social-composer, .hcs-social-post__header { padding-left: 1rem; padding-right: 1rem; }
     .hcs-social-composer__controls { align-items: stretch; flex-direction: column; }
     .hcs-social-visibility { margin-right: 0; width: 100%; }

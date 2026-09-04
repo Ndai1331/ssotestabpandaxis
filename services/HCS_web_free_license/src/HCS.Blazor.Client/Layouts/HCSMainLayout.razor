@@ -95,36 +95,6 @@
                 <i class="fa fa-house" aria-hidden="true"></i><span>@Localizer["Menu:Workspace"]</span>
             </NavLink>
 
-            <AuthorizeView Context="authenticationState">
-                <Authorized>
-                    @if (CanOpenSocialNavigation(authenticationState.User))
-                    {
-                        <div class="hcs-nav-menu @(IsExpanded("social") ? "hcs-nav-menu--expanded" : null)"
-                             @onpointerenter="@(() => OnMenuPointerEnter("social"))">
-                            <button class="hcs-nav-menu__trigger" type="button"
-                                    aria-expanded="@IsExpanded("social").ToString().ToLowerInvariant()"
-                                    aria-haspopup="true" @onmousedown:preventDefault
-                                    @onclick="@(() => ToggleSection("social"))">
-                                <i class="fa fa-users" aria-hidden="true"></i><span>@Localizer["Menu:Social"]</span>
-                                <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
-                            </button>
-                            <div class="hcs-nav-menu__panel" role="menu">
-                                <AuthorizeView Policy="Collaboration.Social">
-                                    <Authorized>
-                                        <NavLink href="/social" @onclick="CloseMobileNav"><i class="fa fa-newspaper" aria-hidden="true"></i>@Localizer["Menu:SocialPosts"]</NavLink>
-                                    </Authorized>
-                                </AuthorizeView>
-                                <AuthorizeView Policy="Collaboration.Chat">
-                                    <Authorized>
-                                        <NavLink href="/chat" @onclick="CloseMobileNav"><i class="fa fa-comments" aria-hidden="true"></i>@Localizer["Menu:SocialChat"]</NavLink>
-                                    </Authorized>
-                                </AuthorizeView>
-                            </div>
-                        </div>
-                    }
-                </Authorized>
-            </AuthorizeView>
-
             <div class="hcs-nav-menu @(IsExpanded("documents") ? "hcs-nav-menu--expanded" : null)"
                  @onpointerenter="@(() => OnMenuPointerEnter("documents"))">
                 <button class="hcs-nav-menu__trigger" type="button"
@@ -243,6 +213,36 @@
                     <NavLink href="/reports" @onclick="CloseMobileNav"><i class="fa fa-chart-column" aria-hidden="true"></i>@Localizer["Menu:Reports"]</NavLink>
                 </div>
             </div>
+
+            <AuthorizeView Context="authenticationState">
+                <Authorized>
+                    @if (CanOpenSocialNavigation(authenticationState.User))
+                    {
+                        <div class="hcs-nav-menu @(IsExpanded("social") ? "hcs-nav-menu--expanded" : null)"
+                             @onpointerenter="@(() => OnMenuPointerEnter("social"))">
+                            <button class="hcs-nav-menu__trigger" type="button"
+                                    aria-expanded="@IsExpanded("social").ToString().ToLowerInvariant()"
+                                    aria-haspopup="true" @onmousedown:preventDefault
+                                    @onclick="@(() => ToggleSection("social"))">
+                                <i class="fa fa-users" aria-hidden="true"></i><span>@Localizer["Menu:Social"]</span>
+                                <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
+                            </button>
+                            <div class="hcs-nav-menu__panel" role="menu">
+                                <AuthorizeView Policy="Collaboration.Social">
+                                    <Authorized>
+                                        <NavLink href="/social" @onclick="CloseMobileNav"><i class="fa fa-newspaper" aria-hidden="true"></i>@Localizer["Menu:SocialPosts"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                                <AuthorizeView Policy="Collaboration.Chat">
+                                    <Authorized>
+                                        <NavLink href="/chat" @onclick="CloseMobileNav"><i class="fa fa-comments" aria-hidden="true"></i>@Localizer["Menu:SocialChat"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                        </div>
+                    }
+                </Authorized>
+            </AuthorizeView>
 
             <AuthorizeView Roles="admin">
                 <Authorized>

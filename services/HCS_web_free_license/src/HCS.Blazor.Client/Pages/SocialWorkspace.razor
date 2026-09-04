@@ -1,5 +1,7 @@
 @page "/social"
 @page "/social/profile"
+@using Microsoft.AspNetCore.Components.Routing
+@using System.Threading
 @attribute [Authorize(Policy = CollaborationPermissions.Social)]
 @inherits HCSComponentBase
 @inject SocialClient Social
@@ -20,6 +22,26 @@
             @(isProfile ? L["Social:BackToFeed"] : L["Social:OpenProfile"])
         </a>
     </header>
+
+    <nav class="hcs-social-scope-tabs" aria-label='@L["Social:ViewLabel"]'>
+        <span class="hcs-social-scope-tabs__label">@L["Social:ViewLabel"]</span>
+        @if (isProfile)
+        {
+            <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(null) ? "is-active" : null)"
+                    aria-pressed="@IsVisibilitySelected(null)" @onclick="() => SelectVisibilityAsync(null)">
+                <i class="fa fa-layer-group" aria-hidden="true"></i>@L["Social:All"]
+            </button>
+        }
+        <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(SocialPostVisibility.Public) ? "is-active" : null)"
+                aria-pressed="@IsVisibilitySelected(SocialPostVisibility.Public)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Public)">
+            <i class="fa fa-globe" aria-hidden="true"></i>@L["Social:Public"]
+        </button>
+        <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(SocialPostVisibility.Internal) ? "is-active" : null)"
+                aria-pressed="@IsVisibilitySelected(SocialPostVisibility.Internal)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Internal)"
+                title='@L["Social:InternalHint"]'>
+            <i class="fa fa-lock" aria-hidden="true"></i>@L["Social:Internal"]
+        </button>
+    </nav>
 
     <div class="hcs-social-layout">
         <main class="hcs-social-stream">
@@ -226,6 +248,7 @@
     private readonly Dictionary<Guid, IReadOnlyList<SocialCommentDto>> commentsByPost = [];
     private readonly HashSet<Guid> expandedPostIds = [];
     private readonly List<UploadSocialMediaResult> uploadedMedia = [];
+    private readonly SemaphoreSlim routeLoadGate = new(1, 1);
     private bool isProfile;
     private bool routeLoaded;
     private bool isLoading;
@@ -243,17 +266,49 @@
     private Guid? replyingToCommentId;
     private long totalCount;
     private string currentDisplayName = "HCS";
+    private SocialPostVisibility? visibilityFilter;
+    private string routeStateKey = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Navigation.LocationChanged += OnLocationChanged;
+    }
 
     protected override async Task OnParametersSetAsync()
     {
         var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         currentDisplayName = authenticationState.User.FindFirst("name")?.Value
             ?? authenticationState.User.Identity?.Name ?? L["Auth:UserFallback"].Value;
-        var profileRoute = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/').EndsWith("/social/profile", StringComparison.OrdinalIgnoreCase);
-        if (!routeLoaded || profileRoute != isProfile)
+        await ReloadForCurrentRouteAsync();
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        _ = InvokeAsync(async () =>
         {
-            isProfile = profileRoute;
+            await ReloadForCurrentRouteAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task ReloadForCurrentRouteAsync(bool force = false)
+    {
+        await routeLoadGate.WaitAsync();
+        try
+        {
+            var route = ReadRouteState();
+            if (!force && route.Key == routeStateKey && routeLoaded)
+                return;
+
+            isProfile = route.IsProfile;
+            visibilityFilter = route.Visibility;
+            routeStateKey = route.Key;
             await LoadAsync();
+        }
+        finally
+        {
+            routeLoadGate.Release();
         }
     }
 
@@ -261,9 +316,12 @@
     {
         isLoading = true;
         loadError = null;
+        routeLoaded = false;
         try
         {
-            var result = isProfile ? await Social.GetProfilePostsAsync() : await Social.GetFeedAsync();
+            var result = isProfile
+                ? await Social.GetProfilePostsAsync(visibility: visibilityFilter)
+                : await Social.GetFeedAsync();
             posts.Clear();
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
@@ -286,12 +344,79 @@
         isLoadingMore = true;
         try
         {
-            var result = isProfile ? await Social.GetProfilePostsAsync(posts.Count) : await Social.GetFeedAsync(posts.Count);
+            var result = isProfile
+                ? await Social.GetProfilePostsAsync(posts.Count, visibility: visibilityFilter)
+                : await Social.GetFeedAsync(posts.Count);
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
         }
         catch { loadError = L["Social:LoadError"].Value; }
         finally { isLoadingMore = false; }
+    }
+
+    private async Task SelectVisibilityAsync(SocialPostVisibility? selectedVisibility)
+    {
+        var target = isProfile
+            ? selectedVisibility.HasValue
+                ? $"/social/profile?visibility={selectedVisibility.Value.ToString().ToLowerInvariant()}"
+                : "/social/profile"
+            : selectedVisibility == SocialPostVisibility.Internal
+                ? "/social/profile?visibility=internal"
+                : "/social";
+        var targetKey = BuildRouteStateKey(target);
+
+        if (targetKey == routeStateKey)
+        {
+            await ReloadForCurrentRouteAsync(force: true);
+            return;
+        }
+
+        Navigation.NavigateTo(target);
+    }
+
+    private bool IsVisibilitySelected(SocialPostVisibility? selectedVisibility) => visibilityFilter == selectedVisibility;
+
+    private (bool IsProfile, SocialPostVisibility? Visibility, string Key) ReadRouteState()
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var queryStart = relative.IndexOf('?');
+        var path = (queryStart >= 0 ? relative[..queryStart] : relative).Trim('/');
+        var isCurrentProfile = path.EndsWith("social/profile", StringComparison.OrdinalIgnoreCase);
+        var selectedVisibility = isCurrentProfile ? ReadVisibility(relative, queryStart) : SocialPostVisibility.Public;
+        return (isCurrentProfile, selectedVisibility,
+            BuildRouteStateKey(isCurrentProfile, selectedVisibility));
+    }
+
+    private static SocialPostVisibility? ReadVisibility(string relative, int queryStart)
+    {
+        if (queryStart < 0)
+            return null;
+
+        var query = relative[(queryStart + 1)..].Split('#')[0];
+        foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var pair = part.Split('=', 2);
+            if (pair.Length != 2 || !pair[0].Equals("visibility", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var value = Uri.UnescapeDataString(pair[1]);
+            if (Enum.TryParse<SocialPostVisibility>(value, true, out var visibility))
+                return visibility;
+        }
+
+        return null;
+    }
+
+    private static string BuildRouteStateKey(bool profile, SocialPostVisibility? selectedVisibility) =>
+        $"{(profile ? "profile" : "feed")}:{selectedVisibility?.ToString() ?? "all"}";
+
+    private static string BuildRouteStateKey(string target)
+    {
+        var queryStart = target.IndexOf('?');
+        var path = (queryStart >= 0 ? target[..queryStart] : target).Trim('/');
+        var isTargetProfile = path.Equals("social/profile", StringComparison.OrdinalIgnoreCase);
+        SocialPostVisibility? selectedVisibility = isTargetProfile ? ReadVisibility(target, queryStart) : SocialPostVisibility.Public;
+        return BuildRouteStateKey(isTargetProfile, selectedVisibility);
     }
 
     private async Task UploadMediaAsync(InputFileChangeEventArgs args)
@@ -416,5 +541,16 @@
 
         return parts.Length == 1 ? parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant()
             : string.Concat(parts[0][0], parts[^1][0]).ToUpperInvariant();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            Navigation.LocationChanged -= OnLocationChanged;
+            routeLoadGate.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 }

@@ -29,6 +29,8 @@ public sealed class ApiContractTests
             .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>().Single().Policy.ShouldBe(CollaborationPermissions.Social);
         typeof(SocialController).GetMethod(nameof(SocialController.Feed))!.GetCustomAttributes(typeof(HttpGetAttribute), true)
             .Cast<HttpGetAttribute>().Single().Template.ShouldBe("feed");
+        typeof(SocialController).GetMethod(nameof(SocialController.ProfilePosts))!.GetParameters()
+            .ShouldContain(parameter => parameter.Name == "visibility" && parameter.ParameterType == typeof(SocialPostVisibility?));
         typeof(SocialMediaStore).IsAssignableTo(typeof(ITransientDependency)).ShouldBeTrue();
         typeof(SocialPostAppService).IsSealed.ShouldBeFalse();
         typeof(SocialCommentAppService).IsSealed.ShouldBeFalse();

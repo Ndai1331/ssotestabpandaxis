@@ -20,7 +20,8 @@ public sealed class SocialController(
 
     [HttpGet("profile/posts")]
     public Task<PagedSocialPostsDto> ProfilePosts([FromQuery] int skip = 0, [FromQuery] int take = 20,
-        CancellationToken ct = default) => posts.GetProfilePostsAsync(skip, take, ct);
+        [FromQuery] SocialPostVisibility? visibility = null, CancellationToken ct = default) =>
+        posts.GetProfilePostsAsync(skip, take, visibility, ct);
 
     [HttpPost("posts")]
     public Task<SocialPostDto> CreatePost(CreateSocialPostInput input, CancellationToken ct) => posts.CreateAsync(input, ct);

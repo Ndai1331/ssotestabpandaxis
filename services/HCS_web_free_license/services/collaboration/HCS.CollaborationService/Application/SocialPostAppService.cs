@@ -22,8 +22,10 @@ public class SocialPostAppService(
     public async Task<PagedSocialPostsDto> GetFeedAsync(int skip = 0, int take = 20, CancellationToken ct = default) =>
         await GetPostsAsync(db.SocialPosts.AsNoTracking().Where(x => x.Visibility == SocialPostVisibility.Public), skip, take, ct);
 
-    public async Task<PagedSocialPostsDto> GetProfilePostsAsync(int skip = 0, int take = 20, CancellationToken ct = default) =>
-        await GetPostsAsync(db.SocialPosts.AsNoTracking().Where(x => x.AuthorUserId == UserId), skip, take, ct);
+    public async Task<PagedSocialPostsDto> GetProfilePostsAsync(int skip = 0, int take = 20,
+        SocialPostVisibility? visibility = null, CancellationToken ct = default) =>
+        await GetPostsAsync(db.SocialPosts.AsNoTracking().Where(x => x.AuthorUserId == UserId &&
+            (!visibility.HasValue || x.Visibility == visibility.Value)), skip, take, ct);
 
     public async Task<SocialPostDto> CreateAsync(CreateSocialPostInput input, CancellationToken ct = default)
     {
