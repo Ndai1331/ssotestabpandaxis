@@ -156,10 +156,11 @@ public class SocialPostAppService(
     private async Task<SocialReactionSummaryDto> GetPostReactionSummaryAsync(Guid postId, Guid userId,
         CancellationToken ct)
     {
-        var counts = await db.SocialPostReactions.AsNoTracking().Where(x => x.PostId == postId)
+        var groupedCounts = await db.SocialPostReactions.AsNoTracking().Where(x => x.PostId == postId)
             .GroupBy(x => x.ReactionType)
-            .Select(x => new SocialReactionCountDto(x.Key, x.Count()))
+            .Select(x => new { Type = x.Key, Count = x.Count() })
             .OrderByDescending(x => x.Count).ThenBy(x => x.Type).ToListAsync(ct);
+        var counts = groupedCounts.Select(x => new SocialReactionCountDto(x.Type, x.Count)).ToArray();
         var current = await db.SocialPostReactions.AsNoTracking()
             .Where(x => x.PostId == postId && x.UserId == userId)
             .Select(x => (SocialReactionType?)x.ReactionType).SingleOrDefaultAsync(ct);

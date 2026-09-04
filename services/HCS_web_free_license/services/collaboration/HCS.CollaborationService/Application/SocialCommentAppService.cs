@@ -111,10 +111,11 @@ public class SocialCommentAppService(
             await transaction.CommitAsync(ct);
         }
         socialNotifications.PublishAfterCommit();
-        var counts = await db.SocialCommentReactions.AsNoTracking().Where(x => x.CommentId == commentId)
+        var groupedCounts = await db.SocialCommentReactions.AsNoTracking().Where(x => x.CommentId == commentId)
             .GroupBy(x => x.ReactionType)
-            .Select(x => new SocialReactionCountDto(x.Key, x.Count()))
+            .Select(x => new { Type = x.Key, Count = x.Count() })
             .OrderByDescending(x => x.Count).ThenBy(x => x.Type).ToListAsync(ct);
+        var counts = groupedCounts.Select(x => new SocialReactionCountDto(x.Type, x.Count)).ToArray();
         var current = await db.SocialCommentReactions.AsNoTracking()
             .Where(x => x.CommentId == commentId && x.UserId == me)
             .Select(x => (SocialReactionType?)x.ReactionType).SingleOrDefaultAsync(ct);

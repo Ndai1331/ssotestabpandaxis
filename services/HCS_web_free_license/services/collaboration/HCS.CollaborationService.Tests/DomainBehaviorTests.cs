@@ -116,6 +116,11 @@ public sealed class DomainBehaviorTests
     [Fact]
     public void Social_notifications_are_localized_with_the_actor_name()
     {
+        NotificationLocalization.Format(NotificationLocalization.SocialCommentTitle, "vi")
+            .ShouldBe("Bài viết có bình luận mới");
+        NotificationLocalization.Format(
+                NotificationLocalization.Encode(NotificationLocalization.SocialCommentBody, "Nguyễn Văn A"), "vi")
+            .ShouldBe("Nguyễn Văn A đã bình luận về bài viết của bạn");
         var body = NotificationLocalization.Encode(NotificationLocalization.SocialReactionBody, "Nguyễn Văn A");
         NotificationLocalization.Format(body, "vi").ShouldBe("Nguyễn Văn A đã tương tác với bài viết của bạn");
         NotificationLocalization.Format(body, "en").ShouldBe("Nguyễn Văn A reacted to your post");
