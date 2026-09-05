@@ -63,6 +63,12 @@ public sealed class CreateSocialPostInput
     public IReadOnlyCollection<Guid> MediaIds { get; init; } = [];
 }
 
+public sealed class UpdateSocialPostInput
+{
+    [StringLength(4000)] public string? Text { get; init; }
+    public SocialPostVisibility Visibility { get; init; }
+}
+
 public sealed class CreateSocialCommentInput
 {
     [Required, StringLength(2000)] public string Text { get; init; } = string.Empty;

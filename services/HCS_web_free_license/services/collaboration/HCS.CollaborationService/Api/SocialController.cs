@@ -30,6 +30,13 @@ public sealed class SocialController(
     [HttpPost("posts")]
     public Task<SocialPostDto> CreatePost(CreateSocialPostInput input, CancellationToken ct) => posts.CreateAsync(input, ct);
 
+    [HttpPut("posts/{postId:guid}")]
+    public Task<SocialPostDto> UpdatePost(Guid postId, UpdateSocialPostInput input, CancellationToken ct) =>
+        posts.UpdateAsync(postId, input, ct);
+
+    [HttpDelete("posts/{postId:guid}")]
+    public Task DeletePost(Guid postId, CancellationToken ct) => posts.DeleteAsync(postId, ct);
+
     [HttpGet("posts/{postId:guid}/comments")]
     public Task<IReadOnlyList<SocialCommentDto>> Comments(Guid postId, CancellationToken ct) => comments.GetAsync(postId, ct);
 

@@ -172,9 +172,47 @@
                                 <i class="fa @(post.Visibility == SocialPostVisibility.Internal ? "fa-lock" : "fa-globe")" aria-hidden="true"></i>
                                 @(post.Visibility == SocialPostVisibility.Internal ? L["Social:Internal"] : L["Social:Public"])
                             </span>
+                            @if (IsOwnPost(post))
+                            {
+                                <div class="hcs-social-post__actions" aria-label='@L["Social:PostActions"]'>
+                                    <button type="button" class="hcs-social-post__action" title='@L["Social:Edit"]'
+                                            aria-label='@L["Social:Edit"]' @onclick="() => BeginEditPost(post)"
+                                            disabled="@(isUpdatingPost || deletingPostId == post.Id)">
+                                        <i class="fa fa-pen" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="hcs-social-post__action hcs-social-post__action--danger"
+                                            title='@L["Social:Delete"]' aria-label='@L["Social:Delete"]'
+                                            @onclick="() => DeletePostAsync(post)"
+                                            disabled="@(isUpdatingPost || deletingPostId == post.Id)">
+                                        <i class="fa @(deletingPostId == post.Id ? "fa-spinner fa-spin" : "fa-trash")" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            }
                         </header>
 
-                        @if (!string.IsNullOrWhiteSpace(post.Text))
+                        @if (editingPostId == post.Id)
+                        {
+                            <form class="hcs-social-post__edit" @onsubmit="() => UpdatePostAsync(post)" @onsubmit:preventDefault>
+                                <label for="edit-social-content-@post.Id">@L["Social:ContentLabel"]</label>
+                                <textarea id="edit-social-content-@post.Id" class="form-control" rows="4"
+                                          @bind="editingContent" @bind:event="oninput" disabled="@isUpdatingPost"></textarea>
+                                <div class="hcs-social-post__edit-controls">
+                                    <label for="edit-social-visibility-@post.Id">@L["Social:VisibilityLabel"]</label>
+                                    <select id="edit-social-visibility-@post.Id" class="form-select" @bind="editingVisibility" disabled="@isUpdatingPost">
+                                        <option value="@SocialPostVisibility.Public">@L["Social:Public"]</option>
+                                        <option value="@SocialPostVisibility.Internal">@L["Social:Internal"]</option>
+                                    </select>
+                                    <button type="button" class="hcs-social-post__edit-cancel" @onclick="CancelEditPost" disabled="@isUpdatingPost">
+                                        @L["Social:Cancel"]
+                                    </button>
+                                    <button type="submit" class="hcs-social-post__edit-save" disabled="@isUpdatingPost">
+                                        <i class="fa @(isUpdatingPost ? "fa-spinner fa-spin" : "fa-floppy-disk")" aria-hidden="true"></i>
+                                        @(isUpdatingPost ? L["Social:Updating"] : L["Social:SaveChanges"])
+                                    </button>
+                                </div>
+                            </form>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(post.Text))
                         {
                             <p class="hcs-social-post__text">@post.Text</p>
                         }
@@ -221,7 +259,7 @@
                             <div class="hcs-social-reaction-summary" aria-label='@L["Social:ReactionSummary"]'>
                                 @foreach (var reaction in post.Reactions.Counts.Take(3))
                                 {
-                                    <span title='@ReactionLabel(reaction.Type)'>
+                                    <span class="@ReactionColorClass(reaction.Type)" title='@ReactionLabel(reaction.Type)'>
                                         <i class="fa @ReactionIcon(reaction.Type)" aria-hidden="true"></i>@reaction.Count
                                     </span>
                                 }
@@ -246,7 +284,7 @@
                                 @foreach (var reactionType in ReactionTypes)
                                 {
                                     <button type="button"
-                                            class="hcs-social-reaction-button @(post.Reactions.CurrentUserReaction == reactionType ? "is-selected" : null)"
+                                            class="hcs-social-reaction-button @ReactionColorClass(reactionType) @(post.Reactions.CurrentUserReaction == reactionType ? "is-selected" : null)"
                                             @onclick="() => ReactToPostAsync(post, reactionType)"
                                             disabled="@(reactionLoadingPostId == post.Id)"
                                             title='@ReactionLabel(reactionType)'
@@ -290,7 +328,7 @@
                                                     @foreach (var reactionType in ReactionTypes)
                                                     {
                                                         <button type="button"
-                                                                class="hcs-social-comment-reaction @(comment.Reactions.CurrentUserReaction == reactionType ? "is-selected" : null)"
+                                                                class="hcs-social-comment-reaction @ReactionColorClass(reactionType) @(comment.Reactions.CurrentUserReaction == reactionType ? "is-selected" : null)"
                                                                 @onclick="() => ReactToCommentAsync(post, comment, reactionType)"
                                                                 disabled="@(reactionLoadingCommentId == comment.Id)"
                                                                 title='@ReactionLabel(reactionType)'
@@ -376,6 +414,12 @@
     private Guid? reactionLoadingPostId;
     private Guid? reactionLoadingCommentId;
     private Guid? shareLoadingPostId;
+    private Guid? currentUserId;
+    private Guid? editingPostId;
+    private Guid? deletingPostId;
+    private bool isUpdatingPost;
+    private string editingContent = string.Empty;
+    private SocialPostVisibility editingVisibility;
     private string content = string.Empty;
     private string commentDraft = string.Empty;
     private string keywordInput = string.Empty;
@@ -409,6 +453,16 @@
     protected override async Task OnParametersSetAsync()
     {
         var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (Guid.TryParse(authenticationState.User.FindFirst("sub")?.Value
+                ?? authenticationState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+            out var userId))
+        {
+            currentUserId = userId;
+        }
+        else
+        {
+            currentUserId = null;
+        }
         currentDisplayName = authenticationState.User.FindFirst("name")?.Value
             ?? authenticationState.User.Identity?.Name ?? L["Auth:UserFallback"].Value;
         await ReloadForCurrentRouteAsync();
@@ -593,6 +647,108 @@
         SocialReactionType.Angry => "fa-face-angry",
         _ => "fa-thumbs-up"
     };
+
+    private static string ReactionColorClass(SocialReactionType reactionType) => reactionType switch
+    {
+        SocialReactionType.Like => "is-like",
+        SocialReactionType.Love => "is-love",
+        SocialReactionType.Haha => "is-haha",
+        SocialReactionType.Wow => "is-wow",
+        SocialReactionType.Sad => "is-sad",
+        SocialReactionType.Angry => "is-angry",
+        _ => "is-like"
+    };
+
+    private bool IsOwnPost(SocialPostDto post) => currentUserId == post.AuthorUserId;
+
+    private void BeginEditPost(SocialPostDto post)
+    {
+        if (!IsOwnPost(post) || isUpdatingPost || deletingPostId.HasValue)
+            return;
+
+        editingPostId = post.Id;
+        editingContent = post.Text;
+        editingVisibility = post.Visibility;
+    }
+
+    private void CancelEditPost()
+    {
+        if (isUpdatingPost)
+            return;
+
+        editingPostId = null;
+        editingContent = string.Empty;
+    }
+
+    private async Task UpdatePostAsync(SocialPostDto post)
+    {
+        if (editingPostId != post.Id || !IsOwnPost(post) || isUpdatingPost)
+            return;
+
+        isUpdatingPost = true;
+        try
+        {
+            var updated = await Social.UpdatePostAsync(post.Id, new UpdateSocialPostInput
+            {
+                Text = editingContent,
+                Visibility = editingVisibility
+            });
+            var index = posts.FindIndex(item => item.Id == post.Id);
+            if (index >= 0)
+            {
+                var noLongerMatchesView = (!isProfile && updated.Visibility != SocialPostVisibility.Public)
+                    || (isProfile && visibilityFilter.HasValue && updated.Visibility != visibilityFilter.Value);
+                if (noLongerMatchesView)
+                {
+                    posts.RemoveAt(index);
+                    totalCount = Math.Max(0, totalCount - 1);
+                    commentsByPost.Remove(post.Id);
+                    expandedPostIds.Remove(post.Id);
+                }
+                else
+                {
+                    posts[index] = updated;
+                }
+            }
+            editingPostId = null;
+            editingContent = string.Empty;
+            await NotifySuccessAsync(L["Social:PostUpdated"]);
+        }
+        catch { await NotifyErrorAsync(L["Social:UpdateError"]); }
+        finally { isUpdatingPost = false; }
+    }
+
+    private async Task DeletePostAsync(SocialPostDto post)
+    {
+        if (!IsOwnPost(post) || deletingPostId.HasValue || isUpdatingPost)
+            return;
+        if (!await UiMessageService.Confirm(string.Format(L["Social:DeletePostConfirmation"].Value, post.AuthorName)))
+            return;
+
+        deletingPostId = post.Id;
+        try
+        {
+            await Social.DeletePostAsync(post.Id);
+            if (selectedPostId == post.Id)
+            {
+                Navigation.NavigateTo(isProfile ? "/social/profile" : "/social");
+                return;
+            }
+
+            var index = posts.FindIndex(item => item.Id == post.Id);
+            if (index >= 0)
+            {
+                posts.RemoveAt(index);
+                totalCount = Math.Max(0, totalCount - 1);
+            }
+            commentsByPost.Remove(post.Id);
+            expandedPostIds.Remove(post.Id);
+            editingPostId = null;
+            await NotifySuccessAsync(L["Social:PostDeleted"]);
+        }
+        catch { await NotifyErrorAsync(L["Social:DeleteError"]); }
+        finally { deletingPostId = null; }
+    }
 
     private async Task SelectVisibilityAsync(SocialPostVisibility? selectedVisibility)
     {

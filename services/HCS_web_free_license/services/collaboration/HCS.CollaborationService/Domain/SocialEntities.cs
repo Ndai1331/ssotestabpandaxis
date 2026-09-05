@@ -44,6 +44,23 @@ public sealed class SocialPost : CreationAuditedAggregateRoot<Guid>
         LinkSiteName = Check.Length(siteName?.Trim(), nameof(siteName), 256);
         LinkImageUrl = Check.Length(imageUrl, nameof(imageUrl), 2048);
     }
+
+    public void UpdateContent(string? text, SocialPostVisibility visibility)
+    {
+        SocialPostRules.DemandValidVisibility(visibility);
+        Text = Check.Length(text?.Trim() ?? string.Empty, nameof(text), 4000) ?? string.Empty;
+        Hashtags = Check.Length(SocialPostRules.BuildHashtagIndex(Text), nameof(Hashtags), 8192) ?? string.Empty;
+        Visibility = visibility;
+    }
+
+    public void ClearLinkPreview()
+    {
+        LinkUrl = null;
+        LinkTitle = null;
+        LinkDescription = null;
+        LinkSiteName = null;
+        LinkImageUrl = null;
+    }
 }
 
 public sealed class SocialPostMedia : CreationAuditedEntity<Guid>

@@ -56,4 +56,19 @@ public sealed class SocialDomainTests
         Should.Throw<BusinessException>(() => reaction.ChangeTo((SocialReactionType)99));
         Should.Throw<BusinessException>(() => new SocialCommentReaction(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), (SocialReactionType)99));
     }
+
+    [Fact]
+    public void Post_can_update_content_visibility_and_link_preview()
+    {
+        var post = new SocialPost(Guid.NewGuid(), Guid.NewGuid(), "Author", "Old #tag", SocialPostVisibility.Public);
+        post.SetLinkPreview("https://example.com/old", "Old", null, "Example", null);
+
+        post.UpdateContent("Updated #news", SocialPostVisibility.Internal);
+        post.ClearLinkPreview();
+
+        post.Text.ShouldBe("Updated #news");
+        post.Hashtags.ShouldBe("|news|");
+        post.Visibility.ShouldBe(SocialPostVisibility.Internal);
+        post.LinkUrl.ShouldBeNull();
+    }
 }

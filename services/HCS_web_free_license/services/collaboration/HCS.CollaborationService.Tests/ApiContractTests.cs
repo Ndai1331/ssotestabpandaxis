@@ -41,6 +41,10 @@ public sealed class ApiContractTests
             .ShouldContain(parameter => parameter.Name == "hashtag" && parameter.ParameterType == typeof(string));
         typeof(SocialController).GetMethod(nameof(SocialController.Feed))!.GetParameters()
             .ShouldContain(parameter => parameter.Name == "postId" && parameter.ParameterType == typeof(Guid?));
+        typeof(SocialController).GetMethod(nameof(SocialController.UpdatePost))!.GetCustomAttributes(typeof(HttpPutAttribute), true)
+            .Cast<HttpPutAttribute>().Single().Template.ShouldBe("posts/{postId:guid}");
+        typeof(SocialController).GetMethod(nameof(SocialController.DeletePost))!.GetCustomAttributes(typeof(HttpDeleteAttribute), true)
+            .Cast<HttpDeleteAttribute>().Single().Template.ShouldBe("posts/{postId:guid}");
         typeof(SocialController).GetMethod(nameof(SocialController.ReactToPost))!.GetCustomAttributes(typeof(HttpPostAttribute), true)
             .Cast<HttpPostAttribute>().Single().Template.ShouldBe("posts/{postId:guid}/reactions");
         typeof(SocialController).GetMethod(nameof(SocialController.ReactToComment))!.GetCustomAttributes(typeof(HttpPostAttribute), true)

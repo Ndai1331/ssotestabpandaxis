@@ -1,6 +1,7 @@
 using HCS.CollaborationService.Contracts;
 using HCS.CollaborationService.Data;
 using HCS.CollaborationService.Domain;
+using HCS.CollaborationService.Storage;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp;
 using Volo.Abp.Application.Services;
@@ -17,7 +18,8 @@ public class SocialPostAppService(
     IGuidGenerator guidGenerator,
     IClock clock,
     SocialLinkPreviewFetcher linkPreviewFetcher,
-    SocialNotificationService socialNotifications) : ApplicationService
+    SocialNotificationService socialNotifications,
+    SocialMediaStore mediaStore) : ApplicationService
 {
     private Guid UserId => currentUser.Id ?? throw new AbpAuthorizationException("Authenticated user required.");
 
@@ -60,6 +62,44 @@ public class SocialPostAppService(
         db.SocialPosts.Add(post);
         await db.SaveChangesAsync(ct);
         return SocialMapping.Post(post, 0, SocialMapping.EmptyReactions(), 0);
+    }
+
+    public async Task<SocialPostDto> UpdateAsync(Guid postId, UpdateSocialPostInput input,
+        CancellationToken ct = default)
+    {
+        var post = await RequireOwnedAsync(postId, ct);
+        var mediaCount = await db.SocialPostMedia.CountAsync(x => x.PostId == postId, ct);
+        SocialPostRules.DemandContent(input.Text, mediaCount);
+
+        var previousLinkUrl = post.LinkUrl;
+        post.UpdateContent(input.Text, input.Visibility);
+        var linkUrl = SocialPostRules.ExtractFirstUrl(input.Text);
+        if (!string.Equals(previousLinkUrl, linkUrl, StringComparison.Ordinal))
+        {
+            post.ClearLinkPreview();
+            if (linkUrl is not null)
+            {
+                var preview = await linkPreviewFetcher.FetchAsync(linkUrl, ct);
+                post.SetLinkPreview(linkUrl, preview?.Title, preview?.Description,
+                    preview?.SiteName, preview?.ImageUrl);
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        return await GetPostSnapshotAsync(post, UserId, ct);
+    }
+
+    public async Task DeleteAsync(Guid postId, CancellationToken ct = default)
+    {
+        var post = await RequireOwnedAsync(postId, ct);
+        var blobNames = await db.SocialPostMedia.AsNoTracking()
+            .Where(x => x.PostId == postId)
+            .Select(x => x.BlobName)
+            .ToArrayAsync(ct);
+
+        db.SocialPosts.Remove(post);
+        await db.SaveChangesAsync(ct);
+        await mediaStore.DeleteBlobsAsync(blobNames, ct);
     }
 
     public async Task<SocialReactionStateDto> ReactAsync(Guid postId, SetSocialReactionInput input,
@@ -117,6 +157,23 @@ public class SocialPostAppService(
         return await db.SocialPosts.SingleOrDefaultAsync(x => x.Id == postId &&
             (x.Visibility == SocialPostVisibility.Public || x.AuthorUserId == me), ct)
             ?? throw new AbpAuthorizationException("Social post is not visible to the current user.");
+    }
+
+    private async Task<SocialPost> RequireOwnedAsync(Guid postId, CancellationToken ct)
+    {
+        var me = UserId;
+        return await db.SocialPosts.SingleOrDefaultAsync(x => x.Id == postId && x.AuthorUserId == me, ct)
+            ?? throw new AbpAuthorizationException("Only the post author can modify this post.");
+    }
+
+    private async Task<SocialPostDto> GetPostSnapshotAsync(SocialPost post, Guid userId,
+        CancellationToken ct)
+    {
+        await db.Entry(post).Collection(x => x.Media).LoadAsync(ct);
+        var commentCount = await db.SocialPostComments.CountAsync(x => x.PostId == post.Id, ct);
+        var shareCount = await db.SocialPostShares.CountAsync(x => x.PostId == post.Id, ct);
+        var reactions = await GetPostReactionSummaryAsync(post.Id, userId, ct);
+        return SocialMapping.Post(post, commentCount, reactions, shareCount);
     }
 
     private async Task<PagedSocialPostsDto> GetPostsAsync(IQueryable<SocialPost> query, int skip, int take, CancellationToken ct)

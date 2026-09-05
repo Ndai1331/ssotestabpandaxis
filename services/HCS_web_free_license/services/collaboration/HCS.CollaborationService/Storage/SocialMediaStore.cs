@@ -2,6 +2,7 @@ using HCS.CollaborationService.Contracts;
 using HCS.CollaborationService.Data;
 using HCS.CollaborationService.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.Authorization;
 using Volo.Abp.BlobStoring;
@@ -19,7 +20,8 @@ public sealed class SocialMediaStore(
     CollaborationDbContext db,
     ICurrentUser currentUser,
     IGuidGenerator guidGenerator,
-    IConfiguration configuration) : ITransientDependency
+    IConfiguration configuration,
+    ILogger<SocialMediaStore> logger) : ITransientDependency
 {
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -90,5 +92,20 @@ public sealed class SocialMediaStore(
         db.SocialPostMedia.Remove(media);
         await db.SaveChangesAsync(ct);
         await container.DeleteAsync(media.BlobName, ct);
+    }
+
+    internal async Task DeleteBlobsAsync(IEnumerable<string> blobNames, CancellationToken ct)
+    {
+        foreach (var blobName in blobNames.Distinct(StringComparer.Ordinal))
+        {
+            try
+            {
+                await container.DeleteAsync(blobName, ct);
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning(exception, "Could not delete social media blob {BlobName} after its post was deleted.", blobName);
+            }
+        }
     }
 }
