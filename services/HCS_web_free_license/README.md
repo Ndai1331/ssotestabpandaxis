@@ -174,3 +174,4 @@ helm upgrade --install hcs ./deploy/helm/hcs-community -n hcs -f my-values.yaml
 Do not use `kubectl delete namespace hcs` unless intentionally discarding all PostgreSQL/MinIO persistent data. Roll back an application release with `helm -n hcs history hcs` then `helm -n hcs rollback hcs <revision>`.
 
 If an earlier version of the script left Helm at `pending-upgrade`, update the source then run the same `./scripts/k8s-up.sh --kind` command. For a one-off manual recovery, use `helm -n hcs rollback hcs <last-known-good-revision>`; do not delete the namespace merely to clear the Helm lock.
+
