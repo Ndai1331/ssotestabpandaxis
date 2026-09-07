@@ -1,6 +1,8 @@
+using HCS.EntityFrameworkCore;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Volo.Abp.Identity;
 using Volo.Abp.Users;
 
@@ -9,8 +11,51 @@ namespace HCS.PlatformService.Controllers;
 [ApiController, Authorize, Route("api/identity/workflow-assignees")]
 public sealed class WorkflowAssigneeCandidatesController(
     IIdentityUserRepository identityUsers,
-    ICurrentUser currentUser) : ControllerBase
+    ICurrentUser currentUser,
+    HCSDbContext identityDb) : ControllerBase
 {
+    [HttpGet("roles")]
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowAssigneeCandidateDto>>> GetRolesAsync(
+        [FromQuery] Guid[] roleIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (currentUser.Id is not { } submitterUserId)
+            return new Dictionary<Guid, IReadOnlyList<WorkflowAssigneeCandidateDto>>();
+
+        var ids = roleIds.Where(x => x != Guid.Empty).Distinct().Take(100).ToArray();
+        if (ids.Length == 0)
+            return new Dictionary<Guid, IReadOnlyList<WorkflowAssigneeCandidateDto>>();
+
+        var submitter = await identityUsers.FindAsync(submitterUserId, includeDetails: true, cancellationToken: cancellationToken);
+        var submitterOuIds = submitter?.OrganizationUnits.Select(x => x.OrganizationUnitId).ToHashSet() ?? [];
+        var roleMemberships = await identityDb.Set<IdentityUserRole>().AsNoTracking()
+            .Where(x => ids.Contains(x.RoleId))
+            .Select(x => new { x.RoleId, x.UserId })
+            .ToListAsync(cancellationToken);
+        var userIdsByRole = roleMemberships
+            .GroupBy(x => x.RoleId)
+            .ToDictionary(x => x.Key, x => x.Select(item => item.UserId).Distinct().Take(200).ToArray());
+
+        var allUserIds = userIdsByRole.Values.SelectMany(x => x).Distinct().ToArray();
+        var users = allUserIds.Length == 0
+            ? []
+            : await identityUsers.GetListByIdsAsync(allUserIds, includeDetails: true, cancellationToken: cancellationToken);
+        var usersById = users.Where(x => x.IsActive).ToDictionary(x => x.Id);
+
+        return ids.ToDictionary(roleId => roleId, roleId => (IReadOnlyList<WorkflowAssigneeCandidateDto>)
+            userIdsByRole.GetValueOrDefault(roleId, [])
+            .Where(userId => usersById.TryGetValue(userId, out var user) &&
+                (submitterOuIds.Count == 0 || user.OrganizationUnits.Any(ou => submitterOuIds.Contains(ou.OrganizationUnitId))))
+            .Select(userId =>
+            {
+                var user = usersById[userId];
+                return new WorkflowAssigneeCandidateDto(user.Id, DisplayName(user),
+                    user.OrganizationUnits.Select(x => x.OrganizationUnitId).FirstOrDefault(), user.UserName);
+            })
+            .DistinctBy(x => x.UserId)
+            .ToArray());
+    }
+
     [HttpGet]
     public async Task<IReadOnlyList<WorkflowAssigneeCandidateDto>> GetAsync(
         [FromQuery] Guid roleId,

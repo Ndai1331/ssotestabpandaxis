@@ -89,15 +89,13 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
         var me = UserId;
         var socialOnly = !CanReadGeneralNotifications;
         var now = clock.Now.ToUniversalTime();
-        var unread = await db.NotificationReceivers
+        await db.NotificationReceivers
             .Where(x => x.UserId == me && !x.IsRead)
             .Where(x => !socialOnly || db.Notifications.Any(notification =>
                 notification.Id == x.NotificationId && SocialNotificationKinds.TitleKeys.Contains(notification.Title)))
-            .ToListAsync(ct);
-        if (unread.Count == 0) return;
-        foreach (var receiver in unread)
-            receiver.MarkRead(now);
-        await db.SaveChangesAsync(ct);
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.IsRead, true)
+                .SetProperty(x => x.ReadAt, now), ct);
     }
 
     public async Task RegisterDeviceAsync(RegisterPushDeviceInput input, CancellationToken ct = default)

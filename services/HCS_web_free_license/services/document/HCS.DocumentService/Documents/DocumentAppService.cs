@@ -3,6 +3,8 @@ using HCS.DocumentService.Integration;
 using HCS.IntegrationEvents.Auditing;
 using HCS.IntegrationEvents.Documents;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Volo.Abp;
 
 namespace HCS.DocumentService.Documents;
 
@@ -18,7 +20,11 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.View);
         take = Math.Clamp(take, 1, 100);
         skip = Math.Max(skip, 0);
-        var query = Query().Where(x => x.SourceType != DocumentSourceType.Workflow || sourceType == 3);
+        // List responses do not need the full file/assignment/history collections.
+        // Loading those collections for every row multiplied payload size by the
+        // number of children and made the list endpoint a hidden fan-out.
+        var query = db.Documents.AsNoTracking()
+            .Where(x => x.SourceType != DocumentSourceType.Workflow || sourceType == 3);
         query = sourceType switch
         {
             1 => query.Where(x => x.SourceType == DocumentSourceType.Personal),
@@ -55,7 +61,7 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         var totalCount = await query.LongCountAsync(cancellationToken);
         var items = await query.OrderByDescending(x => x.CreationTime).Skip(skip).Take(take)
             .ToListAsync(cancellationToken);
-        return new PagedDocumentsDto(totalCount, items.Select(Map).ToList());
+        return new PagedDocumentsDto(totalCount, items.Select(MapList).ToList());
     }
 
     public async Task<DocumentDto> CreateAsync(CreateDocumentRequest input, CancellationToken cancellationToken = default)
@@ -65,14 +71,33 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequirePermission(principal, DocumentPermissions.Create);
         var now = DateTime.UtcNow;
         var sourceType = input.SourceType is DocumentSourceType.Personal ? DocumentSourceType.Personal : DocumentSourceType.Archive;
-        var number = await ResolveNumberAsync(input.Number, now, cancellationToken);
-        var document = new DocumentAggregate(Guid.NewGuid(), number, input.Title, input.Description, userId, now, sourceType);
-        if (input.DocumentTypeId is not null || input.SectorId is not null || input.UrgencyId is not null || input.ConfidentialityId is not null)
-            document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, now);
-        db.Documents.Add(document);
-        AddAudit("DocumentCreated", document.Id, 201, null, now);
-        await db.SaveChangesAsync(cancellationToken);
-        return Map(document);
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var number = ResolveNumber(input.Number, now);
+            var document = new DocumentAggregate(Guid.NewGuid(), number, input.Title, input.Description, userId, now, sourceType);
+            if (input.DocumentTypeId is not null || input.SectorId is not null || input.UrgencyId is not null || input.ConfidentialityId is not null)
+                document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, now);
+            db.Documents.Add(document);
+            AddAudit("DocumentCreated", document.Id, 201, null, now);
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+                return Map(document);
+            }
+            catch (DbUpdateException exception) when (IsUniqueViolation(exception) && string.IsNullOrWhiteSpace(input.Number) && attempt < 2)
+            {
+                // A generated number is already collision-resistant; retrying the
+                // insert handles the remaining race without polling the database.
+                db.ChangeTracker.Clear();
+            }
+            catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+            {
+                db.ChangeTracker.Clear();
+                throw new BusinessException("Document:DuplicateNumber");
+            }
+        }
+
+        throw new BusinessException("Document:UnableToGenerateNumber");
     }
 
     public async Task<DocumentDto?> GetAsync(Guid id, CancellationToken cancellationToken = default)
@@ -194,20 +219,15 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         db.DocumentHistories.AddRange(document.History.Where(x => !existingHistoryIds.Contains(x.Id)));
     }
 
-    private async Task<string> ResolveNumberAsync(string? requested, DateTime now, CancellationToken cancellationToken)
+    private static string ResolveNumber(string? requested, DateTime now)
     {
         var normalized = requested?.Trim();
         if (!string.IsNullOrWhiteSpace(normalized)) return normalized;
-
-        string number;
-        do
-        {
-            number = GenerateNumber(now);
-        }
-        while (await db.Documents.AnyAsync(x => x.Number == number, cancellationToken));
-
-        return number;
+        return GenerateNumber(now);
     }
+
+    private static bool IsUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
     internal static string GenerateNumber(DateTime now) =>
         $"VB-{now:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
@@ -227,5 +247,10 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         x.Files.Select(f => new DocumentFileDto(f.Id, f.FileName, f.ContentType, f.Size, f.Sha256, f.CreationTime, f.PairedFileId)).ToList(),
         x.Assignments.Select(a => new DocumentAssignmentDto(a.Id, a.AssigneeUserId, a.Responsibility, a.AssignedAt, a.IsCurrent, a.StepCode)).ToList(),
         x.History.OrderBy(h => h.OccurredAt).Select(h => new DocumentHistoryDto(h.Id, h.Action, h.ActorUserId, h.Detail, h.OccurredAt)).ToList(),
+        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId);
+
+    private static DocumentDto MapList(DocumentAggregate x) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
+        x.DocumentTypeId, x.SectorId, x.UrgencyId, x.ConfidentialityId,
+        Array.Empty<DocumentFileDto>(), Array.Empty<DocumentAssignmentDto>(), Array.Empty<DocumentHistoryDto>(),
         x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId);
 }

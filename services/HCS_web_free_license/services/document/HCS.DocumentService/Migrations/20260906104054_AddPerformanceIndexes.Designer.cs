@@ -3,6 +3,7 @@ using System;
 using HCS.DocumentService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HCS.DocumentService.Migrations
 {
     [DbContext(typeof(DocumentServiceDbContext))]
-    partial class DocumentServiceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906104054_AddPerformanceIndexes")]
+    partial class AddPerformanceIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -82,22 +85,22 @@ namespace HCS.DocumentService.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Number")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Documents_Number_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Number"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Number"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("ParentDocumentId");
 
                     b.HasIndex("SourceType");
 
-                    b.HasIndex(new[] { "Number" }, "IX_Documents_Number")
-                        .IsUnique();
+                    b.HasIndex("Title")
+                        .HasDatabaseName("IX_Documents_Title_Trgm");
 
-                    b.HasIndex(new[] { "Number" }, "IX_Documents_Number_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Number" }, "IX_Documents_Number_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Number" }, "IX_Documents_Number_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Title" }, "IX_Documents_Title_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Title" }, "IX_Documents_Title_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Title" }, "IX_Documents_Title_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Documents", "document");
                 });

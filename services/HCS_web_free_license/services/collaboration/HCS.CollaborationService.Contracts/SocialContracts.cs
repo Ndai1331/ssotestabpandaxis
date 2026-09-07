@@ -33,8 +33,15 @@ public static partial class CollaborationPermissions
 public sealed record SocialPostMediaDto(Guid Id, string FileName, string ContentType, long Size,
     SocialMediaKind Kind, string Url);
 
+public sealed record SocialCommentAttachmentDto(Guid Id, string FileName, string ContentType,
+    long Size, string Url);
+
 public sealed record SocialLinkPreviewDto(string Url, string? Title, string? Description,
     string? SiteName, string? ImageUrl);
+
+public sealed record SocialPersonDto(Guid UserId, string UserName, string DisplayName,
+    string? Email, string? PhoneNumber, string? AvatarUrl, string? PositionName = null,
+    string? DepartmentName = null);
 
 public sealed record SocialReactionCountDto(SocialReactionType Type, int Count);
 
@@ -48,7 +55,8 @@ public sealed record SocialPostDto(Guid Id, Guid AuthorUserId, string AuthorName
 
 public sealed record SocialCommentDto(Guid Id, Guid PostId, Guid AuthorUserId, string AuthorName,
     string AvatarUrl, string Text, DateTime CreatedAt, Guid? ParentCommentId,
-    SocialReactionSummaryDto Reactions);
+    SocialReactionSummaryDto Reactions, IReadOnlyList<SocialCommentAttachmentDto> Attachments,
+    SocialLinkPreviewDto? LinkPreview);
 
 public sealed record SocialReactionStateDto(SocialReactionSummaryDto Reactions);
 
@@ -71,8 +79,9 @@ public sealed class UpdateSocialPostInput
 
 public sealed class CreateSocialCommentInput
 {
-    [Required, StringLength(2000)] public string Text { get; init; } = string.Empty;
+    [StringLength(2000)] public string? Text { get; init; }
     public Guid? ParentCommentId { get; init; }
+    public IReadOnlyCollection<Guid> AttachmentIds { get; init; } = [];
 }
 
 public sealed class SetSocialReactionInput
@@ -84,11 +93,15 @@ public sealed class SetSocialReactionInput
 public sealed record UploadSocialMediaResult(Guid Id, string FileName, string ContentType,
     long Size, SocialMediaKind Kind, string Url);
 
+public sealed record UploadSocialCommentAttachmentResult(Guid Id, string FileName,
+    string ContentType, long Size, string Url);
+
 public sealed record AuthorizedSocialMediaDownload(string FileName, string ContentType, Stream Content);
 
 public static class SocialPostRules
 {
     public const int MaxMediaItems = 10;
+    public const int MaxCommentAttachments = 10;
 
     private static readonly Regex UrlRegex = new(@"https?://[^\s<>]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly Regex HashtagRegex = new(@"(?<!\w)#(?<tag>[\p{L}\p{N}_-]{1,64})", RegexOptions.CultureInvariant);
@@ -106,6 +119,14 @@ public static class SocialPostRules
             throw new Volo.Abp.BusinessException("Collaboration:EmptySocialPost");
         if (mediaCount > MaxMediaItems)
             throw new Volo.Abp.BusinessException("Collaboration:TooManySocialMediaItems");
+    }
+
+    public static void DemandCommentContent(string? text, int attachmentCount)
+    {
+        if (attachmentCount == 0 && string.IsNullOrWhiteSpace(text))
+            throw new Volo.Abp.BusinessException("Collaboration:EmptySocialComment");
+        if (attachmentCount > MaxCommentAttachments)
+            throw new Volo.Abp.BusinessException("Collaboration:TooManySocialCommentAttachments");
     }
 
     public static string? ExtractFirstUrl(string? text)

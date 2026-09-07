@@ -289,7 +289,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         }
         else
         {
-            var number = await NextWorkflowNumberAsync(source.Number, cancellationToken);
+            var number = NextWorkflowNumber(source.Number);
             document = source.DuplicateAsWorkflow(Guid.NewGuid(), number, userId, now);
             db.Documents.Add(document);
             var template = input.UseTemplateFile
@@ -350,8 +350,14 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var definition = await db.WorkflowDefinitions.AsNoTracking().Include(x => x.Steps)
             .SingleOrDefaultAsync(x => x.Id == definitionId, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
+        var orderedSteps = definition.Steps.OrderBy(x => x.Order).ToList();
+        var roleIds = orderedSteps.Where(x => x.AssigneeType == WorkflowStepAssigneeTypes.RoleInSubmitterOu && x.RoleId.HasValue)
+            .Select(x => x.RoleId!.Value).Distinct().ToArray();
+        var userIds = orderedSteps.Where(x => x.AssigneeUserId.HasValue).Select(x => x.AssigneeUserId!.Value).Distinct().ToArray();
+        var candidatesByRole = await assigneeResolver.ResolveByRolesAsync(roleIds, userId, cancellationToken);
+        var candidatesByUser = await assigneeResolver.ResolveByUsersAsync(userIds, cancellationToken);
         var groups = new List<WorkflowStepCandidateGroupDto>();
-        foreach (var step in definition.Steps.OrderBy(x => x.Order))
+        foreach (var step in orderedSteps)
         {
             if (step.Type == WorkflowStepTypes.View)
             {
@@ -361,7 +367,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
 
             if (step.AssigneeType == WorkflowStepAssigneeTypes.RoleInSubmitterOu && step.RoleId is { } roleId)
             {
-                var candidates = await assigneeResolver.ResolveByRoleAsync(roleId, userId, cancellationToken);
+                var candidates = candidatesByRole.GetValueOrDefault(roleId) ?? [];
                 groups.Add(new WorkflowStepCandidateGroupDto(step.Code, step.Name, step.AssigneeType, roleId, candidates));
                 continue;
             }
@@ -369,7 +375,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             var preset = Array.Empty<WorkflowAssigneeCandidateDto>();
             if (step.AssigneeUserId is { } assignee)
             {
-                var candidate = await assigneeResolver.ResolveByUserAsync(assignee, cancellationToken)
+                var candidate = candidatesByUser.GetValueOrDefault(assignee)
                     ?? new WorkflowAssigneeCandidateDto(assignee, string.Empty);
                 preset = [candidate];
             }
@@ -508,17 +514,11 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.RequireUser(Principal);
         DocumentAccess.RequirePermission(Principal, permission);
     }
-    private async Task<string> NextWorkflowNumberAsync(string sourceNumber, CancellationToken cancellationToken)
+    private static string NextWorkflowNumber(string sourceNumber)
     {
-        var prefix = sourceNumber.Length > 60 ? sourceNumber[..60] : sourceNumber;
-        var candidate = $"{prefix}-WF";
-        var i = 1;
-        while (await db.Documents.AnyAsync(x => x.Number == candidate, cancellationToken))
-        {
-            candidate = $"{prefix}-WF{i++}";
-            if (candidate.Length > 64) candidate = $"{prefix[..Math.Max(1, 64 - 6)]}-WF{i}";
-        }
-        return candidate;
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var prefix = sourceNumber.Length > 49 ? sourceNumber[..49] : sourceNumber;
+        return $"{prefix}-WF-{suffix}";
     }
 
     private async Task<DocumentAggregate> CreateWorkflowDocumentFromTemplateAsync(
@@ -541,7 +541,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var contentType = useWord
             ? template.WordContentType ?? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             : template.PdfContentType ?? "application/pdf";
-        var number = await NextWorkflowNumberAsync(template.Code, cancellationToken);
+        var number = NextWorkflowNumber(template.Code);
         var document = new DocumentAggregate(Guid.NewGuid(), number, template.Name, null, actorUserId, now,
             DocumentSourceType.Workflow);
 
@@ -574,11 +574,15 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     private async Task ApplyRoleAssigneesAsync(WorkflowDefinition definition, Guid submitterUserId,
         Dictionary<string, Guid> overrides, CancellationToken cancellationToken)
     {
+        var roleIds = definition.Steps.Where(x => x.IsBlocking &&
+                x.AssigneeType == WorkflowStepAssigneeTypes.RoleInSubmitterOu && x.RoleId.HasValue)
+            .Select(x => x.RoleId!.Value).Distinct().ToArray();
+        var candidatesByRole = await assigneeResolver.ResolveByRolesAsync(roleIds, submitterUserId, cancellationToken);
         foreach (var step in definition.Steps.Where(x => x.IsBlocking))
         {
             if (step.AssigneeType != WorkflowStepAssigneeTypes.RoleInSubmitterOu || step.RoleId is not { } roleId)
                 continue;
-            var candidates = await assigneeResolver.ResolveByRoleAsync(roleId, submitterUserId, cancellationToken);
+            var candidates = candidatesByRole.GetValueOrDefault(roleId) ?? [];
             if (candidates.Count == 0)
                 throw new InvalidOperationException($"No assignee candidates for step '{step.Code}'.");
             var allowed = candidates.Select(x => x.UserId).ToHashSet();

@@ -121,9 +121,10 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         var tasks = await db.ProjectTasks.Where(x => x.ProjectId == projectId).Select(x => x.Id).ToListAsync(ct);
         var taskAssignments = await db.ProjectTaskAssignments.Where(x => tasks.Contains(x.ProjectTaskId))
             .Select(x => new { x.ProjectTaskId, x.UserId }).ToListAsync(ct);
+        var assignmentsByTask = taskAssignments.ToLookup(x => x.ProjectTaskId, x => x.UserId);
         foreach (var task in tasks)
         {
-            var taskUsers = taskAssignments.Where(x => x.ProjectTaskId == task).Select(x => x.UserId).ToList();
+            var taskUsers = assignmentsByTask[task].ToList();
             taskUsers.AddRange(users);
             AddAccessEvent(projectId, task, false, taskUsers.Distinct().ToArray());
         }
@@ -321,18 +322,25 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
 
 public sealed class CalendarAppService(WorkManagementDbContext db, WorkRecordAuthorization access) : ITransientDependency
 {
+    private const int MaxCalendarEvents = 500;
+    private static readonly TimeSpan DefaultPastWindow = TimeSpan.FromDays(90);
+    private static readonly TimeSpan DefaultFutureWindow = TimeSpan.FromDays(365);
+
     public async Task<List<CalendarEventDto>> GetListAsync(DateTime? from, DateTime? to, CancellationToken ct)
     {
         var me = access.UserId;
+        var now = DateTime.UtcNow;
+        from ??= now.Subtract(DefaultPastWindow);
+        to ??= now.Add(DefaultFutureWindow);
         var query = db.CalendarEvents.AsNoTracking().Where(x => access.IsAdministrator || x.Visibility == "Public" ||
             x.OwnerUserId == me || (x.Visibility == "Participants" &&
                 db.CalendarEventParticipants.Any(p => p.CalendarEventId == x.Id && p.UserId == me)));
-        if (from.HasValue) query = query.Where(x => x.EndTime >= from);
-        if (to.HasValue) query = query.Where(x => x.StartTime <= to);
-        var items = await query.OrderBy(x => x.StartTime).ToListAsync(ct);
+        query = query.Where(x => x.EndTime >= from && x.StartTime <= to);
+        var items = await query.OrderBy(x => x.StartTime).ThenBy(x => x.Id).Take(MaxCalendarEvents).ToListAsync(ct);
         var ids = items.Select(x => x.Id).ToArray();
         var participants = await db.CalendarEventParticipants.AsNoTracking().Where(x => ids.Contains(x.CalendarEventId)).ToListAsync(ct);
-        return items.Select(x => Map(x, participants.Where(p => p.CalendarEventId == x.Id).Select(p => p.UserId).ToList())).ToList();
+        var participantsByEvent = participants.ToLookup(x => x.CalendarEventId, x => x.UserId);
+        return items.Select(x => Map(x, participantsByEvent[x.Id].ToList())).ToList();
     }
 
     public async Task<CalendarEventDto> GetAsync(Guid id, CancellationToken ct)
@@ -416,7 +424,8 @@ public sealed class CalendarAppService(WorkManagementDbContext db, WorkRecordAut
 public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAuthorization access) : ITransientDependency
 {
     public async Task<List<SurveyCriteriaDto>> GetCriteriaAsync(CancellationToken ct) => await db.SurveyCriteria.AsNoTracking()
-        .OrderBy(x => x.SortOrder).Select(x => new SurveyCriteriaDto(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive, x.LocationId, x.Image)).ToListAsync(ct);
+        .OrderBy(x => x.SortOrder).ThenBy(x => x.Id).Take(500)
+        .Select(x => new SurveyCriteriaDto(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive, x.LocationId, x.Image)).ToListAsync(ct);
     public async Task<SurveyCriteriaDto> CreateCriteriaAsync(CreateSurveyCriteriaDto input, CancellationToken ct)
     {
         if (await db.SurveyCriteria.AnyAsync(x => x.Code == input.Code, ct)) throw new BusinessException("Work:DuplicateSurveyCriteria");
@@ -440,7 +449,8 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
         await db.SaveChangesAsync(ct);
     }
     public async Task<List<SurveyLocationDto>> GetLocationsAsync(CancellationToken ct) => await db.SurveyLocations.AsNoTracking()
-        .OrderBy(x => x.Code).Select(x => new SurveyLocationDto(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive, x.Description)).ToListAsync(ct);
+        .OrderBy(x => x.Code).ThenBy(x => x.Id).Take(500)
+        .Select(x => new SurveyLocationDto(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive, x.Description)).ToListAsync(ct);
     public async Task<SurveyLocationDto> CreateLocationAsync(CreateSurveyLocationDto input, CancellationToken ct)
     {
         if (await db.SurveyLocations.AnyAsync(x => x.Code == input.Code, ct)) throw new BusinessException("Work:DuplicateSurveyLocation");
@@ -467,7 +477,7 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
     {
         var query = db.SurveySessions.AsNoTracking().AsQueryable();
         if (locationId.HasValue) query = query.Where(x => x.LocationId == locationId);
-        var sessions = await query.OrderByDescending(x => x.StartsAt).ToListAsync(ct);
+        var sessions = await query.OrderByDescending(x => x.StartsAt).ThenByDescending(x => x.Id).Take(500).ToListAsync(ct);
         return sessions.Select(MapSession).ToList();
     }
     public async Task<SurveySessionDto> CreateSessionAsync(CreateSurveySessionDto input, CancellationToken ct)
@@ -517,6 +527,7 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
     {
         await access.DemandSurveyOwnerAsync(sessionId, ct);
         return await db.SurveyFiles.AsNoTracking().Where(x => x.SessionId == sessionId)
+            .OrderByDescending(x => x.Id).Take(500)
             .Select(x => new SurveyFileReferenceDto(x.Id, x.SessionId, x.FileName, x.ContentType, x.Size))
             .ToListAsync(ct);
     }
@@ -524,7 +535,7 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
     {
         await access.DemandSurveyOwnerAsync(sessionId, ct);
         return await db.SurveyResults.AsNoTracking().Where(x => x.SessionId == sessionId)
-            .OrderByDescending(x => x.CreationTime)
+            .OrderByDescending(x => x.CreationTime).ThenByDescending(x => x.Id).Take(500)
             .Select(x => new SurveyResultDto(x.Id, x.SessionId, x.CriteriaId, x.RespondentUserId, x.Score, x.Comment))
             .ToListAsync(ct);
     }
@@ -589,15 +600,18 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
         if (session.StartsAt > DateTime.UtcNow || session.EndsAt < DateTime.UtcNow)
             throw new BusinessException("Work:SurveyOutsideActiveWindow");
         var criteriaIds = inputs.Select(x => x.CriteriaId).Distinct().ToList();
+        if (criteriaIds.Count != inputs.Count)
+            throw new BusinessException("Work:DuplicateSurveyCriteria");
         var criteria = await db.SurveyCriteria.Where(x => criteriaIds.Contains(x.Id) && x.IsActive &&
                 (x.LocationId == null || x.LocationId == session.LocationId)).ToListAsync(ct);
         if (criteria.Count != criteriaIds.Count) throw new BusinessException("Work:InvalidSurveyCriteria");
+        var existingResults = await db.SurveyResults
+            .Where(x => x.SessionId == sessionId && criteriaIds.Contains(x.CriteriaId))
+            .ToDictionaryAsync(x => x.CriteriaId, ct);
         var results = new List<SurveyResultDto>();
         foreach (var input in inputs)
         {
-            var result = await db.SurveyResults.SingleOrDefaultAsync(x => x.SessionId == sessionId &&
-                x.CriteriaId == input.CriteriaId, ct);
-            if (result is null)
+            if (!existingResults.TryGetValue(input.CriteriaId, out var result))
             {
                 result = new SurveyResult(Guid.NewGuid(), sessionId, input.CriteriaId, null, input.Score, input.Comment);
                 db.SurveyResults.Add(result);
@@ -616,30 +630,38 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
                     join criteria in db.SurveyCriteria.AsNoTracking() on result.CriteriaId equals criteria.Id
                     where !locationId.HasValue || session.LocationId == locationId
                     select new { result.Score, CriteriaId = criteria.Id, CriteriaName = criteria.Name, CriteriaCode = criteria.Code };
-        var rows = await query.ToListAsync(ct);
-        var distribution = Enumerable.Range(0, 6).ToDictionary(star => star, _ => 0);
-        foreach (var row in rows)
+        var aggregate = await query.GroupBy(_ => 1).Select(group => new
         {
-            var star = row.Score <= 0 ? 0 : Math.Clamp((int)Math.Round(row.Score / 20m, MidpointRounding.AwayFromZero), 1, 5);
-            distribution[star]++;
-        }
-        var averages = rows.GroupBy(x => new { x.CriteriaId, x.CriteriaName, x.CriteriaCode })
-            .Select(x => new
-            {
-                Name = x.Key.CriteriaName,
-                Code = x.Key.CriteriaCode,
-                Average = x.Average(y => y.Score)
-            })
-            .GroupBy(x => x.Name)
+            Total = group.Count(),
+            Zero = group.Sum(x => x.Score <= 0 ? 1 : 0),
+            One = group.Sum(x => x.Score > 0 && x.Score < 30 ? 1 : 0),
+            Two = group.Sum(x => x.Score >= 30 && x.Score < 50 ? 1 : 0),
+            Three = group.Sum(x => x.Score >= 50 && x.Score < 70 ? 1 : 0),
+            Four = group.Sum(x => x.Score >= 70 && x.Score < 90 ? 1 : 0),
+            Five = group.Sum(x => x.Score >= 90 ? 1 : 0)
+        }).SingleOrDefaultAsync(ct);
+        var distribution = new Dictionary<int, int>
+        {
+            [0] = aggregate?.Zero ?? 0,
+            [1] = aggregate?.One ?? 0,
+            [2] = aggregate?.Two ?? 0,
+            [3] = aggregate?.Three ?? 0,
+            [4] = aggregate?.Four ?? 0,
+            [5] = aggregate?.Five ?? 0
+        };
+        var averagesByCriteria = await query.GroupBy(x => new { x.CriteriaId, x.CriteriaName, x.CriteriaCode })
+            .Select(group => new { group.Key.CriteriaName, group.Key.CriteriaCode, Average = group.Average(x => x.Score) })
+            .ToListAsync(ct);
+        var averages = averagesByCriteria.GroupBy(x => x.CriteriaName)
             .SelectMany(group => group.Select(item => new
             {
-                Name = group.Count() > 1 && !string.IsNullOrWhiteSpace(item.Code)
-                    ? $"{item.Name} ({item.Code})"
-                    : item.Name,
-                item.Average
+                Name = group.Count() > 1 && !string.IsNullOrWhiteSpace(item.CriteriaCode)
+                    ? $"{item.CriteriaName} ({item.CriteriaCode})"
+                    : item.CriteriaName,
+                Average = Math.Round(item.Average, 1)
             }))
-            .ToDictionary(x => x.Name, x => Math.Round(x.Average, 1));
-        return new(rows.Count, distribution, averages);
+            .ToDictionary(x => x.Name, x => x.Average);
+        return new(aggregate?.Total ?? 0, distribution, averages);
     }
 
     public async Task<PagedWorkDto<SurveyResultSessionSummaryDto>> GetResultSummariesAsync(Guid? locationId,
@@ -666,9 +688,9 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
         return await (from result in db.SurveyResults.AsNoTracking()
                       join criteria in db.SurveyCriteria.AsNoTracking() on result.CriteriaId equals criteria.Id
                       where result.SessionId == sessionId
-                      orderby criteria.Name
+                      orderby criteria.Name, result.Id
                       select new SurveyResultSessionDetailDto(result.Id, result.SessionId, result.CriteriaId,
-                          criteria.Name, result.Score, result.Comment)).ToListAsync(ct);
+                          criteria.Name, result.Score, result.Comment)).Take(500).ToListAsync(ct);
     }
 
     private static SurveySessionDto MapSession(SurveySession x) => new(x.Id, x.Code, x.Name, x.StartsAt, x.EndsAt,

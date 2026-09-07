@@ -72,4 +72,24 @@ public sealed class SocialController(
 
     [HttpDelete("media/{mediaId:guid}")]
     public Task DeleteMedia(Guid mediaId, CancellationToken ct) => media.DeleteUnattachedAsync(mediaId, ct);
+
+    [HttpPost("comment-uploads")]
+    [RequestSizeLimit(26_214_400)]
+    public async Task<UploadSocialCommentAttachmentResult> UploadCommentAttachment(IFormFile file, CancellationToken ct)
+    {
+        if (file is null) throw new BusinessException("Collaboration:InvalidSocialCommentAttachment");
+        await using var stream = file.OpenReadStream();
+        return await media.UploadCommentAttachmentAsync(file.FileName, file.ContentType, stream, file.Length, ct);
+    }
+
+    [HttpGet("comment-media/{attachmentId:guid}")]
+    public async Task<IActionResult> DownloadCommentAttachment(Guid attachmentId, CancellationToken ct)
+    {
+        var file = await media.DownloadCommentAttachmentAsync(attachmentId, ct);
+        return File(file.Content, file.ContentType, file.FileName, enableRangeProcessing: true);
+    }
+
+    [HttpDelete("comment-media/{attachmentId:guid}")]
+    public Task DeleteCommentAttachment(Guid attachmentId, CancellationToken ct) =>
+        media.DeleteUnattachedCommentAttachmentAsync(attachmentId, ct);
 }

@@ -1,6 +1,7 @@
 using HCS.CollaborationService.Contracts;
 using HCS.CollaborationService.Data;
 using HCS.CollaborationService.Domain;
+using HCS.CollaborationService.Storage;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp;
 using Volo.Abp.Application.Services;
@@ -17,7 +18,8 @@ public class SocialCommentAppService(
     ICurrentUser currentUser,
     IGuidGenerator guidGenerator,
     IClock clock,
-    SocialNotificationService socialNotifications) : ApplicationService
+    SocialNotificationService socialNotifications,
+    SocialLinkPreviewFetcher linkPreviewFetcher) : ApplicationService
 {
     private Guid UserId => currentUser.Id ?? throw new AbpAuthorizationException("Authenticated user required.");
 
@@ -26,6 +28,7 @@ public class SocialCommentAppService(
         await posts.RequireVisibleAsync(postId, ct);
         var comments = await db.SocialPostComments.AsNoTracking()
             .Where(x => x.PostId == postId)
+            .Include(x => x.Attachments)
             .OrderBy(x => x.CreationTime).ThenBy(x => x.Id)
             .Take(500).ToListAsync(ct);
         var ids = comments.Select(x => x.Id).ToArray();
@@ -50,7 +53,16 @@ public class SocialCommentAppService(
     public async Task<SocialCommentDto> CreateAsync(Guid postId, CreateSocialCommentInput input, CancellationToken ct = default)
     {
         var post = await posts.RequireVisibleAsync(postId, ct);
-        var text = Check.NotNullOrWhiteSpace(input.Text, nameof(input.Text), 2000);
+        var attachmentIds = input.AttachmentIds.Distinct().ToArray();
+        SocialPostRules.DemandCommentContent(input.Text, attachmentIds.Length);
+        var attachments = await db.SocialCommentAttachments
+            .Where(x => attachmentIds.Contains(x.Id))
+            .ToListAsync(ct);
+        if (attachments.Count != attachmentIds.Length ||
+            attachments.Any(x => x.UploadedByUserId != UserId || x.CommentId.HasValue))
+            throw new BusinessException("Collaboration:InvalidSocialCommentAttachment");
+
+        var text = Check.Length(input.Text?.Trim() ?? string.Empty, nameof(input.Text), 2000) ?? string.Empty;
         Guid? parentAuthorUserId = null;
         if (input.ParentCommentId.HasValue)
         {
@@ -67,6 +79,19 @@ public class SocialCommentAppService(
         var actorName = CurrentDisplayName();
         var comment = new SocialPostComment(guidGenerator.Create(), postId, me,
             actorName, text, input.ParentCommentId, now);
+        var linkUrl = SocialPostRules.ExtractFirstUrl(input.Text);
+        if (linkUrl is not null)
+        {
+            var preview = await linkPreviewFetcher.FetchAsync(linkUrl, ct);
+            comment.SetLinkPreview(linkUrl, preview?.Title, preview?.Description,
+                preview?.SiteName, preview?.ImageUrl);
+        }
+        var attachmentsById = attachments.ToDictionary(x => x.Id);
+        foreach (var attachment in attachmentIds.Select(id => attachmentsById[id]))
+        {
+            attachment.AttachTo(comment.Id);
+            comment.Attachments.Add(attachment);
+        }
         db.SocialPostComments.Add(comment);
         var notifiedUsers = new HashSet<Guid>();
         if (post.AuthorUserId != me && notifiedUsers.Add(post.AuthorUserId))

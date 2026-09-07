@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using System.Threading
 @using System.Globalization
+@using System.IO
 @attribute [Authorize(Policy = CollaborationPermissions.Social)]
 @inherits HCSComponentBase
 @inject SocialClient Social
@@ -50,30 +51,46 @@
             <i class="fa fa-magnifying-glass" aria-hidden="true"></i>
             <span>@L["Social:SearchTitle"]</span>
         </div>
+        <div class="hcs-social-search__modes" role="group" aria-label='@L["Social:SearchTitle"]'>
+            <button type="button" class="hcs-social-search__mode @(!peopleSearchMode ? "is-active" : null)"
+                    aria-pressed="@(!peopleSearchMode)" @onclick="() => SelectSearchMode(false)">
+                <i class="fa fa-newspaper" aria-hidden="true"></i>@L["Social:SearchTitle"]
+            </button>
+            <button type="button" class="hcs-social-search__mode @(peopleSearchMode ? "is-active" : null)"
+                    aria-pressed="@peopleSearchMode" @onclick="() => SelectSearchMode(true)">
+                <i class="fa fa-user-group" aria-hidden="true"></i>@L["Social:PeopleSearch"]
+            </button>
+        </div>
         <div class="hcs-social-search__field hcs-social-search__field--keyword">
-            <label for="social-search-keyword">@L["Social:Keyword"]</label>
+            <label for="social-search-keyword">@(peopleSearchMode ? L["Social:PeopleSearch"] : L["Social:Keyword"])</label>
             <input id="social-search-keyword" class="form-control" @bind="keywordInput"
-                   placeholder='@L["Social:KeywordPlaceholder"]' autocomplete="off" />
+                   placeholder='@(peopleSearchMode ? L["Social:PeopleSearchPlaceholder"] : L["Social:KeywordPlaceholder"])' autocomplete="off" />
         </div>
-        <div class="hcs-social-search__field">
-            <label for="social-search-from">@L["Social:FromDate"]</label>
-            <input id="social-search-from" class="form-control" type="date" @bind="fromDateInput" />
-        </div>
-        <div class="hcs-social-search__field">
-            <label for="social-search-to">@L["Social:ToDate"]</label>
-            <input id="social-search-to" class="form-control" type="date" @bind="toDateInput" />
-        </div>
-        <div class="hcs-social-search__field">
-            <label for="social-search-hashtag">@L["Social:Hashtag"]</label>
-            <input id="social-search-hashtag" class="form-control" @bind="hashtagInput"
-                   placeholder="#hcs" autocomplete="off" />
-        </div>
+        @if (!peopleSearchMode)
+        {
+            <div class="hcs-social-search__field">
+                <label for="social-search-from">@L["Social:FromDate"]</label>
+                <input id="social-search-from" class="form-control" type="date" @bind="fromDateInput" />
+            </div>
+            <div class="hcs-social-search__field">
+                <label for="social-search-to">@L["Social:ToDate"]</label>
+                <input id="social-search-to" class="form-control" type="date" @bind="toDateInput" />
+            </div>
+            <div class="hcs-social-search__field">
+                <label for="social-search-hashtag">@L["Social:Hashtag"]</label>
+                <input id="social-search-hashtag" class="form-control" @bind="hashtagInput"
+                       placeholder="#hcs" autocomplete="off" />
+            </div>
+        }
         <div class="hcs-social-search__actions">
             <button class="hcs-social-search__submit" type="submit">
                 <i class="fa fa-search" aria-hidden="true"></i>@L["Social:Search"]
             </button>
-            <button class="hcs-social-search__clear" type="button" @onclick="ClearSearchAsync"
-                    disabled="@(!HasSearchFilters())">@L["Social:ClearSearch"]</button>
+            @if (!peopleSearchMode)
+            {
+                <button class="hcs-social-search__clear" type="button" @onclick="ClearSearchAsync"
+                        disabled="@(!HasSearchFilters())">@L["Social:ClearSearch"]</button>
+            }
         </div>
     </form>
     @if (!string.IsNullOrWhiteSpace(searchError))
@@ -83,6 +100,95 @@
 
     <div class="hcs-social-layout">
         <main class="hcs-social-stream">
+            @if (peopleSearchMode && peopleSearchExecuted)
+            {
+                <section class="hcs-social-people-results" aria-labelledby="social-people-results-title">
+                    <div class="hcs-social-card-heading">
+                        <span class="hcs-social-card-heading__icon" aria-hidden="true"><i class="fa fa-user-group"></i></span>
+                        <div>
+                            <h2 id="social-people-results-title">@L["Social:PeopleResults"]</h2>
+                            <p>@keywordInput</p>
+                        </div>
+                    </div>
+                    @if (isSearchingPeople)
+                    {
+                        <p class="hcs-social-state hcs-social-state--compact" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Loading"]</p>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(peopleSearchError))
+                    {
+                        <p class="hcs-social-inline-error" role="alert">@peopleSearchError</p>
+                    }
+                    else if (people.Count == 0)
+                    {
+                        <p class="hcs-social-state hcs-social-state--compact">@L["Social:PeopleEmpty"]</p>
+                    }
+                    else
+                    {
+                        <div class="hcs-social-people-grid">
+                            @foreach (var person in people)
+                            {
+                                <article class="hcs-social-person-card">
+                                    @if (!string.IsNullOrWhiteSpace(person.AvatarUrl))
+                                    {
+                                        <img class="hcs-social-avatar hcs-social-avatar--image" src="@person.AvatarUrl" loading="lazy"
+                                             alt="@person.DisplayName" />
+                                    }
+                                    else
+                                    {
+                                        <div class="hcs-social-avatar hcs-social-avatar--accent" aria-hidden="true">@Initials(person.DisplayName)</div>
+                                    }
+                                    <div class="hcs-social-person-card__body">
+                                        <h3>@person.DisplayName</h3>
+                                        <p class="hcs-social-person-card__position">@(person.PositionName ?? L["Social:NoProfileValue"])</p>
+                                        @if (!string.IsNullOrWhiteSpace(person.DepartmentName))
+                                        {
+                                            <p class="hcs-social-person-card__department"><i class="fa fa-building" aria-hidden="true"></i>@person.DepartmentName</p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(person.Email))
+                                        {
+                                            <a href="mailto:@person.Email" class="hcs-social-person-card__contact"><i class="fa fa-envelope" aria-hidden="true"></i>@person.Email</a>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(person.PhoneNumber))
+                                        {
+                                            <a href="tel:@person.PhoneNumber" class="hcs-social-person-card__contact"><i class="fa fa-phone" aria-hidden="true"></i>@person.PhoneNumber</a>
+                                        }
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+            @if (isProfile && myProfile is { } profile)
+            {
+                <section class="hcs-social-profile-card" aria-labelledby="social-my-profile-title">
+                    <div class="hcs-social-profile-card__cover" aria-hidden="true"></div>
+                    <div class="hcs-social-profile-card__content">
+                        @if (!string.IsNullOrWhiteSpace(profile.AvatarUrl))
+                        {
+                            <img class="hcs-social-avatar hcs-social-avatar--profile hcs-social-avatar--image" src="@profile.AvatarUrl"
+                                 alt="@profile.DisplayName" />
+                        }
+                        else
+                        {
+                            <div class="hcs-social-avatar hcs-social-avatar--profile hcs-social-avatar--accent" aria-hidden="true">@Initials(profile.DisplayName)</div>
+                        }
+                        <div class="hcs-social-profile-card__identity">
+                            <h2 id="social-my-profile-title">@profile.DisplayName</h2>
+                            <p class="hcs-social-profile-card__username">@@@profile.UserName</p>
+                            <div class="hcs-social-profile-card__meta">
+                                <span><i class="fa fa-id-badge" aria-hidden="true"></i><b>@L["Social:Position"]:</b> @(profile.PositionName ?? L["Social:NoProfileValue"])</span>
+                                @if (!string.IsNullOrWhiteSpace(profile.DepartmentName))
+                                {
+                                    <span><i class="fa fa-building" aria-hidden="true"></i><b>@L["Social:Department"]:</b> @profile.DepartmentName</span>
+                                }
+                                <span><i class="fa fa-phone" aria-hidden="true"></i><b>@L["Social:Phone"]:</b> @(profile.PhoneNumber ?? L["Social:NoProfileValue"])</span>
+                                <span><i class="fa fa-envelope" aria-hidden="true"></i><b>@L["Social:Email"]:</b> @(profile.Email ?? L["Social:NoProfileValue"])</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            }
             <section class="hcs-social-composer" aria-labelledby="social-composer-title">
                 <div class="hcs-social-card-heading">
                     <div class="hcs-social-avatar hcs-social-avatar--accent" aria-hidden="true">@Initials(CurrentDisplayName())</div>
@@ -318,7 +424,48 @@
                                             <div class="hcs-social-comment__body">
                                                 <div class="hcs-social-comment__bubble">
                                                     <strong>@comment.AuthorName</strong>
-                                                    <p>@comment.Text</p>
+                                                    @if (!string.IsNullOrWhiteSpace(comment.Text))
+                                                    {
+                                                        <p>@comment.Text</p>
+                                                    }
+                                                    @if (comment.Attachments.Count > 0)
+                                                    {
+                                                        <div class="hcs-social-comment__attachments" aria-label='@L["Social:CommentAttachments"]'>
+                                                            @foreach (var attachment in comment.Attachments)
+                                                            {
+                                                                @if (IsImageAttachment(attachment.ContentType))
+                                                                {
+                                                                    <a href="@attachment.Url" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
+                                                                        <img src="@attachment.Url" loading="lazy" alt="@attachment.FileName" />
+                                                                    </a>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <a class="hcs-social-comment__file" href="@attachment.Url" target="_blank" rel="noopener" download>
+                                                                        <i class="fa @FileIcon(attachment.FileName)" aria-hidden="true"></i>
+                                                                        <span>@attachment.FileName</span>
+                                                                        <small>@FormatFileSize(attachment.Size)</small>
+                                                                    </a>
+                                                                }
+                                                            }
+                                                        </div>
+                                                    }
+                                                    @if (comment.LinkPreview is { } commentLinkPreview)
+                                                    {
+                                                        <a class="hcs-social-link-preview hcs-social-link-preview--comment @(string.IsNullOrWhiteSpace(commentLinkPreview.ImageUrl) ? "is-text-only" : null)"
+                                                           href="@commentLinkPreview.Url" target="_blank" rel="noopener noreferrer">
+                                                            @if (!string.IsNullOrWhiteSpace(commentLinkPreview.ImageUrl))
+                                                            {
+                                                                <img src="@commentLinkPreview.ImageUrl" loading="lazy" referrerpolicy="no-referrer"
+                                                                     alt="@(commentLinkPreview.Title ?? commentLinkPreview.Url)" />
+                                                            }
+                                                            <span class="hcs-social-link-preview__body">
+                                                                <small>@(commentLinkPreview.SiteName ?? L["Social:LinkPreview"])</small>
+                                                                <strong>@(commentLinkPreview.Title ?? commentLinkPreview.Url)</strong>
+                                                                <small class="hcs-social-link-preview__url">@commentLinkPreview.Url</small>
+                                                            </span>
+                                                        </a>
+                                                    }
                                                 </div>
                                                 <div class="hcs-social-comment__actions">
                                                     <time datetime="@comment.CreatedAt.ToString("O")">@comment.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
@@ -365,9 +512,41 @@
                                     <label class="visually-hidden" for="comment-@post.Id">@L["Social:Comment"]</label>
                                     <textarea id="comment-@post.Id" class="form-control" rows="2" @bind="commentDraft" @bind:event="oninput"
                                               placeholder='@L["Social:CommentPlaceholder"]' disabled="@isSubmittingComment"></textarea>
-                                    <button class="hcs-social-comment-submit" type="submit" disabled="@(isSubmittingComment || string.IsNullOrWhiteSpace(commentDraft))">
-                                        <i class="fa @(isSubmittingComment ? "fa-spinner fa-spin" : "fa-paper-plane")" aria-hidden="true"></i>@L["Social:SendComment"]
-                                    </button>
+                                    <div class="hcs-social-comment-form__footer">
+                                        <label class="hcs-social-comment-attachment-picker" for="@($"comment-attachment-{post.Id:D}")"
+                                               title='@L["Social:AddCommentAttachment"]'>
+                                            <i class="fa fa-paperclip" aria-hidden="true"></i><span>@L["Social:AddCommentAttachment"]</span>
+                                            <InputFile id="@($"comment-attachment-{post.Id:D}")" class="visually-hidden" multiple
+                                                       accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                                                       OnChange="args => UploadCommentAttachmentsAsync(post.Id, args)"
+                                                       disabled="@(isSubmittingComment || isUploadingCommentAttachment)" />
+                                        </label>
+                                        <button class="hcs-social-comment-submit" type="submit"
+                                                disabled="@(isSubmittingComment || isUploadingCommentAttachment || (string.IsNullOrWhiteSpace(commentDraft) && commentAttachments.Count == 0))">
+                                            <i class="fa @(isSubmittingComment ? "fa-spinner fa-spin" : "fa-paper-plane")" aria-hidden="true"></i>@L["Social:SendComment"]
+                                        </button>
+                                    </div>
+                                    @if (isUploadingCommentAttachment)
+                                    {
+                                        <p class="hcs-social-progress" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Loading"]</p>
+                                    }
+                                    @if (commentAttachments.Count > 0)
+                                    {
+                                        <div class="hcs-social-selected-media hcs-social-selected-media--comments" aria-label='@L["Social:CommentAttachments"]'>
+                                            @foreach (var attachment in commentAttachments)
+                                            {
+                                                <span class="hcs-social-media-chip">
+                                                    <i class="fa @(IsImageAttachment(attachment.ContentType) ? "fa-image" : FileIcon(attachment.FileName))" aria-hidden="true"></i>
+                                                    <span>@attachment.FileName</span>
+                                                    <button type="button" title='@L["Social:RemoveCommentAttachment"]'
+                                                            aria-label='@L["Social:RemoveCommentAttachment"] @attachment.FileName'
+                                                            @onclick="() => RemoveCommentAttachmentAsync(attachment)" disabled="@isSubmittingComment">
+                                                        <i class="fa fa-xmark" aria-hidden="true"></i>
+                                                    </button>
+                                                </span>
+                                            }
+                                        </div>
+                                    }
                                 </form>
                             </section>
                         }
@@ -402,6 +581,8 @@
     private readonly Dictionary<Guid, IReadOnlyList<SocialCommentDto>> commentsByPost = [];
     private readonly HashSet<Guid> expandedPostIds = [];
     private readonly List<UploadSocialMediaResult> uploadedMedia = [];
+    private readonly List<UploadSocialCommentAttachmentResult> commentAttachments = [];
+    private readonly List<SocialPersonDto> people = [];
     private readonly SemaphoreSlim routeLoadGate = new(1, 1);
     private static readonly SocialReactionType[] ReactionTypes = Enum.GetValues<SocialReactionType>();
     private bool isProfile;
@@ -410,11 +591,17 @@
     private bool isLoadingMore;
     private bool isPosting;
     private bool isUploadingMedia;
+    private bool isUploadingCommentAttachment;
+    private bool isSearchingPeople;
+    private bool peopleSearchMode;
+    private bool peopleSearchExecuted;
     private bool isSubmittingComment;
     private Guid? reactionLoadingPostId;
     private Guid? reactionLoadingCommentId;
     private Guid? shareLoadingPostId;
     private Guid? currentUserId;
+    private Guid? commentAttachmentPostId;
+    private SocialPersonDto? myProfile;
     private Guid? editingPostId;
     private Guid? deletingPostId;
     private bool isUpdatingPost;
@@ -429,6 +616,7 @@
     private SocialPostVisibility visibility = SocialPostVisibility.Public;
     private string? loadError;
     private string? searchError;
+    private string? peopleSearchError;
     private Guid? commentLoadingPostId;
     private Guid? commentErrorPostId;
     private Guid? replyingToPostId;
@@ -499,6 +687,9 @@
             toDateInput = toDateFilter?.ToDateTime(TimeOnly.MinValue);
             hashtagInput = hashtagFilter;
             searchError = null;
+            people.Clear();
+            peopleSearchExecuted = false;
+            peopleSearchError = null;
             routeStateKey = route.Key;
             await LoadAsync();
         }
@@ -523,6 +714,15 @@
             posts.Clear();
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
+            if (isProfile)
+            {
+                try { myProfile = await Social.GetMyProfileAsync(); }
+                catch { myProfile = null; }
+            }
+            else
+            {
+                myProfile = null;
+            }
             commentsByPost.Clear();
             expandedPostIds.Clear();
             routeLoaded = true;
@@ -770,6 +970,12 @@
 
     private async Task ApplySearchAsync()
     {
+        if (peopleSearchMode)
+        {
+            await SearchPeopleAsync();
+            return;
+        }
+
         searchError = null;
         DateOnly? from = fromDateInput.HasValue ? DateOnly.FromDateTime(fromDateInput.Value) : null;
         DateOnly? to = toDateInput.HasValue ? DateOnly.FromDateTime(toDateInput.Value) : null;
@@ -789,6 +995,42 @@
             await ReloadForCurrentRouteAsync(force: true);
         else
             Navigation.NavigateTo(target);
+    }
+
+    private void SelectSearchMode(bool searchPeople)
+    {
+        peopleSearchMode = searchPeople;
+        searchError = null;
+        peopleSearchError = null;
+        if (!searchPeople)
+        {
+            people.Clear();
+            peopleSearchExecuted = false;
+        }
+    }
+
+    private async Task SearchPeopleAsync()
+    {
+        peopleSearchExecuted = true;
+        peopleSearchError = null;
+        people.Clear();
+        var search = keywordInput.Trim();
+        if (string.IsNullOrWhiteSpace(search))
+            return;
+
+        isSearchingPeople = true;
+        try
+        {
+            people.AddRange(await Social.SearchPeopleAsync(search, 30));
+        }
+        catch
+        {
+            peopleSearchError = L["Social:PeopleError"].Value;
+        }
+        finally
+        {
+            isSearchingPeople = false;
+        }
     }
 
     private async Task ClearSearchAsync()
@@ -941,6 +1183,97 @@
         catch { await NotifyErrorAsync(L["Social:UploadError"]); }
     }
 
+    private async Task UploadCommentAttachmentsAsync(Guid postId, InputFileChangeEventArgs args)
+    {
+        if (isUploadingCommentAttachment)
+            return;
+
+        if (commentAttachmentPostId is { } existingPostId && existingPostId != postId)
+        {
+            foreach (var attachment in commentAttachments.ToArray())
+            {
+                try { await Social.DeleteUnattachedCommentAttachmentAsync(attachment.Id); }
+                catch { /* A later cleanup request can remove an abandoned upload. */ }
+            }
+            commentAttachments.Clear();
+        }
+
+        commentAttachmentPostId = postId;
+        isUploadingCommentAttachment = true;
+        try
+        {
+            var remaining = SocialPostRules.MaxCommentAttachments - commentAttachments.Count;
+            if (remaining <= 0)
+                return;
+
+            foreach (var file in args.GetMultipleFiles(remaining))
+            {
+                if (file.Size > 25 * 1024 * 1024)
+                {
+                    await NotifyErrorAsync(L["Social:MediaTooLarge"]);
+                    continue;
+                }
+
+                if (!IsSupportedCommentAttachment(file))
+                {
+                    await NotifyErrorAsync(L["Social:CommentAttachmentTypeError"]);
+                    continue;
+                }
+
+                try
+                {
+                    commentAttachments.Add(await Social.UploadCommentAttachmentAsync(file));
+                }
+                catch (CollaborationApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.RequestEntityTooLarge)
+                {
+                    await NotifyErrorAsync(L["Social:MediaTooLarge"]);
+                }
+                catch
+                {
+                    await NotifyErrorAsync(L["Social:CommentAttachmentUploadError"]);
+                }
+            }
+        }
+        catch
+        {
+            await NotifyErrorAsync(L["Social:CommentAttachmentUploadError"]);
+        }
+        finally
+        {
+            isUploadingCommentAttachment = false;
+        }
+    }
+
+    private async Task RemoveCommentAttachmentAsync(UploadSocialCommentAttachmentResult attachment)
+    {
+        try
+        {
+            await Social.DeleteUnattachedCommentAttachmentAsync(attachment.Id);
+            commentAttachments.RemoveAll(item => item.Id == attachment.Id);
+            if (commentAttachments.Count == 0)
+                commentAttachmentPostId = null;
+        }
+        catch
+        {
+            await NotifyErrorAsync(L["Social:CommentAttachmentUploadError"]);
+        }
+    }
+
+    private static bool IsSupportedCommentAttachment(IBrowserFile file)
+    {
+        var contentType = file.ContentType?.Trim();
+        if (contentType is "image/jpeg" or "image/png" or "image/gif" or "image/webp" or
+            "text/plain" or "application/pdf" or "application/msword" or
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" or
+            "application/vnd.ms-excel" or "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" or
+            "application/vnd.ms-powerpoint" or "application/vnd.openxmlformats-officedocument.presentationml.presentation")
+            return true;
+
+        return Path.GetExtension(file.Name).ToLowerInvariant() is
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".txt" or ".pdf" or
+            ".doc" or ".docx" or ".xls" or ".xlsx" or ".ppt" or ".pptx";
+    }
+
     private async Task CreatePostAsync()
     {
         if (isPosting || (string.IsNullOrWhiteSpace(content) && uploadedMedia.Count == 0)) return;
@@ -993,7 +1326,9 @@
 
     private async Task SubmitCommentAsync(Guid postId)
     {
-        if (isSubmittingComment || string.IsNullOrWhiteSpace(commentDraft)) return;
+        if (isSubmittingComment || isUploadingCommentAttachment ||
+            (string.IsNullOrWhiteSpace(commentDraft) && commentAttachments.Count == 0) ||
+            (commentAttachmentPostId.HasValue && commentAttachmentPostId != postId)) return;
         isSubmittingComment = true;
         commentErrorPostId = null;
         try
@@ -1002,13 +1337,16 @@
             var comment = await Social.CreateCommentAsync(postId, new CreateSocialCommentInput
             {
                 Text = commentDraft,
-                ParentCommentId = parentId
+                ParentCommentId = parentId,
+                AttachmentIds = commentAttachments.Select(attachment => attachment.Id).ToArray()
             });
             var current = commentsByPost.GetValueOrDefault(postId, []);
             commentsByPost[postId] = current.Append(comment).ToArray();
             var index = posts.FindIndex(post => post.Id == postId);
             if (index >= 0) posts[index] = posts[index] with { CommentCount = posts[index].CommentCount + 1 };
             commentDraft = string.Empty;
+            commentAttachments.Clear();
+            commentAttachmentPostId = null;
             CancelReply();
         }
         catch { commentErrorPostId = postId; }
@@ -1016,6 +1354,31 @@
     }
 
     private string CurrentDisplayName() => currentDisplayName;
+
+    private static bool IsImageAttachment(string? contentType) =>
+        contentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
+
+    private static string FileIcon(string? fileName)
+    {
+        return Path.GetExtension(fileName ?? string.Empty).ToLowerInvariant() switch
+        {
+            ".pdf" => "fa-file-pdf",
+            ".doc" or ".docx" => "fa-file-word",
+            ".xls" or ".xlsx" => "fa-file-excel",
+            ".ppt" or ".pptx" => "fa-file-powerpoint",
+            ".txt" => "fa-file-lines",
+            _ => "fa-file"
+        };
+    }
+
+    private static string FormatFileSize(long size)
+    {
+        if (size < 1024)
+            return $"{size} B";
+        if (size < 1024 * 1024)
+            return $"{size / 1024d:0.#} KB";
+        return $"{size / (1024d * 1024d):0.#} MB";
+    }
 
     private static string Initials(string? value)
     {

@@ -54,10 +54,18 @@ public sealed class PushDeliveryWorker(IServiceScopeFactory scopeFactory, IConfi
                         .ExecuteUpdateAsync(s => s.SetProperty(x => x.LeaseId, leaseId)
                             .SetProperty(x => x.LeaseUntil, now.AddMinutes(1)), stoppingToken);
                 var deliveries = await db.PushDeliveries.Where(x => x.LeaseId == leaseId).ToListAsync(stoppingToken);
+                var userIds = deliveries.Select(x => x.UserId).Distinct().ToArray();
+                var tokensByUser = userIds.Length == 0
+                    ? new Dictionary<Guid, List<string>>()
+                    : (await db.PushDeviceTokens
+                        .Where(x => userIds.Contains(x.UserId) && x.IsActive)
+                        .Select(x => new { x.UserId, x.Token })
+                        .ToListAsync(stoppingToken))
+                    .GroupBy(x => x.UserId)
+                    .ToDictionary(x => x.Key, x => x.Select(item => item.Token).Take(20).ToList());
                 foreach (var delivery in deliveries)
                 {
-                    var tokens = await db.PushDeviceTokens.Where(x => x.UserId == delivery.UserId && x.IsActive)
-                        .Select(x => x.Token).Take(20).ToListAsync(stoppingToken);
+                    var tokens = tokensByUser.GetValueOrDefault(delivery.UserId) ?? [];
                     var delivered = false;
                     string? error = null;
                     using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);

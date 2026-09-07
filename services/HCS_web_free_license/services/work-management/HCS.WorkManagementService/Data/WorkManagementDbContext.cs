@@ -32,6 +32,7 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
     {
         base.OnModelCreating(builder);
         builder.HasDefaultSchema(Schema);
+        builder.HasPostgresExtension("pg_trgm");
 
         builder.Entity<Project>(b =>
         {
@@ -39,7 +40,10 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.Property(x => x.Code).HasMaxLength(WorkConsts.CodeLength).IsRequired();
             b.Property(x => x.Name).HasMaxLength(WorkConsts.NameLength).IsRequired();
             b.Property(x => x.Status).HasMaxLength(WorkConsts.StatusLength).IsRequired();
-            b.HasIndex(x => x.Code).IsUnique(); b.HasIndex(x => x.OwnerDepartmentId); b.HasIndex(x => x.OwnerUserId);
+            b.HasIndex(x => x.Code).IsUnique();
+            b.HasIndex(x => x.Code, "IX_Projects_Code_Trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.Name, "IX_Projects_Name_Trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.OwnerDepartmentId); b.HasIndex(x => x.OwnerUserId);
         });
         builder.Entity<ProjectMember>(b =>
         {
@@ -56,6 +60,8 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.Property(x => x.Priority).HasMaxLength(WorkConsts.StatusLength).IsRequired();
             b.Property(x => x.Status).HasMaxLength(WorkConsts.StatusLength).IsRequired();
             b.HasIndex(x => new { x.ProjectId, x.Code }).IsUnique();
+            b.HasIndex(x => x.Code, "IX_ProjectTasks_Code_Trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.Title, "IX_ProjectTasks_Title_Trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
             b.HasIndex(x => x.ParentTaskId); b.HasIndex(x => new { x.Status, x.DueDate });
             b.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Cascade);
             b.HasOne<ProjectTask>().WithMany().HasForeignKey(x => x.ParentTaskId).OnDelete(DeleteBehavior.Restrict);
@@ -64,7 +70,8 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
         {
             b.ToTable("ProjectTaskAssignments"); b.ConfigureByConvention();
             b.Property(x => x.AssignmentType).HasMaxLength(WorkConsts.TypeLength).IsRequired();
-            b.HasIndex(x => new { x.ProjectTaskId, x.UserId, x.AssignmentType }).IsUnique(); b.HasIndex(x => x.UserId);
+            b.HasIndex(x => new { x.ProjectTaskId, x.UserId, x.AssignmentType }).IsUnique();
+            b.HasIndex(x => new { x.UserId, x.ProjectTaskId });
             b.HasOne<ProjectTask>().WithMany().HasForeignKey(x => x.ProjectTaskId).OnDelete(DeleteBehavior.Cascade);
         });
         builder.Entity<ProjectTaskDocument>(b =>
@@ -92,7 +99,8 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
         builder.Entity<CalendarEventParticipant>(b =>
         {
             b.ToTable("CalendarEventParticipants"); b.ConfigureByConvention();
-            b.HasIndex(x => new { x.CalendarEventId, x.UserId }).IsUnique(); b.HasIndex(x => x.UserId);
+            b.HasIndex(x => new { x.CalendarEventId, x.UserId }).IsUnique();
+            b.HasIndex(x => new { x.UserId, x.CalendarEventId });
             b.HasOne<CalendarEvent>().WithMany().HasForeignKey(x => x.CalendarEventId).OnDelete(DeleteBehavior.Cascade);
         });
         builder.Entity<SurveyCriteria>(b =>
@@ -121,6 +129,7 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.Property(x => x.Note).HasMaxLength(2000);
             b.Property(x => x.SessionDisplay).HasMaxLength(WorkConsts.NameLength);
             b.HasIndex(x => x.Code).IsUnique(); b.HasIndex(x => new { x.Status, x.StartsAt });
+            b.HasIndex(x => new { x.LocationId, x.StartsAt });
             b.HasIndex(x => x.OwnerUserId); b.HasIndex(x => x.IsPublic);
             b.HasOne<SurveyLocation>().WithMany().HasForeignKey(x => x.LocationId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -129,6 +138,7 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.ToTable("SurveyResults"); b.ConfigureByConvention();
             b.Property(x => x.Score).HasPrecision(7, 2);
             b.HasIndex(x => new { x.SessionId, x.CriteriaId, x.RespondentUserId });
+            b.HasIndex(x => x.CriteriaId);
             b.HasOne<SurveySession>().WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
             b.HasOne<SurveyCriteria>().WithMany().HasForeignKey(x => x.CriteriaId).OnDelete(DeleteBehavior.Restrict);
         });

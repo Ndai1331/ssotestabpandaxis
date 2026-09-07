@@ -53,7 +53,8 @@ public class SocialPostAppService(
             var preview = await linkPreviewFetcher.FetchAsync(linkUrl, ct);
             post.SetLinkPreview(linkUrl, preview?.Title, preview?.Description, preview?.SiteName, preview?.ImageUrl);
         }
-        foreach (var item in mediaIds.Select(id => media.Single(mediaItem => mediaItem.Id == id)))
+        var mediaById = media.ToDictionary(x => x.Id);
+        foreach (var item in mediaIds.Select(id => mediaById[id]))
         {
             item.AttachTo(post.Id);
             post.Media.Add(item);
@@ -96,10 +97,15 @@ public class SocialPostAppService(
             .Where(x => x.PostId == postId)
             .Select(x => x.BlobName)
             .ToArrayAsync(ct);
+        var commentBlobNames = await (from attachment in db.SocialCommentAttachments.AsNoTracking()
+                                      join comment in db.SocialPostComments.AsNoTracking()
+                                          on attachment.CommentId equals comment.Id
+                                      where comment.PostId == postId
+                                      select attachment.BlobName).ToArrayAsync(ct);
 
         db.SocialPosts.Remove(post);
         await db.SaveChangesAsync(ct);
-        await mediaStore.DeleteBlobsAsync(blobNames, ct);
+        await mediaStore.DeleteBlobsAsync(blobNames.Concat(commentBlobNames), ct);
     }
 
     public async Task<SocialReactionStateDto> ReactAsync(Guid postId, SetSocialReactionInput input,

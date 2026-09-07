@@ -32,8 +32,10 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
             $"api/chat/contacts?search={Uri.EscapeDataString(SearchText.Normalize(search))}&take={Math.Clamp(take, 1, 50)}",
             cancellationToken);
 
-    public Task<IReadOnlyList<ConversationDto>> GetConversationsAsync(CancellationToken cancellationToken = default) =>
-        GetAsync<IReadOnlyList<ConversationDto>>("api/chat/conversations", cancellationToken);
+    public Task<IReadOnlyList<ConversationDto>> GetConversationsAsync(int skip = 0, int take = 100,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<ConversationDto>>(
+            $"api/chat/conversations?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 100)}", cancellationToken);
 
     public Task<ConversationDto> GetConversationAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<ConversationDto>($"api/chat/conversations/{id:D}", cancellationToken);

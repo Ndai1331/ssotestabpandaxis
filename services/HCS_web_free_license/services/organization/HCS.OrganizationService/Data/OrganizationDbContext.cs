@@ -34,6 +34,7 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
     {
         base.OnModelCreating(builder);
         builder.HasDefaultSchema(Schema);
+        builder.HasPostgresExtension("pg_trgm");
 
         ConfigureCoded<Department>(builder, "Departments");
         ConfigureCoded<Unit>(builder, "Units");
@@ -149,7 +150,11 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
             b.Property(x => x.Code).IsRequired().HasMaxLength(OrganizationConsts.MaxCodeLength);
             b.Property(x => x.Name).IsRequired().HasMaxLength(OrganizationConsts.MaxNameLength);
             b.Property(x => x.SortOrder).IsRequired();
-            if (uniqueCode) b.HasIndex(x => x.Code).IsUnique();
+            if (uniqueCode) b.HasIndex(x => x.Code, $"IX_{table}_Code").IsUnique();
+            b.HasIndex(x => x.Code, $"IX_{table}_Code_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.Name, $"IX_{table}_Name_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
         });
     }
 
@@ -163,7 +168,11 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
             b.Property(x => x.Code).IsRequired().HasMaxLength(OrganizationConsts.MaxCodeLength);
             b.Property(x => x.Name).IsRequired().HasMaxLength(OrganizationConsts.MaxNameLength);
             b.Property(x => x.SortOrder).IsRequired();
-            b.HasIndex(x => x.Code).IsUnique();
+            b.HasIndex(x => x.Code, $"IX_{table}_Code").IsUnique();
+            b.HasIndex(x => x.Code, $"IX_{table}_Code_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.Name, $"IX_{table}_Name_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
         });
     }
 
@@ -177,6 +186,10 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
             b.Property(x => x.Title).IsRequired().HasMaxLength(OrganizationConsts.MaxTitleLength);
             b.Property(x => x.Description).IsRequired().HasMaxLength(OrganizationConsts.MaxDescriptionLength);
             b.Property(x => x.SortOrder).IsRequired();
+            b.HasIndex(x => x.Title, $"IX_{table}_Title_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.Description, $"IX_{table}_Description_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
         });
     }
 }

@@ -42,6 +42,21 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
         return GetAsync<PagedSocialPostsDto>(BuildSearchUri(uri, keyword, from, to, hashtag, postId), ct);
     }
 
+    public async Task<IReadOnlyList<SocialPersonDto>> SearchPeopleAsync(
+        string search, int take = 20, CancellationToken ct = default)
+    {
+        var people = await GetAsync<IReadOnlyList<SocialPersonDto>>(
+            $"api/identity/social-people?search={Uri.EscapeDataString(search.Trim())}&take={Math.Clamp(take, 1, 30)}", ct);
+        return await EnrichPeopleAsync(people, ct);
+    }
+
+    public async Task<SocialPersonDto?> GetMyProfileAsync(CancellationToken ct = default)
+    {
+        var profile = await GetAsync<SocialPersonDto>("api/identity/social-profile", ct);
+        var enriched = await EnrichPeopleAsync([profile], ct);
+        return enriched.FirstOrDefault();
+    }
+
     public Task<IReadOnlyList<SocialCommentDto>> GetCommentsAsync(Guid postId, CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<SocialCommentDto>>($"api/social/posts/{postId:D}/comments", ct);
 
@@ -74,6 +89,9 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
     public Task DeleteUnattachedMediaAsync(Guid mediaId, CancellationToken ct = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"api/social/media/{mediaId:D}", ct);
 
+    public Task DeleteUnattachedCommentAttachmentAsync(Guid attachmentId, CancellationToken ct = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"api/social/comment-media/{attachmentId:D}", ct);
+
     public async Task<UploadSocialMediaResult> UploadMediaAsync(IBrowserFile file, CancellationToken ct = default)
     {
         if (file.Size > MaxMediaSize)
@@ -94,6 +112,31 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
         await EnsureSuccessAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<UploadSocialMediaResult>(JsonOptions, ct)
             ?? throw new CollaborationApiException(HttpStatusCode.NoContent, "The gateway returned no media response.");
+    }
+
+    public async Task<UploadSocialCommentAttachmentResult> UploadCommentAttachmentAsync(
+        IBrowserFile file, CancellationToken ct = default)
+    {
+        if (file.Size > MaxMediaSize)
+            throw new CollaborationApiException(HttpStatusCode.RequestEntityTooLarge,
+                "Social comment attachment exceeds the 25 MB limit.");
+
+        using var content = new MultipartFormDataContent();
+        await using var source = file.OpenReadStream(MaxMediaSize, ct);
+        await using var buffer = new MemoryStream();
+        await source.CopyToAsync(buffer, ct);
+        buffer.Position = 0;
+        using var fileContent = new StreamContent(buffer);
+        fileContent.Headers.ContentLength = buffer.Length;
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+        content.Add(fileContent, "file", file.Name);
+
+        using var response = await CreateClient().PostAsync("api/social/comment-uploads", content, ct);
+        await EnsureSuccessAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<UploadSocialCommentAttachmentResult>(JsonOptions, ct)
+            ?? throw new CollaborationApiException(HttpStatusCode.NoContent,
+                "The gateway returned no comment attachment response.");
     }
 
     private async Task<T> GetAsync<T>(string uri, CancellationToken ct)
@@ -146,5 +189,23 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
         return parameters.Count == 0 ? uri : $"{uri}&{string.Join('&', parameters)}";
     }
 
+    private async Task<IReadOnlyList<SocialPersonDto>> EnrichPeopleAsync(
+        IReadOnlyList<SocialPersonDto> people, CancellationToken ct)
+    {
+        if (people.Count == 0)
+            return people;
+
+        var ids = people.Select(person => person.UserId).ToArray();
+        var organization = await GetAsync<IReadOnlyList<SocialPersonOrganizationLookup>>(
+            $"api/organization/user-departments?{string.Join('&', ids.Select(id => $"userIds={id:D}"))}", ct);
+        var byUser = organization.ToDictionary(item => item.UserId);
+        return people.Select(person => byUser.TryGetValue(person.UserId, out var item)
+            ? person with { PositionName = item.PositionName, DepartmentName = item.DepartmentName }
+            : person).ToArray();
+    }
+
     private HttpClient CreateClient() => httpClientFactory.CreateClient("HCS.Bff");
+
+    private sealed record SocialPersonOrganizationLookup(Guid UserId, Guid? DepartmentId,
+        string? DepartmentName, Guid? PositionId, string? PositionName);
 }

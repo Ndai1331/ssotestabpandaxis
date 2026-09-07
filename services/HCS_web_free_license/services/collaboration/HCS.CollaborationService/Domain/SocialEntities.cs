@@ -101,6 +101,12 @@ public sealed class SocialPostComment : CreationAuditedEntity<Guid>
     public string AuthorName { get; private set; } = string.Empty;
     public string Text { get; private set; } = string.Empty;
     public Guid? ParentCommentId { get; private set; }
+    public string? LinkUrl { get; private set; }
+    public string? LinkTitle { get; private set; }
+    public string? LinkDescription { get; private set; }
+    public string? LinkSiteName { get; private set; }
+    public string? LinkImageUrl { get; private set; }
+    public ICollection<SocialCommentAttachment> Attachments { get; private set; } = [];
     public ICollection<SocialCommentReaction> Reactions { get; private set; } = [];
 
     private SocialPostComment() { }
@@ -111,9 +117,48 @@ public sealed class SocialPostComment : CreationAuditedEntity<Guid>
         PostId = postId;
         AuthorUserId = authorUserId;
         AuthorName = Check.NotNullOrWhiteSpace(authorName, nameof(authorName), 256);
-        Text = Check.NotNullOrWhiteSpace(text, nameof(text), 2000);
+        Text = Check.Length(text?.Trim() ?? string.Empty, nameof(text), 2000) ?? string.Empty;
         ParentCommentId = parentCommentId;
         CreationTime = creationTimeUtc ?? DateTime.UtcNow;
+    }
+
+    public void SetLinkPreview(string url, string? title, string? description, string? siteName, string? imageUrl)
+    {
+        LinkUrl = Check.Length(url, nameof(url), 2048);
+        LinkTitle = Check.Length(title?.Trim(), nameof(title), 512);
+        LinkDescription = Check.Length(description?.Trim(), nameof(description), 2000);
+        LinkSiteName = Check.Length(siteName?.Trim(), nameof(siteName), 256);
+        LinkImageUrl = Check.Length(imageUrl, nameof(imageUrl), 2048);
+    }
+}
+
+public sealed class SocialCommentAttachment : CreationAuditedEntity<Guid>
+{
+    public Guid? CommentId { get; private set; }
+    public Guid UploadedByUserId { get; private set; }
+    public string BlobName { get; private set; } = string.Empty;
+    public string FileName { get; private set; } = string.Empty;
+    public string ContentType { get; private set; } = string.Empty;
+    public long Size { get; private set; }
+
+    private SocialCommentAttachment() { }
+
+    public SocialCommentAttachment(Guid id, Guid userId, string blobName, string fileName,
+        string contentType, long size) : base(id)
+    {
+        UploadedByUserId = userId;
+        BlobName = Check.NotNullOrWhiteSpace(blobName, nameof(blobName), 512);
+        FileName = Check.NotNullOrWhiteSpace(fileName, nameof(fileName), 256);
+        ContentType = Check.NotNullOrWhiteSpace(contentType, nameof(contentType), 128);
+        Size = size;
+        CreationTime = DateTime.UtcNow;
+    }
+
+    public void AttachTo(Guid commentId)
+    {
+        if (CommentId.HasValue)
+            throw new BusinessException("Collaboration:SocialCommentAttachmentAlreadyUsed");
+        CommentId = commentId;
     }
 }
 

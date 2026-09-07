@@ -13,7 +13,9 @@ namespace HCS.PlatformService.Controllers;
 [ApiController]
 [Route("api/admin/roles")]
 [Authorize]
-public sealed class AdminRolePermissionsController(IPermissionManager permissionManager) : ControllerBase
+public sealed class AdminRolePermissionsController(
+    IPermissionManager permissionManager,
+    IPermissionGrantRepository permissionGrants) : ControllerBase
 {
     [HttpPut("{roleName}/permissions")]
     public async Task<IActionResult> UpdateAsync(string roleName, [FromBody] JsonElement request)
@@ -37,6 +39,7 @@ public sealed class AdminRolePermissionsController(IPermissionManager permission
             return BadRequest();
         }
 
+        var requested = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         foreach (var permission in permissions.EnumerateArray())
         {
             if (!TryGetProperty(permission, "name", out var nameProperty) ||
@@ -51,11 +54,28 @@ public sealed class AdminRolePermissionsController(IPermissionManager permission
                 continue;
             }
 
+            requested[name.Trim()] = grantedProperty.GetBoolean();
+        }
+
+        if (requested.Count == 0)
+            return NoContent();
+
+        // Read the role's current grants once and avoid a write/cache invalidation
+        // for every permission whose value is already correct.
+        var current = await permissionGrants.GetListAsync(
+            RolePermissionValueProvider.ProviderName, roleName, HttpContext.RequestAborted);
+        var currentNames = current.Select(x => x.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var change in requested)
+        {
+            var isCurrentlyGranted = currentNames.Contains(change.Key);
+            if (isCurrentlyGranted == change.Value)
+                continue;
+
             await permissionManager.SetAsync(
-                name,
+                change.Key,
                 RolePermissionValueProvider.ProviderName,
                 roleName,
-                grantedProperty.GetBoolean());
+                change.Value);
         }
 
         return NoContent();

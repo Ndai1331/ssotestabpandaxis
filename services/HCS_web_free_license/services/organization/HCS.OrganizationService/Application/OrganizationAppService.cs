@@ -25,7 +25,7 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     public virtual async Task<PagedResultDto<DepartmentDto>> GetDepartmentsAsync(OrganizationListInput input, CancellationToken ct = default)
     {
-        var query = Filter(_db.Departments.AsNoTracking(), input);
+        var query = Filter(_db.Departments.AsNoTracking(), input, _db.Database.IsNpgsql());
         return await PageAsync(query, input, x => new DepartmentDto(x.Id, x.Code, x.Name, x.ParentId, x.SortOrder, x.IsActive), ct);
     }
 
@@ -53,7 +53,7 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     public virtual async Task<PagedResultDto<UnitDto>> GetUnitsAsync(OrganizationListInput input, CancellationToken ct = default)
     {
-        var query = Filter(_db.Units.AsNoTracking(), input);
+        var query = Filter(_db.Units.AsNoTracking(), input, _db.Database.IsNpgsql());
         return await PageAsync(query, input, x => new UnitDto(x.Id, x.DepartmentId, x.Code, x.Name, x.SortOrder, x.IsActive), ct);
     }
 
@@ -81,7 +81,7 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     public virtual async Task<PagedResultDto<PositionDto>> GetPositionsAsync(OrganizationListInput input, CancellationToken ct = default)
     {
-        var query = Filter(_db.Positions.AsNoTracking(), input);
+        var query = Filter(_db.Positions.AsNoTracking(), input, _db.Database.IsNpgsql());
         return await PageAsync(query, input, x => new PositionDto(x.Id, x.Code, x.Name, x.SignOrder, x.SortOrder, x.IsActive), ct);
     }
 
@@ -108,7 +108,7 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     public virtual async Task<PagedResultDto<MasterDataItemDto>> GetMasterDataAsync(string? type, OrganizationListInput input, CancellationToken ct = default)
     {
         if (!string.IsNullOrWhiteSpace(type)) EnsureMasterDataTypeAllowed(type);
-        var query = Filter(_db.MasterDataItems.AsNoTracking(), input);
+        var query = Filter(_db.MasterDataItems.AsNoTracking(), input, _db.Database.IsNpgsql());
         if (!string.IsNullOrWhiteSpace(type)) query = query.Where(x => x.Type == type.Trim());
         return await PageAsync(query, input, x => new MasterDataItemDto(x.Id, x.Type, x.Code, x.Name, x.SortOrder, x.IsActive), ct);
     }
@@ -427,7 +427,9 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
                                   PositionName = position == null ? null : position.Name
                               }).ToListAsync(ct);
 
-        return ids.Select(userId => mappings.FirstOrDefault(x => x.UserId == userId) is { } mapping
+        var mappingByUser = mappings.GroupBy(x => x.UserId).ToDictionary(x => x.Key, x => x.First());
+        return ids.Select(userId => mappingByUser.TryGetValue(userId, out var mapping)
+                && mapping is not null
                 ? new UserDepartmentLookupDto(userId, mapping.DepartmentId, mapping.DepartmentName,
                     mapping.PositionId, mapping.PositionName)
                 : new UserDepartmentLookupDto(userId, null))
@@ -471,13 +473,22 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     private async Task EnsureDepartmentParentAsync(Guid? departmentId, Guid? parentId, CancellationToken ct)
     {
-        await EnsureDepartmentExistsAsync(parentId, ct);
+        if (!parentId.HasValue) return;
+
+        // Load the parent map once. The previous implementation issued one query
+        // per hierarchy level, making deep trees a database-in-a-loop operation.
+        var parents = await _db.Departments.AsNoTracking()
+            .Select(x => new { x.Id, x.ParentId })
+            .ToDictionaryAsync(x => x.Id, x => x.ParentId, ct);
+        if (!parents.ContainsKey(parentId.Value))
+            throw new BusinessException(OrganizationErrorCodes.InvalidDepartment).WithData("DepartmentId", parentId.Value);
+
         var cursor = parentId;
         while (cursor.HasValue)
         {
             if (cursor == departmentId)
                 throw new BusinessException(OrganizationErrorCodes.DepartmentHierarchyCycle);
-            cursor = await _db.Departments.Where(x => x.Id == cursor.Value).Select(x => x.ParentId).SingleAsync(ct);
+            cursor = parents[cursor.Value];
         }
     }
 
@@ -547,12 +558,16 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
                           commune.ProvinceId, province.Code, commune.SortOrder)).SingleAsync(ct);
     }
 
-    private static IQueryable<TEntity> Filter<TEntity>(IQueryable<TEntity> query, OrganizationListInput input) where TEntity : CodedAggregate
+    private static IQueryable<TEntity> Filter<TEntity>(IQueryable<TEntity> query, OrganizationListInput input,
+        bool usePostgresSearch) where TEntity : CodedAggregate
     {
         if (!string.IsNullOrWhiteSpace(input.Filter))
         {
             var filter = input.Filter.Trim().ToLowerInvariant();
-            query = query.Where(x => x.Code.ToLower().Contains(filter)
+            query = usePostgresSearch
+                ? query.Where(x => EF.Functions.ILike(x.Code, $"%{filter}%")
+                                  || EF.Functions.ILike(x.Name, $"%{filter}%"))
+                : query.Where(x => x.Code.ToLower().Contains(filter)
                                   || x.Name.ToLower().Contains(filter));
         }
         if (input.IsActive.HasValue) query = query.Where(x => x.IsActive == input.IsActive.Value);

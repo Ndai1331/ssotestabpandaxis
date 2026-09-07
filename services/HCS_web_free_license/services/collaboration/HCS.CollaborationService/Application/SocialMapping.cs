@@ -15,11 +15,18 @@ internal static class SocialMapping
 
     public static SocialCommentDto Comment(SocialPostComment comment, SocialReactionSummaryDto reactions) =>
         new(comment.Id, comment.PostId, comment.AuthorUserId, comment.AuthorName,
-            AvatarUrl(comment.AuthorUserId), comment.Text, comment.CreationTime, comment.ParentCommentId, reactions);
+            AvatarUrl(comment.AuthorUserId), comment.Text, comment.CreationTime, comment.ParentCommentId, reactions,
+            comment.Attachments.OrderBy(attachment => attachment.CreationTime).Select(CommentAttachment).ToArray(),
+            comment.LinkUrl is null ? null : new SocialLinkPreviewDto(comment.LinkUrl, comment.LinkTitle,
+                comment.LinkDescription, comment.LinkSiteName, comment.LinkImageUrl));
 
     public static SocialPostMediaDto Media(SocialPostMedia media) =>
         new(media.Id, media.FileName, media.ContentType, media.Size, media.Kind,
             $"/api/social/media/{media.Id:D}");
+
+    public static SocialCommentAttachmentDto CommentAttachment(SocialCommentAttachment attachment) =>
+        new(attachment.Id, attachment.FileName, attachment.ContentType, attachment.Size,
+            $"/api/social/comment-media/{attachment.Id:D}");
 
     public static string AvatarUrl(Guid userId) => $"/api/identity/users/{userId:D}/avatar";
 

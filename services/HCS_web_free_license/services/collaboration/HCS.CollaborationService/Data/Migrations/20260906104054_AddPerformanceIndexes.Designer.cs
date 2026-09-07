@@ -3,6 +3,7 @@ using System;
 using HCS.CollaborationService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Volo.Abp.EntityFrameworkCore;
@@ -12,9 +13,11 @@ using Volo.Abp.EntityFrameworkCore;
 namespace HCS.CollaborationService.Data.Migrations
 {
     [DbContext(typeof(CollaborationDbContext))]
-    partial class CollaborationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906104054_AddPerformanceIndexes")]
+    partial class AddPerformanceIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -84,6 +87,12 @@ namespace HCS.CollaborationService.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Text")
+                        .HasDatabaseName("IX_CollaborationMessages_Text_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Text"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Text"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("ConversationId", "ClientMessageId")
                         .IsUnique()
                         .HasFilter("\"ClientMessageId\" IS NOT NULL");
@@ -91,11 +100,6 @@ namespace HCS.CollaborationService.Data.Migrations
                     b.HasIndex("ConversationId", "CreationTime");
 
                     b.HasIndex("ConversationId", "IsPinned");
-
-                    b.HasIndex(new[] { "Text" }, "IX_CollaborationMessages_Text_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Text" }, "IX_CollaborationMessages_Text_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Text" }, "IX_CollaborationMessages_Text_Trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("CollaborationMessages", (string)null);
                 });
@@ -535,52 +539,6 @@ namespace HCS.CollaborationService.Data.Migrations
                     b.ToTable("CollaborationPushDeviceTokens", (string)null);
                 });
 
-            modelBuilder.Entity("HCS.CollaborationService.Domain.SocialCommentAttachment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("BlobName")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<Guid?>("CommentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("CreationTime");
-
-                    b.Property<Guid?>("CreatorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("CreatorId");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<long>("Size")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("UploadedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CommentId");
-
-                    b.HasIndex("UploadedByUserId", "CommentId");
-
-                    b.ToTable("CollaborationSocialCommentAttachments", (string)null);
-                });
-
             modelBuilder.Entity("HCS.CollaborationService.Domain.SocialCommentReaction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -681,26 +639,27 @@ namespace HCS.CollaborationService.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AuthorName")
+                        .HasDatabaseName("IX_CollaborationSocialPosts_AuthorName_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("AuthorName"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("AuthorName"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("AuthorUserId");
 
+                    b.HasIndex("Hashtags")
+                        .HasDatabaseName("IX_CollaborationSocialPosts_Hashtags_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Hashtags"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Hashtags"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Text")
+                        .HasDatabaseName("IX_CollaborationSocialPosts_Text_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Text"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Text"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("Visibility", "CreationTime", "Id");
-
-                    b.HasIndex(new[] { "AuthorName" }, "IX_CollaborationSocialPosts_AuthorName_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "AuthorName" }, "IX_CollaborationSocialPosts_AuthorName_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "AuthorName" }, "IX_CollaborationSocialPosts_AuthorName_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Hashtags" }, "IX_CollaborationSocialPosts_Hashtags");
-
-                    b.HasIndex(new[] { "Hashtags" }, "IX_CollaborationSocialPosts_Hashtags_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Hashtags" }, "IX_CollaborationSocialPosts_Hashtags_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Hashtags" }, "IX_CollaborationSocialPosts_Hashtags_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Text" }, "IX_CollaborationSocialPosts_Text_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Text" }, "IX_CollaborationSocialPosts_Text_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Text" }, "IX_CollaborationSocialPosts_Text_Trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("CollaborationSocialPosts", (string)null);
                 });
@@ -725,26 +684,6 @@ namespace HCS.CollaborationService.Data.Migrations
                     b.Property<Guid?>("CreatorId")
                         .HasColumnType("uuid")
                         .HasColumnName("CreatorId");
-
-                    b.Property<string>("LinkDescription")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("LinkImageUrl")
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
-
-                    b.Property<string>("LinkSiteName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("LinkTitle")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<string>("LinkUrl")
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
 
                     b.Property<Guid?>("ParentCommentId")
                         .HasColumnType("uuid");
@@ -975,14 +914,6 @@ namespace HCS.CollaborationService.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("HCS.CollaborationService.Domain.SocialCommentAttachment", b =>
-                {
-                    b.HasOne("HCS.CollaborationService.Domain.SocialPostComment", null)
-                        .WithMany("Attachments")
-                        .HasForeignKey("CommentId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
             modelBuilder.Entity("HCS.CollaborationService.Domain.SocialCommentReaction", b =>
                 {
                     b.HasOne("HCS.CollaborationService.Domain.SocialPostComment", null)
@@ -1059,8 +990,6 @@ namespace HCS.CollaborationService.Data.Migrations
 
             modelBuilder.Entity("HCS.CollaborationService.Domain.SocialPostComment", b =>
                 {
-                    b.Navigation("Attachments");
-
                     b.Navigation("Reactions");
                 });
 

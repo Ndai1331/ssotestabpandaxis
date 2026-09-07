@@ -14,7 +14,9 @@ public sealed class ChatController(CollaborationAppService app, CollaborationAtt
     public Task<ConversationDto> CreateConversation(CreateConversationInput input, CancellationToken ct) => app.CreateConversationAsync(input, ct);
 
     [HttpGet("conversations")]
-    public Task<IReadOnlyList<ConversationDto>> GetConversations([FromQuery] ConversationType? type, [FromQuery] bool pinnedOnly, CancellationToken ct) => app.GetConversationsAsync(type, pinnedOnly, ct);
+    public Task<IReadOnlyList<ConversationDto>> GetConversations([FromQuery] ConversationType? type,
+        [FromQuery] bool pinnedOnly, [FromQuery] int skip = 0, [FromQuery] int take = 100,
+        CancellationToken ct = default) => app.GetConversationsAsync(type, pinnedOnly, skip, take, ct);
 
     [HttpGet("conversations/by-project/{projectId:guid}")]
     public async Task<ActionResult<ConversationDto>> FindByProject(Guid projectId, CancellationToken ct)

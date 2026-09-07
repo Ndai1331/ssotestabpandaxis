@@ -25,6 +25,7 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
     public DbSet<SocialPost> SocialPosts => Set<SocialPost>();
     public DbSet<SocialPostMedia> SocialPostMedia => Set<SocialPostMedia>();
     public DbSet<SocialPostComment> SocialPostComments => Set<SocialPostComment>();
+    public DbSet<SocialCommentAttachment> SocialCommentAttachments => Set<SocialCommentAttachment>();
     public DbSet<SocialPostReaction> SocialPostReactions => Set<SocialPostReaction>();
     public DbSet<SocialCommentReaction> SocialCommentReactions => Set<SocialCommentReaction>();
     public DbSet<SocialPostShare> SocialPostShares => Set<SocialPostShare>();
@@ -32,6 +33,7 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.HasPostgresExtension("pg_trgm");
 
         builder.Entity<Conversation>(b =>
         {
@@ -60,6 +62,8 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
         {
             b.ToTable("CollaborationMessages"); b.ConfigureByConvention();
             b.Property(x => x.Text).HasMaxLength(4000);
+            b.HasIndex(x => x.Text, "IX_CollaborationMessages_Text_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
             b.HasIndex(x => new { x.ConversationId, x.CreationTime });
             b.HasIndex(x => new { x.ConversationId, x.ClientMessageId }).IsUnique()
                 .HasFilter("\"ClientMessageId\" IS NOT NULL");
@@ -132,7 +136,13 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
             b.Property(x => x.LinkImageUrl).HasMaxLength(2048);
             b.HasIndex(x => new { x.Visibility, x.CreationTime, x.Id });
             b.HasIndex(x => x.AuthorUserId);
-            b.HasIndex(x => x.Hashtags);
+            b.HasIndex(x => x.Hashtags, "IX_CollaborationSocialPosts_Hashtags");
+            b.HasIndex(x => x.Text, "IX_CollaborationSocialPosts_Text_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.AuthorName, "IX_CollaborationSocialPosts_AuthorName_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.Hashtags, "IX_CollaborationSocialPosts_Hashtags_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
             b.HasMany(x => x.Media).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
             b.HasMany(x => x.Comments).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
             b.HasMany(x => x.Reactions).WithOne().HasForeignKey(x => x.PostId).OnDelete(DeleteBehavior.Cascade);
@@ -152,9 +162,24 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
             b.ToTable("CollaborationSocialPostComments"); b.ConfigureByConvention();
             b.Property(x => x.AuthorName).HasMaxLength(256);
             b.Property(x => x.Text).HasMaxLength(2000);
+            b.Property(x => x.LinkUrl).HasMaxLength(2048);
+            b.Property(x => x.LinkTitle).HasMaxLength(512);
+            b.Property(x => x.LinkDescription).HasMaxLength(2000);
+            b.Property(x => x.LinkSiteName).HasMaxLength(256);
+            b.Property(x => x.LinkImageUrl).HasMaxLength(2048);
             b.HasIndex(x => new { x.PostId, x.CreationTime, x.Id });
             b.HasIndex(x => x.ParentCommentId);
+            b.HasMany(x => x.Attachments).WithOne().HasForeignKey(x => x.CommentId).OnDelete(DeleteBehavior.Cascade);
             b.HasMany(x => x.Reactions).WithOne().HasForeignKey(x => x.CommentId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<SocialCommentAttachment>(b =>
+        {
+            b.ToTable("CollaborationSocialCommentAttachments"); b.ConfigureByConvention();
+            b.Property(x => x.BlobName).HasMaxLength(512);
+            b.Property(x => x.FileName).HasMaxLength(256);
+            b.Property(x => x.ContentType).HasMaxLength(128);
+            b.HasIndex(x => x.CommentId);
+            b.HasIndex(x => new { x.UploadedByUserId, x.CommentId });
         });
         builder.Entity<SocialPostReaction>(b =>
         {

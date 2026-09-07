@@ -3,6 +3,7 @@ using System;
 using HCS.WorkManagementService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HCS.WorkManagementService.Migrations
 {
     [DbContext(typeof(WorkManagementDbContext))]
-    partial class WorkManagementDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906104054_AddPerformanceIndexes")]
+    partial class AddPerformanceIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -262,16 +265,6 @@ namespace HCS.WorkManagementService.Migrations
 
                     b.HasIndex("OwnerUserId");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Projects_Code_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_Projects_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_Projects_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Name" }, "IX_Projects_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_Projects_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_Projects_Name_Trgm"), new[] { "gin_trgm_ops" });
-
                     b.ToTable("Projects", "hcs_work");
                 });
 
@@ -399,16 +392,6 @@ namespace HCS.WorkManagementService.Migrations
                         .IsUnique();
 
                     b.HasIndex("Status", "DueDate");
-
-                    b.HasIndex(new[] { "Code" }, "IX_ProjectTasks_Code_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_ProjectTasks_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_ProjectTasks_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Title" }, "IX_ProjectTasks_Title_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Title" }, "IX_ProjectTasks_Title_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Title" }, "IX_ProjectTasks_Title_Trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("ProjectTasks", "hcs_work");
                 });

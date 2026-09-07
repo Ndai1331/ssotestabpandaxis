@@ -3,6 +3,7 @@ using System;
 using HCS.OrganizationService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Volo.Abp.EntityFrameworkCore;
@@ -12,9 +13,11 @@ using Volo.Abp.EntityFrameworkCore;
 namespace HCS.OrganizationService.Data.Migrations
 {
     [DbContext(typeof(OrganizationDbContext))]
-    partial class OrganizationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906104117_AddPerformanceIndexes")]
+    partial class AddPerformanceIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,15 +88,17 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex(new[] { "Description" }, "IX_BloodGlucoseRanges_Description_Trgm");
+                    b.HasIndex("Description")
+                        .HasDatabaseName("IX_BloodGlucoseRanges_Description_Trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Description" }, "IX_BloodGlucoseRanges_Description_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Description" }, "IX_BloodGlucoseRanges_Description_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Description"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Description"), new[] { "gin_trgm_ops" });
 
-                    b.HasIndex(new[] { "Title" }, "IX_BloodGlucoseRanges_Title_Trgm");
+                    b.HasIndex("Title")
+                        .HasDatabaseName("IX_BloodGlucoseRanges_Title_Trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Title" }, "IX_BloodGlucoseRanges_Title_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Title" }, "IX_BloodGlucoseRanges_Title_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("BloodGlucoseRanges", "hcs_organization");
                 });
@@ -158,15 +163,17 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex(new[] { "Description" }, "IX_BloodPressureRanges_Description_Trgm");
+                    b.HasIndex("Description")
+                        .HasDatabaseName("IX_BloodPressureRanges_Description_Trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Description" }, "IX_BloodPressureRanges_Description_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Description" }, "IX_BloodPressureRanges_Description_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Description"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Description"), new[] { "gin_trgm_ops" });
 
-                    b.HasIndex(new[] { "Title" }, "IX_BloodPressureRanges_Title_Trgm");
+                    b.HasIndex("Title")
+                        .HasDatabaseName("IX_BloodPressureRanges_Title_Trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Title" }, "IX_BloodPressureRanges_Title_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Title" }, "IX_BloodPressureRanges_Title_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("BloodPressureRanges", "hcs_organization");
                 });
@@ -232,15 +239,17 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex(new[] { "Description" }, "IX_BmiRanges_Description_Trgm");
+                    b.HasIndex("Description")
+                        .HasDatabaseName("IX_BmiRanges_Description_Trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Description" }, "IX_BmiRanges_Description_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Description" }, "IX_BmiRanges_Description_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Description"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Description"), new[] { "gin_trgm_ops" });
 
-                    b.HasIndex(new[] { "Title" }, "IX_BmiRanges_Title_Trgm");
+                    b.HasIndex("Title")
+                        .HasDatabaseName("IX_BmiRanges_Title_Trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Title" }, "IX_BmiRanges_Title_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Title" }, "IX_BmiRanges_Title_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("BmiRanges", "hcs_organization");
                 });
@@ -296,20 +305,20 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Communes_Code_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Code"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Communes_Name_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("ProvinceId");
-
-                    b.HasIndex(new[] { "Code" }, "IX_Communes_Code")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "Code" }, "IX_Communes_Code_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_Communes_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_Communes_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Name" }, "IX_Communes_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_Communes_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_Communes_Name_Trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Communes", "hcs_organization");
                 });
@@ -367,21 +376,21 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Countries_Code_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Code"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("CountryCode")
                         .IsUnique();
 
-                    b.HasIndex(new[] { "Code" }, "IX_Countries_Code")
-                        .IsUnique();
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Countries_Name_Trgm");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Countries_Code_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_Countries_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_Countries_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Name" }, "IX_Countries_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_Countries_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_Countries_Name_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Countries", "hcs_organization");
                 });
@@ -440,20 +449,20 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Departments_Code_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Code"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Departments_Name_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("ParentId");
-
-                    b.HasIndex(new[] { "Code" }, "IX_Departments_Code")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "Code" }, "IX_Departments_Code_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_Departments_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_Departments_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Name" }, "IX_Departments_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_Departments_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_Departments_Name_Trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Departments", "hcs_organization");
                 });
@@ -515,20 +524,17 @@ namespace HCS.OrganizationService.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("IX_Icd10_Code_Trgm");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Icd10_Code")
-                        .IsUnique();
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Code"), new[] { "gin_trgm_ops" });
 
-                    b.HasIndex(new[] { "Code" }, "IX_Icd10_Code_Trgm");
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Icd10_Name_Trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_Icd10_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_Icd10_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Name" }, "IX_Icd10_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_Icd10_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_Icd10_Name_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Icd10", "hcs_organization");
                 });
@@ -589,18 +595,20 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .HasDatabaseName("IX_MasterDataItems_Code_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Code"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_MasterDataItems_Name_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("Type", "Code")
                         .IsUnique();
-
-                    b.HasIndex(new[] { "Code" }, "IX_MasterDataItems_Code_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_MasterDataItems_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_MasterDataItems_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Name" }, "IX_MasterDataItems_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_MasterDataItems_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_MasterDataItems_Name_Trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("MasterDataItems", "hcs_organization");
                 });
@@ -659,18 +667,18 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Positions_Code")
-                        .IsUnique();
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Positions_Code_Trgm");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Positions_Code_Trgm");
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Code"), new[] { "gin_trgm_ops" });
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_Positions_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_Positions_Code_Trgm"), new[] { "gin_trgm_ops" });
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Positions_Name_Trgm");
 
-                    b.HasIndex(new[] { "Name" }, "IX_Positions_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_Positions_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_Positions_Name_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Positions", "hcs_organization");
                 });
@@ -726,20 +734,20 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Provinces_Code_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Code"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("CountryId");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Provinces_Code")
-                        .IsUnique();
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Provinces_Name_Trgm");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Provinces_Code_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_Provinces_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_Provinces_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Name" }, "IX_Provinces_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_Provinces_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_Provinces_Name_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Provinces", "hcs_organization");
                 });
@@ -798,20 +806,20 @@ namespace HCS.OrganizationService.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Units_Code_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Code"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Code"), new[] { "gin_trgm_ops" });
+
                     b.HasIndex("DepartmentId");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Units_Code")
-                        .IsUnique();
+                    b.HasIndex("Name")
+                        .HasDatabaseName("IX_Units_Name_Trgm");
 
-                    b.HasIndex(new[] { "Code" }, "IX_Units_Code_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Code" }, "IX_Units_Code_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Code" }, "IX_Units_Code_Trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "Name" }, "IX_Units_Name_Trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "IX_Units_Name_Trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "IX_Units_Name_Trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Units", "hcs_organization");
                 });

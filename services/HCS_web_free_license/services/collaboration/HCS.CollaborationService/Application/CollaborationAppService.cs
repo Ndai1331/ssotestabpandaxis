@@ -96,14 +96,18 @@ public class CollaborationAppService(
         return await ToConversationDto(conversation, me, ct);
     }
 
-    public async Task<IReadOnlyList<ConversationDto>> GetConversationsAsync(ConversationType? type = null, bool pinnedOnly = false, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ConversationDto>> GetConversationsAsync(ConversationType? type = null,
+        bool pinnedOnly = false, int skip = 0, int take = 100, CancellationToken ct = default)
     {
         var me = UserId;
+        skip = Math.Max(skip, 0);
+        take = Math.Clamp(take, 1, 100);
         var query = db.Conversations.AsNoTracking().Include(x => x.Members)
             .Where(x => x.Members.Any(m => m.UserId == me));
         if (type.HasValue) query = query.Where(x => x.Type == type);
         if (pinnedOnly) query = query.Where(x => x.Members.Any(m => m.UserId == me && m.IsPinned));
-        var items = await query.OrderByDescending(x => x.LastMessageAt).ToListAsync(ct);
+        var items = await query.OrderByDescending(x => x.LastMessageAt).ThenByDescending(x => x.Id)
+            .Skip(skip).Take(take).ToListAsync(ct);
         return items.Select(x => MapConversation(x, me)).ToArray();
     }
 
