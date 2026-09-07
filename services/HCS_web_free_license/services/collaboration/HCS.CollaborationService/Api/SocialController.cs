@@ -70,7 +70,7 @@ public sealed class SocialController(
     public async Task<IActionResult> Download(Guid mediaId, CancellationToken ct)
     {
         var file = await media.DownloadAsync(mediaId, ct);
-        return File(file.Content, file.ContentType, file.FileName, enableRangeProcessing: true);
+        return CreateMediaResponse(file);
     }
 
     [HttpDelete("media/{mediaId:guid}")]
@@ -89,10 +89,21 @@ public sealed class SocialController(
     public async Task<IActionResult> DownloadCommentAttachment(Guid attachmentId, CancellationToken ct)
     {
         var file = await media.DownloadCommentAttachmentAsync(attachmentId, ct);
-        return File(file.Content, file.ContentType, file.FileName, enableRangeProcessing: true);
+        return CreateMediaResponse(file);
     }
 
     [HttpDelete("comment-media/{attachmentId:guid}")]
     public Task DeleteCommentAttachment(Guid attachmentId, CancellationToken ct) =>
         media.DeleteUnattachedCommentAttachmentAsync(attachmentId, ct);
+
+    private FileStreamResult CreateMediaResponse(AuthorizedSocialMediaDownload file)
+    {
+        if (file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
+            file.ContentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+        {
+            return File(file.Content, file.ContentType, enableRangeProcessing: true);
+        }
+
+        return File(file.Content, file.ContentType, file.FileName, enableRangeProcessing: true);
+    }
 }
