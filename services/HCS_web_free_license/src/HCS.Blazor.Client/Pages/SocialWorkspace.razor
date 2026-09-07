@@ -28,24 +28,34 @@
         </a>
     </header>
 
-    <nav class="hcs-social-scope-tabs" aria-label='@L["Social:ViewLabel"]'>
+    <nav class="hcs-social-scope-tabs @(isChangingVisibility ? "is-loading" : null)"
+         aria-label='@L["Social:ViewLabel"]' aria-busy="@(isChangingVisibility)">
         <span class="hcs-social-scope-tabs__label">@L["Social:ViewLabel"]</span>
         @if (isProfile)
         {
             <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(null) ? "is-active" : null)"
-                    aria-pressed="@IsVisibilitySelected(null)" @onclick="() => SelectVisibilityAsync(null)">
+                    aria-pressed="@IsVisibilitySelected(null)" @onclick="() => SelectVisibilityAsync(null)"
+                    disabled="@(isLoading || isChangingVisibility)">
                 <i class="fa fa-layer-group" aria-hidden="true"></i>@L["Social:All"]
             </button>
         }
         <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(SocialPostVisibility.Public) ? "is-active" : null)"
-                aria-pressed="@IsVisibilitySelected(SocialPostVisibility.Public)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Public)">
+                aria-pressed="@IsVisibilitySelected(SocialPostVisibility.Public)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Public)"
+                disabled="@(isLoading || isChangingVisibility)">
             <i class="fa fa-globe" aria-hidden="true"></i>@L["Social:Public"]
         </button>
         <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(SocialPostVisibility.Internal) ? "is-active" : null)"
                 aria-pressed="@IsVisibilitySelected(SocialPostVisibility.Internal)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Internal)"
-                title='@L["Social:InternalHint"]'>
+                title='@L["Social:InternalHint"]' disabled="@(isLoading || isChangingVisibility)">
             <i class="fa fa-lock" aria-hidden="true"></i>@L["Social:Internal"]
         </button>
+        @if (isChangingVisibility)
+        {
+            <span class="hcs-social-scope-tabs__loading" role="status" aria-live="polite">
+                <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+                <span>@L["Social:Loading"]</span>
+            </span>
+        }
     </nav>
 
     <form class="hcs-social-search" @onsubmit="ApplySearchAsync" @onsubmit:preventDefault>
@@ -228,9 +238,11 @@
                 }
             </section>
 
-            @if (isLoading)
+            @if (isLoading || isChangingVisibility)
             {
-                <div class="hcs-social-state" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Loading"]</div>
+                <div class="hcs-social-state hcs-social-state--loading" role="status">
+                    <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Loading"]
+                </div>
             }
             else if (!string.IsNullOrWhiteSpace(loadError))
             {
@@ -585,6 +597,7 @@
     private bool isProfile;
     private bool routeLoaded;
     private bool isLoading;
+    private bool isChangingVisibility;
     private bool isLoadingMore;
     private bool isPosting;
     private bool isUploadingMedia;
@@ -694,6 +707,7 @@
         }
         finally
         {
+            isChangingVisibility = false;
             routeLoadGate.Release();
         }
     }
@@ -1008,12 +1022,16 @@
 
     private async Task SelectVisibilityAsync(SocialPostVisibility? selectedVisibility)
     {
+        if (isChangingVisibility)
+            return;
+
         var target = isProfile
             ? BuildViewUri(true, selectedVisibility, keywordFilter, fromDateFilter, toDateFilter, hashtagFilter)
             : BuildViewUri(selectedVisibility == SocialPostVisibility.Internal,
                 selectedVisibility == SocialPostVisibility.Internal ? SocialPostVisibility.Internal : SocialPostVisibility.Public,
                 keywordFilter, fromDateFilter, toDateFilter, hashtagFilter);
         var targetKey = BuildRouteStateKey(target);
+        isChangingVisibility = true;
 
         if (targetKey == routeStateKey)
         {
@@ -1021,7 +1039,15 @@
             return;
         }
 
-        Navigation.NavigateTo(target);
+        try
+        {
+            Navigation.NavigateTo(target);
+        }
+        catch
+        {
+            isChangingVisibility = false;
+            throw;
+        }
     }
 
     private async Task ApplySearchAsync()
