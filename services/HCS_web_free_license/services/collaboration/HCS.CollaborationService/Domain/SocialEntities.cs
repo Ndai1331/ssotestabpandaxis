@@ -130,6 +130,8 @@ public sealed class SocialPostComment : CreationAuditedEntity<Guid>
         LinkSiteName = Check.Length(siteName?.Trim(), nameof(siteName), 256);
         LinkImageUrl = Check.Length(imageUrl, nameof(imageUrl), 2048);
     }
+
+    public void DetachFromParent() => ParentCommentId = null;
 }
 
 public sealed class SocialCommentAttachment : CreationAuditedEntity<Guid>

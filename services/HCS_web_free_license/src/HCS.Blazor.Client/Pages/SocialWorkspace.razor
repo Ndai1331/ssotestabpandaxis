@@ -1,12 +1,14 @@
 @page "/social"
 @page "/social/profile"
 @using Microsoft.AspNetCore.Components.Routing
+@using HCS.Blazor.Client.Account
 @using System.Threading
 @using System.Globalization
 @using System.IO
 @attribute [Authorize(Policy = CollaborationPermissions.Social)]
 @inherits HCSComponentBase
 @inject SocialClient Social
+@inject AccountProfileClient Account
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JS
@@ -128,15 +130,7 @@
                             @foreach (var person in people)
                             {
                                 <article class="hcs-social-person-card">
-                                    @if (!string.IsNullOrWhiteSpace(person.AvatarUrl))
-                                    {
-                                        <img class="hcs-social-avatar hcs-social-avatar--image" src="@person.AvatarUrl" loading="lazy"
-                                             alt="@person.DisplayName" />
-                                    }
-                                    else
-                                    {
-                                        <div class="hcs-social-avatar hcs-social-avatar--accent" aria-hidden="true">@Initials(person.DisplayName)</div>
-                                    }
+                                    @SocialAvatar(person.UserId, person.DisplayName, person.AvatarUrl)
                                     <div class="hcs-social-person-card__body">
                                         <h3>@person.DisplayName</h3>
                                         <p class="hcs-social-person-card__position">@(person.PositionName ?? L["Social:NoProfileValue"])</p>
@@ -164,15 +158,7 @@
                 <section class="hcs-social-profile-card" aria-labelledby="social-my-profile-title">
                     <div class="hcs-social-profile-card__cover" aria-hidden="true"></div>
                     <div class="hcs-social-profile-card__content">
-                        @if (!string.IsNullOrWhiteSpace(profile.AvatarUrl))
-                        {
-                            <img class="hcs-social-avatar hcs-social-avatar--profile hcs-social-avatar--image" src="@profile.AvatarUrl"
-                                 alt="@profile.DisplayName" />
-                        }
-                        else
-                        {
-                            <div class="hcs-social-avatar hcs-social-avatar--profile hcs-social-avatar--accent" aria-hidden="true">@Initials(profile.DisplayName)</div>
-                        }
+                        @SocialAvatar(profile.UserId, profile.DisplayName, profile.AvatarUrl, "hcs-social-avatar--profile")
                         <div class="hcs-social-profile-card__identity">
                             <h2 id="social-my-profile-title">@profile.DisplayName</h2>
                             <p class="hcs-social-profile-card__username">@@@profile.UserName</p>
@@ -191,7 +177,7 @@
             }
             <section class="hcs-social-composer" aria-labelledby="social-composer-title">
                 <div class="hcs-social-card-heading">
-                    <div class="hcs-social-avatar hcs-social-avatar--accent" aria-hidden="true">@Initials(CurrentDisplayName())</div>
+                    @SocialAvatar(currentUserId ?? Guid.Empty, CurrentDisplayName(), null, "hcs-social-avatar--accent")
                     <div>
                         <h2 id="social-composer-title">@L["Social:ComposerTitle"]</h2>
                         <p>@L["Social:ContentLabel"]</p>
@@ -267,7 +253,7 @@
                 {
                     <article class="hcs-social-post" aria-labelledby="post-@post.Id">
                         <header class="hcs-social-post__header">
-                            <div class="hcs-social-avatar" aria-hidden="true">@Initials(post.AuthorName)</div>
+                            @SocialAvatar(post.AuthorUserId, post.AuthorName, post.AvatarUrl)
                             <div class="hcs-social-post__author">
                                 <h2 id="post-@post.Id">@post.AuthorName</h2>
                                 <time datetime="@post.CreatedAt.ToString("O")" title="@post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")">
@@ -330,12 +316,12 @@
                                     @if (media.Kind == SocialMediaKind.Video)
                                     {
                                         <video controls preload="metadata" aria-label="@media.FileName">
-                                            <source src="@media.Url" type="@media.ContentType" />
+                                            <source src="@ResolveSocialResourceUrl(media.Url)" type="@media.ContentType" />
                                         </video>
                                     }
                                     else
                                     {
-                                        <img src="@media.Url" loading="lazy" alt="@media.FileName" />
+                                        <img src="@ResolveSocialResourceUrl(media.Url)" loading="lazy" alt="@media.FileName" />
                                     }
                                 }
                             </div>
@@ -420,7 +406,7 @@
                                     @foreach (var comment in comments)
                                     {
                                         <article class="hcs-social-comment @(comment.ParentCommentId.HasValue ? "is-reply" : null)">
-                                            <div class="hcs-social-avatar hcs-social-avatar--small" aria-hidden="true">@Initials(comment.AuthorName)</div>
+                                            @SocialAvatar(comment.AuthorUserId, comment.AuthorName, comment.AvatarUrl, "hcs-social-avatar--small")
                                             <div class="hcs-social-comment__body">
                                                 <div class="hcs-social-comment__bubble">
                                                     <strong>@comment.AuthorName</strong>
@@ -435,13 +421,13 @@
                                                             {
                                                                 @if (IsImageAttachment(attachment.ContentType))
                                                                 {
-                                                                    <a href="@attachment.Url" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
-                                                                        <img src="@attachment.Url" loading="lazy" alt="@attachment.FileName" />
+                                                                    <a href="@ResolveSocialResourceUrl(attachment.Url)" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
+                                                                        <img src="@ResolveSocialResourceUrl(attachment.Url)" loading="lazy" alt="@attachment.FileName" />
                                                                     </a>
                                                                 }
                                                                 else
                                                                 {
-                                                                    <a class="hcs-social-comment__file" href="@attachment.Url" target="_blank" rel="noopener" download>
+                                                                    <a class="hcs-social-comment__file" href="@ResolveSocialResourceUrl(attachment.Url)" target="_blank" rel="noopener" download>
                                                                         <i class="fa @FileIcon(attachment.FileName)" aria-hidden="true"></i>
                                                                         <span>@attachment.FileName</span>
                                                                         <small>@FormatFileSize(attachment.Size)</small>
@@ -470,6 +456,16 @@
                                                 <div class="hcs-social-comment__actions">
                                                     <time datetime="@comment.CreatedAt.ToString("O")">@comment.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
                                                     <button type="button" @onclick="() => BeginReply(post, comment)">@L["Social:Reply"]</button>
+                                                    @if (IsOwnComment(comment))
+                                                    {
+                                                        <button type="button" class="hcs-social-comment-delete"
+                                                                title='@L["Social:DeleteComment"]' aria-label='@L["Social:DeleteComment"]'
+                                                                @onclick="() => DeleteCommentAsync(post, comment)"
+                                                                disabled="@(deletingCommentId == comment.Id)">
+                                                            <i class="fa @(deletingCommentId == comment.Id ? "fa-spinner fa-spin" : "fa-trash")" aria-hidden="true"></i>
+                                                            @L["Social:DeleteComment"]
+                                                        </button>
+                                                    }
                                                 </div>
                                                 <div class="hcs-social-comment__reaction-actions" aria-label='@L["Social:React"]'>
                                                     @foreach (var reactionType in ReactionTypes)
@@ -583,6 +579,7 @@
     private readonly List<UploadSocialMediaResult> uploadedMedia = [];
     private readonly List<UploadSocialCommentAttachmentResult> commentAttachments = [];
     private readonly List<SocialPersonDto> people = [];
+    private readonly HashSet<string> avatarLoadFailures = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim routeLoadGate = new(1, 1);
     private static readonly SocialReactionType[] ReactionTypes = Enum.GetValues<SocialReactionType>();
     private bool isProfile;
@@ -602,8 +599,10 @@
     private Guid? currentUserId;
     private Guid? commentAttachmentPostId;
     private SocialPersonDto? myProfile;
+    private string? personalAvatarDataUrl;
     private Guid? editingPostId;
     private Guid? deletingPostId;
+    private Guid? deletingCommentId;
     private bool isUpdatingPost;
     private string editingContent = string.Empty;
     private SocialPostVisibility editingVisibility;
@@ -706,6 +705,7 @@
         routeLoaded = false;
         try
         {
+            await LoadPersonalAvatarAsync();
             var result = isProfile
                     ? await Social.GetProfilePostsAsync(visibility: visibilityFilter, keyword: keywordFilter,
                     from: fromDateFilter, to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId)
@@ -734,6 +734,24 @@
             loadError = L["Social:LoadError"].Value;
         }
         finally { isLoading = false; }
+    }
+
+    private async Task LoadPersonalAvatarAsync()
+    {
+        personalAvatarDataUrl = null;
+        avatarLoadFailures.Clear();
+        if (!currentUserId.HasValue)
+            return;
+
+        try
+        {
+            var avatar = await Account.TryGetAvatarAsync();
+            personalAvatarDataUrl = avatar?.ToDataUrl();
+        }
+        catch
+        {
+            // The initials fallback keeps the social page usable when the avatar store is unavailable.
+        }
     }
 
     private async Task LoadMoreAsync()
@@ -861,6 +879,8 @@
 
     private bool IsOwnPost(SocialPostDto post) => currentUserId == post.AuthorUserId;
 
+    private bool IsOwnComment(SocialCommentDto comment) => currentUserId == comment.AuthorUserId;
+
     private void BeginEditPost(SocialPostDto post)
     {
         if (!IsOwnPost(post) || isUpdatingPost || deletingPostId.HasValue)
@@ -948,6 +968,42 @@
         }
         catch { await NotifyErrorAsync(L["Social:DeleteError"]); }
         finally { deletingPostId = null; }
+    }
+
+    private async Task DeleteCommentAsync(SocialPostDto post, SocialCommentDto comment)
+    {
+        if (!IsOwnComment(comment) || deletingCommentId.HasValue)
+            return;
+        if (!await UiMessageService.Confirm(L["Social:DeleteCommentConfirmation"].Value))
+            return;
+
+        deletingCommentId = comment.Id;
+        try
+        {
+            await Social.DeleteCommentAsync(comment.Id);
+            if (commentsByPost.TryGetValue(post.Id, out var current))
+            {
+                commentsByPost[post.Id] = current
+                    .Where(item => item.Id != comment.Id)
+                    .Select(item => item.ParentCommentId == comment.Id
+                        ? item with { ParentCommentId = null }
+                        : item)
+                    .ToArray();
+            }
+
+            var index = posts.FindIndex(item => item.Id == post.Id);
+            if (index >= 0)
+                posts[index] = posts[index] with { CommentCount = Math.Max(0, posts[index].CommentCount - 1) };
+
+            if (replyingToCommentId == comment.Id)
+                CancelReply();
+            await NotifySuccessAsync(L["Social:CommentDeleted"]);
+        }
+        catch
+        {
+            await NotifyErrorAsync(L["Social:DeleteCommentError"]);
+        }
+        finally { deletingCommentId = null; }
     }
 
     private async Task SelectVisibilityAsync(SocialPostVisibility? selectedVisibility)
@@ -1354,6 +1410,58 @@
     }
 
     private string CurrentDisplayName() => currentDisplayName;
+
+    private RenderFragment SocialAvatar(Guid userId, string displayName, string? avatarUrl = null, string extraClass = "") => builder =>
+    {
+        var resolvedAvatarUrl = ResolveSocialAvatarUrl(userId, avatarUrl);
+        var baseClass = string.IsNullOrWhiteSpace(extraClass)
+            ? "hcs-social-avatar"
+            : $"hcs-social-avatar {extraClass}";
+
+        if (!string.IsNullOrWhiteSpace(resolvedAvatarUrl) && !avatarLoadFailures.Contains(resolvedAvatarUrl))
+        {
+            builder.OpenElement(0, "img");
+            builder.AddAttribute(1, "class", $"{baseClass} hcs-social-avatar--image");
+            builder.AddAttribute(2, "src", resolvedAvatarUrl);
+            builder.AddAttribute(3, "loading", "lazy");
+            builder.AddAttribute(4, "alt", "");
+            builder.AddAttribute(5, "aria-hidden", "true");
+            builder.AddAttribute(6, "onerror",
+                EventCallback.Factory.Create(this, () => MarkAvatarLoadFailure(resolvedAvatarUrl)));
+            builder.CloseElement();
+            return;
+        }
+
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", $"{baseClass} hcs-social-avatar--accent");
+        builder.AddAttribute(2, "aria-hidden", "true");
+        builder.AddContent(3, Initials(displayName));
+        builder.CloseElement();
+    };
+
+    private string? ResolveSocialAvatarUrl(Guid userId, string? avatarUrl)
+    {
+        if (userId != Guid.Empty && currentUserId == userId && !string.IsNullOrWhiteSpace(personalAvatarDataUrl))
+            return personalAvatarDataUrl;
+
+        return ResolveSocialResourceUrl(avatarUrl);
+    }
+
+    private string? ResolveSocialResourceUrl(string? resourceUrl)
+    {
+        if (string.IsNullOrWhiteSpace(resourceUrl))
+            return null;
+        if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
+            return resourceUrl;
+
+        var configuredOrigin = Configuration["Bff:PublicOrigin"] ?? Configuration["RemoteServices:Default:BaseUrl"];
+        if (!Uri.TryCreate(configuredOrigin, UriKind.Absolute, out var origin))
+            return resourceUrl;
+
+        return new Uri(origin, resourceUrl.TrimStart('/')).AbsoluteUri;
+    }
+
+    private void MarkAvatarLoadFailure(string avatarUrl) => avatarLoadFailures.Add(avatarUrl);
 
     private static bool IsImageAttachment(string? contentType) =>
         contentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;

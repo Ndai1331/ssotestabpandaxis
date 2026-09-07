@@ -30,6 +30,8 @@ public sealed class SocialDomainTests
         var parentId = Guid.NewGuid();
         var comment = new SocialPostComment(Guid.NewGuid(), postId, Guid.NewGuid(), "Author", "Reply", parentId);
         comment.ParentCommentId.ShouldBe(parentId);
+        comment.DetachFromParent();
+        comment.ParentCommentId.ShouldBeNull();
     }
 
     [Fact]

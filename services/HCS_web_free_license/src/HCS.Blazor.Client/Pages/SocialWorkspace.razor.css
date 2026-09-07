@@ -100,15 +100,18 @@
     box-shadow: var(--hcs-shadow-sm);
     display: grid;
     gap: .7rem;
-    grid-template-columns: auto auto minmax(13rem, 2fr) repeat(3, minmax(7rem, 1fr)) auto;
+    grid-template-columns: minmax(13rem, 2fr) repeat(3, minmax(7rem, 1fr)) auto;
+    grid-template-rows: auto auto;
     margin-bottom: 1.25rem;
     padding: .85rem 1rem;
 }
-.hcs-social-search__heading { align-items: center; color: var(--color-secondary); display: inline-flex; font-size: .82rem; font-weight: 750; gap: .45rem; min-height: 2.75rem; white-space: nowrap; }
-.hcs-social-search__modes { align-items: center; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--hcs-radius-md); display: inline-flex; gap: .15rem; min-height: 2.75rem; padding: .15rem; }
+.hcs-social-search__heading { align-items: center; color: var(--color-secondary); display: inline-flex; font-size: .82rem; font-weight: 750; gap: .45rem; grid-column: 1 / span 4; grid-row: 1; min-height: 2.75rem; white-space: nowrap; }
+.hcs-social-search__modes { align-items: center; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--hcs-radius-md); display: inline-flex; gap: .15rem; grid-column: 5; grid-row: 1; justify-self: end; min-height: 2.75rem; padding: .15rem; }
 .hcs-social-search__mode { align-items: center; background: transparent; border: 0; border-radius: calc(var(--hcs-radius-md) - .15rem); color: var(--color-muted); cursor: pointer; display: inline-flex; font: inherit; font-size: .72rem; font-weight: 700; gap: .3rem; min-height: 2.35rem; padding: .4rem .55rem; white-space: nowrap; }
 .hcs-social-search__mode:hover, .hcs-social-search__mode:focus-visible { color: var(--color-secondary); }
 .hcs-social-search__mode.is-active { background: #fff; box-shadow: var(--hcs-shadow-sm); color: var(--color-secondary); }
+.hcs-social-search__field { grid-row: 2; min-width: 0; }
+.hcs-social-search__actions { grid-row: 2; }
 .hcs-social-search__field label { color: var(--color-muted); display: block; font-size: .72rem; font-weight: 700; margin-bottom: .25rem; }
 .hcs-social-search__field .form-control { min-height: 2.75rem; }
 .hcs-social-search__actions { align-items: center; display: flex; gap: .45rem; min-height: 2.75rem; }
@@ -337,6 +340,9 @@
 .hcs-social-link-preview--comment > img { min-height: 5.5rem; }
 .hcs-social-comment__actions { align-items: center; display: flex; gap: .7rem; padding: .15rem .3rem; }
 .hcs-social-comment__actions button, .hcs-social-replying button { background: transparent; border: 0; color: var(--color-secondary); cursor: pointer; font-size: .75rem; font-weight: 700; padding: .35rem 0; }
+.hcs-social-comment__actions .hcs-social-comment-delete { color: var(--color-accent); }
+.hcs-social-comment__actions .hcs-social-comment-delete:hover, .hcs-social-comment__actions .hcs-social-comment-delete:focus-visible { color: var(--color-accent); text-decoration: underline; }
+.hcs-social-comment__actions .hcs-social-comment-delete:disabled { cursor: wait; opacity: .55; }
 .hcs-social-comment__reaction-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .1rem; margin-top: .15rem; }
 .hcs-social-comment-reaction { --social-reaction-color: var(--color-muted); align-items: center; background: transparent; border: 0; border-radius: 999px; color: var(--color-muted); cursor: pointer; display: inline-flex; font-size: .7rem; gap: .2rem; min-height: 2.75rem; min-width: 2.75rem; padding: .3rem .4rem; }
 .hcs-social-comment-reaction i { color: var(--social-reaction-color); }
@@ -418,8 +424,9 @@
     .hcs-social-scope-tabs__label { margin: .3rem .55rem .05rem; }
     .hcs-social-scope-tab { justify-content: center; width: 100%; }
     .hcs-social-search { align-items: stretch; grid-template-columns: minmax(0, 1fr); }
-    .hcs-social-search__heading { min-height: auto; }
-    .hcs-social-search__modes { width: 100%; }
+    .hcs-social-search__heading { grid-column: auto; grid-row: auto; min-height: auto; }
+    .hcs-social-search__modes { grid-column: auto; grid-row: auto; width: 100%; }
+    .hcs-social-search__field, .hcs-social-search__actions { grid-column: auto; grid-row: auto; }
     .hcs-social-search__mode { flex: 1 1 0; justify-content: center; }
     .hcs-social-search__actions { flex-direction: column; }
     .hcs-social-search__submit, .hcs-social-search__clear { width: 100%; }

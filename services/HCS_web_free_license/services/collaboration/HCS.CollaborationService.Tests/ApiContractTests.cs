@@ -45,6 +45,8 @@ public sealed class ApiContractTests
             .Cast<HttpPutAttribute>().Single().Template.ShouldBe("posts/{postId:guid}");
         typeof(SocialController).GetMethod(nameof(SocialController.DeletePost))!.GetCustomAttributes(typeof(HttpDeleteAttribute), true)
             .Cast<HttpDeleteAttribute>().Single().Template.ShouldBe("posts/{postId:guid}");
+        typeof(SocialController).GetMethod(nameof(SocialController.DeleteComment))!.GetCustomAttributes(typeof(HttpDeleteAttribute), true)
+            .Cast<HttpDeleteAttribute>().Single().Template.ShouldBe("comments/{commentId:guid}");
         typeof(SocialController).GetMethod(nameof(SocialController.ReactToPost))!.GetCustomAttributes(typeof(HttpPostAttribute), true)
             .Cast<HttpPostAttribute>().Single().Template.ShouldBe("posts/{postId:guid}/reactions");
         typeof(SocialController).GetMethod(nameof(SocialController.ReactToComment))!.GetCustomAttributes(typeof(HttpPostAttribute), true)

@@ -19,7 +19,8 @@ public class SocialCommentAppService(
     IGuidGenerator guidGenerator,
     IClock clock,
     SocialNotificationService socialNotifications,
-    SocialLinkPreviewFetcher linkPreviewFetcher) : ApplicationService
+    SocialLinkPreviewFetcher linkPreviewFetcher,
+    SocialMediaStore mediaStore) : ApplicationService
 {
     private Guid UserId => currentUser.Id ?? throw new AbpAuthorizationException("Authenticated user required.");
 
@@ -103,6 +104,28 @@ public class SocialCommentAppService(
         await db.SaveChangesAsync(ct);
         socialNotifications.PublishAfterCommit();
         return SocialMapping.Comment(comment, SocialMapping.EmptyReactions());
+    }
+
+    public async Task DeleteAsync(Guid commentId, CancellationToken ct = default)
+    {
+        var comment = await db.SocialPostComments
+            .Include(x => x.Attachments)
+            .SingleOrDefaultAsync(x => x.Id == commentId, ct)
+            ?? throw new AbpAuthorizationException("Social comment not found.");
+        if (comment.AuthorUserId != UserId)
+            throw new AbpAuthorizationException("Only the comment author can delete this comment.");
+
+        await posts.RequireVisibleAsync(comment.PostId, ct);
+        var blobNames = comment.Attachments.Select(attachment => attachment.BlobName).ToArray();
+        var replies = await db.SocialPostComments
+            .Where(x => x.ParentCommentId == commentId)
+            .ToListAsync(ct);
+        foreach (var reply in replies)
+            reply.DetachFromParent();
+
+        db.SocialPostComments.Remove(comment);
+        await db.SaveChangesAsync(ct);
+        await mediaStore.DeleteBlobsAsync(blobNames, ct);
     }
 
     public async Task<SocialReactionStateDto> ReactAsync(Guid commentId, SetSocialReactionInput input,

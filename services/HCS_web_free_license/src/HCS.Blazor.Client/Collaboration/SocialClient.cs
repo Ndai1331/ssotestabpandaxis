@@ -73,6 +73,9 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
     public Task<SocialCommentDto> CreateCommentAsync(Guid postId, CreateSocialCommentInput input, CancellationToken ct = default) =>
         SendAsync<CreateSocialCommentInput, SocialCommentDto>(HttpMethod.Post, $"api/social/posts/{postId:D}/comments", input, ct);
 
+    public Task DeleteCommentAsync(Guid commentId, CancellationToken ct = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"api/social/comments/{commentId:D}", ct);
+
     public Task<SocialReactionStateDto> ReactToPostAsync(Guid postId, SocialReactionType reactionType,
         bool remove = false, CancellationToken ct = default) =>
         SendAsync<SetSocialReactionInput, SocialReactionStateDto>(HttpMethod.Post, $"api/social/posts/{postId:D}/reactions",

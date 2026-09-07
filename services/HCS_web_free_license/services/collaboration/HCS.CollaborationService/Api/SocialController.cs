@@ -43,6 +43,9 @@ public sealed class SocialController(
     [HttpPost("posts/{postId:guid}/comments")]
     public Task<SocialCommentDto> AddComment(Guid postId, CreateSocialCommentInput input, CancellationToken ct) => comments.CreateAsync(postId, input, ct);
 
+    [HttpDelete("comments/{commentId:guid}")]
+    public Task DeleteComment(Guid commentId, CancellationToken ct) => comments.DeleteAsync(commentId, ct);
+
     [HttpPost("posts/{postId:guid}/reactions")]
     public Task<SocialReactionStateDto> ReactToPost(Guid postId, SetSocialReactionInput input, CancellationToken ct) =>
         posts.ReactAsync(postId, input, ct);
