@@ -16,13 +16,6 @@ namespace HCS.DocumentService.Migrations
                 table: "Documents");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Documents_Number",
-                schema: "document",
-                table: "Documents",
-                column: "Number",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Documents_Number_Trgm",
                 schema: "document",
                 table: "Documents",
@@ -34,11 +27,6 @@ namespace HCS.DocumentService.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_Documents_Number",
-                schema: "document",
-                table: "Documents");
-
             migrationBuilder.DropIndex(
                 name: "IX_Documents_Number_Trgm",
                 schema: "document",
