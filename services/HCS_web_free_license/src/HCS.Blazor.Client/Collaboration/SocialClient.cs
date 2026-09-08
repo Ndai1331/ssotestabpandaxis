@@ -95,6 +95,19 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
     public Task DeleteUnattachedCommentAttachmentAsync(Guid attachmentId, CancellationToken ct = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"api/social/comment-media/{attachmentId:D}", ct);
 
+    internal string BuildResourceUrl(string resourceUrl)
+    {
+        if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
+            return resourceUrl;
+
+        var gatewayBaseAddress = CreateClient().BaseAddress;
+        if (gatewayBaseAddress is null)
+            return resourceUrl;
+
+        var gatewayOrigin = new Uri(gatewayBaseAddress.GetLeftPart(UriPartial.Authority) + "/");
+        return new Uri(gatewayOrigin, resourceUrl.TrimStart('/')).AbsoluteUri;
+    }
+
     public async Task<UploadSocialMediaResult> UploadMediaAsync(IBrowserFile file, CancellationToken ct = default)
     {
         if (file.Size > MaxMediaSize)

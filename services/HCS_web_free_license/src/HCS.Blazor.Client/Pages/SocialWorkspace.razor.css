@@ -433,6 +433,7 @@
 .hcs-social-profile-card__meta span { color: var(--color-muted); font-size: .75rem; overflow-wrap: anywhere; }
 .hcs-social-profile-card__meta i { color: var(--color-secondary); margin-right: .3rem; }
 .hcs-social-profile-card__meta b { color: var(--color-text); font-weight: 700; margin-right: .25rem; }
+.hcs-social-profile-card--top { margin-bottom: 1.25rem; }
 .hcs-social-people-results { padding: 1.1rem 1.25rem 1.25rem; }
 .hcs-social-card-heading__icon { align-items: center; background: var(--color-primary-light); border-radius: 50%; color: var(--color-secondary); display: inline-flex; flex: 0 0 2.75rem; height: 2.75rem; justify-content: center; width: 2.75rem; }
 .hcs-social-people-results > .hcs-social-card-heading { margin-bottom: .9rem; }

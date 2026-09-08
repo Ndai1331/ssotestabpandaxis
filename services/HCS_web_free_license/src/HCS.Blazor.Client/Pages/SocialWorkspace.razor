@@ -28,6 +28,29 @@
         </a>
     </header>
 
+    @if (isProfile && myProfile is { } profile)
+    {
+        <section class="hcs-social-profile-card hcs-social-profile-card--top" aria-labelledby="social-my-profile-title">
+            <div class="hcs-social-profile-card__cover" aria-hidden="true"></div>
+            <div class="hcs-social-profile-card__content">
+                @SocialAvatar(profile.UserId, profile.DisplayName, profile.AvatarUrl, "hcs-social-avatar--profile")
+                <div class="hcs-social-profile-card__identity">
+                    <h2 id="social-my-profile-title">@profile.DisplayName</h2>
+                    <p class="hcs-social-profile-card__username">@@@profile.UserName</p>
+                    <div class="hcs-social-profile-card__meta">
+                        <span><i class="fa fa-id-badge" aria-hidden="true"></i><b>@L["Social:Position"]:</b> @(profile.PositionName ?? L["Social:NoProfileValue"])</span>
+                        @if (!string.IsNullOrWhiteSpace(profile.DepartmentName))
+                        {
+                            <span><i class="fa fa-building" aria-hidden="true"></i><b>@L["Social:Department"]:</b> @profile.DepartmentName</span>
+                        }
+                        <span><i class="fa fa-phone" aria-hidden="true"></i><b>@L["Social:Phone"]:</b> @(profile.PhoneNumber ?? L["Social:NoProfileValue"])</span>
+                        <span><i class="fa fa-envelope" aria-hidden="true"></i><b>@L["Social:Email"]:</b> @(profile.Email ?? L["Social:NoProfileValue"])</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    }
+
     <nav class="hcs-social-scope-tabs @(isChangingVisibility ? "is-loading" : null)"
          aria-label='@L["Social:ViewLabel"]' aria-busy="@(isChangingVisibility)">
         <span class="hcs-social-scope-tabs__label">@L["Social:ViewLabel"]</span>
@@ -161,28 +184,6 @@
                             }
                         </div>
                     }
-                </section>
-            }
-            @if (isProfile && myProfile is { } profile)
-            {
-                <section class="hcs-social-profile-card" aria-labelledby="social-my-profile-title">
-                    <div class="hcs-social-profile-card__cover" aria-hidden="true"></div>
-                    <div class="hcs-social-profile-card__content">
-                        @SocialAvatar(profile.UserId, profile.DisplayName, profile.AvatarUrl, "hcs-social-avatar--profile")
-                        <div class="hcs-social-profile-card__identity">
-                            <h2 id="social-my-profile-title">@profile.DisplayName</h2>
-                            <p class="hcs-social-profile-card__username">@@@profile.UserName</p>
-                            <div class="hcs-social-profile-card__meta">
-                                <span><i class="fa fa-id-badge" aria-hidden="true"></i><b>@L["Social:Position"]:</b> @(profile.PositionName ?? L["Social:NoProfileValue"])</span>
-                                @if (!string.IsNullOrWhiteSpace(profile.DepartmentName))
-                                {
-                                    <span><i class="fa fa-building" aria-hidden="true"></i><b>@L["Social:Department"]:</b> @profile.DepartmentName</span>
-                                }
-                                <span><i class="fa fa-phone" aria-hidden="true"></i><b>@L["Social:Phone"]:</b> @(profile.PhoneNumber ?? L["Social:NoProfileValue"])</span>
-                                <span><i class="fa fa-envelope" aria-hidden="true"></i><b>@L["Social:Email"]:</b> @(profile.Email ?? L["Social:NoProfileValue"])</span>
-                            </div>
-                        </div>
-                    </div>
                 </section>
             }
             <section class="hcs-social-composer" aria-labelledby="social-composer-title">
@@ -1480,6 +1481,12 @@
             return null;
         if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
             return resourceUrl;
+
+        // Media is protected by the Gateway. Use the same configured HttpClient
+        // base address as the social API calls instead of the UI host as fallback.
+        var gatewayResourceUrl = Social.BuildResourceUrl(resourceUrl);
+        if (Uri.TryCreate(gatewayResourceUrl, UriKind.Absolute, out _))
+            return gatewayResourceUrl;
 
         var configuredOrigin = Configuration["Bff:PublicOrigin"] ?? Configuration["RemoteServices:Default:BaseUrl"];
         if (!Uri.TryCreate(configuredOrigin, UriKind.Absolute, out var origin))
