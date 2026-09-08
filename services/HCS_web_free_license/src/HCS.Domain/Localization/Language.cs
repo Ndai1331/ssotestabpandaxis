@@ -22,22 +22,47 @@ public class Language : FullAuditedAggregateRoot<Guid>
         SetCultureName(cultureName);
         SetDisplayName(displayName);
         IsEnabled = isEnabled;
-        IsDefault = isDefault;
+        SetDefault(isDefault);
     }
 
     public void Update(string displayName, bool isEnabled)
     {
+        if (IsDefault && !isEnabled)
+        {
+            throw new BusinessException(HCSDomainErrorCodes.DefaultLanguageRequired);
+        }
+
         SetDisplayName(displayName);
         IsEnabled = isEnabled;
     }
 
-    public void SetDefault(bool isDefault) => IsDefault = isDefault;
+    public void SetDefault(bool isDefault)
+    {
+        if (isDefault && !IsEnabled)
+        {
+            throw new BusinessException(HCSDomainErrorCodes.DefaultLanguageMustBeEnabled);
+        }
+
+        IsDefault = isDefault;
+    }
+
+    public static string NormalizeCultureName(string cultureName)
+    {
+        cultureName = Check.NotNullOrWhiteSpace(cultureName, nameof(cultureName), LanguageConsts.MaxCultureNameLength);
+        try
+        {
+            return CultureInfo.GetCultureInfo(cultureName).Name;
+        }
+        catch (CultureNotFoundException)
+        {
+            throw new BusinessException(HCSDomainErrorCodes.LanguageInvalidCulture)
+                .WithData("CultureName", cultureName);
+        }
+    }
 
     private void SetCultureName(string cultureName)
     {
-        cultureName = Check.NotNullOrWhiteSpace(cultureName, nameof(cultureName), LanguageConsts.MaxCultureNameLength);
-        _ = CultureInfo.GetCultureInfo(cultureName);
-        CultureName = cultureName;
+        CultureName = NormalizeCultureName(cultureName);
     }
 
     private void SetDisplayName(string displayName)

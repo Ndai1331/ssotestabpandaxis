@@ -3,8 +3,8 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using HCS.Blazor.Client.Account
 @using System.Threading
-@using System.Globalization
 @using System.IO
+@using System.Text.RegularExpressions
 @attribute [Authorize(Policy = CollaborationPermissions.Social)]
 @inherits HCSComponentBase
 @inject SocialClient Social
@@ -111,14 +111,6 @@
         </div>
         @if (!peopleSearchMode)
         {
-            <div class="hcs-social-search__field">
-                <label for="social-search-from">@L["Social:FromDate"]</label>
-                <input id="social-search-from" class="form-control" type="date" @bind="fromDateInput" />
-            </div>
-            <div class="hcs-social-search__field">
-                <label for="social-search-to">@L["Social:ToDate"]</label>
-                <input id="social-search-to" class="form-control" type="date" @bind="toDateInput" />
-            </div>
             <div class="hcs-social-search__field">
                 <label for="social-search-hashtag">@L["Social:Hashtag"]</label>
                 <input id="social-search-hashtag" class="form-control" @bind="hashtagInput"
@@ -327,7 +319,7 @@
                         }
                         else if (!string.IsNullOrWhiteSpace(post.Text))
                         {
-                            <p class="hcs-social-post__text">@post.Text</p>
+                            <p class="hcs-social-post__text">@RenderSocialPostText(post.Text)</p>
                         }
                         @if (post.Media.Count > 0)
                         {
@@ -384,7 +376,11 @@
                             <span class="hcs-social-engagement-counts">
                                 @if (post.CommentCount > 0)
                                 {
-                                    <span>@post.CommentCount @L["Social:Comments"]</span>
+                                    <button type="button" class="hcs-social-engagement-count hcs-social-engagement-count--comments"
+                                            @onclick="() => OpenCommentsAsync(post)"
+                                            aria-expanded="@expandedPostIds.Contains(post.Id)">
+                                        @post.CommentCount @L["Social:Comments"]
+                                    </button>
                                 }
                                 @if (post.ShareCount > 0)
                                 {
@@ -406,7 +402,8 @@
                                     </button>
                                 }
                             </div>
-                            <button type="button" class="hcs-social-comment-toggle" @onclick="() => ToggleCommentsAsync(post)">
+                            <button type="button" class="hcs-social-comment-toggle" @onclick="() => ToggleCommentsAsync(post)"
+                                    aria-expanded="@expandedPostIds.Contains(post.Id)">
                                 <i class="fa fa-comment" aria-hidden="true"></i>@L["Social:Comment"]
                             </button>
                             <button type="button" class="hcs-social-share-button" @onclick="() => SharePostAsync(post)"
@@ -514,6 +511,18 @@
                                     <p class="hcs-social-comments__state">@L["Social:EmptyComments"]</p>
                                 }
 
+                                @if (commentsByPost.TryGetValue(post.Id, out var loadedComments) &&
+                                    commentTotalCounts.TryGetValue(post.Id, out var commentTotal) && loadedComments.Count < commentTotal)
+                                {
+                                    <button type="button" class="hcs-social-load-more hcs-social-load-more--comments"
+                                            @onclick="() => LoadMoreCommentsAsync(post)"
+                                            disabled="@(commentLoadingMorePostId == post.Id)"
+                                            aria-label='@L["Social:LoadMoreComments"]'>
+                                        <i class="fa @(commentLoadingMorePostId == post.Id ? "fa-spinner fa-spin" : "fa-arrow-down")" aria-hidden="true"></i>
+                                        @(commentLoadingMorePostId == post.Id ? L["Social:LoadingMoreComments"] : L["Social:LoadMoreComments"])
+                                    </button>
+                                }
+
                                 @if (commentErrorPostId == post.Id)
                                 {
                                     <p class="hcs-social-inline-error" role="alert">@L["Social:CommentError"]</p>
@@ -594,8 +603,13 @@
 </section>
 
 @code {
+    private const int CommentsPageSize = 10;
+    private static readonly Regex HashtagPattern = new(
+        @"(?<!\w)#(?<tag>[\p{L}\p{N}_-]{1,64})",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private readonly List<SocialPostDto> posts = [];
     private readonly Dictionary<Guid, IReadOnlyList<SocialCommentDto>> commentsByPost = [];
+    private readonly Dictionary<Guid, long> commentTotalCounts = [];
     private readonly HashSet<Guid> expandedPostIds = [];
     private readonly List<UploadSocialMediaResult> uploadedMedia = [];
     private readonly List<UploadSocialCommentAttachmentResult> commentAttachments = [];
@@ -631,14 +645,13 @@
     private string content = string.Empty;
     private string commentDraft = string.Empty;
     private string keywordInput = string.Empty;
-    private DateTime? fromDateInput;
-    private DateTime? toDateInput;
     private string hashtagInput = string.Empty;
     private SocialPostVisibility visibility = SocialPostVisibility.Public;
     private string? loadError;
     private string? searchError;
     private string? peopleSearchError;
     private Guid? commentLoadingPostId;
+    private Guid? commentLoadingMorePostId;
     private Guid? commentErrorPostId;
     private Guid? replyingToPostId;
     private Guid? replyingToCommentId;
@@ -649,8 +662,6 @@
     private Guid? pendingScrollPostId;
     private string routeStateKey = string.Empty;
     private string keywordFilter = string.Empty;
-    private DateOnly? fromDateFilter;
-    private DateOnly? toDateFilter;
     private string hashtagFilter = string.Empty;
 
     protected override void OnInitialized()
@@ -700,12 +711,8 @@
             selectedPostId = route.PostId;
             pendingScrollPostId = route.PostId;
             keywordFilter = route.Keyword;
-            fromDateFilter = route.From;
-            toDateFilter = route.To;
             hashtagFilter = route.Hashtag;
             keywordInput = keywordFilter;
-            fromDateInput = fromDateFilter?.ToDateTime(TimeOnly.MinValue);
-            toDateInput = toDateFilter?.ToDateTime(TimeOnly.MinValue);
             hashtagInput = hashtagFilter;
             searchError = null;
             people.Clear();
@@ -731,9 +738,8 @@
             await LoadPersonalAvatarAsync();
             var result = isProfile
                     ? await Social.GetProfilePostsAsync(visibility: visibilityFilter, keyword: keywordFilter,
-                    from: fromDateFilter, to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId)
-                : await Social.GetFeedAsync(keyword: keywordFilter, from: fromDateFilter,
-                    to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId);
+                    hashtag: hashtagFilter, postId: selectedPostId)
+                : await Social.GetFeedAsync(keyword: keywordFilter, hashtag: hashtagFilter, postId: selectedPostId);
             posts.Clear();
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
@@ -747,6 +753,7 @@
                 myProfile = null;
             }
             commentsByPost.Clear();
+            commentTotalCounts.Clear();
             expandedPostIds.Clear();
             routeLoaded = true;
         }
@@ -785,9 +792,8 @@
         {
             var result = isProfile
                 ? await Social.GetProfilePostsAsync(posts.Count, visibility: visibilityFilter, keyword: keywordFilter,
-                    from: fromDateFilter, to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId)
-                : await Social.GetFeedAsync(posts.Count, keyword: keywordFilter, from: fromDateFilter,
-                    to: toDateFilter, hashtag: hashtagFilter, postId: selectedPostId);
+                    hashtag: hashtagFilter, postId: selectedPostId)
+                : await Social.GetFeedAsync(posts.Count, keyword: keywordFilter, hashtag: hashtagFilter, postId: selectedPostId);
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
         }
@@ -1013,6 +1019,8 @@
                         : item)
                     .ToArray();
             }
+            if (commentTotalCounts.TryGetValue(post.Id, out var commentTotal))
+                commentTotalCounts[post.Id] = Math.Max(0, commentTotal - 1);
 
             var index = posts.FindIndex(item => item.Id == post.Id);
             if (index >= 0)
@@ -1035,10 +1043,10 @@
             return;
 
         var target = isProfile
-            ? BuildViewUri(true, selectedVisibility, keywordFilter, fromDateFilter, toDateFilter, hashtagFilter)
+            ? BuildViewUri(true, selectedVisibility, keywordFilter, hashtagFilter)
             : BuildViewUri(selectedVisibility == SocialPostVisibility.Internal,
                 selectedVisibility == SocialPostVisibility.Internal ? SocialPostVisibility.Internal : SocialPostVisibility.Public,
-                keywordFilter, fromDateFilter, toDateFilter, hashtagFilter);
+                keywordFilter, hashtagFilter);
         var targetKey = BuildRouteStateKey(target);
         isChangingVisibility = true;
 
@@ -1068,20 +1076,9 @@
         }
 
         searchError = null;
-        DateOnly? from = fromDateInput.HasValue ? DateOnly.FromDateTime(fromDateInput.Value) : null;
-        DateOnly? to = toDateInput.HasValue ? DateOnly.FromDateTime(toDateInput.Value) : null;
-
-        if (from.HasValue && to.HasValue && from.Value > to.Value)
-        {
-            searchError = L["Social:InvalidDateRange"].Value;
-            return;
-        }
-
         keywordFilter = keywordInput.Trim();
-        fromDateFilter = from;
-        toDateFilter = to;
         hashtagFilter = hashtagInput.Trim();
-        var target = BuildViewUri(isProfile, visibilityFilter, keywordFilter, fromDateFilter, toDateFilter, hashtagFilter);
+        var target = BuildViewUri(isProfile, visibilityFilter, keywordFilter, hashtagFilter);
         if (BuildRouteStateKey(target) == routeStateKey)
             await ReloadForCurrentRouteAsync(force: true);
         else
@@ -1127,15 +1124,11 @@
     private async Task ClearSearchAsync()
     {
         keywordInput = string.Empty;
-        fromDateInput = null;
-        toDateInput = null;
         hashtagInput = string.Empty;
         keywordFilter = string.Empty;
-        fromDateFilter = null;
-        toDateFilter = null;
         hashtagFilter = string.Empty;
         searchError = null;
-        var target = BuildViewUri(isProfile, visibilityFilter, keywordFilter, fromDateFilter, toDateFilter, hashtagFilter);
+        var target = BuildViewUri(isProfile, visibilityFilter, keywordFilter, hashtagFilter);
         if (BuildRouteStateKey(target) == routeStateKey)
             await ReloadForCurrentRouteAsync(force: true);
         else
@@ -1143,13 +1136,12 @@
     }
 
     private bool HasSearchFilters() => !string.IsNullOrWhiteSpace(keywordInput) ||
-        fromDateInput.HasValue || toDateInput.HasValue ||
         !string.IsNullOrWhiteSpace(hashtagInput);
 
     private bool IsVisibilitySelected(SocialPostVisibility? selectedVisibility) => visibilityFilter == selectedVisibility;
 
-    private (bool IsProfile, SocialPostVisibility? Visibility, Guid? PostId, string Keyword, DateOnly? From,
-        DateOnly? To, string Hashtag, string Key) ReadRouteState()
+    private (bool IsProfile, SocialPostVisibility? Visibility, Guid? PostId, string Keyword,
+        string Hashtag, string Key) ReadRouteState()
     {
         var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
         var queryStart = relative.IndexOf('?');
@@ -1158,11 +1150,9 @@
         var selectedVisibility = isCurrentProfile ? ReadVisibility(relative, queryStart) : SocialPostVisibility.Public;
         var postId = ReadGuid(ReadQueryValue(relative, queryStart, "post"));
         var keyword = ReadQueryValue(relative, queryStart, "keyword") ?? string.Empty;
-        var from = ReadDate(ReadQueryValue(relative, queryStart, "from"));
-        var to = ReadDate(ReadQueryValue(relative, queryStart, "to"));
         var hashtag = ReadQueryValue(relative, queryStart, "hashtag") ?? string.Empty;
-        return (isCurrentProfile, selectedVisibility, postId, keyword, from, to, hashtag,
-            BuildRouteStateKey(isCurrentProfile, selectedVisibility, keyword, from, to, hashtag, postId));
+        return (isCurrentProfile, selectedVisibility, postId, keyword, hashtag,
+            BuildRouteStateKey(isCurrentProfile, selectedVisibility, keyword, hashtag: hashtag, postId: postId));
     }
 
     private static SocialPostVisibility? ReadVisibility(string relative, int queryStart)
@@ -1170,10 +1160,6 @@
         var value = ReadQueryValue(relative, queryStart, "visibility");
         return Enum.TryParse<SocialPostVisibility>(value, true, out var visibility) ? visibility : null;
     }
-
-    private static DateOnly? ReadDate(string? value) =>
-        DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-            DateTimeStyles.None, out var date) ? date : null;
 
     private static Guid? ReadGuid(string? value) =>
         Guid.TryParse(value, out var id) ? id : null;
@@ -1195,8 +1181,8 @@
     }
 
     private static string BuildRouteStateKey(bool profile, SocialPostVisibility? selectedVisibility,
-        string keyword = "", DateOnly? from = null, DateOnly? to = null, string hashtag = "", Guid? postId = null) =>
-        $"{(profile ? "profile" : "feed")}:{selectedVisibility?.ToString() ?? "all"}|post={postId}|q={keyword}|from={from?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}|to={to?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}|tag={hashtag}";
+        string keyword = "", string hashtag = "", Guid? postId = null) =>
+        $"{(profile ? "profile" : "feed")}:{selectedVisibility?.ToString() ?? "all"}|post={postId}|q={keyword}|tag={hashtag}";
 
     private static string BuildRouteStateKey(string target)
     {
@@ -1207,13 +1193,11 @@
         var postId = ReadGuid(ReadQueryValue(target, queryStart, "post"));
         return BuildRouteStateKey(isTargetProfile, selectedVisibility,
             ReadQueryValue(target, queryStart, "keyword") ?? string.Empty,
-            ReadDate(ReadQueryValue(target, queryStart, "from")),
-            ReadDate(ReadQueryValue(target, queryStart, "to")),
             ReadQueryValue(target, queryStart, "hashtag") ?? string.Empty, postId);
     }
 
     private static string BuildViewUri(bool profile, SocialPostVisibility? selectedVisibility,
-        string? keyword = null, DateOnly? from = null, DateOnly? to = null, string? hashtag = null, Guid? postId = null)
+        string? keyword = null, string? hashtag = null, Guid? postId = null)
     {
         var uri = profile
             ? "/social/profile"
@@ -1224,10 +1208,6 @@
         var parameters = new List<string>();
         if (!string.IsNullOrWhiteSpace(keyword))
             parameters.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
-        if (from.HasValue)
-            parameters.Add($"from={from.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
-        if (to.HasValue)
-            parameters.Add($"to={to.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
         if (!string.IsNullOrWhiteSpace(hashtag))
             parameters.Add($"hashtag={Uri.EscapeDataString(hashtag.Trim())}");
         if (postId.HasValue)
@@ -1385,6 +1365,16 @@
         finally { isPosting = false; }
     }
 
+    private async Task OpenCommentsAsync(SocialPostDto post)
+    {
+        if (expandedPostIds.Contains(post.Id))
+            return;
+
+        expandedPostIds.Add(post.Id);
+        if (!commentsByPost.ContainsKey(post.Id))
+            await LoadCommentsAsync(post.Id, 0);
+    }
+
     private async Task ToggleCommentsAsync(SocialPostDto post)
     {
         if (!expandedPostIds.Add(post.Id))
@@ -1392,12 +1382,55 @@
             expandedPostIds.Remove(post.Id);
             return;
         }
-        if (commentsByPost.ContainsKey(post.Id)) return;
-        commentLoadingPostId = post.Id;
+        if (!commentsByPost.ContainsKey(post.Id))
+            await LoadCommentsAsync(post.Id, 0);
+    }
+
+    private async Task LoadMoreCommentsAsync(SocialPostDto post)
+    {
+        if (commentLoadingPostId.HasValue || commentLoadingMorePostId.HasValue ||
+            !commentsByPost.TryGetValue(post.Id, out var comments) ||
+            !commentTotalCounts.TryGetValue(post.Id, out var total) || comments.Count >= total)
+            return;
+
+        await LoadCommentsAsync(post.Id, comments.Count);
+    }
+
+    private async Task LoadCommentsAsync(Guid postId, int skip)
+    {
+        if (skip == 0)
+            commentLoadingPostId = postId;
+        else
+            commentLoadingMorePostId = postId;
         commentErrorPostId = null;
-        try { commentsByPost[post.Id] = await Social.GetCommentsAsync(post.Id); }
-        catch { commentErrorPostId = post.Id; }
-        finally { commentLoadingPostId = null; }
+        try
+        {
+            var result = await Social.GetCommentsAsync(postId, skip, CommentsPageSize);
+            if (skip == 0)
+            {
+                commentsByPost[postId] = result.Items;
+            }
+            else
+            {
+                var current = commentsByPost.GetValueOrDefault(postId, []);
+                commentsByPost[postId] = current.Concat(result.Items)
+                    .GroupBy(comment => comment.Id)
+                    .Select(group => group.First())
+                    .ToArray();
+            }
+            commentTotalCounts[postId] = result.TotalCount;
+        }
+        catch
+        {
+            commentErrorPostId = postId;
+        }
+        finally
+        {
+            if (skip == 0)
+                commentLoadingPostId = null;
+            else
+                commentLoadingMorePostId = null;
+        }
     }
 
     private void BeginReply(SocialPostDto post, SocialCommentDto comment)
@@ -1432,7 +1465,8 @@
                 AttachmentIds = commentAttachments.Select(attachment => attachment.Id).ToArray()
             });
             var current = commentsByPost.GetValueOrDefault(postId, []);
-            commentsByPost[postId] = current.Append(comment).ToArray();
+            commentsByPost[postId] = current.Prepend(comment).Take(CommentsPageSize).ToArray();
+            commentTotalCounts[postId] = commentTotalCounts.GetValueOrDefault(postId) + 1;
             var index = posts.FindIndex(post => post.Id == postId);
             if (index >= 0) posts[index] = posts[index] with { CommentCount = posts[index].CommentCount + 1 };
             commentDraft = string.Empty;
@@ -1443,6 +1477,30 @@
         catch { commentErrorPostId = postId; }
         finally { isSubmittingComment = false; }
     }
+
+    private RenderFragment RenderSocialPostText(string text) => builder =>
+    {
+        var position = 0;
+        var sequence = 0;
+        foreach (System.Text.RegularExpressions.Match match in HashtagPattern.Matches(text))
+        {
+            if (match.Index > position)
+                builder.AddContent(sequence++, text[position..match.Index]);
+
+            var hashtag = match.Groups["tag"].Value;
+            builder.OpenElement(sequence++, "a");
+            builder.AddAttribute(sequence++, "class", "hcs-social-hashtag");
+            builder.AddAttribute(sequence++, "href", BuildViewUri(isProfile, visibilityFilter, hashtag: hashtag));
+            builder.AddAttribute(sequence++, "title", string.Format(L["Social:SearchHashtag"].Value, match.Value));
+            builder.AddAttribute(sequence++, "aria-label", string.Format(L["Social:SearchHashtag"].Value, match.Value));
+            builder.AddContent(sequence++, match.Value);
+            builder.CloseElement();
+            position = match.Index + match.Length;
+        }
+
+        if (position < text.Length)
+            builder.AddContent(sequence, text[position..]);
+    };
 
     private string CurrentDisplayName() => currentDisplayName;
 

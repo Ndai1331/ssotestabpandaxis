@@ -5,7 +5,8 @@ internal static class BffRequestPolicy
     private static readonly string[] AnonymousBootstrapPaths =
     [
         "/api/abp/application-configuration",
-        "/api/abp/application-localization"
+        "/api/abp/application-localization",
+        "/api/language-management/languages/enabled"
     ];
     private const string AnonymousSurveyPrefix = "/api/surveys/public";
     private static readonly string[] ProtectedPrefixes = ["/api", "/hubs"];

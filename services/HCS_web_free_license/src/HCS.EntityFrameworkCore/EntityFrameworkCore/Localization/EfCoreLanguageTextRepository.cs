@@ -29,6 +29,18 @@ public class EfCoreLanguageTextRepository : EfCoreRepository<HCSDbContext, Langu
         return await query.Where(x => x.ResourceName == resourceName && x.CultureName == cultureName).ToListAsync(GetCancellationToken(cancellationToken));
     }
 
+    public async Task DeleteByCultureNameAsync(string cultureName, CancellationToken cancellationToken = default)
+    {
+        var query = await GetQueryableAsync();
+        var entities = await query.Where(x => x.CultureName == cultureName)
+            .ToListAsync(GetCancellationToken(cancellationToken));
+
+        foreach (var entity in entities)
+        {
+            await DeleteAsync(entity, autoSave: false, cancellationToken: cancellationToken);
+        }
+    }
+
     public async Task<List<LanguageText>> GetFilteredListAsync(string? resourceName, string? cultureName, string? filter, int skipCount, int maxResultCount, string sorting, CancellationToken cancellationToken = default)
     {
         var query = ApplyFilter(await GetQueryableAsync(), resourceName, cultureName, filter);

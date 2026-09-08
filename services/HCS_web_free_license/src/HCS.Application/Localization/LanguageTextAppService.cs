@@ -31,9 +31,20 @@ public class LanguageTextAppService : HCSAppService, ILanguageTextAppService
 
     public async Task<PagedResultDto<LanguageTextDto>> GetListAsync(GetLanguageTextsInput input)
     {
+        var cultureName = input.CultureName.IsNullOrWhiteSpace()
+            ? input.CultureName
+            : Language.NormalizeCultureName(input.CultureName!);
+        if (!cultureName.IsNullOrWhiteSpace())
+        {
+            var language = await _languageRepository.FindByCultureNameAsync(cultureName!);
+            if (language is null || !language.IsEnabled)
+            {
+                throw new BusinessException(HCSDomainErrorCodes.LanguageNotFound).WithData("CultureName", cultureName!);
+            }
+        }
         var sorting = input.Sorting.IsNullOrWhiteSpace() ? nameof(LanguageText.Name) : input.Sorting;
-        var entities = await _repository.GetFilteredListAsync(input.ResourceName, input.CultureName, input.Filter, input.SkipCount, input.MaxResultCount, sorting);
-        var count = await _repository.GetFilteredCountAsync(input.ResourceName, input.CultureName, input.Filter);
+        var entities = await _repository.GetFilteredListAsync(input.ResourceName, cultureName, input.Filter, input.SkipCount, input.MaxResultCount, sorting);
+        var count = await _repository.GetFilteredCountAsync(input.ResourceName, cultureName, input.Filter);
         return new PagedResultDto<LanguageTextDto>(count, entities.Select(Map).ToList());
     }
 
@@ -41,17 +52,19 @@ public class LanguageTextAppService : HCSAppService, ILanguageTextAppService
 
     public async Task<LanguageTextDto> CreateAsync(CreateLanguageTextDto input)
     {
-        if (await _languageRepository.FindByCultureNameAsync(input.CultureName) == null)
+        var cultureName = Language.NormalizeCultureName(input.CultureName);
+        var language = await _languageRepository.FindByCultureNameAsync(cultureName);
+        if (language is null || !language.IsEnabled)
         {
-            throw new BusinessException("HCS:LanguageNotFound").WithData("CultureName", input.CultureName);
+            throw new BusinessException(HCSDomainErrorCodes.LanguageNotFound).WithData("CultureName", cultureName);
         }
 
-        if (await _repository.FindByKeyAsync(input.ResourceName, input.CultureName, input.Name) != null)
+        if (await _repository.FindByKeyAsync(input.ResourceName, cultureName, input.Name) != null)
         {
             throw new BusinessException(HCSDomainErrorCodes.LanguageTextAlreadyExists);
         }
 
-        var entity = new LanguageText(GuidGenerator.Create(), input.ResourceName, input.CultureName, input.Name, input.Value);
+        var entity = new LanguageText(GuidGenerator.Create(), input.ResourceName, cultureName, input.Name, input.Value);
         await _repository.InsertAsync(entity, autoSave: true);
         await PublishChangeAsync(entity);
         return Map(entity);

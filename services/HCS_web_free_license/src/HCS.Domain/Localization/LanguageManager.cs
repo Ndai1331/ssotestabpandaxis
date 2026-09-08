@@ -16,12 +16,18 @@ public class LanguageManager : DomainService
 
     public async Task<Language> CreateAsync(string cultureName, string displayName, bool isEnabled, bool isDefault)
     {
-        if (await _languageRepository.FindByCultureNameAsync(cultureName) != null)
+        var normalizedCultureName = Language.NormalizeCultureName(cultureName);
+        if (isDefault && !isEnabled)
         {
-            throw new BusinessException(HCSDomainErrorCodes.LanguageAlreadyExists).WithData("CultureName", cultureName);
+            throw new BusinessException(HCSDomainErrorCodes.DefaultLanguageMustBeEnabled);
         }
 
-        var language = new Language(GuidGenerator.Create(), cultureName, displayName, isEnabled, isDefault);
+        if (await _languageRepository.FindByCultureNameAsync(normalizedCultureName) != null)
+        {
+            throw new BusinessException(HCSDomainErrorCodes.LanguageAlreadyExists).WithData("CultureName", normalizedCultureName);
+        }
+
+        var language = new Language(GuidGenerator.Create(), normalizedCultureName, displayName, isEnabled, isDefault);
         if (isDefault)
         {
             await ClearCurrentDefaultAsync();
@@ -32,6 +38,11 @@ public class LanguageManager : DomainService
 
     public async Task SetDefaultAsync(Language language)
     {
+        if (!language.IsEnabled)
+        {
+            throw new BusinessException(HCSDomainErrorCodes.DefaultLanguageMustBeEnabled);
+        }
+
         await ClearCurrentDefaultAsync(language.Id);
         language.SetDefault(true);
     }

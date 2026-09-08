@@ -8,6 +8,7 @@ using HCS.Localization;
 using HCS.IntegrationEvents.Auditing;
 using HCS.PlatformService;
 using Shouldly;
+using Volo.Abp;
 using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
 using Xunit;
@@ -19,6 +20,7 @@ public class PlatformFeatureTests : HCSEntityFrameworkCoreTestBase
 {
     private readonly ILanguageAppService _languages;
     private readonly ILanguageTextAppService _texts;
+    private readonly ILanguageTextRepository _textRepository;
     private readonly IAuditViewerAppService _auditViewer;
     private readonly IAuditRecordProjectionRepository _auditRepository;
     private readonly AuditRecordIntegrationEventHandler _auditHandler;
@@ -28,6 +30,7 @@ public class PlatformFeatureTests : HCSEntityFrameworkCoreTestBase
     {
         _languages = GetRequiredService<ILanguageAppService>();
         _texts = GetRequiredService<ILanguageTextAppService>();
+        _textRepository = GetRequiredService<ILanguageTextRepository>();
         _auditViewer = GetRequiredService<IAuditViewerAppService>();
         _auditRepository = GetRequiredService<IAuditRecordProjectionRepository>();
         _auditHandler = GetRequiredService<AuditRecordIntegrationEventHandler>();
@@ -69,6 +72,75 @@ public class PlatformFeatureTests : HCSEntityFrameworkCoreTestBase
         updated.Value.ShouldBe("Bienvenido");
         (await _texts.GetAsync(created.Id)).Value.ShouldBe("Bienvenido");
         (await _localizationStore.GetTextsAsync("HCS", "es-ES"))["Welcome"].ShouldBe("Bienvenido");
+    }
+
+    [Fact]
+    public async Task Should_Reject_Invalid_Default_Language_Changes()
+    {
+        var createException = await Should.ThrowAsync<BusinessException>(() => _languages.CreateAsync(new CreateLanguageDto
+        {
+            CultureName = "it-IT", DisplayName = "Italiano", IsEnabled = false, IsDefault = true
+        }));
+        createException.Code.ShouldBe(HCSDomainErrorCodes.DefaultLanguageMustBeEnabled);
+
+        var language = await _languages.CreateAsync(new CreateLanguageDto
+        {
+            CultureName = "it-IT", DisplayName = "Italiano", IsEnabled = true, IsDefault = true
+        });
+
+        var disableException = await Should.ThrowAsync<BusinessException>(() => _languages.UpdateAsync(language.Id, new UpdateLanguageDto
+        {
+            DisplayName = "Italiano", IsEnabled = false, IsDefault = true
+        }));
+        disableException.Code.ShouldBe(HCSDomainErrorCodes.DefaultLanguageMustBeEnabled);
+
+        var unsetException = await Should.ThrowAsync<BusinessException>(() => _languages.UpdateAsync(language.Id, new UpdateLanguageDto
+        {
+            DisplayName = "Italiano", IsEnabled = true, IsDefault = false
+        }));
+        unsetException.Code.ShouldBe(HCSDomainErrorCodes.DefaultLanguageRequired);
+    }
+
+    [Fact]
+    public async Task Should_Soft_Delete_Language_Texts_And_Recreate_Culture()
+    {
+        var language = await _languages.CreateAsync(new CreateLanguageDto
+        {
+            CultureName = "fr-CA", DisplayName = "Français (Canada)", IsEnabled = true
+        });
+        await _texts.CreateAsync(new CreateLanguageTextDto
+        {
+            ResourceName = "HCS", CultureName = "fr-ca", Name = "Welcome", Value = "Bonjour"
+        });
+        (await _localizationStore.GetTextsAsync("HCS", "fr-CA"))["Welcome"].ShouldBe("Bonjour");
+
+        await _languages.DeleteAsync(language.Id);
+
+        (await _textRepository.GetFilteredCountAsync("HCS", "fr-CA", null)).ShouldBe(0);
+        (await _localizationStore.GetTextsAsync("HCS", "fr-CA")).ShouldBeEmpty();
+
+        var recreated = await _languages.CreateAsync(new CreateLanguageDto
+        {
+            CultureName = "fr-ca", DisplayName = "Français (Canada)", IsEnabled = true
+        });
+        recreated.CultureName.ShouldBe("fr-CA");
+    }
+
+    [Fact]
+    public async Task Should_Return_Only_Enabled_Language_Options()
+    {
+        await _languages.CreateAsync(new CreateLanguageDto
+        {
+            CultureName = "ja-JP", DisplayName = "日本語", IsEnabled = true, IsDefault = true
+        });
+        await _languages.CreateAsync(new CreateLanguageDto
+        {
+            CultureName = "ko-KR", DisplayName = "한국어", IsEnabled = false
+        });
+
+        var options = await _languages.GetEnabledListAsync();
+        options.ShouldContain(x => x.CultureName == "ja-JP");
+        options.ShouldNotContain(x => x.CultureName == "ko-KR");
     }
 
     [Fact]

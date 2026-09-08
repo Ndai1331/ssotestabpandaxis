@@ -73,10 +73,15 @@ public sealed class HCSBlazorModule : AbpModule
         // The Community Blazor host ships client assets through ABP bundles and
         // embedded static assets, not a LibMan-generated wwwroot/libs folder.
         Configure<AbpMvcLibsOptions>(options => options.CheckLibs = false);
-        Configure<RequestLocalizationOptions>(options => options
-            .SetDefaultCulture("en")
-            .AddSupportedCultures("en", "vi")
-            .AddSupportedUICultures("en", "vi"));
+        Configure<RequestLocalizationOptions>(options =>
+        {
+            // Enabled languages are validated by the platform culture filter. An empty
+            // supported-culture list lets CultureInfo resolve newly-created valid tags
+            // such as fr-FR, zh-CN, or another BCP-47 culture at runtime.
+            options.SetDefaultCulture("en");
+            options.SupportedCultures?.Clear();
+            options.SupportedUICultures?.Clear();
+        });
 
         context.Services.AddRazorComponents()
             .AddInteractiveServerComponents()

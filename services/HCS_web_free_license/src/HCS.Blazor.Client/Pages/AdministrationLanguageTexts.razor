@@ -1,0 +1,165 @@
+@page "/administration/language-texts"
+@attribute [Authorize(Roles = "admin")]
+@using HCS.Permissions
+@using Microsoft.AspNetCore.Authorization
+@inherits HCSComponentBase
+@inject LanguageManagementClient LanguageClient
+@inject LanguageCatalogState LanguageState
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>@L["LanguageTexts:Title"] · HCS</PageTitle>
+
+<AuthorizeView Roles="admin">
+    <Authorized>
+        <main class="hcs-admin-page hcs-language-text-page" aria-labelledby="language-texts-title">
+            <header class="hcs-admin-heading hcs-language-text-heading">
+                <div>
+                    <p class="hcs-page-eyebrow">@L["LanguageTexts:Eyebrow"]</p>
+                    <h1 id="language-texts-title">@L["LanguageTexts:Title"]</h1>
+                    <p>@L["LanguageTexts:Description"]</p>
+                </div>
+                <div class="hcs-language-text-heading__actions">
+                    @if (canManageTexts)
+                    {
+                        <Button Color="Color.Primary" Clicked="OpenCreateModalAsync" Disabled="@isSaving">
+                            <i class="fa fa-plus me-1" aria-hidden="true"></i> @L["LanguageTexts:Create"]
+                        </Button>
+                    }
+                    <Button Color="Color.Light" Outline="true" Clicked="RefreshAsync" Disabled="@isLoading">
+                        <i class="fa fa-rotate me-1" aria-hidden="true"></i> @L["LanguageTexts:Refresh"]
+                    </Button>
+                </div>
+            </header>
+
+            <div class="hcs-language-text-notice" role="note">
+                <i class="fa fa-circle-info" aria-hidden="true"></i>
+                <span>@L["LanguageTexts:RuntimeNotice"]</span>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="hcs-admin-alert" role="alert">
+                    <span>@errorMessage</span>
+                    <Button Color="Color.Light" Size="Size.Small" Clicked="RefreshAsync" Disabled="@isLoading">@L["LanguageTexts:Retry"]</Button>
+                </div>
+            }
+
+            <Card Class="hcs-language-text-filter-card">
+                <CardBody>
+                    <div class="hcs-language-text-filter-row">
+                        <Field Class="hcs-language-culture-field">
+                            <FieldLabel for="language-text-culture">@L["LanguageTexts:Culture"]</FieldLabel>
+                            <Select TValue="string" id="language-text-culture" Value="@selectedCultureName" ValueChanged="OnCultureChangedAsync">
+                                @foreach (var language in LanguageState.Languages)
+                                {
+                                    <SelectItem Value="@language.CultureName">@language.DisplayName (@language.CultureName)</SelectItem>
+                                }
+                            </Select>
+                        </Field>
+                        <Field Class="hcs-language-text-search-field">
+                            <FieldLabel for="language-text-search">@L["LanguageTexts:Search"]</FieldLabel>
+                            <TextInput id="language-text-search" @bind-Value="filterText" Placeholder='@L["LanguageTexts:SearchPlaceholder"].Value' />
+                        </Field>
+                        <div class="hcs-language-text-filter-actions">
+                            <Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@(isLoading || string.IsNullOrWhiteSpace(selectedCultureName))">
+                                <i class="fa fa-search me-1" aria-hidden="true"></i> @L["LanguageTexts:SearchButton"]
+                            </Button>
+                            <Button Color="Color.Light" Outline="true" Clicked="ResetSearchAsync" Disabled="@isLoading">
+                                <i class="fa fa-rotate-left me-1" aria-hidden="true"></i> @L["LanguageTexts:Reset"]
+                            </Button>
+                        </div>
+                    </div>
+                    <div class="hcs-language-text-resource">
+                        <span>@L["LanguageTexts:Resource"]</span><strong>HCS</strong>
+                    </div>
+                </CardBody>
+            </Card>
+
+            <Card Class="hcs-language-text-grid-card">
+                <CardBody>
+                    <DataGrid TItem="LanguageTextDto" @ref="dataGrid" Data="@rows" ReadData="OnDataGridReadAsync"
+                              TotalItems="@totalCount" ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes"
+                              PageSize="@pageSize" Responsive="true" Striped="true" Hoverable="true" Class="hcs-language-text-grid">
+                        <EmptyTemplate>
+                            <div class="hcs-empty py-5">
+                                <i class="fa fa-spell-check" aria-hidden="true"></i>
+                                <h2>@L["LanguageTexts:EmptyTitle"]</h2>
+                                <p>@L["LanguageTexts:EmptyDescription"]</p>
+                            </div>
+                        </EmptyTemplate>
+                        <LoadingTemplate>
+                            <div class="hcs-loading py-5" role="status" aria-live="polite">
+                                <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+                                <span>@L["LanguageTexts:Loading"]</span>
+                            </div>
+                        </LoadingTemplate>
+                        <DataGridColumns>
+                            <DataGridColumn TItem="LanguageTextDto" Field="Name" Caption='@L["LanguageTexts:Key"].Value' />
+                            <DataGridColumn TItem="LanguageTextDto" Field="Value" Caption='@L["LanguageTexts:Value"].Value'>
+                                <DisplayTemplate Context="cell"><span class="hcs-language-text-value" title="@cell.Item.Value">@cell.Item.Value</span></DisplayTemplate>
+                            </DataGridColumn>
+                            <DataGridColumn TItem="LanguageTextDto" Caption='@L["LanguageTexts:Actions"].Value' Class="hcs-language-text-actions-column">
+                                <DisplayTemplate Context="cell">
+                                    @if (canManageTexts)
+                                    {
+                                        <Dropdown>
+                                            <DropdownToggle Color="Color.Light" Size="Size.Small" Class="hcs-language-action-toggle" aria-label='@L["LanguageTexts:Actions"].Value'>
+                                                <i class="fa fa-ellipsis" aria-hidden="true"></i>
+                                            </DropdownToggle>
+                                            <DropdownMenu>
+                                                <DropdownItem Clicked="@(() => OpenEditModalAsync(cell.Item))">
+                                                    <i class="fa fa-pen me-2" aria-hidden="true"></i>@L["LanguageTexts:Edit"]
+                                                </DropdownItem>
+                                                <DropdownDivider />
+                                                <DropdownItem Clicked="@(() => DeleteAsync(cell.Item))" TextColor="TextColor.Danger">
+                                                    <i class="fa fa-trash me-2" aria-hidden="true"></i>@L["LanguageTexts:Delete"]
+                                                </DropdownItem>
+                                            </DropdownMenu>
+                                        </Dropdown>
+                                    }
+                                </DisplayTemplate>
+                            </DataGridColumn>
+                        </DataGridColumns>
+                    </DataGrid>
+                </CardBody>
+            </Card>
+        </main>
+    </Authorized>
+</AuthorizeView>
+
+<Modal @ref="editModal" Size="ModalSize.Large">
+    <ModalContent Centered="true" Class="hcs-language-text-modal">
+        <ModalHeader Class="hcs-language-text-modal__header">
+            <ModalTitle>@(editingId.HasValue ? L["LanguageTexts:EditTitle"] : L["LanguageTexts:CreateTitle"])</ModalTitle>
+            <CloseButton Disabled="@isSaving" />
+        </ModalHeader>
+        <ModalBody Class="hcs-language-text-modal__body">
+            @if (!string.IsNullOrWhiteSpace(formErrorMessage))
+            {
+                <div class="hcs-form-error" role="alert">@formErrorMessage</div>
+            }
+            <div class="hcs-language-text-modal__meta">
+                <span><strong>@L["LanguageTexts:Resource"]:</strong> HCS</span>
+                <span><strong>@L["LanguageTexts:Culture"]:</strong> @selectedCultureName</span>
+            </div>
+            <Field>
+                <FieldLabel for="language-text-key">@L["LanguageTexts:Key"]</FieldLabel>
+                <TextInput id="language-text-key" @bind-Value="form.Name" ReadOnly="@editingId.HasValue" MaxLength="256" />
+                @if (!string.IsNullOrWhiteSpace(keyError)) { <div class="hcs-field-error">@keyError</div> }
+                @if (editingId.HasValue) { <div class="hcs-field-hint">@L["LanguageTexts:KeyReadonly"]</div> }
+            </Field>
+            <Field>
+                <FieldLabel for="language-text-value">@L["LanguageTexts:Value"]</FieldLabel>
+                <textarea id="language-text-value" class="form-control" rows="6" maxlength="4096" @bind="form.Value"></textarea>
+                @if (!string.IsNullOrWhiteSpace(valueError)) { <div class="hcs-field-error">@valueError</div> }
+            </Field>
+        </ModalBody>
+        <ModalFooter Class="hcs-language-text-modal__footer">
+            <Button Color="Color.Light" Clicked="CloseModalAsync" Disabled="@isSaving">@L["LanguageTexts:Cancel"]</Button>
+            <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isSaving" Disabled="@isSaving">
+                @(editingId.HasValue ? L["LanguageTexts:Save"] : L["LanguageTexts:Create"])
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>

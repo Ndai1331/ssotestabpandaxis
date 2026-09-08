@@ -2,6 +2,7 @@ using HCS.Auditing;
 using HCS.Controllers.Auditing;
 using HCS.Controllers.Localization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -34,5 +35,15 @@ public sealed class PlatformRouteContractTests
             .Single(parameter => parameter.ParameterType == typeof(GetAuditLogsInput));
 
         Assert.NotNull(parameter.GetCustomAttribute<FromQueryAttribute>());
+    }
+
+    [Fact]
+    public void Language_lookup_is_an_anonymous_get_action()
+    {
+        var method = typeof(LanguagesController).GetMethod(nameof(LanguagesController.GetEnabledListAsync))!;
+
+        Assert.Contains(method.GetCustomAttributes(typeof(HttpGetAttribute), true)
+            .Cast<HttpGetAttribute>(), attribute => attribute.Template == "enabled");
+        Assert.NotNull(method.GetCustomAttribute<AllowAnonymousAttribute>());
     }
 }

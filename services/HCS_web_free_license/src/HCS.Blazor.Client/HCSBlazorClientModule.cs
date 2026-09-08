@@ -14,6 +14,7 @@ using HCS.Blazor.Client.Navigation;
 using HCS.Blazor.Client.Authentication;
 using HCS.Blazor.Client.Auditing;
 using HCS.Blazor.Client.Collaboration;
+using HCS.Blazor.Client.Layouts;
 using HCS.Blazor.Client.Pages.Organization;
 using HCS.Blazor.Client.Pages;
 using Localization.Resources.AbpUi;
@@ -74,6 +75,8 @@ public class HCSBlazorClientModule : AbpModule
         ConfigureMessageLocalization();
         context.Services.AddScoped<OrganizationCatalogClient>();
         context.Services.AddScoped<ReferenceCatalogClient>();
+        context.Services.AddScoped<LanguageManagementClient>();
+        context.Services.AddScoped<LanguageCatalogState>();
         context.Services.AddScoped<IdentityAdminClient>();
         context.Services.AddScoped<AuditLogClient>();
         context.Services.AddScoped<CollaborationClient>();

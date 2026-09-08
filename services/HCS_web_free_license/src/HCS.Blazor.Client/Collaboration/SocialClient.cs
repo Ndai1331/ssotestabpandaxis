@@ -57,8 +57,10 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
         return enriched.FirstOrDefault();
     }
 
-    public Task<IReadOnlyList<SocialCommentDto>> GetCommentsAsync(Guid postId, CancellationToken ct = default) =>
-        GetAsync<IReadOnlyList<SocialCommentDto>>($"api/social/posts/{postId:D}/comments", ct);
+    public Task<PagedSocialCommentsDto> GetCommentsAsync(Guid postId, int skip = 0, int take = 10,
+        CancellationToken ct = default) =>
+        GetAsync<PagedSocialCommentsDto>(
+            $"api/social/posts/{postId:D}/comments?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}", ct);
 
     public Task<SocialPostDto> CreatePostAsync(CreateSocialPostInput input, CancellationToken ct = default) =>
         SendAsync<CreateSocialPostInput, SocialPostDto>(HttpMethod.Post, "api/social/posts", input, ct);

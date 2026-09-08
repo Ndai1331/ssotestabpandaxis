@@ -12,6 +12,13 @@ public class LanguageDto : FullAuditedEntityDto<Guid>
     public bool IsDefault { get; set; }
 }
 
+public class LanguageOptionDto
+{
+    public string CultureName { get; set; } = null!;
+    public string DisplayName { get; set; } = null!;
+    public bool IsDefault { get; set; }
+}
+
 public class GetLanguagesInput : PagedAndSortedResultRequestDto
 {
     public string? Filter { get; set; }

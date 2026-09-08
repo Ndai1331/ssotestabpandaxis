@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using HCS.Localization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp.Application.Dtos;
 
@@ -16,6 +18,10 @@ public class LanguagesController : HCSController, ILanguageAppService
 
     [HttpGet]
     public Task<PagedResultDto<LanguageDto>> GetListAsync(GetLanguagesInput input) => _service.GetListAsync(input);
+
+    [HttpGet("enabled")]
+    [AllowAnonymous]
+    public Task<List<LanguageOptionDto>> GetEnabledListAsync() => _service.GetEnabledListAsync();
 
     [HttpGet("{id:guid}")]
     public Task<LanguageDto> GetAsync(Guid id) => _service.GetAsync(id);

@@ -64,6 +64,8 @@ public sealed record SocialShareResultDto(Guid PostId, string ShareUrl, int Shar
 
 public sealed record PagedSocialPostsDto(long TotalCount, IReadOnlyList<SocialPostDto> Items);
 
+public sealed record PagedSocialCommentsDto(long TotalCount, IReadOnlyList<SocialCommentDto> Items);
+
 public sealed class CreateSocialPostInput
 {
     [StringLength(4000)] public string? Text { get; init; }

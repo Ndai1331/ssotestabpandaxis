@@ -119,13 +119,13 @@
     box-shadow: var(--hcs-shadow-sm);
     display: grid;
     gap: .7rem;
-    grid-template-columns: minmax(13rem, 2fr) repeat(3, minmax(7rem, 1fr)) auto;
+    grid-template-columns: minmax(13rem, 2fr) minmax(10rem, 1fr) auto;
     grid-template-rows: auto auto;
     margin-bottom: 1.25rem;
     padding: .85rem 1rem;
 }
-.hcs-social-search__heading { align-items: center; color: var(--color-secondary); display: inline-flex; font-size: .82rem; font-weight: 750; gap: .45rem; grid-column: 1 / span 4; grid-row: 1; min-height: 2.75rem; white-space: nowrap; }
-.hcs-social-search__modes { align-items: center; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--hcs-radius-md); display: inline-flex; gap: .15rem; grid-column: 5; grid-row: 1; justify-self: end; min-height: 2.75rem; padding: .15rem; }
+.hcs-social-search__heading { align-items: center; color: var(--color-secondary); display: inline-flex; font-size: .82rem; font-weight: 750; gap: .45rem; grid-column: 1 / span 2; grid-row: 1; min-height: 2.75rem; white-space: nowrap; }
+.hcs-social-search__modes { align-items: center; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--hcs-radius-md); display: inline-flex; gap: .15rem; grid-column: 3; grid-row: 1; justify-self: end; min-height: 2.75rem; padding: .15rem; }
 .hcs-social-search__mode { align-items: center; background: transparent; border: 0; border-radius: calc(var(--hcs-radius-md) - .15rem); color: var(--color-muted); cursor: pointer; display: inline-flex; font: inherit; font-size: .72rem; font-weight: 700; gap: .3rem; min-height: 2.35rem; padding: .4rem .55rem; white-space: nowrap; }
 .hcs-social-search__mode:hover, .hcs-social-search__mode:focus-visible { color: var(--color-secondary); }
 .hcs-social-search__mode.is-active { background: #fff; box-shadow: var(--hcs-shadow-sm); color: var(--color-secondary); }
@@ -259,6 +259,8 @@
 .hcs-social-visibility-badge { align-items: center; background: var(--color-primary-light); border-radius: 999px; color: var(--color-secondary); display: inline-flex; font-size: .72rem; font-weight: 650; gap: .3rem; margin-left: auto; padding: .3rem .55rem; }
 .hcs-social-visibility-badge.is-internal { background: #fff4df; color: #865a00; }
 .hcs-social-post__text { line-height: 1.65; margin: .35rem 1.25rem 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.hcs-social-hashtag { color: var(--color-secondary); font-weight: 700; text-decoration: none; }
+.hcs-social-hashtag:hover, .hcs-social-hashtag:focus-visible { color: var(--color-primary-dark); text-decoration: underline; }
 .hcs-social-post__edit { display: grid; gap: .55rem; margin: .3rem 1.25rem 1rem; }
 .hcs-social-post__edit > label, .hcs-social-post__edit-controls > label { color: var(--color-muted); font-size: .75rem; font-weight: 700; }
 .hcs-social-post__edit textarea { min-height: 6rem; resize: vertical; }
@@ -317,6 +319,9 @@
 .hcs-social-reaction-summary span.is-angry, .hcs-social-reaction-button.is-angry, .hcs-social-comment-reaction.is-angry { --social-reaction-color: var(--hcs-social-reaction-angry); }
 .hcs-social-reaction-summary i { color: var(--social-reaction-color); }
 .hcs-social-engagement-counts { gap: .7rem; }
+.hcs-social-engagement-count { background: transparent; border: 0; color: inherit; cursor: pointer; font: inherit; padding: .25rem 0; text-decoration: none; }
+.hcs-social-engagement-count:hover, .hcs-social-engagement-count:focus-visible { color: var(--color-secondary); text-decoration: underline; }
+.hcs-social-engagement-count--comments { min-height: 2.75rem; }
 .hcs-social-post__footer { border-bottom: 1px solid var(--color-border); padding: .55rem 1.25rem; }
 .hcs-social-post__footer { align-items: center; display: flex; gap: .45rem; }
 .hcs-social-reaction-actions { align-items: center; display: flex; flex: 1 1 auto; flex-wrap: wrap; gap: .2rem; }
@@ -376,6 +381,7 @@
 .hcs-social-comment-reaction:disabled { cursor: wait; opacity: .55; }
 .hcs-social-comments__state { color: var(--color-muted); font-size: .82rem; margin: .35rem 0 .65rem; }
 .hcs-social-comments__state i { margin-right: .4rem; }
+.hcs-social-load-more--comments { margin: .7rem 0 .25rem; }
 .hcs-social-inline-error { color: #a23a3a; font-size: .78rem; margin: .4rem 0; }
 .hcs-social-comment-form { display: grid; gap: .5rem; margin-top: .65rem; }
 .hcs-social-comment-form textarea { min-height: 3.6rem; resize: vertical; }

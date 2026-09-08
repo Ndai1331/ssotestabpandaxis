@@ -4,6 +4,8 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @inject IStringLocalizer<HCSResource> Localizer
+@inject LanguageCatalogState LanguageState
+@implements IDisposable
 
 <div class="hcs-lang-switch @(isOpen ? "hcs-lang-switch--open" : null)" @onkeydown="OnKeyDown">
     <button class="hcs-lang-switch__trigger"
@@ -22,16 +24,17 @@
     {
         <div class="hcs-lang-switch__backdrop" @onclick="Close"></div>
         <div id="hcs-lang-switch-menu" class="hcs-lang-switch__panel" role="menu">
-            @foreach (var language in Languages)
+            @foreach (var language in availableLanguages)
             {
-                var isCurrent = language.Culture == CurrentCulture;
+                var isCurrent = string.Equals(language.CultureName, CurrentCulture, StringComparison.OrdinalIgnoreCase);
                 <button class="hcs-lang-switch__item @(isCurrent ? "hcs-lang-switch__item--current" : null)"
                         type="button"
                         role="menuitem"
                         aria-current="@(isCurrent ? "true" : "false")"
-                        @onclick="@(() => ChangeCultureAsync(language.Culture))">
-                    <span class="hcs-lang-switch__flag" aria-hidden="true">@FlagIcon(language.Culture)</span>
-                    <span>@Localizer[language.NameKey]</span>
+                        @onclick="@(() => ChangeCultureAsync(language.CultureName))">
+                    <span class="hcs-lang-switch__flag" aria-hidden="true">@FlagIcon(language.CultureName)</span>
+                    <span>@language.DisplayName</span>
+                    <small>@language.CultureName</small>
                 </button>
             }
         </div>
@@ -39,25 +42,65 @@
 </div>
 
 @code {
-    private static readonly LanguageOption[] Languages =
-    [
-        new("vi", "Auth:LanguageVietnamese", "Auth:LanguageVietnameseShort"),
-        new("en", "Auth:LanguageEnglish", "Auth:LanguageEnglishShort")
-    ];
-
-    private static readonly HashSet<string> SupportedCultures = Languages
-        .Select(language => language.Culture)
-        .ToHashSet(StringComparer.Ordinal);
-
+    private IReadOnlyList<LanguageOptionDto> availableLanguages = [];
     private bool isOpen;
+    private bool isDisposed;
 
-    private string CurrentCulture =>
-        SupportedCultures.Contains(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)
-            ? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName
-            : "en";
+    private string CurrentCulture
+    {
+        get
+        {
+            var current = CultureInfo.CurrentUICulture.Name;
+            return availableLanguages.FirstOrDefault(language =>
+                       string.Equals(language.CultureName, current, StringComparison.OrdinalIgnoreCase))?.CultureName
+                   ?? availableLanguages.FirstOrDefault(language => language.IsDefault)?.CultureName
+                   ?? availableLanguages.FirstOrDefault()?.CultureName
+                   ?? "en";
+        }
+    }
 
-    private string CurrentCode =>
-        Localizer[Languages.First(language => language.Culture == CurrentCulture).ShortKey];
+    private string CurrentCode => CurrentCulture;
+
+    protected override async Task OnInitializedAsync()
+    {
+        LanguageState.Changed += OnLanguageStateChanged;
+        try
+        {
+            availableLanguages = await LanguageState.EnsureLoadedAsync();
+            if (availableLanguages.Count == 0) availableLanguages = GetEmergencyLanguage();
+        }
+        catch
+        {
+            availableLanguages = GetEmergencyLanguage();
+        }
+    }
+
+    public void Dispose()
+    {
+        isDisposed = true;
+        LanguageState.Changed -= OnLanguageStateChanged;
+    }
+
+    private void OnLanguageStateChanged()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            if (isDisposed) return;
+            availableLanguages = LanguageState.Languages.Count == 0 ? GetEmergencyLanguage() : LanguageState.Languages;
+            var currentCulture = CultureInfo.CurrentUICulture.Name;
+            var currentStillEnabled = availableLanguages.Any(language =>
+                string.Equals(language.CultureName, currentCulture, StringComparison.OrdinalIgnoreCase));
+            if (!currentStillEnabled)
+            {
+                var fallback = CurrentCulture;
+                await JS.InvokeVoidAsync("hcsSetCulture", fallback);
+                Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+                return;
+            }
+
+            StateHasChanged();
+        });
+    }
 
     private void Toggle() => isOpen = !isOpen;
 
@@ -65,34 +108,40 @@
 
     private void OnKeyDown(KeyboardEventArgs args)
     {
-        if (args.Key == "Escape")
-        {
-            Close();
-        }
+        if (args.Key == "Escape") Close();
     }
 
     private async Task ChangeCultureAsync(string culture)
     {
-        if (!SupportedCultures.Contains(culture) || culture == CurrentCulture)
+        var selected = availableLanguages.FirstOrDefault(language =>
+            string.Equals(language.CultureName, culture, StringComparison.OrdinalIgnoreCase));
+        if (selected is null || string.Equals(selected.CultureName, CurrentCulture, StringComparison.OrdinalIgnoreCase))
         {
             Close();
             return;
         }
 
-        await JS.InvokeVoidAsync("hcsSetCulture", culture);
+        await JS.InvokeVoidAsync("hcsSetCulture", selected.CultureName);
         Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+
+    private static IReadOnlyList<LanguageOptionDto> GetEmergencyLanguage()
+    {
+        var cultureName = CultureInfo.CurrentUICulture.Name;
+        if (string.IsNullOrWhiteSpace(cultureName)) cultureName = "en";
+        return [new LanguageOptionDto { CultureName = cultureName, DisplayName = cultureName, IsDefault = true }];
     }
 
     private static RenderFragment FlagIcon(string culture) => __builder =>
     {
-        if (culture == "vi")
+        if (string.Equals(culture, "vi", StringComparison.OrdinalIgnoreCase) || culture.StartsWith("vi-", StringComparison.OrdinalIgnoreCase))
         {
             <svg viewBox="0 0 60 60" width="24" height="24" focusable="false" aria-hidden="true">
                 <rect width="60" height="60" fill="#DA251D" />
                 <polygon fill="#FFCD00" points="30,11 33.53,22.45 45.53,22.45 35.85,29.55 39.53,41.18 30,34.4 20.47,41.18 24.15,29.55 14.47,22.45 26.47,22.45" />
             </svg>
         }
-        else
+        else if (string.Equals(culture, "en", StringComparison.OrdinalIgnoreCase) || culture.StartsWith("en-", StringComparison.OrdinalIgnoreCase))
         {
             <svg viewBox="0 0 60 60" width="24" height="24" focusable="false" aria-hidden="true">
                 <rect width="60" height="60" fill="#B31942" />
@@ -114,7 +163,9 @@
                 </g>
             </svg>
         }
+        else
+        {
+            <i class="fa fa-globe" aria-hidden="true"></i>
+        }
     };
-
-    private sealed record LanguageOption(string Culture, string ShortKey, string NameKey);
 }

@@ -19,7 +19,7 @@ public class LanguageText : FullAuditedAggregateRoot<Guid>
         : base(id)
     {
         ResourceName = Check.NotNullOrWhiteSpace(resourceName, nameof(resourceName), LanguageConsts.MaxResourceNameLength);
-        CultureName = Check.NotNullOrWhiteSpace(cultureName, nameof(cultureName), LanguageConsts.MaxCultureNameLength);
+        CultureName = Language.NormalizeCultureName(cultureName);
         Name = Check.NotNullOrWhiteSpace(name, nameof(name), LanguageConsts.MaxTextNameLength);
         SetValue(value);
     }

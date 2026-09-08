@@ -81,6 +81,17 @@ public sealed class BffSecurityTests
     }
 
     [Fact]
+    public void Language_lookup_is_anonymous_at_the_bff_boundary()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/language-management/languages/enabled";
+        context.Request.Method = "GET";
+
+        Assert.True(BffRequestPolicy.IsAnonymousBootstrapPath(context.Request.Path));
+        Assert.False(BffRequestPolicy.RequiresAntiforgery(context.Request));
+    }
+
+    [Fact]
     public void Login_return_url_rejects_open_redirects()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>

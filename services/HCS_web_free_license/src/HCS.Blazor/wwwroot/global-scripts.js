@@ -51,46 +51,65 @@ window.hcsDownloadTextFile = (fileName, content, mimeType) => {
     URL.revokeObjectURL(url);
 };
 
+const hcsNormalizeCulture = (value) => {
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    const candidate = value.trim().replaceAll("_", "-");
+    if (!/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/.test(candidate)) {
+        return null;
+    }
+
+    try {
+        return Intl.getCanonicalLocales(candidate)[0] || null;
+    } catch {
+        return null;
+    }
+};
+
+const hcsReadCookie = (cookies, name) => {
+    const item = cookies.find((part) => part.startsWith(`${name}=`));
+    if (!item) {
+        return null;
+    }
+
+    try {
+        return decodeURIComponent(item.slice(name.length + 1));
+    } catch {
+        return null;
+    }
+};
+
 window.hcsGetCulture = () => {
-    const supported = ["en", "vi"];
-    const fromStorage = window.localStorage?.getItem("hcs.culture");
-    if (supported.includes(fromStorage)) {
+    const fromStorage = hcsNormalizeCulture(window.localStorage?.getItem("hcs.culture"));
+    if (fromStorage) {
         return fromStorage;
     }
 
     const cookies = document.cookie.split(";").map((part) => part.trim());
-    const named = cookies.find((part) => part.startsWith("hcs.culture="));
+    const named = hcsNormalizeCulture(hcsReadCookie(cookies, "hcs.culture"));
     if (named) {
-        const value = decodeURIComponent(named.slice("hcs.culture=".length));
-        if (supported.includes(value)) {
-            return value;
-        }
+        return named;
     }
 
-    const abp = cookies.find((part) => part.startsWith("Abp.Localization.CultureName="));
+    const abp = hcsNormalizeCulture(hcsReadCookie(cookies, "Abp.Localization.CultureName"));
     if (abp) {
-        const value = decodeURIComponent(abp.slice("Abp.Localization.CultureName=".length));
-        if (supported.includes(value)) {
-            return value;
-        }
+        return abp;
     }
 
-    const aspNet = cookies.find((part) => part.startsWith(".AspNetCore.Culture="));
-    if (aspNet) {
-        const raw = decodeURIComponent(aspNet.slice(".AspNetCore.Culture=".length));
-        const match = raw.match(/(?:^|\|)uic=([a-zA-Z-]+)/);
-        const value = match?.[1]?.slice(0, 2)?.toLowerCase();
-        if (supported.includes(value)) {
-            return value;
-        }
+    const aspNet = hcsReadCookie(cookies, ".AspNetCore.Culture");
+    const match = aspNet?.match(/(?:^|\|)uic=([^|]+)/i);
+    const aspNetCulture = hcsNormalizeCulture(match?.[1]);
+    if (aspNetCulture) {
+        return aspNetCulture;
     }
 
     return "en";
 };
 
 window.hcsSetCulture = (culture) => {
-    const supported = ["en", "vi"];
-    const selected = supported.includes(culture) ? culture : "en";
+    const selected = hcsNormalizeCulture(culture) || "en";
     const encoded = encodeURIComponent(`c=${selected}|uic=${selected}`);
     const secure = window.location.protocol === "https:" ? "; secure" : "";
     const attrs = `; path=/; max-age=31536000; samesite=lax${secure}`;

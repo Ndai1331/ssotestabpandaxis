@@ -24,14 +24,18 @@ public class SocialCommentAppService(
 {
     private Guid UserId => currentUser.Id ?? throw new AbpAuthorizationException("Authenticated user required.");
 
-    public async Task<IReadOnlyList<SocialCommentDto>> GetAsync(Guid postId, CancellationToken ct = default)
+    public async Task<PagedSocialCommentsDto> GetAsync(Guid postId, int skip = 0, int take = 10,
+        CancellationToken ct = default)
     {
         await posts.RequireVisibleAsync(postId, ct);
-        var comments = await db.SocialPostComments.AsNoTracking()
-            .Where(x => x.PostId == postId)
+        take = Math.Clamp(take, 1, 50);
+        skip = Math.Max(skip, 0);
+        var query = db.SocialPostComments.AsNoTracking().Where(x => x.PostId == postId);
+        var total = await query.LongCountAsync(ct);
+        var comments = await query
             .Include(x => x.Attachments)
-            .OrderBy(x => x.CreationTime).ThenBy(x => x.Id)
-            .Take(500).ToListAsync(ct);
+            .OrderByDescending(x => x.CreationTime).ThenByDescending(x => x.Id)
+            .Skip(skip).Take(take).ToListAsync(ct);
         var ids = comments.Select(x => x.Id).ToArray();
         var me = UserId;
         var reactionCounts = await db.SocialCommentReactions.AsNoTracking()
@@ -47,8 +51,9 @@ public class SocialCommentAppService(
                 group.OrderByDescending(x => x.Count).ThenBy(x => x.ReactionType)
                     .Select(x => new SocialReactionCountDto(x.ReactionType, x.Count)),
                 group.Sum(x => x.Count), currentReactions.GetValueOrDefault(group.Key)));
-        return comments.Select(comment => SocialMapping.Comment(comment,
+        var items = comments.Select(comment => SocialMapping.Comment(comment,
             reactionSummaries.GetValueOrDefault(comment.Id) ?? SocialMapping.EmptyReactions())).ToArray();
+        return new(total, items);
     }
 
     public async Task<SocialCommentDto> CreateAsync(Guid postId, CreateSocialCommentInput input, CancellationToken ct = default)

@@ -110,6 +110,18 @@
     color: #fff;
 }
 
+.hcs-lang-switch__item small {
+    margin-left: auto;
+    color: currentColor;
+    font-size: .7rem;
+    opacity: .7;
+}
+
+.hcs-lang-switch__flag .fa-globe {
+    align-self: center;
+    font-size: 1rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .hcs-lang-switch__trigger,
     .hcs-lang-switch__item {

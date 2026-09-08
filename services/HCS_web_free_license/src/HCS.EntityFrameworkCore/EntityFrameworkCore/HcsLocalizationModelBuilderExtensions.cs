@@ -14,8 +14,8 @@ public static class HcsLocalizationModelBuilderExtensions
             b.ConfigureByConvention();
             b.Property(x => x.CultureName).IsRequired().HasMaxLength(LanguageConsts.MaxCultureNameLength);
             b.Property(x => x.DisplayName).IsRequired().HasMaxLength(LanguageConsts.MaxDisplayNameLength);
-            b.HasIndex(x => x.CultureName).IsUnique();
-            b.HasIndex(x => x.IsDefault).IsUnique().HasFilter("\"IsDefault\" = TRUE");
+            b.HasIndex(x => x.CultureName).IsUnique().HasFilter("\"IsDeleted\" = FALSE");
+            b.HasIndex(x => x.IsDefault).IsUnique().HasFilter("\"IsDefault\" = TRUE AND \"IsDeleted\" = FALSE");
         });
 
         builder.Entity<LanguageText>(b =>
@@ -26,7 +26,7 @@ public static class HcsLocalizationModelBuilderExtensions
             b.Property(x => x.CultureName).IsRequired().HasMaxLength(LanguageConsts.MaxCultureNameLength);
             b.Property(x => x.Name).IsRequired().HasMaxLength(LanguageConsts.MaxTextNameLength);
             b.Property(x => x.Value).IsRequired().HasMaxLength(LanguageConsts.MaxTextValueLength);
-            b.HasIndex(x => new { x.ResourceName, x.CultureName, x.Name }).IsUnique();
+            b.HasIndex(x => new { x.ResourceName, x.CultureName, x.Name }).IsUnique().HasFilter("\"IsDeleted\" = FALSE");
         });
     }
 }
