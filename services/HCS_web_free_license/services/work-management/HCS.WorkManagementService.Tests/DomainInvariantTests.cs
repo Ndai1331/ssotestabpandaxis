@@ -114,4 +114,32 @@ public sealed class DomainInvariantTests
     {
         Assert.Throws<BusinessException>(() => new SurveyResult(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, score, null));
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    public void Employee_rating_rejects_score_outside_one_to_five(int score)
+    {
+        Assert.Throws<BusinessException>(() => new EmployeeRating(Guid.NewGuid(), Guid.NewGuid(),
+            Guid.NewGuid(), score, new DateOnly(2026, 9, 8)));
+    }
+
+    [Fact]
+    public void Employee_rating_rejects_self_rating()
+    {
+        var userId = Guid.NewGuid();
+        Assert.Throws<BusinessException>(() => new EmployeeRating(Guid.NewGuid(), userId, userId,
+            5, new DateOnly(2026, 9, 8)));
+    }
+
+    [Fact]
+    public void Employee_ratings_allow_the_same_pair_again_on_a_different_day()
+    {
+        var target = Guid.NewGuid();
+        var voter = Guid.NewGuid();
+        var first = new EmployeeRating(Guid.NewGuid(), target, voter, 4, new DateOnly(2026, 9, 8));
+        var second = new EmployeeRating(Guid.NewGuid(), target, voter, 5, new DateOnly(2026, 9, 9));
+
+        Assert.NotEqual(first.EvaluationDate, second.EvaluationDate);
+    }
 }

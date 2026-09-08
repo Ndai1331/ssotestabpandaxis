@@ -1,0 +1,192 @@
+@page "/employee-ratings"
+@attribute [Authorize(Policy = "WorkManagement.EmployeeRatings")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject EmployeeRatingDirectoryService Directory
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>@L["Feature:EmployeeRatings"] · HCS</PageTitle>
+
+<section class="hcs-rating-page" aria-labelledby="employee-ratings-title">
+    <header class="hcs-rating-page__header">
+        <div>
+            <p class="hcs-document-page__eyebrow">@L["Menu:Social"]</p>
+            <h1 id="employee-ratings-title">@L["Feature:EmployeeRatings"]</h1>
+            <p class="text-muted mb-0">@L["EmployeeRatings:Subtitle"]</p>
+        </div>
+        <div class="hcs-rating-page__filters" role="search">
+            <label class="visually-hidden" for="employee-rating-search">@L["EmployeeRatings:Search"]</label>
+            <div class="input-group">
+                <span class="input-group-text" aria-hidden="true"><i class="fa fa-search"></i></span>
+                <input id="employee-rating-search" class="form-control" type="search"
+                       placeholder="@L["EmployeeRatings:SearchPlaceholder"]" @bind="searchText" @bind:event="oninput" />
+            </div>
+            <label class="visually-hidden" for="employee-rating-department">@L["EmployeeRatings:Department"]</label>
+            <select id="employee-rating-department" class="form-select" @bind="selectedDepartment">
+                <option value="">@L["EmployeeRatings:AllDepartments"]</option>
+                @foreach (var department in DepartmentNames)
+                {
+                    <option value="@department">@department</option>
+                }
+            </select>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+    }
+    else if (hasError)
+    {
+        <div class="hcs-empty py-5" role="alert"><i class="fa fa-circle-exclamation" aria-hidden="true"></i><h2>@L["EmployeeRatings:LoadErrorTitle"]</h2><p>@L["EmployeeRatings:LoadError"]</p><button class="btn btn-primary" type="button" @onclick="LoadAsync">@L["Catalog:Retry"]</button></div>
+    }
+    else if (!FilteredPeople.Any())
+    {
+        <div class="hcs-empty py-5"><i class="fa fa-users-slash" aria-hidden="true"></i><h2>@L["EmployeeRatings:EmptyTitle"]</h2><p>@L["EmployeeRatings:Empty"]</p></div>
+    }
+    else
+    {
+        <div class="hcs-rating-grid">
+            @foreach (var person in FilteredPeople)
+            {
+                <article class="hcs-rating-card">
+                    <div class="hcs-rating-card__identity">
+                        @if (!string.IsNullOrWhiteSpace(person.User.AvatarUrl) && !person.AvatarFailed)
+                        {
+                            <img class="hcs-rating-avatar" src="@person.User.AvatarUrl" alt="@person.User.DisplayName" @onerror="() => OnAvatarError(person)" />
+                        }
+                        else
+                        {
+                            <span class="hcs-rating-avatar hcs-rating-avatar--fallback" aria-hidden="true">@person.Initials</span>
+                        }
+                        <div class="min-w-0">
+                            <h2>@person.User.DisplayName</h2>
+                            <p>@person.DepartmentName</p>
+                        </div>
+                    </div>
+                    <div class="hcs-rating-card__summary" aria-label="@($"{L["EmployeeRatings:Average"]}: {person.Summary.AverageScore:0.0}/5, {person.Summary.ReviewCount} {L["EmployeeRatings:Reviews"]}")">
+                        <span class="hcs-rating-score"><i class="fa fa-star" aria-hidden="true"></i> @person.Summary.AverageScore.ToString("0.0")/5</span>
+                        <span>@person.Summary.ReviewCount @L["EmployeeRatings:Reviews"]</span>
+                    </div>
+                    <div class="hcs-rating-card__action">
+                        <span class="hcs-rating-card__action-label">@L["EmployeeRatings:RatePrompt"]</span>
+                        <div class="hcs-rating-stars" role="group" aria-label="@L["EmployeeRatings:RatePrompt"]" @onmouseleave="() => ClearHover(person)">
+                            @foreach (var score in Enumerable.Range(1, 5))
+                            {
+                                var starScore = score;
+                                var active = (person.HoverScore ?? 0) >= starScore;
+                                <button type="button" class="hcs-rating-star @(active ? "is-active" : null)"
+                                        aria-label="@($"{L["EmployeeRatings:Rate"]} {starScore}/5")"
+                                        title="@($"{starScore}/5")"
+                                        disabled="@(person.IsSubmitting || person.Summary.MyTodayScore.HasValue)"
+                                        @onmouseenter="() => SetHover(person, starScore)"
+                                        @onfocus="() => SetHover(person, starScore)"
+                                        @onclick="() => RateAsync(person, starScore)">
+                                    <i class="@(active ? "fa-solid" : "fa-regular") fa-star" aria-hidden="true"></i>
+                                </button>
+                            }
+                        </div>
+                        @if (person.Summary.MyTodayScore.HasValue)
+                        {
+                            <span class="hcs-rating-card__locked"><i class="fa fa-check-circle" aria-hidden="true"></i>@L["EmployeeRatings:AlreadyRatedToday"]</span>
+                        }
+                        else
+                        {
+                            <span class="hcs-rating-card__hint">@L["EmployeeRatings:OnePerDay"]</span>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private readonly List<EmployeeRatingPerson> people = [];
+    private string searchText = string.Empty;
+    private string selectedDepartment = string.Empty;
+    private bool isLoading = true;
+    private bool hasError;
+    private Guid currentUserId;
+
+    private IEnumerable<EmployeeRatingPerson> FilteredPeople => people
+        .Where(person => string.IsNullOrWhiteSpace(searchText)
+            || person.User.DisplayName.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase)
+            || person.User.UserName.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase))
+        .Where(person => string.IsNullOrWhiteSpace(selectedDepartment)
+            || string.Equals(person.DepartmentName, selectedDepartment, StringComparison.Ordinal));
+
+    private IEnumerable<string> DepartmentNames => people.Select(x => x.DepartmentName)
+        .Where(x => !string.IsNullOrWhiteSpace(x) && x != "—")
+        .Distinct(StringComparer.Ordinal).OrderBy(x => x);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        hasError = false;
+        try
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            _ = Guid.TryParse(state.User.FindFirst("sub")?.Value
+                ?? state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out currentUserId);
+            var loadedPeople = await Directory.GetPeopleAsync();
+            var summaries = await Work.GetAllEmployeeRatingSummariesAsync();
+            var summaryMap = summaries.ToDictionary(x => x.TargetUserId);
+            people.Clear();
+            foreach (var person in loadedPeople.Where(x => x.User.UserId != currentUserId))
+            {
+                if (summaryMap.TryGetValue(person.User.UserId, out var summary))
+                    person.Summary = summary;
+                people.Add(person);
+            }
+        }
+        catch (Exception exception)
+        {
+            hasError = true;
+            await NotifyErrorAsync(exception);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RateAsync(EmployeeRatingPerson person, int score)
+    {
+        if (person.IsSubmitting || person.Summary.MyTodayScore.HasValue) return;
+        person.IsSubmitting = true;
+        try
+        {
+            await Work.SubmitEmployeeRatingAsync(new SubmitEmployeeRatingRequest(person.User.UserId, score));
+            await NotifySuccessAsync(L["EmployeeRatings:SaveSuccess"]);
+            await RefreshSummariesAsync();
+        }
+        catch (Exception exception)
+        {
+            if (exception is HCS.Blazor.Client.Services.BffApiException { StatusCode: System.Net.HttpStatusCode.Conflict })
+                await NotifyErrorAsync(L["EmployeeRatings:AlreadyRatedToday"]);
+            else
+                await NotifyErrorAsync(exception, BffErrorKind.Save);
+        }
+        finally
+        {
+            person.IsSubmitting = false;
+            person.HoverScore = null;
+        }
+    }
+
+    private async Task RefreshSummariesAsync()
+    {
+        var summaries = await Work.GetAllEmployeeRatingSummariesAsync();
+        var map = summaries.ToDictionary(x => x.TargetUserId);
+        foreach (var person in people)
+            person.Summary = map.TryGetValue(person.User.UserId, out var summary)
+                ? summary : new EmployeeRatingSummaryDto(person.User.UserId, 0, 0, Enumerable.Range(1, 5).ToDictionary(x => x, _ => 0));
+    }
+
+    private static void SetHover(EmployeeRatingPerson person, int score) => person.HoverScore = score;
+    private static void ClearHover(EmployeeRatingPerson person) => person.HoverScore = null;
+    private static void OnAvatarError(EmployeeRatingPerson person) => person.AvatarFailed = true;
+}

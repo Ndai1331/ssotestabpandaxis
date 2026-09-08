@@ -1,0 +1,41 @@
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<div style="position: relative; height: 300px;">
+    <canvas id="@ChartId" width="400" height="300"></canvas>
+</div>
+
+@code {
+    [Parameter] public string ChartId { get; set; } = Guid.NewGuid().ToString("n");
+    [Parameter] public List<string> Labels { get; set; } = [];
+    [Parameter] public List<double> Data { get; set; } = [];
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? YAxisLabel { get; set; }
+    [Parameter] public double? MaxValue { get; set; }
+
+    private bool rendered;
+    private string lastSignature = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Labels.Count == 0 || Labels.Count != Data.Count) return;
+        var signature = string.Join("|", Labels) + "#" + string.Join("|", Data) + "#" + MaxValue + Title;
+        if (!rendered)
+        {
+            await Js.InvokeVoidAsync("hcsCharts.createLine", ChartId, Labels, Data, Title, YAxisLabel, MaxValue);
+            rendered = true;
+            lastSignature = signature;
+            return;
+        }
+        if (signature == lastSignature) return;
+        await Js.InvokeVoidAsync("hcsCharts.updateLine", ChartId, Labels, Data);
+        lastSignature = signature;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await Js.InvokeVoidAsync("hcsCharts.destroy", ChartId); }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
+    }
+}

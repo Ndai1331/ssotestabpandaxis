@@ -49,6 +49,9 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         workManagement.AddPermission(HCSPermissions.WorkManagement.SurveyManagement, L("Permission:WorkManagement.SurveyManagement"));
         workManagement.AddPermission(HCSPermissions.WorkManagement.Reports, L("Permission:WorkManagement.Reports"));
         workManagement.AddPermission(HCSPermissions.WorkManagement.Dashboard, L("Permission:WorkManagement.Dashboard"));
+        workManagement.AddPermission(HCSPermissions.WorkManagement.EmployeeRatings, L("Permission:WorkManagement.EmployeeRatings"));
+        workManagement.AddPermission(HCSPermissions.WorkManagement.EmployeeRatingsManagement, L("Permission:WorkManagement.EmployeeRatings.Management"));
+        workManagement.AddPermission(HCSPermissions.WorkManagement.EmployeeRatingsDashboard, L("Permission:WorkManagement.EmployeeRatings.Dashboard"));
 
         var documents = context.AddGroup(HCSPermissions.Documents.Default, L("Permission:Documents"));
         documents.AddPermission(HCSPermissions.Documents.View, L("Permission:Documents.View"));

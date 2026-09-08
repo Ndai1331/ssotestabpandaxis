@@ -72,4 +72,14 @@ public sealed record DashboardDto(
     int ActiveProjects, int OpenTasks, int OverdueTasks, int ActiveSurveys, DateTime CalculatedAt);
 public sealed record ReportRowDto(string Dimension, string Key, string Label, decimal Value, DateTime RefreshedAt);
 
+public sealed record SubmitEmployeeRatingRequest(Guid TargetUserId, int Score);
+public sealed record EmployeeRatingDto(Guid Id, Guid TargetUserId, int Score, DateOnly EvaluationDate, DateTime CreatedAt);
+public sealed record EmployeeRatingSummaryDto(Guid TargetUserId, decimal AverageScore, int ReviewCount,
+    Dictionary<int, int> ScoreDistribution, int? MyTodayScore = null, DateTime? LatestRatingAt = null);
+public sealed record EmployeeRatingTrendDto(string Period, decimal AverageScore, int ReviewCount);
+public sealed record EmployeeRatingDetailDto(Guid TargetUserId, decimal AverageScore, int ReviewCount,
+    Dictionary<int, int> ScoreDistribution, List<EmployeeRatingTrendDto> Trend);
+public sealed record EmployeeRatingDashboardDto(int EvaluatedEmployeeCount, decimal CompanyAverageScore,
+    int DistinctVoterCount, Dictionary<int, int> ScoreDistribution, List<EmployeeRatingSummaryDto> EmployeeSummaries);
+
 public sealed record WorkListQuery(string? Filter, string? Status, int SkipCount, int MaxResultCount);

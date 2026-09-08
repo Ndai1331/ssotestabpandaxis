@@ -64,6 +64,9 @@ public static class HCSPermissions
         public const string SurveyManagement = Default + ".SurveyManagement";
         public const string Reports = Default + ".Reports";
         public const string Dashboard = Default + ".Dashboard";
+        public const string EmployeeRatings = Default + ".EmployeeRatings";
+        public const string EmployeeRatingsManagement = Default + ".EmployeeRatings.Management";
+        public const string EmployeeRatingsDashboard = Default + ".EmployeeRatings.Dashboard";
 
         public static readonly string[] All =
         [
@@ -73,7 +76,10 @@ public static class HCSPermissions
             Surveys,
             SurveyManagement,
             Reports,
-            Dashboard
+            Dashboard,
+            EmployeeRatings,
+            EmployeeRatingsManagement,
+            EmployeeRatingsDashboard
         ];
     }
 

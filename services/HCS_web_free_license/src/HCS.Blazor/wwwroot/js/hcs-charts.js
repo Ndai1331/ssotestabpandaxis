@@ -114,4 +114,47 @@
         chart.data.datasets[0].backgroundColor = (colors || []).map(function (c) { return convertToRgba(c, 1); });
         chart.update();
     };
+
+    window.hcsCharts.createLine = async function (canvasId, labels, data, title, yAxisLabel, maxValue) {
+        await loadChartJs();
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        destroy(canvasId);
+        window.chartInstances[canvasId] = new Chart(canvas.getContext("2d"), {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: yAxisLabel || "Average",
+                    data: data,
+                    borderColor: "#2563eb",
+                    backgroundColor: convertToRgba("#2563eb", 0.14),
+                    pointBackgroundColor: "#2563eb",
+                    pointRadius: 4,
+                    tension: 0.25,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: !!title, text: title || "" }
+                },
+                scales: {
+                    y: { beginAtZero: true, max: maxValue || undefined, title: { display: !!yAxisLabel, text: yAxisLabel || "" } },
+                    x: { ticks: { autoSkip: false } }
+                }
+            }
+        });
+    };
+
+    window.hcsCharts.updateLine = function (canvasId, labels, data) {
+        var chart = window.chartInstances[canvasId];
+        if (!chart) return;
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = data;
+        chart.update();
+    };
 })();

@@ -92,4 +92,29 @@ public sealed class SecurityContractTests
         Assert.False(options.AutoValidate);
         Assert.True(typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(typeof(ProjectsController)));
     }
+
+    [Fact]
+    public void Employee_rating_api_does_not_expose_voter_identity()
+    {
+        Assert.Null(typeof(EmployeeRatingDto).GetProperty("VoterUserId"));
+        Assert.Null(typeof(EmployeeRatingSummaryDto).GetProperty("VoterUserId"));
+        Assert.Null(typeof(EmployeeRatingDetailDto).GetProperty("VoterUserId"));
+    }
+
+    [Fact]
+    public void Employee_rating_endpoints_require_the_expected_permissions()
+    {
+        var controller = typeof(EmployeeRatingsController);
+        Assert.Contains(controller.GetCustomAttributes(typeof(AuthorizeAttribute), true)
+            .Cast<AuthorizeAttribute>(), x => x.Policy == WorkPermissions.EmployeeRatingsRead);
+        Assert.Contains(controller.GetMethod(nameof(EmployeeRatingsController.Submit))!
+            .GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>(),
+            x => x.Policy == WorkPermissions.EmployeeRatings);
+        Assert.Contains(controller.GetMethod(nameof(EmployeeRatingsController.Detail))!
+            .GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>(),
+            x => x.Policy == WorkPermissions.EmployeeRatingsManagement);
+        Assert.Contains(controller.GetMethod(nameof(EmployeeRatingsController.Dashboard))!
+            .GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>(),
+            x => x.Policy == WorkPermissions.EmployeeRatingsDashboard);
+    }
 }

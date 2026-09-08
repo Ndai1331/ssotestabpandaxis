@@ -568,6 +568,76 @@
     }
 }
 
+/* Employee trust ratings */
+.hcs-rating-page { max-width: var(--hcs-content-max-width); margin: 0 auto; padding: var(--hcs-space-6) var(--hcs-page-gutter); color: var(--hcs-color-ink); }
+.hcs-rating-page__header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--hcs-space-5); margin-bottom: var(--hcs-space-5); }
+.hcs-rating-page__header h1 { margin: 0; color: var(--hcs-color-heading); font-size: var(--hcs-font-size-title); }
+.hcs-rating-page__filters { display: flex; align-items: center; gap: var(--hcs-space-2); min-width: min(100%, 420px); }
+.hcs-rating-page__filters .input-group { flex: 1 1 240px; }
+.hcs-rating-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: var(--hcs-space-4); }
+.hcs-rating-card, .hcs-rating-panel, .hcs-rating-toolbar, .hcs-rating-table-card, .hcs-rating-kpi { border: 1px solid var(--hcs-color-border); border-radius: var(--hcs-radius-lg); background: var(--hcs-color-surface); box-shadow: var(--hcs-shadow-sm); }
+.hcs-rating-card { display: flex; flex-direction: column; gap: var(--hcs-space-4); padding: var(--hcs-space-4); }
+.hcs-rating-card__identity, .hcs-rating-table-person { display: flex; align-items: center; gap: var(--hcs-space-3); min-width: 0; }
+.hcs-rating-card__identity h2 { overflow: hidden; margin: 0; color: var(--hcs-color-heading); font-size: var(--hcs-font-size-section-title); text-overflow: ellipsis; white-space: nowrap; }
+.hcs-rating-card__identity p { margin: .2rem 0 0; color: var(--hcs-color-muted); font-size: var(--hcs-text-sm); }
+.hcs-rating-avatar { display: inline-grid; flex: 0 0 3.25rem; width: 3.25rem; height: 3.25rem; overflow: hidden; place-items: center; border-radius: 50%; background: var(--hcs-color-primary-light); color: var(--hcs-color-primary-strong); font-weight: var(--hcs-font-weight-bold); object-fit: cover; }
+.hcs-rating-avatar--small { flex-basis: 2rem; width: 2rem; height: 2rem; font-size: var(--hcs-text-xs); }
+.hcs-rating-card__summary { display: flex; align-items: baseline; justify-content: space-between; gap: var(--hcs-space-2); color: var(--hcs-color-muted); font-size: var(--hcs-text-sm); }
+.hcs-rating-score { color: var(--hcs-color-heading); font-weight: var(--hcs-font-weight-bold); white-space: nowrap; }
+.hcs-rating-score i, .hcs-rating-kpi strong i { color: var(--hcs-color-warning); }
+.hcs-rating-card__action { display: grid; gap: var(--hcs-space-2); border-top: 1px solid var(--hcs-color-border); padding-top: var(--hcs-space-3); }
+.hcs-rating-card__action-label, .hcs-rating-card__hint, .hcs-rating-card__locked { color: var(--hcs-color-muted); font-size: var(--hcs-text-xs); }
+.hcs-rating-card__locked { color: var(--hcs-color-success); }
+.hcs-rating-stars { display: flex; gap: .15rem; }
+.hcs-rating-star { display: inline-grid; width: var(--hcs-touch-target); height: var(--hcs-touch-target); place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--hcs-color-border); cursor: pointer; font-size: 1.3rem; transition: color var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard), background var(--hcs-motion-duration-quick) var(--hcs-motion-ease-standard); }
+.hcs-rating-star:hover, .hcs-rating-star:focus-visible, .hcs-rating-star.is-active { color: var(--hcs-color-warning); background: var(--hcs-color-surface-muted); }
+.hcs-rating-star:focus-visible, .hcs-rating-page select:focus-visible, .hcs-rating-page input:focus-visible, .hcs-rating-page a:focus-visible { outline: none; box-shadow: var(--hcs-focus-ring); }
+.hcs-rating-star:disabled { cursor: not-allowed; opacity: .52; }
+.hcs-rating-toolbar { padding: var(--hcs-space-4); }
+.hcs-rating-toolbar__fields { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--hcs-space-3); }
+.hcs-rating-table-card { overflow: hidden; }
+.hcs-rating-table-card table { min-width: 760px; }
+.hcs-rating-table-card th { background: var(--hcs-color-surface-muted); color: var(--hcs-color-muted); font-size: var(--hcs-text-xs); text-transform: uppercase; }
+.hcs-rating-backlink { display: inline-flex; align-items: center; margin-bottom: var(--hcs-space-2); color: var(--hcs-color-primary-strong); font-size: var(--hcs-text-sm); font-weight: var(--hcs-font-weight-semibold); text-decoration: none; }
+.hcs-rating-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--hcs-space-4); }
+.hcs-rating-kpi .card-body { display: grid; gap: var(--hcs-space-2); min-height: 7rem; align-content: center; }
+.hcs-rating-kpi span, .hcs-rating-kpi small { color: var(--hcs-color-muted); font-size: var(--hcs-text-sm); }
+.hcs-rating-kpi strong { color: var(--hcs-color-heading); font-size: clamp(1.35rem, 2.5vw, 2rem); }
+.hcs-rating-kpi small { font-size: var(--hcs-text-xs); }
+.hcs-rating-detail-grid, .hcs-rating-dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--hcs-space-4); }
+.hcs-rating-panel--wide { grid-column: span 2; }
+.hcs-rating-panel .card-body { padding: var(--hcs-space-4); }
+.hcs-rating-panel h2 { margin: 0 0 var(--hcs-space-4); color: var(--hcs-color-heading); font-size: var(--hcs-font-size-section-title); }
+.hcs-rating-distribution-row { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) 2rem; align-items: center; gap: var(--hcs-space-2); margin-bottom: var(--hcs-space-3); font-size: var(--hcs-text-sm); }
+.hcs-rating-distribution-row > span { color: var(--hcs-color-muted); white-space: nowrap; }
+.hcs-rating-distribution-row > span i { color: var(--hcs-color-warning); }
+.hcs-rating-distribution-track { height: .55rem; overflow: hidden; border-radius: 999px; background: var(--hcs-color-surface-muted); }
+.hcs-rating-distribution-fill { height: 100%; border-radius: inherit; background: var(--hcs-color-primary); }
+.hcs-rating-privacy-note { margin: var(--hcs-space-4) 0 0; color: var(--hcs-color-muted); font-size: var(--hcs-text-sm); }
+.hcs-chart-data-table { margin-top: var(--hcs-space-3); overflow-x: auto; }
+.hcs-chart-data-table table { min-width: 100%; font-size: var(--hcs-text-sm); }
+.hcs-chart-data-table caption { color: var(--hcs-color-muted); caption-side: top; font-size: var(--hcs-text-xs); text-align: left; }
+
+@media (max-width: 767.98px) {
+    .hcs-rating-page { padding-top: var(--hcs-space-4); }
+    .hcs-rating-page__header { align-items: stretch; flex-direction: column; }
+    .hcs-rating-page__filters { flex-direction: column; align-items: stretch; min-width: 0; }
+    .hcs-rating-toolbar__fields, .hcs-rating-kpi-grid, .hcs-rating-detail-grid, .hcs-rating-dashboard-grid { grid-template-columns: 1fr; }
+    .hcs-rating-panel--wide { grid-column: auto; }
+}
+
+@media (max-width: 575.98px) {
+    .hcs-rating-page { padding-right: var(--hcs-space-3); padding-left: var(--hcs-space-3); }
+    .hcs-rating-grid { grid-template-columns: 1fr; }
+    .hcs-rating-table-wrap--stacked table, .hcs-rating-table-wrap--stacked thead, .hcs-rating-table-wrap--stacked tbody, .hcs-rating-table-wrap--stacked th, .hcs-rating-table-wrap--stacked td, .hcs-rating-table-wrap--stacked tr { display: block; }
+    .hcs-rating-table-wrap--stacked thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .hcs-rating-table-wrap--stacked tr { border-bottom: 1px solid var(--hcs-color-border); padding: var(--hcs-space-3); }
+    .hcs-rating-table-wrap--stacked td { display: flex; justify-content: space-between; gap: var(--hcs-space-3); border: 0; padding: .35rem 0; text-align: right; }
+    .hcs-rating-table-wrap--stacked td::before { color: var(--hcs-color-muted); content: attr(data-label); font-weight: var(--hcs-font-weight-semibold); text-align: left; }
+    .hcs-rating-table-wrap--stacked td.text-end { text-align: right !important; }
+    .hcs-rating-card__summary { align-items: flex-start; flex-direction: column; }
+}
+
 /* Enterprise visual layer. Keep these selectors on HCS wrappers so the
    LeptonX and Blazorise packages remain untouched and upgradeable. */
 .hcs-app-shell {

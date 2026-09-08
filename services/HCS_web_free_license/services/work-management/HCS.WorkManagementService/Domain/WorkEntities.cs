@@ -308,6 +308,33 @@ public sealed class SurveyResult : FullAuditedAggregateRoot<Guid>
     }
 }
 
+public sealed class EmployeeRating : FullAuditedAggregateRoot<Guid>
+{
+    private EmployeeRating() { }
+
+    public EmployeeRating(Guid id, Guid targetUserId, Guid voterUserId, int score, DateOnly evaluationDate) : base(id)
+    {
+        if (targetUserId == Guid.Empty || voterUserId == Guid.Empty)
+            throw new BusinessException("Work:EmployeeRatingUserRequired");
+        if (targetUserId == voterUserId)
+            throw new BusinessException("Work:EmployeeRatingSelfNotAllowed");
+        if (score is < 1 or > 5)
+            throw new BusinessException("Work:EmployeeRatingScoreRange");
+        if (evaluationDate == default)
+            throw new BusinessException("Work:EmployeeRatingDateRequired");
+
+        TargetUserId = targetUserId;
+        VoterUserId = voterUserId;
+        Score = score;
+        EvaluationDate = evaluationDate;
+    }
+
+    public Guid TargetUserId { get; private set; }
+    public Guid VoterUserId { get; private set; }
+    public int Score { get; private set; }
+    public DateOnly EvaluationDate { get; private set; }
+}
+
 public sealed class SurveyFileReference : Entity<Guid>
 {
     private SurveyFileReference() { }

@@ -58,8 +58,26 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
         context.Services.AddAuthorization(options =>
         {
             foreach (var permission in new[] { WorkPermissions.Projects, WorkPermissions.Tasks, WorkPermissions.Calendar,
-                         WorkPermissions.Surveys, WorkPermissions.SurveyManagement, WorkPermissions.Reports, WorkPermissions.Dashboard })
+                         WorkPermissions.Surveys, WorkPermissions.SurveyManagement, WorkPermissions.Reports, WorkPermissions.Dashboard,
+                         WorkPermissions.EmployeeRatings, WorkPermissions.EmployeeRatingsManagement, WorkPermissions.EmployeeRatingsDashboard })
                 options.AddPolicy(permission, policy => policy.RequireClaim("permission", permission));
+            options.AddPolicy(WorkPermissions.EmployeeRatingsRead, policy => policy.RequireAssertion(context =>
+                context.User.HasClaim("permission", WorkPermissions.EmployeeRatings)
+                || context.User.HasClaim("permission", WorkPermissions.EmployeeRatingsManagement)
+                || context.User.HasClaim("permission", WorkPermissions.EmployeeRatingsDashboard)
+                || context.User.IsInRole("admin")));
+        });
+        context.Services.AddHttpContextAccessor();
+        context.Services.AddHttpClient("HCS.Platform", client =>
+        {
+            var baseUrl = configuration["Services:Platform:BaseUrl"] ?? "https://localhost:44411/";
+            client.BaseAddress = new Uri(baseUrl.EndsWith('/') ? baseUrl : baseUrl + "/");
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            var handler = new HttpClientHandler();
+            if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false))
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            return handler;
         });
         Configure<AbpAntiForgeryOptions>(BearerApiAntiforgery.DisableCookieValidation);
         context.Services.AddDbContext<WorkManagementDbContext>(options =>

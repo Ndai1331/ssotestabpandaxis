@@ -1,0 +1,110 @@
+@page "/administration/employee-ratings/{UserId:guid}"
+@attribute [Authorize(Policy = "WorkManagement.EmployeeRatings.Management")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject EmployeeRatingDirectoryService Directory
+
+<PageTitle>@L["Feature:EmployeeRatingDetail"] · HCS</PageTitle>
+
+<section class="hcs-rating-page" aria-labelledby="employee-rating-detail-title">
+    <header class="hcs-rating-page__header">
+        <div>
+            <a class="hcs-rating-backlink" href="/administration/employee-ratings"><i class="fa fa-arrow-left me-1" aria-hidden="true"></i>@L["EmployeeRatings:BackToList"]</a>
+            <h1 id="employee-rating-detail-title">@person?.User.DisplayName</h1>
+            <p class="text-muted mb-0">@person?.DepartmentName</p>
+        </div>
+        <div>
+            <label class="visually-hidden" for="rating-detail-period">@L["EmployeeRatings:TrendPeriod"]</label>
+            <select id="rating-detail-period" class="form-select" @bind="period" @bind:after="LoadAsync">
+                <option value="month">@L["EmployeeRatings:Month"]</option>
+                <option value="quarter">@L["EmployeeRatings:Quarter"]</option>
+            </select>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+    }
+    else if (hasError || detail is null)
+    {
+        <div class="hcs-empty py-5" role="alert"><i class="fa fa-circle-exclamation" aria-hidden="true"></i><h2>@L["EmployeeRatings:LoadErrorTitle"]</h2><p>@L["EmployeeRatings:LoadError"]</p><button class="btn btn-primary" type="button" @onclick="LoadAsync">@L["Catalog:Retry"]</button></div>
+    }
+    else
+    {
+        <div class="hcs-rating-kpi-grid mb-4">
+            <div class="card hcs-rating-kpi"><div class="card-body"><span>@L["EmployeeRatings:Average"]</span><strong><i class="fa fa-star" aria-hidden="true"></i> @detail.AverageScore.ToString("0.0")/5</strong></div></div>
+            <div class="card hcs-rating-kpi"><div class="card-body"><span>@L["EmployeeRatings:Reviews"]</span><strong>@detail.ReviewCount</strong></div></div>
+        </div>
+        <div class="hcs-rating-detail-grid">
+            <section class="card hcs-rating-panel" aria-labelledby="rating-distribution-title">
+                <div class="card-body">
+                    <h2 id="rating-distribution-title">@L["EmployeeRatings:Distribution"]</h2>
+                    @foreach (var score in Enumerable.Range(1, 5).Reverse())
+                    {
+                        var count = detail.ScoreDistribution.GetValueOrDefault(score);
+                        var width = detail.ReviewCount == 0 ? 0 : count * 100d / detail.ReviewCount;
+                        <div class="hcs-rating-distribution-row">
+                            <span>@score <i class="fa fa-star" aria-hidden="true"></i></span>
+                            <div class="hcs-rating-distribution-track"><div class="hcs-rating-distribution-fill" style="width:@($"{width:0.#}%")"></div></div>
+                            <strong>@count</strong>
+                        </div>
+                    }
+                </div>
+            </section>
+            <section class="card hcs-rating-panel" aria-labelledby="rating-trend-title">
+                <div class="card-body">
+                    <h2 id="rating-trend-title">@L["EmployeeRatings:Trend"]</h2>
+                    @if (detail.Trend.Count == 0)
+                    {
+                        <div class="hcs-empty py-4"><i class="fa fa-chart-line" aria-hidden="true"></i><p>@L["EmployeeRatings:NoTrend"]</p></div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <caption class="visually-hidden">@L["EmployeeRatings:Trend"]</caption>
+                                <thead><tr><th>@L["EmployeeRatings:Period"]</th><th>@L["EmployeeRatings:Average"]</th><th>@L["EmployeeRatings:Reviews"]</th></tr></thead>
+                                <tbody>@foreach (var item in detail.Trend) { <tr><td>@item.Period</td><td><i class="fa fa-star text-warning" aria-hidden="true"></i> @item.AverageScore.ToString("0.0")/5</td><td>@item.ReviewCount</td></tr> }</tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+        <p class="hcs-rating-privacy-note"><i class="fa fa-shield-halved me-1" aria-hidden="true"></i>@L["EmployeeRatings:PrivacyNote"]</p>
+    }
+</section>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+
+    private EmployeeRatingPerson? person;
+    private EmployeeRatingDetailDto? detail;
+    private string period = "month";
+    private bool isLoading = true;
+    private bool hasError;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        hasError = false;
+        try
+        {
+            var loadedPeople = await Directory.GetPeopleAsync();
+            person = loadedPeople.SingleOrDefault(x => x.User.UserId == UserId);
+            detail = await Work.GetEmployeeRatingDetailAsync(UserId, period);
+        }
+        catch (Exception exception)
+        {
+            hasError = true;
+            await NotifyErrorAsync(exception);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

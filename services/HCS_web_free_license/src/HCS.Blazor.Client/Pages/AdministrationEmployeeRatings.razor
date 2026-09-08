@@ -1,0 +1,137 @@
+@page "/administration/employee-ratings"
+@attribute [Authorize(Policy = "WorkManagement.EmployeeRatings.Management")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject EmployeeRatingDirectoryService Directory
+
+<PageTitle>@L["Feature:EmployeeRatingManagement"] · HCS</PageTitle>
+
+<section class="hcs-rating-page" aria-labelledby="employee-rating-management-title">
+    <header class="hcs-rating-page__header">
+        <div>
+            <p class="hcs-document-page__eyebrow">@L["Menu:Administration"]</p>
+            <h1 id="employee-rating-management-title">@L["Feature:EmployeeRatingManagement"]</h1>
+            <p class="text-muted mb-0">@L["EmployeeRatings:ManagementSubtitle"]</p>
+        </div>
+    </header>
+    <div class="card hcs-rating-toolbar mb-3">
+        <div class="card-body">
+            <div class="hcs-rating-toolbar__fields">
+                <div>
+                    <label class="form-label" for="management-rating-search">@L["EmployeeRatings:Search"]</label>
+                    <input id="management-rating-search" class="form-control" type="search" @bind="searchText" @bind:event="oninput" placeholder="@L["EmployeeRatings:SearchPlaceholder"]" />
+                </div>
+                <div>
+                    <label class="form-label" for="management-rating-department">@L["EmployeeRatings:Department"]</label>
+                    <select id="management-rating-department" class="form-select" @bind="selectedDepartment">
+                        <option value="">@L["EmployeeRatings:AllDepartments"]</option>
+                        @foreach (var department in DepartmentNames)
+                        {
+                            <option value="@department">@department</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="management-rating-sort">@L["EmployeeRatings:Sort"]</label>
+                    <select id="management-rating-sort" class="form-select" @bind="sortOrder">
+                        <option value="desc">@L["EmployeeRatings:SortHighToLow"]</option>
+                        <option value="asc">@L["EmployeeRatings:SortLowToHigh"]</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+    }
+    else if (hasError)
+    {
+        <div class="hcs-empty py-5" role="alert"><i class="fa fa-circle-exclamation" aria-hidden="true"></i><h2>@L["EmployeeRatings:LoadErrorTitle"]</h2><p>@L["EmployeeRatings:LoadError"]</p><button class="btn btn-primary" type="button" @onclick="LoadAsync">@L["Catalog:Retry"]</button></div>
+    }
+    else
+    {
+        <div class="card hcs-rating-table-card">
+            <div class="card-body p-0">
+                @if (!FilteredPeople.Any())
+                {
+                    <div class="hcs-empty py-5"><i class="fa fa-inbox" aria-hidden="true"></i><h2>@L["EmployeeRatings:EmptyTitle"]</h2><p>@L["EmployeeRatings:Empty"]</p></div>
+                }
+                else
+                {
+                    <div class="table-responsive hcs-rating-table-wrap--stacked">
+                        <table class="table table-hover align-middle mb-0">
+                            <caption class="visually-hidden">@L["Feature:EmployeeRatingManagement"]</caption>
+                            <thead><tr><th>@L["EmployeeRatings:Employee"]</th><th>@L["EmployeeRatings:Department"]</th><th>@L["EmployeeRatings:Average"]</th><th>@L["EmployeeRatings:Reviews"]</th><th class="text-end">@L["EmployeeRatings:Action"]</th></tr></thead>
+                            <tbody>
+                                @foreach (var person in FilteredPeople)
+                                {
+                                    <tr>
+                                        <td data-label="@L["EmployeeRatings:Employee"]"><div class="hcs-rating-table-person"><span class="hcs-rating-avatar hcs-rating-avatar--small">@person.Initials</span><strong>@person.User.DisplayName</strong></div></td>
+                                        <td data-label="@L["EmployeeRatings:Department"]">@person.DepartmentName</td>
+                                        <td data-label="@L["EmployeeRatings:Average"]"><span class="hcs-rating-score\"><i class="fa fa-star" aria-hidden="true"></i> @person.Summary.AverageScore.ToString("0.0")/5</span></td>
+                                        <td data-label="@L["EmployeeRatings:Reviews"]">@person.Summary.ReviewCount</td>
+                                        <td data-label="@L["EmployeeRatings:Action"]" class="text-end"><a class="btn btn-sm btn-outline-primary" href="/administration/employee-ratings/@person.User.UserId"><i class="fa fa-eye me-1" aria-hidden="true"></i>@L["EmployeeRatings:ViewDetail"]</a></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    private readonly List<EmployeeRatingPerson> people = [];
+    private string searchText = string.Empty;
+    private string selectedDepartment = string.Empty;
+    private string sortOrder = "desc";
+    private bool isLoading = true;
+    private bool hasError;
+
+    private IEnumerable<EmployeeRatingPerson> FilteredPeople => people
+        .Where(person => string.IsNullOrWhiteSpace(searchText)
+            || person.User.DisplayName.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase)
+            || person.User.UserName.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase))
+        .Where(person => string.IsNullOrWhiteSpace(selectedDepartment)
+            || string.Equals(person.DepartmentName, selectedDepartment, StringComparison.Ordinal))
+        .OrderByDescending(person => sortOrder == "desc" ? person.Summary.AverageScore : -person.Summary.AverageScore)
+        .ThenBy(person => person.User.DisplayName);
+
+    private IEnumerable<string> DepartmentNames => people.Select(x => x.DepartmentName)
+        .Where(x => !string.IsNullOrWhiteSpace(x) && x != "—")
+        .Distinct(StringComparer.Ordinal).OrderBy(x => x);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        hasError = false;
+        try
+        {
+            var loadedPeople = await Directory.GetPeopleAsync();
+            var summaries = await Work.GetAllEmployeeRatingSummariesAsync();
+            var summaryMap = summaries.ToDictionary(x => x.TargetUserId);
+            people.Clear();
+            foreach (var person in loadedPeople)
+            {
+                if (summaryMap.TryGetValue(person.User.UserId, out var summary))
+                    person.Summary = summary;
+                people.Add(person);
+            }
+        }
+        catch (Exception exception)
+        {
+            hasError = true;
+            await NotifyErrorAsync(exception);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -189,6 +189,42 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
         return GetAsync<List<SurveyResultSessionDetailDto>>(uri, cancellationToken);
     }
 
+    public Task<PagedWorkResponse<EmployeeRatingSummaryDto>> GetEmployeeRatingSummariesAsync(
+        int skip = 0, int take = MaxPageSize, DateTime? from = null, DateTime? to = null,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<PagedWorkResponse<EmployeeRatingSummaryDto>>(
+            BuildDateRangeUri($"/api/employee-ratings/summary?skip={Math.Max(0, skip)}&take={Math.Clamp(take, 1, MaxPageSize)}", from, to),
+            cancellationToken);
+
+    public async Task<List<EmployeeRatingSummaryDto>> GetAllEmployeeRatingSummariesAsync(
+        DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+    {
+        var all = new List<EmployeeRatingSummaryDto>();
+        var skip = 0;
+        while (true)
+        {
+            var page = await GetEmployeeRatingSummariesAsync(skip, MaxPageSize, from, to, cancellationToken);
+            all.AddRange(page.Items);
+            skip += page.Items.Count;
+            if (page.Items.Count == 0 || skip >= page.TotalCount) break;
+        }
+        return all;
+    }
+
+    public Task<EmployeeRatingDto> SubmitEmployeeRatingAsync(SubmitEmployeeRatingRequest request,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<EmployeeRatingDto>(HttpMethod.Post, "/api/employee-ratings", request, cancellationToken);
+
+    public Task<EmployeeRatingDetailDto> GetEmployeeRatingDetailAsync(Guid userId, string period = "month",
+        DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) =>
+        GetAsync<EmployeeRatingDetailDto>(
+            BuildDateRangeUri($"/api/employee-ratings/{userId:D}/detail?period={Uri.EscapeDataString(period)}", from, to),
+            cancellationToken);
+
+    public Task<EmployeeRatingDashboardDto> GetEmployeeRatingDashboardAsync(DateTime? from = null,
+        DateTime? to = null, CancellationToken cancellationToken = default) =>
+        GetAsync<EmployeeRatingDashboardDto>(BuildDateRangeUri("/api/employee-ratings/dashboard", from, to), cancellationToken);
+
     public Task<DashboardDto> GetDashboardAsync(CancellationToken cancellationToken = default) =>
         GetAsync<DashboardDto>("/api/dashboard", cancellationToken);
 
@@ -209,6 +245,19 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
         if (!string.IsNullOrWhiteSpace(query.Status))
             parameters.Add($"status={Uri.EscapeDataString(query.Status.Trim())}");
         return $"{endpoint}?{string.Join('&', parameters)}";
+    }
+
+    private static string BuildDateRangeUri(string endpoint, DateTime? from, DateTime? to)
+    {
+        var separator = endpoint.Contains('?') ? '&' : '?';
+        if (from.HasValue)
+        {
+            endpoint += $"{separator}from={Uri.EscapeDataString(from.Value.ToUniversalTime().ToString("O"))}";
+            separator = '&';
+        }
+        if (to.HasValue)
+            endpoint += $"{separator}to={Uri.EscapeDataString(to.Value.ToUniversalTime().ToString("O"))}";
+        return endpoint;
     }
 
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)

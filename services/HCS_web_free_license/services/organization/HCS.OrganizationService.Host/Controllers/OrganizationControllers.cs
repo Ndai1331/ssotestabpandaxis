@@ -154,5 +154,8 @@ public sealed class UserDepartmentLookupController(IOrganizationAppService servi
         || User.HasClaim("permission", "Documents.Workflow.Start")
         || User.HasClaim("permission", "Documents.Workflow.View")
         || User.HasClaim("permission", OrganizationPermissions.UserMappings)
-        || User.HasClaim("permission", "Collaboration.Social");
+        || User.HasClaim("permission", "Collaboration.Social")
+        || User.HasClaim("permission", "WorkManagement.EmployeeRatings")
+        || User.HasClaim("permission", "WorkManagement.EmployeeRatings.Management")
+        || User.HasClaim("permission", "WorkManagement.EmployeeRatings.Dashboard");
 }

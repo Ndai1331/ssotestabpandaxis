@@ -238,19 +238,51 @@
                                         <NavLink href="/chat" @onclick="CloseMobileNav"><i class="fa fa-comments" aria-hidden="true"></i>@Localizer["Menu:SocialChat"]</NavLink>
                                     </Authorized>
                                 </AuthorizeView>
+                                <AuthorizeView Policy="WorkManagement.EmployeeRatings">
+                                    <Authorized>
+                                        <NavLink href="/employee-ratings" @onclick="CloseMobileNav"><i class="fa fa-star-half-stroke" aria-hidden="true"></i>@Localizer["Menu:EmployeeRatings"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
                             </div>
                         </div>
                     }
                 </Authorized>
             </AuthorizeView>
 
-            <AuthorizeView Roles="admin">
+            <AuthorizeView Context="authenticationState">
                 <Authorized>
-                    @Menu("admin", "fa-screwdriver-wrench", Localizer["Menu:Administration"].Value,
-                        ("/administration", "fa-users-gear", Localizer["Menu:Users"].Value),
-                        ("/administration/roles", "fa-shield-halved", Localizer["Menu:Roles"].Value),
-                        ("/administration/languages", "fa-language", Localizer["Menu:Languages"].Value),
-                        ("/administration/audit-logs", "fa-clipboard-list", Localizer["Menu:AuditLogs"].Value))
+                    @if (CanOpenAdministrationNavigation(authenticationState.User))
+                    {
+                        <div class="hcs-nav-menu @(IsExpanded("admin") ? "hcs-nav-menu--expanded" : null)"
+                             @onpointerenter="@(() => OnMenuPointerEnter("admin"))">
+                            <button class="hcs-nav-menu__trigger" type="button"
+                                    aria-expanded="@IsExpanded("admin").ToString().ToLowerInvariant()"
+                                    aria-haspopup="true" @onmousedown:preventDefault
+                                    @onclick="@(() => ToggleSection("admin"))">
+                                <i class="fa fa-screwdriver-wrench" aria-hidden="true"></i><span>@Localizer["Menu:Administration"]</span>
+                                <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
+                            </button>
+                            <div class="hcs-nav-menu__panel" role="menu">
+                                @if (authenticationState.User.IsInRole("admin"))
+                                {
+                                    <NavLink href="/administration" @onclick="CloseMobileNav"><i class="fa fa-users-gear" aria-hidden="true"></i>@Localizer["Menu:Users"]</NavLink>
+                                    <NavLink href="/administration/roles" @onclick="CloseMobileNav"><i class="fa fa-shield-halved" aria-hidden="true"></i>@Localizer["Menu:Roles"]</NavLink>
+                                    <NavLink href="/administration/languages" @onclick="CloseMobileNav"><i class="fa fa-language" aria-hidden="true"></i>@Localizer["Menu:Languages"]</NavLink>
+                                    <NavLink href="/administration/audit-logs" @onclick="CloseMobileNav"><i class="fa fa-clipboard-list" aria-hidden="true"></i>@Localizer["Menu:AuditLogs"]</NavLink>
+                                }
+                                <AuthorizeView Policy="WorkManagement.EmployeeRatings.Management">
+                                    <Authorized>
+                                        <NavLink href="/administration/employee-ratings" @onclick="CloseMobileNav"><i class="fa fa-star" aria-hidden="true"></i>@Localizer["Menu:EmployeeRatingManagement"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                                <AuthorizeView Policy="WorkManagement.EmployeeRatings.Dashboard">
+                                    <Authorized>
+                                        <NavLink href="/administration/employee-ratings-dashboard" @onclick="CloseMobileNav"><i class="fa fa-chart-pie" aria-hidden="true"></i>@Localizer["Menu:EmployeeRatingDashboard"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                        </div>
+                    }
                 </Authorized>
             </AuthorizeView>
 
@@ -289,7 +321,13 @@
 
     private static bool CanOpenSocialNavigation(System.Security.Claims.ClaimsPrincipal user) =>
         user.HasClaim("permission", CollaborationPermissions.Social)
-        || user.HasClaim("permission", CollaborationPermissions.Chat);
+        || user.HasClaim("permission", CollaborationPermissions.Chat)
+        || user.HasClaim("permission", "WorkManagement.EmployeeRatings");
+
+    private static bool CanOpenAdministrationNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        user.IsInRole("admin")
+        || user.HasClaim("permission", "WorkManagement.EmployeeRatings.Management")
+        || user.HasClaim("permission", "WorkManagement.EmployeeRatings.Dashboard");
 
     protected override void OnInitialized()
     {

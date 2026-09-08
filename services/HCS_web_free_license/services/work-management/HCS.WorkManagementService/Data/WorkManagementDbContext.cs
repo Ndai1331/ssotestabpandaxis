@@ -22,6 +22,7 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
     public DbSet<SurveyLocation> SurveyLocations => Set<SurveyLocation>();
     public DbSet<SurveySession> SurveySessions => Set<SurveySession>();
     public DbSet<SurveyResult> SurveyResults => Set<SurveyResult>();
+    public DbSet<EmployeeRating> EmployeeRatings => Set<EmployeeRating>();
     public DbSet<SurveyFileReference> SurveyFiles => Set<SurveyFileReference>();
     public DbSet<DashboardMetric> DashboardMetrics => Set<DashboardMetric>();
     public DbSet<ReportReadModel> ReportReadModels => Set<ReportReadModel>();
@@ -141,6 +142,16 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.HasIndex(x => x.CriteriaId);
             b.HasOne<SurveySession>().WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
             b.HasOne<SurveyCriteria>().WithMany().HasForeignKey(x => x.CriteriaId).OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<EmployeeRating>(b =>
+        {
+            b.ToTable("EmployeeRatings"); b.ConfigureByConvention();
+            b.Property(x => x.Score).IsRequired();
+            b.Property(x => x.EvaluationDate).HasColumnType("date").IsRequired();
+            b.HasIndex(x => new { x.VoterUserId, x.TargetUserId, x.EvaluationDate })
+                .IsUnique().HasDatabaseName("IX_EmployeeRatings_DailyVote");
+            b.HasIndex(x => new { x.TargetUserId, x.CreationTime });
+            b.HasIndex(x => x.VoterUserId);
         });
         builder.Entity<SurveyFileReference>(b =>
         {

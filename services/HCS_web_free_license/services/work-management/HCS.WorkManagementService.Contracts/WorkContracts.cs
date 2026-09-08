@@ -9,6 +9,10 @@ public static class WorkPermissions
     public const string SurveyManagement = "WorkManagement.SurveyManagement";
     public const string Reports = "WorkManagement.Reports";
     public const string Dashboard = "WorkManagement.Dashboard";
+    public const string EmployeeRatings = "WorkManagement.EmployeeRatings";
+    public const string EmployeeRatingsManagement = "WorkManagement.EmployeeRatings.Management";
+    public const string EmployeeRatingsDashboard = "WorkManagement.EmployeeRatings.Dashboard";
+    public const string EmployeeRatingsRead = "WorkManagement.EmployeeRatings.Read";
 }
 
 public sealed record PagedWorkDto<T>(long TotalCount, IReadOnlyList<T> Items);
@@ -82,3 +86,15 @@ public sealed record DashboardDto(int ActiveProjects, int OpenTasks, int Overdue
     DateTime CalculatedAt);
 public sealed record ReportRowDto(string Dimension, string Key, string Label, decimal Value, DateTime RefreshedAt);
 public sealed record WorkAssetDto(string BlobName, string FileName, string ContentType, long Size);
+
+public sealed record SubmitEmployeeRatingDto(Guid TargetUserId, int Score);
+public sealed record EmployeeRatingDto(Guid Id, Guid TargetUserId, int Score, DateOnly EvaluationDate,
+    DateTime CreatedAt);
+public sealed record EmployeeRatingSummaryDto(Guid TargetUserId, decimal AverageScore, int ReviewCount,
+    IReadOnlyDictionary<int, int> ScoreDistribution, int? MyTodayScore = null, DateTime? LatestRatingAt = null);
+public sealed record EmployeeRatingTrendDto(string Period, decimal AverageScore, int ReviewCount);
+public sealed record EmployeeRatingDetailDto(Guid TargetUserId, decimal AverageScore, int ReviewCount,
+    IReadOnlyDictionary<int, int> ScoreDistribution, IReadOnlyList<EmployeeRatingTrendDto> Trend);
+public sealed record EmployeeRatingDashboardDto(int EvaluatedEmployeeCount, decimal CompanyAverageScore,
+    int DistinctVoterCount, IReadOnlyDictionary<int, int> ScoreDistribution,
+    IReadOnlyList<EmployeeRatingSummaryDto> EmployeeSummaries);

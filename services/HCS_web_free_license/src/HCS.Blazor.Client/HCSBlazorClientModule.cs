@@ -84,6 +84,8 @@ public class HCSBlazorClientModule : AbpModule
         context.Services.AddScoped<SurveyCatalogCache>();
         context.Services.AddScoped<Account.AccountProfileClient>();
         context.Services.AddScoped<Work.WorkManagementClient>();
+        context.Services.AddScoped<Work.EmployeeRatingDirectoryClient>();
+        context.Services.AddScoped<Work.EmployeeRatingDirectoryService>();
         context.Services.AddScoped<Documents.DocumentClient>();
         ConfigureRouter(context);
         ConfigureMenu(context);

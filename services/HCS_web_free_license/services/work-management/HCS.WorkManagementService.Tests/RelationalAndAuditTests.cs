@@ -32,4 +32,16 @@ public sealed class RelationalAndAuditTests
         Assert.Equal(AuditRecordCapturedEto.EventName, message.EventName);
         Assert.Contains(audit.Id.ToString(), message.Payload, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void Employee_rating_has_a_unique_daily_vote_index()
+    {
+        using var db = new WorkManagementDbContext(new DbContextOptionsBuilder<WorkManagementDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        var entity = db.Model.FindEntityType(typeof(EmployeeRating))!;
+        var index = entity.GetIndexes().Single(x => x.GetDatabaseName() == "IX_EmployeeRatings_DailyVote");
+        Assert.True(index.IsUnique);
+        Assert.Equal(["VoterUserId", "TargetUserId", "EvaluationDate"],
+            index.Properties.Select(x => x.Name).ToArray());
+    }
 }
