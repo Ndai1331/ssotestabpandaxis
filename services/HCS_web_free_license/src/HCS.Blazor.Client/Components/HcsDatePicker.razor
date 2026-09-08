@@ -1,21 +1,21 @@
 @typeparam TValue
 @namespace HCS.Blazor.Client.Components
 
-<Addons Class="hcs-datepicker">
-    <Addon AddonType="AddonType.Body">
-        <DatePicker @ref="picker"
-                    TValue="TValue"
-                    Value="Value"
-                    ValueChanged="ValueChanged"
-                    InputMode="InputMode"
-                    SelectionMode="SelectionMode"
-                    DisplayFormat="@ResolvedDisplayFormat"
-                    TimeAs24hr="ResolvedTimeAs24hr"
-                    ShowTodayButton="ShowTodayButton"
-                    ShowClearButton="ShowClearButton"
-                    Disabled="Disabled" />
-    </Addon>
-</Addons>
+<div class="hcs-datepicker">
+    <DatePicker @ref="picker"
+                TValue="TValue"
+                Class="w-100"
+                Value="Value"
+                ValueChanged="ValueChanged"
+                InputMode="InputMode"
+                SelectionMode="SelectionMode"
+                DisplayFormat="@ResolvedDisplayFormat"
+                TimeAs24hr="ResolvedTimeAs24hr"
+                ShowTodayButton="ShowTodayButton"
+                ShowClearButton="ShowClearButton"
+                StaticPicker="false"
+                Disabled="Disabled" />
+</div>
 
 @code {
     private const string DefaultDateTimeDisplayFormat = "dd/MM/yyyy HH:mm";

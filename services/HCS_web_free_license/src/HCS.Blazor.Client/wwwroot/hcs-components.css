@@ -25,7 +25,8 @@
     to { transform: rotate(360deg); }
 }
 
-.hcs-app-shell :where(a, button, input, select, textarea, summary):focus-visible,
+.hcs-app-shell :where(a, button, summary):focus-visible,
+.hcs-app-shell :where(input[type="checkbox"], input[type="radio"]):focus-visible,
 .hcs-auth-login-page :where(a, button, input, select, textarea, summary):focus-visible {
     outline: 3px solid var(--hcs-color-primary, var(--color-primary, #00B4A9));
     outline-offset: 2px;
@@ -413,7 +414,54 @@
 
 .hcs-app-shell .modal-body {
     min-height: 0;
+    overflow-anchor: none;
     overflow-y: auto;
+}
+
+.hcs-app-shell .hcs-datepicker,
+.hcs-app-shell .modal .hcs-datepicker .b-is-datepicker {
+    overflow: visible;
+    position: relative;
+}
+
+.hcs-datepicker-layer {
+    display: contents;
+}
+
+body:has(.hcs-app-shell) .hcs-datepicker-layer .datepicker-calendar.dropdown-menu,
+body:has(.hcs-app-shell) .datepicker-calendar.dropdown-menu[data-hcs-hosted] {
+    background: #fff;
+    box-shadow: var(--hcs-shadow-md, 0 12px 32px rgba(23, 50, 68, .18));
+    color: var(--hcs-color-ink);
+    z-index: 1065;
+}
+
+body:has(.hcs-app-shell) .datepicker-calendar,
+body:has(.hcs-app-shell) .datepicker-header,
+body:has(.hcs-app-shell) .datepicker-header button,
+body:has(.hcs-app-shell) .datepicker-title,
+body:has(.hcs-app-shell) .datepicker-title select,
+body:has(.hcs-app-shell) .datepicker-title input,
+body:has(.hcs-app-shell) .datepicker-weekday,
+body:has(.hcs-app-shell) .datepicker-time,
+body:has(.hcs-app-shell) .datepicker-time-input,
+body:has(.hcs-app-shell) .datepicker-button,
+body:has(.hcs-app-shell) .datepicker-calendar .btn {
+    color: var(--hcs-color-ink);
+}
+
+body:has(.hcs-app-shell) .datepicker-weekday {
+    color: var(--hcs-color-muted);
+}
+
+body:has(.hcs-app-shell) .datepicker-day:not(.datepicker-day-selected):not(.datepicker-day-range-start):not(.datepicker-day-range-end),
+body:has(.hcs-app-shell) .datepicker-month:not(.datepicker-month-selected) {
+    color: var(--hcs-color-ink);
+}
+
+body:has(.hcs-app-shell) .datepicker-day-outside:not(.datepicker-day-selected) {
+    color: var(--hcs-color-muted);
+    opacity: 1;
 }
 
 .hcs-table-mobile-hint {
@@ -843,11 +891,188 @@
     width: var(--hcs-button-height-sm);
 }
 
-.hcs-app-shell .btn-primary { background: var(--hcs-color-primary); border-color: var(--hcs-color-primary); color: #fff; }
-.hcs-app-shell .btn-primary:hover:not(:disabled), .hcs-app-shell .btn-primary:focus-visible { background: var(--hcs-color-primary-strong); border-color: var(--hcs-color-primary-strong); box-shadow: var(--hcs-focus-ring); color: #fff; }
-.hcs-app-shell .btn-secondary { background: var(--color-secondary, #007F7C); border-color: var(--color-secondary, #007F7C); color: #fff; }
-.hcs-app-shell .btn-outline-primary { border-color: var(--hcs-color-primary); color: var(--hcs-color-primary); }
-.hcs-app-shell .btn-outline-primary:hover:not(:disabled), .hcs-app-shell .btn-outline-primary:focus-visible { background: var(--hcs-color-primary-soft); border-color: var(--hcs-color-primary); color: var(--hcs-color-primary-strong); }
+/* Filled: 1px border matches fill (no contrasting ring). Outline: visible teal
+   stroke. Cancel is outline, not a second primary. Modals portal under body. */
+body:has(.hcs-app-shell) .btn-primary,
+.hcs-app-shell .btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--hcs-color-primary);
+    --bs-btn-border-color: var(--hcs-color-primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--hcs-color-primary-strong);
+    --bs-btn-hover-border-color: var(--hcs-color-primary-strong);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--hcs-color-primary-strong);
+    --bs-btn-active-border-color: var(--hcs-color-primary-strong);
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: var(--hcs-color-primary);
+    --bs-btn-disabled-border-color: var(--hcs-color-primary);
+    --bs-btn-focus-box-shadow: none;
+    --bs-btn-hover-shadow: none;
+    background-color: var(--hcs-color-primary);
+    border: var(--hcs-button-border-width, 1px) solid var(--hcs-color-primary);
+    color: #fff;
+}
+body:has(.hcs-app-shell) .btn-primary:hover:not(:disabled),
+.hcs-app-shell .btn-primary:hover:not(:disabled) {
+    background-color: var(--hcs-color-primary-strong);
+    border-color: var(--hcs-color-primary-strong);
+    box-shadow: none;
+    color: #fff;
+}
+body:has(.hcs-app-shell) .btn-primary:focus-visible,
+.hcs-app-shell .btn-primary:focus-visible {
+    background-color: var(--hcs-color-primary-strong);
+    border-color: var(--hcs-color-primary-strong);
+    box-shadow: var(--hcs-focus-ring);
+    color: #fff;
+}
+body:has(.hcs-app-shell) .btn-primary.hcs-catalog-save:hover:not(:disabled),
+.hcs-app-shell .btn-primary.hcs-catalog-save:hover:not(:disabled) {
+    background-color: var(--hcs-color-primary-strong);
+    border-color: var(--hcs-color-primary-strong);
+    box-shadow: none;
+}
+body:has(.hcs-app-shell) .btn-secondary,
+.hcs-app-shell .btn-secondary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--color-secondary, #007F7C);
+    --bs-btn-border-color: var(--color-secondary, #007F7C);
+    --bs-btn-hover-bg: var(--hcs-color-primary-strong);
+    --bs-btn-hover-border-color: var(--hcs-color-primary-strong);
+    background-color: var(--color-secondary, #007F7C);
+    border: var(--hcs-button-border-width, 1px) solid var(--color-secondary, #007F7C);
+    color: #fff;
+}
+body:has(.hcs-app-shell) .btn-outline-primary,
+.hcs-app-shell .btn-outline-primary {
+    --bs-btn-color: var(--hcs-color-primary);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: var(--hcs-color-primary);
+    --bs-btn-hover-color: var(--hcs-color-primary-strong);
+    --bs-btn-hover-bg: var(--hcs-color-primary-soft);
+    --bs-btn-hover-border-color: var(--hcs-color-primary);
+    background-color: transparent;
+    border: var(--hcs-button-border-width, 1px) solid var(--hcs-color-primary);
+    color: var(--hcs-color-primary);
+}
+body:has(.hcs-app-shell) .btn-outline-primary:hover:not(:disabled),
+body:has(.hcs-app-shell) .btn-outline-primary:focus-visible,
+.hcs-app-shell .btn-outline-primary:hover:not(:disabled),
+.hcs-app-shell .btn-outline-primary:focus-visible {
+    background-color: var(--hcs-color-primary-soft);
+    border-color: var(--hcs-color-primary);
+    color: var(--hcs-color-primary-strong);
+}
+body:has(.hcs-app-shell) .btn.hcs-catalog-cancel,
+body:has(.hcs-app-shell) .btn.hcs-modal-cancel,
+.hcs-app-shell .btn.hcs-catalog-cancel,
+.hcs-app-shell .btn.hcs-modal-cancel {
+    --bs-btn-color: var(--hcs-color-primary);
+    --bs-btn-bg: var(--hcs-color-surface);
+    --bs-btn-border-color: var(--hcs-color-primary);
+    --bs-btn-hover-color: var(--hcs-color-primary-strong);
+    --bs-btn-hover-bg: var(--hcs-color-primary-soft);
+    --bs-btn-hover-border-color: var(--hcs-color-primary);
+    background-color: var(--hcs-color-surface);
+    border: var(--hcs-button-border-width, 1px) solid var(--hcs-color-primary);
+    color: var(--hcs-color-primary);
+}
+body:has(.hcs-app-shell) .btn.hcs-catalog-cancel:hover:not(:disabled),
+body:has(.hcs-app-shell) .btn.hcs-modal-cancel:hover:not(:disabled),
+.hcs-app-shell .btn.hcs-catalog-cancel:hover:not(:disabled),
+.hcs-app-shell .btn.hcs-modal-cancel:hover:not(:disabled) {
+    background-color: var(--hcs-color-primary-soft);
+    border-color: var(--hcs-color-primary);
+    box-shadow: none;
+    color: var(--hcs-color-primary-strong);
+}
+body:has(.hcs-app-shell) .modal .btn.btn-primary,
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-save {
+    background-color: var(--hcs-color-primary) !important;
+    border-color: var(--hcs-color-primary) !important;
+    color: #fff !important;
+}
+
+body:has(.hcs-app-shell) .modal .btn.btn-primary:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-save:hover:not(:disabled) {
+    background-color: var(--hcs-color-primary-strong) !important;
+    border-color: var(--hcs-color-primary-strong) !important;
+    color: #fff !important;
+}
+
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel,
+body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel {
+    background-color: var(--hcs-color-surface, #fff) !important;
+    border-color: var(--hcs-color-primary) !important;
+    color: var(--hcs-color-primary) !important;
+}
+
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel:hover:not(:disabled) {
+    background-color: var(--hcs-color-primary-soft) !important;
+    border-color: var(--hcs-color-primary) !important;
+    color: var(--hcs-color-primary-strong) !important;
+}
+
+body:has(.hcs-app-shell) .btn.hcs-catalog-cancel:focus-visible,
+body:has(.hcs-app-shell) .btn.hcs-modal-cancel:focus-visible,
+.hcs-app-shell .btn.hcs-catalog-cancel:focus-visible,
+.hcs-app-shell .btn.hcs-modal-cancel:focus-visible {
+    background-color: var(--hcs-color-primary-soft);
+    border-color: var(--hcs-color-primary);
+    box-shadow: var(--hcs-focus-ring);
+    color: var(--hcs-color-primary-strong);
+}
+
+/* Blazorise 2.3 days are buttons (.datepicker-day). Hover must not use
+   white text on the light primary wash — that fails WCAG contrast. */
+body:has(.hcs-app-shell) .datepicker-day:hover:not(:disabled):not(.datepicker-day-selected):not(.datepicker-day-range-start):not(.datepicker-day-range-end),
+body:has(.hcs-app-shell) .datepicker-month:hover:not(:disabled):not(.datepicker-month-selected),
+body:has(.hcs-app-shell) .datepicker-day-focused:not(.datepicker-day-selected):not(.datepicker-day-range-start):not(.datepicker-day-range-end) {
+    background: var(--hcs-color-primary-soft) !important;
+    border-color: var(--hcs-color-primary) !important;
+    color: var(--hcs-color-ink) !important;
+}
+
+body:has(.hcs-app-shell) .datepicker-day-selected,
+body:has(.hcs-app-shell) .datepicker-day-range-start,
+body:has(.hcs-app-shell) .datepicker-day-range-end,
+body:has(.hcs-app-shell) .datepicker-month-selected {
+    background: var(--hcs-color-primary) !important;
+    border-color: var(--hcs-color-primary) !important;
+    color: #fff !important;
+}
+
+body:has(.hcs-app-shell) .datepicker-day-selected:hover:not(:disabled),
+body:has(.hcs-app-shell) .datepicker-day-range-start:hover:not(:disabled),
+body:has(.hcs-app-shell) .datepicker-day-range-end:hover:not(:disabled),
+body:has(.hcs-app-shell) .datepicker-month-selected:hover:not(:disabled) {
+    background: var(--hcs-color-primary-strong) !important;
+    border-color: var(--hcs-color-primary-strong) !important;
+    color: #fff !important;
+}
+
+body:has(.hcs-app-shell) .datepicker-day-today:not(.datepicker-day-selected) {
+    background: transparent;
+    border-color: var(--hcs-color-primary);
+    color: var(--hcs-color-ink);
+}
+
+body:has(.hcs-app-shell) .flatpickr-day.today {
+    border-color: var(--hcs-color-primary);
+}
+
+body:has(.hcs-app-shell) .flatpickr-months .flatpickr-prev-month,
+body:has(.hcs-app-shell) .flatpickr-months .flatpickr-next-month,
+body:has(.hcs-app-shell) .flatpickr-months .flatpickr-prev-month svg,
+body:has(.hcs-app-shell) .flatpickr-months .flatpickr-next-month svg,
+body:has(.hcs-app-shell) .datepicker .datepicker-header .datepicker-prev,
+body:has(.hcs-app-shell) .datepicker .datepicker-header .datepicker-next {
+    color: var(--hcs-color-primary);
+    fill: var(--hcs-color-primary);
+    stroke: var(--hcs-color-primary);
+}
 .hcs-app-shell .btn-light,
 .hcs-app-shell .btn-outline-light,
 .hcs-app-shell .hcs-catalog-filter-reset,
@@ -871,9 +1096,283 @@
     min-height: var(--hcs-control-height);
 }
 
-.hcs-app-shell :where(.form-control, .form-select, select, textarea):focus,
-.hcs-app-shell .select2-container--focus .select2-selection,
-.hcs-app-shell .select2-container--open .select2-selection { border-color: var(--hcs-color-primary); box-shadow: var(--hcs-focus-ring); }
+/* Same halo as Auth login: 1px teal border + 0.2rem translucent spread.
+   Do not add outline — that paints a second solid ring. Modal is portaled
+   under body, so this is scoped to the document, not .hcs-app-shell. */
+body:has(.hcs-app-shell) :is(.form-control, .form-select, select, textarea):focus,
+body:has(.hcs-app-shell) :is(.form-control, .form-select, select, textarea):focus-visible,
+body:has(.hcs-app-shell) .select2-container--focus .select2-selection,
+body:has(.hcs-app-shell) .select2-container--open .select2-selection,
+body:has(.hcs-app-shell) .b-is-datepicker .form-control:focus,
+body:has(.hcs-app-shell) .b-is-datepicker .form-control:focus-visible {
+    border-color: var(--hcs-color-primary);
+    box-shadow: var(--hcs-focus-ring) !important;
+    outline: 0 !important;
+}
+
+/* 4px overlay offset so open option lists sit as a layer, not a glued extension.
+   Modal + Select2 menus portal under body, so this is document-scoped. */
+body:has(.hcs-app-shell) {
+    --bs-dropdown-spacer: var(--hcs-popover-offset, .25rem);
+    --bs-primary: var(--hcs-color-primary);
+    --bs-primary-rgb: 0, 180, 169;
+    --bs-secondary: var(--color-secondary, #007F7C);
+    --bs-secondary-rgb: 0, 127, 124;
+    --bs-success: var(--hcs-color-success);
+    --bs-success-rgb: 0, 127, 124;
+    --bs-warning: #d68a23;
+    --bs-warning-rgb: 214, 138, 35;
+    --bs-danger: var(--hcs-color-danger);
+    --bs-danger-rgb: 227, 30, 36;
+    --bs-info: var(--hcs-color-info);
+    --bs-info-rgb: 0, 180, 169;
+    --bs-link-color: var(--hcs-color-link);
+    --bs-link-color-rgb: 0, 180, 169;
+    --bs-link-hover-color: var(--hcs-color-link-hover);
+    --bs-link-hover-color-rgb: 0, 127, 124;
+    --bs-focus-ring-color: rgba(0, 180, 169, .28);
+}
+
+/* Select2 must match native inputs: same border/ink, one padding layer,
+   centered chevron, clear not stacked on the arrow, menu glued to the field. */
+body:has(.hcs-app-shell) .select2-container {
+    width: 100% !important;
+}
+
+body:has(.hcs-app-shell) .select2-container .select2-selection--single {
+    align-items: center;
+    background-color: var(--hcs-color-surface);
+    border: 1px solid var(--hcs-color-border) !important;
+    border-radius: var(--hcs-radius-sm) !important;
+    box-sizing: border-box;
+    color: var(--hcs-color-ink);
+    display: flex;
+    height: var(--hcs-control-height, 2rem) !important;
+    max-height: var(--hcs-control-height, 2rem) !important;
+    min-height: var(--hcs-control-height, 2rem) !important;
+    overflow: hidden;
+    padding: 0 !important;
+    position: relative;
+}
+
+body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__rendered {
+    align-items: center;
+    color: inherit !important;
+    display: flex !important;
+    flex: 1;
+    font-size: 1rem;
+    height: 100% !important;
+    line-height: 1.25 !important;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 1.75rem 0 .5rem !important;
+    width: 100%;
+}
+
+body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: inherit !important;
+}
+
+body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__clear {
+    color: inherit;
+    float: none !important;
+    font-size: 1.15rem;
+    font-weight: 400;
+    height: 1.5rem;
+    line-height: 1.5rem;
+    margin: 0 !important;
+    position: absolute;
+    right: 1.5rem;
+    text-align: center;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    z-index: 1;
+}
+
+body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__clear:hover {
+    color: var(--hcs-color-ink);
+}
+
+body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__arrow {
+    align-items: center;
+    display: flex !important;
+    height: 100% !important;
+    justify-content: flex-end;
+    margin: 0;
+    padding-right: .5rem;
+    position: absolute;
+    right: 0;
+    top: 0 !important;
+    width: 1.5rem !important;
+}
+
+body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border: 0 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2324465e' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 16px 12px;
+    height: 12px !important;
+    left: auto !important;
+    margin: 0 !important;
+    position: static !important;
+    top: auto !important;
+    width: 16px !important;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown {
+    background: var(--hcs-color-surface);
+    border: 1px solid var(--hcs-color-primary);
+    border-radius: var(--hcs-radius-sm);
+    box-shadow: var(--hcs-focus-ring);
+    color: var(--hcs-color-ink);
+    overflow: hidden;
+    padding: .5rem;
+    z-index: 1060;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown--below {
+    border-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    margin-top: 0;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown--above {
+    border-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: 0;
+}
+
+body:has(.hcs-app-shell) .select2-container--open.select2-container--below .select2-selection--single {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+body:has(.hcs-app-shell) .select2-container--open.select2-container--above .select2-selection--single {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+}
+
+body:has(.hcs-app-shell) .select2-search--dropdown {
+    padding: 0 0 .35rem;
+}
+
+body:has(.hcs-app-shell) .select2-results {
+    border: 0;
+}
+
+body:has(.hcs-app-shell) .select2-search--dropdown .select2-search__field {
+    background: var(--hcs-color-surface);
+    border: 1px solid var(--hcs-color-border) !important;
+    border-radius: var(--hcs-radius-sm);
+    box-shadow: none !important;
+    box-sizing: border-box;
+    color: var(--hcs-color-ink);
+    font-size: 1rem;
+    outline: 0;
+    padding: .35rem .5rem !important;
+    width: 100% !important;
+}
+
+body:has(.hcs-app-shell) .select2-search--dropdown .select2-search__field:focus,
+body:has(.hcs-app-shell) .select2-search--dropdown .select2-search__field:focus-visible {
+    border-color: var(--hcs-color-primary) !important;
+    box-shadow: none !important;
+}
+
+body:has(.hcs-app-shell) .select2-results__option {
+    border-radius: 3px;
+    color: var(--hcs-color-ink);
+    padding: .4rem .5rem;
+}
+
+body:has(.hcs-app-shell) .select2-results__option.select2-results__option--highlighted,
+body:has(.hcs-app-shell) .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background: var(--hcs-color-primary-soft) !important;
+    color: var(--hcs-color-ink) !important;
+}
+
+body:has(.hcs-app-shell) .select2-container--default .select2-results__option--selected {
+    background: var(--hcs-color-primary) !important;
+    color: #fff !important;
+}
+
+body:has(.hcs-app-shell) .select2-container--default .select2-results__option--selected.select2-results__option--highlighted {
+    background: var(--hcs-color-primary-strong) !important;
+    color: #fff !important;
+}
+
+body:has(.hcs-app-shell) .select2-results__message {
+    color: var(--hcs-color-muted);
+    padding: .45rem .5rem;
+}
+
+@supports selector(::picker(select)) {
+    /* Closed customizable select is a flex column by default, so the value
+       sits at the top and leftover icon space makes the field taller than
+       a matching input. Row + center keeps Bootstrap's chevron and the text. */
+    body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) {
+        appearance: base-select !important;
+        align-items: center;
+        display: flex;
+        flex-direction: row;
+    }
+
+    body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) > button,
+    body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) selectedcontent {
+        align-items: center;
+        display: flex;
+        flex: 1 1 auto;
+        height: 100%;
+        min-height: 0;
+        min-width: 0;
+        overflow: hidden;
+        padding: 0;
+    }
+
+    /* UA picker-icon wraps below a block-level select. Keep Bootstrap's
+       background chevron and take the extra triangle out of flow. */
+    body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2)::picker-icon {
+        content: none;
+        display: none !important;
+        flex: 0 0 0;
+        height: 0;
+        margin: 0;
+        opacity: 0;
+        overflow: hidden;
+        padding: 0;
+        pointer-events: none;
+        position: absolute;
+        width: 0;
+    }
+
+    body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2)::picker(select) {
+        appearance: base-select;
+        background: var(--hcs-color-surface);
+        border: 1px solid var(--hcs-color-border);
+        border-radius: var(--hcs-radius-sm);
+        box-shadow: var(--hcs-shadow-md);
+        color: var(--hcs-color-ink);
+        margin-block: var(--hcs-popover-offset, .25rem);
+        overflow: hidden;
+        padding: .15rem;
+        z-index: var(--hcs-z-popover);
+    }
+
+    body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) option {
+        border-radius: 3px;
+        padding: .4rem .65rem;
+    }
+
+    body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) option:checked,
+    body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) option:hover {
+        background-color: var(--hcs-color-primary-soft);
+        color: var(--hcs-color-primary-strong);
+    }
+}
 .hcs-app-shell :where(.form-label, .field-label, label) { color: var(--hcs-color-ink); font-size: .82rem; font-weight: 600; }
 .hcs-app-shell :where(.form-text, .invalid-feedback, .validation-message) { font-size: .76rem; }
 .hcs-app-shell .invalid-feedback, .hcs-app-shell .validation-message { color: var(--hcs-color-danger); }
@@ -890,7 +1389,7 @@
 .hcs-app-shell .pagination .page-link { border-color: var(--hcs-color-border); border-radius: var(--hcs-radius-sm); color: var(--hcs-color-ink); min-height: var(--hcs-touch-target); min-width: var(--hcs-touch-target); text-align: center; }
 .hcs-app-shell .pagination .page-item.active .page-link { background: var(--hcs-color-primary); border-color: var(--hcs-color-primary); color: #fff; }
 
-.hcs-app-shell :where(.modal-content, .hcs-catalog-modal) { border: 1px solid var(--hcs-color-border); border-radius: var(--hcs-radius-lg); box-shadow: var(--hcs-shadow-md); overflow: hidden; }
+.hcs-app-shell :where(.modal-content, .hcs-catalog-modal) { border: 1px solid var(--hcs-color-border); border-radius: var(--hcs-radius-lg); box-shadow: var(--hcs-shadow-md); overflow: visible; }
 .hcs-app-shell :where(.modal-header, .hcs-catalog-modal__header, .modal-footer, .hcs-catalog-modal__footer) { background: var(--hcs-color-surface); border-color: var(--hcs-color-border); padding: var(--hcs-space-4) var(--hcs-space-5); }
 .hcs-app-shell :where(.modal-title, .hcs-catalog-modal__header .modal-title) { color: var(--hcs-color-heading); font-size: var(--hcs-font-size-card-title); font-weight: 700; }
 .hcs-app-shell :where(.modal-body, .hcs-catalog-modal__body) { background: var(--hcs-color-surface); padding: var(--hcs-space-5); }
@@ -925,25 +1424,19 @@
 .hcs-app-shell .hcs-survey-results__location-filter { min-width: 0; }
 .hcs-app-shell .hcs-survey-results__location-filter .select2-container { display: block; width: 100% !important; }
 
-.hcs-app-shell select.hcs-catalog-select2 + .select2-container .select2-selection--single {
-    align-items: center;
-    box-sizing: border-box;
-    display: flex;
-    height: var(--hcs-button-max-height) !important;
-    max-height: var(--hcs-button-max-height) !important;
-    min-height: var(--hcs-button-max-height) !important;
-    overflow: hidden;
+.hcs-app-shell .hcs-catalog-form .select2-container .select2-selection--single,
+.hcs-catalog-form .select2-container .select2-selection--single {
+    background-color: var(--catalog-input, var(--hcs-color-surface));
+    border-color: #e2eaf0 !important;
+    color: #24465e;
+    height: 36px !important;
+    max-height: 36px !important;
+    min-height: 36px !important;
 }
 
-.hcs-app-shell select.hcs-catalog-select2 + .select2-container .select2-selection__rendered {
-    align-items: center;
-    display: flex;
-    height: 100%;
-    line-height: 1 !important;
-    min-width: 0;
-    overflow: hidden;
-    padding-inline: .75rem 2.25rem !important;
-    width: 100%;
+.hcs-app-shell .hcs-catalog-form .select2-container--focus .select2-selection--single,
+.hcs-app-shell .hcs-catalog-form .select2-container--open .select2-selection--single {
+    border-color: var(--hcs-color-primary) !important;
 }
 
 .hcs-app-shell select.hcs-user-select2 + .select2-container .hcs-user-option {
@@ -1121,7 +1614,7 @@
 }
 
 .hcs-app-shell .modal.show .modal-dialog {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: none;
     transition-duration: var(--hcs-motion-duration-modal);
     transition-timing-function: var(--hcs-motion-ease-enter);
 }
@@ -1174,7 +1667,6 @@
     transform-origin: top right;
 }
 
-.hcs-app-shell .hcs-workspace > .hcs-ws-filter,
 .hcs-app-shell .hcs-workspace > .hcs-ws-kpis,
 .hcs-app-shell .hcs-workspace > .hcs-ws-grid-73,
 .hcs-app-shell .hcs-workspace > .hcs-ws-grid-37 {
@@ -1182,7 +1674,6 @@
     animation-delay: calc(var(--hcs-motion-stagger) * var(--hcs-motion-index, 0));
 }
 
-.hcs-app-shell .hcs-workspace > .hcs-ws-filter { --hcs-motion-index: 0; }
 .hcs-app-shell .hcs-workspace > .hcs-ws-kpis { --hcs-motion-index: 1; }
 .hcs-app-shell .hcs-workspace > .hcs-ws-grid-73 { --hcs-motion-index: 2; }
 .hcs-app-shell .hcs-workspace > .hcs-ws-grid-37:nth-child(4) { --hcs-motion-index: 3; }

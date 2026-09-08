@@ -47,14 +47,14 @@
 }
 
 .hcs-role-create {
-    border-color: #385cff;
-    background: #385cff;
-    box-shadow: 0 7px 18px rgb(56 92 255 / 16%);
+    background: var(--hcs-color-primary, #00B4A9);
+    border-color: var(--hcs-color-primary, #00B4A9);
 }
 
 .hcs-roles-refresh {
-    border: 1px solid #385cff;
-    color: #385cff;
+    background: #fff;
+    border: 1px solid var(--hcs-color-primary, #00B4A9);
+    color: var(--hcs-color-primary, #00B4A9);
 }
 
 .hcs-admin-alert {
@@ -200,15 +200,13 @@
 }
 
 .hcs-role-permissions-save {
-    border: 0;
-    background: #385cff;
-    border-color: #385cff;
+    background: var(--hcs-color-primary, #00B4A9);
+    border: 1px solid var(--hcs-color-primary, #00B4A9);
 }
 
 .hcs-role-delete {
-    border: 0;
-    background: #df1e53;
-    border-color: #df1e53;
+    background: var(--hcs-color-danger, #E31E24);
+    border: 1px solid var(--hcs-color-danger, #E31E24);
     color: #fff;
 }
 

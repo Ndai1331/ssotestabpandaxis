@@ -62,6 +62,8 @@
     --hcs-space-6: 2rem;
     --hcs-space-7: 2.5rem;
     --hcs-space-8: 3rem;
+    /* Air gap between a field and its open option list / popover. */
+    --hcs-popover-offset: var(--hcs-space-1);
 
     --hcs-content-max-width: 1540px;
     --hcs-page-gutter: clamp(1rem, 3vw, 2.5rem);
@@ -69,6 +71,7 @@
     --hcs-control-height-compact: 2.5rem;
     --hcs-touch-target: 2rem;
     /* Shared geometry for Bootstrap/Blazorise buttons and button links. */
+    --hcs-button-border-width: 1px;
     --hcs-button-height: 2.5rem;
     --hcs-button-height-sm: 2rem;
     --hcs-button-padding-y: .5rem;

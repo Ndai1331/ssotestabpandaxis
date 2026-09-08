@@ -130,14 +130,14 @@
 
                 <div class="mb-3">
                     <label asp-for="LoginInput.Password" class="form-label"></label>
-                    <div class="input-group">
+                    <div class="input-group hcs-login-password">
                         <input type="password"
                                class="form-control"
                                autocomplete="current-password"
                                spellcheck="false"
                                maxlength="@IdentityUserConsts.MaxPasswordLength"
                                asp-for="LoginInput.Password" />
-                        <button class="btn btn-secondary"
+                        <button class="btn hcs-login-password__toggle"
                                 type="button"
                                 id="PasswordVisibilityButton"
                                 aria-label="@UiL["ShowPassword"]"
@@ -192,7 +192,7 @@
                             ? HcsL["Auth:LoginWithSso"].Value
                             : provider.DisplayName;
                         <button type="submit"
-                                class="btn btn-primary hcs-login-provider m-1"
+                                class="btn hcs-login-provider"
                                 name="provider"
                                 value="@provider.AuthenticationScheme"
                                 data-loading-text="@HcsL["Auth:LoginProgress"]"

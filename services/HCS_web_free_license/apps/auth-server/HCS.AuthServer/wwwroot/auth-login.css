@@ -2,9 +2,12 @@
 body:has(.hcs-auth-login-page) {
     --hcs-login-ink: #1a445c;
     --hcs-login-muted: #5f7a8a;
-    --hcs-login-line: #d5e3ea;
+    --hcs-login-line: #DDE4EE;
+    --hcs-login-field: #f2f5fc;
     --hcs-login-primary: #00B4A9;
     --hcs-login-primary-strong: #007F7C;
+    --hcs-login-control-radius: 5px;
+    --hcs-login-focus-ring: 0 0 0 .2rem rgba(0, 180, 169, .28);
     background-color: #eef4f7;
     background-image:
         linear-gradient(90deg, rgba(248, 252, 253, .26), rgba(248, 252, 253, .08)),
@@ -135,9 +138,9 @@ body:has(.hcs-auth-login-page) .hcs-login-language .dropdown {
 
 body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle {
     align-items: center;
-    background: #f4f8fa;
+    background: var(--hcs-login-field);
     border: 1px solid var(--hcs-login-line);
-    border-radius: .7rem;
+    border-radius: var(--hcs-login-control-radius);
     color: var(--hcs-login-ink);
     display: inline-flex;
     font-weight: 700;
@@ -163,14 +166,14 @@ body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle .bi-translat
 }
 
 body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-menu {
-    border: 1px solid rgba(50, 113, 142, .14);
-    border-radius: .7rem;
+    border: 1px solid var(--hcs-login-line);
+    border-radius: 8px;
     box-shadow: 0 12px 28px rgba(24, 62, 80, .12);
     padding: .35rem;
 }
 
 body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-item {
-    border-radius: .5rem;
+    border-radius: var(--hcs-login-control-radius);
     font-weight: 600;
     padding: .55rem .75rem;
 }
@@ -253,9 +256,9 @@ body:has(.hcs-auth-login-page) .form-label {
 }
 
 body:has(.hcs-auth-login-page) .form-control {
-    background: #f2f5fc;
-    border: 1px solid #cdd9e8;
-    border-radius: .72rem;
+    background: var(--hcs-login-field);
+    border: 1px solid var(--hcs-login-line);
+    border-radius: var(--hcs-login-control-radius);
     color: var(--hcs-login-ink);
     font-size: 1.05rem;
     line-height: 1.4;
@@ -283,10 +286,10 @@ body:has(.hcs-auth-login-page) #PasswordVisibilityButton,
 body:has(.hcs-auth-login-page) .input-group-text,
 body:has(.hcs-auth-login-page) .input-group > .btn {
     align-items: center;
-    background: #f2f5fc;
-    border: 1px solid #cdd9e8;
+    background: var(--hcs-login-field);
+    border: 1px solid var(--hcs-login-line);
     border-left: 0;
-    border-radius: 0 .7rem .7rem 0;
+    border-radius: 0 var(--hcs-login-control-radius) var(--hcs-login-control-radius) 0;
     color: #67808e;
     display: inline-flex;
     flex: 0 0 auto;
@@ -297,9 +300,10 @@ body:has(.hcs-auth-login-page) .input-group > .btn {
 }
 
 body:has(.hcs-auth-login-page) .form-control:focus {
-    background: #fff;
+    background: var(--hcs-login-field);
     border-color: var(--hcs-login-primary);
-    box-shadow: 0 0 0 .2rem rgba(37, 138, 184, .14);
+    box-shadow: var(--hcs-login-focus-ring);
+    outline: 0;
 }
 
 body:has(.hcs-auth-login-page) .form-check {
@@ -337,7 +341,7 @@ body:has(.hcs-auth-login-page) button[type="submit"][value="Login"],
 body:has(.hcs-auth-login-page) button[type="submit"][name="Action"][value="Login"] {
     background: var(--hcs-login-primary);
     border: 1px solid var(--hcs-login-primary);
-    border-radius: .75rem;
+    border-radius: var(--hcs-login-control-radius);
     color: #fff;
     display: block;
     font-size: 1rem;
@@ -358,7 +362,7 @@ body:has(.hcs-auth-login-page) button[type="submit"][name="Action"][value="Login
 
 /* External providers (Keycloak, …) */
 body:has(.hcs-auth-login-page) button[type="submit"][name="provider"] {
-    border-radius: .7rem;
+    border-radius: var(--hcs-login-control-radius);
     font-weight: 650;
     min-height: 2.85rem;
     width: 100%;
@@ -425,9 +429,12 @@ body:has(.hcs-auth-login-page) a {
 body:has(.hcs-auth-login-page) {
     --hcs-login-ink: #19334c;
     --hcs-login-muted: #63798b;
-    --hcs-login-line: #dfe8eb;
+    --hcs-login-line: #DDE4EE;
+    --hcs-login-field: #f2f5fc;
     --hcs-login-primary: #00B4A9;
     --hcs-login-primary-strong: #007F7C;
+    --hcs-login-control-radius: 5px;
+    --hcs-login-focus-ring: 0 0 0 .2rem rgba(0, 180, 169, .28);
     background-color: #eef4f7;
     background-image:
         linear-gradient(90deg, rgba(248, 252, 253, .26), rgba(248, 252, 253, .08)),
@@ -528,9 +535,9 @@ body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Actio
 }
 
 body:has(.hcs-auth-login-page) .hcs-login-form .form-control {
-    background: #f2f5fc;
-    border-color: #cdd9e8;
-    border-radius: .72rem;
+    background: var(--hcs-login-field);
+    border-color: var(--hcs-login-line);
+    border-radius: var(--hcs-login-control-radius);
     font-size: 1.05rem;
     padding: .95rem 1.1rem;
 }
@@ -538,16 +545,14 @@ body:has(.hcs-auth-login-page) .hcs-login-form .form-control {
 body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"] {
     background: var(--hcs-login-primary);
     border-color: var(--hcs-login-primary);
-    border-radius: .72rem;
+    border-radius: var(--hcs-login-control-radius);
     font-size: 1.05rem;
     font-weight: 700;
     width: 100%;
 }
 
 body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"]:hover,
-body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"]:focus-visible,
-body:has(.hcs-auth-login-page) .hcs-login-provider:hover,
-body:has(.hcs-auth-login-page) .hcs-login-provider:focus-visible {
+body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"]:focus-visible {
     background: var(--hcs-login-primary-strong);
     border-color: var(--hcs-login-primary-strong);
 }
@@ -567,9 +572,39 @@ body:has(.hcs-auth-login-page) .hcs-login-external__title {
     margin: 0 0 .5rem;
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-provider {
-    margin: 0 .35rem .35rem 0 !important;
-    min-height: 2.75rem;
+body:has(.hcs-auth-login-page) .hcs-login-external form {
+    display: grid;
+    gap: .55rem;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider,
+body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider.btn-primary {
+    background: transparent !important;
+    border: 1px solid var(--hcs-login-primary) !important;
+    border-radius: var(--hcs-login-control-radius);
+    color: var(--hcs-login-primary-strong) !important;
+    cursor: pointer;
+    display: block;
+    font-weight: 700;
+    margin: 0;
+    min-height: 2.85rem;
+    width: 100%;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider:hover,
+body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider.btn-primary:hover {
+    background: rgba(0, 180, 169, .1) !important;
+    border-color: var(--hcs-login-primary-strong) !important;
+    color: var(--hcs-login-primary-strong) !important;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider:focus-visible,
+body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider.btn-primary:focus-visible {
+    background: rgba(0, 180, 169, .1) !important;
+    border-color: var(--hcs-login-primary-strong) !important;
+    box-shadow: var(--hcs-login-focus-ring);
+    color: var(--hcs-login-primary-strong) !important;
+    outline: none;
 }
 
 body:has(.hcs-auth-login-page) .hcs-login-form button:disabled,
@@ -636,4 +671,88 @@ body:has(.hcs-auth-login-page) .hcs-login-external button:disabled {
 body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-item.active,
 body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-item:active {
     background-color: var(--hcs-login-primary) !important;
+}
+
+/* Password field: one chrome around input + visibility toggle. */
+body:has(.hcs-auth-login-page) .hcs-login-form .input-group,
+body:has(.hcs-auth-login-page) .hcs-login-password {
+    background: var(--hcs-login-field);
+    border: 1px solid var(--hcs-login-line);
+    border-radius: var(--hcs-login-control-radius);
+    overflow: visible;
+    position: relative;
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .form-control,
+body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .form-control:focus,
+body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .form-control:focus-visible,
+body:has(.hcs-auth-login-page) .hcs-login-password > .form-control,
+body:has(.hcs-auth-login-page) .hcs-login-password > .form-control:focus,
+body:has(.hcs-auth-login-page) .hcs-login-password > .form-control:focus-visible {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: var(--hcs-login-control-radius) 0 0 var(--hcs-login-control-radius) !important;
+    box-shadow: none !important;
+    outline: none;
+    z-index: 0;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .btn,
+body:has(.hcs-auth-login-page) .hcs-login-password__toggle,
+body:has(.hcs-auth-login-page) .hcs-login-password > #PasswordVisibilityButton,
+body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 var(--hcs-login-control-radius) var(--hcs-login-control-radius) 0 !important;
+    cursor: pointer;
+    flex: 0 0 auto;
+    min-width: 2.75rem;
+    z-index: 1;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton:hover,
+body:has(.hcs-auth-login-page) .hcs-login-password__toggle:hover {
+    color: var(--hcs-login-primary-strong);
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form .input-group:focus-within,
+body:has(.hcs-auth-login-page) .hcs-login-password:focus-within {
+    background: var(--hcs-login-field);
+    border-color: var(--hcs-login-primary);
+    box-shadow: var(--hcs-login-focus-ring);
+    outline: 0;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form .form-control:focus,
+body:has(.hcs-auth-login-page) .hcs-login-form .form-control:focus-visible {
+    background: var(--hcs-login-field);
+    border-color: var(--hcs-login-primary);
+    box-shadow: var(--hcs-login-focus-ring);
+    outline: 0;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle:focus,
+body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle:focus-visible {
+    border-color: var(--hcs-login-primary);
+    box-shadow: var(--hcs-login-focus-ring);
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton:focus-visible,
+body:has(.hcs-auth-login-page) .hcs-login-password__toggle:focus-visible {
+    color: var(--hcs-login-primary-strong);
+    outline: 2px solid var(--hcs-login-primary);
+    outline-offset: -6px;
+    border-radius: var(--hcs-login-control-radius) !important;
+}
+
+body:has(.hcs-auth-login-page) .hcs-login-form .input-group:has(.input-validation-error):not(:focus-within),
+body:has(.hcs-auth-login-page) .hcs-login-password:has(.input-validation-error):not(:focus-within) {
+    border-color: #d96a78;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body:has(.hcs-auth-login-page) .hcs-login-password {
+        transition: none;
+    }
 }

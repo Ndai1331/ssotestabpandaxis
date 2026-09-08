@@ -205,6 +205,10 @@ orleans.codegen.cs
 **/appsettings.secrets.json
 **/secrets.json
 
+# Local Compose overlay (CSS bind-mounts, etc.) — do not ship
+docker-compose.override.yml
+docker-compose.override.yaml
+
 # Since there are multiple workflows, uncomment next line to ignore bower_components
 # (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
 #bower_components/

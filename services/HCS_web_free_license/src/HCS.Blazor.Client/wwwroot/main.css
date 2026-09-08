@@ -228,21 +228,40 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     .hcs-app-shell .hcs-users-search-input,
     .hcs-app-shell .hcs-users-search-bar .btn,
     .hcs-app-shell .hcs-users-filter-toggle,
+    .hcs-app-shell .hcs-catalog-advanced-filter .form-control,
     .hcs-app-shell .hcs-catalog-advanced-filter .form-select,
     .hcs-app-shell .hcs-catalog-advanced-filter .btn,
+    .hcs-app-shell .hcs-catalog-advanced-filter .b-is-datepicker .form-control,
+    .hcs-app-shell .hcs-catalog-advanced-filter .hcs-datepicker__icon,
+    .hcs-app-shell .hcs-catalog-advanced-filter .select2-container .select2-selection,
+    .hcs-app-shell .hcs-users-advanced-filters .form-control,
     .hcs-app-shell .hcs-users-advanced-filters .form-select,
-    .hcs-app-shell .hcs-users-advanced-filters .btn {
+    .hcs-app-shell .hcs-users-advanced-filters .btn,
+    .hcs-app-shell .hcs-users-advanced-filters .b-is-datepicker .form-control,
+    .hcs-app-shell .hcs-users-advanced-filters .hcs-datepicker__icon,
+    .hcs-app-shell .hcs-users-advanced-filters .select2-container .select2-selection {
         box-sizing: border-box;
         height: var(--hcs-button-max-height);
         max-height: var(--hcs-button-max-height) !important;
         min-height: var(--hcs-button-max-height) !important;
         padding-top: 0;
         padding-bottom: 0;
-        line-height: 1.2;
+    }
+
+    .hcs-app-shell .hcs-catalog-search .form-control,
+    .hcs-app-shell .hcs-users-search-input,
+    .hcs-app-shell .hcs-catalog-advanced-filter .form-control,
+    .hcs-app-shell .hcs-catalog-advanced-filter .b-is-datepicker .form-control,
+    .hcs-app-shell .hcs-users-advanced-filters .form-control,
+    .hcs-app-shell .hcs-users-advanced-filters .b-is-datepicker .form-control {
+        line-height: calc(var(--hcs-button-max-height) - 2px);
     }
 
     .hcs-app-shell .hcs-catalog-advanced-filter .form-select,
     .hcs-app-shell .hcs-users-advanced-filters .form-select {
+        align-items: center;
+        display: flex;
+        line-height: calc(var(--hcs-button-max-height) - 2px);
         padding-right: 2.25rem;
     }
 
@@ -552,10 +571,13 @@ body:has(.hcs-chat-page) {
 .hcs-catalog-page .btn-primary:hover:not(:disabled) {
     background-color: var(--catalog-primary-dark);
     border-color: var(--catalog-primary-dark);
+    box-shadow: none;
+    transform: none;
 }
 
 .hcs-catalog-page .hcs-catalog-export {
     background: #fff;
+    border-color: var(--catalog-primary);
     color: var(--catalog-primary);
 }
 
@@ -616,9 +638,9 @@ body:has(.hcs-chat-page) {
 .hcs-catalog-page .hcs-catalog-search .input-group-text,
 .hcs-catalog-page .hcs-catalog-search .form-control,
 .hcs-catalog-page .hcs-catalog-search .btn {
-    height: 3.6rem;
-    max-height: 3.6rem;
-    min-height: 3.6rem;
+    height: var(--hcs-control-height-compact);
+    max-height: var(--hcs-control-height-compact);
+    min-height: var(--hcs-control-height-compact);
 }
 
 .hcs-catalog-page .hcs-catalog-search .input-group-text,
@@ -1032,8 +1054,8 @@ body:has(.hcs-chat-page) {
 .hcs-catalog-form .form-control,
 .hcs-catalog-form .form-select,
 .hcs-catalog-form .numeric-picker,
-.hcs-catalog-form .b-is-datepicker,
 .hcs-catalog-form .b-is-datepicker .form-control,
+.hcs-catalog-form .select2-container .select2-selection,
 .hcs-document-page input.form-control:not(textarea),
 .hcs-document-page .form-select {
     background-color: var(--catalog-input);
@@ -1048,18 +1070,42 @@ body:has(.hcs-chat-page) {
     padding: .35rem .5rem;
 }
 
+.hcs-catalog-form .select2-container .select2-selection--single {
+    padding: 0;
+}
+
 .hcs-datepicker {
-    align-items: stretch;
-    display: flex;
+    display: block;
+    margin: 0;
+    overflow: visible;
+    padding: 0;
+    position: relative;
     width: 100%;
 }
 
 .hcs-datepicker .b-is-datepicker,
+.hcs-datepicker .datepicker:not(.datepicker-calendar):not(.dropdown-menu),
+.hcs-datepicker .dropdown,
 .hcs-catalog-form .hcs-datepicker .b-is-datepicker,
 .hcs-workspace .hcs-datepicker .b-is-datepicker {
+    display: block;
     height: auto;
+    margin: 0;
     max-height: none;
+    max-width: 100%;
     min-height: 0;
+    min-width: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.hcs-datepicker .form-control,
+.hcs-datepicker input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]) {
+    box-sizing: border-box;
+    display: block;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
 }
 
 .hcs-datepicker__icon {
@@ -1091,16 +1137,19 @@ body:has(.hcs-chat-page) {
 
 select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     box-sizing: border-box;
-    height: var(--hcs-control-height) !important;
-    max-height: var(--hcs-control-height) !important;
-    min-height: var(--hcs-control-height) !important;
+    height: 36px !important;
+    max-height: 36px !important;
+    min-height: 36px !important;
 }
 
 .hcs-catalog-form .form-control:focus,
-.hcs-catalog-form .form-select:focus {
-    background-color: #f4f8fb;
+.hcs-catalog-form .form-control:focus-visible,
+.hcs-catalog-form .form-select:focus,
+.hcs-catalog-form .form-select:focus-visible {
+    background-color: var(--catalog-input);
     border-color: var(--hcs-color-primary, #00B4A9);
-    box-shadow: var(--hcs-focus-ring);
+    box-shadow: var(--hcs-focus-ring) !important;
+    outline: 0 !important;
 }
 
 .hcs-catalog-form select:disabled {
@@ -1184,9 +1233,9 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-catalog-page .hcs-catalog-cancel {
-    background: #7461d2;
-    border-color: #7461d2;
-    color: #fff;
+    background: var(--hcs-color-surface, #fff);
+    border-color: var(--hcs-color-primary, #00B4A9);
+    color: var(--hcs-color-primary, #00B4A9);
 }
 
 .hcs-catalog-page .hcs-catalog-save {
@@ -1240,9 +1289,9 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     .hcs-catalog-page .hcs-catalog-search .input-group-text,
     .hcs-catalog-page .hcs-catalog-search .form-control,
     .hcs-catalog-page .hcs-catalog-search .btn {
-        height: 3.35rem;
-        max-height: 3.35rem !important;
-        min-height: 3.35rem !important;
+        height: var(--hcs-control-height-compact);
+        max-height: var(--hcs-control-height-compact) !important;
+        min-height: var(--hcs-control-height-compact) !important;
     }
 
     .hcs-catalog-advanced-filter {
@@ -1275,8 +1324,11 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 @media (min-width: 768px) {
     .hcs-app-shell .hcs-catalog-page .hcs-catalog-search .btn,
     .hcs-app-shell .hcs-catalog-page .hcs-catalog-filter-toggle,
+    .hcs-app-shell .hcs-catalog-page .hcs-catalog-advanced-filter .form-control,
     .hcs-app-shell .hcs-catalog-page .hcs-catalog-advanced-filter .form-select,
-    .hcs-app-shell .hcs-catalog-page .hcs-catalog-advanced-filter .btn {
+    .hcs-app-shell .hcs-catalog-page .hcs-catalog-advanced-filter .btn,
+    .hcs-app-shell .hcs-catalog-page .hcs-catalog-advanced-filter .b-is-datepicker .form-control,
+    .hcs-app-shell .hcs-catalog-page .hcs-catalog-advanced-filter .hcs-datepicker__icon {
         height: var(--hcs-button-max-height);
         max-height: var(--hcs-button-max-height) !important;
         min-height: var(--hcs-button-max-height) !important;
@@ -1289,6 +1341,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
         min-height: var(--hcs-button-max-height);
         padding-top: 0;
         padding-bottom: 0;
+        line-height: calc(var(--hcs-button-max-height) - 2px);
     }
 
 }
@@ -2017,7 +2070,10 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     flex-wrap: wrap;
     gap: .75rem;
     margin-bottom: .9rem;
+    overflow: visible;
     padding: .7rem 1.1rem;
+    position: relative;
+    z-index: 1;
 }
 
 .hcs-workspace .hcs-ws-filter-label {
@@ -2034,18 +2090,24 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     flex: 1 1 18rem;
     gap: .5rem;
     max-width: 28rem;
+    overflow: visible;
     position: relative;
-    z-index: var(--hcs-z-sticky);
 }
 
 .hcs-workspace .hcs-ws-filter-dates .form-control,
-.hcs-workspace .hcs-ws-filter-dates .b-is-datepicker,
 .hcs-workspace .hcs-ws-filter-dates .b-is-datepicker .form-control {
     height: 36px;
     max-height: 36px;
     min-height: 36px;
     padding-bottom: .35rem;
     padding-top: .35rem;
+}
+
+.hcs-workspace .hcs-ws-filter-dates .hcs-datepicker,
+.hcs-workspace .hcs-ws-filter-dates .b-is-datepicker {
+    height: auto;
+    max-height: none;
+    overflow: visible;
 }
 
 .hcs-workspace .hcs-ws-filter-dates .datepicker-calendar.dropdown-menu {
@@ -2055,10 +2117,16 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     z-index: var(--hcs-z-popover) !important;
 }
 
+.hcs-workspace .hcs-ws-filter-dates .datepicker-backdrop {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
 .hcs-workspace .hcs-ws-search {
     align-items: center;
-    background: var(--hcs-primary, var(--color-primary, #00B4A9));
-    border: 0;
+    background: var(--hcs-color-primary, #00B4A9);
+    border: var(--hcs-button-border-width, 1px) solid var(--hcs-color-primary, #00B4A9);
     border-radius: 5px;
     color: #fff;
     display: inline-flex;
@@ -2069,15 +2137,22 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     padding: 0 1.1rem;
 }
 
-.hcs-workspace .hcs-ws-search:hover {
-     background: var(--color-primary-dark, var(--color-primary-dark, #007F7C)); 
-     color: #fff; }
+.hcs-workspace .hcs-ws-search:hover,
+.hcs-workspace .hcs-ws-search:focus-visible,
+.hcs-workspace .hcs-ws-action:hover,
+.hcs-workspace .hcs-ws-action:focus-visible {
+    background: var(--hcs-color-primary-strong, #007F7C);
+    border-color: var(--hcs-color-primary-strong, #007F7C);
+    color: #fff;
+}
 
 .hcs-workspace .hcs-ws-kpis {
     display: grid;
     gap: .75rem;
     grid-template-columns: repeat(4, 1fr);
     margin-bottom: .9rem;
+    position: relative;
+    z-index: var(--hcs-z-base);
 }
 
 .hcs-workspace .hcs-ws-kpi {
@@ -2121,6 +2196,8 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     display: grid;
     gap: .9rem;
     margin-bottom: .9rem;
+    position: relative;
+    z-index: var(--hcs-z-base);
 }
 
 .hcs-workspace .hcs-ws-grid-73 { grid-template-columns: 2fr 1fr; }
@@ -2165,8 +2242,8 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-workspace .hcs-ws-action {
     align-items: center;
-    background: var(--hcs-primary, var(--color-primary, #00B4A9));
-    border: 0;
+    background: var(--hcs-color-primary, #00B4A9);
+    border: var(--hcs-button-border-width, 1px) solid var(--hcs-color-primary, #00B4A9);
     border-radius: 5px;
     color: #fff;
     display: inline-flex;
@@ -2176,8 +2253,6 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     padding: .35rem .7rem;
     white-space: nowrap;
 }
-
-.hcs-workspace .hcs-ws-action:hover { background: #2f4ae6; color: #fff; }
 
 .hcs-workspace .hcs-ws-card-body {
     flex: 1;
@@ -2647,23 +2722,42 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-workspace-project-detail-modal .hcs-catalog-cancel {
-    background: var(--color-secondary, #007f7c);
-    border-color: var(--color-secondary, #007f7c);
-    color: #fff;
+    background: var(--hcs-color-surface, #fff);
+    border: var(--hcs-button-border-width, 1px) solid var(--hcs-color-primary, #00b4a9);
+    color: var(--hcs-color-primary, #00b4a9);
 }
 
 .hcs-workspace-project-detail-modal .hcs-catalog-save {
     background: var(--hcs-color-primary, #00b4a9);
-    border-color: var(--hcs-color-primary, #00b4a9);
+    border: var(--hcs-button-border-width, 1px) solid var(--hcs-color-primary, #00b4a9);
     color: #fff;
 }
 
-.hcs-workspace-project-detail-modal .hcs-catalog-cancel:hover,
-.hcs-workspace-project-detail-modal .hcs-catalog-cancel:focus-visible,
-.hcs-workspace-project-detail-modal .hcs-catalog-save:hover,
+.hcs-workspace-project-detail-modal .hcs-catalog-cancel:hover:not(:disabled) {
+    background: var(--hcs-color-primary-soft, #e0f7f5);
+    border-color: var(--hcs-color-primary, #00b4a9);
+    box-shadow: none;
+    color: var(--hcs-color-primary-strong, #007f7c);
+}
+
+.hcs-workspace-project-detail-modal .hcs-catalog-cancel:focus-visible {
+    background: var(--hcs-color-primary-soft, #e0f7f5);
+    border-color: var(--hcs-color-primary, #00b4a9);
+    box-shadow: var(--hcs-focus-ring, 0 0 0 .2rem rgba(0, 180, 169, .28));
+    color: var(--hcs-color-primary-strong, #007f7c);
+}
+
+.hcs-workspace-project-detail-modal .hcs-catalog-save:hover:not(:disabled) {
+    background: var(--hcs-color-primary-strong, #007f7c);
+    border-color: var(--hcs-color-primary-strong, #007f7c);
+    box-shadow: none;
+    color: #fff;
+}
+
 .hcs-workspace-project-detail-modal .hcs-catalog-save:focus-visible {
     background: var(--hcs-color-primary-strong, #007f7c);
     border-color: var(--hcs-color-primary-strong, #007f7c);
+    box-shadow: var(--hcs-focus-ring, 0 0 0 .2rem rgba(0, 180, 169, .28));
     color: #fff;
 }
 

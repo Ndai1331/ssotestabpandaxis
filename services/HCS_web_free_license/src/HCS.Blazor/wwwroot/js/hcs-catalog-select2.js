@@ -195,3 +195,179 @@
         URL.revokeObjectURL(url);
     };
 })();
+
+(function () {
+    var GAP = 4;
+    var PAD = 8;
+    var placing = false;
+    var scheduled = false;
+
+    function calendars() {
+        return document.querySelectorAll(".datepicker-calendar, .flatpickr-calendar");
+    }
+
+    function isOpen(el) {
+        return !!(el && (el.classList.contains("show") || el.classList.contains("open")) && !el.classList.contains("d-none"));
+    }
+
+    function findInput(calendar) {
+        if (calendar._hcsInput && document.contains(calendar._hcsInput)) return calendar._hcsInput;
+        var wrap = calendar.closest(".hcs-datepicker")
+            || calendar.closest(".b-is-datepicker")
+            || calendar.closest(".field")
+            || calendar.closest(".form-group");
+        if (wrap) {
+            var nested = wrap.querySelector("input:not([type=hidden])");
+            if (nested) return nested;
+        }
+        var node = calendar.previousElementSibling;
+        while (node) {
+            if (node.matches && node.matches("input:not([type=hidden])")) return node;
+            var found = node.querySelector && node.querySelector("input:not([type=hidden])");
+            if (found) return found;
+            node = node.previousElementSibling;
+        }
+        return null;
+    }
+
+    function restoreScroll(body, top) {
+        if (body) body.scrollTop = top;
+    }
+
+    function keepFocus(e) {
+        if (e.target.closest("input, select, textarea")) return;
+        e.preventDefault();
+    }
+
+    function host(calendar) {
+        if (calendar.parentElement && calendar.parentElement.classList.contains("hcs-datepicker-layer")) return;
+        calendar._hcsParent = calendar.parentElement;
+        calendar._hcsNext = calendar.nextSibling;
+        calendar.dataset.hcsHosted = "1";
+        if (!calendar._hcsKeepFocus) {
+            calendar._hcsKeepFocus = keepFocus;
+            calendar.addEventListener("mousedown", keepFocus, true);
+        }
+        var layer = document.createElement("div");
+        layer.className = "datepicker b-is-datepicker hcs-datepicker-layer";
+        document.body.appendChild(layer);
+        layer.appendChild(calendar);
+    }
+
+    function unhost(calendar) {
+        var layer = calendar.parentElement && calendar.parentElement.classList.contains("hcs-datepicker-layer")
+            ? calendar.parentElement
+            : null;
+        var parent = calendar._hcsParent;
+        if (parent && parent.isConnected) {
+            if (calendar._hcsNext && calendar._hcsNext.parentNode === parent) {
+                parent.insertBefore(calendar, calendar._hcsNext);
+            } else {
+                parent.appendChild(calendar);
+            }
+        }
+        if (layer && layer.parentNode) layer.parentNode.removeChild(layer);
+        calendar._hcsParent = null;
+        calendar._hcsNext = null;
+        delete calendar.dataset.hcsHosted;
+    }
+
+    function clearPlace(calendar) {
+        unhost(calendar);
+        if (!calendar.dataset.hcsPlace) return;
+        delete calendar.dataset.hcsPlace;
+        calendar.style.removeProperty("position");
+        calendar.style.removeProperty("top");
+        calendar.style.removeProperty("left");
+        calendar.style.removeProperty("right");
+        calendar.style.removeProperty("bottom");
+        calendar.style.removeProperty("margin");
+        calendar.style.removeProperty("margin-top");
+        calendar.style.removeProperty("margin-bottom");
+        calendar.style.removeProperty("z-index");
+        calendar.style.removeProperty("transform");
+        calendar.style.removeProperty("max-height");
+        calendar.style.removeProperty("overflow-y");
+    }
+
+    function place(calendar) {
+        var input = findInput(calendar);
+        var modal = input && input.closest(".modal");
+        if (!input || !modal) return;
+        calendar._hcsInput = input;
+        var body = modal.querySelector(".modal-body");
+        var scrollTop = body ? body.scrollTop : 0;
+        host(calendar);
+        var inputRect = input.getBoundingClientRect();
+        var vh = window.innerHeight;
+        var vw = window.innerWidth;
+        var height = calendar.offsetHeight || 360;
+        var width = Math.max(calendar.offsetWidth || 0, 260);
+        var below = inputRect.bottom + GAP;
+        var above = inputRect.top - GAP - height;
+        var fitsBelow = below + height <= vh - PAD;
+        var fitsAbove = above >= PAD;
+        var top;
+        if (fitsBelow) top = below;
+        else if (fitsAbove) top = above;
+        else top = Math.max(PAD, Math.min(below, vh - PAD - height));
+        var left = Math.max(PAD, Math.min(inputRect.left, vw - PAD - width));
+        var key = [Math.round(top), Math.round(left), Math.round(height)].join(",");
+        if (calendar.dataset.hcsPlace === key) {
+            restoreScroll(body, scrollTop);
+            return;
+        }
+        calendar.dataset.hcsPlace = key;
+        calendar.style.setProperty("position", "fixed", "important");
+        calendar.style.setProperty("top", top + "px", "important");
+        calendar.style.setProperty("left", left + "px", "important");
+        calendar.style.setProperty("right", "auto", "important");
+        calendar.style.setProperty("bottom", "auto", "important");
+        calendar.style.setProperty("margin", "0", "important");
+        calendar.style.setProperty("transform", "none", "important");
+        calendar.style.setProperty("z-index", "1065", "important");
+        restoreScroll(body, scrollTop);
+        requestAnimationFrame(function () { restoreScroll(body, scrollTop); });
+    }
+
+    function scan() {
+        if (placing) return;
+        placing = true;
+        try {
+            calendars().forEach(function (calendar) {
+                var modal = calendar.closest(".modal")
+                    || (calendar._hcsInput && calendar._hcsInput.closest(".modal"));
+                if (!modal) return;
+                if (isOpen(calendar)) place(calendar);
+                else clearPlace(calendar);
+            });
+        } catch (err) {
+            /* never break Select2 / page interaction */
+        } finally {
+            placing = false;
+        }
+    }
+
+    function requestScan() {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(function () {
+            scheduled = false;
+            scan();
+        });
+    }
+
+    function start() {
+        if (!document.body) return;
+        new MutationObserver(requestScan).observe(document.body, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ["class", "hidden"]
+        });
+        window.addEventListener("resize", requestScan);
+    }
+
+    if (document.body) start();
+    else document.addEventListener("DOMContentLoaded", start);
+})();

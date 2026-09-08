@@ -28,15 +28,14 @@
 .hcs-users-filter-card ::deep .btn-primary,
 .hcs-users-grid ::deep .dropdown-toggle,
 .hcs-modal-save {
-    background: #385cff;
-    border-color: #385cff;
+    background: var(--hcs-color-primary, #00B4A9);
+    border-color: var(--hcs-color-primary, #00B4A9);
     border-radius: 5px;
     font-weight: 750;
 }
 
 .hcs-users-create-button {
     padding: .75rem 1.2rem;
-    box-shadow: 0 7px 18px rgb(56 92 255 / 16%);
 }
 
 .hcs-users-filter-card,
@@ -284,14 +283,14 @@
 .hcs-modal-save {
     min-width: 7rem;
     min-height: 3.15rem;
-    border: 0;
     font-size: 1.05rem;
     font-weight: 750;
 }
 
 .hcs-modal-cancel {
-    background: #6b5bd4;
-    color: #fff;
+    background: var(--hcs-color-surface, #fff);
+    border: 1px solid var(--hcs-color-primary, #00B4A9);
+    color: var(--hcs-color-primary, #00B4A9);
 }
 
 .hcs-user-tabs {
