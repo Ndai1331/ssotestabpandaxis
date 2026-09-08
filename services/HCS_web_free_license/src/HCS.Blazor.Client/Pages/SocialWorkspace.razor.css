@@ -424,7 +424,29 @@
     box-shadow: var(--hcs-shadow-sm);
     overflow: hidden;
 }
-.hcs-social-profile-card__cover { background: linear-gradient(120deg, var(--color-secondary), var(--color-primary)); height: 4.4rem; }
+.hcs-social-profile-card__cover {
+    align-items: flex-start;
+    background: linear-gradient(120deg, var(--color-secondary), var(--color-primary));
+    display: flex;
+    height: 4.4rem;
+    justify-content: flex-end;
+    padding: .75rem 1rem;
+}
+.hcs-social-profile-card__back {
+    align-items: center;
+    border: 1px solid rgba(255,255,255,.7);
+    border-radius: var(--hcs-radius-md);
+    color: #fff;
+    display: inline-flex;
+    font-size: .78rem;
+    font-weight: 700;
+    gap: .4rem;
+    min-height: 2.5rem;
+    padding: .45rem .75rem;
+    text-decoration: none;
+}
+.hcs-social-profile-card__back:hover,
+.hcs-social-profile-card__back:focus-visible { background: rgba(255,255,255,.16); color: #fff; }
 .hcs-social-profile-card__content { align-items: flex-start; display: flex; gap: 1rem; padding: 0 1.25rem 1.25rem; }
 .hcs-social-profile-card__identity { min-width: 0; padding-top: .8rem; }
 .hcs-social-profile-card__identity h2 { font-size: 1.2rem; margin: 0; overflow-wrap: anywhere; }

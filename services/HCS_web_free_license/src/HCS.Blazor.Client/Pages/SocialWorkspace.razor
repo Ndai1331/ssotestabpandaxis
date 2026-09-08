@@ -15,23 +15,31 @@
 
 <PageTitle>@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"]) · HCS</PageTitle>
 
-<section class="hcs-social-page" aria-labelledby="social-title">
-    <header class="hcs-social-hero">
-        <div>
-            <p class="hcs-social-eyebrow"><i class="fa fa-users" aria-hidden="true"></i> HCS Community</p>
-            <h1 id="social-title">@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"])</h1>
-            <p>@(isProfile ? L["Social:ProfileSubtitle"] : L["Social:Subtitle"])</p>
-        </div>
-        <a class="hcs-social-outline-button" href="@(isProfile ? "/social" : "/social/profile")">
-            <i class="fa @(isProfile ? "fa-house" : "fa-user")" aria-hidden="true"></i>
-            @(isProfile ? L["Social:BackToFeed"] : L["Social:OpenProfile"])
-        </a>
-    </header>
+<section class="hcs-social-page" aria-label='@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"])'>
+    @if (!isProfile)
+    {
+        <header class="hcs-social-hero">
+            <div>
+                <p class="hcs-social-eyebrow"><i class="fa fa-users" aria-hidden="true"></i> HCS Community</p>
+                <h1 id="social-title">@L["Social:Title"]</h1>
+                <p>@L["Social:Subtitle"]</p>
+            </div>
+            <a class="hcs-social-outline-button" href="/social/profile">
+                <i class="fa fa-user" aria-hidden="true"></i>
+                @L["Social:OpenProfile"]
+            </a>
+        </header>
+    }
 
     @if (isProfile && myProfile is { } profile)
     {
         <section class="hcs-social-profile-card hcs-social-profile-card--top" aria-labelledby="social-my-profile-title">
-            <div class="hcs-social-profile-card__cover" aria-hidden="true"></div>
+            <div class="hcs-social-profile-card__cover">
+                <a class="hcs-social-profile-card__back" href="/social">
+                    <i class="fa fa-house" aria-hidden="true"></i>
+                    @L["Social:BackToFeed"]
+                </a>
+            </div>
             <div class="hcs-social-profile-card__content">
                 @SocialAvatar(profile.UserId, profile.DisplayName, profile.AvatarUrl, "hcs-social-avatar--profile")
                 <div class="hcs-social-profile-card__identity">
