@@ -1,0 +1,96 @@
+@page "/event-dashboard"
+@attribute [Authorize(Policy = "WorkManagement.Events")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject NavigationManager Navigation
+
+<PageTitle>@L["Menu:EventDashboard"] · HCS</PageTitle>
+<section class="hcs-catalog-page hcs-event-page" aria-labelledby="event-dashboard-title">
+    <header class="hcs-catalog-titlebar">
+        <div class="min-w-0">
+            <p class="hcs-event-eyebrow">@L["Menu:EventManagement"]</p>
+            <h1 id="event-dashboard-title">@L["Menu:EventDashboard"]</h1>
+        </div>
+        <div class="hcs-catalog-page__actions">
+            <a class="btn btn-outline-primary" href="/events"><i class="fa fa-list me-1" aria-hidden="true"></i>@L["Menu:ManagedEvents"]</a>
+            <a class="btn btn-primary" href="/events"><i class="fa fa-plus me-1" aria-hidden="true"></i>@L["Event:Create"]</a>
+        </div>
+    </header>
+
+    <Card Class="hcs-catalog-filter-card hcs-event-filter-card"><CardBody>
+        <div class="hcs-event-filter-grid">
+            <Field><FieldLabel>@L["Event:FromDate"]</FieldLabel><input class="form-control" type="date" @bind="fromDate" aria-label="@L["Event:FromDate"]" /></Field>
+            <Field><FieldLabel>@L["Event:ToDate"]</FieldLabel><input class="form-control" type="date" @bind="toDate" aria-label="@L["Event:ToDate"]" /></Field>
+            <div class="hcs-event-filter-action"><Button Color="Color.Primary" Clicked="LoadAsync" Disabled="@isLoading"><i class="fa fa-rotate me-1" aria-hidden="true"></i>@L["Catalog:Refresh"]</Button></div>
+        </div>
+    </CardBody></Card>
+
+    @if (isLoading)
+    {
+        <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+    }
+    else if (dashboard is not null)
+    {
+        <div class="hcs-event-kpi-grid" aria-label="@L["Menu:EventDashboard"]">
+            <article class="hcs-event-kpi hcs-event-kpi--primary"><span class="hcs-event-kpi__icon"><i class="fa fa-calendar-days" aria-hidden="true"></i></span><span><small>@L["Event:TotalEvents"]</small><strong>@dashboard.TotalEvents</strong></span></article>
+            <article class="hcs-event-kpi"><span class="hcs-event-kpi__icon"><i class="fa fa-hourglass-end" aria-hidden="true"></i></span><span><small>@L["Event:CompletedEvents"]</small><strong>@dashboard.CompletedEvents</strong></span></article>
+            <article class="hcs-event-kpi"><span class="hcs-event-kpi__icon"><i class="fa fa-bolt" aria-hidden="true"></i></span><span><small>@L["Event:OngoingEvents"]</small><strong>@dashboard.OngoingEvents</strong></span></article>
+            <article class="hcs-event-kpi"><span class="hcs-event-kpi__icon"><i class="fa fa-clock" aria-hidden="true"></i></span><span><small>@L["Event:UpcomingEvents"]</small><strong>@dashboard.UpcomingEvents</strong></span></article>
+            <article class="hcs-event-kpi"><span class="hcs-event-kpi__icon"><i class="fa fa-user-group" aria-hidden="true"></i></span><span><small>@L["Event:TotalAttendees"]</small><strong>@dashboard.TotalAttendees</strong></span></article>
+        </div>
+        <Card Class="hcs-catalog-grid-card hcs-event-timeline-card"><CardBody>
+            <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:NextUp"]</p><h2>@L["Event:UpcomingList"]</h2></div><a href="/events">@L["Event:ViewAll"] <i class="fa fa-arrow-right ms-1" aria-hidden="true"></i></a></div>
+            @if (dashboard.Upcoming.Count == 0)
+            {
+                <div class="hcs-empty py-5"><i class="fa fa-calendar-xmark" aria-hidden="true"></i><h3>@L["Event:NoUpcoming"]</h3><p>@L["Event:NoUpcomingDescription"]</p></div>
+            }
+            else
+            {
+                <div class="hcs-event-timeline">
+                    @foreach (var item in dashboard.Upcoming)
+                    {
+                        <a class="hcs-event-timeline__item" href="@($"/events/{item.Id:D}")">
+                            <time datetime="@item.StartTime.ToString("O")"><strong>@item.StartTime.ToLocalTime().ToString("dd")</strong><span>@item.StartTime.ToLocalTime().ToString("MMM").ToUpperInvariant()</span></time>
+                            <span class="hcs-event-timeline__line" aria-hidden="true"></span>
+                            <span class="hcs-event-timeline__content"><strong>@item.Name</strong><small>#@item.Code · @item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")</small><small><i class="fa fa-location-dot me-1" aria-hidden="true"></i>@(item.Location ?? L["Event:OnlineOrNotSet"])</small></span>
+                            <span class="@StatusClass(item.Status)">@StatusLabel(item.Status)</span>
+                        </a>
+                    }
+                </div>
+            }
+        </CardBody></Card>
+    }
+</section>
+
+@code {
+    private EventDashboardDto? dashboard;
+    private DateTime? fromDate = DateTime.Today.AddMonths(-1);
+    private DateTime? toDate = DateTime.Today.AddMonths(3);
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        try { dashboard = await Work.GetEventDashboardAsync(fromDate, toDate); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
+        finally { isLoading = false; }
+    }
+
+    private string StatusLabel(string value) => value switch
+    {
+        "Preparing" => L["Event:Status.Preparing"].Value,
+        "Ongoing" => L["Event:Status.Ongoing"].Value,
+        "Completed" => L["Event:Status.Completed"].Value,
+        "Cancelled" => L["Event:Status.Cancelled"].Value,
+        _ => value
+    };
+    private static string StatusClass(string value) => value switch
+    {
+        "Ongoing" => "hcs-status-badge hcs-status-badge--success",
+        "Completed" => "hcs-status-badge hcs-status-badge--todo",
+        "Cancelled" => "hcs-status-badge hcs-status-badge--danger",
+        _ => "hcs-status-badge hcs-status-badge--planning"
+    };
+}

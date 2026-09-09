@@ -1,0 +1,43 @@
+@page "/event-check-in/{Code}"
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+
+<PageTitle>@(eventInfo?.Name ?? L["Event:CheckIn"]) · HCS</PageTitle>
+<main class="hcs-event-checkin" aria-labelledby="checkin-title">
+    <section class="hcs-event-checkin__card">
+        @if (isLoading) { <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div> }
+        else if (eventInfo is null) { <div class="hcs-empty"><i class="fa fa-triangle-exclamation" aria-hidden="true"></i><h1 id="checkin-title">@L["Event:PublicUnavailable"]</h1><p>@errorMessage</p></div> }
+        else if (checkedIn is not null) { <div class="hcs-event-checkin__success"><span class="hcs-event-checkin__success-icon"><i class="fa fa-check" aria-hidden="true"></i></span><h1 id="checkin-title">@L["Event:CheckInSuccess"]</h1><p>@string.Format(L["Event:CheckInSuccessDescription"], checkedIn.FullName)</p><time>@checkedIn.CheckedInAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time></div> }
+        else
+        {
+            <div class="hcs-event-checkin__brand"><span><i class="fa fa-calendar-check" aria-hidden="true"></i></span><small>HCS · @L["Menu:EventManagement"]</small></div>
+            <p class="hcs-event-eyebrow">@L["Event:CheckIn"]</p><h1 id="checkin-title">@eventInfo.Name</h1><p class="hcs-event-checkin__meta">@eventInfo.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @eventInfo.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br />@(eventInfo.Location ?? L["Event:OnlineOrNotSet"])</p>
+            <div class="hcs-event-checkin__notice"><i class="fa fa-circle-info me-2" aria-hidden="true"></i>@L["Event:CheckInPrompt"]</div>
+            @if (!string.IsNullOrWhiteSpace(errorMessage)) { <div class="alert alert-danger" role="alert">@errorMessage</div> }
+            <div class="hcs-event-checkin__form"><Field><FieldLabel>@L["Event:FullName"]</FieldLabel><input class="form-control" @bind="form.FullName" autocomplete="name" /></Field><Field><FieldLabel>@L["Event:Phone"]</FieldLabel><input class="form-control" type="tel" @bind="form.PhoneNumber" autocomplete="tel" /></Field><div class="hcs-event-checkin__or">@L["Event:Or"]</div><div class="hcs-form-row"><Field><FieldLabel>CCCD</FieldLabel><input class="form-control" @bind="form.Cccd" /></Field><Field><FieldLabel>@L["Event:Email"]</FieldLabel><input class="form-control" type="email" @bind="form.Email" autocomplete="email" /></Field></div><Button Color="Color.Primary" Class="w-100" Clicked="CheckInAsync" Disabled="@isSubmitting"><i class="fa fa-check me-2" aria-hidden="true"></i>@L["Event:ConfirmCheckIn"]</Button></div>
+        }
+    </section>
+</main>
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+    [SupplyParameterFromQuery] public string? Token { get; set; }
+    private PublicEventDto? eventInfo; private PublicEventCheckInResultDto? checkedIn; private string? errorMessage; private bool isLoading, isSubmitting;
+    private readonly CheckInForm form = new();
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true; errorMessage = null;
+        try { if (string.IsNullOrWhiteSpace(Token)) throw new InvalidOperationException(L["Event:InvalidQr"].Value); eventInfo = await Work.GetPublicEventAsync(Code, Token); }
+        catch (Exception ex) { eventInfo = null; errorMessage = ex.Message; }
+        finally { isLoading = false; }
+    }
+    private async Task CheckInAsync()
+    {
+        if (string.IsNullOrWhiteSpace(form.PhoneNumber) && string.IsNullOrWhiteSpace(form.Email) && string.IsNullOrWhiteSpace(form.Cccd)) { errorMessage = L["Event:CheckInIdentifierRequired"].Value; return; }
+        isSubmitting = true; errorMessage = null;
+        try { checkedIn = await Work.CheckInPublicEventAsync(Code, Token ?? "", new(form.FullName, form.Cccd, form.PhoneNumber, form.Email)); }
+        catch (Exception ex) { errorMessage = ex.Message; }
+        finally { isSubmitting = false; }
+    }
+    private sealed class CheckInForm { public string? FullName { get; set; } public string? Cccd { get; set; } public string? PhoneNumber { get; set; } public string? Email { get; set; } }
+}

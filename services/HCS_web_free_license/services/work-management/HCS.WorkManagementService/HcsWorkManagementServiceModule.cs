@@ -57,7 +57,7 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
         });
         context.Services.AddAuthorization(options =>
         {
-            foreach (var permission in new[] { WorkPermissions.Projects, WorkPermissions.Tasks, WorkPermissions.Calendar,
+            foreach (var permission in new[] { WorkPermissions.Projects, WorkPermissions.Tasks, WorkPermissions.Calendar, WorkPermissions.Events,
                          WorkPermissions.Surveys, WorkPermissions.SurveyManagement, WorkPermissions.Reports, WorkPermissions.Dashboard,
                          WorkPermissions.EmployeeRatings, WorkPermissions.EmployeeRatingsManagement, WorkPermissions.EmployeeRatingsDashboard })
                 options.AddPolicy(permission, policy => policy.RequireClaim("permission", permission));

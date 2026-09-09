@@ -41,6 +41,32 @@ public sealed record UpsertCalendarEventRequest(
     string EventType, string? Location, string RelatedType, string? RelatedId, string Visibility,
     IReadOnlyList<Guid>? ParticipantUserIds);
 
+public sealed record EventListItemDto(Guid Id, string Code, string Group, string Name, DateTime StartTime,
+    DateTime EndTime, string? Location, string Status, int AttendeeCount);
+public sealed record EventAttendanceSummaryDto(int Total, int Confirmed, int Unconfirmed, int Declined, int CheckedIn, int NotCheckedIn);
+public sealed record EventAttachmentDto(Guid Id, string FileName, string ContentType, long Size);
+public sealed record EventDto(Guid Id, string Code, string Group, string Name, string? Content, string? Description,
+    string? Location, DateTime StartTime, DateTime EndTime, string Status, string QrToken,
+    List<EventAttachmentDto> Attachments, EventAttendanceSummaryDto Attendance);
+public sealed record EventDashboardDto(int TotalEvents, int CompletedEvents, int OngoingEvents, int UpcomingEvents,
+    int TotalAttendees, List<EventListItemDto> Upcoming);
+public sealed record CreateManagedEventRequest(string Group, string Name, string? Content, string? Description,
+    string? Location, DateTime StartTime, DateTime EndTime, string Status);
+public sealed record UpdateManagedEventRequest(string Group, string Name, string? Content, string? Description,
+    string? Location, DateTime StartTime, DateTime EndTime, string Status);
+public sealed record EventAttendeeDto(Guid Id, Guid EventId, Guid? UserId, string? Username, string? Surname, string? Name,
+    string FullName, string? Cccd, string PhoneNumber, string Email, string? Address, string RegistrationStatus,
+    string CheckInStatus, string? Note, DateTime? CheckedInAt);
+public sealed record CreateEventAttendeeRequest(Guid? UserId, string? Username, string? Surname, string? Name, string FullName,
+    string? Cccd, string PhoneNumber, string Email, string? Address, string RegistrationStatus, string CheckInStatus, string? Note);
+public sealed record UpdateEventAttendeeRequest(string? Username, string? Surname, string? Name, string FullName, string? Cccd,
+    string PhoneNumber, string Email, string? Address, string RegistrationStatus, string CheckInStatus, string? Note);
+public sealed record ChangeEventAttendeeStatusRequest(string? RegistrationStatus, string? CheckInStatus);
+public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location);
+public sealed record PublicEventCheckInRequest(string? FullName, string? Cccd, string? PhoneNumber, string? Email);
+public sealed record PublicEventCheckInResultDto(string FullName, DateTime CheckedInAt);
+public sealed record EventImportResultDto(int Imported, int Skipped);
+
 public sealed record SurveyCriteriaDto(Guid Id, string Code, string Name, int SortOrder, bool IsActive,
     Guid? LocationId = null, string? Image = null);
 public sealed record SurveyLocationDto(Guid Id, string Code, string Name, Guid? OrganizationUnitId, bool IsActive,

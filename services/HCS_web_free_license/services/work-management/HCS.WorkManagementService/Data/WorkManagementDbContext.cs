@@ -18,6 +18,9 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
     public DbSet<ProjectTaskDocument> ProjectTaskDocuments => Set<ProjectTaskDocument>();
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
     public DbSet<CalendarEventParticipant> CalendarEventParticipants => Set<CalendarEventParticipant>();
+    public DbSet<ManagedEvent> ManagedEvents => Set<ManagedEvent>();
+    public DbSet<EventAttendee> EventAttendees => Set<EventAttendee>();
+    public DbSet<EventAttachment> EventAttachments => Set<EventAttachment>();
     public DbSet<SurveyCriteria> SurveyCriteria => Set<SurveyCriteria>();
     public DbSet<SurveyLocation> SurveyLocations => Set<SurveyLocation>();
     public DbSet<SurveySession> SurveySessions => Set<SurveySession>();
@@ -103,6 +106,41 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.HasIndex(x => new { x.CalendarEventId, x.UserId }).IsUnique();
             b.HasIndex(x => new { x.UserId, x.CalendarEventId });
             b.HasOne<CalendarEvent>().WithMany().HasForeignKey(x => x.CalendarEventId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<ManagedEvent>(b =>
+        {
+            b.ToTable("ManagedEvents"); b.ConfigureByConvention();
+            b.Property(x => x.Code).HasMaxLength(WorkConsts.CodeLength).IsRequired();
+            b.Property(x => x.Group).HasMaxLength(WorkConsts.TypeLength).IsRequired();
+            b.Property(x => x.Name).HasMaxLength(WorkConsts.NameLength).IsRequired();
+            b.Property(x => x.Content).HasMaxLength(4000);
+            b.Property(x => x.Description).HasMaxLength(4000);
+            b.Property(x => x.Location).HasMaxLength(512);
+            b.Property(x => x.Status).HasMaxLength(WorkConsts.StatusLength).IsRequired();
+            b.Property(x => x.QrToken).HasMaxLength(128).IsRequired();
+            b.HasIndex(x => x.Code).IsUnique(); b.HasIndex(x => x.QrToken).IsUnique();
+            b.HasIndex(x => new { x.Status, x.StartTime }); b.HasIndex(x => x.OwnerUserId);
+        });
+        builder.Entity<EventAttendee>(b =>
+        {
+            b.ToTable("EventAttendees"); b.ConfigureByConvention();
+            b.Property(x => x.Username).HasMaxLength(128); b.Property(x => x.Surname).HasMaxLength(128);
+            b.Property(x => x.Name).HasMaxLength(128); b.Property(x => x.FullName).HasMaxLength(WorkConsts.NameLength).IsRequired();
+            b.Property(x => x.Cccd).HasMaxLength(64); b.Property(x => x.PhoneNumber).HasMaxLength(64).IsRequired();
+            b.Property(x => x.Email).HasMaxLength(256).IsRequired(); b.Property(x => x.Address).HasMaxLength(512);
+            b.Property(x => x.RegistrationStatus).HasMaxLength(WorkConsts.StatusLength).IsRequired();
+            b.Property(x => x.CheckInStatus).HasMaxLength(WorkConsts.StatusLength).IsRequired(); b.Property(x => x.Note).HasMaxLength(2000);
+            b.HasIndex(x => new { x.EventId, x.FullName }); b.HasIndex(x => new { x.EventId, x.PhoneNumber });
+            b.HasIndex(x => new { x.EventId, x.Email }); b.HasIndex(x => new { x.EventId, x.Cccd }); b.HasIndex(x => x.UserId);
+            b.HasOne<ManagedEvent>().WithMany().HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<EventAttachment>(b =>
+        {
+            b.ToTable("EventAttachments"); b.ConfigureByConvention();
+            b.Property(x => x.BlobName).HasMaxLength(512).IsRequired(); b.Property(x => x.FileName).HasMaxLength(256).IsRequired();
+            b.Property(x => x.ContentType).HasMaxLength(128).IsRequired(); b.HasIndex(x => x.BlobName).IsUnique();
+            b.HasIndex(x => x.EventId); b.HasIndex(x => x.UploadedByUserId);
+            b.HasOne<ManagedEvent>().WithMany().HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade);
         });
         builder.Entity<SurveyCriteria>(b =>
         {

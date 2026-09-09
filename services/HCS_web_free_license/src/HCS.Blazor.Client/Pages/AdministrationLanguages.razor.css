@@ -108,7 +108,8 @@
     color: #b36b00;
 }
 
-.hcs-language-actions-column {
+.hcs-language-grid ::deep .table th:last-child,
+.hcs-language-grid ::deep .table td:last-child {
     width: 1%;
 }
 

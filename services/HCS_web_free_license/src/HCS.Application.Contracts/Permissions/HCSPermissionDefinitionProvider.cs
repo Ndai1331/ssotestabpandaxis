@@ -45,6 +45,7 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         workManagement.AddPermission(HCSPermissions.WorkManagement.Projects, L("Permission:WorkManagement.Projects"));
         workManagement.AddPermission(HCSPermissions.WorkManagement.Tasks, L("Permission:WorkManagement.ProjectTasks"));
         workManagement.AddPermission(HCSPermissions.WorkManagement.Calendar, L("Permission:WorkManagement.Calendar"));
+        workManagement.AddPermission(HCSPermissions.WorkManagement.Events, L("Permission:WorkManagement.Events"));
         workManagement.AddPermission(HCSPermissions.WorkManagement.Surveys, L("Permission:WorkManagement.Surveys"));
         workManagement.AddPermission(HCSPermissions.WorkManagement.SurveyManagement, L("Permission:WorkManagement.SurveyManagement"));
         workManagement.AddPermission(HCSPermissions.WorkManagement.Reports, L("Permission:WorkManagement.Reports"));

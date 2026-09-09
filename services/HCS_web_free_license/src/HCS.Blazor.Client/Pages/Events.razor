@@ -1,0 +1,106 @@
+@page "/events"
+@attribute [Authorize(Policy = "WorkManagement.Events")]
+@inherits HCSComponentBase
+@inject WorkManagementClient Work
+@inject IUiMessageService UiMessage
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>@L["Menu:ManagedEvents"] · HCS</PageTitle>
+<section class="hcs-catalog-page hcs-event-page" aria-labelledby="events-title">
+    <header class="hcs-catalog-titlebar">
+        <div class="min-w-0"><p class="hcs-event-eyebrow">@L["Menu:EventManagement"]</p><h1 id="events-title">@L["Menu:ManagedEvents"]</h1></div>
+        <div class="hcs-catalog-page__actions"><Button Color="Color.Primary" Outline="true" Clicked="ExportAsync" Disabled="@(items.Count == 0 || isLoading)"><i class="fa fa-download me-1" aria-hidden="true"></i>@L["Catalog:Export"]</Button><Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Event:Create"]</Button></div>
+    </header>
+    <Card Class="hcs-catalog-filter-card"><CardBody>
+        <div class="hcs-event-list-filters">
+            <Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Event:SearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons>
+            <Field><FieldLabel>@L["Event:Group"]</FieldLabel><TextInput @bind-Value="group" /></Field>
+            <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel><Select TValue="string" @bind-Value="status"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>@foreach (var value in Statuses) { <SelectItem Value="@value">@StatusLabel(value)</SelectItem>}</Select></Field>
+            <Button Color="Color.Light" Outline="true" Class="hcs-event-reset" Clicked="ResetAsync">@L["Catalog:Reset"]</Button>
+        </div>
+    </CardBody></Card>
+    <Card Class="hcs-catalog-grid-card"><CardBody>
+        @if (isLoading) { <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div> }
+        else if (items.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-calendar-plus" aria-hidden="true"></i><h2>@L["Event:EmptyTitle"]</h2><p>@L["Event:EmptyDescription"]</p><Button Color="Color.Primary" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Event:Create"]</Button></div> }
+        else
+        {
+            <div class="table-responsive hcs-event-table-wrap"><table class="table align-middle hcs-event-table"><thead><tr><th scope="col">@L["Catalog:Code"]</th><th scope="col">@L["Event:Group"]</th><th scope="col">@L["Event:Time"]</th><th scope="col">@L["Event:Location"]</th><th scope="col">@L["Catalog:Status"]</th><th scope="col">@L["Event:Attendees"]</th><th scope="col"><span class="visually-hidden">@L["Catalog:Actions"]</span></th></tr></thead><tbody>
+            @foreach (var item in items)
+            {
+                <tr><td><a class="hcs-event-name" href="@($"/events/{item.Id:D}")">@item.Name</a><small class="hcs-catalog-code">#@item.Code</small></td><td>@item.Group</td><td>@item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br /><small>@item.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td><td>@(item.Location ?? L["Event:OnlineOrNotSet"])</td><td><span class="@StatusClass(item.Status)">@StatusLabel(item.Status)</span></td><td>@item.AttendeeCount</td><td><div class="hcs-row-actions"><Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Title="@L["Catalog:Edit"]" Clicked="() => EditAsync(item)"><Icon Name="@IconName.Edit" /></Button><Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button" Title="@L["Catalog:Delete"]" Clicked="() => DeleteAsync(item)"><Icon Name="@IconName.Delete" /></Button></div></td></tr>
+            }
+            </tbody></table></div>
+            <div class="hcs-event-pager"><span>@L["Event:Showing"] @((currentPage - 1) * pageSize + 1)–@Math.Min(currentPage * pageSize, totalCount) / @totalCount</span><div><Button Size="Size.Small" Color="Color.Light" Outline="true" Clicked="PreviousPage" Disabled="@(currentPage <= 1)"><i class="fa fa-chevron-left" aria-hidden="true"></i></Button><span class="mx-2">@currentPage</span><Button Size="Size.Small" Color="Color.Light" Outline="true" Clicked="NextPage" Disabled="@(currentPage * pageSize >= totalCount)"><i class="fa fa-chevron-right" aria-hidden="true"></i></Button></div></div>
+        }
+    </CardBody></Card>
+</section>
+
+<Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal"><ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@(editingId is null ? L["Event:Create"] : L["Event:Edit"])</ModalTitle><CloseButton /></ModalHeader><ModalBody Class="hcs-catalog-modal__body"><div class="hcs-catalog-form">
+    <div class="hcs-form-row"><Field><FieldLabel>@L["Event:Group"]</FieldLabel><input class="form-control" @bind="form.Group" maxlength="64" /></Field><Field><FieldLabel>@L["Event:Name"]</FieldLabel><input class="form-control" @bind="form.Name" maxlength="256" /></Field></div>
+    <div class="hcs-form-row"><Field><FieldLabel>@L["Event:StartTime"]</FieldLabel><input class="form-control" type="datetime-local" @bind="form.StartTime" /></Field><Field><FieldLabel>@L["Event:EndTime"]</FieldLabel><input class="form-control" type="datetime-local" @bind="form.EndTime" /></Field></div>
+    <div class="hcs-form-row"><Field><FieldLabel>@L["Event:Location"]</FieldLabel><input class="form-control" @bind="form.Location" maxlength="512" /></Field><Field><FieldLabel>@L["Catalog:Status"]</FieldLabel><Select TValue="string" @bind-Value="form.Status">@foreach (var value in Statuses) { <SelectItem Value="@value">@StatusLabel(value)</SelectItem>}</Select></Field></div>
+    <Field><FieldLabel>@L["Event:Content"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Content" maxlength="4000"></textarea></Field><Field><FieldLabel>@L["Event:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" maxlength="4000"></textarea></Field>
+</div></ModalBody><ModalFooter Class="hcs-catalog-modal__footer"><Button Color="Color.Secondary" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button><Button Color="Color.Primary" Clicked="SaveAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button></ModalFooter></ModalContent></Modal>
+
+@code {
+    private static readonly string[] Statuses = ["Preparing", "Ongoing", "Completed", "Cancelled"];
+    private readonly List<EventListItemDto> items = [];
+    private readonly EventForm form = new();
+    private Modal? modal;
+    private Guid? editingId;
+    private string filter = "", group = "", status = "";
+    private bool isLoading, isSaving;
+    private int totalCount, pageSize = 20, currentPage = 1;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        try { var result = await Work.GetEventsAsync(filter, group, status, (currentPage - 1) * pageSize, pageSize); items.Clear(); items.AddRange(result.Items); totalCount = (int)result.TotalCount; }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
+        finally { isLoading = false; }
+    }
+    private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
+    private Task ResetAsync() { filter = group = status = ""; currentPage = 1; return LoadAsync(); }
+    private Task PreviousPage() { if (currentPage > 1) { currentPage--; return LoadAsync(); } return Task.CompletedTask; }
+    private Task NextPage() { if (currentPage * pageSize < totalCount) { currentPage++; return LoadAsync(); } return Task.CompletedTask; }
+    private async Task OpenCreate() { editingId = null; form.Reset(); if (modal is not null) await modal.Show(); }
+    private async Task EditAsync(EventListItemDto item)
+    {
+        var detail = await Work.GetEventAsync(item.Id); editingId = item.Id; form.Load(detail); if (modal is not null) await modal.Show();
+    }
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(form.Group) || string.IsNullOrWhiteSpace(form.Name)) { await NotifyErrorAsync(new InvalidOperationException(L["Event:RequiredFields"].Value)); return; }
+        isSaving = true;
+        try
+        {
+            if (editingId is { } id) await Work.UpdateEventAsync(id, form.ToUpdate()); else await Work.CreateEventAsync(form.ToCreate());
+            await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]); if (modal is not null) await modal.Hide(); await LoadAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isSaving = false; }
+    }
+    private async Task DeleteAsync(EventListItemDto item)
+    {
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
+        try { await Work.DeleteEventAsync(item.Id); await NotifySuccessAsync(L["Catalog:Deleted"]); if (items.Count == 1 && currentPage > 1) currentPage--; await LoadAsync(); }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
+    }
+    private async Task ExportAsync()
+    {
+        try { var all = new List<EventListItemDto>(); var skip = 0; while (true) { var result = await Work.GetEventsAsync(filter, group, status, skip, WorkManagementClient.MaxPageSize); all.AddRange(result.Items); skip += result.Items.Count; if (result.Items.Count == 0 || skip >= result.TotalCount) break; } await CsvDownload.DownloadAsync(JsRuntime, $"events-{DateTime.Now:yyyyMMdd}.csv", ["Mã", "Tên", "Nhóm", "Bắt đầu", "Kết thúc", "Địa điểm", "Trạng thái", "Người tham dự"], all.Select(x => (IReadOnlyList<string>)[x.Code, x.Name, x.Group, x.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm"), x.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm"), x.Location ?? "", StatusLabel(x.Status), x.AttendeeCount.ToString()])); }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
+    }
+    private string StatusLabel(string value) => value switch { "Preparing" => L["Event:Status.Preparing"].Value, "Ongoing" => L["Event:Status.Ongoing"].Value, "Completed" => L["Event:Status.Completed"].Value, "Cancelled" => L["Event:Status.Cancelled"].Value, _ => value };
+    private static string StatusClass(string value) => value switch { "Ongoing" => "hcs-status-badge hcs-status-badge--success", "Completed" => "hcs-status-badge hcs-status-badge--todo", "Cancelled" => "hcs-status-badge hcs-status-badge--danger", _ => "hcs-status-badge hcs-status-badge--planning" };
+    private sealed class EventForm
+    {
+        public string Group { get; set; } = "General"; public string Name { get; set; } = ""; public string? Content { get; set; } public string? Description { get; set; } public string? Location { get; set; } public DateTime StartTime { get; set; } = DateTime.Now.AddHours(1); public DateTime EndTime { get; set; } = DateTime.Now.AddHours(2); public string Status { get; set; } = "Preparing";
+        public void Reset() { Group = "General"; Name = Content = Description = Location = ""; StartTime = DateTime.Now.AddHours(1); EndTime = DateTime.Now.AddHours(2); Status = "Preparing"; }
+        public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = x.StartTime.ToLocalTime(); EndTime = x.EndTime.ToLocalTime(); Status = x.Status; }
+        public CreateManagedEventRequest ToCreate() => new(Group.Trim(), Name.Trim(), Content, Description, Location, StartTime, EndTime, Status);
+        public UpdateManagedEventRequest ToUpdate() => new(Group.Trim(), Name.Trim(), Content, Description, Location, StartTime, EndTime, Status);
+    }
+}

@@ -137,6 +137,25 @@
                 <i class="fa fa-calendar-days" aria-hidden="true"></i><span>@Localizer["Menu:CalendarEvents"]</span>
             </NavLink>
 
+            <AuthorizeView Policy="WorkManagement.Events">
+                <Authorized>
+                    <div class="hcs-nav-menu @(IsExpanded("managed-events") ? "hcs-nav-menu--expanded" : null)"
+                         @onpointerenter="@(() => OnMenuPointerEnter("managed-events"))">
+                        <button class="hcs-nav-menu__trigger" type="button"
+                                aria-expanded="@IsExpanded("managed-events").ToString().ToLowerInvariant()"
+                                aria-haspopup="true" @onmousedown:preventDefault
+                                @onclick="@(() => ToggleSection("managed-events"))">
+                            <i class="fa fa-calendar-check" aria-hidden="true"></i><span>@Localizer["Menu:EventManagement"]</span>
+                            <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="hcs-nav-menu__panel" role="menu">
+                            <NavLink href="/event-dashboard" @onclick="CloseMobileNav"><i class="fa fa-chart-pie" aria-hidden="true"></i>@Localizer["Menu:EventDashboard"]</NavLink>
+                            <NavLink href="/events" @onclick="CloseMobileNav"><i class="fa fa-calendar-days" aria-hidden="true"></i>@Localizer["Menu:ManagedEvents"]</NavLink>
+                        </div>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+
             @Menu("surveys", "fa-chart-line", Localizer["Menu:Surveys"].Value,
                 ("/survey-sessions", "fa-clipboard-list", Localizer["Menu:SurveySessions"].Value),
                 ("/survey-results", "fa-square-poll-vertical", Localizer["Menu:SurveyResults"].Value))

@@ -178,6 +178,138 @@ public sealed class CalendarEventParticipant : Entity<Guid>
     public Guid UserId { get; private set; }
 }
 
+public static class ManagedEventStatuses
+{
+    public const string Preparing = "Preparing";
+    public const string Ongoing = "Ongoing";
+    public const string Completed = "Completed";
+    public const string Cancelled = "Cancelled";
+    public static readonly string[] All = [Preparing, Ongoing, Completed, Cancelled];
+}
+
+public static class EventRegistrationStatuses
+{
+    public const string Confirmed = "Confirmed";
+    public const string Unconfirmed = "Unconfirmed";
+    public const string Declined = "Declined";
+    public static readonly string[] All = [Confirmed, Unconfirmed, Declined];
+}
+
+public static class EventCheckInStatuses
+{
+    public const string CheckedIn = "CheckedIn";
+    public const string NotCheckedIn = "NotCheckedIn";
+    public static readonly string[] All = [CheckedIn, NotCheckedIn];
+}
+
+public sealed class ManagedEvent : FullAuditedAggregateRoot<Guid>
+{
+    private ManagedEvent() { }
+    public ManagedEvent(Guid id, string code, string group, string name, string? content, string? description,
+        string? location, DateTime startTime, DateTime endTime, string status, string qrToken, Guid ownerUserId) : base(id)
+    {
+        Code = Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength);
+        QrToken = Check.NotNullOrWhiteSpace(qrToken, nameof(qrToken), 128);
+        OwnerUserId = ownerUserId == Guid.Empty ? throw new BusinessException("Work:OwnerRequired") : ownerUserId;
+        Change(group, name, content, description, location, startTime, endTime, status);
+    }
+    public string Code { get; private set; } = string.Empty;
+    public string Group { get; private set; } = string.Empty;
+    public string Name { get; private set; } = string.Empty;
+    public string? Content { get; private set; }
+    public string? Description { get; private set; }
+    public string? Location { get; private set; }
+    public DateTime StartTime { get; private set; }
+    public DateTime EndTime { get; private set; }
+    public string Status { get; private set; } = ManagedEventStatuses.Preparing;
+    public string QrToken { get; private set; } = string.Empty;
+    public Guid OwnerUserId { get; private set; }
+    public void Change(string group, string name, string? content, string? description, string? location,
+        DateTime startTime, DateTime endTime, string status)
+    {
+        startTime = WorkTimestamps.ToUtc(startTime);
+        endTime = WorkTimestamps.ToUtc(endTime);
+        if (endTime < startTime) throw new BusinessException("Work:EventDateRange");
+        if (!ManagedEventStatuses.All.Contains(status, StringComparer.OrdinalIgnoreCase))
+            throw new BusinessException("Work:EventStatusInvalid");
+        Group = Check.NotNullOrWhiteSpace(group, nameof(group), WorkConsts.TypeLength);
+        Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
+        Content = content; Description = description; Location = location;
+        StartTime = startTime; EndTime = endTime;
+        Status = status;
+    }
+}
+
+public sealed class EventAttendee : Entity<Guid>
+{
+    private EventAttendee() { }
+    public EventAttendee(Guid id, Guid eventId, Guid? userId, string? username, string? surname, string? name,
+        string fullName, string? cccd, string phoneNumber, string email, string? address,
+        string registrationStatus, string checkInStatus, string? note) : base(id)
+    {
+        EventId = eventId; UserId = userId;
+        Change(username, surname, name, fullName, cccd, phoneNumber, email, address,
+            registrationStatus, checkInStatus, note);
+    }
+    public Guid EventId { get; private set; }
+    public Guid? UserId { get; private set; }
+    public string? Username { get; private set; }
+    public string? Surname { get; private set; }
+    public string? Name { get; private set; }
+    public string FullName { get; private set; } = string.Empty;
+    public string? Cccd { get; private set; }
+    public string PhoneNumber { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
+    public string? Address { get; private set; }
+    public string RegistrationStatus { get; private set; } = EventRegistrationStatuses.Unconfirmed;
+    public string CheckInStatus { get; private set; } = EventCheckInStatuses.NotCheckedIn;
+    public string? Note { get; private set; }
+    public DateTime? CheckedInAt { get; private set; }
+    public void Change(string? username, string? surname, string? name, string fullName, string? cccd,
+        string phoneNumber, string email, string? address, string registrationStatus, string checkInStatus, string? note)
+    {
+        if (!EventRegistrationStatuses.All.Contains(registrationStatus, StringComparer.OrdinalIgnoreCase))
+            throw new BusinessException("Work:EventRegistrationStatusInvalid");
+        if (!EventCheckInStatuses.All.Contains(checkInStatus, StringComparer.OrdinalIgnoreCase))
+            throw new BusinessException("Work:EventCheckInStatusInvalid");
+        FullName = Check.NotNullOrWhiteSpace(fullName, nameof(fullName), WorkConsts.NameLength);
+        PhoneNumber = Check.NotNullOrWhiteSpace(phoneNumber, nameof(phoneNumber), 64);
+        Email = Check.NotNullOrWhiteSpace(email, nameof(email), 256);
+        Username = username; Surname = surname; Name = name; Cccd = cccd; Address = address;
+        RegistrationStatus = registrationStatus; Note = note;
+        SetCheckInStatus(checkInStatus);
+    }
+    public void SetRegistrationStatus(string status)
+    {
+        if (!EventRegistrationStatuses.All.Contains(status, StringComparer.OrdinalIgnoreCase))
+            throw new BusinessException("Work:EventRegistrationStatusInvalid");
+        RegistrationStatus = status;
+    }
+    public void SetCheckInStatus(string status)
+    {
+        if (!EventCheckInStatuses.All.Contains(status, StringComparer.OrdinalIgnoreCase))
+            throw new BusinessException("Work:EventCheckInStatusInvalid");
+        CheckInStatus = status;
+        CheckedInAt = string.Equals(status, EventCheckInStatuses.CheckedIn, StringComparison.OrdinalIgnoreCase)
+            ? (CheckedInAt ?? DateTime.UtcNow) : null;
+    }
+}
+
+public sealed class EventAttachment : Entity<Guid>
+{
+    private EventAttachment() { }
+    public EventAttachment(Guid id, Guid eventId, Guid uploadedByUserId, string blobName, string fileName,
+        string contentType, long size) : base(id)
+        => (EventId, UploadedByUserId, BlobName, FileName, ContentType, Size) =
+            (eventId, uploadedByUserId, blobName, fileName, contentType, size);
+    public Guid EventId { get; private set; }
+    public Guid UploadedByUserId { get; private set; }
+    public string BlobName { get; private set; } = string.Empty;
+    public string FileName { get; private set; } = string.Empty;
+    public string ContentType { get; private set; } = string.Empty;
+    public long Size { get; private set; }
+}
+
 public sealed class SurveyCriteria : FullAuditedAggregateRoot<Guid>
 {
     private SurveyCriteria() { }

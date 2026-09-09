@@ -51,7 +51,8 @@ public sealed class HCSWebGatewayModule : AbpModule
             {
                 if (authorizationContext.Resource is HttpContext httpContext &&
                     (BffRequestPolicy.IsAnonymousBootstrapPath(httpContext.Request.Path) ||
-                     BffRequestPolicy.IsAnonymousSurveyPath(httpContext.Request.Path)))
+                     BffRequestPolicy.IsAnonymousSurveyPath(httpContext.Request.Path) ||
+                     BffRequestPolicy.IsAnonymousEventPath(httpContext.Request.Path)))
                 {
                     return true;
                 }

@@ -98,6 +98,28 @@ public sealed class DomainInvariantTests
     }
 
     [Fact]
+    public void Managed_event_requires_a_valid_date_range_and_status()
+    {
+        Assert.Throws<BusinessException>(() => new ManagedEvent(Guid.NewGuid(), "EVT-1", "General", "Event", null, null,
+            null, DateTime.UtcNow, DateTime.UtcNow.AddMinutes(-1), ManagedEventStatuses.Preparing, "token", Guid.NewGuid()));
+        Assert.Throws<BusinessException>(() => new ManagedEvent(Guid.NewGuid(), "EVT-1", "General", "Event", null, null,
+            null, DateTime.UtcNow, DateTime.UtcNow.AddMinutes(1), "Unknown", "token", Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void Attendee_check_in_sets_and_clears_timestamp()
+    {
+        var attendee = new EventAttendee(Guid.NewGuid(), Guid.NewGuid(), null, null, null, null, "Guest",
+            null, "0900000000", "guest@example.test", null, EventRegistrationStatuses.Unconfirmed,
+            EventCheckInStatuses.NotCheckedIn, null);
+        Assert.Null(attendee.CheckedInAt);
+        attendee.SetCheckInStatus(EventCheckInStatuses.CheckedIn);
+        Assert.NotNull(attendee.CheckedInAt);
+        attendee.SetCheckInStatus(EventCheckInStatuses.NotCheckedIn);
+        Assert.Null(attendee.CheckedInAt);
+    }
+
+    [Fact]
     public void Survey_session_change_rejects_inverted_date_range()
     {
         var start = DateTime.UtcNow;

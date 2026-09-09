@@ -91,6 +91,73 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
     public Task DeleteCalendarEventAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"/api/calendar/{id:D}", cancellationToken);
 
+    public Task<PagedWorkResponse<EventListItemDto>> GetEventsAsync(string? filter = null, string? group = null,
+        string? status = null, int skip = 0, int take = 20, CancellationToken cancellationToken = default)
+    {
+        var values = new List<string> { $"skip={Math.Max(0, skip)}", $"take={Math.Clamp(take, 1, MaxPageSize)}" };
+        if (!string.IsNullOrWhiteSpace(filter)) values.Add($"filter={Uri.EscapeDataString(filter.Trim())}");
+        if (!string.IsNullOrWhiteSpace(group)) values.Add($"group={Uri.EscapeDataString(group.Trim())}");
+        if (!string.IsNullOrWhiteSpace(status)) values.Add($"status={Uri.EscapeDataString(status.Trim())}");
+        return GetAsync<PagedWorkResponse<EventListItemDto>>($"/api/events?{string.Join('&', values)}", cancellationToken);
+    }
+
+    public Task<EventDashboardDto> GetEventDashboardAsync(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default) =>
+        GetAsync<EventDashboardDto>(BuildDateRangeUri("/api/events/dashboard", from, to), cancellationToken);
+    public Task<EventDto> GetEventAsync(Guid id, CancellationToken cancellationToken = default) => GetAsync<EventDto>($"/api/events/{id:D}", cancellationToken);
+    public Task<EventDto> CreateEventAsync(CreateManagedEventRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<EventDto>(HttpMethod.Post, "/api/events", request, cancellationToken);
+    public Task<EventDto> UpdateEventAsync(Guid id, UpdateManagedEventRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<EventDto>(HttpMethod.Put, $"/api/events/{id:D}", request, cancellationToken);
+    public Task DeleteEventAsync(Guid id, CancellationToken cancellationToken = default) => SendNoContentAsync(HttpMethod.Delete, $"/api/events/{id:D}", cancellationToken);
+    public Task<PagedWorkResponse<EventAttendeeDto>> GetEventAttendeesAsync(Guid eventId, string? filter = null,
+        string? registrationStatus = null, string? checkInStatus = null, int skip = 0, int take = 20, CancellationToken cancellationToken = default)
+    {
+        var values = new List<string> { $"skip={Math.Max(0, skip)}", $"take={Math.Clamp(take, 1, MaxPageSize)}" };
+        if (!string.IsNullOrWhiteSpace(filter)) values.Add($"filter={Uri.EscapeDataString(filter.Trim())}");
+        if (!string.IsNullOrWhiteSpace(registrationStatus)) values.Add($"registrationStatus={Uri.EscapeDataString(registrationStatus.Trim())}");
+        if (!string.IsNullOrWhiteSpace(checkInStatus)) values.Add($"checkInStatus={Uri.EscapeDataString(checkInStatus.Trim())}");
+        return GetAsync<PagedWorkResponse<EventAttendeeDto>>($"/api/events/{eventId:D}/attendees?{string.Join('&', values)}", cancellationToken);
+    }
+    public Task<EventAttendeeDto> AddEventAttendeeAsync(Guid eventId, CreateEventAttendeeRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<EventAttendeeDto>(HttpMethod.Post, $"/api/events/{eventId:D}/attendees", request, cancellationToken);
+    public Task<EventAttendeeDto> UpdateEventAttendeeAsync(Guid id, UpdateEventAttendeeRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<EventAttendeeDto>(HttpMethod.Put, $"/api/events/attendees/{id:D}", request, cancellationToken);
+    public Task<EventAttendeeDto> ChangeEventAttendeeStatusAsync(Guid id, ChangeEventAttendeeStatusRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<EventAttendeeDto>(HttpMethod.Post, $"/api/events/attendees/{id:D}/status", request, cancellationToken);
+    public Task DeleteEventAttendeeAsync(Guid id, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"/api/events/attendees/{id:D}", cancellationToken);
+    public Task<int> DeleteEventAttendeesAsync(Guid eventId, IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default) =>
+        SendAsync<int>(HttpMethod.Post, $"/api/events/{eventId:D}/attendees/delete-bulk", ids, cancellationToken);
+    public async Task<EventImportResultDto> ImportEventAttendeesAsync(Guid eventId, IBrowserFile file, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream(2 * 1024 * 1024, cancellationToken);
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/csv"); content.Add(fileContent, "file", file.Name);
+        using var response = await CreateClient().PostAsync($"/api/events/{eventId:D}/attendees/import", content, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<EventImportResultDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+    public async Task<EventAttachmentDto> UploadEventAttachmentAsync(Guid eventId, IBrowserFile file, CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream(25 * 1024 * 1024, cancellationToken);
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+        content.Add(fileContent, "file", file.Name);
+        using var response = await CreateClient().PostAsync($"/api/events/{eventId:D}/attachments", content, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<EventAttachmentDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+    public Task DeleteEventAttachmentAsync(Guid fileId, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"/api/events/attachments/{fileId:D}", cancellationToken);
+    public Task<PublicEventDto> GetPublicEventAsync(string code, string token, CancellationToken cancellationToken = default) =>
+        GetAsync<PublicEventDto>($"/api/events/public/{Uri.EscapeDataString(code)}?token={Uri.EscapeDataString(token)}", cancellationToken);
+    public Task<PublicEventCheckInResultDto> CheckInPublicEventAsync(string code, string token, PublicEventCheckInRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<PublicEventCheckInResultDto>(HttpMethod.Post, $"/api/events/public/{Uri.EscapeDataString(code)}/check-in?token={Uri.EscapeDataString(token)}", request, cancellationToken);
+
     public Task<List<SurveyCriteriaDto>> GetCriteriaAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<SurveyCriteriaDto>>("/api/surveys/criteria", cancellationToken);
     public Task<SurveyLocationDto> GetPublicLocationAsync(Guid locationId, CancellationToken cancellationToken = default) =>

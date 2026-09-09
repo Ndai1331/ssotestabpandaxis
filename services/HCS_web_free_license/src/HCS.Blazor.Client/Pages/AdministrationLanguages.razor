@@ -117,7 +117,7 @@
                                         ?? cell.Item.CreationTime.ToLocalTime().ToString("g", CultureInfo.CurrentCulture))
                                 </DisplayTemplate>
                             </DataGridColumn>
-                            <DataGridColumn TItem="LanguageDto" Caption='@L["Languages:Actions"].Value' Class="hcs-language-actions-column">
+                            <DataGridColumn TItem="LanguageDto" Caption='@L["Languages:Actions"].Value'>
                                 <DisplayTemplate Context="cell">
                                     <Dropdown>
                                         <DropdownToggle Color="Color.Light" Size="Size.Small" Class="hcs-language-action-toggle" aria-label='@L["Languages:Actions"].Value'>

@@ -9,6 +9,7 @@ internal static class BffRequestPolicy
         "/api/language-management/languages/enabled"
     ];
     private const string AnonymousSurveyPrefix = "/api/surveys/public";
+    private const string AnonymousEventPrefix = "/api/events/public";
     private static readonly string[] ProtectedPrefixes = ["/api", "/hubs"];
     private static readonly string[] SafeMethods = ["GET", "HEAD", "OPTIONS", "TRACE"];
 
@@ -24,7 +25,10 @@ internal static class BffRequestPolicy
     internal static bool IsAnonymousSurveyPath(PathString path) =>
         path.StartsWithSegments(AnonymousSurveyPrefix, StringComparison.OrdinalIgnoreCase);
 
+    internal static bool IsAnonymousEventPath(PathString path) =>
+        path.StartsWithSegments(AnonymousEventPrefix, StringComparison.OrdinalIgnoreCase);
+
     internal static bool RequiresAntiforgery(HttpRequest request) =>
-        IsProxyPath(request.Path) && !IsAnonymousSurveyPath(request.Path) &&
+        IsProxyPath(request.Path) && !IsAnonymousSurveyPath(request.Path) && !IsAnonymousEventPath(request.Path) &&
         !SafeMethods.Contains(request.Method, StringComparer.OrdinalIgnoreCase);
 }

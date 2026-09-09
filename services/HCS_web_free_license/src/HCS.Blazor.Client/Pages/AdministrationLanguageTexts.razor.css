@@ -113,7 +113,8 @@
     white-space: nowrap;
 }
 
-.hcs-language-text-actions-column {
+.hcs-language-text-grid ::deep .table th:last-child,
+.hcs-language-text-grid ::deep .table td:last-child {
     width: 1%;
 }
 

@@ -30,6 +30,7 @@ public sealed class GatewayConfigurationTests
             ["/api/projects/{**catch-all}"] = "WorkManagement",
             ["/api/project-tasks/{**catch-all}"] = "WorkManagement",
             ["/api/calendar/{**catch-all}"] = "WorkManagement",
+            ["/api/events/{**catch-all}"] = "WorkManagement",
             ["/api/surveys/{**catch-all}"] = "WorkManagement",
             ["/api/employee-ratings/{**catch-all}"] = "WorkManagement",
             ["/api/reports/{**catch-all}"] = "WorkManagement",

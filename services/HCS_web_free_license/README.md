@@ -87,6 +87,8 @@ Chi tiết UFW/backup (reference): [`docs/runbooks/hcs-ubuntu24-two-server.md`](
 
 ## Browser sign-in and navigation
 
+Hướng dẫn tích hợp native mobile (PKCE, API contract và ma trận parity theo từng page): [`docs/runbooks/hcs-mobile-api.md`](./docs/runbooks/hcs-mobile-api.md).
+
 The browser entry point is `https://hcs.localhost`. The workspace root (`/`) requires an authenticated user. A direct visit to `/login` is allowed anonymously, but immediately starts the same BFF sign-in flow.
 
 1. The Blazor client sends the browser to the configured `Bff:PublicOrigin` at `/bff/login`.

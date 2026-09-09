@@ -1,4 +1,5 @@
 using HCS.EntityFrameworkCore;
+using HCS.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
@@ -126,6 +127,7 @@ public sealed class HCSAuthServerModule : AbpModule
         context.Services.Configure<AbpClaimsPrincipalFactoryOptions>(options =>
             options.IsDynamicClaimsEnabled = true);
         context.Services.AddTransient<PermissionClaimsHandler>();
+        context.Services.AddHostedService<RolePermissionSyncHostedService>();
 
         ConfigureKeycloak(context);
     }

@@ -62,6 +62,7 @@ public sealed class BffSecurityTests
     [InlineData("POST", "/hubs/chat/negotiate", true)]
     [InlineData("DELETE", "/api/documents/1", true)]
     [InlineData("POST", "/api/surveys/public/sessions", false)]
+    [InlineData("POST", "/api/events/public/demo/check-in?token=test", false)]
     public void Antiforgery_policy_covers_unsafe_api_and_hub_requests(string method, string path, bool expected)
     {
         var context = new DefaultHttpContext();
@@ -77,6 +78,16 @@ public sealed class BffSecurityTests
         context.Request.Path = $"/api/surveys/public/locations/{Guid.NewGuid():D}";
         context.Request.Method = "POST";
         Assert.True(BffRequestPolicy.IsAnonymousSurveyPath(context.Request.Path));
+        Assert.False(BffRequestPolicy.RequiresAntiforgery(context.Request));
+    }
+
+    [Fact]
+    public void Public_event_path_is_explicitly_anonymous_at_the_bff_boundary()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/events/public/EVT-1";
+        context.Request.Method = "GET";
+        Assert.True(BffRequestPolicy.IsAnonymousEventPath(context.Request.Path));
         Assert.False(BffRequestPolicy.RequiresAntiforgery(context.Request));
     }
 

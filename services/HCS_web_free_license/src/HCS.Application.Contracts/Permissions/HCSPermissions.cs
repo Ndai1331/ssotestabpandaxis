@@ -60,6 +60,7 @@ public static class HCSPermissions
         public const string Projects = Default + ".Projects";
         public const string Tasks = Default + ".ProjectTasks";
         public const string Calendar = Default + ".Calendar";
+        public const string Events = Default + ".Events";
         public const string Surveys = Default + ".Surveys";
         public const string SurveyManagement = Default + ".SurveyManagement";
         public const string Reports = Default + ".Reports";
@@ -73,6 +74,7 @@ public static class HCSPermissions
             Projects,
             Tasks,
             Calendar,
+            Events,
             Surveys,
             SurveyManagement,
             Reports,

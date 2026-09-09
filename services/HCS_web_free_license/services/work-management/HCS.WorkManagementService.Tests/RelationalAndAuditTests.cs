@@ -15,6 +15,8 @@ public sealed class RelationalAndAuditTests
     [InlineData(typeof(CalendarEventParticipant), nameof(CalendarEventParticipant.CalendarEventId))]
     [InlineData(typeof(SurveyResult), nameof(SurveyResult.SessionId))]
     [InlineData(typeof(SurveyFileReference), nameof(SurveyFileReference.SessionId))]
+    [InlineData(typeof(EventAttendee), nameof(EventAttendee.EventId))]
+    [InlineData(typeof(EventAttachment), nameof(EventAttachment.EventId))]
     public void Same_database_child_records_have_foreign_keys(Type entityType, string property)
     {
         using var db = new WorkManagementDbContext(new DbContextOptionsBuilder<WorkManagementDbContext>()

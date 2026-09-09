@@ -99,7 +99,7 @@
                             <DataGridColumn TItem="LanguageTextDto" Field="Value" Caption='@L["LanguageTexts:Value"].Value'>
                                 <DisplayTemplate Context="cell"><span class="hcs-language-text-value" title="@cell.Item.Value">@cell.Item.Value</span></DisplayTemplate>
                             </DataGridColumn>
-                            <DataGridColumn TItem="LanguageTextDto" Caption='@L["LanguageTexts:Actions"].Value' Class="hcs-language-text-actions-column">
+                            <DataGridColumn TItem="LanguageTextDto" Caption='@L["LanguageTexts:Actions"].Value'>
                                 <DisplayTemplate Context="cell">
                                     @if (canManageTexts)
                                     {

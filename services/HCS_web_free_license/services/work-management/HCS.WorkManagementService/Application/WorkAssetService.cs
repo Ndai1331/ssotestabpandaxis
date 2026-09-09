@@ -59,6 +59,38 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
         return (stream, Map(item));
     }
 
+    public async Task<EventAttachmentDto> SaveEventFileAsync(Guid eventId, Stream stream, string fileName,
+        string contentType, long size, CancellationToken ct)
+    {
+        if (size is <= 0 or > MaxFileSize) throw new BusinessException("Work:InvalidAssetSize");
+        if (!await db.ManagedEvents.AnyAsync(x => x.Id == eventId, ct)) throw new EntityNotFoundException(typeof(ManagedEvent), eventId);
+        var id = Guid.NewGuid(); var blobName = WorkAssetBlobNamePolicy.Event(eventId, id);
+        await blobs.SaveAsync(blobName, stream, overrideExisting: false, cancellationToken: ct);
+        var item = new EventAttachment(id, eventId, access.UserId, blobName, Path.GetFileName(fileName),
+            string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType, size);
+        db.EventAttachments.Add(item);
+        try { await db.SaveChangesAsync(ct); }
+        catch { await blobs.DeleteAsync(blobName, cancellationToken: ct); throw; }
+        return Map(item);
+    }
+
+    public async Task<(Stream Stream, EventAttachmentDto File)> GetEventFileAsync(Guid fileId, CancellationToken ct)
+    {
+        var item = await db.EventAttachments.AsNoTracking().SingleOrDefaultAsync(x => x.Id == fileId, ct)
+            ?? throw new EntityNotFoundException(typeof(EventAttachment), fileId);
+        var stream = await blobs.GetAsync(item.BlobName, cancellationToken: ct);
+        return (stream, Map(item));
+    }
+
+    public async Task DeleteEventFileAsync(Guid fileId, CancellationToken ct)
+    {
+        var item = await db.EventAttachments.SingleOrDefaultAsync(x => x.Id == fileId, ct)
+            ?? throw new EntityNotFoundException(typeof(EventAttachment), fileId);
+        await blobs.DeleteAsync(item.BlobName, cancellationToken: ct);
+        db.EventAttachments.Remove(item); await db.SaveChangesAsync(ct);
+    }
+
     private static SurveyFileReferenceDto Map(SurveyFileReference item) =>
         new(item.Id, item.SessionId, item.FileName, item.ContentType, item.Size);
+    private static EventAttachmentDto Map(EventAttachment item) => new(item.Id, item.FileName, item.ContentType, item.Size);
 }

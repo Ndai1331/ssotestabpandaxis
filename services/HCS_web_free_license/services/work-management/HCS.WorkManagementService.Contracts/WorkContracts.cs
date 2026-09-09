@@ -5,6 +5,7 @@ public static class WorkPermissions
     public const string Projects = "WorkManagement.Projects";
     public const string Tasks = "WorkManagement.ProjectTasks";
     public const string Calendar = "WorkManagement.Calendar";
+    public const string Events = "WorkManagement.Events";
     public const string Surveys = "WorkManagement.Surveys";
     public const string SurveyManagement = "WorkManagement.SurveyManagement";
     public const string Reports = "WorkManagement.Reports";
@@ -43,6 +44,35 @@ public sealed record ProjectTaskDetailDto(ProjectTaskDto Task, IReadOnlyList<Tas
 public sealed record CalendarEventDto(Guid Id, string Title, string? Description, DateTime StartTime, DateTime EndTime,
     bool AllDay, string EventType, string? Location, string RelatedType, string? RelatedId, string Visibility,
     IReadOnlyList<Guid> ParticipantUserIds);
+
+public sealed record EventListItemDto(Guid Id, string Code, string Group, string Name, DateTime StartTime,
+    DateTime EndTime, string? Location, string Status, int AttendeeCount);
+public sealed record EventAttendanceSummaryDto(int Total, int Confirmed, int Unconfirmed, int Declined,
+    int CheckedIn, int NotCheckedIn);
+public sealed record EventAttachmentDto(Guid Id, string FileName, string ContentType, long Size);
+public sealed record EventDto(Guid Id, string Code, string Group, string Name, string? Content, string? Description,
+    string? Location, DateTime StartTime, DateTime EndTime, string Status, string QrToken,
+    IReadOnlyList<EventAttachmentDto> Attachments, EventAttendanceSummaryDto Attendance);
+public sealed record EventDashboardDto(int TotalEvents, int CompletedEvents, int OngoingEvents, int UpcomingEvents,
+    int TotalAttendees, IReadOnlyList<EventListItemDto> Upcoming);
+public sealed record CreateManagedEventDto(string Group, string Name, string? Content, string? Description,
+    string? Location, DateTime StartTime, DateTime EndTime, string Status);
+public sealed record UpdateManagedEventDto(string Group, string Name, string? Content, string? Description,
+    string? Location, DateTime StartTime, DateTime EndTime, string Status);
+public sealed record EventAttendeeDto(Guid Id, Guid EventId, Guid? UserId, string? Username, string? Surname,
+    string? Name, string FullName, string? Cccd, string PhoneNumber, string Email, string? Address,
+    string RegistrationStatus, string CheckInStatus, string? Note, DateTime? CheckedInAt);
+public sealed record CreateEventAttendeeDto(Guid? UserId, string? Username, string? Surname, string? Name,
+    string FullName, string? Cccd, string PhoneNumber, string Email, string? Address,
+    string RegistrationStatus, string CheckInStatus, string? Note);
+public sealed record UpdateEventAttendeeDto(string? Username, string? Surname, string? Name, string FullName,
+    string? Cccd, string PhoneNumber, string Email, string? Address, string RegistrationStatus,
+    string CheckInStatus, string? Note);
+public sealed record ChangeEventAttendeeStatusDto(string? RegistrationStatus, string? CheckInStatus);
+public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location);
+public sealed record PublicEventCheckInDto(string? FullName, string? Cccd, string? PhoneNumber, string? Email);
+public sealed record PublicEventCheckInResultDto(string FullName, DateTime CheckedInAt);
+public sealed record EventImportResultDto(int Imported, int Skipped);
 public sealed record CreateCalendarEventDto(string Title, string? Description, DateTime StartTime, DateTime EndTime,
     bool AllDay, string EventType, string? Location, string RelatedType, string? RelatedId, string Visibility,
     IReadOnlyList<Guid>? ParticipantUserIds);
