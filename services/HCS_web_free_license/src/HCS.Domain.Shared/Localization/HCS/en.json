@@ -218,6 +218,8 @@
     "Event:Or": "Or",
     "Event:ConfirmCheckIn": "Confirm check-in",
     "Event:CheckInIdentifierRequired": "Enter a phone, email or national ID.",
+    "Work:EventAttendeeNotFound": "This information was not found in the event attendee list. Check the phone, email or national ID and try again.",
+    "Work:EventAttendeeIdentityMismatch": "The name does not match the event registration record.",
     "Event:CheckInSuccess": "Check-in successful",
     "Event:CheckInSuccessDescription": "Hello {0}, your attendance was recorded at:",
     "Permission:Documents": "Documents",

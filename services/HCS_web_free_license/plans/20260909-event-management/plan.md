@@ -71,6 +71,9 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - [x] Sửa QR/file resource URL để đi qua API gateway production thay vì trỏ tương đối về host Blazor.
 - [x] Tải QR qua BFF thành data URL để request ảnh luôn mang phiên xác thực, không phụ thuộc cookie cross-origin của thẻ `<img>`.
 - [x] Bổ sung log có cấu trúc ở Work service cho kết quả/lỗi sinh QR (không ghi QR token).
+- [x] Chẩn đoán log public check-in: QR sinh thành công, Gateway proxy thành công; `403` phát sinh từ `BusinessException` khi định danh không khớp attendee của event.
+- [x] Chuẩn hóa số điện thoại (`+84`, `0084`, dấu cách/gạch), email và CCCD khi đối chiếu; thêm log kết quả check-in an toàn, không ghi PII/token.
+- [x] Map mã lỗi attendee về thông báo tiếng Việt/Anh dễ hiểu trên trang public check-in.
 - [x] Bỏ yêu cầu BFF antiforgery cho toàn bộ public event check-in request, giữ route public đúng mục đích.
 - [x] Cho phép Admin nhận diện theo role ở client/API policy; Auth Server bổ sung các permission definition đang bật khi phát token mới.
 - [x] Thu gọn filter trang chi tiết người tham dự thành một hàng trên desktop và responsive wrap trên màn hình nhỏ.

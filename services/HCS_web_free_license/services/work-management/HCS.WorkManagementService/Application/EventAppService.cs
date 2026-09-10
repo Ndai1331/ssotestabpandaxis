@@ -189,15 +189,33 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     {
         var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), code);
-        var phone = input.PhoneNumber?.Trim(); var email = input.Email?.Trim(); var cccd = input.Cccd?.Trim();
-        var attendee = await db.EventAttendees.SingleOrDefaultAsync(x => x.EventId == item.Id &&
-            ((phone != null && phone != "" && x.PhoneNumber == phone) || (email != null && email != "" && x.Email == email)
-             || (cccd != null && cccd != "" && x.Cccd == cccd)), ct)
-            ?? throw new BusinessException("Work:EventAttendeeNotFound");
-        attendee.SetCheckInStatus(EventCheckInStatuses.CheckedIn);
+
+        var phone = NormalizePhone(input.PhoneNumber);
+        var email = NormalizeEmail(input.Email);
+        var cccd = NormalizeIdentity(input.Cccd);
+        var attendees = await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(ct);
+        var attendee = attendees.FirstOrDefault(x =>
+            (phone.Length > 0 && NormalizePhone(x.PhoneNumber) == phone)
+            || (email.Length > 0 && NormalizeEmail(x.Email) == email)
+            || (cccd.Length > 0 && NormalizeIdentity(x.Cccd) == cccd));
+
+        if (attendee is null)
+        {
+            logger.LogWarning(
+                "Public event check-in attendee not found. EventId={EventId}, EventCode={EventCode}, HasPhone={HasPhone}, HasEmail={HasEmail}, HasCccd={HasCccd}, AttendeeCount={AttendeeCount}",
+                item.Id, item.Code, phone.Length > 0, email.Length > 0, cccd.Length > 0, attendees.Count);
+            throw new BusinessException("Work:EventAttendeeNotFound");
+        }
+
         if (!string.IsNullOrWhiteSpace(input.FullName) && !string.Equals(attendee.FullName, input.FullName.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogWarning("Public event check-in name does not match attendee record. EventId={EventId}, EventCode={EventCode}", item.Id, item.Code);
             throw new BusinessException("Work:EventAttendeeIdentityMismatch");
+        }
+
+        attendee.SetCheckInStatus(EventCheckInStatuses.CheckedIn);
         await db.SaveChangesAsync(ct);
+        logger.LogInformation("Public event check-in succeeded. EventId={EventId}, EventCode={EventCode}", item.Id, item.Code);
         return new(attendee.FullName, attendee.CheckedInAt ?? DateTime.UtcNow);
     }
 
@@ -263,6 +281,18 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     private static EventListItemDto MapList(ManagedEvent x, int count) => new(x.Id, x.Code, x.Group, x.Name, x.StartTime, x.EndTime, x.Location, x.Status, count);
     private static EventAttendeeDto MapAttendee(EventAttendee x) => new(x.Id, x.EventId, x.UserId, x.Username, x.Surname, x.Name, x.FullName,
         x.Cccd, x.PhoneNumber, x.Email, x.Address, x.RegistrationStatus, x.CheckInStatus, x.Note, x.CheckedInAt);
+    private static string NormalizePhone(string? value)
+    {
+        var digits = new string((value ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (digits.StartsWith("0084", StringComparison.Ordinal) && digits.Length == 13)
+            return "0" + digits[4..];
+        if (digits.StartsWith("84", StringComparison.Ordinal) && digits.Length == 11)
+            return "0" + digits[2..];
+        return digits;
+    }
+    private static string NormalizeEmail(string? value) => (value ?? string.Empty).Trim().ToUpperInvariant();
+    private static string NormalizeIdentity(string? value) =>
+        new string((value ?? string.Empty).Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
     private static string NormalizeStatus(string value, string fallback, IReadOnlyCollection<string> allowed) =>
         allowed.FirstOrDefault(x => string.Equals(x, value?.Trim(), StringComparison.OrdinalIgnoreCase)) ?? fallback;
     private static string NormalizeHeader(string value)

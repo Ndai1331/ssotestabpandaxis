@@ -218,6 +218,8 @@
     "Event:Or": "Hoặc",
     "Event:ConfirmCheckIn": "Xác nhận check-in",
     "Event:CheckInIdentifierRequired": "Vui lòng nhập số điện thoại, email hoặc CCCD.",
+    "Work:EventAttendeeNotFound": "Không tìm thấy thông tin này trong danh sách người tham dự của sự kiện. Vui lòng kiểm tra lại số điện thoại, email hoặc CCCD.",
+    "Work:EventAttendeeIdentityMismatch": "Họ tên không khớp với thông tin đăng ký của sự kiện.",
     "Event:CheckInSuccess": "Check-in thành công",
     "Event:CheckInSuccessDescription": "Xin chào {0}, thông tin tham dự của bạn đã được ghi nhận lúc:",
     "Permission:Documents": "Văn bản",
