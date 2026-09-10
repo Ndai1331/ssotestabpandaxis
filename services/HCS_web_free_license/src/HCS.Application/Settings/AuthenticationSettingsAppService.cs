@@ -6,7 +6,7 @@ using Volo.Abp.SettingManagement;
 namespace HCS.Settings;
 
 [Authorize(Roles = "admin")]
-public sealed class AuthenticationSettingsAppService(
+public class AuthenticationSettingsAppService(
     ISettingManager settingManager) : HCSAppService, IAuthenticationSettingsAppService
 {
     public async Task<AuthenticationSettingsDto> GetAsync()

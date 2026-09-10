@@ -46,4 +46,16 @@ public sealed class PlatformRouteContractTests
             .Cast<HttpGetAttribute>(), attribute => attribute.Template == "enabled");
         Assert.NotNull(method.GetCustomAttribute<AllowAnonymousAttribute>());
     }
+
+    [Fact]
+    public void Application_services_are_proxyable_by_abp_interceptors()
+    {
+        var sealedApplicationServices = typeof(HCSApplicationModule).Assembly.GetTypes()
+            .Where(type => type.IsClass && !type.IsAbstract && type.IsSealed)
+            .Where(type => typeof(HCSAppService).IsAssignableFrom(type))
+            .Select(type => type.FullName)
+            .ToArray();
+
+        Assert.Empty(sealedApplicationServices);
+    }
 }
