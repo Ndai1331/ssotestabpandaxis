@@ -70,7 +70,7 @@ public sealed record UpdateEventAttendeeDto(string? Username, string? Surname, s
     string CheckInStatus, string? Note);
 public sealed record ChangeEventAttendeeStatusDto(string? RegistrationStatus, string? CheckInStatus);
 public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location);
-public sealed record PublicEventCheckInDto(string? FullName, string? Cccd, string? PhoneNumber, string? Email, string? Username = null);
+public sealed record PublicEventCheckInDto();
 public sealed record PublicEventCheckInResultDto(string FullName, DateTime CheckedInAt);
 public sealed record EventImportResultDto(int Imported, int Skipped);
 public sealed record CreateCalendarEventDto(string Title, string? Description, DateTime StartTime, DateTime EndTime,

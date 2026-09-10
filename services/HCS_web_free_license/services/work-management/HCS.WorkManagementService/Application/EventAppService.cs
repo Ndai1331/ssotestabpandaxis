@@ -196,37 +196,31 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), code);
 
-        var authenticatedUserId = currentUser.Id is { } currentId && currentId != Guid.Empty ? currentId : (Guid?)null;
-        var rawUsername = FirstNonEmpty(currentUser.UserName, input.Username);
-        var username = NormalizeUsername(rawUsername);
-        var rawPhone = FirstNonEmpty(currentUser.PhoneNumber, input.PhoneNumber);
-        var rawEmail = FirstNonEmpty(currentUser.Email, input.Email);
-        var phone = NormalizePhone(rawPhone);
-        var email = NormalizeEmail(rawEmail);
-        var cccd = NormalizeIdentity(input.Cccd);
-        var attendees = await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(ct);
-        var hasProvidedIdentifier = authenticatedUserId.HasValue || phone.Length > 0 || email.Length > 0 || cccd.Length > 0 || username.Length > 0;
-        if (!hasProvidedIdentifier)
+        var authenticatedUserId = currentUser.IsAuthenticated && currentUser.Id is { } currentId && currentId != Guid.Empty
+            ? currentId : (Guid?)null;
+        if (authenticatedUserId is null)
         {
-            throw new BusinessException("Work:EventAttendeeIdentifierRequired");
+            logger.LogWarning("Public event check-in requires login. EventId={EventId}, EventCode={EventCode}", item.Id, item.Code);
+            throw new BusinessException("Work:EventCheckInLoginRequired");
         }
 
-        var attendee = authenticatedUserId is { } matchedUserId
-            ? attendees.FirstOrDefault(x => x.UserId == matchedUserId)
-            : null;
-        attendee ??= hasProvidedIdentifier
-            ? attendees.FirstOrDefault(x =>
-                (phone.Length > 0 && NormalizePhone(x.PhoneNumber) == phone)
-                || (email.Length > 0 && NormalizeEmail(x.Email) == email)
-                || (cccd.Length > 0 && NormalizeIdentity(x.Cccd) == cccd)
-                || (username.Length > 0 && NormalizeUsername(x.Username) == username))
-            : null;
+        var rawUsername = currentUser.UserName;
+        var username = NormalizeUsername(rawUsername);
+        var rawPhone = currentUser.PhoneNumber;
+        var rawEmail = currentUser.Email;
+        var phone = NormalizePhone(rawPhone);
+        var email = NormalizeEmail(rawEmail);
+        var attendees = await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(ct);
+        var attendee = attendees.FirstOrDefault(x => x.UserId == authenticatedUserId);
+        // Link a legacy attendee created before the login-first flow when its current account identity matches.
+        attendee ??= attendees.FirstOrDefault(x => x.UserId is null &&
+            ((phone.Length > 0 && NormalizePhone(x.PhoneNumber) == phone)
+            || (email.Length > 0 && NormalizeEmail(x.Email) == email)
+            || (username.Length > 0 && NormalizeUsername(x.Username) == username)));
 
         if (attendee is null)
         {
             var fullName = FirstNonEmpty(
-                input.FullName,
-                authenticatedUserId.HasValue ? BuildFullName(currentUser.SurName, currentUser.Name) : null,
                 BuildFullName(currentUser.SurName, currentUser.Name),
                 rawUsername,
                 rawEmail,
@@ -239,19 +233,13 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
                 null, EventRegistrationStatuses.Confirmed, EventCheckInStatuses.CheckedIn, null);
             db.EventAttendees.Add(attendee);
             logger.LogInformation(
-                "Public event check-in attendee created. EventId={EventId}, EventCode={EventCode}, AuthenticatedUser={AuthenticatedUser}, HasPhone={HasPhone}, HasEmail={HasEmail}, HasUsername={HasUsername}, HasLegacyCccd={HasLegacyCccd}",
-                item.Id, item.Code, authenticatedUserId.HasValue, phone.Length > 0, email.Length > 0, username.Length > 0, cccd.Length > 0);
+                "Public event check-in attendee created. EventId={EventId}, EventCode={EventCode}, AuthenticatedUser={AuthenticatedUser}, HasPhone={HasPhone}, HasEmail={HasEmail}, HasUsername={HasUsername}",
+                item.Id, item.Code, authenticatedUserId.HasValue, phone.Length > 0, email.Length > 0, username.Length > 0);
         }
         else
         {
-            if (authenticatedUserId is { } linkedUserId && attendee.UserId is null) attendee.LinkUser(linkedUserId, rawUsername);
+            if (attendee.UserId is null) attendee.LinkUser(authenticatedUserId.Value, rawUsername);
             attendee.SetRegistrationStatus(EventRegistrationStatuses.Confirmed);
-        }
-
-        if (!string.IsNullOrWhiteSpace(input.FullName) && !string.Equals(attendee.FullName, input.FullName.Trim(), StringComparison.OrdinalIgnoreCase))
-        {
-            logger.LogWarning("Public event check-in name does not match attendee record. EventId={EventId}, EventCode={EventCode}", item.Id, item.Code);
-            throw new BusinessException("Work:EventAttendeeIdentityMismatch");
         }
 
         attendee.SetCheckInStatus(EventCheckInStatuses.CheckedIn);

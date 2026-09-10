@@ -34,7 +34,7 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - Thêm aggregate `ManagedEvent`, `EventAttendee`, `EventAttachment` trong Work service.
 - Status chuẩn: `Preparing`, `Ongoing`, `Completed`, `Cancelled`; registration: `Confirmed`, `Unconfirmed`, `Declined`; check-in: `CheckedIn`, `NotCheckedIn`.
 - Mã sự kiện và token QR sinh phía server; thời gian lưu UTC.
-- API protected dưới `/api/events`; public check-in dưới `/api/events/public`.
+- API protected dưới `/api/events`; public event detail dưới `/api/events/public` và check-in yêu cầu phiên đăng nhập.
 - Attachment dùng blob container hiện hữu, metadata được lưu trong database.
 
 ### Client
@@ -74,12 +74,12 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - [x] Chẩn đoán log public check-in: QR sinh thành công, Gateway proxy thành công; `403` phát sinh từ `BusinessException` khi định danh không khớp attendee của event.
 - [x] Chuẩn hóa số điện thoại (`+84`, `0084`, dấu cách/gạch), email và CCCD khi đối chiếu; thêm log kết quả check-in an toàn, không ghi PII/token.
 - [x] Map mã lỗi attendee về thông báo tiếng Việt/Anh dễ hiểu trên trang public check-in.
-- [x] Nếu đã đăng nhập, tự lấy họ tên, username, email và số điện thoại từ hồ sơ tài khoản để điền form check-in; hỗ trợ fallback theo UserId đã liên kết.
-- [x] Cho phép khách quét QR xác thực bằng một trong username, email hoặc số điện thoại; bỏ CCCD khỏi form public.
-- [x] Ưu tiên attendee theo UserId của phiên đăng nhập trước các định danh nhập tay; cập nhật prompt/error public không còn yêu cầu hoặc nhắc CCCD.
+- [x] Đổi public QR thành login-first: khách chưa đăng nhập được chuyển sang BFF login và quay lại đúng URL event sau khi đăng nhập.
+- [x] Bỏ toàn bộ form định danh public; sau khi đăng nhập chỉ hiển thị thông tin sự kiện và nút “Xác nhận tham gia”.
+- [x] Backend lấy `currentUser.Id` làm định danh chính; nếu chưa có attendee thì tự tạo và ghi nhận `Confirmed + CheckedIn`, không nhận username/email/số điện thoại/CCCD từ request.
 - [x] Sửa nguồn tạo QR: dùng `Events:PublicOrigin` cấu hình theo domain Blazor public, không dùng `Request.Host` của Work Management; production đặt theo `https://${HCS_PUBLIC_HOST}`.
 - [x] Mở rộng card chỉnh sửa sự kiện lấp đầy cột bên trái đến sát card QR; bỏ khoảng trắng do card tự căn giữa và tăng khung QR nhẹ, vẫn responsive về một cột trên màn hình nhỏ.
 - [x] Bỏ yêu cầu BFF antiforgery cho toàn bộ public event check-in request, giữ route public đúng mục đích.
 - [x] Cho phép Admin nhận diện theo role ở client/API policy; Auth Server bổ sung các permission definition đang bật khi phát token mới.
 - [x] Thu gọn filter trang chi tiết người tham dự thành một hàng trên desktop và responsive wrap trên màn hình nhỏ.
-- [x] Cho phép check-in bằng QR tự tạo attendee khi chưa có trong danh sách; tự đánh dấu Confirmed + CheckedIn, liên kết UserId khi đã đăng nhập và cho phép thiếu phone/email nếu còn username hoặc một định danh khác.
+- [x] Cho phép tài khoản đã đăng nhập quét QR tự tạo attendee khi chưa có trong danh sách; tự đánh dấu `Confirmed + CheckedIn` và liên kết theo `UserId` hiện tại.

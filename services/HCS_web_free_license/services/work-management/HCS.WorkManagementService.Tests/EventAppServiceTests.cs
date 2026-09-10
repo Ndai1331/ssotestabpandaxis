@@ -5,6 +5,7 @@ using HCS.WorkManagementService.Data;
 using HCS.WorkManagementService.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Volo.Abp;
 using Volo.Abp.Users;
 
 namespace HCS.WorkManagementService.Tests;
@@ -12,7 +13,7 @@ namespace HCS.WorkManagementService.Tests;
 public sealed class EventAppServiceTests
 {
     [Fact]
-    public async Task Public_check_in_creates_username_only_attendee_and_reuses_it()
+    public async Task Public_check_in_requires_an_authenticated_user()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var currentUser = new TestCurrentUser();
@@ -22,20 +23,12 @@ public sealed class EventAppServiceTests
         await db.SaveChangesAsync(cancellationToken);
         var service = CreateService(db, currentUser);
 
-        var first = await service.CheckInPublicAsync(item.Code, item.QrToken,
-            new PublicEventCheckInDto(null, null, null, null, "guest"), cancellationToken);
-        var second = await service.CheckInPublicAsync(item.Code, item.QrToken,
-            new PublicEventCheckInDto(null, null, null, null, "GUEST"), cancellationToken);
+        var exception = await Assert.ThrowsAsync<BusinessException>(() => service.CheckInPublicAsync(
+            item.Code, item.QrToken, new(), cancellationToken));
         var attendees = await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(cancellationToken);
 
-        Assert.Equal("guest", first.FullName);
-        Assert.Equal(first.FullName, second.FullName);
-        Assert.Single(attendees);
-        Assert.Equal("guest", attendees[0].Username);
-        Assert.Null(attendees[0].PhoneNumber);
-        Assert.Null(attendees[0].Email);
-        Assert.Equal(EventRegistrationStatuses.Confirmed, attendees[0].RegistrationStatus);
-        Assert.Equal(EventCheckInStatuses.CheckedIn, attendees[0].CheckInStatus);
+        Assert.Equal("Work:EventCheckInLoginRequired", exception.Code);
+        Assert.Empty(attendees);
     }
 
     [Fact]
@@ -60,7 +53,7 @@ public sealed class EventAppServiceTests
         var service = CreateService(db, currentUser);
 
         await service.CheckInPublicAsync(item.Code, item.QrToken,
-            new PublicEventCheckInDto(null, null, null, null), cancellationToken);
+            new(), cancellationToken);
         var attendee = await db.EventAttendees.SingleAsync(x => x.EventId == item.Id, cancellationToken);
 
         Assert.Equal(userId, attendee.UserId);
@@ -68,6 +61,11 @@ public sealed class EventAppServiceTests
         Assert.Equal("Nguyen Long", attendee.FullName);
         Assert.Equal("0900000000", attendee.PhoneNumber);
         Assert.Equal("long@example.test", attendee.Email);
+
+        await service.CheckInPublicAsync(item.Code, item.QrToken, new(), cancellationToken);
+        Assert.Equal(1, await db.EventAttendees.CountAsync(x => x.EventId == item.Id, cancellationToken));
+        Assert.Equal(EventRegistrationStatuses.Confirmed, attendee.RegistrationStatus);
+        Assert.Equal(EventCheckInStatuses.CheckedIn, attendee.CheckInStatus);
     }
 
     private static EventAppService CreateService(WorkManagementDbContext db, ICurrentUser currentUser) =>

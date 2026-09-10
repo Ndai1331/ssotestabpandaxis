@@ -294,6 +294,7 @@
 }
 
 .hcs-app-shell .hcs-catalog-grid-card {
+    width: 100%;
     max-width: 100%;
     overflow: hidden;
 }
