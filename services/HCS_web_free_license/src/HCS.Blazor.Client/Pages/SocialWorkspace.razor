@@ -1545,20 +1545,7 @@
     {
         if (string.IsNullOrWhiteSpace(resourceUrl))
             return null;
-        if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
-            return resourceUrl;
-
-        // Media is protected by the Gateway. Use the same configured HttpClient
-        // base address as the social API calls instead of the UI host as fallback.
-        var gatewayResourceUrl = Social.BuildResourceUrl(resourceUrl);
-        if (Uri.TryCreate(gatewayResourceUrl, UriKind.Absolute, out _))
-            return gatewayResourceUrl;
-
-        var configuredOrigin = Configuration["Bff:PublicOrigin"] ?? Configuration["RemoteServices:Default:BaseUrl"];
-        if (!Uri.TryCreate(configuredOrigin, UriKind.Absolute, out var origin))
-            return resourceUrl;
-
-        return new Uri(origin, resourceUrl.TrimStart('/')).AbsoluteUri;
+        return Social.BuildResourceUrl(resourceUrl);
     }
 
     private void MarkAvatarLoadFailure(string avatarUrl) => avatarLoadFailures.Add(avatarUrl);

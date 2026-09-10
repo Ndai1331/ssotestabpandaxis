@@ -11,13 +11,15 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using HCS.CollaborationService.Contracts;
+using HCS.Blazor.Client.Navigation;
 using HCS.Blazor.Client.Services;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HCS.Blazor.Client.Collaboration;
 
-internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
+internal sealed class SocialClient(IHttpClientFactory httpClientFactory, IConfiguration configuration)
 {
     private const long MaxMediaSize = 25 * 1024 * 1024;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
@@ -97,18 +99,8 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory)
     public Task DeleteUnattachedCommentAttachmentAsync(Guid attachmentId, CancellationToken ct = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"api/social/comment-media/{attachmentId:D}", ct);
 
-    internal string BuildResourceUrl(string resourceUrl)
-    {
-        if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
-            return resourceUrl;
-
-        var gatewayBaseAddress = CreateClient().BaseAddress;
-        if (gatewayBaseAddress is null)
-            return resourceUrl;
-
-        var gatewayOrigin = new Uri(gatewayBaseAddress.GetLeftPart(UriPartial.Authority) + "/");
-        return new Uri(gatewayOrigin, resourceUrl.TrimStart('/')).AbsoluteUri;
-    }
+    internal string BuildResourceUrl(string resourceUrl) =>
+        GatewayResourceUrlBuilder.Build(configuration, resourceUrl);
 
     public async Task<UploadSocialMediaResult> UploadMediaAsync(IBrowserFile file, CancellationToken ct = default)
     {

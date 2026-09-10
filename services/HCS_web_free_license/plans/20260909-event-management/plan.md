@@ -87,3 +87,4 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - [x] Public check-in trả về danh sách tài liệu và cung cấp endpoint tải file có kiểm tra đúng mã/token của sự kiện.
 - [x] Chuẩn hóa wrapper filter ở danh sách sự kiện và chi tiết người tham dự để label, control và nút Đặt lại thẳng hàng.
 - [x] Resource URL tải file phía client ưu tiên `Bff:PublicOrigin` để luôn đi qua gateway API; Work service ghi log riêng cho lỗi metadata và blob storage.
+- [x] Dùng chung URL builder của gateway cho file Event, ảnh/video/avatar và file bình luận của Mạng xã hội, theo pattern tải file của Chat.

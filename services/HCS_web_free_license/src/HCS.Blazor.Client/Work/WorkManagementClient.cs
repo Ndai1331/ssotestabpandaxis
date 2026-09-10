@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HCS.Blazor.Client.Services;
+using HCS.Blazor.Client.Navigation;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Configuration;
 
@@ -169,20 +170,7 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
     }
 
     public string BuildResourceUrl(string resourceUrl)
-    {
-        if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
-            return resourceUrl;
-
-        var configuredGatewayOrigin = configuration["Bff:PublicOrigin"] ?? configuration["RemoteServices:Default:BaseUrl"];
-        if (Uri.TryCreate(configuredGatewayOrigin, UriKind.Absolute, out var configuredOrigin) &&
-            configuredOrigin.Scheme == Uri.UriSchemeHttps && configuredOrigin.AbsolutePath == "/")
-        {
-            return new Uri(configuredOrigin, resourceUrl.TrimStart('/')).AbsoluteUri;
-        }
-
-        throw new InvalidOperationException(
-            "A valid HTTPS Bff:PublicOrigin or RemoteServices:Default:BaseUrl is required for resource URLs.");
-    }
+        => GatewayResourceUrlBuilder.Build(configuration, resourceUrl);
 
     public Task<List<SurveyCriteriaDto>> GetCriteriaAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<SurveyCriteriaDto>>("/api/surveys/criteria", cancellationToken);
