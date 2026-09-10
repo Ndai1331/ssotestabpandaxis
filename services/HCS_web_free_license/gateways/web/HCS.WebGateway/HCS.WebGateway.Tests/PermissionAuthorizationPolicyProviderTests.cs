@@ -29,10 +29,7 @@ public sealed class PermissionAuthorizationPolicyProviderTests
         var policy = await provider.GetPolicyAsync(permission);
 
         Assert.NotNull(policy);
-        Assert.Contains(policy!.Requirements, requirement =>
-            requirement is ClaimsAuthorizationRequirement claimRequirement
-            && claimRequirement.ClaimType == "permission"
-            && claimRequirement.AllowedValues?.Contains(permission) == true);
+        Assert.Contains(policy!.Requirements, requirement => requirement is AssertionRequirement);
     }
 
     [Fact]

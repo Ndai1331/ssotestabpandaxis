@@ -2,6 +2,7 @@ using System.Security.Claims;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.Identity;
 using Volo.Abp.PermissionManagement;
 using Volo.Abp.Security.Claims;
@@ -20,7 +21,8 @@ public interface IPermissionClaimResolver
 /// </summary>
 public sealed class PermissionClaimResolver(
     IPermissionManager permissionManager,
-    IIdentityUserRepository? userRepository = null)
+    IIdentityUserRepository? userRepository = null,
+    IPermissionDefinitionManager? permissionDefinitionManager = null)
     : IPermissionClaimResolver, ITransientDependency
 {
     // Admin grants every ABP + HCS permission; the previous 256 cap dropped
@@ -57,6 +59,23 @@ public sealed class PermissionClaimResolver(
                 if (permission.IsGranted && IsValidPermissionName(permission.Name))
                 {
                     grants.Add(permission.Name);
+                }
+            }
+        }
+
+        // Keep the built-in administrator usable when a new permission was
+        // introduced after the role's persisted grants were created. The
+        // startup synchronizer normally seeds these grants, but resolving the
+        // enabled definitions here also covers an already-running deployment
+        // and avoids requiring a manual role edit before the next sign-in.
+        if (isAdmin && permissionDefinitionManager is not null)
+        {
+            var definitions = await permissionDefinitionManager.GetPermissionsAsync();
+            foreach (var definition in definitions)
+            {
+                if (definition.IsEnabled && IsValidPermissionName(definition.Name))
+                {
+                    grants.Add(definition.Name);
                 }
             }
         }

@@ -158,6 +158,19 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
     public Task<PublicEventCheckInResultDto> CheckInPublicEventAsync(string code, string token, PublicEventCheckInRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<PublicEventCheckInResultDto>(HttpMethod.Post, $"/api/events/public/{Uri.EscapeDataString(code)}/check-in?token={Uri.EscapeDataString(token)}", request, cancellationToken);
 
+    public string BuildResourceUrl(string resourceUrl)
+    {
+        if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
+            return resourceUrl;
+
+        var gatewayBaseAddress = CreateClient().BaseAddress;
+        if (gatewayBaseAddress is null)
+            return resourceUrl;
+
+        var gatewayOrigin = new Uri(gatewayBaseAddress.GetLeftPart(UriPartial.Authority) + "/");
+        return new Uri(gatewayOrigin, resourceUrl.TrimStart('/')).AbsoluteUri;
+    }
+
     public Task<List<SurveyCriteriaDto>> GetCriteriaAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<SurveyCriteriaDto>>("/api/surveys/criteria", cancellationToken);
     public Task<SurveyLocationDto> GetPublicLocationAsync(Guid locationId, CancellationToken cancellationToken = default) =>

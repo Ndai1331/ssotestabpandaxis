@@ -17,6 +17,7 @@ using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict;
 using Volo.Abp.Swashbuckle;
+using System.Security.Claims;
 
 namespace HCS.WorkManagementService;
 
@@ -60,7 +61,17 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
             foreach (var permission in new[] { WorkPermissions.Projects, WorkPermissions.Tasks, WorkPermissions.Calendar, WorkPermissions.Events,
                          WorkPermissions.Surveys, WorkPermissions.SurveyManagement, WorkPermissions.Reports, WorkPermissions.Dashboard,
                          WorkPermissions.EmployeeRatings, WorkPermissions.EmployeeRatingsManagement, WorkPermissions.EmployeeRatingsDashboard })
-                options.AddPolicy(permission, policy => policy.RequireClaim("permission", permission));
+            {
+                if (permission == WorkPermissions.Events)
+                {
+                    options.AddPolicy(permission, policy => policy.RequireAssertion(context =>
+                        IsAdministrator(context.User) || context.User.HasClaim("permission", permission)));
+                }
+                else
+                {
+                    options.AddPolicy(permission, policy => policy.RequireClaim("permission", permission));
+                }
+            }
             options.AddPolicy(WorkPermissions.EmployeeRatingsRead, policy => policy.RequireAssertion(context =>
                 context.User.HasClaim("permission", WorkPermissions.EmployeeRatings)
                 || context.User.HasClaim("permission", WorkPermissions.EmployeeRatingsManagement)
@@ -101,6 +112,11 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
             options.CustomSchemaIds(type => type.FullName);
         });
     }
+
+    private static bool IsAdministrator(ClaimsPrincipal user) =>
+        user.IsInRole("admin") ||
+        user.FindAll("role").Any(claim => string.Equals(claim.Value, "admin", StringComparison.OrdinalIgnoreCase)) ||
+        user.FindAll(ClaimTypes.Role).Any(claim => string.Equals(claim.Value, "admin", StringComparison.OrdinalIgnoreCase));
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {

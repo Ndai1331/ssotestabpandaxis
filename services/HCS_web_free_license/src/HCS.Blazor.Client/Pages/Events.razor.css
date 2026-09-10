@@ -1,4 +1,6 @@
 .hcs-event-list-filters { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(15rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr) auto; }
+.hcs-event-filter-field { min-width: 0; }
+.hcs-event-filter-field .form-label { display: block; }
 .hcs-event-reset { margin-bottom: .05rem; }
 .hcs-event-table-wrap { overflow-x: auto; }
 .hcs-event-table { margin-bottom: 0; min-width: 900px; }

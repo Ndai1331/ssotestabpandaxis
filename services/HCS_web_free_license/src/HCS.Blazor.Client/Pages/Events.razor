@@ -1,5 +1,7 @@
 @page "/events"
 @attribute [Authorize(Policy = "WorkManagement.Events")]
+@using Blazorise.DataGrid
+@using System.Threading
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
 @inject IUiMessageService UiMessage
@@ -14,25 +16,38 @@
     </header>
     <Card Class="hcs-catalog-filter-card"><CardBody>
         <div class="hcs-event-list-filters">
-            <Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Event:SearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons>
+            <div class="hcs-event-filter-field"><label class="form-label">@L["Catalog:Search"]</label><Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Event:SearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons></div>
             <Field><FieldLabel>@L["Event:Group"]</FieldLabel><TextInput @bind-Value="group" /></Field>
             <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel><Select TValue="string" @bind-Value="status"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>@foreach (var value in Statuses) { <SelectItem Value="@value">@StatusLabel(value)</SelectItem>}</Select></Field>
             <Button Color="Color.Light" Outline="true" Class="hcs-event-reset" Clicked="ResetAsync">@L["Catalog:Reset"]</Button>
         </div>
     </CardBody></Card>
     <Card Class="hcs-catalog-grid-card"><CardBody>
-        @if (isLoading) { <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div> }
-        else if (items.Count == 0) { <div class="hcs-empty py-5"><i class="fa fa-calendar-plus" aria-hidden="true"></i><h2>@L["Event:EmptyTitle"]</h2><p>@L["Event:EmptyDescription"]</p><Button Color="Color.Primary" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Event:Create"]</Button></div> }
-        else
-        {
-            <div class="table-responsive hcs-event-table-wrap"><table class="table align-middle hcs-event-table"><thead><tr><th scope="col">@L["Catalog:Code"]</th><th scope="col">@L["Event:Group"]</th><th scope="col">@L["Event:Time"]</th><th scope="col">@L["Event:Location"]</th><th scope="col">@L["Catalog:Status"]</th><th scope="col">@L["Event:Attendees"]</th><th scope="col"><span class="visually-hidden">@L["Catalog:Actions"]</span></th></tr></thead><tbody>
-            @foreach (var item in items)
-            {
-                <tr><td><a class="hcs-event-name" href="@($"/events/{item.Id:D}")">@item.Name</a><small class="hcs-catalog-code">#@item.Code</small></td><td>@item.Group</td><td>@item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br /><small>@item.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></td><td>@(item.Location ?? L["Event:OnlineOrNotSet"])</td><td><span class="@StatusClass(item.Status)">@StatusLabel(item.Status)</span></td><td>@item.AttendeeCount</td><td><div class="hcs-row-actions"><Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Title="@L["Catalog:Edit"]" Clicked="() => EditAsync(item)"><Icon Name="@IconName.Edit" /></Button><Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button" Title="@L["Catalog:Delete"]" Clicked="() => DeleteAsync(item)"><Icon Name="@IconName.Delete" /></Button></div></td></tr>
-            }
-            </tbody></table></div>
-            <div class="hcs-event-pager"><span>@L["Event:Showing"] @((currentPage - 1) * pageSize + 1)–@Math.Min(currentPage * pageSize, totalCount) / @totalCount</span><div><Button Size="Size.Small" Color="Color.Light" Outline="true" Clicked="PreviousPage" Disabled="@(currentPage <= 1)"><i class="fa fa-chevron-left" aria-hidden="true"></i></Button><span class="mx-2">@currentPage</span><Button Size="Size.Small" Color="Color.Light" Outline="true" Clicked="NextPage" Disabled="@(currentPage * pageSize >= totalCount)"><i class="fa fa-chevron-right" aria-hidden="true"></i></Button></div></div>
-        }
+        <DataGrid TItem="EventListItemDto" @ref="dataGrid" @bind-Page="currentPage" Data="@items" TotalItems="@totalCount" ReadData="OnReadAsync"
+                  ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
+                  Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid hcs-event-grid">
+            <EmptyTemplate>
+                <div class="hcs-empty py-5"><i class="fa fa-calendar-plus" aria-hidden="true"></i><h2>@L["Event:EmptyTitle"]</h2><p>@L["Event:EmptyDescription"]</p><Button Color="Color.Primary" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Event:Create"]</Button></div>
+            </EmptyTemplate>
+            <LoadingTemplate>
+                <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+            </LoadingTemplate>
+            <DataGridColumns>
+                <DataGridColumn TItem="EventListItemDto" Caption='@L["Catalog:Code"].Value'>
+                    <DisplayTemplate Context="cell"><a class="hcs-event-name" href="@($"/events/{cell.Item.Id:D}")">@cell.Item.Name</a><small class="hcs-catalog-code">#@cell.Item.Code</small></DisplayTemplate>
+                </DataGridColumn>
+                <DataGridColumn TItem="EventListItemDto" Field="@nameof(EventListItemDto.Group)" Caption='@L["Event:Group"].Value' />
+                <DataGridColumn TItem="EventListItemDto" Caption='@L["Event:Time"].Value'>
+                    <DisplayTemplate Context="cell">@cell.Item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br /><small>@cell.Item.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></DisplayTemplate>
+                </DataGridColumn>
+                <DataGridColumn TItem="EventListItemDto" Caption='@L["Event:Location"].Value'><DisplayTemplate Context="cell">@(cell.Item.Location ?? L["Event:OnlineOrNotSet"])</DisplayTemplate></DataGridColumn>
+                <DataGridColumn TItem="EventListItemDto" Caption='@L["Catalog:Status"].Value'><DisplayTemplate Context="cell"><span class="@StatusClass(cell.Item.Status)">@StatusLabel(cell.Item.Status)</span></DisplayTemplate></DataGridColumn>
+                <DataGridColumn TItem="EventListItemDto" Field="@nameof(EventListItemDto.AttendeeCount)" Caption='@L["Event:Attendees"].Value' />
+                <DataGridColumn TItem="EventListItemDto" Caption='@L["Catalog:Actions"].Value'>
+                    <DisplayTemplate Context="cell"><div class="hcs-row-actions"><Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Title='@L["Catalog:Edit"].Value' Clicked="@(() => EditAsync(cell.Item))"><Icon Name="@IconName.Edit" /><span class="visually-hidden">@L["Catalog:Edit"]</span></Button><Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button" Title='@L["Catalog:Delete"].Value' Clicked="@(() => DeleteAsync(cell.Item))"><Icon Name="@IconName.Delete" /><span class="visually-hidden">@L["Catalog:Delete"]</span></Button></div></DisplayTemplate>
+                </DataGridColumn>
+            </DataGridColumns>
+        </DataGrid>
     </CardBody></Card>
 </section>
 
@@ -45,26 +60,43 @@
 
 @code {
     private static readonly string[] Statuses = ["Preparing", "Ongoing", "Completed", "Cancelled"];
+    private static readonly int[] pageSizes = [10, 20, 50, 100];
     private readonly List<EventListItemDto> items = [];
     private readonly EventForm form = new();
     private Modal? modal;
+    private DataGrid<EventListItemDto>? dataGrid;
     private Guid? editingId;
     private string filter = "", group = "", status = "";
     private bool isLoading, isSaving;
     private int totalCount, pageSize = 20, currentPage = 1;
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync()
+    private async Task OnReadAsync(DataGridReadDataEventArgs<EventListItemDto> args)
+    {
+        currentPage = Math.Max(args.Page, 1);
+        pageSize = Math.Clamp(args.PageSize, pageSizes[0], pageSizes[^1]);
+        await LoadAsync(args.CancellationToken);
+    }
+    private async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         isLoading = true;
-        try { var result = await Work.GetEventsAsync(filter, group, status, (currentPage - 1) * pageSize, pageSize); items.Clear(); items.AddRange(result.Items); totalCount = (int)result.TotalCount; }
+        try { var result = await Work.GetEventsAsync(filter, group, status, (currentPage - 1) * pageSize, pageSize, cancellationToken); items.Clear(); items.AddRange(result.Items); totalCount = (int)result.TotalCount; }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
-    private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
-    private Task ResetAsync() { filter = group = status = ""; currentPage = 1; return LoadAsync(); }
-    private Task PreviousPage() { if (currentPage > 1) { currentPage--; return LoadAsync(); } return Task.CompletedTask; }
-    private Task NextPage() { if (currentPage * pageSize < totalCount) { currentPage++; return LoadAsync(); } return Task.CompletedTask; }
+    private async Task ReloadFromFirstPageAsync()
+    {
+        currentPage = 1;
+        if (dataGrid is not null)
+        {
+            await dataGrid.Reload();
+        }
+        else
+        {
+            await LoadAsync();
+        }
+    }
+    private Task SearchAsync() => ReloadFromFirstPageAsync();
+    private Task ResetAsync() { filter = group = status = ""; return ReloadFromFirstPageAsync(); }
     private async Task OpenCreate() { editingId = null; form.Reset(); if (modal is not null) await modal.Show(); }
     private async Task EditAsync(EventListItemDto item)
     {
@@ -85,7 +117,7 @@
     private async Task DeleteAsync(EventListItemDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
-        try { await Work.DeleteEventAsync(item.Id); await NotifySuccessAsync(L["Catalog:Deleted"]); if (items.Count == 1 && currentPage > 1) currentPage--; await LoadAsync(); }
+        try { await Work.DeleteEventAsync(item.Id); await NotifySuccessAsync(L["Catalog:Deleted"]); if (items.Count == 1 && currentPage > 1) currentPage--; if (dataGrid is not null) await dataGrid.Reload(); else await LoadAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private async Task ExportAsync()

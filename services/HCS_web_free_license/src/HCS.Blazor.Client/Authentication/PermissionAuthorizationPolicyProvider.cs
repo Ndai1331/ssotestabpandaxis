@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -36,9 +37,15 @@ public sealed class PermissionAuthorizationPolicyProvider(IOptions<Authorization
 
         return new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
-            .RequireClaim("permission", policyName)
+            .RequireAssertion(context =>
+                IsAdministrator(context.User) || context.User.HasClaim("permission", policyName))
             .Build();
     }
+
+    private static bool IsAdministrator(ClaimsPrincipal user) =>
+        user.IsInRole("admin") ||
+        user.FindAll("role").Any(claim => string.Equals(claim.Value, "admin", StringComparison.OrdinalIgnoreCase)) ||
+        user.FindAll(ClaimTypes.Role).Any(claim => string.Equals(claim.Value, "admin", StringComparison.OrdinalIgnoreCase));
 
     private static bool IsPermissionPolicy(string policyName) =>
         !string.IsNullOrWhiteSpace(policyName) &&
