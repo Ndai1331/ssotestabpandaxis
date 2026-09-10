@@ -198,15 +198,16 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         var username = NormalizeUsername(input.Username);
         var attendees = await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(ct);
         var hasProvidedIdentifier = phone.Length > 0 || email.Length > 0 || cccd.Length > 0 || username.Length > 0;
-        var attendee = hasProvidedIdentifier
+        var attendee = currentUser.Id is { } userId
+            ? attendees.FirstOrDefault(x => x.UserId == userId)
+            : null;
+        attendee ??= hasProvidedIdentifier
             ? attendees.FirstOrDefault(x =>
                 (phone.Length > 0 && NormalizePhone(x.PhoneNumber) == phone)
                 || (email.Length > 0 && NormalizeEmail(x.Email) == email)
                 || (cccd.Length > 0 && NormalizeIdentity(x.Cccd) == cccd)
                 || (username.Length > 0 && NormalizeUsername(x.Username) == username))
-            : currentUser.Id is { } userId
-                ? attendees.FirstOrDefault(x => x.UserId == userId)
-                : null;
+            : null;
 
         if (attendee is null)
         {
@@ -242,7 +243,8 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
             using var generator = new QRCodeGenerator();
             using var data = generator.CreateQrCode($"{publicUrl.TrimEnd('/')}/event-check-in/{item.Code}?token={item.QrToken}", QRCodeGenerator.ECCLevel.Q);
             var bytes = new PngByteQRCode(data).GetGraphic(8);
-            logger.LogInformation("Generated event QR code. EventId={EventId}, EventCode={EventCode}, Bytes={Bytes}", id, item.Code, bytes.Length);
+            logger.LogInformation("Generated event QR code. EventId={EventId}, EventCode={EventCode}, PublicOrigin={PublicOrigin}, Bytes={Bytes}",
+                id, item.Code, publicUrl.TrimEnd('/'), bytes.Length);
             return bytes;
         }
         catch (Exception exception)

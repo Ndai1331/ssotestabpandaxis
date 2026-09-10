@@ -240,6 +240,7 @@ services:
     depends_on: { db-migrator: { condition: service_completed_successfully } }
     environment:
       <<: *common-env
+      Events__PublicOrigin: https://${HCS_PUBLIC_HOST}
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"

@@ -190,6 +190,7 @@ services:
     build: { context: ., dockerfile: deploy/docker/Dockerfile, args: { PROJECT: services/work-management/HCS.WorkManagementService/HCS.WorkManagementService.csproj, APP_DLL: HCS.WorkManagementService.dll } }
     environment:
       <<: *common-env
+      Events__PublicOrigin: https://hcs.localhost
       AuthServer__Authority: https://auth.hcs.localhost
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"

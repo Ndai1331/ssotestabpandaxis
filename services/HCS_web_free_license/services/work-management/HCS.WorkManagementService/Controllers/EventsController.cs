@@ -3,11 +3,12 @@ using HCS.WorkManagementService.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace HCS.WorkManagementService.Controllers;
 
 [ApiController, Authorize(Policy = WorkPermissions.Events), Route("api/events")]
-public sealed class EventsController(EventAppService service, WorkAssetService assets) : ControllerBase
+public sealed class EventsController(EventAppService service, WorkAssetService assets, IConfiguration configuration) : ControllerBase
 {
     [HttpGet]
     public Task<PagedWorkDto<EventListItemDto>> GetList(string? filter, string? group, string? status, int skip = 0, int take = 20, CancellationToken ct = default) =>
@@ -59,7 +60,7 @@ public sealed class EventsController(EventAppService service, WorkAssetService a
 
     [HttpGet("{id:guid}/qr")]
     public async Task<IActionResult> Qr(Guid id, CancellationToken ct) =>
-        File(await service.GetQrCodeAsync(id, $"{Request.Scheme}://{Request.Host}", ct), "image/png", "event-qr.png");
+        File(await service.GetQrCodeAsync(id, GetPublicOrigin(), ct), "image/png", "event-qr.png");
 
     [HttpPost("{eventId:guid}/attachments")]
     [RequestSizeLimit(25 * 1024 * 1024)]
@@ -89,4 +90,7 @@ public sealed class EventsController(EventAppService service, WorkAssetService a
     [AllowAnonymous, HttpPost("public/{code}/check-in")]
     public Task<PublicEventCheckInResultDto> PublicCheckIn(string code, [FromQuery] string token,
         PublicEventCheckInDto input, CancellationToken ct) => service.CheckInPublicAsync(code, token, input, ct);
+
+    private string GetPublicOrigin() => configuration["Events:PublicOrigin"]?.TrimEnd('/')
+        ?? throw new InvalidOperationException("Events:PublicOrigin is required to generate public event QR codes.");
 }

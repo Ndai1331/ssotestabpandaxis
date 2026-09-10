@@ -76,6 +76,9 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - [x] Map mã lỗi attendee về thông báo tiếng Việt/Anh dễ hiểu trên trang public check-in.
 - [x] Nếu đã đăng nhập, tự lấy họ tên, username, email và số điện thoại từ hồ sơ tài khoản để điền form check-in; hỗ trợ fallback theo UserId đã liên kết.
 - [x] Cho phép khách quét QR xác thực bằng một trong username, email hoặc số điện thoại; bỏ CCCD khỏi form public.
+- [x] Ưu tiên attendee theo UserId của phiên đăng nhập trước các định danh nhập tay; cập nhật prompt/error public không còn yêu cầu hoặc nhắc CCCD.
+- [x] Sửa nguồn tạo QR: dùng `Events:PublicOrigin` cấu hình theo domain Blazor public, không dùng `Request.Host` của Work Management; production đặt theo `https://${HCS_PUBLIC_HOST}`.
+- [x] Mở rộng card chỉnh sửa sự kiện lấp đầy cột bên trái đến sát card QR; bỏ khoảng trắng do card tự căn giữa và tăng khung QR nhẹ, vẫn responsive về một cột trên màn hình nhỏ.
 - [x] Bỏ yêu cầu BFF antiforgery cho toàn bộ public event check-in request, giữ route public đúng mục đích.
 - [x] Cho phép Admin nhận diện theo role ở client/API policy; Auth Server bổ sung các permission definition đang bật khi phát token mới.
 - [x] Thu gọn filter trang chi tiết người tham dự thành một hàng trên desktop và responsive wrap trên màn hình nhỏ.
