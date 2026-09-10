@@ -53,7 +53,14 @@ else if (detail is not null)
             <Card Class="hcs-catalog-grid-card hcs-event-qr-card">
                 <CardBody>
                     <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:CheckIn"]</p><h2>QR Code</h2></div><a href="@publicCheckInUrl" target="_blank" rel="noopener">@L["Event:OpenPublicPage"]</a></div>
-                    <img class="hcs-event-qr" src="@QrCodeUrl" crossorigin="use-credentials" alt="QR Code @detail.Name" />
+                    @if (!string.IsNullOrWhiteSpace(qrCodeDataUrl))
+                    {
+                        <img class="hcs-event-qr" src="@qrCodeDataUrl" alt="QR Code @detail.Name" />
+                    }
+                    else
+                    {
+                        <div class="hcs-event-qr-placeholder" role="alert"><i class="fa fa-triangle-exclamation" aria-hidden="true"></i><span>@L["Catalog:LoadError"]</span></div>
+                    }
                     <p class="hcs-event-qr-help">@L["Event:QrHelp"]</p>
                     <div class="hcs-event-public-url"><code>@publicCheckInUrl</code></div>
                 </CardBody>
@@ -72,7 +79,7 @@ else if (detail is not null)
             <CardBody>
                 <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:AttendeeManagement"]</p><h2>@L["Event:Attendees"]</h2></div><div class="hcs-event-toolbar"><Button Color="Color.Primary" Clicked="OpenAddAttendee"><Icon Name="@IconName.Add" /> @L["Event:AddAttendee"]</Button><label class="btn btn-outline-primary mb-0"><i class="fa fa-file-import me-1" aria-hidden="true"></i>@L["Event:ImportCsv"]<InputFile class="visually-hidden" accept=".csv,text/csv" OnChange="ImportAsync" /></label><Button Color="Color.Primary" Outline="true" Clicked="ExportAttendeesAsync" Disabled="@(attendees.Count == 0)"><i class="fa fa-download me-1" aria-hidden="true"></i>@L["Catalog:Export"]</Button><Button Color="Color.Danger" Outline="true" Clicked="DeleteSelectedAsync" Disabled="@(selectedIds.Count == 0)"><i class="fa fa-trash me-1" aria-hidden="true"></i>@L["Event:DeleteSelected"]</Button></div></div>
                 <div class="hcs-event-list-filters hcs-event-attendee-filters">
-                    <div class="hcs-event-filter-field"><label class="form-label">@L["Catalog:Search"]</label><Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput @bind-Value="attendeeFilter" Placeholder="@L["Event:AttendeeSearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAttendeesAsync"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons></div>
+                    <Field Class="hcs-event-filter-field"><FieldLabel>@L["Catalog:Search"]</FieldLabel><Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput @bind-Value="attendeeFilter" Placeholder="@L["Event:AttendeeSearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAttendeesAsync"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons></Field>
                     <Field><FieldLabel>@L["Event:RegistrationStatus"]</FieldLabel><Select TValue="string" @bind-Value="registrationFilter"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem><SelectItem Value="Confirmed">@L["Event:Confirmed"]</SelectItem><SelectItem Value="Unconfirmed">@L["Event:Unconfirmed"]</SelectItem><SelectItem Value="Declined">@L["Event:Declined"]</SelectItem></Select></Field>
                     <Field><FieldLabel>@L["Event:CheckInStatus"]</FieldLabel><Select TValue="string" @bind-Value="checkInFilter"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem><SelectItem Value="CheckedIn">@L["Event:CheckedIn"]</SelectItem><SelectItem Value="NotCheckedIn">@L["Event:NotCheckedIn"]</SelectItem></Select></Field>
                     <Button Color="Color.Light" Outline="true" Class="hcs-event-reset" Clicked="ResetAttendeeSearchAsync">@L["Catalog:Reset"]</Button>
@@ -161,7 +168,7 @@ else if (detail is not null)
     private int attendeeTotal, attendeePage = 1, attendeePageSize = 20;
     private readonly HashSet<Guid> selectedIds = [];
     private string publicCheckInUrl => detail is null ? "" : Navigation.ToAbsoluteUri($"/event-check-in/{detail.Code}?token={detail.QrToken}").ToString();
-    private string QrCodeUrl => Work.BuildResourceUrl($"/api/events/{Id:D}/qr");
+    private string? qrCodeDataUrl;
 
     protected override async Task OnParametersSetAsync() => await LoadAsync();
     private async Task LoadAsync()
@@ -171,6 +178,15 @@ else if (detail is not null)
         {
             detail = await Work.GetEventAsync(Id);
             eventForm.Load(detail);
+            qrCodeDataUrl = null;
+            try
+            {
+                qrCodeDataUrl = await Work.GetEventQrCodeDataUrlAsync(Id);
+            }
+            catch (Exception ex)
+            {
+                await NotifyErrorAsync(ex);
+            }
             if (attendeeGrid is not null)
                 await attendeeGrid.Reload();
         }

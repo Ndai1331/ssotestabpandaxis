@@ -60,7 +60,7 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 
 ## 5. Kết quả kiểm chứng
 
-- `dotnet build HCS.slnx --no-restore`: đạt, 0 lỗi; còn 2 cảnh báo xUnit1051 có sẵn ở Collaboration test.
+- `dotnet build HCS.slnx --no-restore`: đạt, 0 lỗi và 0 cảnh báo ở lần kiểm tra follow-up.
 - `dotnet test HCS.slnx --no-build`: đạt toàn bộ các test project có test, gồm 403 test; `HCS.TestBase` không chứa test nên được VSTest bỏ qua.
 - `git diff --check`: đạt.
 
@@ -69,6 +69,8 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - [x] Căn lại filter Event theo cùng một hàng và cùng pattern với các trang catalog hiện có.
 - [x] Thay pager tự dựng bằng Blazorise DataGrid, dùng page size `10/20/50/100` cho danh sách Event và người tham dự.
 - [x] Sửa QR/file resource URL để đi qua API gateway production thay vì trỏ tương đối về host Blazor.
+- [x] Tải QR qua BFF thành data URL để request ảnh luôn mang phiên xác thực, không phụ thuộc cookie cross-origin của thẻ `<img>`.
+- [x] Bổ sung log có cấu trúc ở Work service cho kết quả/lỗi sinh QR (không ghi QR token).
 - [x] Bỏ yêu cầu BFF antiforgery cho toàn bộ public event check-in request, giữ route public đúng mục đích.
 - [x] Cho phép Admin nhận diện theo role ở client/API policy; Auth Server bổ sung các permission definition đang bật khi phát token mới.
 - [x] Thu gọn filter trang chi tiết người tham dự thành một hàng trên desktop và responsive wrap trên màn hình nhỏ.

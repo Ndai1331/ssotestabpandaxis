@@ -158,6 +158,15 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
     public Task<PublicEventCheckInResultDto> CheckInPublicEventAsync(string code, string token, PublicEventCheckInRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<PublicEventCheckInResultDto>(HttpMethod.Post, $"/api/events/public/{Uri.EscapeDataString(code)}/check-in?token={Uri.EscapeDataString(token)}", request, cancellationToken);
 
+    public async Task<string> GetEventQrCodeDataUrlAsync(Guid eventId, CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().GetAsync($"/api/events/{eventId:D}/qr", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/png";
+        return $"data:{contentType};base64,{Convert.ToBase64String(bytes)}";
+    }
+
     public string BuildResourceUrl(string resourceUrl)
     {
         if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))

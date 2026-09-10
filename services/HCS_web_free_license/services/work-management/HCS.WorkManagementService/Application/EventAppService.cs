@@ -4,6 +4,7 @@ using HCS.WorkManagementService.Contracts;
 using HCS.WorkManagementService.Data;
 using HCS.WorkManagementService.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using QRCoder;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -11,7 +12,7 @@ using Volo.Abp.Domain.Entities;
 
 namespace HCS.WorkManagementService.Application;
 
-public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthorization access) : ITransientDependency
+public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthorization access, ILogger<EventAppService> logger) : ITransientDependency
 {
     public async Task<PagedWorkDto<EventListItemDto>> GetListAsync(string? filter, string? group, string? status,
         int skip, int take, CancellationToken ct)
@@ -202,11 +203,26 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
     public async Task<byte[]> GetQrCodeAsync(Guid id, string publicUrl, CancellationToken ct)
     {
-        var item = await db.ManagedEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct)
-            ?? throw new EntityNotFoundException(typeof(ManagedEvent), id);
-        using var generator = new QRCodeGenerator();
-        using var data = generator.CreateQrCode($"{publicUrl.TrimEnd('/')}/event-check-in/{item.Code}?token={item.QrToken}", QRCodeGenerator.ECCLevel.Q);
-        return new PngByteQRCode(data).GetGraphic(8);
+        var item = await db.ManagedEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
+        if (item is null)
+        {
+            logger.LogWarning("Event QR request references a missing event. EventId={EventId}", id);
+            throw new EntityNotFoundException(typeof(ManagedEvent), id);
+        }
+
+        try
+        {
+            using var generator = new QRCodeGenerator();
+            using var data = generator.CreateQrCode($"{publicUrl.TrimEnd('/')}/event-check-in/{item.Code}?token={item.QrToken}", QRCodeGenerator.ECCLevel.Q);
+            var bytes = new PngByteQRCode(data).GetGraphic(8);
+            logger.LogInformation("Generated event QR code. EventId={EventId}, EventCode={EventCode}, Bytes={Bytes}", id, item.Code, bytes.Length);
+            return bytes;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to generate event QR code. EventId={EventId}, EventCode={EventCode}", id, item.Code);
+            throw;
+        }
     }
 
     private async Task<EventDto> MapDetailAsync(ManagedEvent item, CancellationToken ct)

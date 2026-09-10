@@ -16,7 +16,7 @@
     </header>
     <Card Class="hcs-catalog-filter-card"><CardBody>
         <div class="hcs-event-list-filters">
-            <div class="hcs-event-filter-field"><label class="form-label">@L["Catalog:Search"]</label><Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Event:SearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons></div>
+            <Field Class="hcs-event-filter-field"><FieldLabel>@L["Catalog:Search"]</FieldLabel><Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Event:SearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons></Field>
             <Field><FieldLabel>@L["Event:Group"]</FieldLabel><TextInput @bind-Value="group" /></Field>
             <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel><Select TValue="string" @bind-Value="status"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>@foreach (var value in Statuses) { <SelectItem Value="@value">@StatusLabel(value)</SelectItem>}</Select></Field>
             <Button Color="Color.Light" Outline="true" Class="hcs-event-reset" Clicked="ResetAsync">@L["Catalog:Reset"]</Button>
