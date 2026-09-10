@@ -78,7 +78,14 @@ internal static class BffDeploymentPolicy
         }
 
         var origin = request.Headers.Origin.ToString().TrimEnd('/');
-        return !string.IsNullOrWhiteSpace(origin) && allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(origin))
+        {
+            // Native SignalR clients commonly omit Origin. Require a Bearer token
+            // (header or access_token query) before allowing a non-browser handshake.
+            return BffRequestPolicy.HasBearerCredentials(request);
+        }
+
+        return allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
     }
 
     private static bool HostMatchesDomain(string host, string domain) =>

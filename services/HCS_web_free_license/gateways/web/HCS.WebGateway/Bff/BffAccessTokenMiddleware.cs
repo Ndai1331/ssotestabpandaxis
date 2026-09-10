@@ -7,6 +7,12 @@ internal sealed class BffAccessTokenMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(HttpContext context, BffTokenRefreshService tokenRefreshService)
     {
+        if (BffRequestPolicy.HasBearerCredentials(context.Request))
+        {
+            await next(context);
+            return;
+        }
+
         var isAuthenticated = context.User.Identity?.IsAuthenticated == true;
 
         if (BffRequestPolicy.IsProxyPath(context.Request.Path) && isAuthenticated)

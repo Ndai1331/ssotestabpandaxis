@@ -3,6 +3,12 @@ imagePullPolicy: IfNotPresent
 runtimeSecretName: hcs-runtime
 certificateSecretName: hcs-certificates
 deploymentNonce: ""
+mobileAuth:
+  clientId: hcs-mobile
+  redirectUris:
+    - com.htltech.hcs:/oauth/callback
+  postLogoutRedirectUris:
+    - com.htltech.hcs:/oauth/logout
 ingress:
   enabled: true
   className: nginx

@@ -101,6 +101,9 @@ services:
       OpenIddict__Applications__HCS_App__ClientSecret: ${HCS_GATEWAY_CLIENT_SECRET}
       OpenIddict__Applications__HCS_App__RootUrl: https://${HCS_API_PUBLIC_HOST}
       OpenIddict__Applications__HCS_App__PostLogoutRootUrl: https://${HCS_PUBLIC_HOST}
+      OpenIddict__Applications__HCS_Mobile__ClientId: ${HCS_MOBILE_CLIENT_ID:-hcs-mobile}
+      OpenIddict__Applications__HCS_Mobile__RedirectUris__0: ${HCS_MOBILE_REDIRECT_URI:-com.htltech.hcs:/oauth/callback}
+      OpenIddict__Applications__HCS_Mobile__PostLogoutRedirectUris__0: ${HCS_MOBILE_POST_LOGOUT_REDIRECT_URI:-com.htltech.hcs:/oauth/logout}
 
   auth-server:
     <<: *hcs-image
@@ -138,6 +141,7 @@ services:
       Authentication__TokenEndpoint: http://auth-server:8080/connect/token
       Authentication__ClientId: HCS_App
       Authentication__ClientSecret: ${HCS_GATEWAY_CLIENT_SECRET}
+      Authentication__BearerAudience: HCS
       Authentication__RequireHttpsMetadata: "true"
       Authentication__AllowUntrustedBackchannelCertificate: "false"
       Bff__PublicOrigin: https://${HCS_API_PUBLIC_HOST}

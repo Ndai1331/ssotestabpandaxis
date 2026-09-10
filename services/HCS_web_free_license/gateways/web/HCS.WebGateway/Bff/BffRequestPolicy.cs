@@ -28,7 +28,13 @@ internal static class BffRequestPolicy
     internal static bool IsAnonymousEventPath(PathString path) =>
         path.StartsWithSegments(AnonymousEventPrefix, StringComparison.OrdinalIgnoreCase);
 
+    internal static bool HasBearerCredentials(HttpRequest request) =>
+        request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ||
+        (request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase) &&
+         !string.IsNullOrWhiteSpace(request.Query["access_token"]));
+
     internal static bool RequiresAntiforgery(HttpRequest request) =>
         IsProxyPath(request.Path) && !IsAnonymousSurveyPath(request.Path) && !IsAnonymousEventPath(request.Path) &&
+        !HasBearerCredentials(request) &&
         !SafeMethods.Contains(request.Method, StringComparer.OrdinalIgnoreCase);
 }

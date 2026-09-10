@@ -1,5 +1,97 @@
 /* Shared HCS page primitives. Domain-specific styles stay in main.css. */
 
+.hcs-document-form-fields,
+.hcs-document-form-actions { display: grid; gap: var(--hcs-space-2); align-content: start; min-width: 0; }
+.hcs-document-file-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--hcs-space-2);
+}
+.hcs-document-file-list,
+.hcs-document-file-list table,
+.hcs-document-file-list tbody tr,
+.hcs-document-file-list td {
+    height: auto;
+}
+.hcs-document-file-list :is(th, td) {
+    padding-block: var(--hcs-space-2);
+}
+.hcs-document-preview-pane .hcs-pdf-frame {
+    min-height: 28rem;
+}
+.hcs-document-preview-pane .hcs-file-preview-card {
+    margin: 0;
+    max-width: none;
+    min-height: 0;
+}
+/* Two columns, but the left stack stays content-sized so later fields sit tight. */
+@media (min-width: 992px) {
+    .hcs-document-detail-row:has(.hcs-document-form-fields) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--hcs-space-4) var(--hcs-space-6);
+        margin: 0;
+        align-items: start;
+    }
+    .hcs-document-detail-row:has(.hcs-document-form-fields) > * {
+        width: auto;
+        max-width: none;
+        padding: 0;
+        margin: 0;
+    }
+    .hcs-document-detail-row:has(.hcs-document-form-fields) .hcs-document-form-pane > .hcs-catalog-form {
+        align-content: start;
+        gap: var(--hcs-space-2);
+    }
+    .hcs-document-detail-row:has(.hcs-document-form-fields) .hcs-document-form-fields > .field:last-child { margin-bottom: 0; }
+    .hcs-document-detail-row:has(.hcs-document-form-fields) .hcs-document-preview-pane {
+        min-height: 0;
+        overflow: hidden;
+    }
+}
+.hcs-document-preview-empty {
+    background: var(--hcs-color-background);
+    border: 1px solid var(--hcs-color-border);
+    border-radius: var(--hcs-radius);
+    color: var(--hcs-color-ink);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+}
+.hcs-document-preview-empty__heading {
+    border-bottom: 1px solid var(--hcs-color-border);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    padding: 1rem 1.25rem;
+}
+.hcs-document-preview-empty__body {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 340px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+.hcs-document-preview-empty__body::before { content: ""; flex: 1; }
+.hcs-document-preview-empty__body::after { content: ""; flex: 2; }
+.hcs-document-preview-empty__icon {
+    color: var(--hcs-color-primary-strong);
+    font-size: 2.75rem;
+    margin-bottom: 1.25rem;
+}
+.hcs-document-preview-empty__body h3 { color: var(--hcs-color-ink); font-size: 1.05rem; font-weight: 600; margin: 0 0 .65rem; }
+.hcs-document-preview-empty__body p { margin: 0 0 .5rem; }
+.hcs-document-preview-empty__body :is(p, small) { color: var(--hcs-color-muted); max-width: 28rem; }
+@media (max-width: 991.98px) {
+    .hcs-document-preview-empty__body { min-height: 220px; padding: 1.5rem 1rem; }
+}
+
 .hcs-login-redirect {
     align-items: center;
     color: var(--hcs-color-muted);
@@ -1110,6 +1202,146 @@ body:has(.hcs-app-shell) .b-is-datepicker .form-control:focus-visible {
     outline: 0 !important;
 }
 
+.hcs-empty .hcs-catalog-create.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+}
+.hcs-empty .hcs-catalog-create.btn i {
+    color: inherit;
+    font-size: 1em;
+    line-height: 1;
+    margin: 0;
+}
+
+.hcs-catalog-page[aria-labelledby="provider-settings-title"] .hcs-empty .hcs-catalog-create.btn {
+    height: auto;
+    min-height: 58px !important;
+    max-height: none !important;
+    padding: 1rem 1.5rem !important;
+}
+
+/* Numeric steppers are half-height controls, not full-size action buttons. */
+body:has(.hcs-app-shell) .b-numeric > input.form-control { padding-right: 2rem; }
+body:has(.hcs-app-shell) .b-numeric > .b-numeric-handler-wrap {
+    top: 1px;
+    right: 1px;
+    bottom: 1px;
+    height: auto;
+    width: 26px;
+    overflow: hidden;
+    background: var(--hcs-input-background);
+    border: 0;
+    border-left: 1px solid var(--hcs-input-border);
+    border-radius: 0 var(--hcs-radius) var(--hcs-radius) 0;
+}
+body:has(.hcs-app-shell) .b-numeric:focus-within > .b-numeric-handler-wrap { opacity: 1; }
+body:has(.hcs-app-shell) .b-numeric .b-numeric-handler.btn {
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 50% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent;
+    color: var(--hcs-color-muted);
+    font-size: .75rem;
+    line-height: 1;
+    box-shadow: none !important;
+    transform: none !important;
+}
+body:has(.hcs-app-shell) .b-numeric .b-numeric-handler-down.btn { border-top: 1px solid var(--hcs-input-border) !important; }
+body:has(.hcs-app-shell) .b-numeric .b-numeric-handler.btn:hover:not(:disabled) {
+    background: var(--hcs-color-primary-soft);
+    color: var(--hcs-color-primary-strong);
+}
+body:has(.hcs-app-shell) .b-numeric .b-numeric-handler.btn:focus-visible {
+    outline: 2px solid var(--hcs-input-border-focus) !important;
+    outline-offset: -2px;
+}
+
+/* Medical and geographic catalogs share the same search/reset toolbar. */
+.hcs-app-shell .hcs-catalog-page[aria-labelledby="reference-catalog-title"] .hcs-catalog-filter-row {
+    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+}
+.hcs-app-shell .hcs-catalog-page[aria-labelledby="reference-catalog-title"] .hcs-catalog-filter-row > .btn {
+    align-items: center;
+    justify-content: center;
+    display: inline-flex;
+    box-sizing: border-box;
+    height: var(--hcs-control-height-compact);
+    min-height: var(--hcs-control-height-compact) !important;
+    max-height: var(--hcs-control-height-compact) !important;
+    padding: 0 .9rem;
+    white-space: nowrap;
+}
+
+/* Calendar legend must not stretch the search focus ring or the reset button. */
+.hcs-app-shell .hcs-catalog-filter-row:has(> .hcs-cal-legend) {
+    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 1rem;
+}
+.hcs-app-shell .hcs-catalog-filter-row:has(> .hcs-cal-legend) > .hcs-catalog-filter-reset {
+    box-sizing: border-box;
+    height: var(--hcs-control-height-compact);
+    min-height: var(--hcs-control-height-compact) !important;
+    max-height: var(--hcs-control-height-compact) !important;
+    padding: 0 .9rem;
+    white-space: nowrap;
+}
+.hcs-app-shell .hcs-catalog-filter-row > .hcs-cal-legend {
+    flex-wrap: nowrap;
+    margin: 0;
+    white-space: nowrap;
+}
+@media (max-width: 991.98px) {
+    .hcs-app-shell .hcs-catalog-filter-row:has(> .hcs-cal-legend) {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .hcs-app-shell .hcs-catalog-filter-row > .hcs-cal-legend {
+        grid-column: 1 / -1;
+        min-width: 0;
+        overflow-x: auto;
+    }
+}
+
+/* Joined search controls share one outer focus ring, including the submit button. */
+body:has(.hcs-app-shell) :is(.hcs-catalog-search, .hcs-users-search-bar) {
+    border-radius: var(--hcs-radius);
+}
+
+body:has(.hcs-app-shell) :is(.hcs-catalog-search, .hcs-users-search-bar):focus-within {
+    box-shadow: var(--hcs-focus-ring);
+}
+
+body:has(.hcs-app-shell) :is(.hcs-catalog-search, .hcs-users-search-bar) :is(.form-control, .btn):focus {
+    box-shadow: none !important;
+}
+
+/* An inset indicator identifies the button when keyboard focus moves to it. */
+body:has(.hcs-app-shell) :is(.hcs-catalog-search, .hcs-users-search-bar) .btn:focus-visible {
+    outline: 2px solid currentColor !important;
+    outline-offset: -4px;
+}
+
+/* Keep the joined edge aligned while the button is pressed. */
+body:has(.hcs-app-shell) :is(.hcs-catalog-search, .hcs-users-search-bar) .btn:active:not(:disabled) {
+    transform: none;
+}
+
 /* 4px overlay offset so open option lists sit as a layer, not a glued extension.
    Modal + Select2 menus portal under body, so this is document-scoped. */
 body:has(.hcs-app-shell) {
@@ -1147,9 +1379,9 @@ body:has(.hcs-app-shell) .select2-container .select2-selection--single {
     box-sizing: border-box;
     color: var(--hcs-color-ink);
     display: flex;
-    height: var(--hcs-control-height, 2rem) !important;
-    max-height: var(--hcs-control-height, 2rem) !important;
-    min-height: var(--hcs-control-height, 2rem) !important;
+    height: 36px !important;
+    max-height: 36px !important;
+    min-height: 36px !important;
     overflow: hidden;
     padding: 0 !important;
     position: relative;
@@ -1367,6 +1599,21 @@ body:has(.hcs-app-shell) .select2-results__message {
         padding: .4rem .65rem;
     }
 
+    /* Filter options must not inherit the control's full-height line box. */
+    body:has(.hcs-app-shell) :is(.hcs-catalog-advanced-filter, .hcs-users-advanced-filters) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) option {
+        font-size: inherit;
+        line-height: 1.5;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    body:has(.hcs-app-shell) :is(.hcs-catalog-advanced-filter, .hcs-users-advanced-filters) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2)::picker(select) {
+        box-sizing: border-box;
+        max-height: min(18rem, 60dvh);
+        overflow-y: auto;
+        width: anchor-size(width);
+    }
+
     body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) option:checked,
     body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2) option:hover {
         background-color: var(--hcs-color-primary-soft);
@@ -1437,6 +1684,49 @@ body:has(.hcs-app-shell) .select2-results__message {
 .hcs-app-shell .hcs-catalog-form .select2-container--focus .select2-selection--single,
 .hcs-app-shell .hcs-catalog-form .select2-container--open .select2-selection--single {
     border-color: var(--hcs-color-primary) !important;
+}
+
+/* Shared field surfaces, including forms and modals portaled outside the shell.
+   Keep state rules together so page styles cannot change the background on focus. */
+body:has(.hcs-app-shell) :is(.hcs-catalog-search, .hcs-users-search-bar) {
+    --hcs-input-background: var(--hcs-color-background);
+}
+
+body:has(.hcs-app-shell) :is(.form-control, .form-select, .select2-container .select2-selection, .hcs-datepicker__icon) {
+    background-color: var(--hcs-input-background) !important;
+    border-color: var(--hcs-input-border) !important;
+}
+
+body:has(.hcs-app-shell) :is(.form-control, .form-select):hover:where(:not(:focus):not(:disabled):not([readonly])),
+body:has(.hcs-app-shell) .select2-container:where(:not(.select2-container--disabled):not(.select2-container--focus):not(.select2-container--open)) .select2-selection:hover {
+    border-color: var(--hcs-input-border-hover) !important;
+}
+
+body:has(.hcs-app-shell) :is(.form-control, .form-select):focus,
+body:has(.hcs-app-shell) :is(.select2-container--focus, .select2-container--open) .select2-selection {
+    border-color: var(--hcs-input-border-focus) !important;
+}
+
+body:has(.hcs-app-shell) .form-control[readonly] {
+    background-color: var(--hcs-input-background-readonly) !important;
+}
+
+/* Date pickers may prevent typing while still allowing calendar selection. */
+body:has(.hcs-app-shell) :is(.hcs-datepicker, .b-is-datepicker) .form-control[readonly]:not(:disabled) {
+    background-color: var(--hcs-input-background) !important;
+}
+
+body:has(.hcs-app-shell) :is(.form-control, .form-select, .hcs-datepicker__icon):disabled,
+body:has(.hcs-app-shell) .select2-container--disabled .select2-selection {
+    background-color: var(--hcs-input-background-disabled) !important;
+    border-color: var(--hcs-input-border) !important;
+    color: var(--hcs-color-muted) !important;
+    box-shadow: none !important;
+}
+
+body:has(.hcs-app-shell) :is(.form-control, .form-select):is(.is-invalid, .invalid, [aria-invalid="true"]),
+body:has(.hcs-app-shell) select:is(.is-invalid, .invalid, [aria-invalid="true"]) + .select2-container .select2-selection {
+    border-color: var(--hcs-color-danger) !important;
 }
 
 .hcs-app-shell select.hcs-user-select2 + .select2-container .hcs-user-option {

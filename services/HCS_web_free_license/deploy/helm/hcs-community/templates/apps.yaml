@@ -52,6 +52,7 @@ spec:
             - { name: App__RedirectAllowedUrls, value: "https://{{ $root.Values.ingress.authHost }}" }
             {{- end }}
             {{- if eq $app.name "web-gateway" }}
+            - { name: Authentication__BearerAudience, value: "HCS" }
             - { name: ReverseProxy__Clusters__Platform__Destinations__primary__Address, value: "http://platform/" }
             - { name: ReverseProxy__Clusters__Organization__Destinations__primary__Address, value: "http://organization/" }
             - { name: ReverseProxy__Clusters__Document__Destinations__primary__Address, value: "http://document/" }
@@ -115,6 +116,13 @@ spec:
             - { name: ASPNETCORE_ENVIRONMENT, value: Production }
             - { name: ASPNETCORE_FORWARDEDHEADERS_ENABLED, value: "true" }
             - { name: Urls, value: "http://+:8080" }
+            - { name: OpenIddict__Applications__HCS_Mobile__ClientId, value: {{ .Values.mobileAuth.clientId | quote }} }
+            {{- range $index, $redirectUri := .Values.mobileAuth.redirectUris }}
+            - { name: OpenIddict__Applications__HCS_Mobile__RedirectUris__{{ $index }}, value: {{ $redirectUri | quote }} }
+            {{- end }}
+            {{- range $index, $redirectUri := .Values.mobileAuth.postLogoutRedirectUris }}
+            - { name: OpenIddict__Applications__HCS_Mobile__PostLogoutRedirectUris__{{ $index }}, value: {{ $redirectUri | quote }} }
+            {{- end }}
           resources: {{- toYaml .Values.resources | nindent 12 }}
           securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
           volumeMounts:

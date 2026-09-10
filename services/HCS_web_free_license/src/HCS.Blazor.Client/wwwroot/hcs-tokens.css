@@ -23,6 +23,12 @@
     --hcs-color-surface: #ffffff;
     --hcs-color-surface-muted: #eef3f7;
     --hcs-color-border: var(--color-border);
+    --hcs-input-background: var(--hcs-color-surface);
+    --hcs-input-border: var(--hcs-color-border);
+    --hcs-input-border-hover: #b8c5d3;
+    --hcs-input-border-focus: var(--hcs-color-primary);
+    --hcs-input-background-disabled: var(--hcs-color-surface-muted);
+    --hcs-input-background-readonly: var(--hcs-color-background);
     --hcs-color-success: var(--color-secondary);
     --hcs-color-warning: #a35a00;
     --hcs-color-danger: var(--color-accent);

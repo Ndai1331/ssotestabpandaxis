@@ -17,6 +17,14 @@ internal static class BffAccessTokenTransform
                 transformContext.ProxyRequest.Headers.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
             }
+            else if (BffRequestPolicy.HasBearerCredentials(transformContext.HttpContext.Request))
+            {
+                var authorization = transformContext.HttpContext.Request.Headers.Authorization.ToString();
+                if (!string.IsNullOrWhiteSpace(authorization))
+                {
+                    transformContext.ProxyRequest.Headers.TryAddWithoutValidation("Authorization", authorization);
+                }
+            }
 
             return ValueTask.CompletedTask;
         });

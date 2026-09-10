@@ -34,16 +34,17 @@ Native mobile nên dùng Authorization Code + PKCE:
 
 Không dùng cookie `.HCS.Bff`, không nhúng `HCS_App` client secret vào ứng dụng mobile, và không dùng password grant. `HCS_App` hiện là confidential client dành cho Gateway Web.
 
-### 1.2. Giới hạn quan trọng trong mã nguồn hiện tại
+### 1.2. Trạng thái triển khai login mobile
 
-Gateway hiện chỉ cấu hình cookie authentication làm scheme mặc định. Middleware proxy yêu cầu session cookie trước khi forward `/api/*`; chỉ gửi Bearer token vào Gateway hiện chưa đủ để đăng nhập qua Gateway. Gateway cũng đang áp dụng antiforgery cho các request unsafe của BFF.
+Backend đã có đường chạy native mobile:
 
-Vì vậy, tài liệu này mô tả contract mobile mục tiêu, nhưng mobile chỉ có thể gọi API bảo vệ được sau khi backend hoàn thành các mục ở [phần 8](#8-việc-backend-cần-chốt-trước-khi-mobile-tích-hợp):
+- DbMigrator seed public client `hcs-mobile` với Authorization Code + PKCE (`S256`), refresh token và redirect URI cấu hình được.
+- Gateway chọn Cookie cho Web hoặc JWT Bearer cho request có `Authorization: Bearer`.
+- Gateway forward Bearer token xuống service; BFF cookie refresh chỉ áp dụng cho request Web.
+- Bearer request không bị BFF antiforgery cookie check; cookie BFF của Web vẫn giữ nguyên CSRF protection.
+- Native SignalR có thể dùng `access_token` query trong WebSocket handshake.
 
-- đăng ký public mobile client với PKCE tại Auth Server;
-- cho Gateway xác thực Bearer token cho mobile, hoặc cung cấp một API ingress riêng có cùng route contract;
-- xác định chính sách antiforgery cho Bearer request (thường bỏ yêu cầu CSRF khi request đã được xác thực bằng Bearer, còn cookie BFF vẫn giữ CSRF);
-- công bố redirect URI chính thức cho Android và iOS.
+Việc còn lại trước khi đưa lên môi trường thật là thay redirect URI mẫu bằng package/bundle URI chính thức của Android/iOS và chạy DbMigrator/Gateway với cấu hình tương ứng trong [phần 8](#8-việc-backend-cần-chốt-trước-khi-mobile-tích-hợp).
 
 ## 2. Môi trường và URL
 
@@ -75,7 +76,19 @@ GET https://auth-hcs.htltech.vn/.well-known/openid-configuration
 
 Discovery phải cung cấp tối thiểu `authorization_endpoint`, `token_endpoint`, `issuer`; nếu hỗ trợ logout/revoke thì dùng thêm `end_session_endpoint` hoặc `revocation_endpoint`.
 
-Backend cần đăng ký một public client, ví dụ `hcs-mobile`, với:
+Repo đã đăng ký public client `hcs-mobile` khi `OpenIddict:Applications:HCS_Mobile:ClientId` được cấu hình. Giá trị mặc định dùng cho local/Docker là `hcs-mobile`; redirect URI mặc định là `com.htltech.hcs:/oauth/callback`. Có thể thay bằng environment variables khi deploy.
+
+Các biến Docker tương ứng:
+
+```text
+HCS_MOBILE_CLIENT_ID=hcs-mobile
+HCS_MOBILE_REDIRECT_URI=com.htltech.hcs:/oauth/callback
+HCS_MOBILE_POST_LOGOUT_REDIRECT_URI=com.htltech.hcs:/oauth/logout
+```
+
+DbMigrator map chúng vào `OpenIddict__Applications__HCS_Mobile__*`; Gateway dùng `Authentication__BearerAudience=HCS`.
+
+Public client cần có:
 
 - grant: `authorization_code` và `refresh_token`;
 - PKCE: bắt buộc, `S256`;
@@ -83,7 +96,7 @@ Backend cần đăng ký một public client, ví dụ `hcs-mobile`, với:
 - redirect URI chính xác, ví dụ `com.htltech.hcs:/oauth/callback` hoặc universal/app link đã được duyệt;
 - scopes tối thiểu: `openid profile email roles HCS offline_access`.
 
-Tên client và redirect URI ở trên chỉ là mẫu, chưa phải giá trị đã được seed trong repo.
+Tên client và redirect URI mặc định có thể thay đổi; không dùng chung redirect URI này nếu ứng dụng mobile thực tế đăng ký scheme khác.
 
 ### 3.2. Luồng Authorization Code + PKCE
 
@@ -937,16 +950,16 @@ Rule validation hiện tại: post tối đa 4000 ký tự và 10 media; comment
 7. Tạo social post/photo → comment/reaction/share → xóa media/post.
 8. Với user không có quyền, xác nhận `403` hiển thị access denied chứ không redirect login vòng lặp.
 
-## 8. Việc backend cần chốt trước khi mobile tích hợp
+## 8. Việc cần chốt trước khi mobile tích hợp production
 
-Đây là các mục bắt buộc để contract trong tài liệu chạy được end-to-end:
+Phần code login đã triển khai. Các mục vận hành còn lại:
 
-1. **Public client**: seed `hcs-mobile` hoặc tên chính thức, grant code + refresh, PKCE S256, redirect URI Android/iOS, scopes và refresh-token lifetime.
-2. **Gateway Bearer**: thêm JWT Bearer authentication/selector cho request có `Authorization: Bearer`, hoặc đưa các route `/api/*` và `/hubs/*` vào ingress mobile xác thực JWT rồi forward nội bộ.
-3. **Antiforgery**: quyết định rõ Bearer request có được miễn BFF cookie/CSRF check hay không. Native mobile không có browser BFF cookie; nếu vẫn bắt `X-XSRF-TOKEN`, cần công bố flow native tương ứng.
-4. **CORS/network policy**: native không bị CORS như browser, nhưng cần allow HTTPS host, WebSocket `/hubs/chat`, upload size và timeout trên reverse proxy.
-5. **Discovery và certificate**: công bố issuer/metadata production, redirect URI và certificate chain cho Android/iOS.
-6. **Permission contract**: cung cấp role/permission matrix cho mobile; sau khi admin đổi quyền, user cần login lại để nhận claims mới nếu Gateway dùng claims trong session/token.
+1. **Redirect URI chính thức**: đặt `HCS_MOBILE_REDIRECT_URI` và `HCS_MOBILE_POST_LOGOUT_REDIRECT_URI` theo Android/iOS app scheme hoặc universal/app link thực tế. Nếu có nhiều app, thêm các array index tương ứng trong configuration.
+2. **Client ID**: giữ `HCS_MOBILE_CLIENT_ID=hcs-mobile` hoặc đổi sang tên chính thức; đây là public client, không tạo/nhúng client secret.
+3. **Deploy seed**: chạy DbMigrator sau khi set biến môi trường để OpenIddict cập nhật application registration; sau đó restart Gateway để đọc Bearer authority/audience.
+4. **Discovery và certificate**: mobile dùng issuer production và discovery document; Android/iOS phải tin cậy certificate chain của Auth Server/Gateway.
+5. **Network policy**: allow HTTPS API, WebSocket `/hubs/chat`, upload size và timeout trên reverse proxy.
+6. **Permission contract**: cung cấp role/permission matrix cho mobile; sau khi admin đổi quyền, user cần login lại để nhận claims mới.
 7. **Notification push**: chốt `platform` accepted values, token lifecycle, deep-link allow-list và cơ chế refresh token push.
 8. **API versioning**: khi đổi DTO/enum/validation, giữ backward compatibility hoặc công bố version/path mới; mobile không thể cập nhật đồng thời với Web.
 9. **Undocumented placeholders**: chốt contract thật cho `/notification-receivers` và các report dimension ngoài `signing` trước khi triển khai native tương ứng.

@@ -32,8 +32,9 @@
     <Card>
         <CardBody>
             <Row Class="hcs-document-detail-row">
-                <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop">
+                <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop" Class="hcs-document-form-pane">
                     <div class="hcs-catalog-form">
+                        <div class="hcs-document-form-fields">
                         <div class="hcs-form-row">
                             <Field><FieldLabel>@L["Feature:DocumentNumber"]</FieldLabel>
                                 @if (IsCreate)
@@ -79,11 +80,11 @@
                             <div class="hcs-dropzone">
                                 @if (IsCreate)
                                 {
-                                    <InputFile class="form-control" OnChange="SelectPendingFileAsync" accept=".docx,.pdf" />
+                                    <InputFile id="hcs-document-file" class="form-control" OnChange="SelectPendingFileAsync" accept=".docx,.pdf" />
                                 }
                                 else
                                 {
-                                    <InputFile class="form-control" OnChange="UploadAsync" accept=".docx,.pdf" />
+                                    <InputFile id="hcs-document-file" class="form-control" OnChange="UploadAsync" accept=".docx,.pdf" />
                                 }
                                 <p class="hcs-dropzone__hint mb-0">@L["Work:DropFileHere"]</p>
                                 @if (pendingFile is not null)
@@ -96,11 +97,11 @@
                         {
                             @if (document?.Files.Count is null or 0)
                             {
-                                <p class="text-muted">@L["Catalog:EmptyTitle"]</p>
+                                <p class="text-muted mb-0">@L["Catalog:EmptyTitle"]</p>
                             }
                             else
                             {
-                                <div class="table-responsive mb-3">
+                                <div class="table-responsive hcs-document-file-list">
                                     <table class="table table-sm table-striped align-middle mb-0">
                                         <thead><tr>
                                             <th>@L["Catalog:Name"]</th>
@@ -112,11 +113,13 @@
                                             <tr>
                                                 <td>@file.FileName <small class="text-muted">(@(file.Size / 1024) KB)</small></td>
                                                 <td class="text-end">
-                                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Clicked="() => PreviewFileAsync(file)">@L["Work:PdfPreview"]</Button>
-                                                    @if (SourceType is 0 or 1)
-                                                    {
-                                                        <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteFileAsync(file.Id)">@L["Catalog:Delete"]</Button>
-                                                    }
+                                                    <div class="hcs-document-file-actions">
+                                                        <Button Size="Size.Small" Color="Color.Primary" Outline="true" Clicked="() => PreviewFileAsync(file)">@L["Work:PdfPreview"]</Button>
+                                                        @if (SourceType is 0 or 1)
+                                                        {
+                                                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => DeleteFileAsync(file.Id)">@L["Catalog:Delete"]</Button>
+                                                        }
+                                                    </div>
                                                 </td>
                                             </tr>
                                         }
@@ -124,6 +127,11 @@
                                     </table>
                                 </div>
                             }
+                        }
+                        </div>
+                        <div class="hcs-document-form-actions">
+                        @if (!IsCreate)
+                        {
                             <AuthorizeView Policy="Documents.Assign">
                                 <Authorized>
                                     <Field>
@@ -193,12 +201,13 @@
                                 </Authorized>
                             </AuthorizeView>
                         </div>
+                        </div>
                     </div>
                 </Column>
                 <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop" Class="hcs-document-preview-pane">
                     @if (!string.IsNullOrWhiteSpace(pdfUrl))
                     {
-                        <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(50)" />
+                        <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" MatchParent="true" />
                     }
                     else if (pendingFile is not null)
                     {
@@ -224,7 +233,15 @@
                     }
                     else
                     {
-                        <Alert Color="Color.Light" Dismissible="false">@L["Work:NoPdfAvailable"]</Alert>
+                        <section class="hcs-document-preview-empty" aria-labelledby="document-preview-title">
+                            <h2 id="document-preview-title" class="hcs-document-preview-empty__heading">@L["Document:PreviewTitle"]</h2>
+                            <div class="hcs-document-preview-empty__body">
+                                <span class="hcs-document-preview-empty__icon" aria-hidden="true"><i class="fa fa-file-lines"></i></span>
+                                <h3>@L["Document:PreviewEmptyTitle"]</h3>
+                                <p>@L["Document:PreviewEmptyHint"]</p>
+                                <small>@L["Document:PreviewSupportedHint"]</small>
+                            </div>
+                        </section>
                     }
                 </Column>
             </Row>

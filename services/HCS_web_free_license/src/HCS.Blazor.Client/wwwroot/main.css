@@ -411,7 +411,11 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 
 
 .pagination .form-select {
-    padding: .375rem 1.25rem !important;
+    box-sizing: border-box;
+    width: auto;
+    min-width: calc(3ch + 2.65rem + 2px);
+    padding: .375rem 2rem .375rem .65rem !important;
+    background-position: right .5rem center;
 }
 
 #ApplicationContainer > div:first-child:not(:only-child) {
@@ -420,10 +424,6 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 
 body:has(.hcs-chat-page) {
     overflow: hidden;
-}
-
-.pagination .form-select {
-    padding: .375rem 1.25rem !important;
 }
 
 /* === Catalog styles === */
@@ -667,7 +667,8 @@ body:has(.hcs-chat-page) {
     min-width: 8.5rem;
 }
 
-.hcs-catalog-page .hcs-catalog-filter-toggle {
+.hcs-catalog-page .hcs-catalog-filter-toggle,
+.hcs-app-shell .hcs-users-filter-toggle {
     background: #fff;
     border-color: var(--catalog-primary);
     color: var(--catalog-primary);
@@ -676,6 +677,7 @@ body:has(.hcs-chat-page) {
     max-height: 3.6rem;
     min-height: 3.6rem;
     justify-content: center;
+    white-space: nowrap;
 }
 
 .hcs-catalog-advanced-filter {
@@ -856,7 +858,7 @@ body:has(.hcs-chat-page) {
 }
 
 .hcs-loading i,
-.hcs-empty i {
+.hcs-empty > i {
     color: var(--catalog-primary);
     display: block;
     font-size: 1.8rem;
@@ -1272,13 +1274,15 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
         padding: 1rem;
     }
 
-    .hcs-catalog-filter-row {
+    .hcs-catalog-filter-row,
+    .hcs-app-shell .hcs-users-filter-row {
         align-items: stretch;
         flex-direction: column;
         gap: .75rem;
     }
 
-    .hcs-catalog-page .hcs-catalog-filter-toggle {
+    .hcs-catalog-page .hcs-catalog-filter-toggle,
+    .hcs-app-shell .hcs-users-filter-toggle {
         flex-basis: auto;
         height: auto;
         max-height: none;
@@ -1738,7 +1742,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 .hcs-document-preview-pane {
     display: flex;
     flex-direction: column;
-    min-height: calc(100dvh - 12rem);
+    min-height: 0;
 }
 
 .hcs-document-preview-pane .card {

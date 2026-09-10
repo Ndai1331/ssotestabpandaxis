@@ -93,6 +93,8 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
             );
         }
 
+        await CreateMobileApplicationAsync(configurationSection.GetSection("HCS_Mobile"));
+
         
         
 
@@ -147,6 +149,94 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
         }
 
 
+    }
+
+    private async Task CreateMobileApplicationAsync(IConfigurationSection mobileSection)
+    {
+        var clientId = mobileSection["ClientId"]?.Trim();
+        if (clientId.IsNullOrWhiteSpace())
+        {
+            return;
+        }
+
+        var redirectUris = GetConfiguredUris(mobileSection, "RedirectUris", required: true);
+        var postLogoutRedirectUris = GetConfiguredUris(mobileSection, "PostLogoutRedirectUris", required: false);
+        var descriptor = new AbpApplicationDescriptor
+        {
+            ApplicationType = OpenIddictConstants.ApplicationTypes.Native,
+            ClientId = clientId,
+            ClientType = OpenIddictConstants.ClientTypes.Public,
+            ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
+            DisplayName = mobileSection["DisplayName"]?.Trim() ?? "HCS Mobile Application",
+            ClientUri = mobileSection["ClientUri"]?.Trim()
+        };
+
+        descriptor.Permissions.UnionWith(
+        [
+            OpenIddictConstants.Permissions.Endpoints.Authorization,
+            OpenIddictConstants.Permissions.Endpoints.Token,
+            OpenIddictConstants.Permissions.Endpoints.Revocation,
+            OpenIddictConstants.Permissions.Endpoints.Introspection,
+            OpenIddictConstants.Permissions.Endpoints.EndSession,
+            OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+            OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+            OpenIddictConstants.Permissions.ResponseTypes.Code,
+            OpenIddictConstants.Permissions.Scopes.Address,
+            OpenIddictConstants.Permissions.Scopes.Email,
+            OpenIddictConstants.Permissions.Scopes.Phone,
+            OpenIddictConstants.Permissions.Scopes.Profile,
+            OpenIddictConstants.Permissions.Scopes.Roles,
+            $"{OpenIddictConstants.Permissions.Prefixes.Scope}{OpenIddictConstants.Scopes.OfflineAccess}",
+            $"{OpenIddictConstants.Permissions.Prefixes.Scope}{GatewayScope}"
+        ]);
+        descriptor.Requirements.Add(OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange);
+        descriptor.RedirectUris.UnionWith(redirectUris);
+        descriptor.PostLogoutRedirectUris.UnionWith(postLogoutRedirectUris);
+
+        var existingApplication = await OpenIddictApplicationRepository.FindByClientIdAsync(clientId);
+        if (existingApplication is null)
+        {
+            await ApplicationManager.CreateAsync(descriptor);
+        }
+        else
+        {
+            await ApplicationManager.UpdateAsync(existingApplication.ToModel(), descriptor);
+        }
+    }
+
+    private static IReadOnlyCollection<Uri> GetConfiguredUris(
+        IConfigurationSection section,
+        string key,
+        bool required)
+    {
+        var values = section.GetSection(key).Get<string[]>() ?? [];
+        var uris = new HashSet<Uri>();
+        foreach (var value in values)
+        {
+            var normalized = value?.Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                continue;
+            }
+
+            if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri) ||
+                !uri.IsWellFormedOriginalString() ||
+                uri.IsFile)
+            {
+                throw new InvalidOperationException(
+                    $"OpenIddict HCS_Mobile {key} contains an invalid absolute URI '{normalized}'.");
+            }
+
+            uris.Add(uri);
+        }
+
+        if (required && uris.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"OpenIddict HCS_Mobile {key} must contain at least one URI when ClientId is configured.");
+        }
+
+        return uris;
     }
 
     internal static HcsAppRegistration? GetHcsAppRegistration(IConfigurationSection applications)

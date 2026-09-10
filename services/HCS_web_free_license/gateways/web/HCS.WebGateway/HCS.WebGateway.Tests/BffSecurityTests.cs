@@ -92,6 +92,37 @@ public sealed class BffSecurityTests
     }
 
     [Fact]
+    public void Mobile_bearer_requests_use_the_bearer_scheme_and_skip_cookie_antiforgery()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Method = "POST";
+        context.Request.Path = "/api/documents";
+        context.Request.Headers.Authorization = "Bearer mobile-access-token";
+
+        Assert.True(BffRequestPolicy.HasBearerCredentials(context.Request));
+        Assert.Equal(HCSWebGatewayModule.BearerScheme,
+            HCSWebGatewayModule.SelectAuthenticationScheme(context.Request));
+        Assert.False(BffRequestPolicy.RequiresAntiforgery(context.Request));
+    }
+
+    [Fact]
+    public void Native_signalr_handshake_can_use_access_token_query_without_browser_origin()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Method = "GET";
+        context.Request.Path = "/hubs/chat";
+        context.Request.Headers.Upgrade = "websocket";
+        context.Request.QueryString = new QueryString("?access_token=mobile-access-token");
+
+        Assert.True(BffRequestPolicy.HasBearerCredentials(context.Request));
+        Assert.Equal(HCSWebGatewayModule.BearerScheme,
+            HCSWebGatewayModule.SelectAuthenticationScheme(context.Request));
+        Assert.True(BffDeploymentPolicy.IsAllowedWebSocketOrigin(
+            context.Request, ["https://localhost:44403"]));
+        Assert.False(BffRequestPolicy.RequiresAntiforgery(context.Request));
+    }
+
+    [Fact]
     public void Language_lookup_is_anonymous_at_the_bff_boundary()
     {
         var context = new DefaultHttpContext();

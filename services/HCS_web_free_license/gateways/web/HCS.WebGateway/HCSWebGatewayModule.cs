@@ -4,6 +4,7 @@ using HCS.Bff;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -28,6 +29,8 @@ public sealed class HCSWebGatewayModule : AbpModule
 {
     internal const string CorsPolicyName = "HCS.WebGateway";
     internal const string CookieScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    internal const string BearerScheme = "HCS.Mobile.Bearer";
+    internal const string GatewayScheme = "HCS.Gateway";
     internal const string OidcScheme = "HCS.Bff.Oidc";
     internal const string CookieName = ".HCS.Bff";
     internal const string DataProtectionApplicationName = "HCS.Bff";
@@ -178,6 +181,12 @@ public sealed class HCSWebGatewayModule : AbpModule
     private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         var authority = GetRequiredAbsoluteHttpsUrl(configuration, "Authentication:Authority");
+        var bearerAudience = configuration["Authentication:BearerAudience"]?.Trim();
+        if (string.IsNullOrWhiteSpace(bearerAudience))
+        {
+            bearerAudience = "HCS";
+        }
+
         var clientId = GetRequiredValue(configuration, "Authentication:ClientId");
         var clientSecret = GetRequiredValue(configuration, "Authentication:ClientSecret");
         var cookieDomain = BffDeploymentPolicy.ValidateAndGetCookieDomain(configuration);
@@ -185,10 +194,17 @@ public sealed class HCSWebGatewayModule : AbpModule
         services.AddSingleton<ITicketStore, BffAuthTicketStore>();
         services.AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = CookieScheme;
+                options.DefaultAuthenticateScheme = GatewayScheme;
                 options.DefaultSignInScheme = CookieScheme;
-                // Proxy endpoints must return 401. Only /bff/login explicitly challenges OIDC.
-                options.DefaultChallengeScheme = CookieScheme;
+                // Browser requests forward to the BFF cookie; native requests with
+                // Authorization: Bearer forward to the JWT handler. Only /bff/login
+                // explicitly challenges the OIDC browser scheme.
+                options.DefaultChallengeScheme = GatewayScheme;
+                options.DefaultForbidScheme = GatewayScheme;
+            })
+            .AddPolicyScheme(GatewayScheme, "HCS cookie or mobile bearer", options =>
+            {
+                options.ForwardDefaultSelector = context => SelectAuthenticationScheme(context.Request);
             })
             .AddCookie(CookieScheme, options =>
             {
@@ -217,6 +233,34 @@ public sealed class HCSWebGatewayModule : AbpModule
                 {
                     cookieContext.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return Task.CompletedTask;
+                };
+            })
+            .AddJwtBearer(BearerScheme, options =>
+            {
+                options.Authority = authority;
+                options.Audience = bearerAudience;
+                options.RequireHttpsMetadata = configuration.GetValue("Authentication:RequireHttpsMetadata", true);
+                options.MapInboundClaims = false;
+                if (configuration.GetValue("Authentication:AllowUntrustedBackchannelCertificate", false))
+                {
+                    options.BackchannelHttpHandler = new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    };
+                }
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (context.Request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase) &&
+                            string.IsNullOrWhiteSpace(context.Token))
+                        {
+                            context.Token = context.Request.Query["access_token"];
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             })
             .AddOpenIdConnect(OidcScheme, options =>
@@ -307,6 +351,9 @@ public sealed class HCSWebGatewayModule : AbpModule
 
         return value;
     }
+
+    internal static string SelectAuthenticationScheme(HttpRequest request) =>
+        BffRequestPolicy.HasBearerCredentials(request) ? BearerScheme : CookieScheme;
 
     internal static string GetRequiredAbsoluteHttpsUrl(IConfiguration configuration, string key)
     {

@@ -925,6 +925,11 @@
           "System.Threading.RateLimiting": "8.0.0"
         }
       },
+      "QRCoder": {
+        "type": "Transitive",
+        "resolved": "1.6.0",
+        "contentHash": "XmPA81eo+oRxBuyVdswsSkTGTE1d3thfF11Z1PdD7oB56A6HU4G4AAOdySmGRMb/cljwlFTMWUtosGEnwpS6GA=="
+      },
       "RabbitMQ.Client": {
         "type": "Transitive",
         "resolved": "7.1.2",
@@ -1962,6 +1967,7 @@
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.9, )",
           "OpenIddict.Validation.AspNetCore": "[7.5.0, )",
           "OpenIddict.Validation.SystemNetHttp": "[7.5.0, )",
+          "QRCoder": "[1.6.0, )",
           "Serilog.AspNetCore": "[9.0.0, )",
           "Serilog.Sinks.Console": "[6.0.0, )",
           "Volo.Abp.AspNetCore.Mvc": "[10.6.0, )",
