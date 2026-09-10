@@ -180,12 +180,8 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
             return new Uri(configuredOrigin, resourceUrl.TrimStart('/')).AbsoluteUri;
         }
 
-        var gatewayBaseAddress = CreateClient().BaseAddress;
-        if (gatewayBaseAddress is null)
-            return resourceUrl;
-
-        var gatewayOrigin = new Uri(gatewayBaseAddress.GetLeftPart(UriPartial.Authority) + "/");
-        return new Uri(gatewayOrigin, resourceUrl.TrimStart('/')).AbsoluteUri;
+        throw new InvalidOperationException(
+            "A valid HTTPS Bff:PublicOrigin or RemoteServices:Default:BaseUrl is required for resource URLs.");
     }
 
     public Task<List<SurveyCriteriaDto>> GetCriteriaAsync(CancellationToken cancellationToken = default) =>
