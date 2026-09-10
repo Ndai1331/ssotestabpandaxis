@@ -3,6 +3,7 @@ using HCS.WorkManagementService.Data;
 using HCS.WorkManagementService.Domain;
 using HCS.WorkManagementService.Storage;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.BlobStoring;
 using Volo.Abp.DependencyInjection;
@@ -12,7 +13,7 @@ using Volo.Abp.Authorization;
 namespace HCS.WorkManagementService.Application;
 
 public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blobs, WorkManagementDbContext db,
-    WorkRecordAuthorization access) : ITransientDependency
+    WorkRecordAuthorization access, ILogger<WorkAssetService> logger) : ITransientDependency
 {
     public const long MaxFileSize = 25 * 1024 * 1024;
 
@@ -77,9 +78,8 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
     public async Task<(Stream Stream, EventAttachmentDto File)> GetEventFileAsync(Guid fileId, CancellationToken ct)
     {
         var item = await db.EventAttachments.AsNoTracking().SingleOrDefaultAsync(x => x.Id == fileId, ct)
-            ?? throw new EntityNotFoundException(typeof(EventAttachment), fileId);
-        var stream = await blobs.GetAsync(item.BlobName, cancellationToken: ct);
-        return (stream, Map(item));
+            ?? throw AttachmentMetadataNotFound(fileId);
+        return await DownloadEventFileAsync(item, fileId, ct);
     }
 
     public async Task<(Stream Stream, EventAttachmentDto File)> GetPublicEventFileAsync(
@@ -88,9 +88,32 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
         var item = await db.EventAttachments.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == fileId && db.ManagedEvents.Any(eventItem =>
                 eventItem.Id == x.EventId && eventItem.Code == code && eventItem.QrToken == token), ct)
-            ?? throw new EntityNotFoundException(typeof(EventAttachment), fileId);
-        var stream = await blobs.GetAsync(item.BlobName, cancellationToken: ct);
-        return (stream, Map(item));
+            ?? throw AttachmentMetadataNotFound(fileId);
+        return await DownloadEventFileAsync(item, fileId, ct);
+    }
+
+    private async Task<(Stream Stream, EventAttachmentDto File)> DownloadEventFileAsync(
+        EventAttachment item, Guid fileId, CancellationToken ct)
+    {
+        try
+        {
+            var stream = await blobs.GetAsync(item.BlobName, cancellationToken: ct);
+            logger.LogInformation("Event attachment downloaded. FileId={FileId}, EventId={EventId}", fileId, item.EventId);
+            return (stream, Map(item));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "Event attachment blob download failed. FileId={FileId}, EventId={EventId}, BlobName={BlobName}",
+                fileId, item.EventId, item.BlobName);
+            throw;
+        }
+    }
+
+    private EntityNotFoundException AttachmentMetadataNotFound(Guid fileId)
+    {
+        logger.LogWarning("Event attachment metadata not found. FileId={FileId}", fileId);
+        return new EntityNotFoundException(typeof(EventAttachment), fileId);
     }
 
     public async Task DeleteEventFileAsync(Guid fileId, CancellationToken ct)

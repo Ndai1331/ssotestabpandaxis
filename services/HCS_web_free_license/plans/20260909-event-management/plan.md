@@ -85,3 +85,5 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - [x] Cho phép tài khoản đã đăng nhập quét QR tự tạo attendee khi chưa có trong danh sách; tự đánh dấu `Confirmed + CheckedIn` và liên kết theo `UserId` hiện tại.
 - [x] Cho phép chọn một hoặc nhiều file khi tạo sự kiện; tạo event trước rồi tải tuần tự các file lên với giới hạn 10 file, 25 MB/file.
 - [x] Public check-in trả về danh sách tài liệu và cung cấp endpoint tải file có kiểm tra đúng mã/token của sự kiện.
+- [x] Chuẩn hóa wrapper filter ở danh sách sự kiện và chi tiết người tham dự để label, control và nút Đặt lại thẳng hàng.
+- [x] Resource URL tải file phía client ưu tiên `Bff:PublicOrigin` để luôn đi qua gateway API; Work service ghi log riêng cho lỗi metadata và blob storage.

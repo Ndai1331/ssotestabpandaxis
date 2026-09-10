@@ -20,11 +20,7 @@
 .hcs-event-attachment a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hcs-event-attachment small { color: var(--color-muted, #5C6578); white-space: nowrap; }
 .hcs-event-attendee-filters { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(15rem, 2fr) minmax(10rem, 1fr) minmax(10rem, 1fr) auto; margin-bottom: 1rem; }
-.hcs-event-attendee-filters > .field { display: flex; flex-direction: column; justify-content: flex-end; margin: 0 !important; min-width: 0; }
 .hcs-event-attendee-filters .hcs-catalog-search { min-width: 0; width: 100%; }
-.hcs-event-attendee-filters :is(.field-label, .form-label) { display: block; line-height: 1.25; margin: 0 0 .45rem; min-height: 1.25rem; }
-.hcs-event-attendee-filters :is(.form-control, .form-select, .hcs-catalog-search .btn) { box-sizing: border-box; height: var(--hcs-control-height-compact); max-height: var(--hcs-control-height-compact) !important; min-height: var(--hcs-control-height-compact) !important; }
-.hcs-event-attendee-filters .hcs-event-reset { align-self: end; margin-bottom: 0; min-height: var(--hcs-control-height-compact); }
 .hcs-event-table-wrap { overflow-x: auto; }
 .hcs-attendee-table { min-width: 1050px; }
 .hcs-event-pager { align-items: center; border-top: 1px solid var(--color-border, #DDE4EE); color: var(--color-muted, #5C6578); display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 1rem; }

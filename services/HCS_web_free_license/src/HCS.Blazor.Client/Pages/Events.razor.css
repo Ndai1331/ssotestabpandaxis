@@ -1,9 +1,5 @@
 .hcs-event-list-filters { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(15rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr) auto; }
-.hcs-event-list-filters > .field { display: flex; flex-direction: column; justify-content: flex-end; margin: 0 !important; min-width: 0; }
 .hcs-event-list-filters .hcs-catalog-search { min-width: 0; width: 100%; }
-.hcs-event-list-filters :is(.field-label, .form-label) { display: block; line-height: 1.25; margin: 0 0 .45rem; min-height: 1.25rem; }
-.hcs-event-list-filters :is(.form-control, .form-select, .hcs-catalog-search .btn) { box-sizing: border-box; height: var(--hcs-control-height-compact); max-height: var(--hcs-control-height-compact) !important; min-height: var(--hcs-control-height-compact) !important; }
-.hcs-event-reset { align-self: end; margin-bottom: 0; min-height: var(--hcs-control-height-compact); }
 .hcs-event-table-wrap { overflow-x: auto; }
 .hcs-event-table { margin-bottom: 0; min-width: 900px; }
 .hcs-event-table th { color: var(--color-muted, #5C6578); font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }

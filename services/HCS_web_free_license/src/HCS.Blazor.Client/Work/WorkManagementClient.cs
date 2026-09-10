@@ -9,10 +9,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using HCS.Blazor.Client.Services;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.Extensions.Configuration;
 
 namespace HCS.Blazor.Client.Work;
 
-public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
+public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, IConfiguration configuration)
 {
     public const int MaxPageSize = 100;
 
@@ -171,6 +172,13 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory)
     {
         if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
             return resourceUrl;
+
+        var configuredGatewayOrigin = configuration["Bff:PublicOrigin"] ?? configuration["RemoteServices:Default:BaseUrl"];
+        if (Uri.TryCreate(configuredGatewayOrigin, UriKind.Absolute, out var configuredOrigin) &&
+            configuredOrigin.Scheme == Uri.UriSchemeHttps && configuredOrigin.AbsolutePath == "/")
+        {
+            return new Uri(configuredOrigin, resourceUrl.TrimStart('/')).AbsoluteUri;
+        }
 
         var gatewayBaseAddress = CreateClient().BaseAddress;
         if (gatewayBaseAddress is null)

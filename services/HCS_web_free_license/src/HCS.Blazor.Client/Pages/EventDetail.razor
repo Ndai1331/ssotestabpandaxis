@@ -78,11 +78,23 @@ else if (detail is not null)
         <Card Class="hcs-catalog-grid-card">
             <CardBody>
                 <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:AttendeeManagement"]</p><h2>@L["Event:Attendees"]</h2></div><div class="hcs-event-toolbar"><Button Color="Color.Primary" Clicked="OpenAddAttendee"><Icon Name="@IconName.Add" /> @L["Event:AddAttendee"]</Button><label class="btn btn-outline-primary mb-0"><i class="fa fa-file-import me-1" aria-hidden="true"></i>@L["Event:ImportCsv"]<InputFile class="visually-hidden" accept=".csv,text/csv" OnChange="ImportAsync" /></label><Button Color="Color.Primary" Outline="true" Clicked="ExportAttendeesAsync" Disabled="@(attendees.Count == 0)"><i class="fa fa-download me-1" aria-hidden="true"></i>@L["Catalog:Export"]</Button><Button Color="Color.Danger" Outline="true" Clicked="DeleteSelectedAsync" Disabled="@(selectedIds.Count == 0)"><i class="fa fa-trash me-1" aria-hidden="true"></i>@L["Event:DeleteSelected"]</Button></div></div>
-                <div class="hcs-event-list-filters hcs-event-attendee-filters">
-                    <Field Class="hcs-event-filter-field"><FieldLabel>@L["Catalog:Search"]</FieldLabel><Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput @bind-Value="attendeeFilter" Placeholder="@L["Event:AttendeeSearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAttendeesAsync"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons></Field>
-                    <Field><FieldLabel>@L["Event:RegistrationStatus"]</FieldLabel><Select TValue="string" @bind-Value="registrationFilter"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem><SelectItem Value="Confirmed">@L["Event:Confirmed"]</SelectItem><SelectItem Value="Unconfirmed">@L["Event:Unconfirmed"]</SelectItem><SelectItem Value="Declined">@L["Event:Declined"]</SelectItem></Select></Field>
-                    <Field><FieldLabel>@L["Event:CheckInStatus"]</FieldLabel><Select TValue="string" @bind-Value="checkInFilter"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem><SelectItem Value="CheckedIn">@L["Event:CheckedIn"]</SelectItem><SelectItem Value="NotCheckedIn">@L["Event:NotCheckedIn"]</SelectItem></Select></Field>
-                    <Button Color="Color.Light" Outline="true" Class="hcs-event-reset" Clicked="ResetAttendeeSearchAsync">@L["Catalog:Reset"]</Button>
+                <div class="hcs-event-filters hcs-event-list-filters hcs-event-attendee-filters">
+                    <div class="hcs-event-filter-field">
+                        <label class="hcs-event-filter-label" for="event-attendee-search">@L["Catalog:Search"]</label>
+                        <Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput Id="event-attendee-search" @bind-Value="attendeeFilter" Placeholder="@L["Event:AttendeeSearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAttendeesAsync"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons>
+                    </div>
+                    <div class="hcs-event-filter-field">
+                        <label class="hcs-event-filter-label" for="event-registration-status">@L["Event:RegistrationStatus"]</label>
+                        <Select Id="event-registration-status" TValue="string" @bind-Value="registrationFilter"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem><SelectItem Value="Confirmed">@L["Event:Confirmed"]</SelectItem><SelectItem Value="Unconfirmed">@L["Event:Unconfirmed"]</SelectItem><SelectItem Value="Declined">@L["Event:Declined"]</SelectItem></Select>
+                    </div>
+                    <div class="hcs-event-filter-field">
+                        <label class="hcs-event-filter-label" for="event-check-in-status">@L["Event:CheckInStatus"]</label>
+                        <Select Id="event-check-in-status" TValue="string" @bind-Value="checkInFilter"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem><SelectItem Value="CheckedIn">@L["Event:CheckedIn"]</SelectItem><SelectItem Value="NotCheckedIn">@L["Event:NotCheckedIn"]</SelectItem></Select>
+                    </div>
+                    <div class="hcs-event-filter-action">
+                        <span class="hcs-event-filter-label-spacer" aria-hidden="true"></span>
+                        <Button Color="Color.Light" Outline="true" Class="hcs-event-reset" Clicked="ResetAttendeeSearchAsync">@L["Catalog:Reset"]</Button>
+                    </div>
                 </div>
                 <DataGrid TItem="EventAttendeeDto" @ref="attendeeGrid" @bind-Page="attendeePage" Data="@attendees" TotalItems="@attendeeTotal" ReadData="OnAttendeeReadAsync"
                           ShowPager="true" ShowPageSizes="true" PageSizes="@attendeePageSizes" PageSize="@attendeePageSize"

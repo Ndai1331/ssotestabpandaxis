@@ -667,6 +667,68 @@ body:has(.hcs-chat-page) {
     min-width: 8.5rem;
 }
 
+/* Event filters use the same fixed label/control rhythm for search, selects, and reset. */
+.hcs-app-shell .hcs-event-filters > .hcs-event-filter-field,
+.hcs-app-shell .hcs-event-filters > .hcs-event-filter-action {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    margin: 0;
+    min-width: 0;
+}
+
+.hcs-app-shell .hcs-event-filters .hcs-event-filter-label,
+.hcs-app-shell .hcs-event-filters .hcs-event-filter-label-spacer {
+    box-sizing: border-box;
+    display: block;
+    flex: 0 0 1.25rem;
+    height: 1.25rem;
+    line-height: 1.25rem;
+    margin: 0 0 .45rem;
+}
+
+.hcs-app-shell .hcs-event-filters .hcs-event-filter-field > :is(.form-control, .form-select),
+.hcs-app-shell .hcs-event-filters .hcs-catalog-search {
+    box-sizing: border-box;
+    height: var(--hcs-control-height-compact);
+    max-height: var(--hcs-control-height-compact);
+    min-height: var(--hcs-control-height-compact);
+}
+
+.hcs-app-shell .hcs-event-filters .hcs-catalog-search {
+    align-items: stretch;
+    display: flex;
+    margin: 0;
+}
+
+.hcs-app-shell .hcs-event-filters .hcs-catalog-search .addon-body,
+.hcs-app-shell .hcs-event-filters .hcs-catalog-search .addon-end {
+    display: flex;
+    min-height: 0;
+}
+
+.hcs-app-shell .hcs-event-filters .hcs-catalog-search .addon-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.hcs-app-shell .hcs-event-filters :is(.form-control, .form-select, .hcs-catalog-search .btn) {
+    box-sizing: border-box;
+    height: var(--hcs-control-height-compact);
+    max-height: var(--hcs-control-height-compact) !important;
+    min-height: var(--hcs-control-height-compact) !important;
+}
+
+.hcs-app-shell .hcs-event-filters .hcs-catalog-search .addon-end .btn {
+    height: 100%;
+}
+
+.hcs-app-shell .hcs-event-filters .hcs-event-filter-action .hcs-event-reset {
+    align-self: stretch;
+    margin: 0;
+    min-height: var(--hcs-control-height-compact);
+}
+
 .hcs-catalog-page .hcs-catalog-filter-toggle,
 .hcs-app-shell .hcs-users-filter-toggle {
     background: #fff;
