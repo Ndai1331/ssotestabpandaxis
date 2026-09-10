@@ -329,12 +329,12 @@
                                     @if (media.Kind == SocialMediaKind.Video)
                                     {
                                         <video controls preload="metadata" crossorigin="use-credentials" aria-label="@media.FileName">
-                                            <source src="@ResolveSocialResourceUrl(media.Url)" type="@media.ContentType" />
+                                            <source src="@SocialMediaUrl(media.Id)" type="@media.ContentType" />
                                         </video>
                                     }
                                     else
                                     {
-                                        <img src="@ResolveSocialResourceUrl(media.Url)" crossorigin="use-credentials" loading="lazy" alt="@media.FileName" />
+                                        <img src="@SocialMediaUrl(media.Id)" crossorigin="use-credentials" loading="lazy" alt="@media.FileName" />
                                     }
                                 }
                             </div>
@@ -439,13 +439,13 @@
                                                             {
                                                                 @if (IsImageAttachment(attachment.ContentType))
                                                                 {
-                                                                    <a href="@ResolveSocialResourceUrl(attachment.Url)" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
-                                                                        <img src="@ResolveSocialResourceUrl(attachment.Url)" crossorigin="use-credentials" loading="lazy" alt="@attachment.FileName" />
+                                                                    <a href="@SocialCommentAttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
+                                                                        <img src="@SocialCommentAttachmentUrl(attachment.Id)" crossorigin="use-credentials" loading="lazy" alt="@attachment.FileName" />
                                                                     </a>
                                                                 }
                                                                 else
                                                                 {
-                                                                    <a class="hcs-social-comment__file" href="@ResolveSocialResourceUrl(attachment.Url)" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
+                                                                    <a class="hcs-social-comment__file" href="@SocialCommentAttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
                                                                         <i class="fa @FileIcon(attachment.FileName)" aria-hidden="true"></i>
                                                                         <span>@attachment.FileName</span>
                                                                         <small>@FormatFileSize(attachment.Size)</small>
@@ -1547,6 +1547,10 @@
             return null;
         return Social.BuildResourceUrl(resourceUrl);
     }
+
+    private string SocialMediaUrl(Guid mediaId) => Social.BuildMediaUrl(mediaId);
+
+    private string SocialCommentAttachmentUrl(Guid attachmentId) => Social.BuildCommentAttachmentUrl(attachmentId);
 
     private void MarkAvatarLoadFailure(string avatarUrl) => avatarLoadFailures.Add(avatarUrl);
 

@@ -172,6 +172,9 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
     public string BuildResourceUrl(string resourceUrl)
         => GatewayResourceUrlBuilder.Build(configuration, resourceUrl);
 
+    public string BuildEventAttachmentUrl(Guid fileId)
+        => GatewayResourceUrlBuilder.Build(configuration, $"api/events/attachments/{fileId:D}");
+
     public Task<List<SurveyCriteriaDto>> GetCriteriaAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<SurveyCriteriaDto>>("/api/surveys/criteria", cancellationToken);
     public Task<SurveyLocationDto> GetPublicLocationAsync(Guid locationId, CancellationToken cancellationToken = default) =>

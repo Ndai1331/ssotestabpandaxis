@@ -102,6 +102,12 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory, IConfig
     internal string BuildResourceUrl(string resourceUrl) =>
         GatewayResourceUrlBuilder.Build(configuration, resourceUrl);
 
+    internal string BuildMediaUrl(Guid mediaId) =>
+        GatewayResourceUrlBuilder.Build(configuration, $"api/social/media/{mediaId:D}");
+
+    internal string BuildCommentAttachmentUrl(Guid attachmentId) =>
+        GatewayResourceUrlBuilder.Build(configuration, $"api/social/comment-media/{attachmentId:D}");
+
     public async Task<UploadSocialMediaResult> UploadMediaAsync(IBrowserFile file, CancellationToken ct = default)
     {
         if (file.Size > MaxMediaSize)
