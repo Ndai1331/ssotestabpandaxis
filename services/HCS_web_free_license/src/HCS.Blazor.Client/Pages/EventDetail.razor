@@ -67,12 +67,45 @@ else if (detail is not null)
             </Card>
         </div>
         <Card Class="hcs-catalog-grid-card">
-            <CardBody>
-                <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:Documents"]</p><h2>@L["Event:Attachments"]</h2></div><label class="btn btn-outline-primary mb-0"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Event:AddAttachment"]<InputFile class="visually-hidden" multiple OnChange="UploadFilesAsync" /></label></div>
-                <div class="hcs-event-attachments">
-                    @if (detail.Attachments.Count == 0) { <span class="text-muted">@L["Event:NoAttachments"]</span> }
-                    else { @foreach (var file in detail.Attachments) { <div class="hcs-event-attachment"><a href="@AttachmentUrl(file.Id)" target="_blank" rel="noopener"><i class="fa fa-file-lines me-1" aria-hidden="true"></i>@file.FileName</a><small>@FormatSize(file.Size)</small><Button Color="Color.Danger" Size="Size.Small" Outline="true" Clicked="@(() => DeleteAttachmentAsync(file))"><Icon Name="@IconName.Delete" /></Button></div> } }
-                </div>
+                <CardBody>
+                    <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:Documents"]</p><h2>@L["Event:Attachments"]</h2></div><label class="btn btn-outline-primary mb-0"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Event:AddAttachment"]<InputFile class="visually-hidden" multiple OnChange="UploadFilesAsync" /></label></div>
+                @if (detail.Attachments.Count == 0)
+                {
+                    <p class="hcs-event-attachments-empty">@L["Event:NoAttachments"]</p>
+                }
+                else
+                {
+                    <div class="hcs-event-attachments-table-wrap">
+                        <table class="hcs-event-attachments-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">@L["Event:AttachmentName"]</th>
+                                    <th scope="col">@L["Event:AttachmentSize"]</th>
+                                    <th scope="col" class="hcs-event-attachments-table__actions">@L["Catalog:Actions"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var file in detail.Attachments)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="hcs-event-attachment-name"><i class="fa fa-file-lines" aria-hidden="true"></i><span>@file.FileName</span></span>
+                                        </td>
+                                        <td class="hcs-event-attachment-size">@FormatSize(file.Size)</td>
+                                        <td>
+                                            <div class="hcs-event-attachment-actions">
+                                                <a class="btn btn-sm btn-outline-primary" href="@AttachmentUrl(file.Id)" target="_blank" rel="noopener" download="@file.FileName">
+                                                    <i class="fa fa-download me-1" aria-hidden="true"></i>@L["Event:DownloadAttachment"]
+                                                </a>
+                                                <Button Color="Color.Danger" Size="Size.Small" Outline="true" Title='@L["Catalog:Delete"].Value' aria-label='@L["Catalog:Delete"].Value' Clicked="@(() => DeleteAttachmentAsync(file))"><Icon Name="@IconName.Delete" /></Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
             </CardBody>
         </Card>
         <Card Class="hcs-catalog-grid-card">

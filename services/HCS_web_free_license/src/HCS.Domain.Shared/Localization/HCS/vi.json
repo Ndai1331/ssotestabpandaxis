@@ -192,6 +192,8 @@
     "Event:Attachments": "Tài liệu đính kèm",
     "Event:AddAttachment": "Đính kèm tài liệu",
     "Event:NoAttachments": "Chưa có tài liệu đính kèm.",
+    "Event:AttachmentName": "Tên tài liệu",
+    "Event:AttachmentSize": "Dung lượng",
     "Event:AttachmentUploaded": "Đã tải tài liệu lên.",
     "Event:DownloadAttachment": "Tải xuống",
     "Event:CreateAttachmentHint": "Có thể chọn một hoặc nhiều file, tối đa 25 MB mỗi file.",

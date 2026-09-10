@@ -192,6 +192,8 @@
     "Event:Attachments": "Attachments",
     "Event:AddAttachment": "Attach document",
     "Event:NoAttachments": "No attachments yet.",
+    "Event:AttachmentName": "File name",
+    "Event:AttachmentSize": "Size",
     "Event:AttachmentUploaded": "Attachment uploaded.",
     "Event:DownloadAttachment": "Download",
     "Event:CreateAttachmentHint": "Choose one or more files, up to 25 MB per file.",

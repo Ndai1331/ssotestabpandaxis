@@ -15,10 +15,18 @@
 .hcs-event-qr-help { color: var(--color-muted, #5C6578); font-size: .8rem; }
 .hcs-event-public-url { background: #f5f8fc; border-radius: .4rem; font-size: .7rem; overflow-wrap: anywhere; padding: .6rem; text-align: left; }
 .hcs-event-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
-.hcs-event-attachments { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
-.hcs-event-attachment { align-items: center; background: #f7fbfc; border: 1px solid #dcefed; border-radius: .55rem; display: flex; gap: .5rem; padding: .6rem .7rem; }
-.hcs-event-attachment a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hcs-event-attachment small { color: var(--color-muted, #5C6578); white-space: nowrap; }
+.hcs-event-attachments-empty { color: var(--color-muted, #5C6578); margin: 0; }
+.hcs-event-attachments-table-wrap { border: 1px solid var(--color-border, #DDE4EE); border-radius: .65rem; overflow-x: auto; }
+.hcs-event-attachments-table { border-collapse: separate; border-spacing: 0; min-width: 38rem; width: 100%; }
+.hcs-event-attachments-table th { background: #f7fbfc; color: var(--color-muted, #5C6578); font-size: .72rem; letter-spacing: .04em; padding: .7rem .85rem; text-align: left; text-transform: uppercase; white-space: nowrap; }
+.hcs-event-attachments-table td { border-top: 1px solid var(--color-border, #DDE4EE); padding: .7rem .85rem; vertical-align: middle; }
+.hcs-event-attachments-table__actions { text-align: right !important; }
+.hcs-event-attachment-name { align-items: center; display: flex; gap: .55rem; min-width: 0; }
+.hcs-event-attachment-name > i { color: var(--color-secondary, #007F7C); flex: 0 0 auto; }
+.hcs-event-attachment-name > span { min-width: 0; overflow-wrap: anywhere; }
+.hcs-event-attachment-size { color: var(--color-muted, #5C6578); white-space: nowrap; }
+.hcs-event-attachment-actions { align-items: center; display: flex; gap: .5rem; justify-content: flex-end; }
+.hcs-event-attachment-actions .btn { white-space: nowrap; }
 .hcs-event-attendee-filters { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(15rem, 2fr) minmax(10rem, 1fr) minmax(10rem, 1fr) auto; margin-bottom: 1rem; }
 .hcs-event-attendee-filters .hcs-catalog-search { min-width: 0; width: 100%; }
 .hcs-event-table-wrap { overflow-x: auto; }
