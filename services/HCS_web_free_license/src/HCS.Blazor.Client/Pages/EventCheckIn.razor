@@ -1,5 +1,9 @@
 @page "/event-check-in/{Code}"
 @inherits HCSComponentBase
+@using HCS.Blazor.Client.Account
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AccountProfileClient Account
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject WorkManagementClient Work
 
 <PageTitle>@(eventInfo?.Name ?? L["Event:CheckIn"]) · HCS</PageTitle>
@@ -14,7 +18,16 @@
             <p class="hcs-event-eyebrow">@L["Event:CheckIn"]</p><h1 id="checkin-title">@eventInfo.Name</h1><p class="hcs-event-checkin__meta">@eventInfo.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @eventInfo.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br />@(eventInfo.Location ?? L["Event:OnlineOrNotSet"])</p>
             <div class="hcs-event-checkin__notice"><i class="fa fa-circle-info me-2" aria-hidden="true"></i>@L["Event:CheckInPrompt"]</div>
             @if (!string.IsNullOrWhiteSpace(errorMessage)) { <div class="alert alert-danger" role="alert">@errorMessage</div> }
-            <div class="hcs-event-checkin__form"><Field><FieldLabel>@L["Event:FullName"]</FieldLabel><input class="form-control" @bind="form.FullName" autocomplete="name" /></Field><Field><FieldLabel>@L["Event:Phone"]</FieldLabel><input class="form-control" type="tel" @bind="form.PhoneNumber" autocomplete="tel" /></Field><div class="hcs-event-checkin__or">@L["Event:Or"]</div><div class="hcs-form-row"><Field><FieldLabel>CCCD</FieldLabel><input class="form-control" @bind="form.Cccd" /></Field><Field><FieldLabel>@L["Event:Email"]</FieldLabel><input class="form-control" type="email" @bind="form.Email" autocomplete="email" /></Field></div><Button Color="Color.Primary" Class="w-100" Clicked="CheckInAsync" Disabled="@isSubmitting"><i class="fa fa-check me-2" aria-hidden="true"></i>@L["Event:ConfirmCheckIn"]</Button></div>
+            <div class="hcs-event-checkin__form">
+                <Field><FieldLabel>@L["Event:FullName"]</FieldLabel><input class="form-control" @bind="form.FullName" autocomplete="name" /></Field>
+                <Field><FieldLabel>@L["Event:Username"]</FieldLabel><input class="form-control" @bind="form.Username" autocomplete="username" /></Field>
+                <div class="hcs-form-row">
+                    <Field><FieldLabel>@L["Event:Phone"]</FieldLabel><input class="form-control" type="tel" @bind="form.PhoneNumber" autocomplete="tel" /></Field>
+                    <Field><FieldLabel>@L["Event:Email"]</FieldLabel><input class="form-control" type="email" @bind="form.Email" autocomplete="email" /></Field>
+                </div>
+                <p class="hcs-event-checkin__helper">@L["Event:CheckInIdentifierHint"]</p>
+                <Button Color="Color.Primary" Class="w-100" Clicked="CheckInAsync" Disabled="@isSubmitting"><i class="fa fa-check me-2" aria-hidden="true"></i>@L["Event:ConfirmCheckIn"]</Button>
+            </div>
         }
     </section>
 </main>
@@ -26,19 +39,48 @@
     private readonly CheckInForm form = new();
     protected override async Task OnParametersSetAsync()
     {
-        isLoading = true; errorMessage = null;
+        isLoading = true; checkedIn = null; errorMessage = null; form.Reset();
         try { if (string.IsNullOrWhiteSpace(Token)) throw new InvalidOperationException(L["Event:InvalidQr"].Value); eventInfo = await Work.GetPublicEventAsync(Code, Token); }
         catch (InvalidOperationException ex) { eventInfo = null; errorMessage = ex.Message; }
         catch (Exception ex) { eventInfo = null; errorMessage = MapBffError(ex); }
-        finally { isLoading = false; }
+        finally
+        {
+            isLoading = false;
+            if (eventInfo is not null) await TryPrefillCurrentUserAsync();
+        }
     }
     private async Task CheckInAsync()
     {
-        if (string.IsNullOrWhiteSpace(form.PhoneNumber) && string.IsNullOrWhiteSpace(form.Email) && string.IsNullOrWhiteSpace(form.Cccd)) { errorMessage = L["Event:CheckInIdentifierRequired"].Value; return; }
+        if (string.IsNullOrWhiteSpace(form.PhoneNumber) && string.IsNullOrWhiteSpace(form.Email) && string.IsNullOrWhiteSpace(form.Username)) { errorMessage = L["Event:CheckInIdentifierRequired"].Value; return; }
         isSubmitting = true; errorMessage = null;
-        try { checkedIn = await Work.CheckInPublicEventAsync(Code, Token ?? "", new(form.FullName, form.Cccd, form.PhoneNumber, form.Email)); }
+        try { checkedIn = await Work.CheckInPublicEventAsync(Code, Token ?? "", new(form.FullName, null, form.PhoneNumber, form.Email, form.Username)); }
         catch (Exception ex) { errorMessage = MapBffError(ex); }
         finally { isSubmitting = false; }
     }
-    private sealed class CheckInForm { public string? FullName { get; set; } public string? Cccd { get; set; } public string? PhoneNumber { get; set; } public string? Email { get; set; } }
+    private async Task TryPrefillCurrentUserAsync()
+    {
+        try
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (state.User.Identity?.IsAuthenticated != true) return;
+            var profile = await Account.GetProfileAsync();
+            form.Username = profile.UserName;
+            form.FullName = $"{profile.Surname} {profile.Name}".Trim();
+            if (string.IsNullOrWhiteSpace(form.FullName)) form.FullName = profile.UserName;
+            form.PhoneNumber = profile.PhoneNumber;
+            form.Email = profile.Email;
+        }
+        catch (Exception)
+        {
+            // Public check-in must remain usable when an authenticated session has no profile response.
+        }
+    }
+    private sealed class CheckInForm
+    {
+        public string? FullName { get; set; }
+        public string? Username { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Email { get; set; }
+        public void Reset() => (FullName, Username, PhoneNumber, Email) = (null, null, null, null);
+    }
 }

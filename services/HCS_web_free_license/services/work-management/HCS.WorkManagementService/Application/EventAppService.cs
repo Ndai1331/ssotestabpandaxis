@@ -9,10 +9,12 @@ using QRCoder;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Domain.Entities;
+using Volo.Abp.Users;
 
 namespace HCS.WorkManagementService.Application;
 
-public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthorization access, ILogger<EventAppService> logger) : ITransientDependency
+public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthorization access,
+    ILogger<EventAppService> logger, ICurrentUser currentUser) : ITransientDependency
 {
     public async Task<PagedWorkDto<EventListItemDto>> GetListAsync(string? filter, string? group, string? status,
         int skip, int take, CancellationToken ct)
@@ -193,17 +195,24 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         var phone = NormalizePhone(input.PhoneNumber);
         var email = NormalizeEmail(input.Email);
         var cccd = NormalizeIdentity(input.Cccd);
+        var username = NormalizeUsername(input.Username);
         var attendees = await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(ct);
-        var attendee = attendees.FirstOrDefault(x =>
-            (phone.Length > 0 && NormalizePhone(x.PhoneNumber) == phone)
-            || (email.Length > 0 && NormalizeEmail(x.Email) == email)
-            || (cccd.Length > 0 && NormalizeIdentity(x.Cccd) == cccd));
+        var hasProvidedIdentifier = phone.Length > 0 || email.Length > 0 || cccd.Length > 0 || username.Length > 0;
+        var attendee = hasProvidedIdentifier
+            ? attendees.FirstOrDefault(x =>
+                (phone.Length > 0 && NormalizePhone(x.PhoneNumber) == phone)
+                || (email.Length > 0 && NormalizeEmail(x.Email) == email)
+                || (cccd.Length > 0 && NormalizeIdentity(x.Cccd) == cccd)
+                || (username.Length > 0 && NormalizeUsername(x.Username) == username))
+            : currentUser.Id is { } userId
+                ? attendees.FirstOrDefault(x => x.UserId == userId)
+                : null;
 
         if (attendee is null)
         {
             logger.LogWarning(
-                "Public event check-in attendee not found. EventId={EventId}, EventCode={EventCode}, HasPhone={HasPhone}, HasEmail={HasEmail}, HasCccd={HasCccd}, AttendeeCount={AttendeeCount}",
-                item.Id, item.Code, phone.Length > 0, email.Length > 0, cccd.Length > 0, attendees.Count);
+                "Public event check-in attendee not found. EventId={EventId}, EventCode={EventCode}, AuthenticatedUser={AuthenticatedUser}, HasPhone={HasPhone}, HasEmail={HasEmail}, HasUsername={HasUsername}, HasLegacyCccd={HasLegacyCccd}, AttendeeCount={AttendeeCount}",
+                item.Id, item.Code, currentUser.Id.HasValue, phone.Length > 0, email.Length > 0, username.Length > 0, cccd.Length > 0, attendees.Count);
             throw new BusinessException("Work:EventAttendeeNotFound");
         }
 
@@ -291,6 +300,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         return digits;
     }
     private static string NormalizeEmail(string? value) => (value ?? string.Empty).Trim().ToUpperInvariant();
+    private static string NormalizeUsername(string? value) => (value ?? string.Empty).Trim().ToUpperInvariant();
     private static string NormalizeIdentity(string? value) =>
         new string((value ?? string.Empty).Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
     private static string NormalizeStatus(string value, string fallback, IReadOnlyCollection<string> allowed) =>
