@@ -16,6 +16,21 @@
             <p class="hcs-event-eyebrow">@L["Event:CheckIn"]</p><h1 id="checkin-title">@eventInfo.Name</h1><p class="hcs-event-checkin__meta">@eventInfo.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @eventInfo.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br />@(eventInfo.Location ?? L["Event:OnlineOrNotSet"])</p>
             <div class="hcs-event-checkin__notice"><i class="fa fa-circle-info me-2" aria-hidden="true"></i>@L["Event:CheckInAuthenticatedPrompt"]</div>
             @if (!string.IsNullOrWhiteSpace(errorMessage)) { <div class="alert alert-danger" role="alert">@errorMessage</div> }
+            @if (eventInfo.Attachments is { Count: > 0 })
+            {
+                <section class="hcs-event-checkin__attachments" aria-labelledby="event-attachments-title">
+                    <h2 id="event-attachments-title"><i class="fa fa-paperclip me-2" aria-hidden="true"></i>@L["Event:Attachments"]</h2>
+                    <div class="hcs-event-checkin__attachment-list">
+                        @foreach (var file in eventInfo.Attachments)
+                        {
+                            <a class="hcs-event-checkin__attachment" href="@PublicAttachmentUrl(file.Id)" target="_blank" rel="noopener">
+                                <span class="hcs-event-checkin__attachment-name"><i class="fa fa-file-lines me-2" aria-hidden="true"></i>@file.FileName</span>
+                                <span class="hcs-event-checkin__attachment-download">@L["Event:DownloadAttachment"]<i class="fa fa-download ms-1" aria-hidden="true"></i></span>
+                            </a>
+                        }
+                    </div>
+                </section>
+            }
             <div class="hcs-event-checkin__form">
                 <Button Color="Color.Primary" Class="w-100" Clicked="ConfirmParticipationAsync" Disabled="@isSubmitting"><i class="fa fa-check me-2" aria-hidden="true"></i>@L["Event:ConfirmParticipation"]</Button>
             </div>
@@ -58,4 +73,7 @@
         catch (Exception ex) { errorMessage = MapBffError(ex); }
         finally { isSubmitting = false; }
     }
+
+    private string PublicAttachmentUrl(Guid fileId) => Work.BuildResourceUrl(
+        $"/api/events/public/{Uri.EscapeDataString(Code)}/attachments/{fileId:D}?token={Uri.EscapeDataString(Token ?? string.Empty)}");
 }

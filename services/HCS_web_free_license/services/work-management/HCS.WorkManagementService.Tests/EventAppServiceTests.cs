@@ -68,6 +68,26 @@ public sealed class EventAppServiceTests
         Assert.Equal(EventCheckInStatuses.CheckedIn, attendee.CheckInStatus);
     }
 
+    [Fact]
+    public async Task Public_event_details_include_its_attachments()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent();
+        db.ManagedEvents.Add(item);
+        db.EventAttachments.Add(new EventAttachment(Guid.NewGuid(), item.Id, Guid.NewGuid(),
+            $"events/{item.Id:N}/file", "agenda.pdf", "application/pdf", 2048));
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, new TestCurrentUser());
+
+        var result = await service.GetPublicAsync(item.Code, item.QrToken, cancellationToken);
+
+        var attachment = Assert.Single(result.Attachments);
+        Assert.Equal("agenda.pdf", attachment.FileName);
+        Assert.Equal("application/pdf", attachment.ContentType);
+        Assert.Equal(2048, attachment.Size);
+    }
+
     private static EventAppService CreateService(WorkManagementDbContext db, ICurrentUser currentUser) =>
         new(db, new WorkRecordAuthorization(db, currentUser),
             NullLogger<EventAppService>.Instance, currentUser);

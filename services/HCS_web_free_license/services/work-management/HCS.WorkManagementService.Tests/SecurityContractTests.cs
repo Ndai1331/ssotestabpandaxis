@@ -84,6 +84,16 @@ public sealed class SecurityContractTests
         Assert.NotNull(method.GetCustomAttributes(typeof(AllowAnonymousAttribute), true).SingleOrDefault());
     }
 
+    [Theory]
+    [InlineData(nameof(EventsController.Public))]
+    [InlineData(nameof(EventsController.PublicAttachment))]
+    [InlineData(nameof(EventsController.PublicCheckIn))]
+    public void Public_event_endpoints_are_explicitly_anonymous(string action)
+    {
+        var method = typeof(EventsController).GetMethod(action)!;
+        Assert.NotNull(method.GetCustomAttributes(typeof(AllowAnonymousAttribute), true).SingleOrDefault());
+    }
+
     [Fact]
     public void Bearer_apis_do_not_auto_validate_antiforgery_cookies()
     {

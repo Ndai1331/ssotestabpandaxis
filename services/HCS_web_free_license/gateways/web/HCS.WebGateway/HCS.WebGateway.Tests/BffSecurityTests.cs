@@ -106,6 +106,52 @@ public sealed class BffSecurityTests
     }
 
     [Fact]
+    public void Mobile_bearer_header_is_not_appended_again_by_the_proxy_transform()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Headers.Authorization = "Bearer mobile-access-token";
+        using var proxyRequest = new HttpRequestMessage();
+        proxyRequest.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "mobile-access-token");
+
+        BffAccessTokenTransform.Apply(context, proxyRequest);
+
+        Assert.Equal("Bearer", proxyRequest.Headers.Authorization?.Scheme);
+        Assert.Equal("mobile-access-token", proxyRequest.Headers.Authorization?.Parameter);
+        Assert.Single(proxyRequest.Headers.GetValues("Authorization"));
+    }
+
+    [Fact]
+    public void Http_request_message_allows_appending_a_second_authorization_value_without_validation()
+    {
+        using var proxyRequest = new HttpRequestMessage();
+        proxyRequest.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "mobile-access-token");
+
+        var appended = proxyRequest.Headers.TryAddWithoutValidation(
+            "Authorization", "Bearer mobile-access-token");
+
+        Assert.True(appended);
+        Assert.Equal(2, proxyRequest.Headers.GetValues("Authorization").Count());
+    }
+
+    [Fact]
+    public void Browser_bff_token_replaces_the_outgoing_authorization_header()
+    {
+        var context = new DefaultHttpContext();
+        context.Items[BffAccessTokenMiddleware.AccessTokenItemKey] = "bff-access-token";
+        using var proxyRequest = new HttpRequestMessage();
+        proxyRequest.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "stale-token");
+
+        BffAccessTokenTransform.Apply(context, proxyRequest);
+
+        Assert.Equal("Bearer", proxyRequest.Headers.Authorization?.Scheme);
+        Assert.Equal("bff-access-token", proxyRequest.Headers.Authorization?.Parameter);
+        Assert.Single(proxyRequest.Headers.GetValues("Authorization"));
+    }
+
+    [Fact]
     public void Native_signalr_handshake_can_use_access_token_query_without_browser_origin()
     {
         var context = new DefaultHttpContext();

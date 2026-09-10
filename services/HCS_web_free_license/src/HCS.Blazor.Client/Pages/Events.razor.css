@@ -11,6 +11,15 @@
 .hcs-event-table td small { color: var(--color-muted, #5C6578); }
 .hcs-event-name { color: var(--color-secondary, #007F7C); display: block; font-weight: 800; text-decoration: none; }
 .hcs-event-name:hover, .hcs-event-name:focus-visible { text-decoration: underline; }
+.hcs-event-create-attachments { background: #f7fbfc; border: 1px solid #dcefed; border-radius: .65rem; display: grid; gap: .75rem; padding: .85rem; }
+.hcs-event-create-attachments__header { align-items: center; display: flex; gap: 1rem; justify-content: space-between; }
+.hcs-event-create-attachments__header .form-label { margin-bottom: .2rem; }
+.hcs-event-upload-hint { color: var(--color-muted, #5C6578); font-size: .78rem; margin: 0; }
+.hcs-event-upload-list { display: grid; gap: .5rem; }
+.hcs-event-upload-file { align-items: center; background: #fff; border: 1px solid var(--color-border, #DDE4EE); border-radius: .5rem; display: flex; gap: .75rem; justify-content: space-between; min-height: 2.75rem; padding: .5rem .65rem; }
+.hcs-event-upload-file__name { align-items: center; display: flex; min-width: 0; }
+.hcs-event-upload-file__name > span { min-width: 0; overflow-wrap: anywhere; }
+.hcs-event-upload-file__name small { color: var(--color-muted, #5C6578); display: block; font-size: .74rem; margin-top: .1rem; }
 .hcs-event-pager { align-items: center; border-top: 1px solid var(--color-border, #DDE4EE); color: var(--color-muted, #5C6578); display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 1rem; }
 @media (max-width: 850px) { .hcs-event-list-filters { grid-template-columns: 1fr 1fr; } .hcs-event-list-filters .hcs-catalog-search { grid-column: 1 / -1; } }
-@media (max-width: 520px) { .hcs-event-list-filters { grid-template-columns: 1fr; } .hcs-event-list-filters .hcs-catalog-search { grid-column: auto; } .hcs-event-pager { align-items: start; flex-direction: column; gap: .75rem; } }
+@media (max-width: 520px) { .hcs-event-list-filters { grid-template-columns: 1fr; } .hcs-event-list-filters .hcs-catalog-search { grid-column: auto; } .hcs-event-create-attachments__header { align-items: stretch; flex-direction: column; } .hcs-event-create-attachments__header .btn { align-self: flex-start; } .hcs-event-pager { align-items: start; flex-direction: column; gap: .75rem; } }

@@ -56,6 +56,35 @@
     <div class="hcs-form-row"><Field><FieldLabel>@L["Event:StartTime"]</FieldLabel><input class="form-control" type="datetime-local" @bind="form.StartTime" /></Field><Field><FieldLabel>@L["Event:EndTime"]</FieldLabel><input class="form-control" type="datetime-local" @bind="form.EndTime" /></Field></div>
     <div class="hcs-form-row"><Field><FieldLabel>@L["Event:Location"]</FieldLabel><input class="form-control" @bind="form.Location" maxlength="512" /></Field><Field><FieldLabel>@L["Catalog:Status"]</FieldLabel><Select TValue="string" @bind-Value="form.Status">@foreach (var value in Statuses) { <SelectItem Value="@value">@StatusLabel(value)</SelectItem>}</Select></Field></div>
     <Field><FieldLabel>@L["Event:Content"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Content" maxlength="4000"></textarea></Field><Field><FieldLabel>@L["Event:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" maxlength="4000"></textarea></Field>
+    @if (editingId is null)
+    {
+        <div class="hcs-event-create-attachments">
+            <div class="hcs-event-create-attachments__header">
+                <div>
+                    <label class="form-label" for="event-create-attachments">@L["Event:Attachments"]</label>
+                    <p class="hcs-event-upload-hint">@L["Event:CreateAttachmentHint"]</p>
+                </div>
+                <label class="btn btn-outline-primary mb-0" for="event-create-attachments"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Event:AddAttachment"]</label>
+                <InputFile id="event-create-attachments" class="visually-hidden" multiple OnChange="SelectCreateAttachments" />
+            </div>
+            @if (!string.IsNullOrWhiteSpace(attachmentError))
+            {
+                <div class="alert alert-danger mb-0" role="alert">@attachmentError</div>
+            }
+            @if (selectedCreateAttachments.Count > 0)
+            {
+                <div class="hcs-event-upload-list" aria-live="polite">
+                    @foreach (var file in selectedCreateAttachments)
+                    {
+                        <div class="hcs-event-upload-file">
+                            <span class="hcs-event-upload-file__name"><i class="fa fa-file-lines me-2" aria-hidden="true"></i><span>@file.Name<small>@FormatSize(file.Size)</small></span></span>
+                            <Button Color="Color.Light" Size="Size.Small" Outline="true" Title='@L["Event:RemoveAttachment"].Value' Clicked="@(() => RemoveCreateAttachment(file))"><i class="fa fa-xmark" aria-hidden="true"></i><span class="visually-hidden">@L["Event:RemoveAttachment"]</span></Button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
 </div></ModalBody><ModalFooter Class="hcs-catalog-modal__footer"><Button Color="Color.Secondary" Clicked="() => modal!.Hide()">@L["Catalog:Cancel"]</Button><Button Color="Color.Primary" Clicked="SaveAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button></ModalFooter></ModalContent></Modal>
 
 @code {
@@ -67,6 +96,10 @@
     private DataGrid<EventListItemDto>? dataGrid;
     private Guid? editingId;
     private string filter = "", group = "", status = "";
+    private const int MaxEventAttachmentCount = 10;
+    private const long MaxEventAttachmentSize = 25 * 1024 * 1024;
+    private readonly List<IBrowserFile> selectedCreateAttachments = [];
+    private string? attachmentError;
     private bool isLoading, isSaving;
     private int totalCount, pageSize = 20, currentPage = 1;
 
@@ -97,23 +130,97 @@
     }
     private Task SearchAsync() => ReloadFromFirstPageAsync();
     private Task ResetAsync() { filter = group = status = ""; return ReloadFromFirstPageAsync(); }
-    private async Task OpenCreate() { editingId = null; form.Reset(); if (modal is not null) await modal.Show(); }
+    private async Task OpenCreate()
+    {
+        editingId = null; form.Reset(); selectedCreateAttachments.Clear(); attachmentError = null;
+        if (modal is not null) await modal.Show();
+    }
     private async Task EditAsync(EventListItemDto item)
     {
-        var detail = await Work.GetEventAsync(item.Id); editingId = item.Id; form.Load(detail); if (modal is not null) await modal.Show();
+        var detail = await Work.GetEventAsync(item.Id); editingId = item.Id; form.Load(detail); selectedCreateAttachments.Clear(); attachmentError = null;
+        if (modal is not null) await modal.Show();
     }
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(form.Group) || string.IsNullOrWhiteSpace(form.Name)) { await NotifyErrorAsync(new InvalidOperationException(L["Event:RequiredFields"].Value)); return; }
+        if (editingId is null && !ValidateCreateAttachments()) return;
         isSaving = true;
+        EventDto? createdEvent = null;
         try
         {
-            if (editingId is { } id) await Work.UpdateEventAsync(id, form.ToUpdate()); else await Work.CreateEventAsync(form.ToCreate());
-            await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]); if (modal is not null) await modal.Hide(); await LoadAsync();
+            if (editingId is { } id)
+            {
+                await Work.UpdateEventAsync(id, form.ToUpdate());
+            }
+            else
+            {
+                createdEvent = await Work.CreateEventAsync(form.ToCreate());
+                foreach (var file in selectedCreateAttachments)
+                    await Work.UploadEventAttachmentAsync(createdEvent.Id, file);
+            }
+
+            selectedCreateAttachments.Clear(); attachmentError = null;
+            await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
+            if (modal is not null) await modal.Hide();
+            await LoadAsync();
         }
-        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        catch (Exception ex)
+        {
+            if (createdEvent is not null)
+            {
+                selectedCreateAttachments.Clear(); attachmentError = null;
+                if (modal is not null) await modal.Hide();
+                await LoadAsync();
+                await NotifyErrorAsync(L["Event:CreatedButAttachmentsFailed"]);
+            }
+            else
+            {
+                await NotifyErrorAsync(ex, BffErrorKind.Save);
+            }
+        }
         finally { isSaving = false; }
     }
+    private void SelectCreateAttachments(InputFileChangeEventArgs args)
+    {
+        attachmentError = null;
+        selectedCreateAttachments.Clear();
+        try
+        {
+            var files = args.GetMultipleFiles(MaxEventAttachmentCount + 1);
+            if (files.Count > MaxEventAttachmentCount)
+            {
+                attachmentError = L["Event:AttachmentCountExceeded"].Value;
+                return;
+            }
+            if (files.Any(file => file.Size <= 0 || file.Size > MaxEventAttachmentSize))
+            {
+                attachmentError = L["Event:AttachmentTooLarge"].Value;
+                return;
+            }
+            selectedCreateAttachments.AddRange(files);
+        }
+        catch (InvalidOperationException)
+        {
+            attachmentError = L["Event:AttachmentCountExceeded"].Value;
+        }
+    }
+    private bool ValidateCreateAttachments()
+    {
+        if (!string.IsNullOrWhiteSpace(attachmentError)) return false;
+        if (selectedCreateAttachments.Count > MaxEventAttachmentCount)
+        {
+            attachmentError = L["Event:AttachmentCountExceeded"].Value;
+            return false;
+        }
+        if (selectedCreateAttachments.Any(file => file.Size <= 0 || file.Size > MaxEventAttachmentSize))
+        {
+            attachmentError = L["Event:AttachmentTooLarge"].Value;
+            return false;
+        }
+        attachmentError = null;
+        return true;
+    }
+    private void RemoveCreateAttachment(IBrowserFile file) => selectedCreateAttachments.Remove(file);
     private async Task DeleteAsync(EventListItemDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
@@ -127,6 +234,7 @@
     }
     private string StatusLabel(string value) => value switch { "Preparing" => L["Event:Status.Preparing"].Value, "Ongoing" => L["Event:Status.Ongoing"].Value, "Completed" => L["Event:Status.Completed"].Value, "Cancelled" => L["Event:Status.Cancelled"].Value, _ => value };
     private static string StatusClass(string value) => value switch { "Ongoing" => "hcs-status-badge hcs-status-badge--success", "Completed" => "hcs-status-badge hcs-status-badge--todo", "Cancelled" => "hcs-status-badge hcs-status-badge--danger", _ => "hcs-status-badge hcs-status-badge--planning" };
+    private static string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{bytes / 1024d:0.#} KB" : $"{bytes / 1024d / 1024d:0.#} MB";
     private sealed class EventForm
     {
         public string Group { get; set; } = "General"; public string Name { get; set; } = ""; public string? Content { get; set; } public string? Description { get; set; } public string? Location { get; set; } public DateTime StartTime { get; set; } = DateTime.Now.AddHours(1); public DateTime EndTime { get; set; } = DateTime.Now.AddHours(2); public string Status { get; set; } = "Preparing";

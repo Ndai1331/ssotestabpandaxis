@@ -17,6 +17,7 @@ using HCS.Blazor.Client.Collaboration;
 using HCS.Blazor.Client.Layouts;
 using HCS.Blazor.Client.Pages.Organization;
 using HCS.Blazor.Client.Pages;
+using HCS.Blazor.Client.Settings;
 using Localization.Resources.AbpUi;
 using OpenIddict.Abstractions;
 using Volo.Abp.AspNetCore.Components.Web;
@@ -31,6 +32,7 @@ using Volo.Abp.AspNetCore.Mvc.UI.Bundling;
 using Volo.Abp.AspNetCore.Components.WebAssembly.Theming.Bundling;
 using Volo.Abp.AspNetCore.Components.WebAssembly.LeptonXLiteTheme;
 using Volo.Abp.SettingManagement.Blazor.WebAssembly;
+using Volo.Abp.SettingManagement.Blazor;
 using Volo.Abp.FeatureManagement.Blazor.WebAssembly;
 using Volo.Abp.Identity.Blazor;
 using Volo.Abp.Identity.Blazor.WebAssembly;
@@ -87,8 +89,10 @@ public class HCSBlazorClientModule : AbpModule
         context.Services.AddScoped<Work.EmployeeRatingDirectoryClient>();
         context.Services.AddScoped<Work.EmployeeRatingDirectoryService>();
         context.Services.AddScoped<Documents.DocumentClient>();
+        context.Services.AddScoped<AuthenticationSettingsClient>();
         ConfigureRouter(context);
         ConfigureMenu(context);
+        ConfigureSettingManagement();
     }
 
 
@@ -107,6 +111,12 @@ public class HCSBlazorClientModule : AbpModule
         {
             options.MenuContributors.Add(new HCSMenuContributor());
         });
+    }
+
+    private void ConfigureSettingManagement()
+    {
+        Configure<SettingManagementComponentOptions>(options =>
+            options.Contributors.Add(new AuthenticationSettingsPageContributor()));
     }
 
     private void ConfigureMessageLocalization()

@@ -83,3 +83,5 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - [x] Cho phép Admin nhận diện theo role ở client/API policy; Auth Server bổ sung các permission definition đang bật khi phát token mới.
 - [x] Thu gọn filter trang chi tiết người tham dự thành một hàng trên desktop và responsive wrap trên màn hình nhỏ.
 - [x] Cho phép tài khoản đã đăng nhập quét QR tự tạo attendee khi chưa có trong danh sách; tự đánh dấu `Confirmed + CheckedIn` và liên kết theo `UserId` hiện tại.
+- [x] Cho phép chọn một hoặc nhiều file khi tạo sự kiện; tạo event trước rồi tải tuần tự các file lên với giới hạn 10 file, 25 MB/file.
+- [x] Public check-in trả về danh sách tài liệu và cung cấp endpoint tải file có kiểm tra đúng mã/token của sự kiện.

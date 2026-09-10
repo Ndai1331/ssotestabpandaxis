@@ -82,6 +82,17 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
         return (stream, Map(item));
     }
 
+    public async Task<(Stream Stream, EventAttachmentDto File)> GetPublicEventFileAsync(
+        string code, string token, Guid fileId, CancellationToken ct)
+    {
+        var item = await db.EventAttachments.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == fileId && db.ManagedEvents.Any(eventItem =>
+                eventItem.Id == x.EventId && eventItem.Code == code && eventItem.QrToken == token), ct)
+            ?? throw new EntityNotFoundException(typeof(EventAttachment), fileId);
+        var stream = await blobs.GetAsync(item.BlobName, cancellationToken: ct);
+        return (stream, Map(item));
+    }
+
     public async Task DeleteEventFileAsync(Guid fileId, CancellationToken ct)
     {
         var item = await db.EventAttachments.SingleOrDefaultAsync(x => x.Id == fileId, ct)

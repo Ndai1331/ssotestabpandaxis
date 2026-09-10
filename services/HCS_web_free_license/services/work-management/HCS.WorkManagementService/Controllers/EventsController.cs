@@ -87,6 +87,13 @@ public sealed class EventsController(EventAppService service, WorkAssetService a
     [AllowAnonymous, HttpGet("public/{code}")]
     public Task<PublicEventDto> Public(string code, [FromQuery] string token, CancellationToken ct) => service.GetPublicAsync(code, token, ct);
 
+    [AllowAnonymous, HttpGet("public/{code}/attachments/{fileId:guid}")]
+    public async Task<IActionResult> PublicAttachment(string code, Guid fileId, [FromQuery] string token, CancellationToken ct)
+    {
+        var result = await assets.GetPublicEventFileAsync(code, token, fileId, ct);
+        return File(result.Stream, result.File.ContentType, result.File.FileName);
+    }
+
     [AllowAnonymous, HttpPost("public/{code}/check-in")]
     public Task<PublicEventCheckInResultDto> PublicCheckIn(string code, [FromQuery] string token,
         PublicEventCheckInDto input, CancellationToken ct) => service.CheckInPublicAsync(code, token, input, ct);

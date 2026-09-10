@@ -62,7 +62,8 @@ public sealed record CreateEventAttendeeRequest(Guid? UserId, string? Username, 
 public sealed record UpdateEventAttendeeRequest(string? Username, string? Surname, string? Name, string FullName, string? Cccd,
     string? PhoneNumber, string? Email, string? Address, string RegistrationStatus, string CheckInStatus, string? Note);
 public sealed record ChangeEventAttendeeStatusRequest(string? RegistrationStatus, string? CheckInStatus);
-public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location);
+public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location,
+    List<EventAttachmentDto>? Attachments = null);
 public sealed record PublicEventCheckInRequest();
 public sealed record PublicEventCheckInResultDto(string FullName, DateTime CheckedInAt);
 public sealed record EventImportResultDto(int Imported, int Skipped);

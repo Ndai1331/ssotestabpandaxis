@@ -1,0 +1,139 @@
+@using HCS.Blazor.Client.Settings
+@using HCS.Settings
+@inherits HCSComponentBase
+@inject AuthenticationSettingsClient SettingsClient
+
+<section class="hcs-auth-settings" aria-labelledby="hcs-sso-login-settings-title" aria-busy="@(isLoading ? "true" : "false")">
+    <header class="hcs-auth-settings__header">
+        <div>
+            <p class="hcs-auth-settings__eyebrow">@L["Settings:SsoLoginEyebrow"]</p>
+            <h2 id="hcs-sso-login-settings-title">@L["Settings:SsoLoginGroup"]</h2>
+            <p>@L["Settings:SsoLoginDescription"]</p>
+        </div>
+        <i class="fa fa-shield-halved hcs-auth-settings__icon" aria-hidden="true"></i>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="hcs-auth-settings__state" role="status" aria-live="polite">
+            <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+            <span>@L["Settings:SsoLoginLoading"]</span>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="hcs-auth-settings__error" role="alert">
+                <span>@errorMessage</span>
+                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isSaving">
+                    @L["Settings:SsoLoginRetry"]
+                </Button>
+            </div>
+        }
+
+        <div class="hcs-auth-settings__row">
+            <div>
+                <h3>@L["Settings:SsoLoginButton"]</h3>
+                <p id="hcs-sso-login-settings-description">@L["Settings:SsoLoginButtonDescription"]</p>
+            </div>
+            <button type="button"
+                    class="hcs-auth-settings__switch @(showSsoLoginButton ? "is-enabled" : "is-disabled")"
+                    aria-pressed="@(showSsoLoginButton ? "true" : "false")"
+                    aria-describedby="hcs-sso-login-settings-description"
+                    @onclick="ToggleSsoLoginButton"
+                    disabled="@isSaving">
+                <span class="hcs-auth-settings__switch-track" aria-hidden="true">
+                    <span class="hcs-auth-settings__switch-thumb"></span>
+                </span>
+                <span>@(showSsoLoginButton ? L["Settings:SsoLoginButtonEnabled"] : L["Settings:SsoLoginButtonDisabled"])</span>
+            </button>
+        </div>
+
+        <div class="hcs-auth-settings__footer">
+            <span class="hcs-auth-settings__status" role="status" aria-live="polite">
+                @(showSsoLoginButton ? L["Settings:SsoLoginStatusEnabled"] : L["Settings:SsoLoginStatusDisabled"])
+            </span>
+            <Button Color="Color.Primary"
+                    Clicked="SaveAsync"
+                    Loading="@isSaving"
+                    Disabled="@(isSaving || !isDirty)">
+                <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
+                @L["Settings:SsoLoginSave"]
+            </Button>
+        </div>
+    }
+</section>
+
+@code {
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool isDirty;
+    private bool showSsoLoginButton = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var settings = await SettingsClient.GetAsync();
+            showSsoLoginButton = settings.ShowSsoLoginButton;
+            isDirty = false;
+        }
+        catch (System.Exception exception)
+        {
+            errorMessage = MapBffError(exception);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private Task ToggleSsoLoginButton()
+    {
+        if (!isSaving)
+        {
+            showSsoLoginButton = !showSsoLoginButton;
+            isDirty = true;
+            errorMessage = null;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (isSaving || !isDirty)
+        {
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            await SettingsClient.UpdateAsync(new UpdateAuthenticationSettingsDto
+            {
+                ShowSsoLoginButton = showSsoLoginButton
+            });
+            isDirty = false;
+            await NotifySuccessAsync(L["Settings:SsoLoginSaved"]);
+        }
+        catch (System.Exception exception)
+        {
+            errorMessage = MapBffError(exception, BffErrorKind.Save);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

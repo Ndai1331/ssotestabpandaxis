@@ -187,7 +187,12 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     {
         var item = await db.ManagedEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), code);
-        return new(item.Code, item.Name, item.StartTime, item.EndTime, item.Location);
+        var attachments = await db.EventAttachments.AsNoTracking()
+            .Where(x => x.EventId == item.Id)
+            .OrderBy(x => x.FileName)
+            .Select(x => new EventAttachmentDto(x.Id, x.FileName, x.ContentType, x.Size))
+            .ToListAsync(ct);
+        return new(item.Code, item.Name, item.StartTime, item.EndTime, item.Location, attachments);
     }
 
     public async Task<PublicEventCheckInResultDto> CheckInPublicAsync(string code, string token,

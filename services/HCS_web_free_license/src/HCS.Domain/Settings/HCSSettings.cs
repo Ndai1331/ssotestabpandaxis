@@ -1,9 +1,2 @@
-﻿namespace HCS.Settings;
-
-public static class HCSSettings
-{
-    private const string Prefix = "HCS";
-
-    //Add your own setting names here. Example:
-    //public const string MySetting1 = Prefix + ".MySetting1";
-}
+﻿// Setting names are shared by the domain, API, AuthServer and Blazor client.
+// The canonical definition lives in HCS.Domain.Shared/Settings/HCSSettings.cs.
