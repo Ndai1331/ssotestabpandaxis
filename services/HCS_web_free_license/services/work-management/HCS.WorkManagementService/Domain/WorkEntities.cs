@@ -244,7 +244,7 @@ public sealed class EventAttendee : Entity<Guid>
 {
     private EventAttendee() { }
     public EventAttendee(Guid id, Guid eventId, Guid? userId, string? username, string? surname, string? name,
-        string fullName, string? cccd, string phoneNumber, string email, string? address,
+        string fullName, string? cccd, string? phoneNumber, string? email, string? address,
         string registrationStatus, string checkInStatus, string? note) : base(id)
     {
         EventId = eventId; UserId = userId;
@@ -258,23 +258,23 @@ public sealed class EventAttendee : Entity<Guid>
     public string? Name { get; private set; }
     public string FullName { get; private set; } = string.Empty;
     public string? Cccd { get; private set; }
-    public string PhoneNumber { get; private set; } = string.Empty;
-    public string Email { get; private set; } = string.Empty;
+    public string? PhoneNumber { get; private set; }
+    public string? Email { get; private set; }
     public string? Address { get; private set; }
     public string RegistrationStatus { get; private set; } = EventRegistrationStatuses.Unconfirmed;
     public string CheckInStatus { get; private set; } = EventCheckInStatuses.NotCheckedIn;
     public string? Note { get; private set; }
     public DateTime? CheckedInAt { get; private set; }
     public void Change(string? username, string? surname, string? name, string fullName, string? cccd,
-        string phoneNumber, string email, string? address, string registrationStatus, string checkInStatus, string? note)
+        string? phoneNumber, string? email, string? address, string registrationStatus, string checkInStatus, string? note)
     {
         if (!EventRegistrationStatuses.All.Contains(registrationStatus, StringComparer.OrdinalIgnoreCase))
             throw new BusinessException("Work:EventRegistrationStatusInvalid");
         if (!EventCheckInStatuses.All.Contains(checkInStatus, StringComparer.OrdinalIgnoreCase))
             throw new BusinessException("Work:EventCheckInStatusInvalid");
         FullName = Check.NotNullOrWhiteSpace(fullName, nameof(fullName), WorkConsts.NameLength);
-        PhoneNumber = Check.NotNullOrWhiteSpace(phoneNumber, nameof(phoneNumber), 64);
-        Email = Check.NotNullOrWhiteSpace(email, nameof(email), 256);
+        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
         Username = username; Surname = surname; Name = name; Cccd = cccd; Address = address;
         RegistrationStatus = registrationStatus; Note = note;
         SetCheckInStatus(checkInStatus);
@@ -284,6 +284,12 @@ public sealed class EventAttendee : Entity<Guid>
         if (!EventRegistrationStatuses.All.Contains(status, StringComparer.OrdinalIgnoreCase))
             throw new BusinessException("Work:EventRegistrationStatusInvalid");
         RegistrationStatus = status;
+    }
+    public void LinkUser(Guid userId, string? username = null)
+    {
+        if (userId == Guid.Empty) throw new BusinessException("Work:AttendeeUserRequired");
+        UserId = userId;
+        if (!string.IsNullOrWhiteSpace(username)) Username = username.Trim();
     }
     public void SetCheckInStatus(string status)
     {

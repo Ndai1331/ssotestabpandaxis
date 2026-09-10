@@ -126,8 +126,8 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.ToTable("EventAttendees"); b.ConfigureByConvention();
             b.Property(x => x.Username).HasMaxLength(128); b.Property(x => x.Surname).HasMaxLength(128);
             b.Property(x => x.Name).HasMaxLength(128); b.Property(x => x.FullName).HasMaxLength(WorkConsts.NameLength).IsRequired();
-            b.Property(x => x.Cccd).HasMaxLength(64); b.Property(x => x.PhoneNumber).HasMaxLength(64).IsRequired();
-            b.Property(x => x.Email).HasMaxLength(256).IsRequired(); b.Property(x => x.Address).HasMaxLength(512);
+            b.Property(x => x.Cccd).HasMaxLength(64); b.Property(x => x.PhoneNumber).HasMaxLength(64);
+            b.Property(x => x.Email).HasMaxLength(256); b.Property(x => x.Address).HasMaxLength(512);
             b.Property(x => x.RegistrationStatus).HasMaxLength(WorkConsts.StatusLength).IsRequired();
             b.Property(x => x.CheckInStatus).HasMaxLength(WorkConsts.StatusLength).IsRequired(); b.Property(x => x.Note).HasMaxLength(2000);
             b.HasIndex(x => new { x.EventId, x.FullName }); b.HasIndex(x => new { x.EventId, x.PhoneNumber });

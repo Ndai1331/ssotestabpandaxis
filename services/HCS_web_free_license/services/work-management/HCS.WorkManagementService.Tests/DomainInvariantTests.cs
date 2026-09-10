@@ -120,6 +120,19 @@ public sealed class DomainInvariantTests
     }
 
     [Fact]
+    public void Attendee_can_be_created_with_only_a_username_for_public_check_in()
+    {
+        var attendee = new EventAttendee(Guid.NewGuid(), Guid.NewGuid(), null, "guest", null, null, "guest",
+            null, null, null, null, EventRegistrationStatuses.Confirmed, EventCheckInStatuses.CheckedIn, null);
+
+        Assert.Equal("guest", attendee.Username);
+        Assert.Null(attendee.PhoneNumber);
+        Assert.Null(attendee.Email);
+        Assert.Equal(EventCheckInStatuses.CheckedIn, attendee.CheckInStatus);
+        Assert.NotNull(attendee.CheckedInAt);
+    }
+
+    [Fact]
     public void Survey_session_change_rejects_inverted_date_range()
     {
         var start = DateTime.UtcNow;

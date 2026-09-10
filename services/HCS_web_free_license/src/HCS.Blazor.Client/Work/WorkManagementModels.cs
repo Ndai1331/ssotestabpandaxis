@@ -55,12 +55,12 @@ public sealed record CreateManagedEventRequest(string Group, string Name, string
 public sealed record UpdateManagedEventRequest(string Group, string Name, string? Content, string? Description,
     string? Location, DateTime StartTime, DateTime EndTime, string Status);
 public sealed record EventAttendeeDto(Guid Id, Guid EventId, Guid? UserId, string? Username, string? Surname, string? Name,
-    string FullName, string? Cccd, string PhoneNumber, string Email, string? Address, string RegistrationStatus,
+    string FullName, string? Cccd, string? PhoneNumber, string? Email, string? Address, string RegistrationStatus,
     string CheckInStatus, string? Note, DateTime? CheckedInAt);
 public sealed record CreateEventAttendeeRequest(Guid? UserId, string? Username, string? Surname, string? Name, string FullName,
-    string? Cccd, string PhoneNumber, string Email, string? Address, string RegistrationStatus, string CheckInStatus, string? Note);
+    string? Cccd, string? PhoneNumber, string? Email, string? Address, string RegistrationStatus, string CheckInStatus, string? Note);
 public sealed record UpdateEventAttendeeRequest(string? Username, string? Surname, string? Name, string FullName, string? Cccd,
-    string PhoneNumber, string Email, string? Address, string RegistrationStatus, string CheckInStatus, string? Note);
+    string? PhoneNumber, string? Email, string? Address, string RegistrationStatus, string CheckInStatus, string? Note);
 public sealed record ChangeEventAttendeeStatusRequest(string? RegistrationStatus, string? CheckInStatus);
 public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location);
 public sealed record PublicEventCheckInRequest(string? FullName, string? Cccd, string? PhoneNumber, string? Email, string? Username = null);

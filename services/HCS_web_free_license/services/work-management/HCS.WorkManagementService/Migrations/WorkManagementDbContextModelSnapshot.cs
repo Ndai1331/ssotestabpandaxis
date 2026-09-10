@@ -313,7 +313,6 @@ namespace HCS.WorkManagementService.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
@@ -334,7 +333,6 @@ namespace HCS.WorkManagementService.Migrations
                         .HasColumnType("character varying(2000)");
 
                     b.Property<string>("PhoneNumber")
-                        .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 

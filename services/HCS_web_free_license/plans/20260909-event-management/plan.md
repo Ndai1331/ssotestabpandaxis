@@ -82,3 +82,4 @@ Mockup có trường mật khẩu ở form thêm nhanh. Mật khẩu **không th
 - [x] Bỏ yêu cầu BFF antiforgery cho toàn bộ public event check-in request, giữ route public đúng mục đích.
 - [x] Cho phép Admin nhận diện theo role ở client/API policy; Auth Server bổ sung các permission definition đang bật khi phát token mới.
 - [x] Thu gọn filter trang chi tiết người tham dự thành một hàng trên desktop và responsive wrap trên màn hình nhỏ.
+- [x] Cho phép check-in bằng QR tự tạo attendee khi chưa có trong danh sách; tự đánh dấu Confirmed + CheckedIn, liên kết UserId khi đã đăng nhập và cho phép thiếu phone/email nếu còn username hoặc một định danh khác.

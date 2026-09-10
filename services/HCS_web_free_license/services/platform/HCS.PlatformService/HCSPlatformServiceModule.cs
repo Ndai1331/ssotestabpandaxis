@@ -30,6 +30,7 @@ namespace HCS.PlatformService;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBlobStoringMinioModule),
     typeof(AbpEventBusRabbitMqModule),
+    typeof(AbpOpenIddictAspNetCoreModule),
     typeof(AbpSwashbuckleModule))]
 public sealed class HCSPlatformServiceModule : AbpModule
 {

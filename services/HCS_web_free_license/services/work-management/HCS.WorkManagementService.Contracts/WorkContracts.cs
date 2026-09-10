@@ -60,13 +60,13 @@ public sealed record CreateManagedEventDto(string Group, string Name, string? Co
 public sealed record UpdateManagedEventDto(string Group, string Name, string? Content, string? Description,
     string? Location, DateTime StartTime, DateTime EndTime, string Status);
 public sealed record EventAttendeeDto(Guid Id, Guid EventId, Guid? UserId, string? Username, string? Surname,
-    string? Name, string FullName, string? Cccd, string PhoneNumber, string Email, string? Address,
+    string? Name, string FullName, string? Cccd, string? PhoneNumber, string? Email, string? Address,
     string RegistrationStatus, string CheckInStatus, string? Note, DateTime? CheckedInAt);
 public sealed record CreateEventAttendeeDto(Guid? UserId, string? Username, string? Surname, string? Name,
-    string FullName, string? Cccd, string PhoneNumber, string Email, string? Address,
+    string FullName, string? Cccd, string? PhoneNumber, string? Email, string? Address,
     string RegistrationStatus, string CheckInStatus, string? Note);
 public sealed record UpdateEventAttendeeDto(string? Username, string? Surname, string? Name, string FullName,
-    string? Cccd, string PhoneNumber, string Email, string? Address, string RegistrationStatus,
+    string? Cccd, string? PhoneNumber, string? Email, string? Address, string RegistrationStatus,
     string CheckInStatus, string? Note);
 public sealed record ChangeEventAttendeeStatusDto(string? RegistrationStatus, string? CheckInStatus);
 public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location);

@@ -96,8 +96,10 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         if (!string.IsNullOrWhiteSpace(filter))
         {
             var term = filter.Trim().ToLowerInvariant();
-            query = query.Where(x => EF.Functions.ILike(x.FullName, $"%{term}%") || EF.Functions.ILike(x.PhoneNumber, $"%{term}%")
-                || EF.Functions.ILike(x.Email, $"%{term}%") || (x.Cccd != null && EF.Functions.ILike(x.Cccd, $"%{term}%")));
+            query = query.Where(x => EF.Functions.ILike(x.FullName, $"%{term}%")
+                || (x.PhoneNumber != null && EF.Functions.ILike(x.PhoneNumber, $"%{term}%"))
+                || (x.Email != null && EF.Functions.ILike(x.Email, $"%{term}%"))
+                || (x.Cccd != null && EF.Functions.ILike(x.Cccd, $"%{term}%")));
         }
         if (!string.IsNullOrWhiteSpace(registrationStatus)) query = query.Where(x => x.RegistrationStatus == registrationStatus);
         if (!string.IsNullOrWhiteSpace(checkInStatus)) query = query.Where(x => x.CheckInStatus == checkInStatus);
@@ -109,6 +111,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     public async Task<EventAttendeeDto> AddAttendeeAsync(Guid eventId, CreateEventAttendeeDto input, CancellationToken ct)
     {
         await EnsureEventAsync(eventId, ct);
+        EnsureManualAttendeeFields(input.FullName, input.PhoneNumber, input.Email);
         await EnsureNotDuplicateAsync(eventId, input.UserId, input.PhoneNumber, input.Email, input.Cccd, null, ct);
         var attendee = new EventAttendee(Guid.NewGuid(), eventId, input.UserId, input.Username, input.Surname, input.Name,
             input.FullName, input.Cccd, input.PhoneNumber, input.Email, input.Address, input.RegistrationStatus,
@@ -122,6 +125,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     {
         var attendee = await db.EventAttendees.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(EventAttendee), id);
+        EnsureManualAttendeeFields(input.FullName, input.PhoneNumber, input.Email);
         await EnsureNotDuplicateAsync(attendee.EventId, attendee.UserId, input.PhoneNumber, input.Email, input.Cccd, id, ct);
         attendee.Change(input.Username, input.Surname, input.Name, input.FullName, input.Cccd, input.PhoneNumber,
             input.Email, input.Address, input.RegistrationStatus, input.CheckInStatus, input.Note);
@@ -192,14 +196,23 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), code);
 
-        var phone = NormalizePhone(input.PhoneNumber);
-        var email = NormalizeEmail(input.Email);
+        var authenticatedUserId = currentUser.Id is { } currentId && currentId != Guid.Empty ? currentId : (Guid?)null;
+        var rawUsername = FirstNonEmpty(currentUser.UserName, input.Username);
+        var username = NormalizeUsername(rawUsername);
+        var rawPhone = FirstNonEmpty(currentUser.PhoneNumber, input.PhoneNumber);
+        var rawEmail = FirstNonEmpty(currentUser.Email, input.Email);
+        var phone = NormalizePhone(rawPhone);
+        var email = NormalizeEmail(rawEmail);
         var cccd = NormalizeIdentity(input.Cccd);
-        var username = NormalizeUsername(input.Username);
         var attendees = await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(ct);
-        var hasProvidedIdentifier = phone.Length > 0 || email.Length > 0 || cccd.Length > 0 || username.Length > 0;
-        var attendee = currentUser.Id is { } userId
-            ? attendees.FirstOrDefault(x => x.UserId == userId)
+        var hasProvidedIdentifier = authenticatedUserId.HasValue || phone.Length > 0 || email.Length > 0 || cccd.Length > 0 || username.Length > 0;
+        if (!hasProvidedIdentifier)
+        {
+            throw new BusinessException("Work:EventAttendeeIdentifierRequired");
+        }
+
+        var attendee = authenticatedUserId is { } matchedUserId
+            ? attendees.FirstOrDefault(x => x.UserId == matchedUserId)
             : null;
         attendee ??= hasProvidedIdentifier
             ? attendees.FirstOrDefault(x =>
@@ -211,10 +224,28 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
         if (attendee is null)
         {
-            logger.LogWarning(
-                "Public event check-in attendee not found. EventId={EventId}, EventCode={EventCode}, AuthenticatedUser={AuthenticatedUser}, HasPhone={HasPhone}, HasEmail={HasEmail}, HasUsername={HasUsername}, HasLegacyCccd={HasLegacyCccd}, AttendeeCount={AttendeeCount}",
-                item.Id, item.Code, currentUser.Id.HasValue, phone.Length > 0, email.Length > 0, username.Length > 0, cccd.Length > 0, attendees.Count);
-            throw new BusinessException("Work:EventAttendeeNotFound");
+            var fullName = FirstNonEmpty(
+                input.FullName,
+                authenticatedUserId.HasValue ? BuildFullName(currentUser.SurName, currentUser.Name) : null,
+                BuildFullName(currentUser.SurName, currentUser.Name),
+                rawUsername,
+                rawEmail,
+                rawPhone,
+                "Guest")!;
+            attendee = new EventAttendee(Guid.NewGuid(), item.Id, authenticatedUserId, rawUsername,
+                currentUser.SurName, currentUser.Name, fullName, null,
+                phone.Length == 0 ? null : rawPhone,
+                email.Length == 0 ? null : rawEmail,
+                null, EventRegistrationStatuses.Confirmed, EventCheckInStatuses.CheckedIn, null);
+            db.EventAttendees.Add(attendee);
+            logger.LogInformation(
+                "Public event check-in attendee created. EventId={EventId}, EventCode={EventCode}, AuthenticatedUser={AuthenticatedUser}, HasPhone={HasPhone}, HasEmail={HasEmail}, HasUsername={HasUsername}, HasLegacyCccd={HasLegacyCccd}",
+                item.Id, item.Code, authenticatedUserId.HasValue, phone.Length > 0, email.Length > 0, username.Length > 0, cccd.Length > 0);
+        }
+        else
+        {
+            if (authenticatedUserId is { } linkedUserId && attendee.UserId is null) attendee.LinkUser(linkedUserId, rawUsername);
+            attendee.SetRegistrationStatus(EventRegistrationStatuses.Confirmed);
         }
 
         if (!string.IsNullOrWhiteSpace(input.FullName) && !string.Equals(attendee.FullName, input.FullName.Trim(), StringComparison.OrdinalIgnoreCase))
@@ -271,12 +302,32 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
             throw new EntityNotFoundException(typeof(ManagedEvent), id);
     }
 
-    private async Task EnsureNotDuplicateAsync(Guid eventId, Guid? userId, string phone, string email, string? cccd,
+    private async Task EnsureNotDuplicateAsync(Guid eventId, Guid? userId, string? phone, string? email, string? cccd,
         Guid? exceptId, CancellationToken ct)
     {
-        if (userId.HasValue && userId != Guid.Empty && await db.EventAttendees.AnyAsync(x => x.EventId == eventId && x.UserId == userId && x.Id != exceptId, ct)
-            || await db.EventAttendees.AnyAsync(x => x.EventId == eventId && (x.PhoneNumber == phone || x.Email == email || (cccd != null && x.Cccd == cccd)) && x.Id != exceptId, ct))
+        var normalizedPhone = NormalizePhone(phone);
+        var normalizedEmail = NormalizeEmail(email);
+        var normalizedCccd = NormalizeIdentity(cccd);
+        var hasPhone = normalizedPhone.Length > 0;
+        var hasEmail = normalizedEmail.Length > 0;
+        var hasCccd = normalizedCccd.Length > 0;
+        if (!userId.HasValue && !hasPhone && !hasEmail && !hasCccd) return;
+
+        var attendees = await db.EventAttendees.AsNoTracking()
+            .Where(x => x.EventId == eventId && x.Id != exceptId)
+            .ToListAsync(ct);
+        if ((userId.HasValue && userId != Guid.Empty && attendees.Any(x => x.UserId == userId))
+            || attendees.Any(x =>
+                (hasPhone && NormalizePhone(x.PhoneNumber) == normalizedPhone)
+                || (hasEmail && NormalizeEmail(x.Email) == normalizedEmail)
+                || (hasCccd && NormalizeIdentity(x.Cccd) == normalizedCccd)))
             throw new BusinessException("Work:DuplicateEventAttendee");
+    }
+
+    private static void EnsureManualAttendeeFields(string fullName, string? phone, string? email)
+    {
+        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(email))
+            throw new BusinessException("Work:EventAttendeeRequiredFields");
     }
 
     private async Task<string> NewCodeAsync(CancellationToken ct)
@@ -292,6 +343,13 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     private static EventListItemDto MapList(ManagedEvent x, int count) => new(x.Id, x.Code, x.Group, x.Name, x.StartTime, x.EndTime, x.Location, x.Status, count);
     private static EventAttendeeDto MapAttendee(EventAttendee x) => new(x.Id, x.EventId, x.UserId, x.Username, x.Surname, x.Name, x.FullName,
         x.Cccd, x.PhoneNumber, x.Email, x.Address, x.RegistrationStatus, x.CheckInStatus, x.Note, x.CheckedInAt);
+    private static string? FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))?.Trim();
+    private static string? BuildFullName(string? surname, string? name)
+    {
+        var value = $"{surname} {name}".Trim();
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
     private static string NormalizePhone(string? value)
     {
         var digits = new string((value ?? string.Empty).Where(char.IsDigit).ToArray());
