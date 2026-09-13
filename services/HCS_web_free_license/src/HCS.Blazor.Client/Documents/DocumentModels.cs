@@ -96,7 +96,8 @@ public sealed record ExtendWorkflowDueDateRequest(int AdditionalDays, string? Re
 
 public sealed record SigningCredentialDto(Guid Id, int Kind, string ProviderCode, string Endpoint, string MaskedSecret,
     int ApiTimeoutSeconds, int SignWidth, int SignHeight, bool AllowElectronicSign, bool AllowDigitalSign,
-    bool RequireOtp, DateTime UpdatedAt, bool HasLayoutImage = false);
+    bool RequireOtp, DateTime UpdatedAt, bool HasLayoutImage = false, bool IsActive = true, bool IsDeleted = false,
+    string? LegacyLayoutImagePath = null);
 public sealed record SigningProviderDefinitionDto(
     string Code,
     string DisplayName,
@@ -111,7 +112,7 @@ public sealed record SigningProviderDefinitionDto(
 public sealed record ConfigureSigningCredentialRequest(int Kind, string Endpoint, string Secret,
     string ProviderCode = "", string? LayoutImageBase64 = null, int ApiTimeoutSeconds = 30,
     int SignWidth = 150, int SignHeight = 70, bool AllowElectronicSign = true,
-    bool AllowDigitalSign = true, bool RequireOtp = false);
+    bool AllowDigitalSign = true, bool RequireOtp = false, Guid? CredentialId = null);
 public sealed record SignDocumentRequest(Guid DocumentId, Guid FileId, int Kind, string IdempotencyKey,
     Guid? SignatureId = null, string? Placeholder = null, string? SignerName = null, string? Note = null);
 public sealed record SigningAttemptDto(

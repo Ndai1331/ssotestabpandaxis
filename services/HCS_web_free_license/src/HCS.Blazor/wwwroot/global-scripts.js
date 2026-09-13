@@ -51,6 +51,62 @@ window.hcsDownloadTextFile = (fileName, content, mimeType) => {
     URL.revokeObjectURL(url);
 };
 
+window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgroundUrl) => {
+    const nextTitle = typeof title === "string" && title.trim() ? title.trim() : "HCS";
+    const nextDescription = typeof description === "string" ? description.trim() : "";
+    const nextLogoUrl = typeof logoUrl === "string" && logoUrl ? logoUrl : "/images/logo/logo.png";
+    const nextFaviconUrl = typeof faviconUrl === "string" && faviconUrl ? faviconUrl : "/favicon.ico";
+    const nextBackgroundImage = typeof backgroundUrl === "string" && backgroundUrl
+        ? `url("${backgroundUrl}")`
+        : "none";
+    const currentTitle = (document.title || "").trim();
+    const previousTitle = window.__hcsSystemBrandingTitle;
+    let pageTitle = currentTitle;
+
+    for (const marker of [previousTitle, "HCS"]) {
+        if (typeof marker !== "string" || !marker) {
+            continue;
+        }
+
+        if (pageTitle === marker) {
+            pageTitle = "";
+            break;
+        }
+
+        const prefix = `${marker} · `;
+        const suffix = ` · ${marker}`;
+        if (pageTitle.startsWith(prefix)) {
+            pageTitle = pageTitle.slice(prefix.length).trim();
+            break;
+        }
+        if (pageTitle.endsWith(suffix)) {
+            pageTitle = pageTitle.slice(0, -suffix.length).trim();
+            break;
+        }
+    }
+
+    document.title = pageTitle ? `${pageTitle} · ${nextTitle}` : nextTitle;
+    window.__hcsSystemBrandingTitle = nextTitle;
+
+    document.querySelectorAll("[data-hcs-system-branding-favicon]").forEach((element) => {
+        element.setAttribute("href", nextFaviconUrl);
+    });
+    document.querySelectorAll("[data-hcs-branding-logo]").forEach((element) => {
+        element.setAttribute("src", nextLogoUrl);
+        element.setAttribute("alt", nextTitle);
+    });
+    document.querySelectorAll("[data-hcs-branding-title]").forEach((element) => {
+        element.textContent = nextTitle;
+    });
+    document.querySelectorAll("[data-hcs-branding-description]").forEach((element) => {
+        element.textContent = nextDescription;
+        element.setAttribute("title", nextDescription);
+    });
+    document.querySelectorAll(".hcs-app-shell").forEach((element) => {
+        element.style.setProperty("--hcs-branding-background-image", nextBackgroundImage);
+    });
+};
+
 const hcsNormalizeCulture = (value) => {
     if (typeof value !== "string") {
         return null;

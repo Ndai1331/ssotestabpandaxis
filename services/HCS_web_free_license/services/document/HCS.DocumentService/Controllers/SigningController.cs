@@ -28,12 +28,12 @@ public sealed class SigningController(ISigningAppService signing, ISigningKpiRep
         [FromForm] SigningKind kind, [FromForm] string endpoint, [FromForm] string secret,
         [FromForm] string? providerCode, [FromForm] int apiTimeoutSeconds, [FromForm] int signWidth,
         [FromForm] int signHeight, [FromForm] bool allowElectronicSign, [FromForm] bool allowDigitalSign,
-        [FromForm] bool requireOtp, [FromForm] IFormFile? layoutImage, [FromQuery] Guid? userId,
+        [FromForm] bool requireOtp, [FromForm] Guid? credentialId, [FromForm] IFormFile? layoutImage, [FromQuery] Guid? userId,
         CancellationToken cancellationToken)
     {
         var layoutImageBase64 = await ReadLayoutImageAsync(layoutImage, cancellationToken);
         var input = new ConfigureSigningCredentialRequest(kind, endpoint, secret, providerCode ?? string.Empty,
-            layoutImageBase64, apiTimeoutSeconds, signWidth, signHeight, allowElectronicSign, allowDigitalSign, requireOtp);
+            layoutImageBase64, apiTimeoutSeconds, signWidth, signHeight, allowElectronicSign, allowDigitalSign, requireOtp, credentialId);
         return await signing.ConfigureCredentialAsync(input, userId, cancellationToken);
     }
     [HttpPost("attempts"), Authorize(Policy = Documents.DocumentPermissions.SigningExecute)]

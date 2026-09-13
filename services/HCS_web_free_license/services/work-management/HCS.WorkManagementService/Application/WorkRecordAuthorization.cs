@@ -66,6 +66,13 @@ public sealed class WorkRecordAuthorization(WorkManagementDbContext db, ICurrent
             throw new AbpAuthorizationException("Task creator required.");
     }
 
+    public async Task DemandEventOwnerAsync(Guid eventId, CancellationToken ct)
+    {
+        if (IsAdministrator) return;
+        if (!await db.ManagedEvents.AnyAsync(x => x.Id == eventId && x.OwnerUserId == UserId, ct))
+            throw new AbpAuthorizationException("Event owner required.");
+    }
+
     public async Task DemandSurveyOwnerAsync(Guid sessionId, CancellationToken ct)
     {
         if (IsAdministrator) return;

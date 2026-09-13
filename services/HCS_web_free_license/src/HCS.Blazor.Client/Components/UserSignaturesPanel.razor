@@ -437,7 +437,7 @@
     private static string FormatDate(DateTime value) => value.ToLocalTime().ToString("dd/MM/yyyy", CultureInfo.CurrentCulture);
 
     private IReadOnlyList<CatalogSelect2Item> ProviderItems => providerCredentials
-        .Where(x => x.Kind != 0 && !string.IsNullOrWhiteSpace(x.ProviderCode))
+        .Where(x => x.Kind != 0 && x.IsActive && !x.IsDeleted && !string.IsNullOrWhiteSpace(x.ProviderCode))
         .Select(x => new CatalogSelect2Item(x.ProviderCode, $"{x.ProviderCode} · {KindName(x.Kind)}", x.Endpoint))
         .GroupBy(x => x.Id, StringComparer.OrdinalIgnoreCase)
         .Select(x => x.First())
@@ -445,8 +445,8 @@
 
     private bool IsSealImageRequired =>
         editForm.Type == UserSignatureType.Digital
-        && providerCredentials.FirstOrDefault(credential =>
-            string.Equals(credential.ProviderCode, editForm.ProviderCode, StringComparison.OrdinalIgnoreCase))?.Kind
+        && providerCredentials.FirstOrDefault(credential => credential.IsActive && !credential.IsDeleted
+            && string.Equals(credential.ProviderCode, editForm.ProviderCode, StringComparison.OrdinalIgnoreCase))?.Kind
             is 2 or 3;
 
     private Task<CatalogSelect2SearchResponse> SearchProvidersAsync(string term, int page)

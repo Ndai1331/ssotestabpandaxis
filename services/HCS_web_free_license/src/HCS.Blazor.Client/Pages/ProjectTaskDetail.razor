@@ -15,44 +15,22 @@
     }
     else if (detail is not null)
     {
-        <div class="hcs-detail-split">
-            <Card>
-                <CardHeader><strong>@L["Feature:GeneralInformation"]</strong></CardHeader>
-                <CardBody>
-                    <div class="hcs-catalog-form">
-                        <div class="hcs-form-row">
-                            <Field>
-                                <FieldLabel>@L["Feature:Project"]</FieldLabel>
-                                <HcsIsolatedTextInput Value="@projectName" Name="hcsTaskProjectName" Disabled="true" />
-                            </Field>
-                            <Field>
-                                <FieldLabel>@L["Feature:ParentTask"]</FieldLabel>
-                                <HcsIsolatedTextInput Value="@ParentTaskLabel" Name="hcsTaskParentLabel" Disabled="true" />
-                            </Field>
-                        </div>
-                        <div class="hcs-form-row">
-                            <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput Value="@form.Code" Name="hcsTaskDetailCode" Disabled="true" /></Field>
-                            <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsTaskDetailTitle" /></Field>
-                        </div>
-                        <div class="hcs-form-row hcs-form-row--equal">
-                            <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="form.StartDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
-                            <Field><FieldLabel>@L["Feature:DueDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="form.DueDate" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
-                        </div>
-                        <div class="hcs-form-row hcs-form-row--equal">
-                            <Field><FieldLabel>@L["Feature:Priority"]</FieldLabel>
-                                <Select TValue="string" @bind-Value="form.Priority">
-                                    @foreach (var value in WorkUi.TaskPriorities) { <SelectItem Value="@value">@L[WorkUi.PriorityKey(value)]</SelectItem> }
-                                </Select>
-                            </Field>
-                            <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                                <Select TValue="string" @bind-Value="form.Status" @bind-Value:after="SyncProgressWithStatus">
-                                    @foreach (var value in WorkUi.TaskStatuses) { <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem> }
-                                </Select>
-                            </Field>
-                            <Field><FieldLabel>@L["Feature:Progress"]</FieldLabel><NumericPicker TValue="int" Value="@form.ProgressPercent" ValueChanged="OnProgressChanged" Min="0" Max="100" /></Field>
-                        </div>
-                        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
-                        <Button Color="Color.Primary" Clicked="SaveTaskAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+        <form class="vb-card" @onsubmit="SaveTaskAsync" @onsubmit:preventDefault>
+            <header class="vb-chrome">
+                <div class="vb-chrome-id">
+                    <button class="icon-btn" type="button" @onclick="GoBackToList" aria-label="@L["Feature:BackToList"]">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>
+                    </button>
+                    <div class="vb-editor-head">
+                        <h1 id="task-detail-title" title="@(form.Title.Length > 0 ? form.Title : L["Feature:TaskDetail"].Value)">@(form.Title.Length > 0 ? form.Title : L["Feature:TaskDetail"])</h1>
+                        <p class="vb-editor-sub">
+                            <span>@(string.IsNullOrWhiteSpace(form.Code) ? "—" : form.Code)</span>
+                            <span class="@WorkUi.TaskBadgeDs(form.Status)">@L[WorkUi.TaskStatusKey(form.Status)]</span>
+                            @if (!string.IsNullOrWhiteSpace(projectName))
+                            {
+                                <a href="@($"/project-detail/{detail.Task.ProjectId}")">@projectName</a>
+                            }
+                        </p>
                     </div>
                 </div>
                 <div class="vb-chrome-actions">
@@ -279,8 +257,8 @@
         form.Code = task.Code;
         form.Title = task.Title;
         form.Description = task.Description ?? "";
-        form.StartDate = WorkUi.UtcToFormTime(task.StartDate);
-        form.DueDate = WorkUi.UtcToFormTime(task.DueDate);
+        form.StartDate = task.StartDate;
+        form.DueDate = task.DueDate;
         form.Priority = task.Priority;
         form.Status = task.Status;
         form.ProgressPercent = task.ProgressPercent;
@@ -304,9 +282,7 @@
         try
         {
             await Work.UpdateTaskAsync(TaskId, new UpdateProjectTaskRequest(
-                form.Title.Trim(), Blank(form.Description), WorkUi.FormTimeToUtc(form.StartDate), WorkUi.FormTimeToUtc(form.DueDate), form.Priority, form.Status, form.ProgressPercent));
-            detail = await Work.GetTaskAsync(TaskId);
-            BindForm(detail.Task);
+                form.Title.Trim(), Blank(form.Description), form.StartDate, form.DueDate, form.Priority, form.Status, form.ProgressPercent));
             await NotifySuccessAsync(L["Catalog:Updated"]);
             GoBackToList();
         }
@@ -314,12 +290,11 @@
         finally { isSaving = false; }
     }
 
-    private void SyncProgressWithStatus()
+    private Task OnStatusChanged(string value)
     {
-        if (string.Equals(form.Status, "Completed", StringComparison.OrdinalIgnoreCase))
-            form.ProgressPercent = 100;
-        else if (form.ProgressPercent == 100)
-            form.ProgressPercent = 95;
+        form.Status = value;
+        if (string.Equals(value, "Completed", StringComparison.OrdinalIgnoreCase)) form.ProgressPercent = 100;
+        return Task.CompletedTask;
     }
 
     private Task OnProgressChanged(int value)
@@ -342,7 +317,8 @@
     }
     private async Task RemoveAssignmentAsync(TaskAssignmentDto assignment)
     {
-        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], Name(assignment.UserId)))) return;
+        if (detail?.Task.CanManageAssignments != true) return;
+        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
         try
         {
             await Work.RemoveAssignmentAsync(TaskId, assignment.Id);
@@ -365,7 +341,7 @@
     }
     private async Task RemoveDocumentAsync(TaskDocumentReferenceDto reference)
     {
-        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], reference.DocumentCode ?? documents.FirstOrDefault(x => x.Id == reference.DocumentId)?.Number))) return;
+        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
         try
         {
             await Work.RemoveTaskDocumentAsync(TaskId, reference.Id);

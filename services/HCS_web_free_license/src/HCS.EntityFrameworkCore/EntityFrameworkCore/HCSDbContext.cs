@@ -16,6 +16,7 @@ using HCS.Localization;
 using HCS.Auditing;
 using HCS.EntityFrameworkCore.Auditing;
 using HCS.Identity;
+using HCS.Branding;
 using Volo.Abp.EntityFrameworkCore.DistributedEvents;
 
 namespace HCS.EntityFrameworkCore;
@@ -32,6 +33,7 @@ public class HCSDbContext :
     public DbSet<LanguageText> LanguageTexts { get; set; }
     public DbSet<AuditRecordProjection> AuditRecordProjections { get; set; }
     public DbSet<UserAvatar> UserAvatars { get; set; }
+    public DbSet<SystemBrandingAsset> SystemBrandingAssets { get; set; }
     public DbSet<IncomingEventRecord> IncomingEvents { get; set; }
     public DbSet<OutgoingEventRecord> OutgoingEvents { get; set; }
 
@@ -87,5 +89,6 @@ public class HCSDbContext :
         builder.ConfigureHcsLocalization();
         builder.ConfigureHcsAuditProjection();
         builder.ConfigureHcsUserAvatars();
+        builder.ConfigureHcsSystemBranding();
     }
 }

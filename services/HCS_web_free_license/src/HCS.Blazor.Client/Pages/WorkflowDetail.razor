@@ -233,27 +233,12 @@
                                               EmptyMessage="@L["Catalog:EmptyTitle"]" />
                     </Field>
                     <Field><FieldLabel>@L["Work:Assignee"]</FieldLabel>
-                        <UserSelect2 @key="@($"view-user-{editingStep.Key}")"
-                                     Value="viewAssigneePick"
-                                     ValueChanged="OnViewAssigneeChangedAsync"
-                                     SelectedItem="@ContactItem(viewAssigneePick)"
+                        <UserSelect2 Multiple="true" Values="editingStep.UserIds"
+                                     ValuesChanged="ids => editingStep.UserIds = ids.ToList()"
+                                     SelectedItems="@ContactItems(editingStep.UserIds)"
+                                     SelectedTexts="@UserNames(editingStep.UserIds)"
                                      Placeholder="@L["Chat:SelectContacts"]"
-                                     SelectedText="@ContactName(viewAssigneePick)"
-                                     Search="SearchViewContactsAsync" />
-                        @if (editingStep.UserIds.Count > 0)
-                        {
-                            <ul class="hcs-member-list hcs-step-assignee-list">
-                                @foreach (var userId in editingStep.UserIds)
-                                {
-                                    <li class="hcs-member-list__item">
-                                        <span class="hcs-member-list__meta">
-                                            <strong class="hcs-member-list__name">@(string.IsNullOrWhiteSpace(ContactName(userId)) ? userId.ToString("N")[..8] : ContactName(userId))</strong>
-                                        </span>
-                                        <Button Color="Color.Danger" Size="Size.Small" Outline="true" Class="hcs-member-list__remove" Clicked="() => RemoveViewAssignee(userId)">@L["Catalog:Delete"]</Button>
-                                    </li>
-                                }
-                            </ul>
-                        }
+                                     Search="SearchContactsAsync" />
                     </Field>
                     <Field><FieldLabel>@L["Feature:Role"]</FieldLabel>
                         <CatalogSelect2 Value="editingStep.RoleId"
@@ -308,7 +293,7 @@
         }
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
-        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => stepModal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Secondary" Clicked="() => stepModal!.Hide()">@L["Catalog:Cancel"]</Button>
         <Button Color="Color.Primary" Clicked="CloseStepModal">@L["Catalog:SaveChanges"]</Button>
     </ModalFooter>
 </ModalContent></Modal>
@@ -325,7 +310,6 @@
     private Modal? stepModal;
     private string activeTab = "info";
     private string? pdfUrl;
-    private Guid? viewAssigneePick;
     private bool isSaving, loaded, isNewStep;
     private Guid? loadedDefinitionId;
     private ElementReference templateFormPane;
@@ -581,7 +565,6 @@
     private async Task AddStep()
     {
         isNewStep = true;
-        viewAssigneePick = null;
         editingStep = new StepDraft($"step{form.Steps.Count + 1}", L["Feature:StepName"], "PROCESS", "Documents.Workflow.Decide")
         {
             SlaDays = 1
@@ -591,7 +574,6 @@
     private async Task EditStep(StepDraft step)
     {
         isNewStep = false;
-        viewAssigneePick = null;
         editingStep = step;
         if (stepModal is not null) await stepModal.Show();
     }
@@ -604,7 +586,6 @@
         editingStep.RoleId = null;
         editingStep.UserIds = [];
         editingStep.DepartmentIds = [];
-        viewAssigneePick = null;
     }
     private async Task RemoveStep(StepDraft step)
     {
@@ -722,6 +703,8 @@
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
     private CatalogSelect2Item? ContactItem(Guid? id) =>
         contacts.FirstOrDefault(x => x.Id == id) is { } contact ? CatalogSelect2Cache.UserItem(contact) : null;
+    private IReadOnlyList<CatalogSelect2Item> ContactItems(IEnumerable<Guid> ids) =>
+        ids.Select(id => ContactItem(id)).OfType<CatalogSelect2Item>().ToList();
     private string RoleName(Guid? id) => CatalogSelect2Cache.TextFor(roles, id, x => x.Id, x => x.Name);
     private const string SpecificUserAssignee = "SpecificUser";
     private const string RoleInSubmitterOuAssignee = "RoleInSubmitterOu";
@@ -742,6 +725,7 @@
             editingStep.RoleId = null;
         await InvokeAsync(StateHasChanged);
     }
+    private IReadOnlyList<string> UserNames(IEnumerable<Guid> ids) => CatalogSelect2Cache.TextsFor(contacts, ids, x => x.Id, x => x.DisplayName);
     private Task<CatalogSelect2SearchResponse> SearchRolesAsync(string term, int page)
     {
         var found = roles.Where(x => string.IsNullOrWhiteSpace(term)
@@ -753,30 +737,6 @@
         var found = kinds.Where(x => string.IsNullOrWhiteSpace(term) || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
         return Task.FromResult(CatalogSelect2Cache.Merge(kinds, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
     }
-    private async Task OnViewAssigneeChangedAsync(Guid? id)
-    {
-        if (editingStep is null) return;
-        if (id is { } userId && !editingStep.UserIds.Contains(userId))
-            editingStep.UserIds.Add(userId);
-        viewAssigneePick = null;
-    }
-
-    private void RemoveViewAssignee(Guid userId)
-    {
-        editingStep?.UserIds.Remove(userId);
-    }
-
-    private async Task<CatalogSelect2SearchResponse> SearchViewContactsAsync(string term, int page)
-    {
-        var result = await SearchContactsAsync(term, page);
-        var selected = editingStep?.UserIds ?? [];
-        if (selected.Count == 0) return result;
-        return result with
-        {
-            Results = result.Results.Where(x => !Guid.TryParse(x.Id, out var id) || !selected.Contains(id)).ToList()
-        };
-    }
-
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);

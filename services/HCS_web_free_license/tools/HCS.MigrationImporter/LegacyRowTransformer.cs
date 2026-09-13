@@ -282,7 +282,9 @@ public static class LegacyRowTransformer
     {
         var id = Guid(source, "Id");
         return Object(
-            ("Id", id), ("UserId", Guid(source, "CreatorId") ?? id),
+            // AppSignatureSettings is a global catalog in the legacy application.
+            // CreatorId is audit metadata and must not become credential ownership.
+            ("Id", id), ("UserId", null),
             ("Kind", SigningKind(Text(source, "ProviderType"), Text(source, "DefaultSignType"))),
             ("Endpoint", Limit(Text(source, "ApiEndpoint") ?? "", 1024)), ("ProtectedSecret", ""),
             ("UpdatedAt", Date(source, "LastModificationTime", "CreationTime") ?? DateTime.UnixEpoch),
@@ -292,7 +294,16 @@ public static class LegacyRowTransformer
             ("LayoutImageBase64", null), ("ProviderCode", Limit(Text(source, "ProviderCode") ?? "", 256)),
             ("RequireOtp", Bool(source, "RequireOtp") ?? false),
             ("SignHeight", Math.Clamp(Int(source, "SignHeight") ?? 70, 20, 1000)),
-            ("SignWidth", Math.Clamp(Int(source, "SignWidth") ?? 150, 40, 1000)));
+            ("SignWidth", Math.Clamp(Int(source, "SignWidth") ?? 150, 40, 1000)),
+            ("ProviderType", Limit(Text(source, "ProviderType") ?? "", 64)),
+            ("DefaultSignType", Limit(Text(source, "DefaultSignType") ?? "", 64)),
+            ("SignedFileSuffix", Limit(Text(source, "SignedFileSuffix") ?? "signed", 128)),
+            ("KeepOriginalFile", Bool(source, "KeepOriginalFile") ?? false),
+            ("OverwriteSignedFile", Bool(source, "OverwriteSignedFile") ?? false),
+            ("EnableSignLog", Bool(source, "EnableSignLog") ?? false),
+            ("IsActive", Bool(source, "IsActive") ?? true),
+            ("IsDeleted", Bool(source, "IsDeleted") ?? false),
+            ("LegacyLayoutImagePath", Limit(Text(source, "LayoutImg"), 512)));
     }
 
     private static JsonObject UserSignature(JsonObject source)

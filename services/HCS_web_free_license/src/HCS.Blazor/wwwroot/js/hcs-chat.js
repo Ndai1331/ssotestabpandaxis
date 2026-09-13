@@ -18,10 +18,6 @@ window.hcsChat = {
         const el = document.getElementById(id);
         return !!el && el.scrollTop <= threshold;
     },
-    isNearBottom(id, threshold = 96) {
-        const el = document.getElementById(id);
-        return !!el && el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
-    },
     scrollHeight(id) {
         return document.getElementById(id)?.scrollHeight ?? 0;
     },

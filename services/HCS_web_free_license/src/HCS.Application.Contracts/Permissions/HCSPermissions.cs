@@ -18,6 +18,12 @@ public static class HCSPermissions
         public const string Default = GroupName + ".AuditViewer";
     }
 
+    public static class SystemBranding
+    {
+        public const string Default = GroupName + ".SystemBranding";
+        public const string Update = Default + ".Update";
+    }
+
     public static class Organization
     {
         public const string Default = HCSOrganizationPermissions.Group;

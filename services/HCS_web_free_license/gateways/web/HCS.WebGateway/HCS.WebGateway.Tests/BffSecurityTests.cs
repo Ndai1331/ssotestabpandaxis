@@ -135,6 +135,19 @@ public sealed class BffSecurityTests
         Assert.False(BffRequestPolicy.RequiresAntiforgery(context.Request));
     }
 
+    [Theory]
+    [InlineData("/api/hcs/system-branding/public")]
+    [InlineData("/api/hcs/system-branding/assets/logo?v=2")]
+    public void Branding_bootstrap_paths_are_anonymous_at_the_bff_boundary(string path)
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+        context.Request.Method = "GET";
+
+        Assert.True(BffRequestPolicy.IsAnonymousBootstrapPath(context.Request.Path));
+        Assert.False(BffRequestPolicy.RequiresAntiforgery(context.Request));
+    }
+
     [Fact]
     public void Login_return_url_rejects_open_redirects()
     {

@@ -25,8 +25,7 @@ public sealed record ProjectDetailDto(ProjectDto Project, IReadOnlyList<ProjectM
     IReadOnlyList<ProjectTaskDto> Tasks);
 public sealed record CreateProjectDto(string Code, string Name, string? Description, DateTime StartDate,
     DateTime EndDate, string Status, Guid? OwnerDepartmentId);
-public sealed record UpdateProjectDto(string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status,
-    Guid? OwnerDepartmentId);
+public sealed record UpdateProjectDto(string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status);
 public sealed record ProjectMemberDto(Guid Id, Guid ProjectId, Guid UserId, string Role, bool IsActive);
 public sealed record AddProjectMemberDto(Guid UserId, string Role);
 
@@ -46,16 +45,18 @@ public sealed record ProjectTaskDetailDto(ProjectTaskDto Task, IReadOnlyList<Tas
 
 public sealed record CalendarEventDto(Guid Id, string Title, string? Description, DateTime StartTime, DateTime EndTime,
     bool AllDay, string EventType, string? Location, string RelatedType, string? RelatedId, string Visibility,
-    IReadOnlyList<Guid> ParticipantUserIds);
+    IReadOnlyList<Guid> ParticipantUserIds, Guid OwnerUserId = default, bool CanManage = false);
 
 public sealed record EventListItemDto(Guid Id, string Code, string Group, string Name, DateTime StartTime,
-    DateTime EndTime, string? Location, string Status, int AttendeeCount);
+    DateTime EndTime, string? Location, string Status, int AttendeeCount,
+    Guid OwnerUserId = default, bool CanManage = false);
 public sealed record EventAttendanceSummaryDto(int Total, int Confirmed, int Unconfirmed, int Declined,
     int CheckedIn, int NotCheckedIn);
 public sealed record EventAttachmentDto(Guid Id, string FileName, string ContentType, long Size);
 public sealed record EventDto(Guid Id, string Code, string Group, string Name, string? Content, string? Description,
     string? Location, DateTime StartTime, DateTime EndTime, string Status, string QrToken,
-    IReadOnlyList<EventAttachmentDto> Attachments, EventAttendanceSummaryDto Attendance);
+    IReadOnlyList<EventAttachmentDto> Attachments, EventAttendanceSummaryDto Attendance,
+    Guid OwnerUserId = default, bool CanManage = false);
 public sealed record EventDashboardDto(int TotalEvents, int CompletedEvents, int OngoingEvents, int UpcomingEvents,
     int TotalAttendees, IReadOnlyList<EventListItemDto> Upcoming);
 public sealed record CreateManagedEventDto(string Group, string Name, string? Content, string? Description,

@@ -27,4 +27,7 @@ public static class WorkAccessQueries
 
     public static bool CanManageAssignments(Guid? creatorId, Guid userId, bool isAdministrator, Guid? projectOwnerUserId = null) =>
         CanDeleteTask(creatorId, userId, isAdministrator, projectOwnerUserId);
+
+    public static bool CanManageOwned(Guid ownerUserId, Guid userId, bool isAdministrator) =>
+        isAdministrator || ownerUserId == userId;
 }

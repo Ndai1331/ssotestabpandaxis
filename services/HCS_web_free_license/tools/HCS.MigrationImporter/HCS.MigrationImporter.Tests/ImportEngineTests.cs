@@ -43,6 +43,27 @@ public sealed class ImportEngineTests
     }
 
     [Fact]
+    public async Task Soft_deleted_rows_are_skipped_before_transform_and_upsert()
+    {
+        var activeId = Guid.NewGuid();
+        var source = Source(
+            Row("AppDocuments", ("Id", activeId), ("Title", "Active"), ("IsDeleted", false)),
+            Row("AppDocuments", ("Id", Guid.NewGuid()), ("Title", "Deleted"), ("IsDeleted", true)));
+        var target = new FakeTarget();
+        using var output = new OutputFolder();
+
+        var report = await Engine(source, target)
+            .RunAsync(new ImportOptions(false, output.Path, Set("AppDocuments")));
+
+        var result = Assert.Single(report.Tables);
+        Assert.Equal(2, result.SourceRows);
+        Assert.Equal(1, result.UpsertedRows);
+        Assert.Equal(1, result.SkippedRows);
+        Assert.Equal(1, result.SoftDeletedRows);
+        Assert.Equal(activeId, target.Writes.Single().Values["Id"]!.GetValue<Guid>());
+    }
+
+    [Fact]
     public async Task Reports_duplicate_unmatched_and_missing_user_references()
     {
         var source = Source(

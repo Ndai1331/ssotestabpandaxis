@@ -18,7 +18,7 @@ public sealed class ConfigureSigningCredentialRequest
     public ConfigureSigningCredentialRequest(SigningKind kind, string endpoint, string secret,
         string providerCode = "", string? layoutImageBase64 = null, int apiTimeoutSeconds = 30,
         int signWidth = 150, int signHeight = 70, bool allowElectronicSign = true,
-        bool allowDigitalSign = true, bool requireOtp = false)
+        bool allowDigitalSign = true, bool requireOtp = false, Guid? credentialId = null)
     {
         Kind = kind;
         Endpoint = endpoint;
@@ -31,6 +31,7 @@ public sealed class ConfigureSigningCredentialRequest
         AllowElectronicSign = allowElectronicSign;
         AllowDigitalSign = allowDigitalSign;
         RequireOtp = requireOtp;
+        CredentialId = credentialId;
     }
 
     public SigningKind Kind { get; init; }
@@ -46,6 +47,7 @@ public sealed class ConfigureSigningCredentialRequest
     public bool AllowElectronicSign { get; init; } = true;
     public bool AllowDigitalSign { get; init; } = true;
     public bool RequireOtp { get; init; }
+    public Guid? CredentialId { get; init; }
     [JsonPropertyName("secret")]
     public string Secret { private get; init; } = string.Empty;
     public string ConsumeSecret() => Secret;
@@ -54,7 +56,8 @@ public sealed class ConfigureSigningCredentialRequest
 public sealed record SigningCredentialDto(Guid Id, SigningKind Kind, string ProviderCode, string Endpoint,
     string MaskedSecret, int ApiTimeoutSeconds, int SignWidth, int SignHeight,
     bool AllowElectronicSign, bool AllowDigitalSign, bool RequireOtp, DateTime UpdatedAt,
-    bool HasLayoutImage = false)
+    bool HasLayoutImage = false, bool IsActive = true, bool IsDeleted = false,
+    string? LegacyLayoutImagePath = null)
 {
     public SigningCredentialDto(Guid id, SigningKind kind, string endpoint, string maskedSecret, DateTime updatedAt)
         : this(id, kind, string.Empty, endpoint, maskedSecret, 30, 150, 70, true, true, false, updatedAt, false) { }

@@ -7,40 +7,23 @@
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Feature:EventDetail"] · HCS</PageTitle>
-<section class="hcs-document-page">
-    <header class="hcs-document-page__header">
-        <div><h1>@(item?.Title ?? L["Feature:EventDetail"])</h1>@if (item is not null) { <p>@item.StartTime.ToLocalTime() – @item.EndTime.ToLocalTime() · @item.Visibility</p> }</div>
-        <div>
-            @if (RelatedHref() is { } relatedHref)
-            {
-                <a class="btn btn-outline-secondary me-2" href="@relatedHref">@L["Work:OpenRelated"]</a>
-            }
-            <a class="btn btn-outline-primary" href="/calendar-events">@L["Feature:BackToList"]</a>
-        </div>
-    </header>
-    @if (item is not null)
-    {
-        <Card Class="mb-3"><CardBody>
-            <div class="hcs-catalog-form">
-            <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventDetailTitle" /></Field>
-            <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
-            <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
-                <Select TValue="string" @bind-Value="form.Visibility">
-                    <SelectItem Value="@("Private")">Private</SelectItem>
-                    <SelectItem Value="@("Participants")">Participants</SelectItem>
-                    <SelectItem Value="@("Public")">Public</SelectItem>
-                </Select>
-            </Field>
-            <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
-                @foreach (var contact in contacts)
-                {
-                    <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
-                }
-            </Field>
-            <div class="hcs-document-file-actions">
-                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SaveAsync">@L["Catalog:SaveChanges"]</Button>
-                <Button Color="Color.Danger" Outline="true" Clicked="DeleteAsync">@L["Catalog:Delete"]</Button>
-            </div>
+<section class="page page-wf page-vb">
+    <form class="vb-card" @onsubmit="SaveAsync" @onsubmit:preventDefault>
+        <header class="vb-chrome">
+            <div class="vb-chrome-id">
+                <a class="icon-btn" href="/calendar-events" aria-label="@L["Feature:BackToList"]">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>
+                </a>
+                <div class="vb-editor-head">
+                    <h1 title="@(item?.Title ?? L["Feature:EventDetail"].Value)">@(item?.Title ?? L["Feature:EventDetail"])</h1>
+                    @if (item is not null)
+                    {
+                        <p class="vb-editor-sub">
+                            <span>@item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @item.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                            <span class="badge badge-info">@item.Visibility</span>
+                        </p>
+                    }
+                </div>
             </div>
             <div class="vb-chrome-actions">
                 <div class="vb-foot">
@@ -61,10 +44,10 @@
                 else
                 {
                     <div class="hcs-catalog-form">
-                        <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventDetailTitle" /></Field>
-                        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
+                        <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventDetailTitle" Disabled="@(!item.CanManage)" /></Field>
+                        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off" disabled="@(!item.CanManage)"></textarea></Field>
                         <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
-                            <Select TValue="string" @bind-Value="form.Visibility">
+                            <Select TValue="string" @bind-Value="form.Visibility" Disabled="@(!item.CanManage)">
                                 <SelectItem Value="@("Private")">Private</SelectItem>
                                 <SelectItem Value="@("Participants")">Participants</SelectItem>
                                 <SelectItem Value="@("Public")">Public</SelectItem>
@@ -79,14 +62,17 @@
                             {
                                 @foreach (var contact in contacts)
                                 {
-                                    <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
+                                    <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))" Disabled="@(!item.CanManage)">@contact.DisplayName</Check>
                                 }
                             }
                         </Field>
+                        @if (item.CanManage)
+                        {
                         <div class="vb-foot">
                             <button class="btn btn-outline" type="button" @onclick="DeleteAsync">@L["Catalog:Delete"]</button>
                             <button class="btn btn-primary" type="submit">@L["Catalog:SaveChanges"]</button>
                         </div>
+                        }
                     </div>
                 }
             </div>
@@ -112,27 +98,27 @@
     }
 
     private string? RelatedHref() => item is null ? null : WorkUi.RelatedEntityHref(item.RelatedType, item.RelatedId);
-    private void Toggle(Guid id, bool selected) { if (selected) form.Participants.Add(id); else form.Participants.Remove(id); }
+    private void Toggle(Guid id, bool selected)
+    {
+        if (item is null || !item.CanManage) return;
+        if (selected) form.Participants.Add(id); else form.Participants.Remove(id);
+    }
     private async Task SaveAsync()
     {
-        if (item is null) return;
+        if (item is null || !item.CanManage) return;
         try
         {
             item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, item.StartTime, item.EndTime, item.AllDay, item.EventType, item.Location, item.RelatedType, item.RelatedId, form.Visibility, form.Participants.ToList()));
             await NotifySuccessAsync(L["Catalog:Updated"]);
+            Navigation.NavigateTo("/calendar-events");
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync()
     {
-        var name = string.IsNullOrWhiteSpace(form.Title) ? item?.Title : form.Title.Trim();
-        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], name))) return;
-        try
-        {
-            await Work.DeleteCalendarEventAsync(EventId);
-            await NotifySuccessAsync(L["Catalog:Deleted"]);
-            Navigation.NavigateTo("/calendar-events");
-        }
+        if (item is null || !item.CanManage) return;
+        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
+        try { await Work.DeleteCalendarEventAsync(EventId); Navigation.NavigateTo("/calendar-events"); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private sealed class EventForm

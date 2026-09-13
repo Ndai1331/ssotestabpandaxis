@@ -1,0 +1,192 @@
+2026-09-13 09:37:20.120 +07:00 [INF] Starting web host.
+2026-09-13 09:37:21.801 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 10:16:40.795 +07:00 [INF] Starting web host.
+2026-09-13 10:16:42.225 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 10:37:52.092 +07:00 [INF] Starting web host.
+2026-09-13 10:37:53.563 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 11:12:39.324 +07:00 [INF] Starting web host.
+2026-09-13 11:12:41.856 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 11:36:01.455 +07:00 [INF] Starting web host.
+2026-09-13 11:36:03.812 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 11:45:23.635 +07:00 [INF] Starting web host.
+2026-09-13 11:45:26.235 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 11:54:38.517 +07:00 [INF] Starting web host.
+2026-09-13 11:54:40.885 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 11:58:16.111 +07:00 [INF] Starting web host.
+2026-09-13 11:58:18.338 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 12:00:15.934 +07:00 [INF] Starting web host.
+2026-09-13 12:00:17.345 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 12:06:29.012 +07:00 [INF] Starting web host.
+2026-09-13 12:06:45.991 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 13:24:56.610 +07:00 [INF] Starting web host.
+2026-09-13 13:24:59.081 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
+2026-09-13 14:35:22.732 +07:00 [INF] Starting web host.
+2026-09-13 14:35:24.387 +07:00 [FTL] Host terminated unexpectedly!
+Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
+ ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
+   at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
+   at StackExchange.Redis.ConnectionMultiplexer.Connect(ConfigurationOptions configuration, TextWriter log) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 685
+   at HCS.Blazor.HCSBlazorModule.ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration, IWebHostEnvironment environment) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 151
+   at HCS.Blazor.HCSBlazorModule.ConfigureServices(ServiceConfigurationContext context) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/HCSBlazorModule.cs:line 98
+   at Volo.Abp.Modularity.AbpModule.ConfigureServicesAsync(ServiceConfigurationContext context)
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   --- End of inner exception stack trace ---
+   at Volo.Abp.AbpApplicationBase.ConfigureServicesAsync()
+   at Volo.Abp.AbpApplicationFactory.CreateAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
+   at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
+   at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41

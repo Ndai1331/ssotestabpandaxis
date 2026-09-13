@@ -5,15 +5,6 @@ namespace HCS.Blazor.Client.Work;
 
 internal static class WorkUi
 {
-    // Date pickers edit wall-clock values; never let their DateTime.Kind decide
-    // whether JSON includes an offset or the server interprets the value as UTC.
-    public static DateTime FormTimeToUtc(DateTime value, TimeZoneInfo? timeZone = null) =>
-        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(value, DateTimeKind.Unspecified), timeZone ?? TimeZoneInfo.Local);
-
-    public static DateTime UtcToFormTime(DateTime value, TimeZoneInfo? timeZone = null) =>
-        DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.SpecifyKind(value, DateTimeKind.Utc), timeZone ?? TimeZoneInfo.Local), DateTimeKind.Unspecified);
-
     public static readonly string[] ProjectStatuses = ["Draft", "Active", "Completed", "Cancelled"];
     public static readonly string[] TaskStatuses = ["New", "InProgress", "Waiting", "Completed", "Cancelled"];
     public static readonly string[] TaskPriorities = ["Low", "Normal", "High", "Urgent"];
@@ -37,12 +28,38 @@ internal static class WorkUi
         _ => "Work:Status.Todo"
     };
 
+    public static string TaskStatusTone(string status) => status switch
+    {
+        "InProgress" => "doing",
+        "Waiting" => "waiting",
+        "Completed" => "done",
+        "Cancelled" => "cancelled",
+        _ => "todo"
+    };
+
     public static string PriorityKey(string priority) => priority switch
     {
         "Low" => "Work:Priority.Low",
         "High" => "Work:Priority.High",
         "Urgent" => "Work:Priority.Urgent",
         _ => "Work:Priority.Normal"
+    };
+
+    public static string ProjectBadgeDs(string status) => status switch
+    {
+        "Active" => "badge badge-info",
+        "Completed" => "badge badge-muted",
+        "Cancelled" => "badge badge-overdue",
+        _ => "badge badge-muted"
+    };
+
+    public static string TaskBadgeDs(string status) => status switch
+    {
+        "InProgress" => "badge badge-info",
+        "Waiting" => "badge badge-warn",
+        "Completed" => "badge badge-muted",
+        "Cancelled" => "badge badge-overdue",
+        _ => "badge badge-warn"
     };
 
     public static string ProjectBadgeClass(string status) => status switch
@@ -105,5 +122,12 @@ internal static class WorkUi
         if (string.Equals(relatedType, "TASK", StringComparison.OrdinalIgnoreCase))
             return $"/project-task-detail/{id}";
         return null;
+    }
+
+    public static bool TryRelatedTaskId(string? relatedType, string? relatedId, out Guid taskId)
+    {
+        taskId = default;
+        return string.Equals(relatedType, "TASK", StringComparison.OrdinalIgnoreCase)
+            && Guid.TryParse(relatedId, out taskId);
     }
 }

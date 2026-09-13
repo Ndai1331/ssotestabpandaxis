@@ -6,6 +6,7 @@ One-way, resumable migration utility from the read-only legacy PostgreSQL databa
 
 - Only tables in `MigrationManifest.Tables` can be read. SaaS/tenant, GDPR, Text Template, File Management, Forms and OpenIddict Pro names are rejected.
 - Target writes use primary-key upserts plus `hcs_migration_checkpoints`; reruns skip rows whose canonical SHA-256 checksum is unchanged.
+- Rows marked `IsDeleted=true` in AxisHCS are excluded before transform, relationship/blob validation and target upsert; the reconciliation report records their skipped count.
 - Secrets are accepted only through environment variables. No connection strings or credentials belong in tracked files.
 - Legacy users are matched to a verified Keycloak export by normalized email or username. Ambiguous, missing and unmatched mappings are reported.
 - Legacy signing credential fields (`Password`, `Pin`, private keys, tokens and client secrets) are deliberately stripped. Operators must re-provision them through the encrypted write-only signing configuration flow.

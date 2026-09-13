@@ -5,7 +5,6 @@
 @attribute [Authorize(Policy = CollaborationPermissions.Chat)]
 @using System.Globalization
 @using System.Net
-@using System.Threading
 @using HCS.CollaborationService.Contracts
 @using HCS.Localization
 @using Microsoft.AspNetCore.SignalR.Client
@@ -70,14 +69,17 @@
                     {
                         <h2 id="contact-picker-title" class="visually-hidden">@T("Chat:ContactsTab")</h2>
                     }
-                    <input class="hcs-chat__contact-filter" value="@contactSearch" @oninput="OnContactSearchInput" type="search" placeholder="@T("Chat:Search")" />
-                    @if (contactsLoading && contacts.Count == 0)
+                    <div class="chat-search chat-contact-search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                        <input class="hcs-chat__contact-filter" @bind="contactSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" autocomplete="off" />
+                    </div>
+                    @if (contactsLoading)
                     {
-                        <p class="hcs-chat__state" role="status">@T("Chat:LoadingContacts")</p>
+                        <p class="hcs-chat__state chat-empty">@T("Chat:LoadingContacts")</p>
                     }
-                    else if (contactsError is not null && contacts.Count == 0)
+                    else if (contactsError is not null)
                     {
-                        <div class="hcs-chat__inline-error" role="alert"><span>@contactsError</span><button type="button" @onclick="RetryContactsAsync">@T("Chat:Retry")</button></div>
+                        <div class="hcs-chat__inline-error" role="alert"><span>@contactsError</span><button type="button" @onclick="LoadContactsAsync">@T("Chat:Retry")</button></div>
                     }
                     else if (!FilteredContacts.Any())
                     {
@@ -85,7 +87,7 @@
                     }
                     else
                     {
-                        <div id="hcs-chat-contacts" class="hcs-chat__contacts" role="@contactListRole" aria-label="@contactListLabel" @onscroll="OnContactsScrollAsync">
+                        <div class="hcs-chat__contacts chat-contact-list" role="@contactListRole" aria-label="@contactListLabel">
                             @foreach (var contact in FilteredContacts)
                             {
                                 <label class="hcs-chat__contact chat-contact">
@@ -94,24 +96,25 @@
                                     <span class="chat-contact-meta"><strong>@contact.DisplayName</strong><span>@@@contact.UserName</span></span>
                                 </label>
                             }
-                            @if (contactsLoadingMore)
-                            {
-                                <p class="hcs-chat__contacts-loading" role="status">@T("Chat:LoadingContacts")</p>
-                            }
                         </div>
                     }
-                    @if (contactsError is not null && contacts.Count > 0)
-                    {
-                        <div class="hcs-chat__inline-error" role="alert"><span>@contactsError</span><button type="button" @onclick="RetryContactsAsync">@T("Chat:Retry")</button></div>
-                    }
-                    @if (selectedContactIds.Count > 1)
-                    {
-                        <input class="hcs-chat__contact-filter" @bind="groupName" placeholder="@T("Chat:GroupNamePlaceholder")" maxlength="256" />
-                    }
-                    <button class="btn btn-primary w-100" type="button" @onclick="CreateConversationAsync" disabled="@(isCreatingConversation || selectedContactIds.Count == 0)">
-                        <i class="fa @(isCreatingConversation ? "fa-spinner fa-spin" : "fa-plus")" aria-hidden="true"></i>
-                        @(isCreatingConversation ? T("Chat:Loading") : T("Chat:CreateConversation"))
-                    </button>
+                    <div class="chat-contact-foot">
+                        @if (selectedContactIds.Count > 1)
+                        {
+                            <input class="hcs-chat__contact-filter chat-group-name" @bind="groupName" placeholder="@T("Chat:GroupNamePlaceholder")" maxlength="256" />
+                        }
+                        <button class="btn btn-primary" type="button" @onclick="CreateConversationAsync" disabled="@(isCreatingConversation || selectedContactIds.Count == 0)">
+                            @if (isCreatingConversation)
+                            {
+                                <svg class="chat-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                            }
+                            else
+                            {
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            }
+                            <span class="btn-label">@(isCreatingConversation ? T("Chat:Loading") : T("Chat:CreateConversation"))</span>
+                        </button>
+                    </div>
                 </section>
             }
 
@@ -781,9 +784,6 @@
 @code {
     [Parameter] public Guid? RedirectToConversationId { get; set; }
 
-    private const string ContactsPaneId = "hcs-chat-contacts";
-    private const int ContactsPageSize = 30;
-
     private readonly HashSet<Guid> onlineUserIds = [];
     private readonly HashSet<Guid> selectedContactIds = [];
     private readonly HashSet<Guid> selectedMemberIds = [];
@@ -811,7 +811,6 @@
     private string? messageError;
     private bool isLoadingConversations;
     private bool contactsLoading;
-    private bool contactsLoadingMore;
     private bool isLoadingMessages;
     private bool isSending;
     private bool isCreatingConversation;
@@ -846,12 +845,6 @@
     private string forwardSearch = string.Empty;
     private bool showTransferAdmin;
     private Guid? transferAdminTo;
-    private int contactSkip;
-    private long totalContactCount;
-    private bool contactsHasMore;
-    private string loadedContactSearch = string.Empty;
-    private CancellationTokenSource? contactsRequestCts;
-    private CancellationTokenSource? contactSearchDebounceCts;
 
     private bool CanSend => !string.IsNullOrWhiteSpace(messageText) || pendingFiles.Count > 0;
 
@@ -872,7 +865,10 @@
         .OrderByDescending(conversation => conversation.IsPinned)
         .ThenByDescending(conversation => conversation.LastMessageAt ?? DateTime.MinValue);
 
-    private IEnumerable<ChatContactDto> FilteredContacts => contacts;
+    private IEnumerable<ChatContactDto> FilteredContacts => contacts.Where(contact =>
+        string.IsNullOrWhiteSpace(contactSearch) ||
+        contact.DisplayName.Contains(contactSearch.Trim(), StringComparison.CurrentCultureIgnoreCase) ||
+        contact.UserName.Contains(contactSearch.Trim(), StringComparison.CurrentCultureIgnoreCase));
 
     private bool CanManageGroupMembers =>
         selected is not null &&
@@ -966,114 +962,21 @@
         }
     }
 
-    private async Task LoadContactsAsync(bool reset = true)
+    private async Task LoadContactsAsync()
     {
-        var currentSearch = contactSearch.Trim();
-        if (!reset &&
-            (contactsLoading || contactsLoadingMore || !contactsHasMore ||
-             !string.Equals(loadedContactSearch, currentSearch, StringComparison.OrdinalIgnoreCase)))
-        {
-            return;
-        }
-
-        CancellationTokenSource requestCts;
-        if (reset)
-        {
-            contactsRequestCts?.Cancel();
-            contactsRequestCts = new CancellationTokenSource();
-            requestCts = contactsRequestCts;
-            loadedContactSearch = currentSearch;
-            contacts = [];
-            contactSkip = 0;
-            totalContactCount = 0;
-            contactsHasMore = true;
-            contactsLoading = true;
-            contactsLoadingMore = false;
-        }
-        else
-        {
-            requestCts = contactsRequestCts ??= new CancellationTokenSource();
-            contactsLoadingMore = true;
-        }
-
+        contactsLoading = true;
         contactsError = null;
         try
         {
-            var response = await Client.GetContactsPageAsync(
-                loadedContactSearch,
-                contactSkip,
-                ContactsPageSize,
-                requestCts.Token);
-            if (!ReferenceEquals(requestCts, contactsRequestCts))
-            {
-                return;
-            }
-
-            contacts = reset
-                ? response.Items
-                : contacts.Concat(response.Items).DistinctBy(contact => contact.Id).ToArray();
-            contactSkip += response.Items.Count;
-            totalContactCount = response.TotalCount;
-            contactsHasMore = contactSkip < totalContactCount;
-        }
-        catch (OperationCanceledException) when (requestCts.IsCancellationRequested)
-        {
+            contacts = await Client.GetContactsAsync(string.Empty);
         }
         catch (Exception exception)
         {
-            if (ReferenceEquals(requestCts, contactsRequestCts))
-            {
-                contactsError = MapChatError(exception, "Chat:ContactsError");
-            }
+            contactsError = MapChatError(exception, "Chat:ContactsError");
         }
         finally
         {
-            if (ReferenceEquals(requestCts, contactsRequestCts))
-            {
-                contactsLoading = false;
-                contactsLoadingMore = false;
-                contactsRequestCts = null;
-            }
-
-            requestCts.Dispose();
-        }
-    }
-
-    private async Task OnContactSearchInput(ChangeEventArgs args)
-    {
-        contactSearch = args.Value?.ToString() ?? string.Empty;
-        contactSearchDebounceCts?.Cancel();
-        contactSearchDebounceCts?.Dispose();
-        contactSearchDebounceCts = new CancellationTokenSource();
-        var debounceCts = contactSearchDebounceCts;
-
-        contactsRequestCts?.Cancel();
-        contactsHasMore = false;
-        contactsError = null;
-
-        try
-        {
-            await Task.Delay(250, debounceCts.Token);
-            await LoadContactsAsync();
-        }
-        catch (OperationCanceledException) when (debounceCts.IsCancellationRequested)
-        {
-        }
-    }
-
-    private Task RetryContactsAsync() => LoadContactsAsync(reset: contacts.Count == 0);
-
-    private async Task OnContactsScrollAsync()
-    {
-        if (contactsLoading || contactsLoadingMore || !contactsHasMore ||
-            !string.Equals(loadedContactSearch, contactSearch.Trim(), StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        if (await TryChatScriptAsync(() => Js.InvokeAsync<bool>("hcsChat.isNearBottom", ContactsPaneId)) == true)
-        {
-            await LoadContactsAsync(reset: false);
+            contactsLoading = false;
         }
     }
 
@@ -1895,10 +1798,6 @@
 
     public ValueTask DisposeAsync()
     {
-        contactsRequestCts?.Cancel();
-        contactsRequestCts?.Dispose();
-        contactSearchDebounceCts?.Cancel();
-        contactSearchDebounceCts?.Dispose();
         Realtime.Changed -= HandleRealtimeChangeAsync;
         Realtime.MessageReceived -= HandleMessageReceivedAsync;
         Realtime.MessageDeleted -= HandleMessageDeletedAsync;

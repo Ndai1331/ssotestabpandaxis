@@ -116,6 +116,52 @@ namespace HCS.Migrations
                     b.ToTable("HcsAuditRecordProjections", (string)null);
                 });
 
+            modelBuilder.Entity("HCS.Branding.SystemBrandingAsset", b =>
+                {
+                    b.Property<string>("Slot")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("BlobName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("LastModificationTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<long>("Revision")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Slot");
+
+                    b.HasIndex("BlobName")
+                        .IsUnique();
+
+                    b.ToTable("HcsSystemBrandingAssets", (string)null);
+                });
+
             modelBuilder.Entity("HCS.Identity.UserAvatar", b =>
                 {
                     b.Property<Guid>("UserId")

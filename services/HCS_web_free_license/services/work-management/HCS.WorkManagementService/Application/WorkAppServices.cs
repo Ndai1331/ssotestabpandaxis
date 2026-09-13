@@ -81,7 +81,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         await access.DemandProjectOwnerAsync(id, ct);
         var project = await db.Projects.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(Project), id);
-        project.Change(input.Name, input.Description, input.StartDate, input.EndDate, input.Status, input.OwnerDepartmentId);
+        project.Change(input.Name, input.Description, input.StartDate, input.EndDate, input.Status);
         await WorkCalendarLinker.SyncProjectAsync(db, project, ct);
         AddEvent(new ProjectChangedEto(Guid.NewGuid(), DateTime.UtcNow, project.Id, "Updated", project.Status));
         await db.SaveChangesAsync(ct);
@@ -444,8 +444,9 @@ public sealed class CalendarAppService(WorkManagementDbContext db, WorkRecordAut
             db.CalendarEventParticipants.Any(p => p.CalendarEventId == item.Id && p.UserId == me)) return;
         throw new Volo.Abp.Authorization.AbpAuthorizationException("Calendar visibility denied.");
     }
-    private static CalendarEventDto Map(CalendarEvent x, IReadOnlyList<Guid> people) => new(x.Id, x.Title, x.Description,
-        x.StartTime, x.EndTime, x.AllDay, x.EventType, x.Location, x.RelatedType, x.RelatedId, x.Visibility, people);
+    private CalendarEventDto Map(CalendarEvent x, IReadOnlyList<Guid> people) => new(x.Id, x.Title, x.Description,
+        x.StartTime, x.EndTime, x.AllDay, x.EventType, x.Location, x.RelatedType, x.RelatedId, x.Visibility, people,
+        x.OwnerUserId, WorkAccessQueries.CanManageOwned(x.OwnerUserId, access.UserId, access.IsAdministrator));
     private static string Correlation() => System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
 }
 

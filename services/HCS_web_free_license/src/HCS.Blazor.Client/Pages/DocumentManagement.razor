@@ -10,6 +10,7 @@
 @inject NavigationManager Navigation
 @implements IDisposable
 @using System.Threading
+@using HCS.Permissions
 
 <PageTitle>@PageTitle · HCS</PageTitle>
 <section class="page page-wf page-vb" @key="SourceType" aria-labelledby="docs-title">
@@ -300,13 +301,14 @@
             return 0;
         }
     }
-    private bool CanCreate => SourceType is 0 or 1;
-    private bool CanManage => SourceType is 0 or 1;
+    private bool canManageArchive;
+    private bool CanCreate => canManageArchive && SourceType is 0 or 1;
+    private bool CanManage => canManageArchive && SourceType is 0 or 1;
     private bool IsInbox => SourceType == 2;
     private string PageTitle => SourceType switch
     {
-        1 => L["Menu:MyDocuments"],
-        2 => L["Menu:DocumentsSentToMe"],
+        1 => L["Menu:DocumentsICreated"],
+        2 => L["Menu:MyDocuments"],
         _ => L["Menu:DocumentList"]
     };
     private bool IsSearchFiltered => !string.IsNullOrWhiteSpace(filter);
@@ -322,7 +324,11 @@
     private bool CanNext => currentPage < PageCount;
 
     protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
-    protected override async Task OnParametersSetAsync() => await ReloadIfSourceChangedAsync(resetFilter: lastLoadedSource != int.MinValue);
+    protected override async Task OnParametersSetAsync()
+    {
+        canManageArchive = await AuthorizationService.IsGrantedAsync(HCSPermissions.Documents.Create);
+        await ReloadIfSourceChangedAsync(resetFilter: lastLoadedSource != int.MinValue);
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender) => await OpenInboxPreviewFromQueryAsync();
     private void OnLocationChanged(object? sender, LocationChangedEventArgs args) =>
         _ = InvokeAsync(async () =>
@@ -335,6 +341,11 @@
     private async Task ReloadIfSourceChangedAsync(bool resetFilter)
     {
         var source = SourceType;
+        if (source is 0 or 1 && !canManageArchive)
+        {
+            Navigation.NavigateTo("/manage-documents?sourceType=2", replace: true);
+            return;
+        }
         if (source == lastLoadedSource) return;
         if (resetFilter) ResetFilters();
         lastLoadedSource = source;

@@ -15,6 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>HCS</title>
     <base href="/" />
+    <link rel="icon" href="/favicon.ico" data-hcs-system-branding-favicon />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
@@ -42,7 +43,7 @@
 <body class="abp-application-layout @rtl">
     <div id="hcs-boot-screen" class="hcs-boot-screen" role="status" aria-live="polite" aria-busy="true">
         <div class="hcs-boot-screen__card">
-            <img class="hcs-boot-screen__logo" src="/images/logo/logo.png" alt="HCS" width="88" height="62" />
+            <img class="hcs-boot-screen__logo" src="/images/logo/logo.png" data-hcs-branding-logo alt="HCS" width="88" height="62" />
             <div class="hcs-boot-screen__spinner" aria-hidden="true"></div>
             <p class="hcs-boot-screen__hint" aria-label="@HintText">
                 @for (var i = 0; i < HintText.Length; i++)

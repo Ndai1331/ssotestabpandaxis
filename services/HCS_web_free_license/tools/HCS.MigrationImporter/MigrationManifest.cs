@@ -46,7 +46,9 @@ public static class MigrationManifest
         T("AppWorkflowTemplates", TargetDatabase.Document, "WorkflowTemplates", ["Id"]),
         T("AppWorkflowStepTemplates", TargetDatabase.Document, "WorkflowSteps", ["Id"]),
         T("AppDocumentWorkflowInstances", TargetDatabase.Document, "WorkflowInstances", ["Id"], ["CreatorId"]),
-        T("AppSignatureSettings", TargetDatabase.Document, "SigningCredentials", ["Id"], ["CreatorId"], archiveUniqueConflicts: true),
+        // Signing credentials are a global catalog. CreatorId remains source audit data,
+        // not ownership, so it must never be used as a target uniqueness scope.
+        T("AppSignatureSettings", TargetDatabase.Document, "SigningCredentials", ["Id"], archiveUniqueConflicts: true),
         T("AppUserSignatures", TargetDatabase.Document, "UserSignatures", ["Id"], ["IdentityUserId"], ["SignatureImage"]),
         T("AppProjects", TargetDatabase.Work, "Projects", ["Id"], ["CreatorId"]),
         T("AppProjectMembers", TargetDatabase.Work, "ProjectMembers", ["Id"], ["UserId"], relationships: [R("ProjectId", "Projects")], archiveUniqueConflicts: true),

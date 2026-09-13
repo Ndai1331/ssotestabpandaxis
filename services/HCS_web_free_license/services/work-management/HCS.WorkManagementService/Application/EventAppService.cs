@@ -71,6 +71,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
     public async Task<EventDto> UpdateAsync(Guid id, UpdateManagedEventDto input, CancellationToken ct)
     {
+        await access.DemandEventOwnerAsync(id, ct);
         var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), id);
         item.Change(input.Group, input.Name, input.Content, input.Description, input.Location,
@@ -81,6 +82,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
     public async Task DeleteAsync(Guid id, CancellationToken ct)
     {
+        await access.DemandEventOwnerAsync(id, ct);
         var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), id);
         db.ManagedEvents.Remove(item);
@@ -110,6 +112,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
     public async Task<EventAttendeeDto> AddAttendeeAsync(Guid eventId, CreateEventAttendeeDto input, CancellationToken ct)
     {
+        await access.DemandEventOwnerAsync(eventId, ct);
         await EnsureEventAsync(eventId, ct);
         EnsureManualAttendeeFields(input.FullName, input.PhoneNumber, input.Email, input.UserId);
         await EnsureNotDuplicateAsync(eventId, input.UserId, input.PhoneNumber, input.Email, input.Cccd, null, ct);
@@ -125,6 +128,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     {
         var attendee = await db.EventAttendees.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(EventAttendee), id);
+        await access.DemandEventOwnerAsync(attendee.EventId, ct);
         EnsureManualAttendeeFields(input.FullName, input.PhoneNumber, input.Email, attendee.UserId);
         await EnsureNotDuplicateAsync(attendee.EventId, attendee.UserId, input.PhoneNumber, input.Email, input.Cccd, id, ct);
         attendee.Change(input.Username, input.Surname, input.Name, input.FullName, input.Cccd, input.PhoneNumber,
@@ -137,6 +141,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     {
         var attendee = await db.EventAttendees.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(EventAttendee), id);
+        await access.DemandEventOwnerAsync(attendee.EventId, ct);
         if (!string.IsNullOrWhiteSpace(input.RegistrationStatus)) attendee.SetRegistrationStatus(input.RegistrationStatus);
         if (!string.IsNullOrWhiteSpace(input.CheckInStatus)) attendee.SetCheckInStatus(input.CheckInStatus);
         await db.SaveChangesAsync(ct);
@@ -147,11 +152,13 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     {
         var attendee = await db.EventAttendees.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(EventAttendee), id);
+        await access.DemandEventOwnerAsync(attendee.EventId, ct);
         db.EventAttendees.Remove(attendee); await db.SaveChangesAsync(ct);
     }
 
     public async Task<int> DeleteAttendeesAsync(Guid eventId, IReadOnlyCollection<Guid> ids, CancellationToken ct)
     {
+        await access.DemandEventOwnerAsync(eventId, ct);
         await EnsureEventAsync(eventId, ct);
         var items = await db.EventAttendees.Where(x => x.EventId == eventId && ids.Contains(x.Id)).ToListAsync(ct);
         db.EventAttendees.RemoveRange(items); await db.SaveChangesAsync(ct); return items.Count;
@@ -159,6 +166,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
     public async Task<EventImportResultDto> ImportAsync(Guid eventId, Stream stream, CancellationToken ct)
     {
+        await access.DemandEventOwnerAsync(eventId, ct);
         await EnsureEventAsync(eventId, ct);
         using var reader = new StreamReader(stream, Encoding.UTF8, true, 1024, leaveOpen: true);
         var header = await reader.ReadLineAsync(ct);
@@ -341,7 +349,8 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
             item.EndTime, item.Status, item.QrToken, files.Select(x => new EventAttachmentDto(x.Id, x.FileName, x.ContentType, x.Size)).ToList(),
             new(attendees.Count, attendees.Count(x => x.RegistrationStatus == EventRegistrationStatuses.Confirmed),
                 attendees.Count(x => x.RegistrationStatus == EventRegistrationStatuses.Unconfirmed), attendees.Count(x => x.RegistrationStatus == EventRegistrationStatuses.Declined),
-                attendees.Count(x => x.CheckInStatus == EventCheckInStatuses.CheckedIn), attendees.Count(x => x.CheckInStatus == EventCheckInStatuses.NotCheckedIn)));
+                attendees.Count(x => x.CheckInStatus == EventCheckInStatuses.CheckedIn), attendees.Count(x => x.CheckInStatus == EventCheckInStatuses.NotCheckedIn)),
+            item.OwnerUserId, CanManageEvent(item.OwnerUserId));
     }
 
     private async Task EnsureEventAsync(Guid id, CancellationToken ct)
@@ -392,7 +401,11 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         throw new BusinessException("Work:EventCodeGenerationFailed");
     }
 
-    private static EventListItemDto MapList(ManagedEvent x, int count) => new(x.Id, x.Code, x.Group, x.Name, x.StartTime, x.EndTime, x.Location, x.Status, count);
+    private EventListItemDto MapList(ManagedEvent x, int count) =>
+        new(x.Id, x.Code, x.Group, x.Name, x.StartTime, x.EndTime, x.Location, x.Status, count,
+            x.OwnerUserId, CanManageEvent(x.OwnerUserId));
+    private bool CanManageEvent(Guid ownerUserId) =>
+        WorkAccessQueries.CanManageOwned(ownerUserId, access.UserId, access.IsAdministrator);
     private static EventAttendeeDto MapAttendee(EventAttendee x) => new(x.Id, x.EventId, x.UserId, x.Username, x.Surname, x.Name, x.FullName,
         x.Cccd, x.PhoneNumber, x.Email, x.Address, x.RegistrationStatus, x.CheckInStatus, x.Note, x.CheckedInAt);
     private static string? FirstNonEmpty(params string?[] values) =>

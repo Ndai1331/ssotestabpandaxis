@@ -39,11 +39,11 @@ public sealed class HCSMenuContributor : IMenuContributor
 
         var documents = Item("HCS.Documents", "Văn bản", icon: "fa fa-file-lines", order: 120);
         documents.AddItem(Item("HCS.Documents.Archive", "Quản lý tài liệu", "/manage-documents?sourceType=0", "fa fa-folder-open", 10)
+            .RequirePermissions(HCSPermissions.Documents.Create));
+        documents.AddItem(Item("HCS.Documents.Personal", "Văn bản tôi tạo", "/manage-documents?sourceType=1", "fa fa-pen", 20)
+            .RequirePermissions(HCSPermissions.Documents.Create));
+        documents.AddItem(Item("HCS.Documents.SentToMe", "Văn bản của tôi", "/manage-documents?sourceType=2", "fa fa-inbox", 30)
             .RequirePermissions(HCSPermissions.Documents.View));
-        documents.AddItem(Item("HCS.Documents.Personal", "Văn bản của tôi", "/manage-documents?sourceType=1", "fa fa-user", 20)
-            .RequirePermissions(HCSPermissions.Documents.View));
-        documents.AddItem(Item("HCS.Documents.SentToMe", "Văn bản gửi đến tôi", "/manage-documents?sourceType=2", "fa fa-inbox", 30)
-            .RequirePermissions(new[] { HCSPermissions.Documents.View, HCSPermissions.Documents.Assign }));
         documents.AddItem(Item("HCS.Documents.Signing", "Ký duyệt", "/document-signing", "fa fa-signature", 40)
             .RequirePermissions(HCSPermissions.Documents.SigningExecute));
         documents.AddItem(Item("HCS.Documents.SigningKpi", "KPI ký số", "/signing-kpi-report", "fa fa-chart-column", 50)
@@ -90,6 +90,10 @@ public sealed class HCSMenuContributor : IMenuContributor
             .RequirePermissions(false, HCSPermissions.Catalogs.EventTypes, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
         catalogs.AddItem(documentCatalogs);
         context.Menu.AddItem(catalogs);
+
+        context.Menu.AddItem(
+            Item("HCS.SystemBranding", "Quản trị cấu hình hệ thống", "/setting-management", "fa fa-sliders", 350)
+                .RequirePermissions(HCSPermissions.SystemBranding.Update));
     }
 
     private void ConfigureUserMenu(MenuConfigurationContext context)

@@ -37,7 +37,8 @@ public sealed class ReconciliationReport
     public bool LegacyIdentityPreserved { get; set; }
 }
 
-public sealed record TableResult(string Table, long SourceRows, long UpsertedRows, long SkippedRows, string Checksum);
+public sealed record TableResult(string Table, long SourceRows, long UpsertedRows, long SkippedRows, string Checksum,
+    long SoftDeletedRows = 0);
 public sealed record UserIssue(string Table, string RowKey, string Column, string LegacyValue, string Reason);
 public sealed record RelationshipIssue(string Table, string RowKey, string Column, string ReferencedTable, string Value);
 public sealed record BlobIssue(string Table, string RowKey, string Bucket, string ObjectName, string Reason);

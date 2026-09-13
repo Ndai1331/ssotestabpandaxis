@@ -9,7 +9,7 @@ public sealed class DocumentListScopeTests
     private static readonly DateTime Now = new(2026, 9, 12, 0, 0, 0, DateTimeKind.Utc);
 
     [Fact]
-    public async Task Archive_list_returns_every_archive_document()
+    public async Task Archive_list_is_empty_for_view_only_employees()
     {
         var user = Guid.NewGuid();
         var other = Guid.NewGuid();
@@ -19,6 +19,22 @@ public sealed class DocumentListScopeTests
             Personal("personal", user));
 
         var ids = await DocumentAccess.FilterBySource(db.Documents, 0, user, mine: false, Viewer())
+            .Select(x => x.Number).ToListAsync();
+
+        Assert.Empty(ids);
+    }
+
+    [Fact]
+    public async Task Archive_list_returns_every_archive_document_for_managers()
+    {
+        var user = Guid.NewGuid();
+        var other = Guid.NewGuid();
+        await using var db = CreateDb(
+            Archive("mine", user),
+            Archive("theirs", other),
+            Personal("personal", user));
+
+        var ids = await DocumentAccess.FilterBySource(db.Documents, 0, user, mine: false, Manager())
             .Select(x => x.Number).OrderBy(x => x).ToListAsync();
 
         Assert.Equal(["mine", "theirs"], ids);
@@ -63,14 +79,18 @@ public sealed class DocumentListScopeTests
     }
 
     [Fact]
-    public void Archive_documents_are_viewable_with_the_menu_permission()
+    public void Archive_documents_are_viewable_by_creators_managers_or_inbox_recipients()
     {
         var owner = Guid.NewGuid();
         var viewer = Guid.NewGuid();
         var document = Archive("cv", owner);
-        Assert.True(DocumentAccess.CanView(document, viewer, Viewer()));
+        Assert.True(DocumentAccess.CanView(document, owner, Viewer()));
+        Assert.False(DocumentAccess.CanView(document, viewer, Viewer()));
+        Assert.True(DocumentAccess.CanView(document, viewer, Manager()));
         Assert.False(DocumentAccess.CanManage(document, viewer, Viewer()));
         Assert.True(DocumentAccess.CanManage(document, viewer, WithPermission(DocumentPermissions.Update)));
+        document.Send(viewer, null, owner, Now);
+        Assert.True(DocumentAccess.CanView(document, viewer, Viewer()));
     }
 
     [Fact]
@@ -111,6 +131,8 @@ public sealed class DocumentListScopeTests
     }
 
     private static ClaimsPrincipal Viewer() => WithPermission(DocumentPermissions.View);
+
+    private static ClaimsPrincipal Manager() => WithPermission(DocumentPermissions.Create);
 
     private static ClaimsPrincipal WithPermission(string permission) => new(new ClaimsIdentity(
         [

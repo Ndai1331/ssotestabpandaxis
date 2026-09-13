@@ -5,7 +5,6 @@
 @inject WorkManagementClient Work
 @inject OrganizationCatalogClient Catalog
 @inject CollaborationClient Chat
-@inject NavigationManager Navigation
 
 <PageTitle>@L["Menu:CalendarEvents"] · HCS</PageTitle>
 <section class="page page-wf page-cal">
@@ -123,6 +122,7 @@
     </ModalFooter>
 </ModalContent></Modal>
 <ProjectTaskViewModal @ref="taskModal" />
+<CalendarEventViewModal @ref="eventViewModal" OnOpenTask="OpenRelatedTaskAsync" />
 @code {
     private const string MonthView = "dayGridMonth";
     private const string WeekView = "timeGridWeek";
@@ -135,6 +135,7 @@
     private EventForm form = new();
     private Modal? modal;
     private ProjectTaskViewModal? taskModal;
+    private CalendarEventViewModal? eventViewModal;
     private bool isLoading;
     private string filter = "", search = "";
     private string viewType = MonthView;
@@ -204,12 +205,17 @@
         if (!Guid.TryParse(id, out var eventId)) return;
         var item = events.FirstOrDefault(x => x.Id == eventId);
         if (item is null) return;
-        if (string.Equals(item.RelatedType, "TASK", StringComparison.OrdinalIgnoreCase) && Guid.TryParse(item.RelatedId, out var taskId))
+        if (WorkUi.TryRelatedTaskId(item.RelatedType, item.RelatedId, out var taskId))
         {
             if (taskModal is not null) await taskModal.ShowAsync(taskId);
             return;
         }
-        Navigation.NavigateTo(WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id));
+        if (eventViewModal is not null) await eventViewModal.ShowAsync(item);
+    }
+
+    private async Task OpenRelatedTaskAsync(Guid taskId)
+    {
+        if (taskModal is not null) await taskModal.ShowAsync(taskId);
     }
 
     private void OnRelatedTypeChanged(string value)
@@ -222,7 +228,7 @@
     {
         try
         {
-            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, WorkUi.FormTimeToUtc(form.Start), WorkUi.FormTimeToUtc(form.End), false, form.EventType, null, form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
+            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, null, form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
             if (modal is not null) await modal.Hide();
             await LoadEventsAsync();
         }

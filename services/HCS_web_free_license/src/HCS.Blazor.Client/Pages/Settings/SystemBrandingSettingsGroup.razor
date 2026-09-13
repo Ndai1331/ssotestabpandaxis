@@ -1,0 +1,410 @@
+@using System.IO
+@using System
+@using System.Threading.Tasks
+@using HCS.Blazor.Client.Branding
+@using HCS.Branding
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Localization
+@inherits HCSComponentBase
+@inject SystemBrandingClient BrandingClient
+@inject SystemBrandingState BrandingState
+
+<section class="hcs-branding-settings" aria-labelledby="hcs-branding-settings-title" aria-busy="@(isLoading || isSaving ? "true" : "false")">
+    <header class="hcs-branding-settings__header">
+        <div>
+            <p class="hcs-branding-settings__eyebrow">@L["Settings:BrandingEyebrow"]</p>
+            <h2 id="hcs-branding-settings-title">@L["Settings:BrandingGroup"]</h2>
+            <p>@L["Settings:BrandingDescription"]</p>
+        </div>
+        <i class="fa fa-palette hcs-branding-settings__icon" aria-hidden="true"></i>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="hcs-branding-settings__state" role="status" aria-live="polite">
+            <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+            <span>@L["Settings:BrandingLoading"]</span>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="hcs-branding-settings__error" role="alert">
+                <span>@errorMessage</span>
+                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isSaving">
+                    @L["Settings:BrandingRetry"]
+                </Button>
+            </div>
+        }
+
+        <div class="hcs-branding-settings__form-grid">
+            <Field>
+                <FieldLabel>@L["Settings:BrandingTitle"]</FieldLabel>
+                <TextInput @bind-Value="title" @bind-Value:after="MarkDirty" maxlength="120" autocomplete="organization" />
+                <FieldHelp>@L["Settings:BrandingTitleHint"]</FieldHelp>
+            </Field>
+            <Field>
+                <FieldLabel>@L["Settings:BrandingDescriptionLabel"]</FieldLabel>
+                <TextInput @bind-Value="description" @bind-Value:after="MarkDirty" maxlength="500" autocomplete="off" />
+                <FieldHelp>@L["Settings:BrandingDescriptionHint"]</FieldHelp>
+            </Field>
+        </div>
+
+        <div class="hcs-branding-settings__assets" aria-label='@L["Settings:BrandingAssets"]'>
+            @AssetCard(
+                "logo",
+                L["Settings:BrandingLogo"].Value,
+                L["Settings:BrandingLogoHint"].Value,
+                logoUrl,
+                logoFile,
+                logoPreviewUrl,
+                SystemBrandingLimits.MaxLogoBytes,
+                "image/png,image/jpeg,image/webp",
+                EventCallback.Factory.Create<InputFileChangeEventArgs>(this, OnLogoChangedAsync),
+                RemoveLogo)
+            @AssetCard(
+                "favicon",
+                L["Settings:BrandingFavicon"].Value,
+                L["Settings:BrandingFaviconHint"].Value,
+                faviconUrl,
+                faviconFile,
+                faviconPreviewUrl,
+                SystemBrandingLimits.MaxFaviconBytes,
+                "image/x-icon,image/png",
+                EventCallback.Factory.Create<InputFileChangeEventArgs>(this, OnFaviconChangedAsync),
+                RemoveFavicon)
+            @AssetCard(
+                "background",
+                L["Settings:BrandingBackground"].Value,
+                L["Settings:BrandingBackgroundHint"].Value,
+                backgroundUrl,
+                backgroundFile,
+                backgroundPreviewUrl,
+                SystemBrandingLimits.MaxBackgroundBytes,
+                "image/png,image/jpeg,image/webp",
+                EventCallback.Factory.Create<InputFileChangeEventArgs>(this, OnBackgroundChangedAsync),
+                RemoveBackground)
+        </div>
+
+        <div class="hcs-branding-settings__preview-grid">
+            <article class="hcs-branding-preview hcs-branding-preview--login">
+                <div class="hcs-branding-preview__bar"><span></span><span></span><span></span></div>
+                <div class="hcs-branding-preview__login-body" style="@BackgroundPreviewStyle">
+                    <div class="hcs-branding-preview__login-card">
+                        <img src="@LogoPreviewOrCurrent" alt="" class="hcs-branding-preview__logo" />
+                        <strong>@DisplayTitle</strong>
+                        <small>@DisplayDescription</small>
+                        <div class="hcs-branding-preview__fake-input"></div>
+                        <div class="hcs-branding-preview__fake-input"></div>
+                        <div class="hcs-branding-preview__fake-button"></div>
+                    </div>
+                </div>
+                <p class="hcs-branding-preview__caption">@L["Settings:BrandingLoginPreview"]</p>
+            </article>
+            <article class="hcs-branding-preview hcs-branding-preview--shell">
+                <div class="hcs-branding-preview__shell-header">
+                    <img src="@LogoPreviewOrCurrent" alt="" class="hcs-branding-preview__shell-logo" />
+                    <span>@DisplayTitle</span>
+                    <i class="fa fa-bell" aria-hidden="true"></i>
+                </div>
+                <div class="hcs-branding-preview__shell-nav"></div>
+                <div class="hcs-branding-preview__shell-content" style="@BackgroundPreviewStyle"><span></span><span></span><span></span></div>
+                <p class="hcs-branding-preview__caption">@L["Settings:BrandingShellPreview"]</p>
+            </article>
+        </div>
+
+        <footer class="hcs-branding-settings__footer">
+            <span class="hcs-branding-settings__status" role="status" aria-live="polite">
+                @L["Settings:BrandingAutoApply"]
+            </span>
+            <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isSaving" Disabled="@(isSaving || !isDirty)">
+                <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
+                @L["Settings:BrandingSave"]
+            </Button>
+        </footer>
+    }
+</section>
+
+@code {
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool isDirty;
+    private string title = SystemBrandingDefaults.Title;
+    private string description = SystemBrandingDefaults.Description;
+    private string? errorMessage;
+
+    private IBrowserFile? logoFile;
+    private IBrowserFile? faviconFile;
+    private IBrowserFile? backgroundFile;
+    private string? logoPreviewUrl;
+    private string? faviconPreviewUrl;
+    private string? backgroundPreviewUrl;
+    private string logoUrl = "/images/logo/logo.png";
+    private string faviconUrl = "/favicon.ico";
+    private string? backgroundUrl;
+    private bool RemoveLogo { get; set; }
+    private bool RemoveFavicon { get; set; }
+    private bool RemoveBackground { get; set; }
+
+    private string DisplayTitle => string.IsNullOrWhiteSpace(title) ? SystemBrandingDefaults.Title : title;
+    private string DisplayDescription => string.IsNullOrWhiteSpace(description) ? SystemBrandingDefaults.Description : description;
+    private string LogoPreviewOrCurrent => logoPreviewUrl ?? logoUrl;
+    private string BackgroundPreviewStyle => string.IsNullOrWhiteSpace(backgroundPreviewUrl ?? backgroundUrl)
+        ? string.Empty
+        : $"background-image: linear-gradient(180deg, rgba(245, 248, 252, .72), rgba(245, 248, 252, .72)), url('{backgroundPreviewUrl ?? backgroundUrl}'); background-position: center; background-size: cover;";
+
+    private void MarkDirty()
+    {
+        isDirty = true;
+        errorMessage = null;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var settings = await BrandingClient.GetAsync();
+            await BrandingState.ApplyAsync(settings);
+            title = settings.Title;
+            description = settings.Description;
+            logoUrl = BrandingState.LogoUrl;
+            faviconUrl = BrandingState.FaviconUrl;
+            backgroundUrl = BrandingState.BackgroundUrl;
+            ResetAssetChanges();
+            isDirty = false;
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (isSaving || !isDirty)
+        {
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            var settings = await BrandingClient.UpdateAsync(
+                title,
+                description,
+                RemoveLogo,
+                RemoveFavicon,
+                RemoveBackground,
+                logoFile,
+                faviconFile,
+                backgroundFile);
+            await BrandingState.ApplyAsync(settings);
+            logoUrl = BrandingState.LogoUrl;
+            faviconUrl = BrandingState.FaviconUrl;
+            backgroundUrl = BrandingState.BackgroundUrl;
+            ResetAssetChanges();
+            isDirty = false;
+            await NotifySuccessAsync(L["Settings:BrandingSaved"]);
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception, BffErrorKind.Save);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task OnLogoChangedAsync(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            logoFile = args.File;
+            RemoveLogo = false;
+            logoPreviewUrl = await BuildPreviewAsync(logoFile, SystemBrandingLimits.MaxLogoBytes);
+            errorMessage = null;
+            isDirty = true;
+        }
+        catch (Exception)
+        {
+            logoFile = null;
+            logoPreviewUrl = null;
+            errorMessage = L["Settings:BrandingInvalidAsset"].Value;
+        }
+    }
+
+    private async Task OnFaviconChangedAsync(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            faviconFile = args.File;
+            RemoveFavicon = false;
+            faviconPreviewUrl = await BuildPreviewAsync(faviconFile, SystemBrandingLimits.MaxFaviconBytes);
+            errorMessage = null;
+            isDirty = true;
+        }
+        catch (Exception)
+        {
+            faviconFile = null;
+            faviconPreviewUrl = null;
+            errorMessage = L["Settings:BrandingInvalidAsset"].Value;
+        }
+    }
+
+    private async Task OnBackgroundChangedAsync(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            backgroundFile = args.File;
+            RemoveBackground = false;
+            backgroundPreviewUrl = await BuildPreviewAsync(backgroundFile, SystemBrandingLimits.MaxBackgroundBytes);
+            errorMessage = null;
+            isDirty = true;
+        }
+        catch (Exception)
+        {
+            backgroundFile = null;
+            backgroundPreviewUrl = null;
+            errorMessage = L["Settings:BrandingInvalidAsset"].Value;
+        }
+    }
+
+    private async Task<string?> BuildPreviewAsync(IBrowserFile? file, long maximumBytes)
+    {
+        if (file is null)
+        {
+            return null;
+        }
+
+        await using var stream = file.OpenReadStream(maximumBytes);
+        await using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory);
+        var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "image/png" : file.ContentType;
+        return $"data:{contentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+    }
+
+    private void ResetAssetChanges()
+    {
+        logoFile = null;
+        faviconFile = null;
+        backgroundFile = null;
+        logoPreviewUrl = null;
+        faviconPreviewUrl = null;
+        backgroundPreviewUrl = null;
+        RemoveLogo = false;
+        RemoveFavicon = false;
+        RemoveBackground = false;
+    }
+
+    private RenderFragment AssetCard(
+        string slot,
+        string label,
+        string hint,
+        string? currentUrl,
+        IBrowserFile? file,
+        string? previewUrl,
+        long maxBytes,
+        string accept,
+        EventCallback<InputFileChangeEventArgs> onChanged,
+        bool isRemoved) => builder =>
+    {
+        var inputId = $"hcs-branding-{slot}";
+        var imageUrl = previewUrl ?? (isRemoved ? null : currentUrl);
+        builder.OpenElement(0, "article");
+        builder.AddAttribute(1, "class", "hcs-branding-asset-card");
+        builder.OpenElement(2, "div");
+        builder.AddAttribute(3, "class", $"hcs-branding-asset-card__preview hcs-branding-asset-card__preview--{slot}");
+        if (imageUrl is not null)
+        {
+            builder.OpenElement(4, "img");
+            builder.AddAttribute(5, "src", imageUrl);
+            builder.AddAttribute(6, "alt", label);
+            builder.AddAttribute(7, "class", "hcs-branding-asset-card__image");
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(8, "i");
+            builder.AddAttribute(9, "class", "fa fa-image");
+            builder.AddAttribute(10, "aria-hidden", "true");
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+        builder.OpenElement(11, "div");
+        builder.AddAttribute(12, "class", "hcs-branding-asset-card__body");
+        builder.OpenElement(13, "h3");
+        builder.AddContent(14, label);
+        builder.CloseElement();
+        builder.OpenElement(15, "p");
+        builder.AddContent(16, hint);
+        builder.CloseElement();
+        if (file is not null)
+        {
+            builder.OpenElement(17, "p");
+            builder.AddAttribute(18, "class", "hcs-branding-asset-card__filename");
+            builder.AddContent(19, file.Name);
+            builder.CloseElement();
+        }
+        builder.OpenElement(20, "div");
+        builder.AddAttribute(21, "class", "hcs-branding-asset-card__actions");
+        builder.OpenElement(22, "label");
+        builder.AddAttribute(23, "class", "btn btn-sm btn-light hcs-branding-asset-card__upload");
+        builder.AddAttribute(24, "for", inputId);
+        builder.AddContent(25, L["Settings:BrandingChooseFile"]);
+        builder.CloseElement();
+        builder.OpenComponent<InputFile>(26);
+        builder.AddAttribute(27, "id", inputId);
+        builder.AddAttribute(28, "accept", accept);
+        builder.AddAttribute(29, "OnChange", onChanged);
+        builder.AddAttribute(30, "class", "hcs-branding-asset-card__input");
+        builder.CloseComponent();
+        builder.OpenElement(31, "button");
+        builder.AddAttribute(32, "type", "button");
+        builder.AddAttribute(33, "class", "hcs-branding-asset-card__remove");
+        builder.AddAttribute(34, "disabled", file is null && currentUrl is null);
+        builder.AddAttribute(35, "onclick", EventCallback.Factory.Create(this, () => MarkRemoved(slot)));
+        builder.AddContent(36, L["Settings:BrandingUseDefault"]);
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private void MarkRemoved(string slot)
+    {
+        switch (slot)
+        {
+            case SystemBrandingDefaults.LogoSlot:
+                logoFile = null;
+                logoPreviewUrl = null;
+                RemoveLogo = true;
+                break;
+            case SystemBrandingDefaults.FaviconSlot:
+                faviconFile = null;
+                faviconPreviewUrl = null;
+                RemoveFavicon = true;
+                break;
+            case SystemBrandingDefaults.BackgroundSlot:
+                backgroundFile = null;
+                backgroundPreviewUrl = null;
+                RemoveBackground = true;
+                break;
+        }
+
+        isDirty = true;
+    }
+}

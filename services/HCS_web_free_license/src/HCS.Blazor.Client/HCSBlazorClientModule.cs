@@ -19,6 +19,7 @@ using HCS.Blazor.Client.Layouts;
 using HCS.Blazor.Client.Pages.Organization;
 using HCS.Blazor.Client.Pages;
 using HCS.Blazor.Client.Settings;
+using HCS.Blazor.Client.Branding;
 using Localization.Resources.AbpUi;
 using OpenIddict.Abstractions;
 using Volo.Abp.AspNetCore.Components.Web;
@@ -94,6 +95,8 @@ public class HCSBlazorClientModule : AbpModule
         context.Services.AddScoped<Work.EmployeeRatingDirectoryService>();
         context.Services.AddScoped<Documents.DocumentClient>();
         context.Services.AddScoped<AuthenticationSettingsClient>();
+        context.Services.AddScoped<SystemBrandingClient>();
+        context.Services.AddScoped<SystemBrandingState>();
         ConfigureRouter(context);
         ConfigureMenu(context);
         ConfigureSettingManagement();
@@ -120,7 +123,10 @@ public class HCSBlazorClientModule : AbpModule
     private void ConfigureSettingManagement()
     {
         Configure<SettingManagementComponentOptions>(options =>
-            options.Contributors.Add(new AuthenticationSettingsPageContributor()));
+        {
+            options.Contributors.Add(new AuthenticationSettingsPageContributor());
+            options.Contributors.Add(new SystemBrandingSettingsPageContributor());
+        });
     }
 
     private void ConfigureMessageLocalization()

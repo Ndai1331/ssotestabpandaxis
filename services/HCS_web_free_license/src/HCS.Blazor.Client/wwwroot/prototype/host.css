@@ -769,9 +769,15 @@ body:has(.page-chat) {
 
 /* ——— Workspace dashboard (keep hcs-workspace layout, app control language) ——— */
 .hcs-app-shell .hcs-workspace a.hcs-ws-kpi,
+.hcs-app-shell .hcs-workspace .hcs-ws-kpi--static,
 .hcs-app-shell .hcs-workspace a.hcs-ws-notif-row,
 .hcs-app-shell .hcs-workspace a.hcs-ws-proj-name,
-.hcs-app-shell .hcs-workspace a.hcs-ws-task-name {
+.hcs-app-shell .hcs-workspace a.hcs-ws-task-name,
+.hcs-app-shell .hcs-workspace button.hcs-ws-proj-name,
+.hcs-app-shell .hcs-workspace button.hcs-ws-task-name,
+.hcs-app-shell .hcs-workspace button.hcs-ws-doc-name,
+.hcs-app-shell .hcs-workspace button.hcs-ws-ev-name,
+.hcs-app-shell .hcs-ws-project-modal button.hcs-ws-project__task-name {
   color: inherit !important;
   text-decoration: none !important;
 }
@@ -1734,6 +1740,7 @@ body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__opt
 
 .hcs-app-shell .modal-dialog.hcs-catalog-modal--pdf .hcs-catalog-modal__header,
 .hcs-app-shell .modal-dialog.hcs-catalog-modal--pdf .modal-header {
+  flex-wrap: nowrap;
   overflow: hidden;
 }
 
@@ -1744,7 +1751,7 @@ body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__opt
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: nowrap !important;
 }
 
 .hcs-app-shell .hcs-inbox-preview-tabs.process-side-tabs {

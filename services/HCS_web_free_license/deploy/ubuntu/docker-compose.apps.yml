@@ -118,6 +118,7 @@ services:
       <<: *common-env
       App__SelfUrl: https://${HCS_AUTH_PUBLIC_HOST}
       App__ClientUrl: https://${HCS_PUBLIC_HOST}
+      App__GatewayUrl: https://${HCS_PUBLIC_HOST}
       App__RedirectAllowedUrls: https://${HCS_PUBLIC_HOST},https://${HCS_API_PUBLIC_HOST},https://${HCS_AUTH_PUBLIC_HOST}
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
       AuthServer__RequireHttpsMetadata: "false"

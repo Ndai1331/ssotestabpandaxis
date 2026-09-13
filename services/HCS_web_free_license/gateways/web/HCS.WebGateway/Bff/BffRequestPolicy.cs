@@ -6,7 +6,9 @@ internal static class BffRequestPolicy
     [
         "/api/abp/application-configuration",
         "/api/abp/application-localization",
-        "/api/language-management/languages/enabled"
+        "/api/language-management/languages/enabled",
+        "/api/hcs/system-branding/public",
+        "/api/hcs/system-branding/assets"
     ];
     private const string AnonymousSurveyPrefix = "/api/surveys/public";
     private const string AnonymousEventPrefix = "/api/events/public";

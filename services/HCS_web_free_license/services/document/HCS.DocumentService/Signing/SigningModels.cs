@@ -3,7 +3,7 @@ namespace HCS.DocumentService.Signing;
 public sealed class SigningCredential
 {
     private SigningCredential() { }
-    public SigningCredential(Guid id, Guid userId, SigningKind kind, string endpoint, string protectedSecret, DateTime now,
+    public SigningCredential(Guid id, Guid? userId, SigningKind kind, string endpoint, string protectedSecret, DateTime now,
         string? providerCode = null, string? layoutImageBase64 = null, int apiTimeoutSeconds = 30,
         int signWidth = 150, int signHeight = 70, bool allowElectronicSign = true,
         bool allowDigitalSign = true, bool requireOtp = false)
@@ -15,7 +15,8 @@ public sealed class SigningCredential
             signWidth, signHeight, allowElectronicSign, allowDigitalSign, requireOtp);
     }
     public Guid Id { get; private set; }
-    public Guid UserId { get; private set; }
+    // Kept as nullable legacy audit linkage. A credential itself belongs to the global catalog.
+    public Guid? UserId { get; private set; }
     public SigningKind Kind { get; private set; }
     public string Endpoint { get; private set; } = string.Empty;
     public string ProtectedSecret { get; private set; } = string.Empty;
@@ -28,6 +29,15 @@ public sealed class SigningCredential
     public bool AllowDigitalSign { get; private set; } = true;
     public bool RequireOtp { get; private set; }
     public DateTime UpdatedAt { get; private set; }
+    public string ProviderType { get; private set; } = string.Empty;
+    public string DefaultSignType { get; private set; } = string.Empty;
+    public string SignedFileSuffix { get; private set; } = "signed";
+    public bool KeepOriginalFile { get; private set; }
+    public bool OverwriteSignedFile { get; private set; }
+    public bool EnableSignLog { get; private set; }
+    public bool IsActive { get; private set; } = true;
+    public bool IsDeleted { get; private set; }
+    public string? LegacyLayoutImagePath { get; private set; }
     public void Replace(string endpoint, string protectedSecret, DateTime now,
         string? providerCode = null, string? layoutImageBase64 = null, int apiTimeoutSeconds = 30,
         int signWidth = 150, int signHeight = 70, bool allowElectronicSign = true,
@@ -44,6 +54,22 @@ public sealed class SigningCredential
         AllowDigitalSign = allowDigitalSign;
         RequireOtp = requireOtp;
         UpdatedAt = now;
+    }
+
+    public void SetCatalogMetadata(string? providerType, string? defaultSignType, string? signedFileSuffix,
+        bool? keepOriginalFile, bool? overwriteSignedFile, bool? enableSignLog, bool? isActive, bool? isDeleted,
+        string? legacyLayoutImagePath)
+    {
+        ProviderType = providerType?.Trim() ?? ProviderType;
+        DefaultSignType = defaultSignType?.Trim() ?? DefaultSignType;
+        SignedFileSuffix = string.IsNullOrWhiteSpace(signedFileSuffix) ? SignedFileSuffix : signedFileSuffix.Trim();
+        if (keepOriginalFile.HasValue) KeepOriginalFile = keepOriginalFile.Value;
+        if (overwriteSignedFile.HasValue) OverwriteSignedFile = overwriteSignedFile.Value;
+        if (enableSignLog.HasValue) EnableSignLog = enableSignLog.Value;
+        if (isActive.HasValue) IsActive = isActive.Value;
+        if (isDeleted.HasValue) IsDeleted = isDeleted.Value;
+        if (legacyLayoutImagePath is not null)
+            LegacyLayoutImagePath = string.IsNullOrWhiteSpace(legacyLayoutImagePath) ? null : legacyLayoutImagePath.Trim();
     }
 }
 

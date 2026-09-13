@@ -261,6 +261,8 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         content.Add(new StringContent(request.AllowElectronicSign.ToString()), "allowElectronicSign");
         content.Add(new StringContent(request.AllowDigitalSign.ToString()), "allowDigitalSign");
         content.Add(new StringContent(request.RequireOtp.ToString()), "requireOtp");
+        if (request.CredentialId is { } credentialId)
+            content.Add(new StringContent(credentialId.ToString("D")), "credentialId");
         // Keep the upload stream alive until the request has been sent and read.
         await using var stream = layoutImage.OpenReadStream(3 * 1024 * 1024, cancellationToken);
         using var fileContent = new StreamContent(stream);

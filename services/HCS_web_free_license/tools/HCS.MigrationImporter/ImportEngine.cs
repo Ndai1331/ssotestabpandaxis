@@ -26,11 +26,18 @@ public sealed class ImportEngine(
         foreach (var table in tables)
         {
             var sourceCount = await snapshot.CountAsync(table.SourceTable, cancellationToken);
-            long upserted = 0, skipped = 0, archivedConflicts = 0;
+            long upserted = 0, skipped = 0, softDeleted = 0, archivedConflicts = 0;
             using var tableHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
             await foreach (var original in snapshot.ReadAsync(table, cancellationToken))
             {
+                if (IsSoftDeleted(original.Values))
+                {
+                    softDeleted++;
+                    skipped++;
+                    continue;
+                }
+
                 var row = Clone(original);
                 var rowKey = BuildRowKey(table, row.Values);
                 RemapUsers(table, rowKey, row.Values, userMap, report, report.LegacyIdentityPreserved);
@@ -68,7 +75,7 @@ public sealed class ImportEngine(
             }
 
             report.Tables.Add(new TableResult(table.SourceTable, sourceCount, upserted, skipped,
-                Convert.ToHexString(tableHash.GetHashAndReset()).ToLowerInvariant()));
+                Convert.ToHexString(tableHash.GetHashAndReset()).ToLowerInvariant(), softDeleted));
             if (archivedConflicts > 0)
                 report.ArchivedTables.Add(new ArchiveTableResult($"{table.SourceTable}__conflicts", table.TargetDatabase, archivedConflicts));
         }
@@ -216,6 +223,9 @@ public sealed class ImportEngine(
         table.KeyColumns.Select(x => Text(values, x) ?? throw new InvalidDataException($"{table.SourceTable}.{x} is null")));
 
     private static SourceRow Clone(SourceRow row) => new(row.Table, (JsonObject)row.Values.DeepClone());
+    private static bool IsSoftDeleted(JsonObject values)
+        => MigrationLookup.BoolValue(values, "IsDeleted") == true;
+
     private static string? Text(JsonObject values, string column)
     {
         if (values[column] is not JsonValue value) return null;

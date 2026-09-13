@@ -25,8 +25,11 @@ using Volo.Abp.Autofac;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict;
 using Volo.Abp.Security.Claims;
+using Volo.Abp.Settings;
 using Volo.Abp.UI.Navigation.Urls;
 using Volo.Abp.Ui.LayoutHooks;
+using HCS.Branding;
+using HCS.Settings;
 
 namespace HCS.AuthServer;
 
@@ -206,14 +209,28 @@ public sealed class HCSAuthServerModule : AbpModule
     }
 }
 
-public sealed class AuthServerFaviconViewComponent : ViewComponent
+public sealed class AuthServerFaviconViewComponent(
+    ISettingProvider settingProvider,
+    IConfiguration configuration) : ViewComponent
 {
-    public IViewComponentResult Invoke()
+    public async Task<IViewComponentResult> InvokeAsync()
     {
         var link = new TagBuilder("link");
         link.Attributes["rel"] = "icon";
-        link.Attributes["href"] = "/favicon.ico";
-        link.Attributes["type"] = "image/x-icon";
+        var revision = await settingProvider.GetOrNullAsync(HCSSettings.BrandingFaviconRevision);
+        var origin = configuration["App:GatewayUrl"]
+            ?? configuration["App:ClientUrl"]
+            ?? "https://localhost:44402";
+        var hasCustomFavicon = long.TryParse(revision, out var parsedRevision) && parsedRevision > 0;
+        if (hasCustomFavicon)
+        {
+            link.Attributes["href"] = $"{origin.TrimEnd('/')}/api/hcs/system-branding/assets/{SystemBrandingDefaults.FaviconSlot}?v={parsedRevision}";
+        }
+        else
+        {
+            link.Attributes["href"] = "/favicon.ico";
+            link.Attributes["type"] = "image/x-icon";
+        }
 
         return new HtmlContentViewComponentResult(link);
     }

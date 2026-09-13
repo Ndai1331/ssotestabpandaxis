@@ -39,36 +39,39 @@ else if (detail is not null)
             <div class="hcs-catalog-grid-card hcs-event-edit-card">
                 <div class="hcs-event-card-body">
                     <div class="hcs-event-section-heading">
-                        <h2>@L["Event:Edit"]</h2>
+                        <h2>@(canManage ? L["Event:Edit"] : L["Feature:GeneralInformation"])</h2>
+                        @if (canManage)
+                        {
                         <button class="btn btn-primary" type="button" @onclick="SaveEventAsync" disabled="@isSaving">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
                             @L["Catalog:SaveChanges"]
                         </button>
+                        }
                     </div>
                     <div class="hcs-event-form-grid">
                         <label class="hcs-event-field">
                             <span>@L["Event:Group"]</span>
-                            <input class="input" @bind="eventForm.Group" />
+                            <input class="input" @bind="eventForm.Group" disabled="@(!canManage)" />
                         </label>
                         <label class="hcs-event-field">
                             <span>@L["Event:Name"]</span>
-                            <input class="input" @bind="eventForm.Name" />
+                            <input class="input" @bind="eventForm.Name" disabled="@(!canManage)" />
                         </label>
                         <label class="hcs-event-field">
                             <span>@L["Event:StartTime"]</span>
-                            <input class="input" type="datetime-local" @bind="eventForm.StartTime" />
+                            <input class="input" type="datetime-local" @bind="eventForm.StartTime" disabled="@(!canManage)" />
                         </label>
                         <label class="hcs-event-field">
                             <span>@L["Event:EndTime"]</span>
-                            <input class="input" type="datetime-local" @bind="eventForm.EndTime" />
+                            <input class="input" type="datetime-local" @bind="eventForm.EndTime" disabled="@(!canManage)" />
                         </label>
                         <label class="hcs-event-field">
                             <span>@L["Event:Location"]</span>
-                            <input class="input" @bind="eventForm.Location" />
+                            <input class="input" @bind="eventForm.Location" disabled="@(!canManage)" />
                         </label>
                         <label class="hcs-event-field">
                             <span>@L["Catalog:Status"]</span>
-                            <select class="select" @bind="eventForm.Status">
+                            <select class="select" @bind="eventForm.Status" disabled="@(!canManage)">
                                 @foreach (var value in EventStatuses)
                                 {
                                     <option value="@value">@StatusLabel(value)</option>
@@ -78,11 +81,11 @@ else if (detail is not null)
                     </div>
                     <label class="hcs-event-field">
                         <span>@L["Event:Content"]</span>
-                        <textarea class="input" rows="3" @bind="eventForm.Content"></textarea>
+                        <textarea class="input" rows="3" @bind="eventForm.Content" disabled="@(!canManage)"></textarea>
                     </label>
                     <label class="hcs-event-field">
                         <span>@L["Event:Description"]</span>
-                        <textarea class="input" rows="3" @bind="eventForm.Description"></textarea>
+                        <textarea class="input" rows="3" @bind="eventForm.Description" disabled="@(!canManage)"></textarea>
                     </label>
                 </div>
             </div>
@@ -118,11 +121,14 @@ else if (detail is not null)
                     <div class="hcs-event-card-body">
                         <div class="hcs-event-section-heading">
                             <h2>@L["Event:Documents"]</h2>
+                            @if (canManage)
+                            {
                             <label class="btn btn-outline mb-0">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.44 11.05 12 20.5a6 6 0 0 1-8.49-8.49l9.9-9.9a4 4 0 0 1 5.66 5.66l-9.9 9.9a2 2 0 1 1-2.83-2.83l8.49-8.48"/></svg>
                                 @L["Event:AddAttachment"]
                                 <InputFile class="visually-hidden" multiple OnChange="UploadFilesAsync" />
                             </label>
+                            }
                         </div>
                         @if (detail.Attachments.Count == 0)
                         {
@@ -145,9 +151,12 @@ else if (detail is not null)
                                             <a class="doc-action" href="@AttachmentUrl(file.Id)" target="_blank" rel="noopener" download="@file.FileName" aria-label="@L["Event:DownloadAttachment"]" title="@L["Event:DownloadAttachment"]">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
                                             </a>
+                                            @if (canManage)
+                                            {
                                             <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAttachmentAsync(file)">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
                                             </button>
+                                            }
                                         </span>
                                     </li>
                                 }
@@ -162,6 +171,8 @@ else if (detail is not null)
                 <div class="hcs-event-section-heading">
                     <h2>@L["Event:Attendees"]</h2>
                     <div class="hcs-event-toolbar">
+                        @if (canManage)
+                        {
                         <button class="btn btn-primary" type="button" @onclick="OpenAddAttendee">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                             @L["Event:AddAttendee"]
@@ -171,14 +182,18 @@ else if (detail is not null)
                             @L["Event:ImportCsv"]
                             <InputFile class="visually-hidden" accept=".csv,text/csv" OnChange="ImportAsync" />
                         </label>
+                        }
                         <button class="btn btn-outline" type="button" @onclick="ExportAttendeesAsync" disabled="@(attendees.Count == 0)">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
                             @L["Catalog:Export"]
                         </button>
+                        @if (canManage)
+                        {
                         <button class="btn btn-danger @(selectedIds.Count == 0 ? null : "is-active")" type="button" @onclick="DeleteSelectedAsync" disabled="@(selectedIds.Count == 0)">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
                             @L["Event:DeleteSelected"]@(selectedIds.Count == 0 ? null : $" ({selectedIds.Count})")
                         </button>
+                        }
                     </div>
                 </div>
                 <div class="hcs-event-filters hcs-event-list-filters hcs-event-attendee-filters">
@@ -227,6 +242,8 @@ else if (detail is not null)
                         <table class="docs-table">
                             <thead>
                                 <tr>
+                                    @if (canManage)
+                                    {
                                     <th class="col-check" scope="col">
                                         <label class="hcs-row-check-wrap">
                                             <input class="hcs-row-check" type="checkbox"
@@ -235,19 +252,25 @@ else if (detail is not null)
                                                    @onchange="OnSelectAllChanged" aria-label="@L["Event:SelectAll"]" />
                                         </label>
                                     </th>
+                                    }
                                     <th scope="col">@L["Event:FullName"]</th>
                                     <th scope="col">@L["Catalog:Department"]</th>
                                     <th scope="col">@L["Event:Phone"]</th>
                                     <th scope="col">@L["Event:Email"]</th>
                                     <th class="col-status" scope="col">@L["Event:RegistrationStatus"]</th>
                                     <th class="col-status" scope="col">@L["Event:CheckInStatus"]</th>
+                                    @if (canManage)
+                                    {
                                     <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                                    }
                                 </tr>
                             </thead>
                             <tbody>
                             @foreach (var person in attendees)
                             {
                                 <tr @key="person.Id">
+                                    @if (canManage)
+                                    {
                                     <td class="col-check">
                                         <label class="hcs-row-check-wrap">
                                             <input class="hcs-row-check" type="checkbox"
@@ -256,6 +279,7 @@ else if (detail is not null)
                                                    @onchange="args => ToggleSelected(person.Id, args)" aria-label="@person.FullName" />
                                         </label>
                                     </td>
+                                    }
                                     <td>
                                         <div class="pj-name">
                                             <strong>@person.FullName</strong>
@@ -270,6 +294,8 @@ else if (detail is not null)
                                     <td>@(person.Email ?? "—")</td>
                                     <td><span class="hcs-status-badge @RegistrationClass(person.RegistrationStatus)">@RegistrationLabel(person.RegistrationStatus)</span></td>
                                     <td><span class="hcs-status-badge @CheckInClass(person.CheckInStatus)">@CheckInLabel(person.CheckInStatus)</span></td>
+                                    @if (canManage)
+                                    {
                                     <td>
                                         <div class="doc-actions">
                                             @if (IsConfirmed(person))
@@ -301,6 +327,7 @@ else if (detail is not null)
                                             </button>
                                         </div>
                                     </td>
+                                    }
                                 </tr>
                             }
                             </tbody>
@@ -387,6 +414,7 @@ else if (detail is not null)
     private static readonly int[] attendeePageSizes = [10, 20, 50, 100];
     private static readonly string[] EventStatuses = ["Preparing", "Ongoing", "Completed", "Cancelled"];
     private EventDto? detail;
+    private bool canManage => detail?.CanManage == true;
     private readonly List<EventAttendeeDto> attendees = [];
     private readonly List<PickerUser> pickerUsers = [];
     private readonly HashSet<Guid> pickerSelected = [];
@@ -454,7 +482,7 @@ else if (detail is not null)
     }
     private async Task SaveEventAsync()
     {
-        if (detail is null) return;
+        if (detail is null || !canManage) return;
         isSaving = true;
         try { detail = await Work.UpdateEventAsync(Id, eventForm.ToRequest()); await NotifySuccessAsync(L["Catalog:Updated"]); Navigation.NavigateTo("/events"); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
@@ -471,11 +499,13 @@ else if (detail is not null)
     }
     private async Task UploadFilesAsync(InputFileChangeEventArgs args)
     {
+        if (!canManage) return;
         try { foreach (var file in args.GetMultipleFiles(10)) await Work.UploadEventAttachmentAsync(Id, file); detail = await Work.GetEventAsync(Id); await NotifySuccessAsync(L["Event:AttachmentUploaded"]); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAttachmentAsync(EventAttachmentDto file)
     {
+        if (!canManage) return;
         if (!await UiMessage.Confirm(string.Format(L["Event:DeleteAttachmentConfirmation"], file.FileName))) return;
         try { await Work.DeleteEventAttachmentAsync(file.Id); detail = await Work.GetEventAsync(Id); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
@@ -502,6 +532,7 @@ else if (detail is not null)
     }
     private async Task OpenAddAttendee()
     {
+        if (!canManage) return;
         contactSearch = "";
         pickerUsers.Clear();
         pickerSelected.Clear();
@@ -561,6 +592,7 @@ else if (detail is not null)
     }
     private async Task AddSelectedUsersAsync()
     {
+        if (!canManage) return;
         if (!CanAddPickerUsers) return;
         isSavingAttendee = true;
         var imported = 0; var skipped = 0;
@@ -593,12 +625,14 @@ else if (detail is not null)
     private Task UndoCheckInAsync(EventAttendeeDto person) => ChangeStatusWithConfirmAsync(person, string.Format(L["Event:UndoCheckInOnBehalf"], person.FullName), new(null, NotCheckedIn));
     private async Task ChangeStatusWithConfirmAsync(EventAttendeeDto person, string message, ChangeEventAttendeeStatusRequest request)
     {
+        if (!canManage) return;
         if (!await UiMessage.Confirm(message)) return;
         try { await Work.ChangeEventAttendeeStatusAsync(person.Id, request); await LoadAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAttendeeAsync(EventAttendeeDto person)
     {
+        if (!canManage) return;
         if (!await UiMessage.Confirm(string.Format(L["Event:DeleteAttendeeConfirmation"], person.FullName))) return;
         try { await Work.DeleteEventAttendeeAsync(person.Id); selectedIds.Remove(person.Id); await LoadAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
@@ -620,7 +654,7 @@ else if (detail is not null)
         selectAll = attendees.Count > 0 && attendees.All(person => selectedIds.Contains(person.Id));
     private async Task DeleteSelectedAsync()
     {
-        if (selectedIds.Count == 0 || !await UiMessage.Confirm(L["Event:DeleteSelectedConfirmation"])) return;
+        if (!canManage || selectedIds.Count == 0 || !await UiMessage.Confirm(L["Event:DeleteSelectedConfirmation"])) return;
         var ids = selectedIds.ToArray();
         try
         {
@@ -635,6 +669,7 @@ else if (detail is not null)
     }
     private async Task ImportAsync(InputFileChangeEventArgs args)
     {
+        if (!canManage) return;
         try { var result = await Work.ImportEventAttendeesAsync(Id, args.File); await NotifySuccessAsync(string.Format(L["Event:ImportResult"], result.Imported, result.Skipped)); await LoadAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
@@ -671,6 +706,58 @@ else if (detail is not null)
     private string DepartmentName(EventAttendeeDto person) => person.UserId is { } userId && departments.TryGetValue(userId, out var name) ? name : "—";
     private static string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{bytes / 1024d:0.#} KB" : $"{bytes / 1024d / 1024d:0.#} MB";
     private string AttachmentUrl(Guid fileId) => Work.BuildEventAttachmentUrl(fileId);
-    private sealed class EventForm { public string Group { get; set; } = ""; public string Name { get; set; } = ""; public string? Content { get; set; } public string? Description { get; set; } public string? Location { get; set; } public DateTime StartTime { get; set; } public DateTime EndTime { get; set; } public string Status { get; set; } = "Preparing"; public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = WorkUi.UtcToFormTime(x.StartTime); EndTime = WorkUi.UtcToFormTime(x.EndTime); Status = x.Status; } public UpdateManagedEventRequest ToRequest() => new(Group.Trim(), Name.Trim(), Content, Description, Location, WorkUi.FormTimeToUtc(StartTime), WorkUi.FormTimeToUtc(EndTime), Status); }
-    private sealed class AttendeeForm { public Guid? UserId { get; set; } public string? Username { get; set; } public string? Surname { get; set; } public string? Name { get; set; } public string FullName { get; set; } = ""; public string? Cccd { get; set; } public string PhoneNumber { get; set; } = ""; public string Email { get; set; } = ""; public string? Address { get; set; } public string RegistrationStatus { get; set; } = "Unconfirmed"; public string CheckInStatus { get; set; } = "NotCheckedIn"; public string? Note { get; set; } public void Reset() { UserId = null; Username = Surname = Name = Cccd = Address = Note = ""; FullName = PhoneNumber = Email = ""; RegistrationStatus = "Unconfirmed"; CheckInStatus = "NotCheckedIn"; } public CreateEventAttendeeRequest ToRequest() => new(UserId, Username, Surname, Name, FullName.Trim(), Cccd, PhoneNumber.Trim(), Email.Trim(), Address, RegistrationStatus, CheckInStatus, Note); }
+    private static bool IsChecked(object? value)
+    {
+        if (value is bool flag) return flag;
+        var text = Convert.ToString(value);
+        return string.Equals(text, "true", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(text, "on", StringComparison.OrdinalIgnoreCase);
+    }
+    private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private sealed class EventForm
+    {
+        public string Group { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string? Content { get; set; }
+        public string? Description { get; set; }
+        public string? Location { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public string Status { get; set; } = "Preparing";
+        public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = x.StartTime.ToLocalTime(); EndTime = x.EndTime.ToLocalTime(); Status = x.Status; }
+        public UpdateManagedEventRequest ToRequest() => new(Group.Trim(), Name.Trim(), Content, Description, Location, StartTime, EndTime, Status);
+    }
+    private sealed class PickerUser
+    {
+        public Guid Id { get; init; }
+        public string UserName { get; init; } = "";
+        public string DisplayName { get; init; } = "";
+        public string? Surname { get; init; }
+        public string? Name { get; init; }
+        public string? Phone { get; init; }
+        public string? Email { get; init; }
+        public static PickerUser From(IdentityAdminUserDto user)
+        {
+            var display = string.Join(' ', new[] { user.Surname, user.Name }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim();
+            return new()
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                DisplayName = display.Length > 0 ? display : user.UserName,
+                Surname = user.Surname,
+                Name = user.Name,
+                Phone = NullIfEmpty(user.PhoneNumber),
+                Email = NullIfEmpty(user.Email)
+            };
+        }
+        public static PickerUser From(ChatContactDto contact) => new()
+        {
+            Id = contact.Id,
+            UserName = contact.UserName,
+            DisplayName = string.IsNullOrWhiteSpace(contact.DisplayName) ? contact.UserName : contact.DisplayName,
+            Surname = contact.Surname,
+            Name = contact.Name,
+            Phone = contact.PhoneNumber
+        };
+    }
 }

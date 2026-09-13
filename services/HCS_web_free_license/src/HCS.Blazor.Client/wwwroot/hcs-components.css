@@ -1350,24 +1350,6 @@ body:has(.hcs-app-shell) .select2-container {
     width: 100% !important;
 }
 
-body:has(.hcs-app-shell) > .select2-container {
-    width: auto !important;
-}
-
-body:has(.hcs-app-shell) .select2-container--open {
-    z-index: 2060;
-}
-
-body:has(.hcs-app-shell) .hcs-select2-drop {
-    z-index: 2060 !important;
-}
-
-body:has(.hcs-app-shell) .hcs-select2-drop .select2-dropdown {
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-}
-
 body:has(.hcs-app-shell) .select2-container .select2-selection--single {
     align-items: center;
     background-color: var(--hcs-color-surface);
@@ -1472,14 +1454,13 @@ body:has(.hcs-app-shell) .select2-container--default .select2-selection--single 
 
 body:has(.hcs-app-shell) .select2-dropdown {
     background: var(--hcs-color-surface);
-    border: 1px solid var(--hcs-color-primary);
-    border-radius: var(--hcs-radius-sm);
-    box-shadow: var(--hcs-focus-ring);
-    box-sizing: border-box;
+    border: 1px solid var(--hcs-input-border);
+    border-radius: var(--input-radius, var(--hcs-radius-sm));
+    box-shadow: var(--shadow-sm, var(--hcs-focus-ring));
     color: var(--hcs-color-ink);
     overflow: hidden;
     padding: .5rem;
-    z-index: 2000;
+    z-index: 1060;
 }
 
 body:has(.hcs-app-shell) .select2-dropdown--below {
@@ -1487,33 +1468,13 @@ body:has(.hcs-app-shell) .select2-dropdown--below {
 }
 
 body:has(.hcs-app-shell) .select2-dropdown--above {
-    border-radius: var(--hcs-radius-sm);
-    margin-bottom: 0;
+    margin-bottom: 8px;
+    margin-top: 0;
 }
 
 body:has(.hcs-app-shell) .select2-container--open.select2-container--below .select2-selection--single,
-body:has(.hcs-app-shell) .select2-container--open.select2-container--below .select2-selection--multiple {
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-}
-
-/* Multi-select search is part of the selection, not another bordered input. */
-body:has(.hcs-app-shell) .select2-selection--multiple .select2-search--inline .select2-search__field {
-    background: transparent !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
-    min-height: 0 !important;
-    height: 1.5rem !important;
-    padding: 0 !important;
-    line-height: 1.5rem;
-    resize: none;
-}
-
-body:has(.hcs-app-shell) .select2-selection--multiple {
-    min-height: 36px;
-    padding: 4px 8px;
+body:has(.hcs-app-shell) .select2-container--open.select2-container--above .select2-selection--single {
+    border-radius: var(--input-radius, var(--hcs-radius-sm)) !important;
 }
 
 body:has(.hcs-app-shell) .select2-search--dropdown {
@@ -1741,8 +1702,7 @@ body:has(.hcs-app-shell) select:is(.is-invalid, .invalid, [aria-invalid="true"])
     border-color: var(--hcs-color-danger) !important;
 }
 
-.hcs-app-shell select.hcs-user-select2 + .select2-container .hcs-user-option,
-body:has(.hcs-app-shell) .select2-dropdown .hcs-user-option {
+.hcs-app-shell select.hcs-user-select2 + .select2-container .hcs-user-option {
     align-items: center;
     display: flex;
     gap: .5rem;

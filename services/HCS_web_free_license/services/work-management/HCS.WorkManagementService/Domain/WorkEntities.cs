@@ -20,8 +20,9 @@ public sealed class Project : FullAuditedAggregateRoot<Guid>
         Guid? ownerDepartmentId, Guid ownerUserId, string? description = null) : base(id)
     {
         Code = Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength);
+        OwnerDepartmentId = ownerDepartmentId;
         OwnerUserId = ownerUserId == Guid.Empty ? throw new BusinessException("Work:OwnerRequired") : ownerUserId;
-        Change(name, description, startDate, endDate, status, ownerDepartmentId);
+        Change(name, description, startDate, endDate, status);
     }
     public string Code { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
@@ -31,8 +32,7 @@ public sealed class Project : FullAuditedAggregateRoot<Guid>
     public string Status { get; private set; } = string.Empty;
     public Guid? OwnerDepartmentId { get; private set; }
     public Guid OwnerUserId { get; private set; }
-    public void Change(string name, string? description, DateTime startDate, DateTime endDate, string status,
-        Guid? ownerDepartmentId)
+    public void Change(string name, string? description, DateTime startDate, DateTime endDate, string status)
     {
         startDate = WorkTimestamps.ToUtc(startDate);
         endDate = WorkTimestamps.ToUtc(endDate);
@@ -42,7 +42,6 @@ public sealed class Project : FullAuditedAggregateRoot<Guid>
         StartDate = startDate;
         EndDate = endDate;
         Status = Check.NotNullOrWhiteSpace(status, nameof(status), WorkConsts.StatusLength);
-        OwnerDepartmentId = ownerDepartmentId;
     }
 }
 

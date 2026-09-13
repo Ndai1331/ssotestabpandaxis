@@ -18,7 +18,7 @@
 @inject ILanguageProvider LanguageProvider
 
 @{
-    ViewBag.Title = HcsL["Auth:LoginTitle"].Value;
+    ViewBag.Title = Model.BrandingTitle;
     Layout = ThemeManager.CurrentTheme.GetAccountLayout();
     var languages = (await LanguageProvider.GetLanguagesAsync()).ToList();
     var currentUi = CultureInfo.CurrentUICulture.Name;
@@ -44,6 +44,14 @@
             : HcsL["Auth:LanguageEnglishShort"].Value;
 }
 
+<style>
+    body:has(.hcs-auth-login-page) {
+        background-image:
+            linear-gradient(180deg, rgba(240, 248, 250, .18), rgba(240, 248, 250, .08)),
+            url("@Html.Raw(Model.BrandingBackgroundUrl)");
+    }
+</style>
+
 @section scripts
 {
     <abp-script-bundle name="@typeof(LoginModel).FullName">
@@ -65,14 +73,14 @@
             <header class="hcs-login-card-brand" id="hcs-login-title">
                 <div class="hcs-login-card-brand__logo">
                     <img class="hcs-login-card-logo"
-                         src="/images/logo/logo-hcs.svg"
-                         alt=""
+                         src="@Model.BrandingLogoUrl"
+                         alt="@Model.BrandingTitle"
                          width="48"
                          height="48" />
                 </div>
                 <div class="hcs-login-card-brand__copy">
-                    <strong>@HcsL["AppName"] - @HcsL["Brand:Subtitle"]</strong>
-                    <span>@HcsL["Auth:AccountFallback"]</span>
+                    <strong>@Model.BrandingTitle</strong>
+                    <span>@Model.BrandingDescription</span>
                 </div>
             </header>
         @if (Model.VisibleAlerts.Any())

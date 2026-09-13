@@ -11,7 +11,14 @@
     --hcs-primary: var(--hcs-color-primary, var(--color-primary, #00B4A9));
     --hcs-primary-soft: var(--hcs-color-primary-soft, var(--color-primary-light, #E0F7F5));
     --hcs-ease: var(--hcs-motion-ease, cubic-bezier(.22, 1, .36, 1));
-    background: var(--hcs-bg);
+    background:
+        linear-gradient(rgba(245, 248, 252, .91), rgba(245, 248, 252, .91)),
+        var(--hcs-branding-background-image, none),
+        var(--hcs-bg);
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
     color: var(--hcs-ink);
     font-family: var(--font-sans, var(--hcs-font-family, "Inter", "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif));
     max-width: 100%;
@@ -68,7 +75,7 @@
 .hcs-brand__mark { align-items: center; display: inline-flex; height: 2.9rem; justify-content: center; overflow: hidden; width: 4rem; }
 .hcs-brand__mark img { display: block; height: 100%; object-fit: contain; width: 100%; }
 .hcs-brand__text strong { display: block; font-size: 1.1rem; letter-spacing: .04em; line-height: 1; }
-.hcs-brand__text small { color: var(--hcs-muted); display: block; font-size: .62rem; font-weight: 700; letter-spacing: .08em; margin-top: .28rem; text-transform: uppercase; }
+.hcs-brand__text small { color: var(--hcs-muted); display: block; font-size: .62rem; font-weight: 700; letter-spacing: .04em; margin-top: .28rem; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
 
 .hcs-nav-toggle,
 .hcs-icon-button {
@@ -119,7 +126,7 @@
 
 .hcs-top-nav {
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     background: var(--hcs-color-sidebar, var(--color-teal-top, #007F7C));
     box-shadow: 0 4px 14px rgba(0, 127, 124, .14);
     display: flex;

@@ -144,16 +144,24 @@ public sealed class SigningAppService(
     public async Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var principal = Principal;
-        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningConfigure);
-        var credentials = await db.SigningCredentials.AsNoTracking().Where(x => x.UserId == targetUserId)
-            .OrderBy(x => x.Kind).ToListAsync(cancellationToken);
+        DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningConfigure);
+        // SigningCredentials is a shared catalog. userId is retained on the contract
+        // for backward compatibility with older clients, but is intentionally ignored.
+        var credentials = await db.SigningCredentials.AsNoTracking()
+            .OrderBy(x => x.Kind)
+            .ThenBy(x => x.ProviderCode)
+            .ThenBy(x => x.IsDeleted)
+            .ThenByDescending(x => x.UpdatedAt)
+            .ToListAsync(cancellationToken);
         return credentials.Select(Map).ToList();
     }
 
     public async Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest input, Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var principal = Principal;
-        var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningConfigure);
+        DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningConfigure);
         if (!Enum.IsDefined(input.Kind)) throw new ArgumentOutOfRangeException(nameof(input.Kind));
         var providerCode = input.Kind == SigningKind.Electronic
             ? input.ProviderCode.Trim()
@@ -168,7 +176,13 @@ public sealed class SigningAppService(
             || (endpoint.Scheme != Uri.UriSchemeHttps && endpoint.Scheme != Uri.UriSchemeHttp))
             throw new ArgumentException("Signing endpoint must be an absolute HTTP or HTTPS URI.");
         EnsureEndpointAllowed(endpoint);
-        var credential = await db.SigningCredentials.SingleOrDefaultAsync(x => x.UserId == targetUserId && x.Kind == input.Kind, cancellationToken);
+        var credential = input.CredentialId is { } credentialId && credentialId != Guid.Empty
+            ? await db.SigningCredentials.SingleOrDefaultAsync(x => x.Id == credentialId, cancellationToken)
+            : await db.SigningCredentials
+                .Where(x => !x.IsDeleted && x.Kind == input.Kind
+                    && x.ProviderCode.ToUpper() == providerCode.ToUpper())
+                .OrderByDescending(x => x.UpdatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
         var rawSecret = input.ConsumeSecret();
         if (credential is null && input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(rawSecret))
             throw new ArgumentException("A signing secret is required for a new provider configuration.", nameof(input));
@@ -186,7 +200,7 @@ public sealed class SigningAppService(
         var signHeight = input.SignHeight > 0 ? input.SignHeight : providerDefaults.DefaultSignHeight;
         if (credential is null)
         {
-            credential = new SigningCredential(Guid.NewGuid(), targetUserId, input.Kind, endpoint.ToString(), protectedSecret, DateTime.UtcNow,
+            credential = new SigningCredential(Guid.NewGuid(), null, input.Kind, endpoint.ToString(), protectedSecret, DateTime.UtcNow,
                 providerCode, layoutImage, timeoutSeconds, signWidth, signHeight,
                 input.AllowElectronicSign, input.AllowDigitalSign, input.RequireOtp);
             db.SigningCredentials.Add(credential);
@@ -233,14 +247,6 @@ public sealed class SigningAppService(
             ?? throw new KeyNotFoundException("Document file not found.");
         if (!IsPdf(file))
             throw new InvalidOperationException("Only the prepared PDF file can be signed.");
-        var credential = await db.SigningCredentials.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId && x.Kind == input.Kind, cancellationToken);
-        if (input.Kind != SigningKind.Electronic && credential is null) throw new InvalidOperationException("Signing provider is not configured.");
-        if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(credential!.ProviderCode))
-            throw new InvalidOperationException("The selected signing provider has no provider code.");
-        if (input.Kind == SigningKind.Electronic && credential is { AllowElectronicSign: false })
-            throw new InvalidOperationException("Electronic signing is disabled for this provider.");
-        if (input.Kind != SigningKind.Electronic && credential is { AllowDigitalSign: false })
-            throw new InvalidOperationException("Digital signing is disabled for this provider.");
         var expectedType = input.Kind == SigningKind.Electronic ? UserSignatureType.Electronic : UserSignatureType.Digital;
         var signatureQuery = db.UserSignatures.AsNoTracking()
             .Where(x => x.UserId == userId && x.Type == expectedType && x.IsActive);
@@ -256,6 +262,24 @@ public sealed class SigningAppService(
                 .FirstOrDefaultAsync(cancellationToken);
         }
         if (signature is null) throw new InvalidOperationException("A matching user signature is not configured.");
+
+        var credentialQuery = db.SigningCredentials.AsNoTracking()
+            .Where(x => x.Kind == input.Kind && x.IsActive && !x.IsDeleted);
+        if (input.Kind != SigningKind.Electronic && !string.IsNullOrWhiteSpace(signature.ProviderCode))
+        {
+            var normalizedSignatureProvider = SigningProviderCodes.Normalize(signature.ProviderCode);
+            credentialQuery = credentialQuery.Where(x => x.ProviderCode.ToUpper() == normalizedSignatureProvider);
+        }
+        var credential = await credentialQuery
+            .OrderByDescending(x => x.UpdatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (input.Kind != SigningKind.Electronic && credential is null) throw new InvalidOperationException("Signing provider is not configured in the global catalog.");
+        if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(credential!.ProviderCode))
+            throw new InvalidOperationException("The selected signing provider has no provider code.");
+        if (input.Kind == SigningKind.Electronic && credential is { AllowElectronicSign: false })
+            throw new InvalidOperationException("Electronic signing is disabled for this provider.");
+        if (input.Kind != SigningKind.Electronic && credential is { AllowDigitalSign: false })
+            throw new InvalidOperationException("Digital signing is disabled for this provider.");
         if (credential is not null && !string.IsNullOrWhiteSpace(signature.ProviderCode)
             && !string.Equals(signature.ProviderCode, credential.ProviderCode, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("The selected signature is configured for a different provider.");
@@ -748,11 +772,11 @@ public sealed class SigningAppService(
         if (string.IsNullOrWhiteSpace(normalizedProvider))
             throw new ArgumentException("A configured provider must be selected for a digital signature.", nameof(providerCode));
 
-        var credential = await db.SigningCredentials.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId
+        var credential = await db.SigningCredentials.AsNoTracking().FirstOrDefaultAsync(x => x.IsActive && !x.IsDeleted
             && x.Kind != SigningKind.Electronic
             && x.ProviderCode.ToUpper() == normalizedProvider, cancellationToken);
         if (credential is null)
-            throw new InvalidOperationException("The selected provider is not configured for this user.");
+            throw new InvalidOperationException("The selected provider is not configured in the global catalog.");
         var providerDefaults = providerFactory.GetDefinition(credential.Kind, normalizedProvider);
 
         var normalizedToken = string.IsNullOrWhiteSpace(tokenRef)
@@ -797,7 +821,8 @@ public sealed class SigningAppService(
     private string CorrelationId => httpContext.HttpContext?.TraceIdentifier ?? Guid.NewGuid().ToString("N");
     private static SigningCredentialDto Map(SigningCredential x) => new(x.Id, x.Kind, x.ProviderCode, x.Endpoint, "********",
         x.ApiTimeoutSeconds, x.SignWidth, x.SignHeight, x.AllowElectronicSign, x.AllowDigitalSign, x.RequireOtp,
-        x.UpdatedAt, !string.IsNullOrWhiteSpace(x.LayoutImageBase64));
+        x.UpdatedAt, !string.IsNullOrWhiteSpace(x.LayoutImageBase64) || !string.IsNullOrWhiteSpace(x.LegacyLayoutImagePath),
+        x.IsActive, x.IsDeleted, x.LegacyLayoutImagePath);
     private static SigningAttemptDto Map(SigningAttempt x) => new(x.Id, x.DocumentId, x.FileId, x.Kind, x.Status,
         x.InputSha256, x.OutputSha256, x.Error, x.CreationTime, x.CompletedAt);
     private static UserSignatureDto MapSignature(UserSignature x) =>

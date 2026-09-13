@@ -17,6 +17,7 @@ public sealed class GatewayConfigurationTests
             ["/api/setting-management/{**catch-all}"] = "Platform",
             ["/api/language-management/{**catch-all}"] = "Platform",
             ["/api/hcs/authentication-settings/{**catch-all}"] = "Platform",
+            ["/api/hcs/system-branding/{**catch-all}"] = "Platform",
             ["/api/audit-logs/{**catch-all}"] = "Platform",
             ["/api/admin/{**catch-all}"] = "Platform",
             ["/api/chat/contacts/{**catch-all}"] = "Platform",

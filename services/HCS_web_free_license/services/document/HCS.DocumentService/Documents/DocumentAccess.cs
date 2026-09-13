@@ -65,8 +65,9 @@ internal static class DocumentAccess
         IQueryable<DocumentAggregate> query, int? sourceType, Guid userId, bool mine, ClaimsPrincipal principal) =>
         sourceType switch
         {
-            // Quản lý tài liệu: everyone who can open the menu sees the full archive.
-            0 => query.Where(x => x.SourceType == DocumentSourceType.Archive),
+            // Quản lý tài liệu: archive managers see the full list; employees do not.
+            0 when CanBrowseArchive(principal) => query.Where(x => x.SourceType == DocumentSourceType.Archive),
+            0 => query.Where(x => false),
             // Văn bản của tôi: only documents this user created.
             1 => query.Where(x => x.SourceType == DocumentSourceType.Personal &&
                                   x.History.Any(h => h.Action == CreatedAction && h.ActorUserId == userId)),
@@ -84,12 +85,17 @@ internal static class DocumentAccess
             _ => query
         };
 
+    public static bool CanBrowseArchive(ClaimsPrincipal principal) =>
+        IsElevated(principal)
+        || HasGrant(principal, DocumentPermissions.Create)
+        || HasGrant(principal, DocumentPermissions.Update);
+
     public static bool CanView(DocumentAggregate document, Guid userId, ClaimsPrincipal principal)
     {
-        if (document.SourceType == DocumentSourceType.Archive)
-            return HasPermission(principal, DocumentPermissions.View);
         if (IsCreator(document, userId) || HasInboxView(document, userId))
             return true;
+        if (document.SourceType == DocumentSourceType.Archive)
+            return CanBrowseArchive(principal);
         if (document.SourceType == DocumentSourceType.Workflow)
             return IsElevated(principal) || document.Assignments.Any(x => x.AssigneeUserId == userId);
         return false;

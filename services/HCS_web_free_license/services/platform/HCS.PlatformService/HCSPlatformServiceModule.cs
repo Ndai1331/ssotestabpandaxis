@@ -110,6 +110,14 @@ public sealed class HCSPlatformServiceModule : AbpModule
                 minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
                 minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
             }));
+            options.Containers.Configure<BrandingBlobContainer>(container => container.UseMinio(minio =>
+            {
+                minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
+                minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
+                minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
+                minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
+                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
+            }));
         });
     }
 

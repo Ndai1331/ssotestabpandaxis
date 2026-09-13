@@ -46,16 +46,18 @@ body:has(.hcs-app-shell) .hcs-catalog-modal__header .modal-title,
 
 body:has(.hcs-app-shell) .modal-dialog.hcs-catalog-modal--pdf .modal-header,
 body:has(.hcs-app-shell) .modal-dialog.hcs-catalog-modal--pdf .hcs-catalog-modal__header {
+  flex-wrap: nowrap;
   overflow: hidden;
 }
 
 body:has(.hcs-app-shell) .modal-dialog.hcs-catalog-modal--pdf .modal-title,
 body:has(.hcs-app-shell) .modal-dialog.hcs-catalog-modal--pdf .hcs-catalog-modal__title {
   display: block;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: nowrap !important;
 }
 
 body:has(.hcs-app-shell) .modal-header .btn-close,
@@ -118,6 +120,7 @@ body:has(.hcs-app-shell) .hcs-language-modal__footer,
   border-top: 0 !important;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
   padding: 12px 24px 16px !important;
 }
 

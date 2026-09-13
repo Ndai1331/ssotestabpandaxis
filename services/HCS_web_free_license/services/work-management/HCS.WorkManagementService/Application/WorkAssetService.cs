@@ -64,6 +64,7 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
         string contentType, long size, CancellationToken ct)
     {
         if (size is <= 0 or > MaxFileSize) throw new BusinessException("Work:InvalidAssetSize");
+        await access.DemandEventOwnerAsync(eventId, ct);
         if (!await db.ManagedEvents.AnyAsync(x => x.Id == eventId, ct)) throw new EntityNotFoundException(typeof(ManagedEvent), eventId);
         var id = Guid.NewGuid(); var blobName = WorkAssetBlobNamePolicy.Event(eventId, id);
         await blobs.SaveAsync(blobName, stream, overrideExisting: false, cancellationToken: ct);
@@ -120,6 +121,7 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
     {
         var item = await db.EventAttachments.SingleOrDefaultAsync(x => x.Id == fileId, ct)
             ?? throw new EntityNotFoundException(typeof(EventAttachment), fileId);
+        await access.DemandEventOwnerAsync(item.EventId, ct);
         await blobs.DeleteAsync(item.BlobName, cancellationToken: ct);
         db.EventAttachments.Remove(item); await db.SaveChangesAsync(ct);
     }

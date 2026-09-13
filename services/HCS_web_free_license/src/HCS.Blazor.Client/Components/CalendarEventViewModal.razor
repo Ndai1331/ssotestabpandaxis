@@ -1,0 +1,120 @@
+@inherits HCSComponentBase
+@inject NavigationManager Navigation
+
+<Modal @ref="modal" Size="ModalSize.Large">
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle title="@(item?.Title ?? L["Feature:EventDetail"].Value)">@(item?.Title ?? L["Feature:EventDetail"])</ModalTitle>
+            <CloseButton Clicked="HideAsync" />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            @if (item is null)
+            {
+                <div class="hcs-loading py-5" role="status" aria-live="polite">
+                    <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+                    <span>@L["Catalog:Loading"]</span>
+                </div>
+            }
+            else
+            {
+                <div class="hcs-catalog-form hcs-workspace-readonly">
+                    <div>
+                        <div class="hcs-catalog-desc">@L["Feature:Event"]</div>
+                        <strong class="hcs-workspace-readonly__value">@item.Title</strong>
+                    </div>
+                    <div class="hcs-form-row hcs-form-row--equal">
+                        <div>
+                            <div class="hcs-catalog-desc">@L["Catalog:EventTypeTitle"]</div>
+                            <strong>@item.EventType</strong>
+                        </div>
+                        <div>
+                            <div class="hcs-catalog-desc">@L["Feature:Visibility"]</div>
+                            <strong>@item.Visibility</strong>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="hcs-catalog-desc">@L["Event:Time"]</div>
+                        <strong>@WorkUi.FormatRange(item.StartTime, item.EndTime)</strong>
+                    </div>
+                    <div>
+                        <div class="hcs-catalog-desc">@L["Event:Location"]</div>
+                        <p class="hcs-workspace-readonly__description mb-0">@(string.IsNullOrWhiteSpace(item.Location) ? L["Event:OnlineOrNotSet"] : item.Location)</p>
+                    </div>
+                    <div>
+                        <div class="hcs-catalog-desc">@L["Feature:Description"]</div>
+                        <p class="hcs-workspace-readonly__description mb-0">@(string.IsNullOrWhiteSpace(item.Description) ? "—" : item.Description)</p>
+                    </div>
+                    @if (HasRelated)
+                    {
+                        <div>
+                            <div class="hcs-catalog-desc">@L["Feature:RelatedType"]</div>
+                            <strong>@RelatedTypeLabel()</strong>
+                        </div>
+                    }
+                </div>
+            }
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="HideAsync">@L["Catalog:Close"]</Button>
+            @if (HasRelated)
+            {
+                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="OpenRelatedAsync">@L["Work:OpenRelated"]</Button>
+            }
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@code {
+    [Parameter] public EventCallback<Guid> OnOpenProject { get; set; }
+    [Parameter] public EventCallback<Guid> OnOpenTask { get; set; }
+
+    private Modal? modal;
+    private CalendarEventDto? item;
+
+    private bool HasRelated => TryRelatedId(out _);
+
+    public async Task ShowAsync(CalendarEventDto value)
+    {
+        item = value;
+        if (modal is not null) await modal.Show();
+    }
+
+    public async Task HideAsync()
+    {
+        if (modal is not null) await modal.Hide();
+    }
+
+    private async Task OpenRelatedAsync()
+    {
+        if (item is null || !TryRelatedId(out var relatedId)) return;
+        if (IsProject && OnOpenProject.HasDelegate)
+        {
+            await HideAsync();
+            await OnOpenProject.InvokeAsync(relatedId);
+            return;
+        }
+        if (IsTask && OnOpenTask.HasDelegate)
+        {
+            await HideAsync();
+            await OnOpenTask.InvokeAsync(relatedId);
+            return;
+        }
+        Navigation.NavigateTo(WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id));
+    }
+
+    private bool IsProject => string.Equals(item?.RelatedType, "PROJECT", StringComparison.OrdinalIgnoreCase);
+    private bool IsTask => string.Equals(item?.RelatedType, "TASK", StringComparison.OrdinalIgnoreCase);
+
+    private bool TryRelatedId(out Guid relatedId)
+    {
+        relatedId = default;
+        return item is not null && Guid.TryParse(item.RelatedId, out relatedId) && (IsProject || IsTask);
+    }
+
+    private string RelatedTypeLabel()
+    {
+        if (IsProject) return L["Menu:Projects"];
+        if (IsTask) return L["Menu:Tasks"];
+        return item?.RelatedType ?? "";
+    }
+}

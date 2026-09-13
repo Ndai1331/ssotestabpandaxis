@@ -373,10 +373,27 @@ namespace HCS.DocumentService.Migrations
                     b.Property<int>("ApiTimeoutSeconds")
                         .HasColumnType("integer");
 
+                    b.Property<string>("DefaultSignType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("EnableSignLog")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Endpoint")
                         .IsRequired()
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("KeepOriginalFile")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("Kind")
                         .HasColumnType("integer");
@@ -384,6 +401,13 @@ namespace HCS.DocumentService.Migrations
                     b.Property<string>("LayoutImageBase64")
                         .HasMaxLength(4000000)
                         .HasColumnType("character varying(4000000)");
+
+                    b.Property<string>("LegacyLayoutImagePath")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<bool>("OverwriteSignedFile")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("ProtectedSecret")
                         .IsRequired()
@@ -395,6 +419,11 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("ProviderType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<bool>("RequireOtp")
                         .HasColumnType("boolean");
 
@@ -404,16 +433,20 @@ namespace HCS.DocumentService.Migrations
                     b.Property<int>("SignWidth")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SignedFileSuffix")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "Kind")
-                        .IsUnique();
+                    b.HasIndex("Kind", "ProviderCode");
 
                     b.ToTable("SigningCredentials", "document");
                 });

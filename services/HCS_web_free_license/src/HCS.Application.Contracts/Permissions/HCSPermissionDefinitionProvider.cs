@@ -16,6 +16,9 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         languages.AddChild(HCSPermissions.Languages.ManageTexts, L("Permission:Languages.ManageTexts"));
         group.AddPermission(HCSPermissions.AuditViewer.Default, L("Permission:AuditViewer"));
 
+        var systemBranding = context.AddGroup(HCSPermissions.SystemBranding.Default, L("Permission:SystemBranding"));
+        systemBranding.AddPermission(HCSPermissions.SystemBranding.Update, L("Permission:SystemBranding.Update"));
+
         var organization = context.AddGroup(HCSPermissions.Organization.Default, L("Permission:Organization"));
         AddCrud(organization.AddPermission(HCSPermissions.Organization.Departments, L("Permission:Organization.Departments")));
         AddCrud(organization.AddPermission(HCSPermissions.Organization.Units, L("Permission:Organization.Units")));

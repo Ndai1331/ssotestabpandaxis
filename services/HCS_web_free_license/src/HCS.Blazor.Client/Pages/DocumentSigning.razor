@@ -363,23 +363,38 @@
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
             <button class="btn btn-outline" type="button" @onclick="CloseSignAsync">@L["Catalog:Cancel"]</button>
-            @if (selected is { } selectedItem && CanActOn(selectedItem))
+            @if (selected is { } selectedItem)
             {
-                @if (CanReturn)
-                {
-                    <button class="btn btn-outline" type="button" @onclick="() => DecideAsync(true, true)" disabled="@isDecisionPending">@L["Work:Return"]</button>
-                }
-                @if (selectedItem.Task.Status == ApprovalTaskStatus.Pending)
-                {
-                    <button class="btn btn-outline" type="button" @onclick="ExtendDueDateAsync" disabled="@isDecisionPending">@L["Work:ExtendDueDate"]</button>
-                }
-                <button class="btn btn-danger" type="button" @onclick="() => DecideAsync(false, false)" disabled="@isDecisionPending">@L["Feature:Reject"]</button>
-                <button class="btn btn-primary" type="button" @onclick="ApproveAsync" disabled="@(isDecisionPending || !HasValidSelectedSignature)">@ActionModalTitle(selectedItem)</button>
+                <SigningDecisionButtons Show="CanActOn(selectedItem)"
+                                        CanReturn="CanReturnOn(selectedItem)"
+                                        CanExtend="selectedItem.Task.Status == ApprovalTaskStatus.Pending"
+                                        Disabled="@isDecisionPending"
+                                        ApproveDisabled="@(!HasValidSelectedSignature)"
+                                        ApproveText="@ActionModalTitle(selectedItem)"
+                                        OnReturn="ReturnSelectedAsync"
+                                        OnExtend="ExtendDueDateAsync"
+                                        OnReject="RejectSelectedAsync"
+                                        OnApprove="ApproveAsync" />
             }
         </ModalFooter>
     </ModalContent>
 </Modal>
-<DocumentPdfPreviewModal @ref="previewModal" ShowAssignTask="true" OnAssignTask="AssignFromPreviewAsync" />
+<DocumentPdfPreviewModal @ref="previewModal" ShowAssignTask="true" OnAssignTask="AssignFromPreviewAsync">
+    <FooterActions>
+        @if (previewing is { } previewItem)
+        {
+            <SigningDecisionButtons Show="CanActOn(previewItem)"
+                                    CanReturn="CanReturnOn(previewItem)"
+                                    CanExtend="previewItem.Task.Status == ApprovalTaskStatus.Pending"
+                                    Disabled="@isDecisionPending"
+                                    ApproveText="@SignActionTitle(previewItem)"
+                                    OnReturn="ReturnFromPreviewAsync"
+                                    OnExtend="ExtendFromPreviewAsync"
+                                    OnReject="RejectFromPreviewAsync"
+                                    OnApprove="ProcessFromPreviewAsync" />
+        }
+    </FooterActions>
+</DocumentPdfPreviewModal>
 <ProjectTaskCreateModal @ref="taskModal" />
 <SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
 <WorkflowInfoModal @ref="infoModal" OnPreviewFile="PreviewInfoFileAsync" />
@@ -579,6 +594,36 @@
         previewing = item;
         return previewModal?.ShowAsync(item.Document.Id, item.Document.Files, item.Document.Title) ?? Task.CompletedTask;
     }
+
+    private async Task ProcessFromPreviewAsync()
+    {
+        if (previewing is null || !CanActOn(previewing)) return;
+        var item = previewing;
+        if (previewModal is not null) await previewModal.HideAsync();
+        await OpenSign(item);
+    }
+
+    private Task RejectSelectedAsync() => DecideAsync(false, false);
+    private Task ReturnSelectedAsync() => DecideAsync(true, true);
+    private Task RejectFromPreviewAsync() => DecideFromPreviewAsync(false, false);
+    private Task ReturnFromPreviewAsync() => DecideFromPreviewAsync(true, true);
+
+    private async Task DecideFromPreviewAsync(bool approve, bool returnStep)
+    {
+        if (previewing is null || !CanActOn(previewing)) return;
+        selected = previewing;
+        form.DecisionIdempotencyKey = Guid.NewGuid().ToString("N");
+        if (previewModal is not null) await previewModal.HideAsync();
+        await DecideAsync(approve, returnStep);
+    }
+
+    private async Task ExtendFromPreviewAsync()
+    {
+        if (previewing is null || !CanActOn(previewing)) return;
+        selected = previewing;
+        if (previewModal is not null) await previewModal.HideAsync();
+        await ExtendDueDateAsync();
+    }
     private Task PreviewSigningFileAsync(DocumentFileDto file)
     {
         if (selected is null) return Task.CompletedTask;
@@ -664,14 +709,15 @@
         if (signature.ValidFrom is { } validFrom && validFrom > now) return false;
         if (signature.ValidTo is { } validTo && validTo < now) return false;
 
-        var credential = signingCredentials.FirstOrDefault(x => x.Kind == form.Kind);
+        var activeCredentials = signingCredentials
+            .Where(x => x.Kind == form.Kind && x.IsActive && !x.IsDeleted)
+            .ToList();
         if (form.Kind == (int)SigningKind.Electronic)
-            return credential?.AllowElectronicSign != false;
+            return activeCredentials.Count == 0 || activeCredentials.Any(x => x.AllowElectronicSign);
 
-        return credential is not null
-            && credential.AllowDigitalSign
+        return activeCredentials.Any(credential => credential.AllowDigitalSign
             && !string.IsNullOrWhiteSpace(credential.ProviderCode)
-            && string.Equals(signature.ProviderCode, credential.ProviderCode, StringComparison.OrdinalIgnoreCase);
+            && string.Equals(signature.ProviderCode, credential.ProviderCode, StringComparison.OrdinalIgnoreCase));
     }
 
     private static UserSignatureType SignatureTypeFor(int signingKind) =>
@@ -854,7 +900,8 @@
     private static WorkflowStepDto? CurrentStep(SigningQueueItem item) =>
         item.Definition.Steps.FirstOrDefault(x =>
             string.Equals(x.Code, item.Task.StepCode, StringComparison.OrdinalIgnoreCase));
-    private bool CanReturn => selected is { } item && CurrentStep(item)?.AllowReturn == true;
+    private bool CanReturn => selected is { } item && CanReturnOn(item);
+    private static bool CanReturnOn(SigningQueueItem item) => CurrentStep(item)?.AllowReturn == true;
     private static bool IsActionStep(SigningQueueItem item) => CurrentStep(item)?.Type is "PROCESS" or "SIGN";
     private static bool IsSignStep(SigningQueueItem? item) => item is not null && CurrentStep(item)?.Type == "SIGN";
     private bool CanActOn(SigningQueueItem item) =>

@@ -53,6 +53,10 @@
                             <div class="d-flex justify-content-between gap-2">
                                 <div>
                                     <span class="badge text-bg-light"><i class="fa fa-plug me-1" aria-hidden="true"></i>@KindName(item.Kind)</span>
+                                    @if (item.IsDeleted || !item.IsActive)
+                                    {
+                                        <span class="badge text-bg-secondary ms-1">@(item.IsDeleted ? "Đã ngừng" : "Tạm tắt")</span>
+                                    }
                                     <h2 class="h5 mt-2 mb-0 text-break">@(string.IsNullOrWhiteSpace(item.ProviderCode) ? KindName(item.Kind) : item.ProviderCode)</h2>
                                 </div>
                                 <span class="badge text-bg-light">@item.MaskedSecret</span>
@@ -236,7 +240,7 @@
         {
             var request = new ConfigureSigningCredentialRequest(form.Kind, form.Endpoint.Trim(), form.Secret,
                 form.ProviderCode.Trim(), null, form.ApiTimeoutSeconds, form.SignWidth, form.SignHeight,
-                form.AllowElectronicSign, form.AllowDigitalSign, form.RequireOtp);
+                form.AllowElectronicSign, form.AllowDigitalSign, form.RequireOtp, editingCredential.Id == Guid.Empty ? null : editingCredential.Id);
             await Documents.ConfigureCredentialWithLayoutAsync(request, layoutFile);
             await NotifySuccessAsync(L["Catalog:Updated"]);
             if (providerModal is not null) await providerModal.Hide();

@@ -1,26 +1,35 @@
 @inherits LayoutComponentBase
 @using HCS.Blazor.Client.Account
 @using HCS.Localization
+@using HCS.Permissions
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.Localization
 @using Volo.Abp.BlazoriseUI.Components
+@using HCS.Blazor.Client.Branding
 @inject IConfiguration Configuration
 @inject NavigationManager Navigation
 @inject IStringLocalizer<HCSResource> Localizer
 @inject AccountProfileClient Account
+@inject SystemBrandingState Branding
 @inject IJSRuntime Js
 @implements IDisposable
 
-<div class="hcs-app-shell @(mobileNavOpen ? "hcs-app-shell--nav-open" : null)" @onkeydown="HandleKeyDown">
+<HeadContent>
+    <title>@Branding.Title</title>
+    <meta name="description" content="@Branding.Description" />
+    <link rel="icon" href="@Branding.FaviconUrl" data-hcs-system-branding-favicon />
+</HeadContent>
+
+<div class="hcs-app-shell @(mobileNavOpen ? "hcs-app-shell--nav-open" : null)" style="@Branding.BackgroundStyle" @onkeydown="HandleKeyDown">
     <a class="hcs-skip-link" href="#main-content" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">@Localizer["Menu:SkipToContent"]</a>
     <header class="hcs-header">
         <HcsBusyBar />
         <div class="hcs-header__top">
-            <a class="hcs-brand" href="/workspace" aria-label="HCS - @Localizer["Menu:Workspace"]" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
-                <span class="hcs-brand__mark" aria-hidden="true"><img src="/images/logo/logo.png" alt="" width="100" height="70" /></span>
-                <span class="hcs-brand__text"><strong>HCS</strong><small>@Localizer["Brand:Subtitle"]</small></span>
+            <a class="hcs-brand" href="/workspace" aria-label="@Branding.Title - @Localizer["Menu:Workspace"]" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
+                <span class="hcs-brand__mark" aria-hidden="true"><img src="@Branding.LogoUrl" data-hcs-branding-logo alt="" width="100" height="70" /></span>
+                <span class="hcs-brand__text"><strong data-hcs-branding-title>@Branding.Title</strong><small data-hcs-branding-description title="@Branding.Description">@Branding.Description</small></span>
             </a>
 
             <button class="hcs-nav-toggle"
@@ -43,7 +52,7 @@
                             <span class="hcs-icon-badge">@unreadNotifications</span>
                         }
                     </button>
-                    <AuthorizeView>
+                    <AuthorizeView Policy="Collaboration.Notifications">
                         <Authorized>
                             <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" ChatUnreadCountChanged="OnChatUnreadChanged" />
                         </Authorized>
@@ -100,6 +109,10 @@
                 <i class="fa fa-house" aria-hidden="true"></i><span>@Localizer["Menu:Workspace"]</span>
             </NavLink>
 
+            <AuthorizeView Context="documentsNav">
+                <Authorized>
+                    @if (CanOpenDocumentsNavigation(documentsNav.User))
+                    {
             <div class="hcs-nav-menu @(IsExpanded("documents") ? "hcs-nav-menu--expanded" : null)"
                  @onpointerenter="@(() => OnMenuPointerEnter("documents"))">
                 <button class="hcs-nav-menu__trigger" type="button"
@@ -110,37 +123,51 @@
                     <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
                 </button>
                 <div class="hcs-nav-menu__panel" role="menu">
-                    <AuthorizeView Policy="Documents.View">
+                    <AuthorizeView Policy="Documents.Create">
                         <Authorized>
                             <NavLink href="/manage-documents?sourceType=0" @onclick="CloseMobileNav"><i class="fa fa-folder-open" aria-hidden="true"></i>@Localizer["Menu:DocumentList"]</NavLink>
-                            <NavLink href="/manage-documents?sourceType=1" @onclick="CloseMobileNav"><i class="fa fa-user" aria-hidden="true"></i>@Localizer["Menu:MyDocuments"]</NavLink>
+                            <NavLink href="/manage-documents?sourceType=1" @onclick="CloseMobileNav"><i class="fa fa-pen" aria-hidden="true"></i>@Localizer["Menu:DocumentsICreated"]</NavLink>
                         </Authorized>
                     </AuthorizeView>
-                    <AuthorizeView Policy="Documents.Assign" Context="canAssignDocuments">
-                        <Authorized>
-                            <AuthorizeView Policy="Documents.View" Context="canViewDocuments">
-                                <Authorized><NavLink href="/manage-documents?sourceType=2" @onclick="CloseMobileNav"><i class="fa fa-inbox" aria-hidden="true"></i>@Localizer["Menu:DocumentsSentToMe"]</NavLink></Authorized>
-                            </AuthorizeView>
-                        </Authorized>
+                    <AuthorizeView Policy="Documents.View">
+                        <Authorized><NavLink href="/manage-documents?sourceType=2" @onclick="CloseMobileNav"><i class="fa fa-inbox" aria-hidden="true"></i>@Localizer["Menu:MyDocuments"]</NavLink></Authorized>
                     </AuthorizeView>
                     <AuthorizeView Policy="Documents.Signing.Execute">
                         <Authorized><NavLink href="/document-signing" @onclick="CloseMobileNav"><i class="fa fa-signature" aria-hidden="true"></i>@Localizer["Menu:DocumentSigning"]</NavLink></Authorized>
                     </AuthorizeView>
                 </div>
             </div>
+                    }
+                </Authorized>
+            </AuthorizeView>
 
+            <AuthorizeView Policy="Documents.Workflow.View">
+                <Authorized>
             @Menu("workflows", "fa-arrow-trend-up", Localizer["Menu:Workflows"].Value,
                 ("/workflow-definitions", "fa-diagram-project", Localizer["Menu:WorkflowDefinitions"].Value),
                 ("/workflow-lists", "fa-code-branch", Localizer["Menu:WorkflowList"].Value),
                 ("/document-workflow-instances", "fa-folder-open", Localizer["Menu:WorkflowInstances"].Value))
+                </Authorized>
+            </AuthorizeView>
 
-            @Menu("projects", "fa-diagram-project", Localizer["Menu:ProjectsAndTasks"].Value,
-                ("/projects", "fa-briefcase", Localizer["Menu:ProjectList"].Value),
-                ("/tasks", "fa-list-check", Localizer["Menu:Tasks"].Value))
+            <AuthorizeView Context="projectsNav">
+                <Authorized>
+                    @if (CanOpenProjectsNavigation(projectsNav.User))
+                    {
+                        @Menu("projects", "fa-diagram-project", Localizer["Menu:ProjectsAndTasks"].Value,
+                            ("/projects", "fa-briefcase", Localizer["Menu:ProjectList"].Value),
+                            ("/tasks", "fa-list-check", Localizer["Menu:Tasks"].Value))
+                    }
+                </Authorized>
+            </AuthorizeView>
 
-            <NavLink class="hcs-top-nav__link" href="/calendar-events" @onclick="CloseMobileNav">
-                <i class="fa fa-calendar-days" aria-hidden="true"></i><span>@Localizer["Menu:CalendarEvents"]</span>
-            </NavLink>
+            <AuthorizeView Policy="WorkManagement.Calendar">
+                <Authorized>
+                    <NavLink class="hcs-top-nav__link" href="/calendar-events" @onclick="CloseMobileNav">
+                        <i class="fa fa-calendar-days" aria-hidden="true"></i><span>@Localizer["Menu:CalendarEvents"]</span>
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
 
             <AuthorizeView Policy="WorkManagement.Events">
                 <Authorized>
@@ -161,10 +188,18 @@
                 </Authorized>
             </AuthorizeView>
 
-            @Menu("surveys", "fa-chart-line", Localizer["Menu:Surveys"].Value,
-                ("/survey-sessions", "fa-clipboard-list", Localizer["Menu:SurveySessions"].Value),
-                ("/survey-results", "fa-square-poll-vertical", Localizer["Menu:SurveyResults"].Value))
+            <AuthorizeView Policy="WorkManagement.Surveys">
+                <Authorized>
+                    @Menu("surveys", "fa-chart-line", Localizer["Menu:Surveys"].Value,
+                        ("/survey-sessions", "fa-clipboard-list", Localizer["Menu:SurveySessions"].Value),
+                        ("/survey-results", "fa-square-poll-vertical", Localizer["Menu:SurveyResults"].Value))
+                </Authorized>
+            </AuthorizeView>
 
+            <AuthorizeView Context="catalogAuth">
+                <Authorized>
+                    @if (CanOpenCatalogNavigation(catalogAuth.User))
+                    {
             <div class="hcs-nav-menu hcs-nav-menu--catalog @(IsExpanded("catalog") ? "hcs-nav-menu--expanded" : null)"
                  @onpointerenter="@(() => OnMenuPointerEnter("catalog"))">
                 <button class="hcs-nav-menu__trigger"
@@ -207,6 +242,8 @@
                             <NavLink href="/positions" @onclick="CloseMobileNav"><i class="fa fa-id-badge" aria-hidden="true"></i>@Localizer["Menu:Positions"]</NavLink>
                         </Authorized>
                     </AuthorizeView>
+                    @if (HasHealthCatalogNavigation(catalogAuth.User))
+                    {
                     <p class="hcs-nav-menu__label">@Localizer["Menu:HealthCatalogs"]</p>
                     <AuthorizeView Policy="HCS.Catalogs.ICD10">
                         <Authorized><NavLink href="/icd10" @onclick="CloseMobileNav"><i class="fa fa-heart-pulse" aria-hidden="true"></i>@Localizer["Menu:ICD10"]</NavLink></Authorized>
@@ -220,6 +257,9 @@
                     <AuthorizeView Policy="HCS.Catalogs.BMI">
                         <Authorized><NavLink href="/bmi" @onclick="CloseMobileNav"><i class="fa fa-weight-scale" aria-hidden="true"></i>@Localizer["Menu:BMI"]</NavLink></Authorized>
                     </AuthorizeView>
+                    }
+                    @if (HasLocationCatalogNavigation(catalogAuth.User))
+                    {
                     <p class="hcs-nav-menu__label">@Localizer["Menu:LocationCatalogs"]</p>
                     <AuthorizeView Policy="HCS.Catalogs.Countries">
                         <Authorized><NavLink href="/countries" @onclick="CloseMobileNav"><i class="fa fa-earth-americas" aria-hidden="true"></i>@Localizer["Menu:Countries"]</NavLink></Authorized>
@@ -230,13 +270,25 @@
                     <AuthorizeView Policy="HCS.Catalogs.Communes">
                         <Authorized><NavLink href="/communes" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:Communes"]</NavLink></Authorized>
                     </AuthorizeView>
-                    <p class="hcs-nav-menu__label">@Localizer["Menu:SurveyCatalogs"]</p>
-                    <NavLink href="/survey-locations" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:SurveyLocations"]</NavLink>
-                    <NavLink href="/survey-criterias" @onclick="CloseMobileNav"><i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]</NavLink>
-                    <p class="hcs-nav-menu__label">@Localizer["Menu:Reports"]</p>
-                    <NavLink href="/reports" @onclick="CloseMobileNav"><i class="fa fa-chart-column" aria-hidden="true"></i>@Localizer["Menu:Reports"]</NavLink>
+                    }
+                    <AuthorizeView Policy="WorkManagement.SurveyManagement" Context="surveyCatalog">
+                        <Authorized>
+                            <p class="hcs-nav-menu__label">@Localizer["Menu:SurveyCatalogs"]</p>
+                            <NavLink href="/survey-locations" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:SurveyLocations"]</NavLink>
+                            <NavLink href="/survey-criterias" @onclick="CloseMobileNav"><i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]</NavLink>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Policy="WorkManagement.Reports" Context="reportsNav">
+                        <Authorized>
+                            <p class="hcs-nav-menu__label">@Localizer["Menu:Reports"]</p>
+                            <NavLink href="/reports" @onclick="CloseMobileNav"><i class="fa fa-chart-column" aria-hidden="true"></i>@Localizer["Menu:Reports"]</NavLink>
+                        </Authorized>
+                    </AuthorizeView>
                 </div>
             </div>
+                    }
+                </Authorized>
+            </AuthorizeView>
 
             <AuthorizeView Context="authenticationState">
                 <Authorized>
@@ -323,7 +375,7 @@
     <nav class="hcs-bottom-nav" aria-label="@Localizer["Menu:BottomNav"]">
         <AuthorizeView Policy="Documents.View">
             <Authorized>
-                <a class="@BottomNavClass("documents")" href="/manage-documents?sourceType=0" aria-current="@(IsBottomNavActive("documents") ? "page" : null)">
+                <a class="@BottomNavClass("documents")" href="/manage-documents?sourceType=2" aria-current="@(IsBottomNavActive("documents") ? "page" : null)">
                     <i class="fa fa-file-lines" aria-hidden="true"></i>
                     <span>@Localizer["Menu:Documents"]</span>
                 </a>
@@ -380,6 +432,49 @@
     private int unreadChat;
     private string? avatarDataUrl;
 
+    private static bool CanOpenDocumentsNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        HasPermission(user, HCSPermissions.Documents.View)
+        || HasPermission(user, HCSPermissions.Documents.SigningExecute);
+
+    private static bool CanOpenProjectsNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        HasPermission(user, HCSPermissions.WorkManagement.Projects)
+        || HasPermission(user, HCSPermissions.WorkManagement.Tasks);
+
+    private static bool CanOpenCatalogNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        HasAnyPermission(user,
+            HCSOrganizationPermissions.MasterData,
+            HCSOrganizationPermissions.Departments,
+            HCSOrganizationPermissions.Units,
+            HCSOrganizationPermissions.Positions,
+            HCSCatalogPermissions.Icd10,
+            HCSCatalogPermissions.BloodPressure,
+            HCSCatalogPermissions.BloodGlucose,
+            HCSCatalogPermissions.Bmi,
+            HCSCatalogPermissions.Countries,
+            HCSCatalogPermissions.Provinces,
+            HCSCatalogPermissions.Communes,
+            HCSPermissions.WorkManagement.SurveyManagement,
+            HCSPermissions.WorkManagement.Reports);
+
+    private static bool HasHealthCatalogNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        HasAnyPermission(user,
+            HCSCatalogPermissions.Icd10,
+            HCSCatalogPermissions.BloodPressure,
+            HCSCatalogPermissions.BloodGlucose,
+            HCSCatalogPermissions.Bmi);
+
+    private static bool HasLocationCatalogNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        HasAnyPermission(user,
+            HCSCatalogPermissions.Countries,
+            HCSCatalogPermissions.Provinces,
+            HCSCatalogPermissions.Communes);
+
+    private static bool HasAnyPermission(System.Security.Claims.ClaimsPrincipal user, params string[] permissions) =>
+        permissions.Any(permission => HasPermission(user, permission));
+
+    private static bool HasPermission(System.Security.Claims.ClaimsPrincipal user, string permission) =>
+        user.HasClaim("permission", permission);
+
     private static bool CanOpenSocialNavigation(System.Security.Claims.ClaimsPrincipal user) =>
         user.HasClaim("permission", CollaborationPermissions.Social)
         || user.HasClaim("permission", CollaborationPermissions.Chat)
@@ -394,6 +489,12 @@
     {
         Navigation.LocationChanged += OnLocationChanged;
         Account.AvatarChanged += OnAvatarChanged;
+        Branding.Changed += OnBrandingChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Branding.EnsureLoadedAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -444,9 +545,12 @@
     {
         Navigation.LocationChanged -= OnLocationChanged;
         Account.AvatarChanged -= OnAvatarChanged;
+        Branding.Changed -= OnBrandingChanged;
     }
 
     private void OnAvatarChanged(object? sender, EventArgs args) => _ = ReloadAvatarQuietAsync();
+
+    private void OnBrandingChanged(object? sender, EventArgs args) => _ = InvokeAsync(StateHasChanged);
 
     private void ToggleUserMenu() => userMenuOpen = !userMenuOpen;
 

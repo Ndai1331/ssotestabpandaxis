@@ -40,14 +40,29 @@
             }
             else
             {
-                <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" MatchParent="true" />
-            }
-            else if (selectedFile is not null)
-            {
-                <div class="hcs-file-preview-card">
-                    <i class="fa fa-file-lines" aria-hidden="true"></i>
-                    <div class="min-w-0"><strong class="d-block text-truncate">@selectedFile.FileName</strong><span class="hcs-catalog-desc">@selectedFile.ContentType · @FormatSize(selectedFile.Size)</span></div>
-                    <Button Color="Color.Primary" Outline="true" Clicked="DownloadSelectedAsync"><i class="fa fa-download me-1" aria-hidden="true"></i>@L["Work:View"]</Button>
+                <div class="hcs-inbox-preview-pane" hidden="@(showHistory && activeTab != "pdf")">
+                    @if (!string.IsNullOrWhiteSpace(error))
+                    {
+                        <p class="text-muted mb-0 p-4">@error</p>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(pdfUrl))
+                    {
+                        <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" MatchParent="true"
+                                     FileName="@DownloadFileName"
+                                     OnPrinted="RecordPrintedAsync" OnDownloaded="RecordDownloadedAsync" />
+                    }
+                    else if (selectedFile is not null)
+                    {
+                        <div class="hcs-office-preview">
+                            <i class="fa @DocumentFilePick.IconClass(selectedFile) hcs-office-preview__icon" aria-hidden="true"></i>
+                            <h2 class="hcs-office-preview__name">@selectedFile.FileName</h2>
+                            <p class="hcs-office-preview__meta">@selectedFile.ContentType · @FormatSize(selectedFile.Size)</p>
+                            <p class="hcs-office-preview__hint">@L["Document:OfficePreviewHint"]</p>
+                            <Button Color="Color.Primary" Clicked="DownloadSelectedAsync">
+                                <i class="fa fa-download me-1" aria-hidden="true"></i>@L["Document:DownloadFile"]
+                            </Button>
+                        </div>
+                    }
                 </div>
                 @if (showHistory)
                 {
@@ -76,12 +91,20 @@
                 }
             }
         </ModalBody>
-        <PdfViewerTaskActionsFooter Class="hcs-catalog-modal__footer" OnClose="HideAsync" ShowAssignTask="ShowAssignTask" OnAssignTask="AssignFromPreviewAsync" />
+        <PdfViewerTaskActionsFooter Class="hcs-catalog-modal__footer"
+                                   OnClose="HideAsync"
+                                   ShowAssignTask="ShowAssignTask"
+                                   OnAssignTask="AssignFromPreviewAsync"
+                                   ViewDetailHref="@ViewDetailHref">
+            @FooterActions
+        </PdfViewerTaskActionsFooter>
     </ModalContent>
 </Modal>
 @code {
     [Parameter] public bool ShowAssignTask { get; set; }
+    [Parameter] public bool ShowViewDetail { get; set; } = true;
     [Parameter] public EventCallback OnAssignTask { get; set; }
+    [Parameter] public RenderFragment? FooterActions { get; set; }
 
     private static readonly HashSet<string> InboxHistoryActions =
         new(StringComparer.OrdinalIgnoreCase) { "Sent", "Assigned", "Revoked", "Viewed", "Printed", "Downloaded" };
@@ -99,6 +122,9 @@
     private readonly Dictionary<Guid, string> personNames = [];
     private readonly Dictionary<Guid, string> orgNames = [];
     public Guid? DocumentId { get; private set; }
+    private string? ViewDetailHref => ShowViewDetail && DocumentId is { } id
+        ? $"/document-detail/{id:D}"
+        : null;
     private string BodyClass =>
         "hcs-catalog-modal__body hcs-catalog-modal__body--pdf" + (showHistory ? " is-inbox" : "");
     private string DownloadFileName => document is null

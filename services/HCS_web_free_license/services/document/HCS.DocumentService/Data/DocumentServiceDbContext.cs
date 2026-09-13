@@ -144,7 +144,11 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
             b.Property(x => x.ProtectedSecret).HasMaxLength(4096);
             b.Property(x => x.ProviderCode).HasMaxLength(256);
             b.Property(x => x.LayoutImageBase64).HasMaxLength(4_000_000);
-            b.HasIndex(x => new { x.UserId, x.Kind }).IsUnique();
+            b.Property(x => x.ProviderType).HasMaxLength(64);
+            b.Property(x => x.DefaultSignType).HasMaxLength(64);
+            b.Property(x => x.SignedFileSuffix).HasMaxLength(128);
+            b.Property(x => x.LegacyLayoutImagePath).HasMaxLength(512);
+            b.HasIndex(x => new { x.Kind, x.ProviderCode });
         });
         builder.Entity<UserSignature>(b =>
         {

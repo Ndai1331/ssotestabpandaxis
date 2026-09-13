@@ -28,6 +28,15 @@ public sealed class WorkAccessScopeTests
     }
 
     [Fact]
+    public void Owned_record_can_be_managed_by_owner_or_administrator()
+    {
+        var owner = Guid.NewGuid();
+        Assert.True(WorkAccessQueries.CanManageOwned(owner, owner, false));
+        Assert.False(WorkAccessQueries.CanManageOwned(owner, Guid.NewGuid(), false));
+        Assert.True(WorkAccessQueries.CanManageOwned(owner, Guid.NewGuid(), true));
+    }
+
+    [Fact]
     public async Task Task_list_includes_created_or_assigned_tasks_not_every_project_task()
     {
         var ct = TestContext.Current.CancellationToken;

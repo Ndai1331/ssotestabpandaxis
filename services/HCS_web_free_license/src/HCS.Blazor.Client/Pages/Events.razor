@@ -99,12 +99,15 @@
                             <td>@item.AttendeeCount</td>
                             <td>
                                 <div class="doc-actions">
+                                    @if (item.CanManage)
+                                    {
                                     <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => EditAsync(item)">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                                     </button>
                                     <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
                                     </button>
+                                    }
                                 </div>
                             </td>
                         </tr>
@@ -223,6 +226,7 @@
     }
     private async Task EditAsync(EventListItemDto item)
     {
+        if (!item.CanManage) return;
         var detail = await Work.GetEventAsync(item.Id); editingId = item.Id; form.Load(detail); selectedCreateAttachments.Clear(); attachmentError = null;
         if (modal is not null) await modal.Show();
     }
@@ -309,6 +313,7 @@
     private void RemoveCreateAttachment(IBrowserFile file) => selectedCreateAttachments.Remove(file);
     private async Task DeleteAsync(EventListItemDto item)
     {
+        if (!item.CanManage) return;
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
         try
         {
@@ -331,8 +336,8 @@
     {
         public string Group { get; set; } = "General"; public string Name { get; set; } = ""; public string? Content { get; set; } public string? Description { get; set; } public string? Location { get; set; } public DateTime StartTime { get; set; } = DateTime.Now.AddHours(1); public DateTime EndTime { get; set; } = DateTime.Now.AddHours(2); public string Status { get; set; } = "Preparing";
         public void Reset() { Group = "General"; Name = Content = Description = Location = ""; StartTime = DateTime.Now.AddHours(1); EndTime = DateTime.Now.AddHours(2); Status = "Preparing"; }
-        public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = WorkUi.UtcToFormTime(x.StartTime); EndTime = WorkUi.UtcToFormTime(x.EndTime); Status = x.Status; }
-        public CreateManagedEventRequest ToCreate() => new(Group.Trim(), Name.Trim(), Content, Description, Location, WorkUi.FormTimeToUtc(StartTime), WorkUi.FormTimeToUtc(EndTime), Status);
-        public UpdateManagedEventRequest ToUpdate() => new(Group.Trim(), Name.Trim(), Content, Description, Location, WorkUi.FormTimeToUtc(StartTime), WorkUi.FormTimeToUtc(EndTime), Status);
+        public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = x.StartTime.ToLocalTime(); EndTime = x.EndTime.ToLocalTime(); Status = x.Status; }
+        public CreateManagedEventRequest ToCreate() => new(Group.Trim(), Name.Trim(), Content, Description, Location, StartTime, EndTime, Status);
+        public UpdateManagedEventRequest ToUpdate() => new(Group.Trim(), Name.Trim(), Content, Description, Location, StartTime, EndTime, Status);
     }
 }

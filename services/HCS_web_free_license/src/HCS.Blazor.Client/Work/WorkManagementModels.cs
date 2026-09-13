@@ -24,7 +24,7 @@ public sealed record ProjectTaskDetailDto(
 public sealed record CreateProjectRequest(
     string Code, string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record UpdateProjectRequest(
-    string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
+    string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status);
 public sealed record AddProjectMemberRequest(Guid UserId, string Role);
 public sealed record CreateProjectTaskRequest(
     Guid ProjectId, Guid? ParentTaskId, string Code, string Title, string? Description,
@@ -37,19 +37,21 @@ public sealed record AddTaskDocumentRequest(Guid DocumentId, string? DocumentCod
 public sealed record CalendarEventDto(
     Guid Id, string Title, string? Description, DateTime StartTime, DateTime EndTime, bool AllDay,
     string EventType, string? Location, string RelatedType, string? RelatedId, string Visibility,
-    List<Guid> ParticipantUserIds);
+    List<Guid> ParticipantUserIds, Guid OwnerUserId = default, bool CanManage = false);
 public sealed record UpsertCalendarEventRequest(
     string Title, string? Description, DateTime StartTime, DateTime EndTime, bool AllDay,
     string EventType, string? Location, string RelatedType, string? RelatedId, string Visibility,
     IReadOnlyList<Guid>? ParticipantUserIds);
 
 public sealed record EventListItemDto(Guid Id, string Code, string Group, string Name, DateTime StartTime,
-    DateTime EndTime, string? Location, string Status, int AttendeeCount);
+    DateTime EndTime, string? Location, string Status, int AttendeeCount,
+    Guid OwnerUserId = default, bool CanManage = false);
 public sealed record EventAttendanceSummaryDto(int Total, int Confirmed, int Unconfirmed, int Declined, int CheckedIn, int NotCheckedIn);
 public sealed record EventAttachmentDto(Guid Id, string FileName, string ContentType, long Size);
 public sealed record EventDto(Guid Id, string Code, string Group, string Name, string? Content, string? Description,
     string? Location, DateTime StartTime, DateTime EndTime, string Status, string QrToken,
-    List<EventAttachmentDto> Attachments, EventAttendanceSummaryDto Attendance);
+    List<EventAttachmentDto> Attachments, EventAttendanceSummaryDto Attendance,
+    Guid OwnerUserId = default, bool CanManage = false);
 public sealed record EventDashboardDto(int TotalEvents, int CompletedEvents, int OngoingEvents, int UpcomingEvents,
     int TotalAttendees, List<EventListItemDto> Upcoming);
 public sealed record CreateManagedEventRequest(string Group, string Name, string? Content, string? Description,
@@ -65,8 +67,11 @@ public sealed record UpdateEventAttendeeRequest(string? Username, string? Surnam
     string? PhoneNumber, string? Email, string? Address, string RegistrationStatus, string CheckInStatus, string? Note);
 public sealed record ChangeEventAttendeeStatusRequest(string? RegistrationStatus, string? CheckInStatus);
 public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location,
-    List<EventAttachmentDto>? Attachments = null);
+    List<EventAttachmentDto>? Attachments = null, string Status = "Preparing", string? Content = null,
+    string? Description = null, string? RegistrationStatus = null, string? CheckInStatus = null,
+    DateTime? CheckedInAt = null);
 public sealed record PublicEventCheckInRequest();
+public sealed record PublicEventConfirmResultDto(string FullName, string RegistrationStatus);
 public sealed record PublicEventCheckInResultDto(string FullName, DateTime CheckedInAt);
 public sealed record EventImportResultDto(int Imported, int Skipped);
 

@@ -1,5 +1,6 @@
 @page "/survey-sessions"
 @attribute [Authorize(Policy = "WorkManagement.Surveys")]
+@using HCS.Permissions
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
 @inject IUiMessageService UiMessage
@@ -13,10 +14,13 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
                 @L["Catalog:Refresh"]
             </button>
+            @if (canManage)
+            {
             <button class="btn btn-primary" type="button" @onclick="OpenCreate">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                 @L["Catalog:New"]
             </button>
+            }
         </div>
     </div>
     <section class="docs-main">
@@ -77,18 +81,24 @@
                             <td><span class="hcs-status-badge @SessionStatusClass(item.Status)">@SessionStatusText(item.Status)</span></td>
                             <td>
                                 <div class="doc-actions">
+                                    @if (canManage)
+                                    {
                                     <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => Edit(item)">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                                     </button>
                                     <button class="btn btn-outline btn-sm" type="button" @onclick="@(() => ChangeStatusAsync(item, "Active"))">@L["Catalog:Active"]</button>
                                     <button class="btn btn-outline btn-sm" type="button" @onclick="@(() => ChangeStatusAsync(item, "Closed"))">@L["Catalog:Closed"]</button>
+                                    }
                                     @if (item.LocationId is { } locationId)
                                     {
                                         <a class="btn btn-outline btn-sm" href="@($"/survey-collections/{locationId}")">@L["Feature:Collect"]</a>
                                     }
+                                    @if (canManage)
+                                    {
                                     <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
                                     </button>
+                                    }
                                 </div>
                             </td>
                         </tr>
@@ -147,13 +157,17 @@
     private Modal? modal;
     private Guid? editingId;
     private string filter = "", statusFilter = "";
-    private bool isLoading, showFilters, loaded;
+    private bool isLoading, showFilters, loaded, canManage;
     private int totalCount, pageSize = 20, currentPage = 1;
     private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
     private bool CanPrev => currentPage > 1;
     private bool CanNext => currentPage < PageCount;
 
-    protected override Task OnInitializedAsync() => LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        canManage = await AuthorizationService.IsGrantedAsync(HCSPermissions.WorkManagement.SurveyManagement);
+        await LoadAsync();
+    }
 
     private Task GoFirst() { currentPage = 1; ApplyPage(); return Task.CompletedTask; }
     private Task GoPrev() { if (!CanPrev) return Task.CompletedTask; currentPage--; ApplyPage(); return Task.CompletedTask; }
@@ -218,21 +232,27 @@
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
-    private async Task OpenCreate() { editingId = null; form.Reset(); if (modal is not null) await modal.Show(); }
+    private async Task OpenCreate()
+    {
+        if (!canManage) return;
+        editingId = null; form.Reset(); if (modal is not null) await modal.Show();
+    }
     private async Task Edit(SurveySessionDto session)
     {
+        if (!canManage) return;
         editingId = session.Id;
         form.Code = session.Code; form.Name = session.Name; form.LocationId = session.LocationId?.ToString() ?? "";
-        form.StartsAt = WorkUi.UtcToFormTime(session.StartsAt); form.EndsAt = WorkUi.UtcToFormTime(session.EndsAt);
+        form.StartsAt = session.StartsAt.ToLocalTime(); form.EndsAt = session.EndsAt.ToLocalTime();
         if (modal is not null) await modal.Show();
     }
     private async Task SaveAsync()
     {
+        if (!canManage) return;
         try
         {
             Guid? location = Guid.TryParse(form.LocationId, out var id) ? id : null;
-            if (editingId is { } sessionId) await Work.UpdateSessionAsync(sessionId, new UpdateSurveySessionRequest(form.Name.Trim(), WorkUi.FormTimeToUtc(form.StartsAt), WorkUi.FormTimeToUtc(form.EndsAt), location));
-            else await Work.CreateSessionAsync(new CreateSurveySessionRequest(form.Code.Trim(), form.Name.Trim(), WorkUi.FormTimeToUtc(form.StartsAt), WorkUi.FormTimeToUtc(form.EndsAt), location));
+            if (editingId is { } sessionId) await Work.UpdateSessionAsync(sessionId, new UpdateSurveySessionRequest(form.Name.Trim(), form.StartsAt, form.EndsAt, location));
+            else await Work.CreateSessionAsync(new CreateSurveySessionRequest(form.Code.Trim(), form.Name.Trim(), form.StartsAt, form.EndsAt, location));
             await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             form.Reset(); await LoadAsync();
@@ -241,6 +261,7 @@
     }
     private async Task ChangeStatusAsync(SurveySessionDto session, string status)
     {
+        if (!canManage) return;
         try { await Work.ChangeSessionStatusAsync(session.Id, status); await NotifySuccessAsync(L["Catalog:Updated"]); await LoadAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
@@ -260,6 +281,7 @@
     };
     private async Task DeleteAsync(SurveySessionDto session)
     {
+        if (!canManage) return;
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], session.Name))) return;
         try { await Work.DeleteSessionAsync(session.Id); await NotifySuccessAsync(L["Catalog:Deleted"]); await LoadAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
