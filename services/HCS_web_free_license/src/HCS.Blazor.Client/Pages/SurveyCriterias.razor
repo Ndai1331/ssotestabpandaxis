@@ -116,7 +116,7 @@
             </div>
             @if (editingId is not null)
             {
-                <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Catalog:Active"]</Check></Field>
+                <Field><Check TValue="bool" @bind-Value="form.IsActive">@L["Catalog:Active"]</Check></Field>
             }
         </div>
     </ModalBody>
@@ -214,7 +214,7 @@
             if (editingId is { } id)
                 await Work.UpdateCriteriaAsync(id, new UpdateSurveyCriteriaRequest(form.Name.Trim(), form.SortOrder, form.IsActive, form.LocationId, Blank(form.Image)));
             else
-                await Work.CreateCriteriaAsync(new CreateSurveyCriteriaRequest(form.Code.Trim(), form.Name.Trim(), form.SortOrder, form.LocationId, Blank(form.Image)));
+                await Work.CreateCriteriaAsync(new CreateSurveyCriteriaRequest(form.Code.Trim(), form.Name.Trim(), form.SortOrder, form.LocationId, Blank(form.Image), form.IsActive));
             await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             await LoadAsync();

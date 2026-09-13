@@ -22,7 +22,7 @@ public sealed record ProjectTaskDetailDto(
 public sealed record CreateProjectRequest(
     string Code, string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record UpdateProjectRequest(
-    string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status);
+    string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record AddProjectMemberRequest(Guid UserId, string Role);
 public sealed record CreateProjectTaskRequest(
     Guid ProjectId, Guid? ParentTaskId, string Code, string Title, string? Description,
@@ -77,9 +77,9 @@ public sealed record SurveySessionDto(Guid Id, string Code, string Name, DateTim
     DateTime? SurveyTime = null, string? DeviceType = null, string? Note = null, string? SessionDisplay = null);
 public sealed record SurveyResultDto(Guid Id, Guid SessionId, Guid CriteriaId, Guid? RespondentUserId, decimal Score, string? Comment);
 public sealed record SurveyFileDto(Guid Id, Guid SessionId, string FileName, string ContentType, long Size);
-public sealed record CreateSurveyCriteriaRequest(string Code, string Name, int SortOrder, Guid? LocationId = null, string? Image = null);
+public sealed record CreateSurveyCriteriaRequest(string Code, string Name, int SortOrder, Guid? LocationId = null, string? Image = null, bool IsActive = true);
 public sealed record UpdateSurveyCriteriaRequest(string Name, int SortOrder, bool IsActive, Guid? LocationId = null, string? Image = null);
-public sealed record CreateSurveyLocationRequest(string Code, string Name, Guid? OrganizationUnitId, string? Description = null);
+public sealed record CreateSurveyLocationRequest(string Code, string Name, Guid? OrganizationUnitId, string? Description = null, bool IsActive = true);
 public sealed record UpdateSurveyLocationRequest(string Name, Guid? OrganizationUnitId, bool IsActive, string? Description = null);
 public sealed record CreateSurveySessionRequest(string Code, string Name, DateTime StartsAt, DateTime EndsAt, Guid? LocationId);
 public sealed record UpdateSurveySessionRequest(string Name, DateTime StartsAt, DateTime EndsAt, Guid? LocationId);

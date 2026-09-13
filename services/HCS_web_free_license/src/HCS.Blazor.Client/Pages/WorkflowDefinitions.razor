@@ -88,7 +88,7 @@
                 <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsKindName" /></Field>
             </div>
             <Field><FieldLabel>@L["Work:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
-            <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Work:IsActive"]</Check></Field>
+            <Field><Check TValue="bool" @bind-Value="form.IsActive">@L["Work:IsActive"]</Check></Field>
         </div>
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
@@ -99,7 +99,7 @@
 @code {
     private static readonly int[] pageSizes = [10, 20, 50, 100];
     private readonly List<WorkflowKindDto> kinds = [];
-    private readonly List<WorkflowKindDto> pageItems = [];
+    private List<WorkflowKindDto> pageItems = [];
     private readonly KindForm form = new();
     private WorkflowKindDto? editing;
     private Modal? modal;
@@ -135,8 +135,9 @@
     {
         var filtered = Filtered;
         totalCount = filtered.Count;
-        pageItems.Clear();
-        pageItems.AddRange(filtered.Skip((currentPage - 1) * pageSize).Take(pageSize));
+        // Replace the collection so DataGrid invalidates its cached rows even
+        // when an update leaves the number of items unchanged.
+        pageItems = filtered.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
     }
 
     private async Task LoadAsync()
@@ -144,8 +145,9 @@
         isLoading = true;
         try
         {
+            var latestKinds = await Documents.GetKindsAsync();
             kinds.Clear();
-            kinds.AddRange(await Documents.GetKindsAsync());
+            kinds.AddRange(latestKinds);
             loaded = true;
             ApplyPage();
         }

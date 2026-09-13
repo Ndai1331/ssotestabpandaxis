@@ -106,7 +106,9 @@
                         @if (Kind == ReferenceCatalogKind.Bmi)
                         {
                             <DataGridColumn TItem="ReferenceCatalogRow" Field="Title" Caption='@L["Catalog:Title"].Value' />
-                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Gender" Caption='@L["Catalog:Gender"].Value' />
+                            <DataGridColumn TItem="ReferenceCatalogRow" Field="Gender" Caption='@L["Catalog:Gender"].Value'>
+                                <DisplayTemplate Context="cell">@GenderText(cell.Item.Gender)</DisplayTemplate>
+                            </DataGridColumn>
                             <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:Minimum"].Value'><DisplayTemplate Context="cell">@FormatDecimal(cell.Item.MinValue)</DisplayTemplate></DataGridColumn>
                             <DataGridColumn TItem="ReferenceCatalogRow" Caption='@L["Catalog:Maximum"].Value'><DisplayTemplate Context="cell">@FormatDecimal(cell.Item.MaxValue)</DisplayTemplate></DataGridColumn>
                             <DataGridColumn TItem="ReferenceCatalogRow" Field="Description" Caption='@L["Catalog:Description"].Value' />
@@ -161,7 +163,7 @@
                         </div>
                         <div class="hcs-form-row">
                             @TextField(L["Catalog:DiseaseGroup"].Value, "diseaseGroup", 256, true, form.DiseaseGroup, EventCallback.Factory.Create<string?>(this, value => form.DiseaseGroup = value ?? string.Empty))
-                            <Field Class="hcs-catalog-active-field"><Check TValue="bool" @bind-Checked="form.IsChronic">@L["Catalog:Chronic"]</Check></Field>
+                            <Field Class="hcs-catalog-active-field hcs-icd-chronic-field"><Check TValue="bool" @bind-Value="form.IsChronic">@L["Catalog:Chronic"]</Check></Field>
                         </div>
                     }
                     @if (Kind == ReferenceCatalogKind.BloodPressure)
@@ -176,7 +178,7 @@
                         @TextField(L["Catalog:Title"].Value, "bloodGlucoseTitle", 256, true, form.Title, EventCallback.Factory.Create<string?>(this, value => form.Title = value ?? string.Empty), true)
                         <div class="hcs-form-row">@DecimalField(L["Catalog:Minimum"].Value, form.MinValue, EventCallback.Factory.Create<decimal>(this, value => form.MinValue = value))@DecimalField(L["Catalog:Maximum"].Value, form.MaxValue, EventCallback.Factory.Create<decimal>(this, value => form.MaxValue = value))</div>
                         @DescriptionField(form.Description, EventCallback.Factory.Create<string?>(this, value => form.Description = value ?? string.Empty))
-                        <Field Class="hcs-catalog-active-field"><Check TValue="bool" @bind-Checked="form.BeforeMeal">@L["Catalog:BeforeMeal"]</Check></Field>
+                        <Field Class="hcs-catalog-active-field"><Check TValue="bool" @bind-Value="form.BeforeMeal">@L["Catalog:BeforeMeal"]</Check></Field>
                     }
                     @if (Kind == ReferenceCatalogKind.Bmi)
                     {
@@ -202,13 +204,9 @@
                     }
                     @NumericField(L["Catalog:SortOrder"].Value, form.SortOrder, EventCallback.Factory.Create<int>(this, value => form.SortOrder = value))
                 </div>
-                @if (!string.IsNullOrWhiteSpace(validationMessage))
-                {
-                    <Alert Color="Color.Warning" Visible="true" Class="mt-3">@validationMessage</Alert>
-                }
             </ModalBody>
             <ModalFooter Class="hcs-catalog-modal__footer">
-                <Button Color="Color.Secondary" Clicked="CloseModalAsync">@L["Catalog:Cancel"]</Button>
+                <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseModalAsync">@L["Catalog:Cancel"]</Button>
                 <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isSaving" Disabled="@isSaving">@(editingId.HasValue ? L["Catalog:SaveChanges"] : L["Catalog:Create"])</Button>
             </ModalFooter>
         </ModalContent>
@@ -220,6 +218,14 @@ else
 }
 
 @code {
+    private string GenderText(string gender) => gender switch
+    {
+        "Male" => L["Catalog:Male"].Value,
+        "Female" => L["Catalog:Female"].Value,
+        "Other" => L["Catalog:Other"].Value,
+        _ => gender
+    };
+
     private RenderFragment TextField(string label, string name, int maxLength, bool required, string? value, EventCallback<string?> valueChanged, bool autofocus = false) => builder =>
     {
         builder.OpenComponent<Field>(0);
@@ -283,8 +289,18 @@ else
             fieldBuilder.OpenComponent<Select<string>>(2); fieldBuilder.AddAttribute(3, "Value", value); fieldBuilder.AddAttribute(4, "ValueChanged", valueChanged); fieldBuilder.AddAttribute(5, "Class", "hcs-catalog-select");
             fieldBuilder.AddAttribute(6, "ChildContent", (RenderFragment)(selectBuilder =>
             {
-                selectBuilder.OpenComponent<SelectItem<string>>(0); selectBuilder.AddAttribute(1, "Value", string.Empty); selectBuilder.AddContent(2, placeholder); selectBuilder.CloseComponent();
-                var index = 3; foreach (var item in items) { selectBuilder.OpenComponent<SelectItem<string>>(index++); selectBuilder.AddAttribute(index++, "Value", item.Value); selectBuilder.AddContent(index++, item.Text); selectBuilder.CloseComponent(); }
+                selectBuilder.OpenComponent<SelectItem<string>>(0);
+                selectBuilder.AddAttribute(1, "Value", string.Empty);
+                selectBuilder.AddAttribute(2, "ChildContent", (RenderFragment)(textBuilder => textBuilder.AddContent(0, placeholder)));
+                selectBuilder.CloseComponent();
+                foreach (var item in items)
+                {
+                    selectBuilder.OpenComponent<SelectItem<string>>(3);
+                    selectBuilder.SetKey(item.Value);
+                    selectBuilder.AddAttribute(4, "Value", item.Value);
+                    selectBuilder.AddAttribute(5, "ChildContent", (RenderFragment)(textBuilder => textBuilder.AddContent(0, item.Text)));
+                    selectBuilder.CloseComponent();
+                }
             }));
             fieldBuilder.CloseComponent();
         }));

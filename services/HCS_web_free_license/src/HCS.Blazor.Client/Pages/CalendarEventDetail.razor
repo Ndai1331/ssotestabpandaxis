@@ -34,11 +34,13 @@
             <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
                 @foreach (var contact in contacts)
                 {
-                    <Check TValue="bool" Checked="form.Participants.Contains(contact.Id)" CheckedChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
+                    <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
                 }
             </Field>
-            <Button Color="Color.Primary" Clicked="SaveAsync">@L["Catalog:SaveChanges"]</Button>
-            <Button Color="Color.Danger" Outline="true" Clicked="DeleteAsync">@L["Catalog:Delete"]</Button>
+            <div class="hcs-document-file-actions">
+                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SaveAsync">@L["Catalog:SaveChanges"]</Button>
+                <Button Color="Color.Danger" Outline="true" Clicked="DeleteAsync">@L["Catalog:Delete"]</Button>
+            </div>
             </div>
         </CardBody></Card>
     }
@@ -69,13 +71,20 @@
         try
         {
             item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, item.StartTime, item.EndTime, item.AllDay, item.EventType, item.Location, item.RelatedType, item.RelatedId, form.Visibility, form.Participants.ToList()));
+            await NotifySuccessAsync(L["Catalog:Updated"]);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
     private async Task DeleteAsync()
     {
-        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
-        try { await Work.DeleteCalendarEventAsync(EventId); Navigation.NavigateTo("/calendar-events"); }
+        var name = string.IsNullOrWhiteSpace(form.Title) ? item?.Title : form.Title.Trim();
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], name))) return;
+        try
+        {
+            await Work.DeleteCalendarEventAsync(EventId);
+            await NotifySuccessAsync(L["Catalog:Deleted"]);
+            Navigation.NavigateTo("/calendar-events");
+        }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private sealed class EventForm

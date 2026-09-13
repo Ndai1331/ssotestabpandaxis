@@ -11,6 +11,12 @@ public interface ISourceSnapshot : IAsyncDisposable
     Task<long> CountAsync(string table, CancellationToken cancellationToken);
 }
 
+public interface IRawSourceSnapshot
+{
+    Task<IReadOnlyList<string>> ListTablesAsync(CancellationToken cancellationToken);
+    IAsyncEnumerable<RawSourceRow> ReadRawAsync(string table, CancellationToken cancellationToken);
+}
+
 public interface ITargetStore
 {
     Task<Checkpoint?> GetCheckpointAsync(TargetDatabase database, string table, string rowKey, CancellationToken cancellationToken);
@@ -26,4 +32,9 @@ public interface IKeycloakUserDirectory
 public interface IBlobExistenceChecker
 {
     Task<bool> ExistsAsync(string bucket, string objectName, CancellationToken cancellationToken);
+}
+
+public interface ILegacyArchiveStore
+{
+    Task ArchiveAsync(TargetDatabase database, RawSourceRow row, string checksum, CancellationToken cancellationToken);
 }

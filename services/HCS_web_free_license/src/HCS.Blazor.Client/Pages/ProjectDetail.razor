@@ -142,8 +142,12 @@
         </div>
     </text>;
 
+    private Guid? lastLoadedProjectId;
+    private bool hasLoadedCurrent;
+
     protected override async Task OnParametersSetAsync()
     {
+        if (hasLoadedCurrent && lastLoadedProjectId == ProjectId) return;
         isLoading = true;
         try
         {
@@ -157,6 +161,8 @@
                 detail = await Work.GetProjectAsync(id);
                 BindProjectForm(detail.Project);
             }
+            lastLoadedProjectId = ProjectId;
+            hasLoadedCurrent = true;
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
@@ -167,8 +173,8 @@
         projectForm.Code = project.Code;
         projectForm.Name = project.Name;
         projectForm.Description = project.Description ?? "";
-        projectForm.StartDate = project.StartDate;
-        projectForm.EndDate = project.EndDate;
+        projectForm.StartDate = WorkUi.UtcToFormTime(project.StartDate);
+        projectForm.EndDate = WorkUi.UtcToFormTime(project.EndDate);
         projectForm.Status = project.Status;
         projectForm.OwnerDepartmentId = project.OwnerDepartmentId;
     }
@@ -180,7 +186,7 @@
         {
             var created = await Work.CreateProjectAsync(new CreateProjectRequest(
                 projectForm.Code.Trim(), projectForm.Name.Trim(), Blank(projectForm.Description),
-                projectForm.StartDate, projectForm.EndDate, projectForm.Status, projectForm.OwnerDepartmentId));
+                WorkUi.FormTimeToUtc(projectForm.StartDate), WorkUi.FormTimeToUtc(projectForm.EndDate), projectForm.Status, projectForm.OwnerDepartmentId));
             await NotifySuccessAsync(L["Catalog:Created"]);
             Navigation.NavigateTo($"/project-detail/{created.Id}");
         }
@@ -195,7 +201,7 @@
         try
         {
             await Work.UpdateProjectAsync(projectId, new UpdateProjectRequest(
-                projectForm.Name.Trim(), Blank(projectForm.Description), projectForm.StartDate, projectForm.EndDate, projectForm.Status));
+                projectForm.Name.Trim(), Blank(projectForm.Description), WorkUi.FormTimeToUtc(projectForm.StartDate), WorkUi.FormTimeToUtc(projectForm.EndDate), projectForm.Status, projectForm.OwnerDepartmentId));
             detail = await Work.GetProjectAsync(projectId);
             BindProjectForm(detail.Project);
             await NotifySuccessAsync(L["Catalog:Updated"]);

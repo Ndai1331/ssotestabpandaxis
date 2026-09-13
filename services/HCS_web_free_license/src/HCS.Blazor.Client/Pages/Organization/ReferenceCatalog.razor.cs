@@ -12,6 +12,7 @@ using HCS.Permissions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
+using Volo.Abp.AspNetCore.Components.Messages;
 
 namespace HCS.Blazor.Client.Pages.Organization;
 
@@ -34,7 +35,6 @@ public partial class ReferenceCatalog : IDisposable
     private ReferenceCatalogFormModel form = new();
     private string? filterText;
     private string? errorMessage;
-    private string? validationMessage;
     private bool isLoading;
     private bool isSaving;
     private bool isAuthorized;
@@ -67,7 +67,6 @@ public partial class ReferenceCatalog : IDisposable
             rows.Clear();
             totalCount = 0;
             errorMessage = null;
-            validationMessage = null;
             form = NewForm();
         }
 
@@ -221,7 +220,7 @@ public partial class ReferenceCatalog : IDisposable
     private async Task OpenCreateModalAsync()
     {
         if (!canCreate) return;
-        editingId = null; form = NewForm(); validationMessage = null;
+        editingId = null; form = NewForm();
         await LoadRequiredLookupsAsync();
         if (editModal is not null) await editModal.Show();
     }
@@ -238,7 +237,6 @@ public partial class ReferenceCatalog : IDisposable
             BeforeMeal = row.BeforeMeal, Gender = row.Gender, CountryCode = row.CountryCode,
             ParentId = row.ParentId?.ToString() ?? string.Empty, SortOrder = row.SortOrder
         };
-        validationMessage = null;
         await LoadRequiredLookupsAsync();
         if (editModal is not null) await editModal.Show();
     }
@@ -246,18 +244,22 @@ public partial class ReferenceCatalog : IDisposable
     private async Task CloseModalAsync()
     {
         if (editModal is not null) await editModal.Hide();
-        editingId = null; form = NewForm(); validationMessage = null;
+        editingId = null; form = NewForm();
     }
 
     private async Task SaveAsync()
     {
         if (isSaving || (editingId.HasValue ? !canUpdate : !canCreate)) return;
-        validationMessage = ValidateForm();
-        if (!string.IsNullOrWhiteSpace(validationMessage)) return;
-
         isSaving = true;
         try
         {
+            var validationMessage = ValidateForm();
+            if (!string.IsNullOrWhiteSpace(validationMessage))
+            {
+                await UiMessageService.Warn(validationMessage);
+                return;
+            }
+
             var wasEditing = editingId.HasValue;
             switch (Kind)
             {
@@ -395,7 +397,7 @@ public partial class ReferenceCatalog : IDisposable
         ReferenceCatalogKind.Icd10 => [row.Code, row.Name, row.DiseaseGroup, row.IsChronic ? L["Catalog:Yes"].Value : L["Catalog:No"].Value, row.SortOrder.ToString(CultureInfo.InvariantCulture)],
         ReferenceCatalogKind.BloodPressure => [FormatRange(row.HATTMin, row.HATTMax), FormatRange(row.HATTrMin, row.HATTrMax), row.Title, row.Description, row.SortOrder.ToString(CultureInfo.InvariantCulture)],
         ReferenceCatalogKind.BloodGlucose => [row.Title, FormatDecimal(row.MinValue), FormatDecimal(row.MaxValue), row.BeforeMeal ? L["Catalog:Yes"].Value : L["Catalog:No"].Value, row.Description, row.SortOrder.ToString(CultureInfo.InvariantCulture)],
-        ReferenceCatalogKind.Bmi => [row.Title, row.Gender, FormatDecimal(row.MinValue), FormatDecimal(row.MaxValue), row.Description, row.SortOrder.ToString(CultureInfo.InvariantCulture)],
+        ReferenceCatalogKind.Bmi => [row.Title, GenderText(row.Gender), FormatDecimal(row.MinValue), FormatDecimal(row.MaxValue), row.Description, row.SortOrder.ToString(CultureInfo.InvariantCulture)],
         ReferenceCatalogKind.Country => [row.Code, row.Name, row.CountryCode, row.SortOrder.ToString(CultureInfo.InvariantCulture)],
         ReferenceCatalogKind.Province => [row.Code, row.Name, row.ParentCode, row.SortOrder.ToString(CultureInfo.InvariantCulture)],
         ReferenceCatalogKind.Commune => [row.Code, row.Name, row.ParentCode, row.SortOrder.ToString(CultureInfo.InvariantCulture)],

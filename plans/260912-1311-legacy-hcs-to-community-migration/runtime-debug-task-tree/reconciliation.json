@@ -1,0 +1,28 @@
+{
+  "StartedAt": "2026-09-12T08:23:05.1388959+00:00",
+  "CompletedAt": "2026-09-12T08:23:06.1679906+00:00",
+  "DryRun": false,
+  "Tables": [
+    {
+      "Table": "AppProjectTasks",
+      "SourceRows": 43,
+      "UpsertedRows": 4,
+      "SkippedRows": 112,
+      "Checksum": "5f9137dd783a9715d079986aeb88eb2c8100a27237c2da3db6b2ecfa68c242cb"
+    },
+    {
+      "Table": "AppProjectTaskAssignments",
+      "SourceRows": 34,
+      "UpsertedRows": 33,
+      "SkippedRows": 1,
+      "Checksum": "cadbf64af6afeb7bd1e03445667482e2b9003da6e0ee842a423d2d1612fcfac3"
+    }
+  ],
+  "DuplicateUsers": [],
+  "MissingUsers": [],
+  "UnmatchedUsers": [],
+  "RelationshipIssues": [],
+  "BlobIssues": [],
+  "ArchivedTables": [],
+  "LegacyIdentityPreserved": true
+}

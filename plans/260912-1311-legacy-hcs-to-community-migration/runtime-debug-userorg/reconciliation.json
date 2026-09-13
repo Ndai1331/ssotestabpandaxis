@@ -1,0 +1,27 @@
+{
+  "StartedAt": "2026-09-12T08:18:23.0923688+00:00",
+  "CompletedAt": "2026-09-12T08:18:24.3857031+00:00",
+  "DryRun": false,
+  "Tables": [
+    {
+      "Table": "AppUserDepartments",
+      "SourceRows": 6,
+      "UpsertedRows": 2,
+      "SkippedRows": 4,
+      "Checksum": "b0a2deec1f108e2b3f29687a7db2ed99d36f0962721d474fb3147aa584ef62bd"
+    }
+  ],
+  "DuplicateUsers": [],
+  "MissingUsers": [],
+  "UnmatchedUsers": [],
+  "RelationshipIssues": [],
+  "BlobIssues": [],
+  "ArchivedTables": [
+    {
+      "Table": "AppUserDepartments__conflicts",
+      "Database": 1,
+      "Rows": 2
+    }
+  ],
+  "LegacyIdentityPreserved": true
+}

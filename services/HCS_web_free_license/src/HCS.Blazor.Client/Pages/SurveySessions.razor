@@ -172,7 +172,7 @@
     {
         editingId = session.Id;
         form.Code = session.Code; form.Name = session.Name; form.LocationId = session.LocationId?.ToString() ?? "";
-        form.StartsAt = session.StartsAt.ToLocalTime(); form.EndsAt = session.EndsAt.ToLocalTime();
+        form.StartsAt = WorkUi.UtcToFormTime(session.StartsAt); form.EndsAt = WorkUi.UtcToFormTime(session.EndsAt);
         if (modal is not null) await modal.Show();
     }
     private async Task SaveAsync()
@@ -180,8 +180,8 @@
         try
         {
             Guid? location = Guid.TryParse(form.LocationId, out var id) ? id : null;
-            if (editingId is { } sessionId) await Work.UpdateSessionAsync(sessionId, new UpdateSurveySessionRequest(form.Name.Trim(), form.StartsAt, form.EndsAt, location));
-            else await Work.CreateSessionAsync(new CreateSurveySessionRequest(form.Code.Trim(), form.Name.Trim(), form.StartsAt, form.EndsAt, location));
+            if (editingId is { } sessionId) await Work.UpdateSessionAsync(sessionId, new UpdateSurveySessionRequest(form.Name.Trim(), WorkUi.FormTimeToUtc(form.StartsAt), WorkUi.FormTimeToUtc(form.EndsAt), location));
+            else await Work.CreateSessionAsync(new CreateSurveySessionRequest(form.Code.Trim(), form.Name.Trim(), WorkUi.FormTimeToUtc(form.StartsAt), WorkUi.FormTimeToUtc(form.EndsAt), location));
             await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             form.Reset(); await LoadAsync();

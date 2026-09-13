@@ -1,0 +1,199 @@
+@using Blazorise
+@using HCS.OrganizationUnits
+@using HCS.Permissions
+@inherits HCSComponentBase
+@if (isAuthorized)
+{
+    <section class="hcs-feature hcs-ou-page" aria-labelledby="organization-unit-title">
+        <header class="hcs-ou-page__header">
+            <div>
+                <p class="hcs-ou-page__eyebrow">@L["OrganizationUnit:Eyebrow"]</p>
+                <h1 id="organization-unit-title">@L["OrganizationUnit:Title"]</h1>
+                <p class="hcs-ou-page__description">@L["OrganizationUnit:Description"]</p>
+            </div>
+        </header>
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@errorMessage</div>
+        }
+        <div class="hcs-ou-layout">
+            <Card Class="hcs-ou-tree-card">
+                <CardHeader Class="hcs-ou-card__header">
+                    <h2>@L["OrganizationUnit:Tree"]</h2>
+                    @if (canCreate)
+                    {
+                        <Button Color="Color.Primary" Clicked="OpenCreateRootAsync" Disabled="@isLoading">
+                            <Icon Name="@IconName.Add" /> @L["OrganizationUnit:AddRoot"]
+                        </Button>
+                    }
+                </CardHeader><CardBody Class="hcs-ou-tree-card__body">
+                    @if (isLoading && !hasLoaded)
+                    {
+                        <div class="hcs-loading" role="status">@L["OrganizationUnit:Loading"]</div>
+                    }
+                    else
+                    {
+                        <OrganizationUnitTree Nodes="rootNodes" SelectedId="selectedId" CanCreate="canCreate" CanUpdate="canUpdate" CanDelete="canDelete" NodeSelected="SelectNodeAsync" ActionRequested="HandleActionAsync" />
+                    }
+                </CardBody></Card>
+            <Card Class="hcs-ou-members-card">
+                <CardBody>
+                    @if (selectedNode is null)
+                    {
+                        <div class="hcs-ou-empty-state">
+                            <i class="fa fa-sitemap" aria-hidden="true"></i>
+                            <h2>@L["OrganizationUnit:SelectTitle"]</h2>
+                            <p>@L["OrganizationUnit:SelectDescription"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="hcs-ou-tabs" role="tablist">
+                            <button type="button" class="is-active" role="tab" aria-selected="true">@L["OrganizationUnit:Members"] (@totalMembers)</button>
+                            <button type="button" role="tab" aria-selected="false" disabled>@L["OrganizationUnit:Roles"] (0)</button>
+                        </div>
+                        <div class="hcs-ou-members__header">
+                            <h2>@selectedNode.DisplayName</h2>
+                            @if (canUpdate)
+                            {
+                                <Button Color="Color.Primary" Clicked="OpenAddMemberAsync" Disabled="@isMembersLoading">
+                                    <Icon Name="@IconName.Add" /> @L["OrganizationUnit:AddMember"]
+                                </Button>
+                            }
+                        </div>
+                        <div class="hcs-ou-search">
+                            <TextInput @bind-Value="memberFilter" Placeholder='@L["OrganizationUnit:SearchPlaceholder"].Value' />
+                            <Button Color="Color.Primary" Clicked="SearchMembersAsync" Disabled="@isMembersLoading">
+                                <i class="fa fa-search" aria-hidden="true"></i><span class="visually-hidden">@L["OrganizationUnit:Search"]</span>
+                            </Button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table hcs-ou-members-table">
+                                <thead>
+                                    <tr>
+                                        <th>@L["OrganizationUnit:Actions"]</th>
+                                        <th>@L["OrganizationUnit:UserName"]</th>
+                                        <th>@L["OrganizationUnit:Email"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (isMembersLoading)
+                                    {
+                                        <tr><td colspan="3" class="hcs-ou-table-state">@L["OrganizationUnit:Loading"]</td></tr>
+                                    }
+                                    else if (members.Count == 0)
+                                    {
+                                        <tr><td colspan="3" class="hcs-ou-table-state">@L["OrganizationUnit:EmptyMembers"]</td></tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var member in members)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    @if (canUpdate)
+                                                    {
+                                                        <Button Color="Color.Danger" Outline="true" Size="Size.Small" Clicked="@(() => RemoveMemberAsync(member))" Title='@L["OrganizationUnit:RemoveMember"].Value'>
+                                                            <i class="fa fa-user-minus" aria-hidden="true"></i><span class="visually-hidden">@L["OrganizationUnit:RemoveMember"]</span>
+                                                        </Button>
+                                                    }
+                                                </td>
+                                                <td><strong>@member.FullName</strong><small>@member.UserName</small></td>
+                                                <td>@member.Email</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @if (TotalMemberPages > 1)
+                        {
+                            <div class="hcs-ou-pagination">
+                                <Button Color="Color.Light" Outline="true" Clicked="PreviousMembersPageAsync" Disabled="@(currentMemberPage <= 1)">@L["OrganizationUnit:Previous"]</Button>
+                                <span>@currentMemberPage / @TotalMemberPages</span>
+                                <Button Color="Color.Light" Outline="true" Clicked="NextMembersPageAsync" Disabled="@(currentMemberPage >= TotalMemberPages)">@L["OrganizationUnit:Next"]</Button>
+                            </div>
+                        }
+                    }
+                </CardBody>
+            </Card>
+        </div>
+    </section>
+
+    <Modal @ref="unitModal">
+        <ModalContent Centered="true" Class="hcs-ou-modal">
+            <ModalHeader><ModalTitle>@UnitModalTitle</ModalTitle><CloseButton Clicked="CloseUnitModalAsync" /></ModalHeader>
+            <ModalBody>
+                <Field>
+                    <FieldLabel>@L["OrganizationUnit:Name"] *</FieldLabel>
+                    <TextInput @bind-Value="unitForm.DisplayName" MaxLength="128" Autofocus="true" />
+                </Field>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseUnitModalAsync">@L["Catalog:Cancel"]</Button>
+                <Button Color="Color.Primary" Clicked="SaveUnitAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="moveModal">
+        <ModalContent Centered="true" Class="hcs-ou-modal">
+            <ModalHeader><ModalTitle>@L["OrganizationUnit:Move"]</ModalTitle><CloseButton Clicked="CloseMoveModalAsync" /></ModalHeader>
+            <ModalBody>
+                <Field><FieldLabel>@L["OrganizationUnit:Parent"]</FieldLabel>
+                    <select class="form-select" @bind="moveTargetValue">
+                        <option value="">@L["OrganizationUnit:Root"]</option>
+                        @foreach (var target in MoveTargetOptions)
+                        {
+                            <option value="@target.Id.ToString("D")">@target.DisplayName</option>
+                        }
+                    </select>
+                </Field>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseMoveModalAsync">@L["Catalog:Cancel"]</Button>
+                <Button Color="Color.Primary" Clicked="MoveUnitAsync" Disabled="@isSaving">@L["OrganizationUnit:Move"]</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="moveAllModal">
+        <ModalContent Centered="true" Class="hcs-ou-modal">
+            <ModalHeader><ModalTitle>@L["OrganizationUnit:MoveAllMembers"]</ModalTitle><CloseButton Clicked="CloseMoveAllModalAsync" /></ModalHeader>
+            <ModalBody>
+                <Field><FieldLabel>@L["OrganizationUnit:Target"]</FieldLabel>
+                    <select class="form-select" @bind="moveAllTargetValue">
+                        @foreach (var target in MoveAllTargetOptions)
+                        {
+                            <option value="@target.Id.ToString("D")">@target.DisplayName</option>
+                        }
+                    </select>
+                </Field>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseMoveAllModalAsync">@L["Catalog:Cancel"]</Button>
+                <Button Color="Color.Primary" Clicked="MoveAllMembersAsync" Disabled="@isSaving">@L["OrganizationUnit:MoveAllMembers"]</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+
+    <Modal @ref="memberModal" Size="ModalSize.Large">
+        <ModalContent Centered="true" Class="hcs-ou-modal">
+            <ModalHeader><ModalTitle>@L["OrganizationUnit:AddMember"]</ModalTitle><CloseButton Clicked="CloseMemberModalAsync" /></ModalHeader>
+            <ModalBody>
+                <div class="hcs-ou-search mb-3"><TextInput @bind-Value="availableMemberFilter" Placeholder='@L["OrganizationUnit:SearchPlaceholder"].Value' /><Button Color="Color.Primary" Clicked="SearchAvailableMembersAsync">@L["OrganizationUnit:Search"]</Button></div>
+                <select class="form-select" @bind="selectedAvailableMemberValue">
+                    <option value="">@L["OrganizationUnit:ChooseMember"]</option>
+                    @foreach (var member in availableMembers)
+                    {
+                        <option value="@member.Id.ToString("D")">@member.FullName (@member.UserName)</option>
+                    }
+                </select>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Secondary" Clicked="CloseMemberModalAsync">@L["Catalog:Cancel"]</Button>
+                <Button Color="Color.Primary" Clicked="AddMemberAsync" Disabled="@isSaving">@L["OrganizationUnit:AddMember"]</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+}

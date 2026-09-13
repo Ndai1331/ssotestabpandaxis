@@ -2,6 +2,7 @@
 @inject WorkManagementClient Work
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
+@inject IUiMessageService UiMessage
 
 <Modal @ref="modal" Size="ModalSize.Large">
     <ModalContent Centered Class="hcs-catalog-modal">
@@ -71,7 +72,23 @@
                                          SelectedText="@ContactName(assigneeId)"
                                          Search="SearchContactsAsync" />
                         </Field>
-                        <Button Color="Color.Primary" Clicked="AddAssignmentAsync" Disabled="@isAssigning">@L["Feature:Assign"]</Button>
+                        <Button Color="Color.Primary" Class="mb-3" Clicked="AddAssignmentAsync" Disabled="@isAssigning">@L["Feature:Assign"]</Button>
+                        @if (detail is null || detail.Assignments.Count == 0)
+                        {
+                            <p class="text-muted">@L["Catalog:EmptyTitle"]</p>
+                        }
+                        else
+                        {
+                            <ul class="list-group">
+                                @foreach (var assignment in detail.Assignments)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>@ContactName(assignment.UserId) · @assignment.AssignmentType</span>
+                                        <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveAssignmentAsync(assignment)">@L["Catalog:Delete"]</Button>
+                                    </li>
+                                }
+                            </ul>
+                        }
                     </TabPanel>
                     <TabPanel Name="documents">
                         <Field>
@@ -81,7 +98,26 @@
                                             SelectedText="@DocumentName(documentId)"
                                             Search="SearchDocumentsAsync" />
                         </Field>
-                        <Button Color="Color.Primary" Clicked="AddDocumentAsync">@L["Feature:AttachDocument"]</Button>
+                        <Button Color="Color.Primary" Class="mb-3" Clicked="AddDocumentAsync">@L["Feature:AttachDocument"]</Button>
+                        @if (detail is null || detail.Documents.Count == 0)
+                        {
+                            <p class="text-muted">@L["Work:NoDocuments"]</p>
+                        }
+                        else
+                        {
+                            <ul class="list-group">
+                                @foreach (var reference in detail.Documents)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                                        <a class="text-truncate" href="@($"/document-detail/{reference.DocumentId}")">@(reference.DocumentCode ?? reference.DocumentId.ToString("N")[..8])</a>
+                                        <div class="hcs-row-actions">
+                                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" Clicked="() => PreviewDocumentAsync(reference.DocumentId)"><i class="fa fa-eye" aria-hidden="true"></i></Button>
+                                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveDocumentAsync(reference)">@L["Catalog:Delete"]</Button>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
                     </TabPanel>
                 </Content>
             </Tabs>
@@ -99,10 +135,13 @@
         </ModalFooter>
     </ModalContent>
 </Modal>
+<DocumentPdfPreviewModal @ref="previewModal" />
 @code {
     [Parameter] public EventCallback OnCreated { get; set; }
 
     private Modal? modal;
+    private DocumentPdfPreviewModal? previewModal;
+    private ProjectTaskDetailDto? detail;
     private readonly List<ProjectDto> projects = [];
     private readonly List<ProjectTaskDto> parentOptions = [];
     private readonly List<ChatContactDto> contacts = [];
@@ -134,6 +173,7 @@
     private void Reset()
     {
         tab = "general";
+        detail = null;
         createdId = assigneeId = documentId = parentTaskId = linkedDocumentId = null;
         code = title = description = "";
         priority = "Normal";
@@ -141,6 +181,12 @@
         startDate = DateTime.Today;
         dueDate = DateTime.Today.AddDays(7);
         parentOptions.Clear();
+    }
+
+    private async Task ReloadDetailAsync()
+    {
+        if (createdId is not { } taskId) { detail = null; return; }
+        detail = await Work.GetTaskAsync(taskId);
     }
 
     private async Task OnProjectChanged(Guid? value)
@@ -180,15 +226,17 @@
             var created = await Work.CreateTaskAsync(new CreateProjectTaskRequest(
                 project, parentTaskId, code.Trim(), title.Trim(),
                 string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
-                startDate, dueDate, priority, status, 0));
+                WorkUi.FormTimeToUtc(startDate), WorkUi.FormTimeToUtc(dueDate), priority, status, 0));
             newId = created.Id;
             createdId = created.Id;
+            await ReloadDetailAsync();
             if (linkedDocumentId is { } linked)
             {
                 documentId = linked;
                 await AddDocumentAsync();
             }
             tab = "assignments";
+            await OnCreated.InvokeAsync();
             await NotifySuccessAsync(L["Catalog:Created"]);
         }
         catch (Exception ex)
@@ -215,10 +263,23 @@
         {
             await Work.AddAssignmentAsync(taskId, new AddTaskAssignmentRequest(userId, "Assignee"));
             assigneeId = null;
+            await ReloadDetailAsync();
             await NotifySuccessAsync(L["Feature:AssignmentAdded"]);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
         finally { isAssigning = false; }
+    }
+
+    private async Task RemoveAssignmentAsync(TaskAssignmentDto assignment)
+    {
+        if (createdId is not { } taskId) return;
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], ContactName(assignment.UserId)))) return;
+        try
+        {
+            await Work.RemoveAssignmentAsync(taskId, assignment.Id);
+            await ReloadDetailAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
 
     private async Task AddDocumentAsync()
@@ -230,12 +291,54 @@
             documents.AddRange(page.Items);
         }
         var document = documents.FirstOrDefault(x => x.Id == id);
-        try { await Work.AddTaskDocumentAsync(taskId, new AddTaskDocumentRequest(id, document?.Number)); }
+        try
+        {
+            await Work.AddTaskDocumentAsync(taskId, new AddTaskDocumentRequest(id, document?.Number));
+            documentId = null;
+            await ReloadDetailAsync();
+        }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+    }
+
+    private async Task RemoveDocumentAsync(TaskDocumentReferenceDto reference)
+    {
+        if (createdId is not { } taskId) return;
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], reference.DocumentCode ?? DocumentName(reference.DocumentId)))) return;
+        try
+        {
+            await Work.RemoveTaskDocumentAsync(taskId, reference.Id);
+            await ReloadDetailAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
+    }
+
+    private async Task PreviewDocumentAsync(Guid documentId)
+    {
+        try
+        {
+            var document = await Documents.GetDocumentAsync(documentId);
+            if (previewModal is not null)
+                await previewModal.ShowAsync(document.Id, document.Files, document.Title);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
 
     private async Task FinishAsync()
     {
+        if (createdId is { } taskId)
+        {
+            try
+            {
+                await Work.UpdateTaskAsync(taskId, new UpdateProjectTaskRequest(
+                    title.Trim(), string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+                    WorkUi.FormTimeToUtc(startDate), WorkUi.FormTimeToUtc(dueDate), priority, status, 0));
+            }
+            catch (Exception ex)
+            {
+                await NotifyErrorAsync(ex, BffErrorKind.Save);
+                return;
+            }
+        }
         await HideAsync();
         await OnCreated.InvokeAsync();
     }

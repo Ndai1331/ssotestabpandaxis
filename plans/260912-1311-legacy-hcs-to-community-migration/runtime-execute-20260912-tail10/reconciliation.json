@@ -1,0 +1,48 @@
+{
+  "StartedAt": "2026-09-12T08:25:58.9214356+00:00",
+  "CompletedAt": "2026-09-12T08:26:02.5694162+00:00",
+  "DryRun": false,
+  "Tables": [
+    {
+      "Table": "ChatUserMessages",
+      "SourceRows": 28,
+      "UpsertedRows": 28,
+      "SkippedRows": 0,
+      "Checksum": "0d78633e3c73b876680197c7c4c5becbe4aeb38a9fecfc4ff5779e198a144ff7"
+    },
+    {
+      "Table": "AppNotifications",
+      "SourceRows": 656,
+      "UpsertedRows": 656,
+      "SkippedRows": 0,
+      "Checksum": "c2a2e07ccf571b7d632d6466ed3c0a0a20bec6248e4fade83ccbb9ea6c3859f8"
+    },
+    {
+      "Table": "AppNotificationReceivers",
+      "SourceRows": 256,
+      "UpsertedRows": 256,
+      "SkippedRows": 0,
+      "Checksum": "cc342d5c71dfbdb2a65887ccfd996cfb8e9c7edc869f7afcae74a57fd07c94af"
+    },
+    {
+      "Table": "AppUserPushDeviceTokens",
+      "SourceRows": 4,
+      "UpsertedRows": 3,
+      "SkippedRows": 1,
+      "Checksum": "394d5649f966996a359aedf8fc9b0a73af737ac16e62c176c42503fa12345cff"
+    }
+  ],
+  "DuplicateUsers": [],
+  "MissingUsers": [],
+  "UnmatchedUsers": [],
+  "RelationshipIssues": [],
+  "BlobIssues": [],
+  "ArchivedTables": [
+    {
+      "Table": "AppUserPushDeviceTokens__conflicts",
+      "Database": 4,
+      "Rows": 1
+    }
+  ],
+  "LegacyIdentityPreserved": true
+}

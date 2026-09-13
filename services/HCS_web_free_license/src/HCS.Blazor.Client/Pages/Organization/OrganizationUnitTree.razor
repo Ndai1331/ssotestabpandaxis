@@ -1,0 +1,68 @@
+@using Blazorise
+@using Microsoft.AspNetCore.Components
+@inherits HCSComponentBase
+
+@if (Nodes.Count == 0)
+{
+    <div class="hcs-ou-tree__empty">@L["OrganizationUnit:EmptyTree"]</div>
+}
+else
+{
+    <div class="hcs-ou-tree" role="tree" aria-label='@L["OrganizationUnit:Tree"].Value'>
+        @foreach (var node in Nodes)
+        {
+            <div class="hcs-ou-tree__branch" role="treeitem" aria-expanded="@(node.HasChildren ? node.IsExpanded : null)">
+                <div class="hcs-ou-tree__row @(SelectedId == node.Id ? "is-selected" : string.Empty)">
+                    @if (node.HasChildren)
+                    {
+                        <button type="button" class="hcs-ou-tree__expand" @onclick="@(() => ToggleAsync(node))" aria-label='@L["OrganizationUnit:ToggleChildren"]'>
+                            <i class="fa @(node.IsExpanded ? "fa-chevron-down" : "fa-chevron-right")" aria-hidden="true"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="hcs-ou-tree__expand-placeholder" aria-hidden="true"></span>
+                    }
+
+                    <button type="button" class="hcs-ou-tree__node" @onclick="@(() => NodeSelected.InvokeAsync(node))">
+                        <i class="fa fa-folder hcs-ou-tree__folder" aria-hidden="true"></i>
+                        <span class="hcs-ou-tree__label">@node.DisplayName</span>
+                    </button>
+
+                    @if (CanCreate || CanUpdate || CanDelete)
+                    {
+                        <Dropdown Class="hcs-ou-tree__actions">
+                            <DropdownToggle Color="Color.Light" Size="Size.Small" Class="hcs-ou-tree__actions-toggle" aria-label='@L["OrganizationUnit:Actions"].Value'>
+                                <i class="fa fa-ellipsis-vertical" aria-hidden="true"></i>
+                            </DropdownToggle>
+                            <DropdownMenu>
+                                @if (CanCreate)
+                                {
+                                    <DropdownItem Clicked="@(() => RequestAsync(node, OrganizationUnitAction.AddSubUnit))"><i class="fa fa-folder-plus me-2"></i>@L["OrganizationUnit:AddSubUnit"]</DropdownItem>
+                                }
+                                @if (CanUpdate)
+                                {
+                                    <DropdownItem Clicked="@(() => RequestAsync(node, OrganizationUnitAction.Edit))"><i class="fa fa-pen me-2"></i>@L["OrganizationUnit:Edit"]</DropdownItem>
+                                    <DropdownItem Clicked="@(() => RequestAsync(node, OrganizationUnitAction.Move))"><i class="fa fa-arrows-up-down-left-right me-2"></i>@L["OrganizationUnit:Move"]</DropdownItem>
+                                    <DropdownItem Clicked="@(() => RequestAsync(node, OrganizationUnitAction.MoveAllMembers))"><i class="fa fa-users me-2"></i>@L["OrganizationUnit:MoveAllMembers"]</DropdownItem>
+                                }
+                                @if (CanDelete)
+                                {
+                                    <DropdownDivider />
+                                    <DropdownItem Clicked="@(() => RequestAsync(node, OrganizationUnitAction.Delete))" TextColor="TextColor.Danger"><i class="fa fa-trash me-2"></i>@L["OrganizationUnit:Delete"]</DropdownItem>
+                                }
+                            </DropdownMenu>
+                        </Dropdown>
+                    }
+                </div>
+
+                @if (node.IsExpanded && node.HasChildren)
+                {
+                    <div class="hcs-ou-tree__children">
+                        <OrganizationUnitTree Nodes="node.Children" SelectedId="SelectedId" CanCreate="CanCreate" CanUpdate="CanUpdate" CanDelete="CanDelete" NodeSelected="NodeSelected" ActionRequested="ActionRequested" />
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

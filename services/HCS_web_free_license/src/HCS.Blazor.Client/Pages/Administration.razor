@@ -218,10 +218,10 @@
                             </Field>
                         </div>
                         <div class="hcs-user-flags">
-                            <Check TValue="bool" @bind-Checked="userForm.IsActive">Kích hoạt</Check>
-                            <Check TValue="bool" @bind-Checked="userForm.LockoutEnabled">Khóa tài khoản</Check>
-                            <Check TValue="bool" Checked="@userForm.EmailConfirmed" Disabled="true">Email đã xác nhận</Check>
-                            <Check TValue="bool" Checked="@userForm.ShouldChangePasswordOnNextLogin" Disabled="true">Bắt đổi mật khẩu</Check>
+                            <Check TValue="bool" @bind-Value="userForm.IsActive">Kích hoạt</Check>
+                            <Check TValue="bool" @bind-Value="userForm.LockoutEnabled">Khóa tài khoản</Check>
+                            <Check TValue="bool" Value="@userForm.EmailConfirmed" Disabled="true">Email đã xác nhận</Check>
+                            <Check TValue="bool" Value="@userForm.ShouldChangePasswordOnNextLogin" Disabled="true">Bắt đổi mật khẩu</Check>
                         </div>
                         <p class="hcs-form-note">Các cờ “Email đã xác nhận” và “Bắt đổi mật khẩu” chưa có trong hợp đồng Identity Community hiện tại nên chỉ hiển thị trạng thái.</p>
                     </div>

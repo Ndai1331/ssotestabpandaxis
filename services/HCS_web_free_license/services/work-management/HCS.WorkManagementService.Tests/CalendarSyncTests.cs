@@ -17,7 +17,7 @@ public sealed class CalendarSyncTests
         db.Projects.Add(project);
         await WorkCalendarLinker.SyncProjectAsync(db, project, ct);
         await db.SaveChangesAsync(ct);
-        project.Change("Renamed project", null, start, start.AddDays(4), "Active");
+        project.Change("Renamed project", null, start, start.AddDays(4), "Active", project.OwnerDepartmentId);
         await WorkCalendarLinker.SyncProjectAsync(db, project, ct);
         await db.SaveChangesAsync(ct);
 

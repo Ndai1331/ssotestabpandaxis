@@ -1,0 +1,2 @@
+category,table,rowKey,column,value,reason
+"legacy-archive","AppSignatureSettings__conflicts","","Document","1","Stored in legacy_migration.source_rows"

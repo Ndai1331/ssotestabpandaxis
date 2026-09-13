@@ -60,8 +60,9 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         if (to.HasValue) query = query.Where(x => x.CreationTime < to.Value.ToUniversalTime().AddDays(1));
         var totalCount = await query.LongCountAsync(cancellationToken);
         var items = await query.OrderByDescending(x => x.CreationTime).Skip(skip).Take(take)
+            .Select(x => new { Document = x, FileCount = x.Files.Count(f => !f.IsPendingDeletion) })
             .ToListAsync(cancellationToken);
-        return new PagedDocumentsDto(totalCount, items.Select(MapList).ToList());
+        return new PagedDocumentsDto(totalCount, items.Select(x => MapList(x.Document, x.FileCount)).ToList());
     }
 
     public async Task<DocumentDto> CreateAsync(CreateDocumentRequest input, CancellationToken cancellationToken = default)
@@ -247,10 +248,11 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         x.Files.Select(f => new DocumentFileDto(f.Id, f.FileName, f.ContentType, f.Size, f.Sha256, f.CreationTime, f.PairedFileId)).ToList(),
         x.Assignments.Select(a => new DocumentAssignmentDto(a.Id, a.AssigneeUserId, a.Responsibility, a.AssignedAt, a.IsCurrent, a.StepCode)).ToList(),
         x.History.OrderBy(h => h.OccurredAt).Select(h => new DocumentHistoryDto(h.Id, h.Action, h.ActorUserId, h.Detail, h.OccurredAt)).ToList(),
-        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId);
+        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId,
+        x.Files.Count(f => !f.IsPendingDeletion));
 
-    private static DocumentDto MapList(DocumentAggregate x) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
+    private static DocumentDto MapList(DocumentAggregate x, int fileCount) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
         x.DocumentTypeId, x.SectorId, x.UrgencyId, x.ConfidentialityId,
         Array.Empty<DocumentFileDto>(), Array.Empty<DocumentAssignmentDto>(), Array.Empty<DocumentHistoryDto>(),
-        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId);
+        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId, fileCount);
 }

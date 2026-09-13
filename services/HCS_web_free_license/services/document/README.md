@@ -19,11 +19,13 @@ Minio__EndPoint=localhost:9000
 Minio__AccessKey=...
 Minio__SecretKey=...
 RabbitMQ__Connections__Default__HostName=localhost
-Signing__RemoteCa__ApiKey=...
 
 # Optional provider defaults (never put TokenRef/secret values here)
 Signing__Providers__VISNAM__DefaultEndpoint=https://sign-hn10.vin-hsm.com
-Signing__Providers__TAG__DefaultEndpoint=https://<your-tag-endpoint>
+# For a TAG service on the internal network, use its absolute HTTP(S) URL and
+# add the same host/IP to the endpoint allowlist before saving the credential.
+Signing__Providers__TAG__DefaultEndpoint=http://<internal-tag-ip>:<port>
+Signing__AllowedEndpointHosts__2=<internal-tag-ip>
 ```
 
 Buckets are private. Files are returned only through authorized API streams; no public bucket URL is persisted.

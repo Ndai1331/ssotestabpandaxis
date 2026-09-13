@@ -156,6 +156,7 @@ Còn lại:
 - `/` requires authentication; `/login` is anonymous only to start the same BFF flow.
 - `/account` is the profile entry point with profile/password/avatar controls and a `?tab=signatures` personal signature grid. `/user-signatures` redirects there for compatibility; `/signature-settings` remains the separate credential-signing configuration page.
 - Profile avatars use the Platform service and MinIO `hcs-avatars`. Personal signature CRUD uses the Document service and MinIO `hcs-signing`; self-service is scoped to the current user, while elevated users retain the existing cross-user permission.
+- `/departments` uses ABP Identity `AbpOrganizationUnits` as the department source of truth. The Platform API exposes the OU tree and direct OU members; the existing Organization service catalog remains for units, positions, and legacy mappings.
 - The sole HCS-specific main-menu item is Chat (`/chat`), protected by `Collaboration.Chat`; standard Administration entries remain permission-driven.
 - Docker Compose is the default runtime. See [`runbooks/hcs-docker-compose-handoff.md`](./runbooks/hcs-docker-compose-handoff.md) for safe startup and rollback.
 

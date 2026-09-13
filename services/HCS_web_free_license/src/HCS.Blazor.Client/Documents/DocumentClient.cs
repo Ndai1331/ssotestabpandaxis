@@ -255,14 +255,12 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         content.Add(new StringContent(request.AllowElectronicSign.ToString()), "allowElectronicSign");
         content.Add(new StringContent(request.AllowDigitalSign.ToString()), "allowDigitalSign");
         content.Add(new StringContent(request.RequireOtp.ToString()), "requireOtp");
-        if (layoutImage is not null)
-        {
-            await using var stream = layoutImage.OpenReadStream(3 * 1024 * 1024, cancellationToken);
-            using var fileContent = new StreamContent(stream);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue(
-                string.IsNullOrWhiteSpace(layoutImage.ContentType) ? "image/png" : layoutImage.ContentType);
-            content.Add(fileContent, "layoutImage", layoutImage.Name);
-        }
+        // Keep the upload stream alive until the request has been sent and read.
+        await using var stream = layoutImage.OpenReadStream(3 * 1024 * 1024, cancellationToken);
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(layoutImage.ContentType) ? "image/png" : layoutImage.ContentType);
+        content.Add(fileContent, "layoutImage", layoutImage.Name);
 
         using var response = await CreateClient().PutAsync(
             SigningUserUri("/api/signing/credentials/current/upload", userId), content, cancellationToken);
@@ -276,6 +274,12 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 
     public Task<SigningReportDto> GetSigningReportAsync(Guid documentId, CancellationToken cancellationToken = default) =>
         GetAsync<SigningReportDto>($"/api/signing/reports/documents/{documentId:D}", cancellationToken);
+
+    public Task<SigningKpiReportDto> GetSigningKpiAsync(SigningKpiQuery query,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<SigningKpiReportDto>(BuildSigningKpiUri("kpi", query), cancellationToken);
+
+    public static string GetSigningKpiExportUri(SigningKpiQuery query) => BuildSigningKpiUri("kpi/export", query);
 
     public Task<List<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default) =>
         GetAsync<List<UserSignatureDto>>(SigningUserUri("/api/signing/signatures", userId), cancellationToken);
@@ -418,6 +422,17 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         if (query.To is { } to)
             parameters.Add($"to={Uri.EscapeDataString(to.ToString("O"))}");
         return $"/api/documents?{string.Join('&', parameters)}";
+    }
+
+    internal static string BuildSigningKpiUri(string endpoint, SigningKpiQuery query)
+    {
+        var parameters = new List<string>();
+        if (query.SourceYear is { } year) parameters.Add($"sourceYear={year}");
+        if (query.SubmittedFrom is { } from)
+            parameters.Add($"submittedFrom={Uri.EscapeDataString(from.ToString("O"))}");
+        if (query.SubmittedTo is { } to)
+            parameters.Add($"submittedTo={Uri.EscapeDataString(to.ToString("O"))}");
+        return parameters.Count == 0 ? $"/api/signing/{endpoint}" : $"/api/signing/{endpoint}?{string.Join('&', parameters)}";
     }
 
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)

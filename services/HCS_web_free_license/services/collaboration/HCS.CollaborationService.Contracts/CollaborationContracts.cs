@@ -30,6 +30,7 @@ public sealed record ChatContactDto(
     string? Name = null,
     string? PhoneNumber = null,
     string? AvatarUrl = null);
+public sealed record PagedChatContactsDto(long TotalCount, IReadOnlyList<ChatContactDto> Items);
 public sealed record ConversationPermissionDto(bool CanSend, bool CanManageMembers, bool CanRename, bool CanLeave,
     bool CanModerateMessages = false);
 

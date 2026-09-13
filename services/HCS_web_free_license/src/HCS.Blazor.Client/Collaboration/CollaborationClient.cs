@@ -32,6 +32,15 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
             $"api/chat/contacts?search={Uri.EscapeDataString(SearchText.Normalize(search))}&take={Math.Clamp(take, 1, 50)}",
             cancellationToken);
 
+    public Task<PagedChatContactsDto> GetContactsPageAsync(
+        string? search,
+        int skip = 0,
+        int take = 30,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<PagedChatContactsDto>(
+            $"api/chat/contacts/page?search={Uri.EscapeDataString(SearchText.Normalize(search))}&skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}",
+            cancellationToken);
+
     public Task<IReadOnlyList<ConversationDto>> GetConversationsAsync(int skip = 0, int take = 100,
         CancellationToken cancellationToken = default) =>
         GetAsync<IReadOnlyList<ConversationDto>>(

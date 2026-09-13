@@ -14,6 +14,12 @@ public sealed class JsonKeycloakUserDirectory(string path) : IKeycloakUserDirect
     }
 }
 
+public sealed class EmptyKeycloakUserDirectory : IKeycloakUserDirectory
+{
+    public Task<IReadOnlyList<KeycloakUser>> GetUsersAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<KeycloakUser>>([]);
+}
+
 public sealed class MinioBlobExistenceChecker(IMinioClient client) : IBlobExistenceChecker
 {
     public async Task<bool> ExistsAsync(string bucket, string objectName, CancellationToken cancellationToken)

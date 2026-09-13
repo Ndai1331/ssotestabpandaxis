@@ -20,7 +20,7 @@
             }
             else if (!string.IsNullOrWhiteSpace(pdfUrl))
             {
-                <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(35)" />
+                <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" MatchParent="true" />
             }
             else if (selectedFile is not null)
             {
@@ -55,26 +55,25 @@
         isLoading = true;
         await RevokeAsync();
         if (modal is not null) await modal.Show();
-        var file = selectedFileId is { } requestedFileId
-            ? files.FirstOrDefault(x => x.Id == requestedFileId)
-            : null;
-        file ??= DocumentFilePick.PreferPdf(files) ?? files.FirstOrDefault();
-        if (file is null)
-        {
-            error = L["Work:NoPdfAvailable"];
-            isLoading = false;
-            await InvokeAsync(StateHasChanged);
-            return;
-        }
-        selectedFile = file;
-        if (!DocumentFilePick.IsPdf(file))
-        {
-            isLoading = false;
-            await InvokeAsync(StateHasChanged);
-            return;
-        }
         try
         {
+            // List rows omit files; always fetch current detail before choosing a preview.
+            var document = await Documents.GetDocumentAsync(documentId);
+            files = document.Files;
+            var file = selectedFileId is { } requestedFileId
+                ? files.FirstOrDefault(x => x.Id == requestedFileId)
+                : null;
+            file ??= DocumentFilePick.PreferPdf(files) ?? files.FirstOrDefault();
+            if (file is null)
+            {
+                error = L["Work:NoPdfAvailable"];
+                return;
+            }
+            selectedFile = file;
+            if (!DocumentFilePick.IsPdf(file))
+            {
+                return;
+            }
             var content = await Documents.GetWatermarkedFileContentAsync(documentId, file.Id);
             pdfUrl = await Js.InvokeAsync<string>("hcsCreateObjectUrl", "application/pdf", content.Bytes);
         }

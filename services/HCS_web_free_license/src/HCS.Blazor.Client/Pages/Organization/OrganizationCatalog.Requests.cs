@@ -30,11 +30,15 @@ public partial class OrganizationCatalog
     private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page) =>
         SearchDepartmentsAsync(term, page, excludeEditingDepartment: false);
 
-    private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(
+    private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(
         string term,
         int page,
         bool excludeEditingDepartment)
     {
+        // Select2 queries on each open/search; refresh before filtering so newly
+        // created or updated departments are available without reloading the page.
+        await LoadDepartmentOptionsAsync();
+
         var normalizedTerm = CatalogSelect2Text.NormalizeSearch(term);
         var options = (excludeEditingDepartment ? ParentDepartmentOptions : departmentOptions)
             .Where(item => normalizedTerm.Length == 0
@@ -42,12 +46,12 @@ public partial class OrganizationCatalog
                 || CatalogSelect2Text.NormalizeSearch(item.Name).Contains(normalizedTerm, StringComparison.Ordinal))
             .ToList();
 
-        return Task.FromResult(CatalogSelect2Cache.Merge(
+        return CatalogSelect2Cache.Merge(
             departmentOptions,
             options,
             item => item.Id,
             item => CatalogSelect2Text.CodeName(item.Code, item.Name),
-            more: false));
+            more: false);
     }
 
     private bool TryBuildRequest(out object request, out string validationMessage)

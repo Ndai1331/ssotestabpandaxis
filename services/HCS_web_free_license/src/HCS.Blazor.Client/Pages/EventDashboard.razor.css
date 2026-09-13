@@ -1,6 +1,12 @@
 .hcs-event-page { --event-ink: var(--color-text, #1A1A2E); }
 .hcs-event-eyebrow { color: var(--color-primary, #00B4A9); font-size: .72rem; font-weight: 800; letter-spacing: .1em; margin: 0 0 .25rem; text-transform: uppercase; }
-.hcs-event-filter-grid { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+.hcs-event-filter-grid { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) auto; }
+.hcs-event-filter-range { min-width: 0; }
+.hcs-event-filter-range__label { align-items: center; color: var(--color-muted, #5C6578); display: inline-flex; font-size: .8rem; gap: .4rem; margin-bottom: .45rem; }
+.hcs-event-filter-range .hcs-datepicker, .hcs-event-filter-range .b-is-datepicker { max-width: 28rem; overflow: visible; }
+.hcs-event-filter-range .form-control, .hcs-event-filter-range .b-is-datepicker .form-control { height: 36px; max-height: 36px; min-height: 36px; padding-bottom: .35rem; padding-top: .35rem; }
+.hcs-event-filter-range .datepicker-calendar.dropdown-menu { background-color: #fff !important; border: 1px solid var(--hcs-color-border, #dde4ee) !important; box-shadow: var(--hcs-shadow-md); z-index: var(--hcs-z-popover) !important; }
+.hcs-event-filter-range .datepicker-backdrop { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 .hcs-event-filter-action { padding-bottom: .05rem; }
 .hcs-event-kpi-grid { display: grid; gap: 1rem; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 1rem; }
 .hcs-event-kpi { align-items: center; background: #fff; border: 1px solid var(--color-border, #DDE4EE); border-radius: .85rem; box-shadow: 0 8px 24px rgba(26,26,46,.05); display: flex; gap: .8rem; min-height: 7rem; padding: 1rem; }
@@ -24,4 +30,4 @@
 .hcs-event-timeline__content strong { color: var(--event-ink); }
 .hcs-event-timeline__content small { color: var(--color-muted, #5C6578); font-size: .78rem; margin-top: .2rem; }
 @media (max-width: 900px) { .hcs-event-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px) { .hcs-event-filter-grid { grid-template-columns: 1fr; } .hcs-event-kpi-grid { grid-template-columns: 1fr; } .hcs-event-timeline__item { align-items: start; grid-template-columns: 3rem 1px minmax(0, 1fr); } .hcs-event-timeline__item > .hcs-status-badge { grid-column: 3; } }
+@media (max-width: 560px) { .hcs-event-filter-grid { grid-template-columns: 1fr; } .hcs-event-filter-range .hcs-datepicker, .hcs-event-filter-range .b-is-datepicker { max-width: none; } .hcs-event-filter-action .btn { width: 100%; } .hcs-event-kpi-grid { grid-template-columns: 1fr; } .hcs-event-timeline__item { align-items: start; grid-template-columns: 3rem 1px minmax(0, 1fr); } .hcs-event-timeline__item > .hcs-status-badge { grid-column: 3; } }

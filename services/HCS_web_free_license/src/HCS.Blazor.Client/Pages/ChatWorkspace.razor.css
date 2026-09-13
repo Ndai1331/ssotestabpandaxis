@@ -281,6 +281,13 @@
     overflow-y: auto;
 }
 
+.hcs-chat__contacts-loading {
+    color: var(--chat-muted);
+    font-size: .75rem;
+    padding: .45rem .3rem;
+    text-align: center;
+}
+
 .hcs-chat__new--directory .hcs-chat__contacts {
     flex: 1 1 auto;
     max-height: none;

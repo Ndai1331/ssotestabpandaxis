@@ -46,6 +46,8 @@ public sealed class HCSMenuContributor : IMenuContributor
             .RequirePermissions(new[] { HCSPermissions.Documents.View, HCSPermissions.Documents.Assign }));
         documents.AddItem(Item("HCS.Documents.Signing", "Ký duyệt", "/document-signing", "fa fa-signature", 40)
             .RequirePermissions(HCSPermissions.Documents.SigningExecute));
+        documents.AddItem(Item("HCS.Documents.SigningKpi", "KPI ký số", "/signing-kpi-report", "fa fa-chart-column", 50)
+            .RequirePermissions(HCSPermissions.Documents.SigningReport));
         context.Menu.AddItem(documents);
 
         var workflows = Item("HCS.Workflows", "Quy trình", icon: "fa fa-arrow-trend-up", order: 150);

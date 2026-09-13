@@ -3,20 +3,10 @@
 @if (!string.IsNullOrWhiteSpace(Source))
 {
     <div class="hcs-pdf-frame hcs-pdf-frame--fill" title="@Title">
-        @if (EffectiveHeight is null)
-        {
-            <PdfViewerContainer>
-                <PdfViewerToolbar ShowDownloading="false" />
-                <PdfViewer @key="Source" Source="@Source" />
-            </PdfViewerContainer>
-        }
-        else
-        {
-            <PdfViewerContainer Height="EffectiveHeight">
-                <PdfViewerToolbar ShowDownloading="false" />
-                <PdfViewer @key="Source" Source="@Source" />
-            </PdfViewerContainer>
-        }
+        <PdfViewerContainer Height="EffectiveHeight">
+            <PdfViewerToolbar ShowDownloading="false" />
+            <PdfViewer @key="Source" Source="@Source" />
+        </PdfViewerContainer>
     </div>
 }
 @code {
@@ -25,5 +15,5 @@
     [Parameter] public IFluentSizing? ViewerHeight { get; set; }
     [Parameter] public bool MatchParent { get; set; }
 
-    private IFluentSizing? EffectiveHeight => MatchParent ? null : ViewerHeight ?? Height.Rem(50);
+    private IFluentSizing EffectiveHeight => MatchParent ? Height.Is100 : ViewerHeight ?? Height.Rem(50);
 }

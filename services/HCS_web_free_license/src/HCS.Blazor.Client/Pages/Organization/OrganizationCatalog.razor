@@ -105,7 +105,7 @@
                                     <input class="hcs-row-check" type="checkbox" disabled tabindex="-1" aria-hidden="true" />
                                 </DisplayTemplate>
                             </DataGridColumn>
-                            @if (!Definition.IsTypedMasterData && Definition.Kind != OrganizationCatalogKind.Department)
+                            @if (Definition.Kind == OrganizationCatalogKind.MasterData && !Definition.IsTypedMasterData)
                             {
                                 <DataGridColumn TItem="OrganizationCatalogRow" Field="Type" Caption='@L["Catalog:Type"].Value' />
                             }
@@ -170,27 +170,18 @@
                 <ModalBody Class="hcs-catalog-modal__body">
                     <Validations @ref="validations" Mode="ValidationMode.Auto" Model="@form" ValidateOnLoad="false">
                         <div class="hcs-catalog-form">
-                        @if (Definition.Kind == OrganizationCatalogKind.MasterData)
+                        @if (Definition.Kind == OrganizationCatalogKind.MasterData && !Definition.IsTypedMasterData)
                         {
                             <Validation>
                                 <Field>
-                                    <FieldLabel>@L["Catalog:Type"] @(!Definition.IsTypedMasterData ? "*" : string.Empty)</FieldLabel>
-                                    @if (Definition.IsTypedMasterData)
-                                    {
-                                    <Select TValue="string" @bind-Value="form.Type" Disabled="true" Class="hcs-catalog-select">
-                                            <SelectItem Value="@Definition.MasterType">@Definition.Title</SelectItem>
-                                        </Select>
-                                    }
-                                    else
-                                    {
-                                        <Select TValue="string" @bind-Value="form.Type" Class="hcs-catalog-select">
-                                            <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
-                                            @foreach (var masterType in MasterTypeOptions)
-                                            {
-                                                <SelectItem Value="@masterType.Type">@L[masterType.TitleKey]</SelectItem>
-                                            }
-                                        </Select>
-                                    }
+                                    <FieldLabel>@L["Catalog:Type"] *</FieldLabel>
+                                    <Select TValue="string" @bind-Value="form.Type" Class="hcs-catalog-select">
+                                        <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
+                                        @foreach (var masterType in MasterTypeOptions)
+                                        {
+                                            <SelectItem Value="@masterType.Type">@L[masterType.TitleKey]</SelectItem>
+                                        }
+                                    </Select>
                                 </Field>
                             </Validation>
                         }
@@ -252,7 +243,7 @@
                             </Field>
                         </Validation>
                         <Field Class="hcs-catalog-active-field">
-                            <Check TValue="bool" @bind-Checked="form.IsActive">@L["Catalog:Active"]</Check>
+                            <Check TValue="bool" @bind-Value="form.IsActive">@L["Catalog:Active"]</Check>
                         </Field>
                         </div>
                     </Validations>

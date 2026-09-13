@@ -224,17 +224,17 @@ public sealed class SignTextV2
     /// </summary>
     internal static string NormalizeRemoteSignBaseUri(string raw)
     {
-        var trimmed = raw.Trim().TrimEnd('/');
-        if (string.IsNullOrEmpty(trimmed))
+        var input = raw.Trim();
+        if (string.IsNullOrEmpty(input))
         {
             throw new ArgumentException("Base URI is required.", nameof(raw));
         }
 
-        var withScheme =
-            trimmed.StartsWith(Uri.UriSchemeHttp + Uri.SchemeDelimiter, StringComparison.OrdinalIgnoreCase)
-            || trimmed.StartsWith(Uri.UriSchemeHttps + Uri.SchemeDelimiter, StringComparison.OrdinalIgnoreCase)
-                ? trimmed
-                : Uri.UriSchemeHttp + Uri.SchemeDelimiter + trimmed;
+        var hasScheme = input.StartsWith(Uri.UriSchemeHttp + Uri.SchemeDelimiter, StringComparison.OrdinalIgnoreCase)
+            || input.StartsWith(Uri.UriSchemeHttps + Uri.SchemeDelimiter, StringComparison.OrdinalIgnoreCase);
+        var withScheme = hasScheme
+            ? input.TrimEnd('/')
+            : Uri.UriSchemeHttp + Uri.SchemeDelimiter + input.TrimEnd('/');
 
         if (!Uri.TryCreate(withScheme, UriKind.Absolute, out var absolute) ||
             string.IsNullOrWhiteSpace(absolute.Host))

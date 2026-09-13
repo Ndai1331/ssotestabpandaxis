@@ -1,0 +1,682 @@
+{
+  "StartedAt": "2026-09-12T08:27:48.3291271+00:00",
+  "CompletedAt": "2026-09-12T08:28:22.3288113+00:00",
+  "DryRun": false,
+  "Tables": [
+    {
+      "Table": "AbpUsers",
+      "SourceRows": 951,
+      "UpsertedRows": 0,
+      "SkippedRows": 951,
+      "Checksum": "053af28392de92e76a708e0865e6ee95fd664f27292fd904b8520e6b3aa049da"
+    },
+    {
+      "Table": "AbpRoles",
+      "SourceRows": 12,
+      "UpsertedRows": 0,
+      "SkippedRows": 12,
+      "Checksum": "6e0c69f984b14a9a60869806604f9e9b07999de0bf126b621eff7d9ee1278d45"
+    },
+    {
+      "Table": "AbpUserRoles",
+      "SourceRows": 1009,
+      "UpsertedRows": 0,
+      "SkippedRows": 1009,
+      "Checksum": "88ffcd8d09e8b7ac86e9aaa0e560e2b64819c869713917f4b8d59a82be4e7264"
+    },
+    {
+      "Table": "AbpRoleClaims",
+      "SourceRows": 255,
+      "UpsertedRows": 0,
+      "SkippedRows": 255,
+      "Checksum": "738db137269e861230c2b2990a0e043105e16a01504012e69d70a1c30d58e1bc"
+    },
+    {
+      "Table": "AbpPermissionGrants",
+      "SourceRows": 1673,
+      "UpsertedRows": 0,
+      "SkippedRows": 1673,
+      "Checksum": "8be2f8aca67f77fda0f8353e1c9fd44ff507dd72a538a92290570cf625003693"
+    },
+    {
+      "Table": "AbpPermissions",
+      "SourceRows": 332,
+      "UpsertedRows": 0,
+      "SkippedRows": 332,
+      "Checksum": "db19e7e48254a49d44fd7e2031a444f28c26ae479e5e2c2b07ec5b8aa4d721d9"
+    },
+    {
+      "Table": "AbpPermissionGroups",
+      "SourceRows": 13,
+      "UpsertedRows": 0,
+      "SkippedRows": 13,
+      "Checksum": "ba56c3470e3d1373b872087c81ac947f4b39f5b3876628c6dad442aac964e20f"
+    },
+    {
+      "Table": "AbpClaimTypes",
+      "SourceRows": 0,
+      "UpsertedRows": 0,
+      "SkippedRows": 0,
+      "Checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "Table": "AbpOrganizationUnits",
+      "SourceRows": 57,
+      "UpsertedRows": 0,
+      "SkippedRows": 57,
+      "Checksum": "5b8ed2b63b111d067a8e4470251f70a16aa0d550a5b011947a943f14e67fdb8d"
+    },
+    {
+      "Table": "AbpOrganizationUnitRoles",
+      "SourceRows": 0,
+      "UpsertedRows": 0,
+      "SkippedRows": 0,
+      "Checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "Table": "AbpUserOrganizationUnits",
+      "SourceRows": 988,
+      "UpsertedRows": 0,
+      "SkippedRows": 988,
+      "Checksum": "1a5fa4a6d25f2082c020d95baf40dbc3e43c4c6a7d30e5b8633e2411a904a08f"
+    },
+    {
+      "Table": "AbpUserClaims",
+      "SourceRows": 0,
+      "UpsertedRows": 0,
+      "SkippedRows": 0,
+      "Checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "Table": "AbpFeatureGroups",
+      "SourceRows": 9,
+      "UpsertedRows": 0,
+      "SkippedRows": 9,
+      "Checksum": "1826f39fdf77c825fae05d9850f8c8e41de86763b47a982f1ca3a9d4bc773396"
+    },
+    {
+      "Table": "AbpFeatures",
+      "SourceRows": 14,
+      "UpsertedRows": 0,
+      "SkippedRows": 14,
+      "Checksum": "1c529086261a9e1c33c82e303672bb9e0971462bf8f830091fdf395e1fc31de3"
+    },
+    {
+      "Table": "AbpFeatureValues",
+      "SourceRows": 2,
+      "UpsertedRows": 0,
+      "SkippedRows": 2,
+      "Checksum": "c058a2d32d389825e378e37871be5c96cb7ebc648e2fcc28504adc0ef6439560"
+    },
+    {
+      "Table": "AbpSettingDefinitions",
+      "SourceRows": 78,
+      "UpsertedRows": 0,
+      "SkippedRows": 78,
+      "Checksum": "af1146f75407bf398f52fe3db33a0481d0cf09d616ccf9773f13950d52e624ef"
+    },
+    {
+      "Table": "AbpSettings",
+      "SourceRows": 15,
+      "UpsertedRows": 0,
+      "SkippedRows": 15,
+      "Checksum": "5771614ac8bd808f2cc95566eed7933f4e8654508072397527244712a0834101"
+    },
+    {
+      "Table": "AbpAuditLogs",
+      "SourceRows": 74594,
+      "UpsertedRows": 0,
+      "SkippedRows": 74594,
+      "Checksum": "0494b44ace16034378c9437c5f43c898158b165a48fdbe47861d428d4e3283ef"
+    },
+    {
+      "Table": "AbpAuditLogActions",
+      "SourceRows": 108512,
+      "UpsertedRows": 0,
+      "SkippedRows": 108512,
+      "Checksum": "9923b4c8e56834f93002593a5ca13b6045a8b0d688403310446180d7886d3b1d"
+    },
+    {
+      "Table": "AbpEntityChanges",
+      "SourceRows": 0,
+      "UpsertedRows": 0,
+      "SkippedRows": 0,
+      "Checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "Table": "AbpEntityPropertyChanges",
+      "SourceRows": 0,
+      "UpsertedRows": 0,
+      "SkippedRows": 0,
+      "Checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "Table": "AbpSecurityLogs",
+      "SourceRows": 1574,
+      "UpsertedRows": 0,
+      "SkippedRows": 1574,
+      "Checksum": "31e96f524164f66181818139572b1024af54f2a504c8c62432e7c2460eeb9ba2"
+    },
+    {
+      "Table": "AbpSessions",
+      "SourceRows": 23,
+      "UpsertedRows": 0,
+      "SkippedRows": 23,
+      "Checksum": "91a529816b9bb84f6d9eea3fad0030cee4cf9111cc950b497afb1610158d0ffb"
+    },
+    {
+      "Table": "AbpLanguages",
+      "SourceRows": 3,
+      "UpsertedRows": 0,
+      "SkippedRows": 3,
+      "Checksum": "583ee07699979ff7d82f3de2490d0fe54ff0ed1617b4167d9cf7499bffbf7d16"
+    },
+    {
+      "Table": "AbpLanguageTexts",
+      "SourceRows": 186,
+      "UpsertedRows": 0,
+      "SkippedRows": 186,
+      "Checksum": "7509286e7da4780f16fc16e707bd271158bbc254cad37fed967ae3eb34dbe7c1"
+    },
+    {
+      "Table": "AppDepartments",
+      "SourceRows": 9,
+      "UpsertedRows": 0,
+      "SkippedRows": 9,
+      "Checksum": "81f9922932eaaca9f5e9d190b5cf98d67f33d5d00fb41844c21d51039da729ad"
+    },
+    {
+      "Table": "AppUnits",
+      "SourceRows": 2,
+      "UpsertedRows": 0,
+      "SkippedRows": 2,
+      "Checksum": "fab39cecde4c7a188d618c37e314764a5349aa1392f8fb147d76021489f3e7db"
+    },
+    {
+      "Table": "AppPositions",
+      "SourceRows": 39,
+      "UpsertedRows": 0,
+      "SkippedRows": 39,
+      "Checksum": "3e029ffd1778b32907d6bd8fb4b2b5fc4d169bcf90642293406de4932d11dad3"
+    },
+    {
+      "Table": "AppMasterDatas",
+      "SourceRows": 41,
+      "UpsertedRows": 0,
+      "SkippedRows": 41,
+      "Checksum": "cda8d635f3c27261c8cf00d08142c36cfd54d886ba9665ef45c1955afed047af"
+    },
+    {
+      "Table": "AppUserDepartments",
+      "SourceRows": 6,
+      "UpsertedRows": 0,
+      "SkippedRows": 6,
+      "Checksum": "b0a2deec1f108e2b3f29687a7db2ed99d36f0962721d474fb3147aa584ef62bd"
+    },
+    {
+      "Table": "AppDocuments",
+      "SourceRows": 99,
+      "UpsertedRows": 0,
+      "SkippedRows": 99,
+      "Checksum": "191075e5b67acd5eccd3b0c991c021215ee2eebb60186e88feaf504e115944ae"
+    },
+    {
+      "Table": "AppDocumentFiles",
+      "SourceRows": 497,
+      "UpsertedRows": 0,
+      "SkippedRows": 497,
+      "Checksum": "36530439a632ae014505e245b173d63862702fe7fba3fa1304ea434de173a1a7"
+    },
+    {
+      "Table": "AppDocumentHistories",
+      "SourceRows": 143,
+      "UpsertedRows": 0,
+      "SkippedRows": 143,
+      "Checksum": "82772c4d5a15f9fc4bc7708debbcafb98ce54355cf1b96e3989769278a04b1c9"
+    },
+    {
+      "Table": "AppDocumentAssignments",
+      "SourceRows": 36,
+      "UpsertedRows": 0,
+      "SkippedRows": 36,
+      "Checksum": "64f392f3bc9439477195736b0da6de840896e7ddd5cedab45c2d2142db965552"
+    },
+    {
+      "Table": "AppWorkflowDefinitions",
+      "SourceRows": 9,
+      "UpsertedRows": 0,
+      "SkippedRows": 9,
+      "Checksum": "1239595c1b51479bf52be130a05e058c07fda313f392425ab0e7907d1fdedb2f"
+    },
+    {
+      "Table": "AppWorkflowTemplates",
+      "SourceRows": 26,
+      "UpsertedRows": 0,
+      "SkippedRows": 26,
+      "Checksum": "33372ac25601b551940790b3d4db1308fb6980a6dc0ed352297b5c16fb5dadf7"
+    },
+    {
+      "Table": "AppWorkflowStepTemplates",
+      "SourceRows": 82,
+      "UpsertedRows": 0,
+      "SkippedRows": 82,
+      "Checksum": "1e999022e8a3e35bf97055a8b9c51f9beef708701064d3df72f9c5bc5b3e23e3"
+    },
+    {
+      "Table": "AppDocumentWorkflowInstances",
+      "SourceRows": 22,
+      "UpsertedRows": 0,
+      "SkippedRows": 22,
+      "Checksum": "f8c7ee68913d1dbd6953cc386fba0cecff838b528bc4410d9a280a98c54bbdbe"
+    },
+    {
+      "Table": "AppSignatureSettings",
+      "SourceRows": 6,
+      "UpsertedRows": 0,
+      "SkippedRows": 6,
+      "Checksum": "609abd1c2c8306b47cdfd349f0f3645639a37bc4e0402a4212c2d925713f7384"
+    },
+    {
+      "Table": "AppUserSignatures",
+      "SourceRows": 1452,
+      "UpsertedRows": 0,
+      "SkippedRows": 1452,
+      "Checksum": "c88ab15aa7894179ddeb98e147b98a14826ce28ad4b6c3b2fc9fcc5e3c178aba"
+    },
+    {
+      "Table": "AppProjects",
+      "SourceRows": 11,
+      "UpsertedRows": 0,
+      "SkippedRows": 11,
+      "Checksum": "fb0058f7c174d77f0125c048fafc742d72db37f5419242477a10526de6a726e4"
+    },
+    {
+      "Table": "AppProjectMembers",
+      "SourceRows": 12,
+      "UpsertedRows": 0,
+      "SkippedRows": 12,
+      "Checksum": "8415a2cb709193d2bba25ea838d36251b0364a19de2d9abb42751c3dbfd3525a"
+    },
+    {
+      "Table": "AppProjectTasks",
+      "SourceRows": 43,
+      "UpsertedRows": 0,
+      "SkippedRows": 52,
+      "Checksum": "dd4c231ae291ef3373f9c7e655275d938a31aa9a127e0f4c98e44dee0b18a843"
+    },
+    {
+      "Table": "AppProjectTaskAssignments",
+      "SourceRows": 34,
+      "UpsertedRows": 0,
+      "SkippedRows": 34,
+      "Checksum": "cadbf64af6afeb7bd1e03445667482e2b9003da6e0ee842a423d2d1612fcfac3"
+    },
+    {
+      "Table": "AppProjectTaskDocuments",
+      "SourceRows": 38,
+      "UpsertedRows": 0,
+      "SkippedRows": 38,
+      "Checksum": "757ff9d733daba5a6e8ad81e87eeafe18fdb2a1c5f960b34599a96d9850a054d"
+    },
+    {
+      "Table": "AppCalendarEvents",
+      "SourceRows": 72,
+      "UpsertedRows": 0,
+      "SkippedRows": 72,
+      "Checksum": "9850883856631a37dce4d6b9b000c95bdad2f7a8d50e0b5b6fae471a1bbc46fb"
+    },
+    {
+      "Table": "AppCalendarEventParticipants",
+      "SourceRows": 46,
+      "UpsertedRows": 0,
+      "SkippedRows": 46,
+      "Checksum": "79ac5868cee26ae9d02fcb4bca0c767c639e3f6be1ae20967346894dbc63f378"
+    },
+    {
+      "Table": "AppSurveyLocations",
+      "SourceRows": 269,
+      "UpsertedRows": 0,
+      "SkippedRows": 269,
+      "Checksum": "4b5eeb5cb8707acc34c039f03b51820505ee9f60d637d77c2ad3e9a14a58e713"
+    },
+    {
+      "Table": "AppSurveySessions",
+      "SourceRows": 1,
+      "UpsertedRows": 0,
+      "SkippedRows": 1,
+      "Checksum": "6b08f067b0f6e6e518a11299241162b6d89f6041335b2d1c98dc24ee828d4a59"
+    },
+    {
+      "Table": "AppSurveyCriterias",
+      "SourceRows": 281,
+      "UpsertedRows": 0,
+      "SkippedRows": 281,
+      "Checksum": "a20042363c06eb653783f23be337996b3c576409198172add51d879bb8a560b7"
+    },
+    {
+      "Table": "AppSurveyResults",
+      "SourceRows": 1,
+      "UpsertedRows": 0,
+      "SkippedRows": 1,
+      "Checksum": "5846f27c2b4cccbad1ca7769c513f062055a34b90eeda4aca3baa882bceb3ccc"
+    },
+    {
+      "Table": "AppSurveyFiles",
+      "SourceRows": 0,
+      "UpsertedRows": 0,
+      "SkippedRows": 0,
+      "Checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "Table": "AppReports",
+      "SourceRows": 0,
+      "UpsertedRows": 0,
+      "SkippedRows": 0,
+      "Checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "Table": "ChatConversations",
+      "SourceRows": 8,
+      "UpsertedRows": 0,
+      "SkippedRows": 8,
+      "Checksum": "cfb56ba5abaf0b6e70f11d2d149928c3e68c4c6817a9a5c5652575115af34996"
+    },
+    {
+      "Table": "ChatConversationMembers",
+      "SourceRows": 16,
+      "UpsertedRows": 0,
+      "SkippedRows": 16,
+      "Checksum": "7490530597991522892f5fb7f442f18990ae61073f17dca93216dc19cee9ec3a"
+    },
+    {
+      "Table": "ChatMessages",
+      "SourceRows": 14,
+      "UpsertedRows": 0,
+      "SkippedRows": 14,
+      "Checksum": "25f03ff8cfbb3b73ad3adab75c12378ac5f2979aabb1cd90e60c9bd0c34a6af3"
+    },
+    {
+      "Table": "ChatMessageFiles",
+      "SourceRows": 1,
+      "UpsertedRows": 0,
+      "SkippedRows": 1,
+      "Checksum": "0bc4dbfad5c81ffc10af1fd73cafff559125c97126c48a417b301fae331d0b96"
+    },
+    {
+      "Table": "ChatUserMessages",
+      "SourceRows": 28,
+      "UpsertedRows": 0,
+      "SkippedRows": 28,
+      "Checksum": "0d78633e3c73b876680197c7c4c5becbe4aeb38a9fecfc4ff5779e198a144ff7"
+    },
+    {
+      "Table": "AppNotifications",
+      "SourceRows": 656,
+      "UpsertedRows": 0,
+      "SkippedRows": 656,
+      "Checksum": "c2a2e07ccf571b7d632d6466ed3c0a0a20bec6248e4fade83ccbb9ea6c3859f8"
+    },
+    {
+      "Table": "AppNotificationReceivers",
+      "SourceRows": 256,
+      "UpsertedRows": 0,
+      "SkippedRows": 256,
+      "Checksum": "cc342d5c71dfbdb2a65887ccfd996cfb8e9c7edc869f7afcae74a57fd07c94af"
+    },
+    {
+      "Table": "AppUserPushDeviceTokens",
+      "SourceRows": 4,
+      "UpsertedRows": 0,
+      "SkippedRows": 4,
+      "Checksum": "394d5649f966996a359aedf8fc9b0a73af737ac16e62c176c42503fa12345cff"
+    }
+  ],
+  "DuplicateUsers": [],
+  "MissingUsers": [],
+  "UnmatchedUsers": [],
+  "RelationshipIssues": [],
+  "BlobIssues": [],
+  "ArchivedTables": [
+    {
+      "Table": "AppUserDepartments__conflicts",
+      "Database": 1,
+      "Rows": 2
+    },
+    {
+      "Table": "AppDocumentFiles__conflicts",
+      "Database": 2,
+      "Rows": 250
+    },
+    {
+      "Table": "AppDocumentAssignments__conflicts",
+      "Database": 2,
+      "Rows": 1
+    },
+    {
+      "Table": "AppSignatureSettings__conflicts",
+      "Database": 2,
+      "Rows": 1
+    },
+    {
+      "Table": "AppCalendarEventParticipants__conflicts",
+      "Database": 3,
+      "Rows": 1
+    },
+    {
+      "Table": "ChatMessageFiles__conflicts",
+      "Database": 4,
+      "Rows": 1
+    },
+    {
+      "Table": "AppUserPushDeviceTokens__conflicts",
+      "Database": 4,
+      "Rows": 1
+    },
+    {
+      "Table": "AbpAuditLogExcelFiles",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "AbpBackgroundJobs",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "AbpEventInbox",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "AbpLinkUsers",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "AbpLocalizationResources",
+      "Database": 0,
+      "Rows": 33
+    },
+    {
+      "Table": "AbpLocalizationTexts",
+      "Database": 0,
+      "Rows": 55
+    },
+    {
+      "Table": "AbpOrganizationUnits_Backup",
+      "Database": 0,
+      "Rows": 55
+    },
+    {
+      "Table": "AbpOrganizationUnits_Backup_20260601",
+      "Database": 0,
+      "Rows": 56
+    },
+    {
+      "Table": "AbpTextTemplateContents",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "AbpTextTemplateDefinitionContentRecords",
+      "Database": 0,
+      "Rows": 10
+    },
+    {
+      "Table": "AbpTextTemplateDefinitionRecords",
+      "Database": 0,
+      "Rows": 10
+    },
+    {
+      "Table": "AbpUserDelegations",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "AbpUserLogins",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "AbpUserTokens",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "AbpUsers_Backup_BeforeSwapNameSurname",
+      "Database": 0,
+      "Rows": 942
+    },
+    {
+      "Table": "AppBooks",
+      "Database": 0,
+      "Rows": 2
+    },
+    {
+      "Table": "AppDocumentBackgroundOperations",
+      "Database": 2,
+      "Rows": 0
+    },
+    {
+      "Table": "AppDocumentWorkflowInstanceExtensions",
+      "Database": 2,
+      "Rows": 0
+    },
+    {
+      "Table": "AppDocumentWorkflowInstanceFiles",
+      "Database": 2,
+      "Rows": 23
+    },
+    {
+      "Table": "AppDocumentWorkflowInstanceLogss",
+      "Database": 2,
+      "Rows": 47
+    },
+    {
+      "Table": "AppNotificationOutboxes",
+      "Database": 4,
+      "Rows": 0
+    },
+    {
+      "Table": "AppWorkflowStepAssignments",
+      "Database": 2,
+      "Rows": 88
+    },
+    {
+      "Table": "AppWorkflows",
+      "Database": 2,
+      "Rows": 30
+    },
+    {
+      "Table": "ChatUsers",
+      "Database": 4,
+      "Rows": 109
+    },
+    {
+      "Table": "FmDirectoryDescriptors",
+      "Database": 0,
+      "Rows": 1
+    },
+    {
+      "Table": "FmFileDescriptors",
+      "Database": 0,
+      "Rows": 2
+    },
+    {
+      "Table": "FrmAnswers",
+      "Database": 0,
+      "Rows": 3
+    },
+    {
+      "Table": "FrmChoices",
+      "Database": 0,
+      "Rows": 2
+    },
+    {
+      "Table": "FrmFormResponses",
+      "Database": 0,
+      "Rows": 1
+    },
+    {
+      "Table": "FrmForms",
+      "Database": 0,
+      "Rows": 2
+    },
+    {
+      "Table": "FrmQuestions",
+      "Database": 0,
+      "Rows": 4
+    },
+    {
+      "Table": "GdprInfo",
+      "Database": 0,
+      "Rows": 1
+    },
+    {
+      "Table": "GdprRequests",
+      "Database": 0,
+      "Rows": 1
+    },
+    {
+      "Table": "OpenIddictApplications",
+      "Database": 0,
+      "Rows": 6
+    },
+    {
+      "Table": "OpenIddictAuthorizations",
+      "Database": 0,
+      "Rows": 19
+    },
+    {
+      "Table": "OpenIddictScopes",
+      "Database": 0,
+      "Rows": 1
+    },
+    {
+      "Table": "OpenIddictTokens",
+      "Database": 0,
+      "Rows": 151
+    },
+    {
+      "Table": "SaasEditions",
+      "Database": 0,
+      "Rows": 1
+    },
+    {
+      "Table": "SaasTenantConnectionStrings",
+      "Database": 0,
+      "Rows": 0
+    },
+    {
+      "Table": "SaasTenants",
+      "Database": 0,
+      "Rows": 3
+    },
+    {
+      "Table": "__EFMigrationsHistory",
+      "Database": 0,
+      "Rows": 122
+    }
+  ],
+  "LegacyIdentityPreserved": true
+}

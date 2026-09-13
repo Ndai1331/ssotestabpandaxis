@@ -25,8 +25,10 @@ try
         blobChecker = new MinioBlobExistenceChecker(client.Build());
     }
 
-    var engine = new ImportEngine(new PostgresLegacySource(source), new PostgresTargetStore(targets),
-        new JsonKeycloakUserDirectory(cli.KeycloakUsersPath), blobChecker);
+    var keycloak = cli.KeycloakUsersPath is null
+        ? new EmptyKeycloakUserDirectory() as IKeycloakUserDirectory
+        : new JsonKeycloakUserDirectory(cli.KeycloakUsersPath);
+    var engine = new ImportEngine(new PostgresLegacySource(source), new PostgresTargetStore(targets), keycloak, blobChecker);
     var report = await engine.RunAsync(new ImportOptions(cli.DryRun, cli.OutputDirectory, cli.Tables));
     Console.WriteLine($"Migration {(cli.DryRun ? "dry-run" : "run")} completed. Report: {Path.GetFullPath(cli.OutputDirectory)}");
     Console.WriteLine($"Tables: {report.Tables.Count}; user issues: {report.DuplicateUsers.Count + report.MissingUsers.Count + report.UnmatchedUsers.Count}; blob issues: {report.BlobIssues.Count}");
@@ -34,23 +36,23 @@ try
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine(exception.Message);
+    Console.Error.WriteLine(exception.ToString());
     return 1;
 }
 
 static string RequiredEnvironment(string name) => Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
     ? value : throw new InvalidOperationException($"Required environment variable is missing: {name}");
 
-internal sealed record CliOptions(bool DryRun, string OutputDirectory, string KeycloakUsersPath, IReadOnlySet<string>? Tables)
+internal sealed record CliOptions(bool DryRun, string OutputDirectory, string? KeycloakUsersPath, IReadOnlySet<string>? Tables)
 {
     public static CliOptions Parse(string[] args)
     {
         if (args.Contains("--help"))
         {
-            Console.WriteLine("Usage: HCS.MigrationImporter [--dry-run|--execute] --keycloak-users <verified-users.json> [--output <dir>] [--tables Table1,Table2]");
+            Console.WriteLine("Usage: HCS.MigrationImporter [--dry-run|--execute] [--keycloak-users <verified-users.json>] [--output <dir>] [--tables Table1,Table2]");
             Environment.Exit(0);
         }
-        var keycloak = Value(args, "--keycloak-users") ?? throw new ArgumentException("--keycloak-users is required");
+        var keycloak = Value(args, "--keycloak-users");
         var requested = Value(args, "--tables")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var execute = args.Contains("--execute");

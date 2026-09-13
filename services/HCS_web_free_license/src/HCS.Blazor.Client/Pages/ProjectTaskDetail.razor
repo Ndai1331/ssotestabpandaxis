@@ -47,7 +47,7 @@
                                 </Select>
                             </Field>
                             <Field><FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                                <Select TValue="string" SelectedValue="@form.Status" SelectedValueChanged="OnStatusChanged">
+                                <Select TValue="string" @bind-Value="form.Status" @bind-Value:after="SyncProgressWithStatus">
                                     @foreach (var value in WorkUi.TaskStatuses) { <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem> }
                                 </Select>
                             </Field>
@@ -180,8 +180,8 @@
         form.Code = task.Code;
         form.Title = task.Title;
         form.Description = task.Description ?? "";
-        form.StartDate = task.StartDate;
-        form.DueDate = task.DueDate;
+        form.StartDate = WorkUi.UtcToFormTime(task.StartDate);
+        form.DueDate = WorkUi.UtcToFormTime(task.DueDate);
         form.Priority = task.Priority;
         form.Status = task.Status;
         form.ProgressPercent = task.ProgressPercent;
@@ -205,7 +205,7 @@
         try
         {
             await Work.UpdateTaskAsync(TaskId, new UpdateProjectTaskRequest(
-                form.Title.Trim(), Blank(form.Description), form.StartDate, form.DueDate, form.Priority, form.Status, form.ProgressPercent));
+                form.Title.Trim(), Blank(form.Description), WorkUi.FormTimeToUtc(form.StartDate), WorkUi.FormTimeToUtc(form.DueDate), form.Priority, form.Status, form.ProgressPercent));
             detail = await Work.GetTaskAsync(TaskId);
             BindForm(detail.Task);
             await NotifySuccessAsync(L["Catalog:Updated"]);
@@ -214,11 +214,12 @@
         finally { isSaving = false; }
     }
 
-    private Task OnStatusChanged(string value)
+    private void SyncProgressWithStatus()
     {
-        form.Status = value;
-        if (string.Equals(value, "Completed", StringComparison.OrdinalIgnoreCase)) form.ProgressPercent = 100;
-        return Task.CompletedTask;
+        if (string.Equals(form.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+            form.ProgressPercent = 100;
+        else if (form.ProgressPercent == 100)
+            form.ProgressPercent = 95;
     }
 
     private Task OnProgressChanged(int value)
@@ -241,7 +242,7 @@
     }
     private async Task RemoveAssignmentAsync(TaskAssignmentDto assignment)
     {
-        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], Name(assignment.UserId)))) return;
         try
         {
             await Work.RemoveAssignmentAsync(TaskId, assignment.Id);
@@ -264,7 +265,7 @@
     }
     private async Task RemoveDocumentAsync(TaskDocumentReferenceDto reference)
     {
-        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], reference.DocumentCode ?? documents.FirstOrDefault(x => x.Id == reference.DocumentId)?.Number))) return;
         try
         {
             await Work.RemoveTaskDocumentAsync(TaskId, reference.Id);

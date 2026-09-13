@@ -76,6 +76,7 @@ public class HCSBlazorClientModule : AbpModule
         ConfigureBlazorise(context);
         ConfigureMessageLocalization();
         context.Services.AddScoped<OrganizationCatalogClient>();
+        context.Services.AddScoped<OrganizationUnitCatalogClient>();
         context.Services.AddScoped<ReferenceCatalogClient>();
         context.Services.AddScoped<LanguageManagementClient>();
         context.Services.AddScoped<LanguageCatalogState>();

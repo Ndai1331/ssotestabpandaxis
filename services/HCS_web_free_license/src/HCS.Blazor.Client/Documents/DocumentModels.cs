@@ -38,7 +38,7 @@ public sealed record DocumentDto(
     List<DocumentFileDto> Files, List<DocumentAssignmentDto> Assignments,
     List<DocumentHistoryDto> History, DateTime CreationTime,
     DocumentSourceType SourceType = DocumentSourceType.Archive, Guid? ParentDocumentId = null,
-    Guid? FromUserId = null, Guid? OrganizationUnitId = null);
+    Guid? FromUserId = null, Guid? OrganizationUnitId = null, int FileCount = 0);
 
 public sealed record CreateDocumentRequest(
     string? Number, string Title, string? Description,
@@ -114,6 +114,48 @@ public sealed record SigningAttemptDto(
     Guid Id, Guid DocumentId, Guid FileId, int Kind, SigningStatus Status, string InputSha256,
     string? OutputSha256, string? Error, DateTime CreationTime, DateTime? CompletedAt);
 public sealed record SigningReportDto(Guid DocumentId, int Completed, int Failed, List<SigningAttemptDto> Attempts);
+public sealed record SigningKpiQuery(int? SourceYear = null, DateTime? SubmittedFrom = null, DateTime? SubmittedTo = null);
+public sealed class SigningKpiMetricsDto
+{
+    public long TotalCount { get; set; }
+    public long NewCount { get; set; }
+    public long InProgressCount { get; set; }
+    public long CompletedCount { get; set; }
+    public long RejectedCount { get; set; }
+    public long CancelledCount { get; set; }
+    public double? AverageProcessingHours { get; set; }
+    public long OnTimeCount { get; set; }
+    public long LateCount { get; set; }
+    public long CompletedWithDeadlineCount { get; set; }
+    public double? OnTimeRatePercent { get; set; }
+    public double? CompletedRatePercent { get; set; }
+    public double? InProgressRatePercent { get; set; }
+    public double? RejectedRatePercent { get; set; }
+    public double? CancelledRatePercent { get; set; }
+    public long ProcessingIncludingNewCount => InProgressCount + NewCount;
+}
+public sealed class SigningKpiGroupRowDto
+{
+    public string Source { get; set; } = string.Empty;
+    public string? GroupCode { get; set; }
+    public string? GroupName { get; set; }
+    public SigningKpiMetricsDto Metrics { get; set; } = new();
+}
+public sealed class SigningKpiPieSliceDto
+{
+    public string Label { get; set; } = string.Empty;
+    public long Value { get; set; }
+    public string Color { get; set; } = string.Empty;
+}
+public sealed class SigningKpiReportDto
+{
+    public SigningKpiMetricsDto Combined { get; set; } = new();
+    public SigningKpiMetricsDto Hcs { get; set; } = new();
+    public List<SigningKpiGroupRowDto> Groups { get; set; } = [];
+    public List<SigningKpiPieSliceDto> PieSlices { get; set; } = [];
+    public bool HcsAvailable { get; set; }
+    public string? HcsError { get; set; }
+}
 public sealed record UserSignatureDto(Guid Id, string FileName, string ContentType, long Size, bool IsDefault, DateTime CreationTime,
     UserSignatureType Type = UserSignatureType.Electronic, string ProviderCode = "", string TokenRef = "",
     DateTime? ValidFrom = null, DateTime? ValidTo = null, bool IsActive = true, bool HasSealImage = false);

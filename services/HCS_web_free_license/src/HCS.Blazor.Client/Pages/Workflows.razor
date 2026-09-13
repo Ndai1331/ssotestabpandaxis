@@ -114,7 +114,7 @@
                     <SelectItem Value="@("PARALLEL")">@L["Work:SignMode.PARALLEL"]</SelectItem>
                 </Select>
             </Field>
-            <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Work:IsActive"]</Check></Field>
+            <Field><Check TValue="bool" @bind-Value="form.IsActive">@L["Work:IsActive"]</Check></Field>
         </div>
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">

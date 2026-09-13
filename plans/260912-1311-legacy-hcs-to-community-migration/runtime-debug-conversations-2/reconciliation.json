@@ -1,0 +1,21 @@
+{
+  "StartedAt": "2026-09-12T08:25:02.8891773+00:00",
+  "CompletedAt": "2026-09-12T08:25:04.4976369+00:00",
+  "DryRun": false,
+  "Tables": [
+    {
+      "Table": "ChatConversations",
+      "SourceRows": 8,
+      "UpsertedRows": 5,
+      "SkippedRows": 3,
+      "Checksum": "cfb56ba5abaf0b6e70f11d2d149928c3e68c4c6817a9a5c5652575115af34996"
+    }
+  ],
+  "DuplicateUsers": [],
+  "MissingUsers": [],
+  "UnmatchedUsers": [],
+  "RelationshipIssues": [],
+  "BlobIssues": [],
+  "ArchivedTables": [],
+  "LegacyIdentityPreserved": true
+}

@@ -16,6 +16,17 @@ Provider codes are normalized case-insensitively. The aliases `VINHSM`, `VIN-HSM
 - Default timeout is 30 seconds; signature size defaults to 150 x 70. TAG requests are clamped to 30–240 seconds.
 - `Signing:AllowedEndpointHosts` remains an explicit SSRF allowlist. Add the TAG host before saving or invoking a TAG credential.
 
+## TAG endpoint nội bộ
+
+TAG phải dùng URL tuyệt đối, ví dụ `http://<internal-tag-ip>:<port>` hoặc `https://<internal-tag-host>:<port>`; không thêm `/api/v2/pdf/sign/originaldata` vì adapter tự nối path này. Có thể cấu hình bằng biến môi trường:
+
+```text
+Signing__Providers__TAG__DefaultEndpoint=http://<internal-tag-ip>:<port>
+Signing__AllowedEndpointHosts__2=<internal-tag-ip>
+```
+
+Giữ nguyên các phần tử allowlist đang có trong `appsettings.json`; chỉ thay `<internal-tag-ip>` và `<port>` bằng thông tin do nhà cung cấp TAG cung cấp. Không ghi TokenRef/secret vào file cấu hình hoặc source code.
+
 ## Keys and secrets
 
 `TokenRef` and provider secrets are user/provider credentials, not source assets. They are accepted through the secured API/UI, encrypted with ASP.NET Core Data Protection at rest, masked in DTOs, and omitted from logs. The licensed source's ABP license, MinIO password, and OIDC client values are unrelated infrastructure secrets and are not migrated.

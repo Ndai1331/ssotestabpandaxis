@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using HCS.Blazor.Client.Pages.Organization;
+using HCS.OrganizationUnits;
 using Microsoft.Extensions.Http;
 using Xunit;
 
@@ -67,6 +68,41 @@ public sealed class OrganizationCatalogClientTests
             ReferenceCatalogKind.Bmi, new ReferenceCatalogQuery("  Nam & nữ  ", -10, 500));
 
         Assert.Equal("/api/organization/bmi?filter=nam%20%26%20n%E1%BB%AF&skipCount=0&maxResultCount=100", actual);
+    }
+
+    [Fact]
+    public void Builds_organization_unit_member_url_with_filter_and_page_bounds()
+    {
+        var actual = OrganizationUnitCatalogClient.BuildMembersUri(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "  A&B  ",
+            -10,
+            500);
+
+        Assert.Equal(
+            "/api/identity/organization-units/11111111-1111-1111-1111-111111111111/members?filter=a%26b&skipCount=0&maxResultCount=100",
+            actual);
+    }
+
+    [Fact]
+    public void Builds_a_tree_from_flat_organization_units_and_preserves_expansion()
+    {
+        var rootId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        var roots = OrganizationUnitTreeBuilder.Build([
+            new OrganizationUnitDto { Id = childId, ParentId = rootId, Code = "00001.00001", DisplayName = "Child" },
+            new OrganizationUnitDto { Id = rootId, Code = "00001", DisplayName = "Root" }
+        ]);
+        roots[0].IsExpanded = false;
+
+        var rebuilt = OrganizationUnitTreeBuilder.Build([
+            new OrganizationUnitDto { Id = rootId, Code = "00001", DisplayName = "Root" },
+            new OrganizationUnitDto { Id = childId, ParentId = rootId, Code = "00001.00001", DisplayName = "Child" }
+        ], OrganizationUnitTreeBuilder.CaptureExpandedState(roots));
+
+        Assert.Equal(rootId, Assert.Single(rebuilt).Id);
+        Assert.Equal(childId, Assert.Single(rebuilt[0].Children).Id);
+        Assert.False(rebuilt[0].IsExpanded);
     }
 
     [Theory]

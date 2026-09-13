@@ -99,7 +99,7 @@
         <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
             @foreach (var contact in contacts)
             {
-                <Check TValue="bool" Checked="form.Participants.Contains(contact.Id)" CheckedChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
+                <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
             }
         </Field>
         </div>
@@ -209,7 +209,7 @@
     {
         try
         {
-            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, null, form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
+            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, WorkUi.FormTimeToUtc(form.Start), WorkUi.FormTimeToUtc(form.End), false, form.EventType, null, form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
             if (modal is not null) await modal.Hide();
             await LoadEventsAsync();
         }

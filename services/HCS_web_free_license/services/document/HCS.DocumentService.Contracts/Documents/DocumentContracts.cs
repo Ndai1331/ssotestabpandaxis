@@ -37,7 +37,7 @@ public sealed record DocumentDto(Guid Id, string Number, string Title, string? D
     IReadOnlyList<DocumentFileDto> Files, IReadOnlyList<DocumentAssignmentDto> Assignments,
     IReadOnlyList<DocumentHistoryDto> History, DateTime CreationTime,
     DocumentSourceType SourceType = DocumentSourceType.Archive, Guid? ParentDocumentId = null,
-    Guid? FromUserId = null, Guid? OrganizationUnitId = null);
+    Guid? FromUserId = null, Guid? OrganizationUnitId = null, int FileCount = 0);
 public sealed record PagedDocumentsDto(long TotalCount, IReadOnlyList<DocumentDto> Items);
 
 public interface IDocumentAppService

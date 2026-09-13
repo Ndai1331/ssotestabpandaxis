@@ -317,7 +317,7 @@
 </section>
 
 <ProjectTaskCreateModal @ref="createTaskModal" OnCreated="LoadAsync" />
-<ProjectTaskViewModal @ref="taskViewModal" OnChanged="LoadAsync" OnViewDocument="PreviewTaskDocumentAsync" />
+<ProjectTaskViewModal @ref="taskViewModal" OnChanged="LoadAsync" />
 <DocumentPdfPreviewModal @ref="documentPreviewModal" ShowAssignTask="true" OnAssignTask="AssignPreviewDocumentAsync" />
 
 <Modal @ref="createProjectModal" Size="ModalSize.Large">
@@ -548,7 +548,7 @@
         {
             await Work.CreateProjectAsync(new CreateProjectRequest(projectForm.Code.Trim(), projectForm.Name.Trim(),
                 string.IsNullOrWhiteSpace(projectForm.Description) ? null : projectForm.Description.Trim(),
-                projectForm.StartDate, projectForm.EndDate, projectForm.Status, projectForm.OwnerDepartmentId));
+                WorkUi.FormTimeToUtc(projectForm.StartDate), WorkUi.FormTimeToUtc(projectForm.EndDate), projectForm.Status, projectForm.OwnerDepartmentId));
             await NotifySuccessAsync(L["Catalog:Created"]);
             await CloseCreateProjectModalAsync();
             await LoadAsync();
@@ -607,8 +607,6 @@
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
-
-    private Task PreviewTaskDocumentAsync(Guid documentId) => PreviewDocumentAsync(documentId);
 
     private async Task AssignPreviewDocumentAsync()
     {

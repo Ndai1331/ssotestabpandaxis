@@ -22,6 +22,8 @@ public static class ReportWriter
             csv.AppendLine(Csv("relationship", issue.Table, issue.RowKey, issue.Column, issue.Value, $"Missing {issue.ReferencedTable}"));
         foreach (var issue in report.BlobIssues)
             csv.AppendLine(Csv("blob", issue.Table, issue.RowKey, issue.Bucket, issue.ObjectName, issue.Reason));
+        foreach (var archive in report.ArchivedTables)
+            csv.AppendLine(Csv("legacy-archive", archive.Table, "", archive.Database.ToString(), archive.Rows.ToString(), "Stored in legacy_migration.source_rows"));
         await File.WriteAllTextAsync(Path.Combine(outputDirectory, "reconciliation.csv"), csv.ToString(), cancellationToken);
 
         var rollback = new StringBuilder()
@@ -34,6 +36,7 @@ public static class ReportWriter
             .AppendLine("# Re-run importer from the last verified source snapshot after cleanup.")
             .AppendLine("# Migrated tables:");
         foreach (var table in tables) rollback.AppendLine($"# - {table.TargetDatabase}: {table.TargetTable}");
+        rollback.AppendLine("# Unmapped source rows are retained in legacy_migration.source_rows in their routed target database.");
         await File.WriteAllTextAsync(Path.Combine(outputDirectory, "rollback-preview.txt"), rollback.ToString(), cancellationToken);
     }
 

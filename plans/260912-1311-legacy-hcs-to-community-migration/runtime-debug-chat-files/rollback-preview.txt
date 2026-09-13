@@ -1,0 +1,10 @@
+# ROLLBACK PREVIEW — NEVER EXECUTED BY THE IMPORTER
+# Confirm backups and type exactly: I UNDERSTAND TARGET DATA WILL BE DELETED
+# Then run your approved DBA runbook for ONLY these target databases:
+# hcs_identity, hcs_organization, hcs_document, hcs_work, hcs_collaboration
+# Review and delete ONLY importer-created objects in buckets:
+# hcs-documents, hcs-signing, hcs-work-assets, hcs-collaboration
+# Re-run importer from the last verified source snapshot after cleanup.
+# Migrated tables:
+# - Collaboration: CollaborationAttachments
+# Unmapped source rows are retained in legacy_migration.source_rows in their routed target database.

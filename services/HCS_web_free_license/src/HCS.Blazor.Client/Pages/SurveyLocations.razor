@@ -106,7 +106,7 @@
             <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
             @if (editingId is not null)
             {
-                <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Catalog:Active"]</Check></Field>
+                <Field><Check TValue="bool" @bind-Value="form.IsActive">@L["Catalog:Active"]</Check></Field>
             }
         </div>
     </ModalBody>
@@ -200,7 +200,7 @@
             if (editingId is { } id)
                 await Work.UpdateLocationAsync(id, new UpdateSurveyLocationRequest(form.Name.Trim(), null, form.IsActive, Blank(form.Description)));
             else
-                await Work.CreateLocationAsync(new CreateSurveyLocationRequest(form.Code.Trim(), form.Name.Trim(), null, Blank(form.Description)));
+                await Work.CreateLocationAsync(new CreateSurveyLocationRequest(form.Code.Trim(), form.Name.Trim(), null, Blank(form.Description), form.IsActive));
             await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             await LoadAsync();

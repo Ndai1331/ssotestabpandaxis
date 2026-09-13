@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace HCS.DocumentService.Controllers;
 
 [ApiController, Authorize, Route("api/signing")]
-public sealed class SigningController(ISigningAppService signing) : ControllerBase
+public sealed class SigningController(ISigningAppService signing, ISigningKpiReportService signingKpi) : ControllerBase
 {
     [HttpGet("queue"), Authorize(Policy = Documents.DocumentPermissions.SigningExecute)]
     public Task<IReadOnlyList<SigningQueueItemDto>> GetQueue(CancellationToken cancellationToken) =>
@@ -40,6 +40,16 @@ public sealed class SigningController(ISigningAppService signing) : ControllerBa
     public Task<SigningAttemptDto> Sign(SignDocumentRequest input, CancellationToken cancellationToken) => signing.SignAsync(input, cancellationToken);
     [HttpGet("reports/documents/{documentId:guid}"), Authorize(Policy = Documents.DocumentPermissions.SigningReport)]
     public Task<SigningReportDto> Report(Guid documentId, CancellationToken cancellationToken) => signing.GetReportAsync(documentId, cancellationToken);
+    [HttpGet("kpi"), Authorize(Policy = Documents.DocumentPermissions.SigningReport)]
+    public Task<SigningKpiReportDto> GetKpi([FromQuery] GetSigningKpiInput input, CancellationToken cancellationToken) =>
+        signingKpi.GetAsync(input, cancellationToken);
+    [HttpGet("kpi/export"), Authorize(Policy = Documents.DocumentPermissions.SigningReport)]
+    public async Task<IActionResult> ExportKpi([FromQuery] GetSigningKpiInput input, CancellationToken cancellationToken)
+    {
+        var rows = await signingKpi.GetDetailsAsync(input, cancellationToken);
+        var fileName = $"signing-kpi-{DateTime.UtcNow:yyyyMMddHHmmss}.csv";
+        return File(SigningKpiCsvExporter.Build(rows), "text/csv; charset=utf-8", fileName);
+    }
     [HttpGet("signatures")]
     public Task<IReadOnlyList<UserSignatureDto>> GetSignatures([FromQuery] Guid? userId, CancellationToken cancellationToken) =>
         signing.GetSignaturesAsync(userId, cancellationToken);

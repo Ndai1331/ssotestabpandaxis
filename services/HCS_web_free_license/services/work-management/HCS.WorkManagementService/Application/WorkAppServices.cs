@@ -79,7 +79,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         await access.DemandProjectOwnerAsync(id, ct);
         var project = await db.Projects.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(Project), id);
-        project.Change(input.Name, input.Description, input.StartDate, input.EndDate, input.Status);
+        project.Change(input.Name, input.Description, input.StartDate, input.EndDate, input.Status, input.OwnerDepartmentId);
         await WorkCalendarLinker.SyncProjectAsync(db, project, ct);
         AddEvent(new ProjectChangedEto(Guid.NewGuid(), DateTime.UtcNow, project.Id, "Updated", project.Status));
         await db.SaveChangesAsync(ct);
@@ -429,7 +429,10 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
     public async Task<SurveyCriteriaDto> CreateCriteriaAsync(CreateSurveyCriteriaDto input, CancellationToken ct)
     {
         if (await db.SurveyCriteria.AnyAsync(x => x.Code == input.Code, ct)) throw new BusinessException("Work:DuplicateSurveyCriteria");
-        var x = new SurveyCriteria(Guid.NewGuid(), input.Code, input.Name, input.SortOrder, input.LocationId, input.Image); db.SurveyCriteria.Add(x); await db.SaveChangesAsync(ct);
+        var x = new SurveyCriteria(Guid.NewGuid(), input.Code, input.Name, input.SortOrder, input.LocationId, input.Image);
+        x.Change(input.Name, input.SortOrder, input.IsActive, input.LocationId, input.Image);
+        db.SurveyCriteria.Add(x);
+        await db.SaveChangesAsync(ct);
         return new(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive, x.LocationId, x.Image);
     }
     public async Task<SurveyCriteriaDto> UpdateCriteriaAsync(Guid id, UpdateSurveyCriteriaDto input, CancellationToken ct)
@@ -454,7 +457,10 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
     public async Task<SurveyLocationDto> CreateLocationAsync(CreateSurveyLocationDto input, CancellationToken ct)
     {
         if (await db.SurveyLocations.AnyAsync(x => x.Code == input.Code, ct)) throw new BusinessException("Work:DuplicateSurveyLocation");
-        var x = new SurveyLocation(Guid.NewGuid(), input.Code, input.Name, input.OrganizationUnitId, input.Description); db.SurveyLocations.Add(x); await db.SaveChangesAsync(ct);
+        var x = new SurveyLocation(Guid.NewGuid(), input.Code, input.Name, input.OrganizationUnitId, input.Description);
+        x.Change(input.Name, input.OrganizationUnitId, input.IsActive, input.Description);
+        db.SurveyLocations.Add(x);
+        await db.SaveChangesAsync(ct);
         return new(x.Id, x.Code, x.Name, x.OrganizationUnitId, x.IsActive, x.Description);
     }
     public async Task<SurveyLocationDto> UpdateLocationAsync(Guid id, UpdateSurveyLocationDto input, CancellationToken ct)

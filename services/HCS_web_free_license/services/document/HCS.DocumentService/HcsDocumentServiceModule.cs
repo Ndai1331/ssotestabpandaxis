@@ -101,6 +101,7 @@ public sealed class HcsDocumentServiceModule : AbpModule
                 client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         });
         context.Services.AddScoped<ISigningAppService, SigningAppService>();
+        context.Services.AddScoped<ISigningKpiReportService, SigningKpiReportService>();
         context.Services.AddScoped<DocumentFileService>();
         context.Services.AddScoped<DocumentPdfWatermarkService>();
         context.Services.AddScoped<ISigningSecretProtector, DataProtectionSigningSecretProtector>();

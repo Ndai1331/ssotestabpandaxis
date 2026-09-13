@@ -13,7 +13,7 @@
         else
         {
             <div class="hcs-event-checkin__brand"><span><i class="fa fa-calendar-check" aria-hidden="true"></i></span><small>HCS · @L["Menu:EventManagement"]</small></div>
-            <p class="hcs-event-eyebrow">@L["Event:CheckIn"]</p><h1 id="checkin-title">@eventInfo.Name</h1><p class="hcs-event-checkin__meta">@eventInfo.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @eventInfo.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br />@(eventInfo.Location ?? L["Event:OnlineOrNotSet"])</p>
+            <h1 id="checkin-title">@eventInfo.Name</h1><p class="hcs-event-checkin__meta">@eventInfo.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @eventInfo.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br />@(eventInfo.Location ?? L["Event:OnlineOrNotSet"])</p>
             <div class="hcs-event-checkin__notice"><i class="fa fa-circle-info me-2" aria-hidden="true"></i>@L["Event:CheckInAuthenticatedPrompt"]</div>
             @if (!string.IsNullOrWhiteSpace(errorMessage)) { <div class="alert alert-danger" role="alert">@errorMessage</div> }
             @if (eventInfo.Attachments is { Count: > 0 })

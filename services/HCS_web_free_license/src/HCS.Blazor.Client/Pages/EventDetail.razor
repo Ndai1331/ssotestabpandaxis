@@ -35,7 +35,8 @@ else if (detail is not null)
             <Card Class="hcs-catalog-grid-card hcs-event-edit-card">
                 <CardBody>
                     <div class="hcs-event-section-heading">
-                        <div><p class="hcs-event-eyebrow">@L["Event:Information"]</p><h2>@L["Event:Edit"]</h2></div>
+                        <div>
+                            <h2>@L["Event:Edit"]</h2></div>
                         <Button Color="Color.Primary" Clicked="SaveEventAsync" Disabled="@isSaving"><i class="fa fa-save me-1" aria-hidden="true"></i>@L["Catalog:SaveChanges"]</Button>
                     </div>
                     <div class="hcs-event-form-grid">
@@ -52,7 +53,8 @@ else if (detail is not null)
             </Card>
             <Card Class="hcs-catalog-grid-card hcs-event-qr-card">
                 <CardBody>
-                    <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:CheckIn"]</p><h2>QR Code</h2></div><a href="@publicCheckInUrl" target="_blank" rel="noopener">@L["Event:OpenPublicPage"]</a></div>
+                    <div class="hcs-event-section-heading"><div>
+                        <h2>QR Code</h2></div><a href="@publicCheckInUrl" target="_blank" rel="noopener">@L["Event:OpenPublicPage"]</a></div>
                     @if (!string.IsNullOrWhiteSpace(qrCodeDataUrl))
                     {
                         <img class="hcs-event-qr" src="@qrCodeDataUrl" alt="QR Code @detail.Name" />
@@ -68,7 +70,7 @@ else if (detail is not null)
         </div>
         <Card Class="hcs-catalog-grid-card">
                 <CardBody>
-                    <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:Documents"]</p><h2>@L["Event:Attachments"]</h2></div><label class="btn btn-outline-primary mb-0"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Event:AddAttachment"]<InputFile class="visually-hidden" multiple OnChange="UploadFilesAsync" /></label></div>
+                    <div class="hcs-event-section-heading"><div><h2>@L["Event:Attachments"]</h2></div><label class="btn btn-outline-primary mb-0"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Event:AddAttachment"]<InputFile class="visually-hidden" multiple OnChange="UploadFilesAsync" /></label></div>
                 @if (detail.Attachments.Count == 0)
                 {
                     <p class="hcs-event-attachments-empty">@L["Event:NoAttachments"]</p>
@@ -110,7 +112,7 @@ else if (detail is not null)
         </Card>
         <Card Class="hcs-catalog-grid-card">
             <CardBody>
-                <div class="hcs-event-section-heading"><div><p class="hcs-event-eyebrow">@L["Event:AttendeeManagement"]</p><h2>@L["Event:Attendees"]</h2></div><div class="hcs-event-toolbar"><Button Color="Color.Primary" Clicked="OpenAddAttendee"><Icon Name="@IconName.Add" /> @L["Event:AddAttendee"]</Button><label class="btn btn-outline-primary mb-0"><i class="fa fa-file-import me-1" aria-hidden="true"></i>@L["Event:ImportCsv"]<InputFile class="visually-hidden" accept=".csv,text/csv" OnChange="ImportAsync" /></label><Button Color="Color.Primary" Outline="true" Clicked="ExportAttendeesAsync" Disabled="@(attendees.Count == 0)"><i class="fa fa-download me-1" aria-hidden="true"></i>@L["Catalog:Export"]</Button><Button Color="Color.Danger" Outline="true" Clicked="DeleteSelectedAsync" Disabled="@(selectedIds.Count == 0)"><i class="fa fa-trash me-1" aria-hidden="true"></i>@L["Event:DeleteSelected"]</Button></div></div>
+                <div class="hcs-event-section-heading"><div><h2>@L["Event:Attendees"]</h2></div><div class="hcs-event-toolbar"><Button Color="Color.Primary" Clicked="OpenAddAttendee"><Icon Name="@IconName.Add" /> @L["Event:AddAttendee"]</Button><label class="btn btn-outline-primary mb-0"><i class="fa fa-file-import me-1" aria-hidden="true"></i>@L["Event:ImportCsv"]<InputFile class="visually-hidden" accept=".csv,text/csv" OnChange="ImportAsync" /></label><Button Color="Color.Primary" Outline="true" Clicked="ExportAttendeesAsync" Disabled="@(attendees.Count == 0)"><i class="fa fa-download me-1" aria-hidden="true"></i>@L["Catalog:Export"]</Button><Button Color="Color.Danger" Outline="true" Clicked="DeleteSelectedAsync" Disabled="@(selectedIds.Count == 0)"><i class="fa fa-trash me-1" aria-hidden="true"></i>@L["Event:DeleteSelected"]</Button></div></div>
                 <div class="hcs-event-filters hcs-event-list-filters hcs-event-attendee-filters">
                     <div class="hcs-event-filter-field">
                         <label class="hcs-event-filter-label" for="event-attendee-search">@L["Catalog:Search"]</label>
@@ -328,6 +330,6 @@ else if (detail is not null)
     private static bool IsCheckedIn(EventAttendeeDto person) => person.CheckInStatus == "CheckedIn";
     private static string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{bytes / 1024d:0.#} KB" : $"{bytes / 1024d / 1024d:0.#} MB";
     private string AttachmentUrl(Guid fileId) => Work.BuildEventAttachmentUrl(fileId);
-    private sealed class EventForm { public string Group { get; set; } = ""; public string Name { get; set; } = ""; public string? Content { get; set; } public string? Description { get; set; } public string? Location { get; set; } public DateTime StartTime { get; set; } public DateTime EndTime { get; set; } public string Status { get; set; } = "Preparing"; public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = x.StartTime.ToLocalTime(); EndTime = x.EndTime.ToLocalTime(); Status = x.Status; } public UpdateManagedEventRequest ToRequest() => new(Group.Trim(), Name.Trim(), Content, Description, Location, StartTime, EndTime, Status); }
+    private sealed class EventForm { public string Group { get; set; } = ""; public string Name { get; set; } = ""; public string? Content { get; set; } public string? Description { get; set; } public string? Location { get; set; } public DateTime StartTime { get; set; } public DateTime EndTime { get; set; } public string Status { get; set; } = "Preparing"; public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = WorkUi.UtcToFormTime(x.StartTime); EndTime = WorkUi.UtcToFormTime(x.EndTime); Status = x.Status; } public UpdateManagedEventRequest ToRequest() => new(Group.Trim(), Name.Trim(), Content, Description, Location, WorkUi.FormTimeToUtc(StartTime), WorkUi.FormTimeToUtc(EndTime), Status); }
     private sealed class AttendeeForm { public Guid? UserId { get; set; } public string? Username { get; set; } public string? Surname { get; set; } public string? Name { get; set; } public string FullName { get; set; } = ""; public string? Cccd { get; set; } public string PhoneNumber { get; set; } = ""; public string Email { get; set; } = ""; public string? Address { get; set; } public string RegistrationStatus { get; set; } = "Unconfirmed"; public string CheckInStatus { get; set; } = "NotCheckedIn"; public string? Note { get; set; } public void Reset() { UserId = null; Username = Surname = Name = Cccd = Address = Note = ""; FullName = PhoneNumber = Email = ""; RegistrationStatus = "Unconfirmed"; CheckInStatus = "NotCheckedIn"; } public CreateEventAttendeeRequest ToRequest() => new(UserId, Username, Surname, Name, FullName.Trim(), Cccd, PhoneNumber.Trim(), Email.Trim(), Address, RegistrationStatus, CheckInStatus, Note); }
 }

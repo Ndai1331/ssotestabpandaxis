@@ -91,6 +91,7 @@
             return;
         }
         if ($el.data("select2")) {
+            unbindDropdownPin($el);
             $el.off(".hcsCatalogSelect2");
             $el.select2("destroy");
         }
@@ -101,13 +102,13 @@
         $el.prop("multiple", multiple);
         fillOptions($el, initialItems, multiple);
 
-        var dropdownParent = $el.closest(".modal").length ? $el.closest(".modal") : $(document.body);
         $el.select2({
             width: "100%",
             placeholder: placeholder,
             allowClear: true,
             multiple: multiple,
-            dropdownParent: dropdownParent,
+            dropdownParent: $(document.body),
+            dropdownCssClass: "hcs-select2-dropdown",
             minimumInputLength: typeof options.minimumInputLength === "number" ? options.minimumInputLength : 0,
             templateResult: userTemplateEnabled ? userTemplate : undefined,
             templateSelection: userTemplateEnabled ? userSelectionTemplate : undefined,
@@ -117,7 +118,10 @@
                 transport: function (params, success, failure) {
                     var term = (params.data && params.data.term) ? params.data.term : "";
                     var page = params.data && params.data.page ? params.data.page : 1;
-                    dotNetRef.invokeMethodAsync("SearchAsync", term, page).then(success).catch(failure);
+                    dotNetRef.invokeMethodAsync("SearchAsync", term, page).then(function (data) {
+                        success(data);
+                        schedulePin($el);
+                    }).catch(failure);
                 },
                 processResults: function (data) {
                     return {
@@ -130,6 +134,7 @@
 
         $el.data("hcsCatalogSelect2DotNetRef", dotNetRef);
         bindChange($el, dotNetRef);
+        bindDropdownPin($el);
     };
 
     window.hcsCatalogSelect2.setSelection = function (selectId, items) {
@@ -152,12 +157,184 @@
         if (!$el.length) {
             return;
         }
+        unbindDropdownPin($el);
         $el.removeData("hcsCatalogSelect2DotNetRef");
         if ($el.data("select2")) {
             $el.off(".hcsCatalogSelect2");
             $el.select2("destroy");
         }
     };
+
+    function clearPinStyles(el) {
+        if (!el || !el.style) return;
+        ["position", "top", "left", "right", "bottom", "width", "min-width", "margin", "transform", "z-index", "display", "overflow", "pointer-events"].forEach(function (name) {
+            el.style.removeProperty(name);
+        });
+    }
+
+    function dropdownShell(api) {
+        var adapter = api.dropdown;
+        var $container = adapter && adapter.$dropdownContainer;
+        if ($container && $container.length && $container[0] !== api.$container[0]) return $container;
+        var $parent = api.$dropdown.parent();
+        if ($parent.length && $parent[0] !== api.$container[0] && $parent[0] !== document.body) return $parent;
+        return api.$dropdown;
+    }
+
+    function bindShellGuard($shell) {
+        if (!$shell || !$shell.length || $shell.data("hcsSelect2Guard")) return;
+        $shell.data("hcsSelect2Guard", true);
+        $shell.on("mousedown.hcsDrop mouseup.hcsDrop click.hcsDrop focusin.hcsDrop", function (e) {
+            e.stopPropagation();
+        });
+    }
+
+    function pinDropdown($el) {
+        if ($el.data("hcsSelect2Pinning")) return;
+        var api = $el.data("select2");
+        if (!api || !api.$dropdown || !api.$container || !api.$container.hasClass("select2-container--open")) return;
+        var selection = api.$container.find(".select2-selection")[0];
+        var $dropdown = api.$dropdown;
+        if (!selection || !$dropdown.length || !document.body.contains($dropdown[0])) return;
+        var $shell = dropdownShell(api);
+        if (!$shell.length || $shell[0] === api.$container[0] || $.contains(api.$container[0], $shell[0])) return;
+        $el.data("hcsSelect2Pinning", true);
+        try {
+            bindShellGuard($shell);
+            $shell.addClass("hcs-select2-drop");
+            if ($shell[0] !== $dropdown[0]) {
+                $dropdown[0].style.setProperty("position", "relative", "important");
+                $dropdown[0].style.setProperty("top", "0", "important");
+                $dropdown[0].style.setProperty("left", "0", "important");
+                $dropdown[0].style.setProperty("width", "100%", "important");
+            }
+            var rect = selection.getBoundingClientRect();
+            var shell = $shell[0];
+            var GAP = 8;
+            var pad = 8;
+            shell.style.setProperty("display", "block", "important");
+            shell.style.setProperty("position", "fixed", "important");
+            shell.style.setProperty("left", rect.left + "px", "important");
+            shell.style.setProperty("width", rect.width + "px", "important");
+            shell.style.setProperty("min-width", rect.width + "px", "important");
+            shell.style.setProperty("right", "auto", "important");
+            shell.style.setProperty("margin", "0", "important");
+            shell.style.setProperty("transform", "none", "important");
+            shell.style.setProperty("overflow", "visible", "important");
+            shell.style.setProperty("z-index", "2060", "important");
+            var height = Math.max($dropdown.outerHeight() || 0, shell.offsetHeight || 0, 48);
+            var spaceBelow = window.innerHeight - rect.bottom;
+            var spaceAbove = rect.top;
+            var openBelow = spaceBelow >= Math.min(height + GAP, 160) || spaceBelow >= spaceAbove;
+            if (openBelow) {
+                shell.style.setProperty("top", rect.bottom + "px", "important");
+                shell.style.setProperty("bottom", "auto", "important");
+                if (!$dropdown.hasClass("select2-dropdown--below")) {
+                    $dropdown.removeClass("select2-dropdown--above").addClass("select2-dropdown--below");
+                }
+                if (!api.$container.hasClass("select2-container--below")) {
+                    api.$container.removeClass("select2-container--above").addClass("select2-container--below");
+                }
+            } else {
+                shell.style.setProperty("top", Math.max(pad, rect.top - height - GAP) + "px", "important");
+                shell.style.setProperty("bottom", "auto", "important");
+                if (!$dropdown.hasClass("select2-dropdown--above")) {
+                    $dropdown.removeClass("select2-dropdown--below").addClass("select2-dropdown--above");
+                }
+                if (!api.$container.hasClass("select2-container--above")) {
+                    api.$container.removeClass("select2-container--below").addClass("select2-container--above");
+                }
+            }
+        } finally {
+            $el.removeData("hcsSelect2Pinning");
+        }
+    }
+
+    function schedulePin($el) {
+        if ($el.data("hcsSelect2PinQueued")) return;
+        $el.data("hcsSelect2PinQueued", true);
+        requestAnimationFrame(function () {
+            $el.removeData("hcsSelect2PinQueued");
+            pinDropdown($el);
+        });
+    }
+
+    function bindDropdownPin($el) {
+        unbindDropdownPin($el);
+        var pin = function () { pinDropdown($el); };
+        var onResults = function () { schedulePin($el); };
+        $el.data("hcsSelect2Pin", pin);
+        $el.on("select2:open.hcsPin", function () {
+            var api = $el.data("select2");
+            var $shell = api ? dropdownShell(api) : $();
+            if ($shell.length) {
+                bindShellGuard($shell);
+                $shell.css("pointer-events", "none");
+            }
+            pinDropdown($el);
+            var release = function () {
+                window.removeEventListener("mouseup", release, true);
+                window.removeEventListener("touchend", release, true);
+                $el.removeData("hcsSelect2Release");
+                setTimeout(function () {
+                    if ($shell.length) $shell.css("pointer-events", "");
+                    if (!api || !api.$container || !api.$container.hasClass("select2-container--open")) return;
+                    window.addEventListener("scroll", pin, true);
+                    window.addEventListener("resize", pin);
+                    pinDropdown($el);
+                }, 0);
+            };
+            $el.data("hcsSelect2Release", release);
+            window.addEventListener("mouseup", release, true);
+            window.addEventListener("touchend", release, true);
+            setTimeout(function () { pinDropdown($el); }, 0);
+            if (api && !api._hcsPinResults && typeof api.on === "function") {
+                api._hcsPinResults = true;
+                api.on("results:all", onResults);
+                api.on("results:append", onResults);
+            }
+        });
+        $el.on("select2:closing.hcsPin", function () {
+            window.removeEventListener("scroll", pin, true);
+            window.removeEventListener("resize", pin);
+            var release = $el.data("hcsSelect2Release");
+            if (release) {
+                window.removeEventListener("mouseup", release, true);
+                window.removeEventListener("touchend", release, true);
+                $el.removeData("hcsSelect2Release");
+            }
+            var current = $el.data("select2");
+            if (current && current.$container) clearPinStyles(current.$container[0]);
+        });
+    }
+
+    function unbindDropdownPin($el) {
+        var pin = $el.data("hcsSelect2Pin");
+        if (pin) {
+            window.removeEventListener("scroll", pin, true);
+            window.removeEventListener("resize", pin);
+        }
+        var release = $el.data("hcsSelect2Release");
+        if (release) {
+            window.removeEventListener("mouseup", release, true);
+            window.removeEventListener("touchend", release, true);
+        }
+        $el.off(".hcsPin");
+        $el.removeData("hcsSelect2Pin");
+        $el.removeData("hcsSelect2PinQueued");
+        $el.removeData("hcsSelect2Pinning");
+        $el.removeData("hcsSelect2Release");
+    }
+
+    if (!window._hcsSelect2FocusGuard) {
+        window._hcsSelect2FocusGuard = true;
+        document.addEventListener("focusin", function (e) {
+            var t = e.target;
+            if (t && t.closest && t.closest(".select2-dropdown, .hcs-select2-drop")) {
+                e.stopImmediatePropagation();
+            }
+        }, true);
+    }
 
     window.hcsCreateObjectUrl = function (contentType, bytes) {
         var binary;
@@ -193,6 +370,44 @@
         anchor.click();
         anchor.remove();
         URL.revokeObjectURL(url);
+    };
+})();
+
+window.hcsMatchBlockHeight = (function () {
+    var observers = new WeakMap();
+    function measure(source) {
+        var card = source && source.querySelector ? source.querySelector(":scope > .card") : null;
+        var node = card || source;
+        return node ? Math.round(node.getBoundingClientRect().height) : 0;
+    }
+    function apply(source, target) {
+        if (!source || !target) return;
+        target.style.height = "0px";
+        var height = measure(source);
+        if (height > 0) target.style.height = height + "px";
+    }
+    return {
+        attach: function (source, target) {
+            if (!source || !target) return;
+            var measured = source.querySelector(":scope > .card") || source;
+            var entry = observers.get(target);
+            if (entry && entry.source === measured) {
+                apply(source, target);
+                return;
+            }
+            this.detach(target);
+            apply(source, target);
+            var observer = new ResizeObserver(function () { apply(source, target); });
+            observer.observe(measured);
+            observers.set(target, { source: measured, observer: observer });
+        },
+        detach: function (target) {
+            var entry = target && observers.get(target);
+            if (!entry) return;
+            entry.observer.disconnect();
+            observers.delete(target);
+            target.style.height = "";
+        }
     };
 })();
 

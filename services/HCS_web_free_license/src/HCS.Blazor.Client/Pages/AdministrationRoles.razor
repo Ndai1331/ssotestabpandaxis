@@ -218,8 +218,8 @@
                 <HcsIsolatedTextInput @bind-Value="roleForm.Name" Name="hcsRoleName" Autofocus="true" Placeholder='@L["Roles:NamePlaceholder"].Value' />
             </Field>
             <div class="hcs-role-create-flags">
-                <Check TValue="bool" @bind-Checked="roleForm.IsDefault">@L["Roles:Default"]</Check>
-                <Check TValue="bool" @bind-Checked="roleForm.IsPublic">@L["Roles:Public"]</Check>
+                <Check TValue="bool" @bind-Value="roleForm.IsDefault">@L["Roles:Default"]</Check>
+                <Check TValue="bool" @bind-Value="roleForm.IsPublic">@L["Roles:Public"]</Check>
             </div>
         </ModalBody>
         <ModalFooter>

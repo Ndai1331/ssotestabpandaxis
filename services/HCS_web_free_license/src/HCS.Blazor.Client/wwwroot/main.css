@@ -873,6 +873,15 @@ body:has(.hcs-chat-page) {
     color: var(--hcs-color-primary, var(--color-primary, #00B4A9));
 }
 
+/* Keep info/link icons visible against the white action-button background. */
+.hcs-app-shell .hcs-action-button.btn-outline-info:hover:not(:disabled),
+.hcs-app-shell .hcs-action-button.btn-outline-info:focus-visible,
+.hcs-app-shell .hcs-action-button.btn-outline-info:active:not(:disabled) {
+    background-color: var(--hcs-color-primary-soft);
+    border-color: var(--hcs-color-primary-strong);
+    color: var(--hcs-color-primary-strong);
+}
+
 .hcs-catalog-page .hcs-row-actions .hcs-action-button--edit {
     border-color: var(--color-secondary);
     color: var(--color-secondary);
@@ -972,6 +981,107 @@ body:has(.hcs-chat-page) {
     gap: 1.1rem 1.25rem;
     grid-template-columns: minmax(8rem, 4fr) minmax(12rem, 8fr);
     align-items: start;
+}
+
+/* Bootstrap5 Steps has a fixed-width inner container and connector. */
+.steps.hcs-workflow-steps {
+    display: flex;
+    width: 100%;
+    max-width: 720px;
+    margin: 24px auto 32px;
+    padding: 0;
+    overflow: visible;
+}
+
+.steps.hcs-workflow-steps .step {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+}
+
+.hcs-workflow-steps .step .step-container {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding: 0 8px;
+}
+
+.hcs-workflow-steps .step-circle {
+    box-sizing: border-box;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.hcs-workflow-steps .step-circle::before {
+    display: none;
+}
+
+.hcs-workflow-steps .step + .step::before {
+    content: "";
+    position: absolute;
+    top: 15px;
+    left: calc(-50% + 16px);
+    width: calc(100% - 32px);
+    height: 2px;
+    background: var(--hcs-color-border, #adb5bd);
+}
+
+.hcs-workflow-steps .step.step-active::before,
+.hcs-workflow-steps .step.step-completed::before {
+    background: var(--hcs-color-primary, #00b4a9);
+}
+
+.hcs-workflow-steps .step-text {
+    width: 100%;
+    max-width: none;
+    margin: 12px 0 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    white-space: nowrap;
+    text-align: center;
+    color: var(--hcs-color-ink-muted, #617184);
+}
+
+.hcs-workflow-steps .step-active .step-text {
+    color: var(--hcs-color-primary-strong, #007f7c);
+    font-weight: 600;
+}
+
+.hcs-workflow-steps .step-active .step-circle {
+    background: var(--hcs-color-primary, #00b4a9);
+    border-color: var(--hcs-color-primary, #00b4a9);
+}
+
+@media (max-width: 575.98px) {
+    .steps.hcs-workflow-steps {
+        flex-direction: column;
+        gap: 16px;
+        margin: 16px 0 24px;
+    }
+
+    .hcs-workflow-steps .step .step-container {
+        flex-direction: row;
+        gap: 12px;
+        min-height: 44px;
+        padding: 0;
+    }
+
+    .hcs-workflow-steps .step + .step::before {
+        top: -10px;
+        left: 15px;
+        width: 2px;
+        height: 28px;
+    }
+
+    .hcs-workflow-steps .step-text {
+        width: auto;
+        margin: 0;
+        white-space: normal;
+        text-align: left;
+    }
 }
 
 .hcs-form-row--equal {
@@ -1119,7 +1229,7 @@ body:has(.hcs-chat-page) {
 .hcs-catalog-form .form-select,
 .hcs-catalog-form .numeric-picker,
 .hcs-catalog-form .b-is-datepicker .form-control,
-.hcs-catalog-form .select2-container .select2-selection,
+.hcs-catalog-form .select2-container .select2-selection--single,
 .hcs-document-page input.form-control:not(textarea),
 .hcs-document-page .form-select {
     background-color: var(--catalog-input);
@@ -1232,6 +1342,17 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     padding-top: .15rem;
 }
 
+/* Match the adjacent catalog input height, below its label. */
+@media (min-width: 768px) {
+    .hcs-form-row .hcs-icd-chronic-field {
+        align-self: end;
+        align-items: center;
+        display: flex;
+        min-height: 36px;
+        padding-top: 0;
+    }
+}
+
 .hcs-catalog-active-field .form-check {
     align-items: center;
     display: flex;
@@ -1279,6 +1400,10 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-catalog-modal .hcs-assignee-type .form-check-input {
     margin: 0;
+}
+
+.hcs-catalog-modal .hcs-step-assignee-list {
+    margin: .55rem 0 0;
 }
 
 .hcs-catalog-modal .hcs-allow-return {
@@ -1681,11 +1806,12 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     color: #9aafbc;
 }
 
-.hcs-fc .fc-day-today {
+.hcs-fc .fc-daygrid-day.fc-day-today,
+.hcs-fc .fc-timegrid-col.fc-day-today {
     background: transparent !important;
 }
 
-.hcs-fc .fc-day-today .fc-daygrid-day-number {
+.hcs-fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
     align-items: center;
     background: var(--hcs-color-primary, #00B4A9);
     border-radius: 50%;
@@ -1789,7 +1915,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 
 .hcs-pdf-frame .b-pdf-viewer,
 .hcs-pdf-frame .pdf-viewer-container,
-.hcs-pdf-frame [class*="pdf-viewer"] {
+.hcs-pdf-frame [class*="pdf-viewer"]:not([class*="toolbar"]) {
     height: 100%;
     min-height: 32rem;
 }
@@ -1879,23 +2005,116 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
 }
 
 .hcs-template-split {
-    align-items: stretch;
-    min-height: calc(100dvh - 16rem);
+    display: grid;
+    gap: 1rem;
+    align-items: start;
+}
+
+.hcs-template-form {
+    align-self: start;
+    height: auto;
+    min-height: 0;
+}
+
+.hcs-template-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.hcs-template-preview {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 28rem;
 }
 
 .hcs-template-split .hcs-pdf-pane {
     display: flex;
     flex-direction: column;
-    min-height: 28rem;
-}
-
-.hcs-template-split .hcs-pdf-pane .hcs-pdf-frame--fill,
-.hcs-template-split .hcs-pdf-pane .card {
-    flex: 1 1 auto;
     min-height: 0;
 }
 
-.hcs-catalog-modal--pdf .modal-content {
+.hcs-template-split .hcs-pdf-pane .hcs-pdf-frame--fill {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.hcs-template-preview-empty,
+.hcs-template-split .hcs-pdf-pane .hcs-template-preview-empty {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100%;
+}
+
+.hcs-template-preview-empty .card-body {
+    align-items: center;
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: center;
+}
+
+@media (min-width: 992px) {
+    .hcs-template-split {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .hcs-template-split .hcs-pdf-pane {
+        align-self: start;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .hcs-template-split .hcs-template-preview {
+        flex: 1 1 auto;
+        height: 100%;
+        min-height: 100%;
+        overflow: hidden;
+    }
+
+    .hcs-template-split .hcs-template-preview-empty {
+        min-height: 100%;
+    }
+
+    .hcs-template-split .hcs-pdf-frame,
+    .hcs-template-split .hcs-pdf-frame .b-pdf-viewer,
+    .hcs-template-split .hcs-pdf-frame .pdf-viewer-container,
+    .hcs-template-split .hcs-pdf-frame [class*="pdf-viewer"] {
+        min-height: 0 !important;
+    }
+
+    .hcs-template-split .hcs-pdf-frame {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .hcs-template-split .hcs-pdf-frame > * {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .hcs-template-split .hcs-pdf-frame .overflow-auto {
+        flex: 1 1 auto;
+        height: auto;
+        min-height: 0;
+        overflow: auto !important;
+    }
+}
+
+.hcs-catalog-modal--pdf,
+.hcs-catalog-modal--pdf.modal-content {
     display: flex;
     flex-direction: column;
     height: min(90dvh, 56rem);
@@ -1909,13 +2128,44 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     max-height: none;
     min-height: 0;
     overflow: hidden;
-    padding: 0;
+    padding: var(--hcs-space-4) var(--hcs-space-5) !important;
 }
 
+.hcs-catalog-modal__body--pdf .hcs-pdf-frame,
 .hcs-catalog-modal__body--pdf .hcs-pdf-frame--fill {
-    border-radius: 0;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.hcs-catalog-modal__body--pdf .hcs-pdf-frame > * {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.hcs-catalog-modal__body--pdf .hcs-pdf-frame .b-pdf-viewer,
+.hcs-catalog-modal__body--pdf .hcs-pdf-frame .pdf-viewer-container,
+.hcs-catalog-modal__body--pdf .hcs-pdf-frame [class*="pdf-viewer"]:not([class*="toolbar"]) {
+    min-height: 0 !important;
+}
+
+.hcs-catalog-modal__body--pdf .hcs-pdf-frame [class*="toolbar"] {
+    flex: 0 0 auto;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+.hcs-catalog-modal__body--pdf .hcs-pdf-frame .overflow-auto {
     flex: 1 1 auto;
     min-height: 0;
+    overflow: auto !important;
 }
 
 .hcs-dropzone {

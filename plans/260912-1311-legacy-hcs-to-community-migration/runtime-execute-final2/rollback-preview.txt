@@ -1,0 +1,70 @@
+# ROLLBACK PREVIEW — NEVER EXECUTED BY THE IMPORTER
+# Confirm backups and type exactly: I UNDERSTAND TARGET DATA WILL BE DELETED
+# Then run your approved DBA runbook for ONLY these target databases:
+# hcs_identity, hcs_organization, hcs_document, hcs_work, hcs_collaboration
+# Review and delete ONLY importer-created objects in buckets:
+# hcs-documents, hcs-signing, hcs-work-assets, hcs-collaboration
+# Re-run importer from the last verified source snapshot after cleanup.
+# Migrated tables:
+# - Identity: AbpUsers
+# - Identity: AbpRoles
+# - Identity: AbpUserRoles
+# - Identity: AbpRoleClaims
+# - Identity: AbpPermissionGrants
+# - Identity: AbpPermissions
+# - Identity: AbpPermissionGroups
+# - Identity: AbpClaimTypes
+# - Identity: AbpOrganizationUnits
+# - Identity: AbpOrganizationUnitRoles
+# - Identity: AbpUserOrganizationUnits
+# - Identity: AbpUserClaims
+# - Identity: AbpFeatureGroups
+# - Identity: AbpFeatures
+# - Identity: AbpFeatureValues
+# - Identity: AbpSettingDefinitions
+# - Identity: AbpSettings
+# - Identity: AbpAuditLogs
+# - Identity: AbpAuditLogActions
+# - Identity: AbpEntityChanges
+# - Identity: AbpEntityPropertyChanges
+# - Identity: AbpSecurityLogs
+# - Identity: AbpSessions
+# - Identity: HcsLanguages
+# - Identity: HcsLanguageTexts
+# - Organization: Departments
+# - Organization: Units
+# - Organization: Positions
+# - Organization: MasterDataItems
+# - Organization: UserOrganizationMappings
+# - Document: Documents
+# - Document: DocumentFiles
+# - Document: DocumentHistories
+# - Document: DocumentAssignments
+# - Document: WorkflowDefinitions
+# - Document: WorkflowTemplates
+# - Document: WorkflowSteps
+# - Document: WorkflowInstances
+# - Document: SigningCredentials
+# - Document: UserSignatures
+# - Work: Projects
+# - Work: ProjectMembers
+# - Work: ProjectTasks
+# - Work: ProjectTaskAssignments
+# - Work: ProjectTaskDocuments
+# - Work: CalendarEvents
+# - Work: CalendarEventParticipants
+# - Work: SurveyLocations
+# - Work: SurveySessions
+# - Work: SurveyCriteria
+# - Work: SurveyResults
+# - Work: SurveyFiles
+# - Work: ReportReadModels
+# - Collaboration: CollaborationConversations
+# - Collaboration: CollaborationConversationMembers
+# - Collaboration: CollaborationMessages
+# - Collaboration: CollaborationAttachments
+# - Collaboration: CollaborationInbox
+# - Collaboration: CollaborationNotifications
+# - Collaboration: CollaborationNotificationReceivers
+# - Collaboration: CollaborationPushDeviceTokens
+# Unmapped source rows are retained in legacy_migration.source_rows in their routed target database.

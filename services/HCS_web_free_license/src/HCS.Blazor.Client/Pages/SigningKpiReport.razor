@@ -1,62 +1,142 @@
 @page "/signing-kpi-report"
 @attribute [Authorize(Policy = "Documents.Signing.Report")]
+@using HCS.Blazor.Client.Components.Charts
 @inherits HCSComponentBase
 @inject DocumentClient Documents
-@inject WorkManagementClient Work
+@inject NavigationManager Navigation
 
-<PageTitle>@L["Menu:SigningKpi"] · HCS</PageTitle>
-<section class="hcs-document-page">
-    <header class="hcs-document-page__header"><div><h1>@L["Feature:SigningKpi"]</h1></div><Button Color="Color.Primary" Outline="true" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button></header>
-    <div class="row g-3 mb-4">
-        <div class="col-md-4"><Card><CardBody><p class="mb-1">@L["Feature:Completed"]</p><h2>@completed</h2></CardBody></Card></div>
-        <div class="col-md-4"><Card><CardBody><p class="mb-1">@L["Feature:Failed"]</p><h2>@failed</h2></CardBody></Card></div>
-        <div class="col-md-4"><Card><CardBody><p class="mb-1">@L["Feature:Attempts"]</p><h2>@attempts</h2></CardBody></Card></div>
-    </div>
-    <Card Class="mb-4"><CardHeader>@L["Menu:Reports"] · signing</CardHeader>
-        <CardBody Class="p-0">
-            @if (rows.Count == 0) { <p class="p-4 mb-0">@L["Catalog:EmptyTitle"]</p> }
-            else {
-                <table class="table mb-0"><thead><tr><th>@L["Catalog:Code"]</th><th>@L["Catalog:Name"]</th><th>@L["Catalog:Status"]</th></tr></thead>
-                <tbody>@foreach (var row in rows) { <tr><td>@row.Key</td><td>@row.Label</td><td>@row.Value</td></tr> }</tbody></table>
-            }
+<PageTitle>KPI ký số · HCS</PageTitle>
+<section class="hcs-document-page" aria-labelledby="signing-kpi-title">
+    <header class="hcs-document-page__header">
+        <div>
+            <p class="hcs-document-page__eyebrow">Báo cáo</p>
+            <h1 id="signing-kpi-title">KPI ký số</h1>
+            <p class="text-muted mb-0">Tổng hợp hồ sơ trình ký và thời gian xử lý từ hệ thống HCS.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" type="button" @onclick="LoadAsync" disabled="@loading">@(loading ? "Đang tải…" : "Làm mới")</button>
+            <button class="btn btn-success" type="button" @onclick="ExportAsync" disabled="@(loading || report is null)">Xuất CSV</button>
+        </div>
+    </header>
+
+    <Card Class="mb-4">
+        <CardBody>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <Field>
+                        <FieldLabel>Từ ngày</FieldLabel>
+                        <HcsDatePicker TValue="DateTime?" @bind-Value="fromDate" />
+                    </Field>
+                </div>
+                <div class="col-md-4">
+                    <Field>
+                        <FieldLabel>Đến ngày</FieldLabel>
+                        <HcsDatePicker TValue="DateTime?" @bind-Value="toDate" />
+                    </Field>
+                </div>
+                <div class="col-md-4 text-muted small">Chọn khoảng trống để xem toàn bộ dữ liệu.</div>
+            </div>
         </CardBody>
     </Card>
-    <Card><CardHeader>@L["Feature:Attempts"]</CardHeader>
-        <CardBody Class="p-0">
-            <table class="table mb-0"><thead><tr><th>@L["Menu:Documents"]</th><th>@L["Feature:Completed"]</th><th>@L["Feature:Failed"]</th></tr></thead>
-            <tbody>
-            @foreach (var report in reports)
-            {
-                <tr><td><a href="@($"/document-detail/{report.DocumentId}")">@report.DocumentId.ToString("N")[..8]</a></td><td>@report.Completed</td><td>@report.Failed</td></tr>
-            }
-            </tbody></table>
-        </CardBody>
-    </Card>
+
+    @if (loading)
+    {
+        <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Đang tải báo cáo…</div>
+    }
+    else if (!string.IsNullOrWhiteSpace(error))
+    {
+        <Alert Color="Color.Warning">@error</Alert>
+    }
+    else if (report is null || !report.HcsAvailable)
+    {
+        <div class="hcs-empty py-5"><i class="fa fa-chart-column" aria-hidden="true"></i><h2>Chưa có số liệu</h2><p>Chưa thể đọc dữ liệu workflow trình ký.</p></div>
+    }
+    else
+    {
+        var metrics = report.Combined;
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Tổng hồ sơ</small><h2 class="mb-0">@metrics.TotalCount</h2></CardBody></Card></div>
+            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đã hoàn tất</small><h2 class="mb-0 text-success">@metrics.CompletedCount <small class="text-muted">(@FmtPct(metrics.CompletedRatePercent))</small></h2></CardBody></Card></div>
+            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đang xử lý</small><h2 class="mb-0 text-primary">@metrics.ProcessingIncludingNewCount</h2></CardBody></Card></div>
+            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đúng hạn</small><h2 class="mb-0">@FmtPct(metrics.OnTimeRatePercent)</h2></CardBody></Card></div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-5">
+                <Card Class="h-100"><CardHeader>Phân bổ trạng thái</CardHeader><CardBody>
+                    @if (report.PieSlices.Count > 0)
+                    {
+                        <PieChart ChartId="signing-kpi-status" Labels="PieLabels" Data="PieData" BackgroundColors="PieColors" IsDoughnut="true" />
+                    }
+                    else { <p class="text-muted mb-0">Chưa có hồ sơ trong khoảng thời gian này.</p> }
+                </CardBody></Card>
+            </div>
+            <div class="col-lg-7">
+                <Card Class="h-100"><CardHeader>Chỉ số xử lý</CardHeader><CardBody>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-7">Thời gian xử lý trung bình</dt><dd class="col-sm-5">@(metrics.AverageProcessingHours?.ToString("0.##") ?? "-") giờ</dd>
+                        <dt class="col-sm-7">Từ chối</dt><dd class="col-sm-5">@metrics.RejectedCount (@FmtPct(metrics.RejectedRatePercent))</dd>
+                        <dt class="col-sm-7">Đã hủy</dt><dd class="col-sm-5">@metrics.CancelledCount (@FmtPct(metrics.CancelledRatePercent))</dd>
+                        <dt class="col-sm-7">Đúng hạn / có hạn</dt><dd class="col-sm-5">@metrics.OnTimeCount / @metrics.CompletedWithDeadlineCount</dd>
+                    </dl>
+                </CardBody></Card>
+            </div>
+        </div>
+
+        <Card>
+            <CardHeader>Thống kê theo quy trình</CardHeader>
+            <CardBody Class="p-0">
+                <div class="table-responsive"><table class="table table-hover align-middle mb-0">
+                    <thead><tr><th>Nguồn</th><th>Mã quy trình</th><th>Tên quy trình</th><th>Tổng</th><th>Hoàn tất</th><th>Từ chối</th><th>Đang xử lý</th><th>TB giờ</th><th>Đúng hạn</th></tr></thead>
+                    <tbody>
+                    @foreach (var group in report.Groups)
+                    {
+                        <tr><td>@group.Source</td><td>@group.GroupCode</td><td>@group.GroupName</td><td>@group.Metrics.TotalCount</td><td>@group.Metrics.CompletedCount</td><td>@group.Metrics.RejectedCount</td><td>@group.Metrics.ProcessingIncludingNewCount</td><td>@(group.Metrics.AverageProcessingHours?.ToString("0.##") ?? "-")</td><td>@FmtPct(group.Metrics.OnTimeRatePercent)</td></tr>
+                    }
+                    </tbody>
+                </table></div>
+            </CardBody>
+        </Card>
+    }
 </section>
+
 @code {
-    private readonly List<ReportRowDto> rows = [];
-    private readonly List<SigningReportDto> reports = [];
-    private int completed, failed, attempts;
+    private DateTime? fromDate = new(DateTime.Today.Year, 1, 1);
+    private DateTime? toDate = DateTime.Today;
+    private SigningKpiReportDto? report;
+    private bool loading;
+    private string? error;
+
+    private List<string> PieLabels => report?.PieSlices.Select(x => x.Label).ToList() ?? [];
+    private List<double> PieData => report?.PieSlices.Select(x => (double)x.Value).ToList() ?? [];
+    private List<string> PieColors => report?.PieSlices.Select(x => x.Color).ToList() ?? [];
 
     protected override Task OnInitializedAsync() => LoadAsync();
+
     private async Task LoadAsync()
     {
-        completed = failed = attempts = 0; rows.Clear(); reports.Clear();
+        loading = true;
+        error = null;
         try
         {
-            try { rows.AddRange(await Work.GetReportsAsync("signing")); } catch { /* reports permission is independent */ }
-            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 50));
-            foreach (var document in page.Items.Where(x => x.Files.Count > 0).Take(20))
-            {
-                try
-                {
-                    var report = await Documents.GetSigningReportAsync(document.Id);
-                    reports.Add(report);
-                    completed += report.Completed; failed += report.Failed; attempts += report.Attempts.Count;
-                }
-                catch { /* skip documents without signing access */ }
-            }
+            var to = toDate?.Date.AddDays(1).AddTicks(-1);
+            report = await Documents.GetSigningKpiAsync(new SigningKpiQuery(null, fromDate?.Date, to));
+            if (!report.HcsAvailable) error = report.HcsError ?? "Không thể đọc dữ liệu KPI ký số.";
         }
-        catch (Exception ex) { await NotifyErrorAsync(ex); }
+        catch (Exception exception)
+        {
+            report = null;
+            error = MapBffError(exception);
+        }
+        finally { loading = false; }
     }
+
+    private Task ExportAsync()
+    {
+        Navigation.NavigateTo(DocumentClient.GetSigningKpiExportUri(new SigningKpiQuery(null, fromDate?.Date,
+            toDate?.Date.AddDays(1).AddTicks(-1))), forceLoad: true);
+        return Task.CompletedTask;
+    }
+
+    private static string FmtPct(double? value) => value.HasValue ? $"{value:0.##}%" : "-";
 }

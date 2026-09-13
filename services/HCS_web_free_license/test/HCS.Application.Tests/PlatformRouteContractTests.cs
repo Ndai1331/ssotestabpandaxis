@@ -1,4 +1,5 @@
 using HCS.Auditing;
+using HCS.Controllers.Identity;
 using HCS.Controllers.Auditing;
 using HCS.Controllers.Localization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,20 @@ public sealed class PlatformRouteContractTests
 
         Assert.Contains(legacyRoute, routes);
         Assert.Contains(gatewayRoute, routes);
+    }
+
+    [Fact]
+    public void Organization_unit_management_is_exposed_under_identity_route()
+    {
+        var route = typeof(OrganizationUnitManagementController)
+            .GetCustomAttributes(typeof(RouteAttribute), true)
+            .Cast<RouteAttribute>()
+            .Single()
+            .Template;
+
+        Assert.Equal("api/identity/organization-units", route);
+        Assert.NotNull(typeof(OrganizationUnitManagementController)
+            .GetCustomAttribute<AuthorizeAttribute>());
     }
 
     [Fact]

@@ -17,6 +17,18 @@ public sealed class DomainInvariantTests
     }
 
     [Fact]
+    public void Project_change_updates_owner_department()
+    {
+        var departmentId = Guid.NewGuid();
+        var start = DateTime.UtcNow;
+        var project = new Project(Guid.NewGuid(), "P-1", "Project", start, start.AddDays(1), "Active", null, Guid.NewGuid());
+        project.Change("Project", null, start, start.AddDays(1), "Active", departmentId);
+        Assert.Equal(departmentId, project.OwnerDepartmentId);
+        project.Change("Project", null, start, start.AddDays(1), "Active", null);
+        Assert.Null(project.OwnerDepartmentId);
+    }
+
+    [Fact]
     public void Project_rejects_inverted_date_range()
     {
         Assert.Throws<BusinessException>(() => new Project(Guid.NewGuid(), "P-1", "Project",

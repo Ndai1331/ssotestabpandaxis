@@ -149,7 +149,7 @@
                             <DisplayTemplate Context="cell"><span class="hcs-status-badge @DocumentStatusUi.BadgeClass(cell.Item.Status)">@L[DocumentStatusUi.TextKey(cell.Item.Status)]</span></DisplayTemplate>
                         </DataGridColumn>
                         <DataGridColumn TItem="DocumentDto" Caption="@L["Feature:Files"].Value">
-                            <DisplayTemplate Context="cell">@cell.Item.Files.Count</DisplayTemplate>
+                            <DisplayTemplate Context="cell">@cell.Item.FileCount</DisplayTemplate>
                         </DataGridColumn>
                     </DataGridColumns>
                 </DataGrid>

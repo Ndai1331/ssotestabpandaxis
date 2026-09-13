@@ -21,7 +21,7 @@
         <Button Color="Color.Primary" Outline="true" Clicked="GoBackToList">@L["Feature:BackToList"]</Button>
     </header>
 
-    <Steps SelectedStep="@selectedStep" SelectedStepChanged="OnStepChanged">
+    <Steps Class="hcs-workflow-steps" SelectedStep="@selectedStep" SelectedStepChanged="OnStepChanged">
         <Items>
             <Step Name="step1" Completed="Id.HasValue"><Marker><Icon Name="IconName.FileAlt" /></Marker><Caption>@L["Work:CreateWorkflow"]</Caption></Step>
             <Step Name="step2" Completed="template is not null"><Marker><Icon Name="IconName.File" /></Marker><Caption>@L["Work:CreateTemplate"]</Caption></Step>
@@ -49,7 +49,7 @@
                                 <SelectItem Value="@("PARALLEL")">@L["Work:SignMode.PARALLEL"]</SelectItem>
                             </Select>
                         </Field>
-                        <Field><Check TValue="bool" @bind-Checked="form.IsActive">@L["Work:IsActive"]</Check></Field>
+                        <Field><Check TValue="bool" @bind-Value="form.IsActive">@L["Work:IsActive"]</Check></Field>
                         <AuthorizeView Policy="Documents.Workflow.Manage">
                             <Authorized>
                                 <WizardFooter SelectedStep="@selectedStep" SelectedStepChanged="OnStepChanged" OnSave="SaveWorkflowAsync" SaveDisabled="@isSaving" />
@@ -65,8 +65,8 @@
                 }
                 else
                 {
-                    <div class="row g-3 hcs-template-split">
-                        <div class="col-lg-6">
+                    <div class="hcs-template-split">
+                        <div @ref="templateFormPane" class="hcs-template-form">
                             <Card><CardBody>
                                 <div class="hcs-catalog-form">
                                     <div class="hcs-form-row">
@@ -101,25 +101,33 @@
                                     </Field>
                                     <AuthorizeView Policy="Documents.Workflow.Manage">
                                         <Authorized>
+                                            <div class="hcs-template-actions">
                                             <Button Color="Color.Success" Clicked="SaveTemplateAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
                                             @if (template is not null)
                                             {
-                                                <Button Color="Color.Light" Class="ms-2" Clicked="SetActiveAsync" Disabled="@(template.IsActive)">@L["Work:SetTemplateActive"]</Button>
+                                                <Button Color="Color.Light" Clicked="SetActiveAsync" Disabled="@(template.IsActive)">@L["Work:SetTemplateActive"]</Button>
                                             }
+                                            </div>
                                         </Authorized>
                                     </AuthorizeView>
                                 </div>
                             </CardBody></Card>
                         </div>
-                        <div class="col-lg-6 hcs-pdf-pane">
+                        <div @ref="templatePdfPane" class="hcs-pdf-pane">
+                            <div class="hcs-template-preview">
                             @if (!string.IsNullOrWhiteSpace(pdfUrl))
                             {
-                                <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(45)" />
+                                <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" MatchParent="true" />
                             }
                             else
                             {
-                                <Card><CardBody><p class="text-muted mb-0">@L["Work:PreviewPdfOnly"]</p></CardBody></Card>
+                                <Card Class="hcs-template-preview-empty">
+                                    <CardBody>
+                                        <p class="text-muted mb-0">@L["Work:PreviewPdfOnly"]</p>
+                                    </CardBody>
+                                </Card>
                             }
+                            </div>
                         </div>
                     </div>
                     <WizardFooter SelectedStep="@selectedStep" SelectedStepChanged="OnStepChanged" OnSave="SaveTemplateAsync" />
@@ -193,7 +201,7 @@
                     </Field>
                 </div>
                 <Field Class="hcs-allow-return">
-                    <Check TValue="bool" @bind-Checked="editingStep.AllowReturn">@L["Work:AllowReturn"]</Check>
+                    <Check TValue="bool" @bind-Value="editingStep.AllowReturn">@L["Work:AllowReturn"]</Check>
                 </Field>
                 @if (editingStep.Type == "VIEW")
                 {
@@ -203,12 +211,27 @@
                                               EmptyMessage="@L["Catalog:EmptyTitle"]" />
                     </Field>
                     <Field><FieldLabel>@L["Work:Assignee"]</FieldLabel>
-                        <UserSelect2 Multiple="true" Values="editingStep.UserIds"
-                                     ValuesChanged="ids => editingStep.UserIds = ids.ToList()"
-                                     SelectedItems="@ContactItems(editingStep.UserIds)"
-                                     SelectedTexts="@UserNames(editingStep.UserIds)"
+                        <UserSelect2 @key="@($"view-user-{editingStep.Key}")"
+                                     Value="viewAssigneePick"
+                                     ValueChanged="OnViewAssigneeChangedAsync"
+                                     SelectedItem="@ContactItem(viewAssigneePick)"
                                      Placeholder="@L["Chat:SelectContacts"]"
-                                     Search="SearchContactsAsync" />
+                                     SelectedText="@ContactName(viewAssigneePick)"
+                                     Search="SearchViewContactsAsync" />
+                        @if (editingStep.UserIds.Count > 0)
+                        {
+                            <ul class="hcs-member-list hcs-step-assignee-list">
+                                @foreach (var userId in editingStep.UserIds)
+                                {
+                                    <li class="hcs-member-list__item">
+                                        <span class="hcs-member-list__meta">
+                                            <strong class="hcs-member-list__name">@(string.IsNullOrWhiteSpace(ContactName(userId)) ? userId.ToString("N")[..8] : ContactName(userId))</strong>
+                                        </span>
+                                        <Button Color="Color.Danger" Size="Size.Small" Outline="true" Class="hcs-member-list__remove" Clicked="() => RemoveViewAssignee(userId)">@L["Catalog:Delete"]</Button>
+                                    </li>
+                                }
+                            </ul>
+                        }
                     </Field>
                     <Field><FieldLabel>@L["Feature:Role"]</FieldLabel>
                         <CatalogSelect2 Value="editingStep.RoleId"
@@ -263,7 +286,7 @@
         }
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
-        <Button Color="Color.Secondary" Clicked="() => stepModal!.Hide()">@L["Catalog:Cancel"]</Button>
+        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => stepModal!.Hide()">@L["Catalog:Cancel"]</Button>
         <Button Color="Color.Primary" Clicked="CloseStepModal">@L["Catalog:SaveChanges"]</Button>
     </ModalFooter>
 </ModalContent></Modal>
@@ -280,8 +303,11 @@
     private Modal? stepModal;
     private string selectedStep = "step1";
     private string? pdfUrl;
+    private Guid? viewAssigneePick;
     private bool isSaving, loaded, isNewStep;
     private Guid? loadedDefinitionId;
+    private ElementReference templateFormPane;
+    private ElementReference templatePdfPane;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -332,6 +358,17 @@
             return;
         }
         selectedStep = name;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (selectedStep != "step2" || Id is null) return;
+        try
+        {
+            await Js.InvokeVoidAsync("hcsMatchBlockHeight.attach", templateFormPane, templatePdfPane);
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
     }
     private async Task LoadDefinitionAsync(Guid id)
     {
@@ -475,6 +512,7 @@
     private async Task AddStep()
     {
         isNewStep = true;
+        viewAssigneePick = null;
         editingStep = new StepDraft($"step{form.Steps.Count + 1}", L["Feature:StepName"], "PROCESS", "Documents.Workflow.Decide")
         {
             SlaDays = 1
@@ -484,6 +522,7 @@
     private async Task EditStep(StepDraft step)
     {
         isNewStep = false;
+        viewAssigneePick = null;
         editingStep = step;
         if (stepModal is not null) await stepModal.Show();
     }
@@ -496,6 +535,7 @@
         editingStep.RoleId = null;
         editingStep.UserIds = [];
         editingStep.DepartmentIds = [];
+        viewAssigneePick = null;
     }
     private async Task RemoveStep(StepDraft step)
     {
@@ -613,8 +653,6 @@
     private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
     private CatalogSelect2Item? ContactItem(Guid? id) =>
         contacts.FirstOrDefault(x => x.Id == id) is { } contact ? CatalogSelect2Cache.UserItem(contact) : null;
-    private IReadOnlyList<CatalogSelect2Item> ContactItems(IEnumerable<Guid> ids) =>
-        ids.Select(id => ContactItem(id)).OfType<CatalogSelect2Item>().ToList();
     private string RoleName(Guid? id) => CatalogSelect2Cache.TextFor(roles, id, x => x.Id, x => x.Name);
     private const string SpecificUserAssignee = "SpecificUser";
     private const string RoleInSubmitterOuAssignee = "RoleInSubmitterOu";
@@ -635,7 +673,6 @@
             editingStep.RoleId = null;
         await InvokeAsync(StateHasChanged);
     }
-    private IReadOnlyList<string> UserNames(IEnumerable<Guid> ids) => CatalogSelect2Cache.TextsFor(contacts, ids, x => x.Id, x => x.DisplayName);
     private Task<CatalogSelect2SearchResponse> SearchRolesAsync(string term, int page)
     {
         var found = roles.Where(x => string.IsNullOrWhiteSpace(term)
@@ -647,6 +684,30 @@
         var found = kinds.Where(x => string.IsNullOrWhiteSpace(term) || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
         return Task.FromResult(CatalogSelect2Cache.Merge(kinds, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
     }
+    private async Task OnViewAssigneeChangedAsync(Guid? id)
+    {
+        if (editingStep is null) return;
+        if (id is { } userId && !editingStep.UserIds.Contains(userId))
+            editingStep.UserIds.Add(userId);
+        viewAssigneePick = null;
+    }
+
+    private void RemoveViewAssignee(Guid userId)
+    {
+        editingStep?.UserIds.Remove(userId);
+    }
+
+    private async Task<CatalogSelect2SearchResponse> SearchViewContactsAsync(string term, int page)
+    {
+        var result = await SearchContactsAsync(term, page);
+        var selected = editingStep?.UserIds ?? [];
+        if (selected.Count == 0) return result;
+        return result with
+        {
+            Results = result.Results.Where(x => !Guid.TryParse(x.Id, out var id) || !selected.Contains(id)).ToList()
+        };
+    }
+
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
         var found = await Chat.GetContactsAsync(term, 50);
@@ -654,6 +715,7 @@
     }
     public async ValueTask DisposeAsync()
     {
+        try { await Js.InvokeVoidAsync("hcsMatchBlockHeight.detach", templatePdfPane); } catch { }
         try { await RevokePdfAsync(); } catch { }
     }
 

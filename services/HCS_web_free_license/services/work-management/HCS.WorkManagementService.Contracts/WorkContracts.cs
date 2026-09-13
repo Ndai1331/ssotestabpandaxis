@@ -24,7 +24,8 @@ public sealed record ProjectDetailDto(ProjectDto Project, IReadOnlyList<ProjectM
     IReadOnlyList<ProjectTaskDto> Tasks);
 public sealed record CreateProjectDto(string Code, string Name, string? Description, DateTime StartDate,
     DateTime EndDate, string Status, Guid? OwnerDepartmentId);
-public sealed record UpdateProjectDto(string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status);
+public sealed record UpdateProjectDto(string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status,
+    Guid? OwnerDepartmentId);
 public sealed record ProjectMemberDto(Guid Id, Guid ProjectId, Guid UserId, string Role, bool IsActive);
 public sealed record AddProjectMemberDto(Guid UserId, string Role);
 
@@ -91,11 +92,11 @@ public sealed record SurveySessionDto(Guid Id, string Code, string Name, DateTim
 public sealed record SurveyResultDto(Guid Id, Guid SessionId, Guid CriteriaId, Guid? RespondentUserId,
     decimal Score, string? Comment);
 public sealed record CreateSurveyCriteriaDto(string Code, string Name, int SortOrder,
-    Guid? LocationId = null, string? Image = null);
+    Guid? LocationId = null, string? Image = null, bool IsActive = true);
 public sealed record UpdateSurveyCriteriaDto(string Name, int SortOrder, bool IsActive,
     Guid? LocationId = null, string? Image = null);
 public sealed record CreateSurveyLocationDto(string Code, string Name, Guid? OrganizationUnitId,
-    string? Description = null);
+    string? Description = null, bool IsActive = true);
 public sealed record UpdateSurveyLocationDto(string Name, Guid? OrganizationUnitId, bool IsActive,
     string? Description = null);
 public sealed record CreateSurveySessionDto(string Code, string Name, DateTime StartsAt, DateTime EndsAt, Guid? LocationId);

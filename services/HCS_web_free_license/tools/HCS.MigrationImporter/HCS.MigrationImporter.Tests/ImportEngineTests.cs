@@ -79,6 +79,29 @@ public sealed class ImportEngineTests
     }
 
     [Theory]
+    [InlineData("LOAI_VB", "DocumentType")]
+    [InlineData("LINH_VUC_VB", "Sector")]
+    [InlineData("MUC_DO_KHAN", "UrgencyLevel")]
+    [InlineData("MUC_DO_MAT", "ConfidentialityLevel")]
+    [InlineData("HINH_THUC_XL", "ProcessingMethod")]
+    [InlineData("TRANG_THAI_VB", "DocumentStatus")]
+    [InlineData("LOAI_KY", "SigningMethod")]
+    [InlineData("LOAI_SU_KIEN", "EventType")]
+    public void Master_data_transform_maps_legacy_type_to_the_community_type(string legacyType, string expectedType)
+    {
+        var table = MigrationManifest.Tables.Single(x => x.SourceTable == "AppMasterDatas");
+        var row = Row("AppMasterDatas",
+            ("Id", Guid.NewGuid().ToString()),
+            ("Type", legacyType),
+            ("Code", "TEST"),
+            ("Name", "Test"));
+
+        var transformed = LegacyRowTransformer.Transform(table, row, new Dictionary<string, Guid?>(), new MigrationLookup());
+
+        Assert.Equal(expectedType, transformed.Values["Type"]!.GetValue<string>());
+    }
+
+    [Theory]
     [InlineData("SaasTenants")]
     [InlineData("AbpGdprRequests")]
     [InlineData("TextTemplateContents")]

@@ -1,0 +1,27 @@
+{
+  "StartedAt": "2026-09-12T08:25:48.4288283+00:00",
+  "CompletedAt": "2026-09-12T08:25:49.7046615+00:00",
+  "DryRun": false,
+  "Tables": [
+    {
+      "Table": "ChatMessageFiles",
+      "SourceRows": 1,
+      "UpsertedRows": 0,
+      "SkippedRows": 1,
+      "Checksum": "0bc4dbfad5c81ffc10af1fd73cafff559125c97126c48a417b301fae331d0b96"
+    }
+  ],
+  "DuplicateUsers": [],
+  "MissingUsers": [],
+  "UnmatchedUsers": [],
+  "RelationshipIssues": [],
+  "BlobIssues": [],
+  "ArchivedTables": [
+    {
+      "Table": "ChatMessageFiles__conflicts",
+      "Database": 4,
+      "Rows": 1
+    }
+  ],
+  "LegacyIdentityPreserved": true
+}

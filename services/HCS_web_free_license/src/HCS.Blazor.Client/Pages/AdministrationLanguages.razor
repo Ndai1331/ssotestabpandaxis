@@ -178,10 +178,10 @@
                 @if (!string.IsNullOrWhiteSpace(displayNameError)) { <div class="hcs-field-error">@displayNameError</div> }
             </Field>
             <Field Class="hcs-language-checks">
-                <Check TValue="bool" Checked="@form.IsEnabled" CheckedChanged="OnEnabledChanged" Disabled="@form.IsDefault">
+                <Check TValue="bool" Value="@form.IsEnabled" ValueChanged="OnEnabledChanged" Disabled="@form.IsDefault">
                     @L["Languages:IsEnabled"]
                 </Check>
-                <Check TValue="bool" Checked="@form.IsDefault" CheckedChanged="OnDefaultChanged" Disabled="@isEditingCurrentDefault">
+                <Check TValue="bool" Value="@form.IsDefault" ValueChanged="OnDefaultChanged" Disabled="@isEditingCurrentDefault">
                     @L["Languages:IsDefault"]
                 </Check>
                 @if (form.IsDefault)
