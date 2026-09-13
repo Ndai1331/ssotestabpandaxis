@@ -37,18 +37,22 @@
                 </Field>
                 @if (allowDocumentPicker && HasWorkflowTemplateFile)
                 {
-                    <Card Class="mt-2 mb-2 border-info">
-                        <CardBody>
-                            <Check TValue="bool" Value="useWorkflowTemplateFile"
-                                   ValueChanged="OnUseWorkflowTemplateFileChanged">
-                                @L["Work:UseTemplateFile"]
-                            </Check>
-                            <div class="hcs-template-file-box mt-2">
-                                <i class="fa fa-file-word me-2"></i>
-                                <span>@WorkflowTemplateFileName</span>
-                            </div>
-                        </CardBody>
-                    </Card>
+                    <div class="sign-template">
+                        <label class="checkbox">
+                            <input type="checkbox" checked="@useWorkflowTemplateFile"
+                                   @onchange="OnTemplateToggle" />
+                            @L["Work:UseTemplateFile"]
+                        </label>
+                        <div class="vb-drop vb-file-chip has-file">
+                            <span class="vb-file-icon" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                            </span>
+                            <span class="vb-file-copy">
+                                <strong>@L["Work:TemplateFile"]</strong>
+                                <span class="vb-file-chosen">@WorkflowTemplateFileName</span>
+                            </span>
+                        </div>
+                    </div>
                 }
                 @if (selected is not null)
                 {
@@ -102,19 +106,17 @@
                     <textarea class="form-control" rows="3" maxlength="2000" @bind="signingContent"></textarea>
                 </Field>
                 <Field><FieldLabel>@L["Feature:Files"]</FieldLabel>
-                    <div class="hcs-dropzone">
-                        <InputFile class="form-control" OnChange="AttachFilesAsync" accept=".pdf,.docx,.png,.jpeg,.jpg" multiple />
-                        <p class="hcs-dropzone__hint mb-0">@L["Work:DropFileHere"]</p>
-                    </div>
-                    @if (attachedNames.Count > 0)
-                    {
-                        <ul class="small mt-2 mb-0">
-                            @foreach (var name in attachedNames)
-                            {
-                                <li>@name</li>
-                            }
-                        </ul>
-                    }
+                    <label class="vb-drop vb-file-chip @(HasAttachedFiles ? "has-file" : null)">
+                        <InputFile OnChange="AttachFilesAsync" accept=".pdf,.docx,.png,.jpeg,.jpg" multiple />
+                        <span class="vb-file-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                        </span>
+                        <span class="vb-file-copy">
+                            <strong>@L["Feature:Files"]</strong>
+                            <span class="vb-file-chosen">@AttachedFilesLabel</span>
+                        </span>
+                        <span class="vb-file-cta">@L["Work:ChooseFile"]</span>
+                    </label>
                 </Field>
             </div>
         </ModalBody>
@@ -247,6 +249,9 @@
     private IReadOnlyList<WorkflowAssigneeCandidateDto> CandidatesFor(string code) =>
         candidatesByStep.TryGetValue(code, out var list) ? list : [];
 
+    private void OnTemplateToggle(ChangeEventArgs args) =>
+        OnUseWorkflowTemplateFileChanged(args.Value is true);
+
     private void OnUseWorkflowTemplateFileChanged(bool value)
     {
         useWorkflowTemplateFile = value;
@@ -317,6 +322,10 @@
     private static bool IsStartableDefinition(WorkflowDefinitionDto definition) =>
         definition.IsActive && definition.Steps.Any(x => !string.Equals(x.Type, "VIEW", StringComparison.OrdinalIgnoreCase));
     private bool HasWorkflowTemplateFile => selectedTemplate?.PdfFileId is not null || selectedTemplate?.WordFileId is not null;
+    private bool HasAttachedFiles => attachedNames.Count > 0;
+    private string AttachedFilesLabel => attachedNames.Count == 0
+        ? L["Work:NoFileChosen"]
+        : string.Join(", ", attachedNames);
     private string WorkflowTemplateFileName => selectedTemplate?.PdfFileName ?? selectedTemplate?.WordFileName ?? selectedTemplate?.Name ?? "";
     private string ContactName(Guid? id) => id is not { } userId
         ? ""

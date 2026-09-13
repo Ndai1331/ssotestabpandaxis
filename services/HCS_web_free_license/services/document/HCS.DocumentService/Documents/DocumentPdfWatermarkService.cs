@@ -8,7 +8,7 @@ public sealed class DocumentPdfWatermarkService(
     DocumentFileService files,
     IHttpContextAccessor httpContext)
 {
-    public async Task<(DocumentFile File, byte[] Bytes)> OpenAsync(
+    public async Task<(DocumentFile File, byte[] Bytes, string DownloadFileName)> OpenAsync(
         Guid documentId,
         Guid fileId,
         CancellationToken cancellationToken = default)
@@ -20,11 +20,11 @@ public sealed class DocumentPdfWatermarkService(
         var bytes = buffer.ToArray();
 
         if (!string.Equals(result.File.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
-            return (result.File, bytes);
+            return (result.File, bytes, result.DownloadFileName);
 
         var user = CurrentUserLabel(httpContext.HttpContext?.User);
         var stamp = $"HCS · {user} · {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
-        return (result.File, Stamp(bytes, stamp));
+        return (result.File, Stamp(bytes, stamp), result.DownloadFileName);
     }
 
     private static byte[] Stamp(byte[] source, string text)

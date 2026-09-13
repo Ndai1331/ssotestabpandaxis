@@ -45,6 +45,10 @@ public sealed class OrganizationCatalogClient(IHttpClientFactory httpClientFacto
         CancellationToken cancellationToken = default) =>
         GetLookupAsync<DepartmentCatalogDto>(OrganizationCatalogKind.Department, cancellationToken);
 
+    public Task<IReadOnlyList<UnitCatalogDto>> GetUnitLookupAsync(
+        CancellationToken cancellationToken = default) =>
+        GetLookupAsync<UnitCatalogDto>(OrganizationCatalogKind.Unit, cancellationToken);
+
     public async Task<IReadOnlyList<UserDepartmentLookupDto>> GetUserDepartmentsAsync(
         IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
     {
@@ -55,12 +59,29 @@ public sealed class OrganizationCatalogClient(IHttpClientFactory httpClientFacto
             $"/api/organization/user-departments?{query}", cancellationToken);
     }
 
+    public Task<IReadOnlyList<UserDepartmentLookupDto>> GetDepartmentUsersAsync(
+        Guid departmentId, CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<UserDepartmentLookupDto>>(
+            $"/api/organization/user-departments?departmentId={departmentId:D}", cancellationToken);
+
+    public Task<IReadOnlyList<DepartmentCatalogDto>> GetSendableDepartmentsAsync(
+        CancellationToken cancellationToken = default) =>
+        GetAsync<IReadOnlyList<DepartmentCatalogDto>>(
+            "/api/organization/user-departments/catalog", cancellationToken);
+
     public Task<OrganizationPagedResponse<DepartmentCatalogDto>> SearchDepartmentsAsync(
         string? filter,
         int skipCount,
         int maxResultCount,
         CancellationToken cancellationToken = default) =>
         GetDepartmentsAsync(new OrganizationCatalogQuery(filter, true, skipCount, maxResultCount), cancellationToken);
+
+    public Task<OrganizationPagedResponse<UnitCatalogDto>> SearchUnitsAsync(
+        string? filter,
+        int skipCount,
+        int maxResultCount,
+        CancellationToken cancellationToken = default) =>
+        GetUnitsAsync(new OrganizationCatalogQuery(filter, true, skipCount, maxResultCount), cancellationToken);
 
     public Task<OrganizationPagedResponse<MasterDataCatalogDto>> SearchMasterDataAsync(
         string masterType,

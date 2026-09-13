@@ -38,7 +38,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
             .GroupBy(x => x.ProjectId)
             .Select(g => new { g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
-        var taskCounts = await db.ProjectTasks.AsNoTracking()
+        var taskCounts = await access.VisibleTasks().AsNoTracking()
             .Where(x => ids.Contains(x.ProjectId))
             .GroupBy(x => x.ProjectId)
             .Select(g => new { g.Key, Count = g.Count() })
@@ -55,8 +55,10 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         var members = await db.ProjectMembers.AsNoTracking().Where(x => x.ProjectId == id)
             .OrderBy(x => x.Role).Select(x => new ProjectMemberDto(x.Id, x.ProjectId, x.UserId, x.Role, x.IsActive))
             .ToListAsync(ct);
-        var tasks = await db.ProjectTasks.AsNoTracking().Where(x => x.ProjectId == id).OrderBy(x => x.Code)
-            .Select(x => MapTask(x)).ToListAsync(ct);
+        var taskRows = await access.VisibleTasks().AsNoTracking().Where(x => x.ProjectId == id)
+            .OrderBy(x => x.Code).ToListAsync(ct);
+        var canCreateChild = await access.CreatableProjectIdsAsync([id], ct);
+        var tasks = taskRows.Select(x => MapTask(x, canCreateChild.Contains(id), project.OwnerUserId)).ToList();
         return new(Map(project), members, tasks);
     }
 
@@ -168,10 +170,18 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
     }
     private Task<Guid> OwnerUserId(Guid projectId, CancellationToken ct) =>
         db.Projects.Where(x => x.Id == projectId).Select(x => x.OwnerUserId).SingleAsync(ct);
-    private static ProjectDto Map(Project x, int memberCount = 0, int taskCount = 0) =>
-        new(x.Id, x.Code, x.Name, x.Description, x.StartDate, x.EndDate, x.Status, x.OwnerDepartmentId, x.OwnerUserId, memberCount, taskCount);
-    private static ProjectTaskDto MapTask(ProjectTask x) => new(x.Id, x.ProjectId, x.ParentTaskId, x.Code, x.Title,
-        x.Description, x.StartDate, x.DueDate, x.Priority, x.Status, x.ProgressPercent);
+    private ProjectDto Map(Project x, int memberCount = 0, int taskCount = 0)
+    {
+        var canManage = WorkAccessQueries.CanManageProject(x.OwnerUserId, access.UserId, access.IsAdministrator);
+        return new(x.Id, x.Code, x.Name, x.Description, x.StartDate, x.EndDate, x.Status, x.OwnerDepartmentId, x.OwnerUserId,
+            memberCount, taskCount, canManage, canManage);
+    }
+    private ProjectTaskDto MapTask(ProjectTask x, bool canCreateChild, Guid projectOwnerUserId)
+    {
+        var canDelete = WorkAccessQueries.CanDeleteTask(x.CreatorId, access.UserId, access.IsAdministrator, projectOwnerUserId);
+        return new(x.Id, x.ProjectId, x.ParentTaskId, x.Code, x.Title, x.Description, x.StartDate, x.DueDate,
+            x.Priority, x.Status, x.ProgressPercent, x.CreatorId, canDelete, canDelete, canCreateChild);
+    }
     private static string Correlation() => System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
 }
 
@@ -181,9 +191,7 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
     {
         skip = Math.Max(skip, 0);
         take = Math.Clamp(take, 1, 100);
-        var visibleProjectIds = access.VisibleProjects().Select(x => x.Id);
-        var query = db.ProjectTasks.AsNoTracking().Where(x => visibleProjectIds.Contains(x.ProjectId) ||
-            db.ProjectTaskAssignments.Any(a => a.ProjectTaskId == x.Id && a.UserId == access.UserId));
+        var query = access.VisibleTasks().AsNoTracking();
         if (projectId.HasValue) query = query.Where(x => x.ProjectId == projectId);
         if (!string.IsNullOrWhiteSpace(filter))
         {
@@ -193,8 +201,11 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         }
         if (!string.IsNullOrWhiteSpace(status)) query = query.Where(x => x.Status == status);
         var total = await query.LongCountAsync(ct);
-        var items = await query.OrderBy(x => x.Code).Skip(skip).Take(take).Select(x => Map(x)).ToListAsync(ct);
-        return new(total, items);
+        var rows = await query.OrderBy(x => x.Code).Skip(skip).Take(take).ToListAsync(ct);
+        var projectIds = rows.Select(x => x.ProjectId).ToList();
+        var creatable = await access.CreatableProjectIdsAsync(projectIds, ct);
+        var owners = await ProjectOwnersAsync(projectIds, ct);
+        return new(total, rows.Select(x => Map(x, creatable.Contains(x.ProjectId), owners.GetValueOrDefault(x.ProjectId))).ToList());
     }
 
     public async Task<ProjectTaskDetailDto> GetAsync(Guid id, CancellationToken ct)
@@ -206,22 +217,26 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
             .Select(x => new TaskAssignmentDto(x.Id, x.ProjectTaskId, x.UserId, x.AssignmentType)).ToListAsync(ct);
         var documents = await db.ProjectTaskDocuments.AsNoTracking().Where(x => x.ProjectTaskId == id)
             .Select(x => new TaskDocumentReferenceDto(x.Id, x.ProjectTaskId, x.DocumentId, x.DocumentCode)).ToListAsync(ct);
-        return new(Map(task), assignments, documents);
+        var canCreate = await access.CreatableProjectIdsAsync([task.ProjectId], ct);
+        var owner = await OwnerUserId(task.ProjectId, ct);
+        return new(Map(task, canCreate.Contains(task.ProjectId), owner), assignments, documents);
     }
 
     public async Task<ProjectTaskDto> CreateAsync(CreateProjectTaskDto input, CancellationToken ct)
     {
-        await access.DemandProjectOwnerAsync(input.ProjectId, ct);
+        await access.DemandProjectMemberAsync(input.ProjectId, ct);
         if (!await db.Projects.AnyAsync(x => x.Id == input.ProjectId, ct)) throw new EntityNotFoundException(typeof(Project), input.ProjectId);
-        if (input.ParentTaskId.HasValue && !await db.ProjectTasks.AnyAsync(x => x.Id == input.ParentTaskId && x.ProjectId == input.ProjectId, ct))
+        if (input.ParentTaskId.HasValue && !await access.VisibleTasks()
+                .AnyAsync(x => x.Id == input.ParentTaskId && x.ProjectId == input.ProjectId, ct))
             throw new BusinessException("Work:InvalidParentTask");
         if (await db.ProjectTasks.AnyAsync(x => x.ProjectId == input.ProjectId && x.Code == input.Code, ct))
             throw new BusinessException("Work:DuplicateTaskCode");
         var task = new ProjectTask(Guid.NewGuid(), input.ProjectId, input.ParentTaskId, input.Code, input.Title,
             input.Description, input.StartDate, input.DueDate, input.Priority, input.Status, input.ProgressPercent);
+        task.SetCreatedBy(access.UserId);
         db.ProjectTasks.Add(task); AddEvent(task, "Created", []);
         await WorkCalendarLinker.SyncTaskAsync(db, task, await OwnerUserId(task.ProjectId, ct), ct);
-        await AddAccessEvent(task, false, [], ct); await db.SaveChangesAsync(ct); return Map(task);
+        await AddAccessEvent(task, false, [], ct); await db.SaveChangesAsync(ct); return Map(task, true, await OwnerUserId(task.ProjectId, ct));
     }
 
     public async Task<ProjectTaskDto> UpdateAsync(Guid id, UpdateProjectTaskDto input, CancellationToken ct)
@@ -232,7 +247,9 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         task.Change(input.Title, input.Description, input.StartDate, input.DueDate, input.Priority, input.Status, input.ProgressPercent);
         await WorkCalendarLinker.SyncTaskAsync(db, task, await OwnerUserId(task.ProjectId, ct), ct);
         var users = await db.ProjectTaskAssignments.Where(x => x.ProjectTaskId == id).Select(x => x.UserId).Distinct().ToListAsync(ct);
-        AddEvent(task, "Updated", users); await db.SaveChangesAsync(ct); return Map(task);
+        AddEvent(task, "Updated", users); await db.SaveChangesAsync(ct);
+        var canCreate = await access.CreatableProjectIdsAsync([task.ProjectId], ct);
+        return Map(task, canCreate.Contains(task.ProjectId), await OwnerUserId(task.ProjectId, ct));
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct)
@@ -315,8 +332,19 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
     }
     private Task<Guid> OwnerUserId(Guid projectId, CancellationToken ct) =>
         db.Projects.Where(x => x.Id == projectId).Select(x => x.OwnerUserId).SingleAsync(ct);
-    private static ProjectTaskDto Map(ProjectTask x) => new(x.Id, x.ProjectId, x.ParentTaskId, x.Code, x.Title,
-        x.Description, x.StartDate, x.DueDate, x.Priority, x.Status, x.ProgressPercent);
+    private async Task<Dictionary<Guid, Guid>> ProjectOwnersAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken ct)
+    {
+        var ids = projectIds.Distinct().ToList();
+        if (ids.Count == 0) return [];
+        return await db.Projects.AsNoTracking().Where(x => ids.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.OwnerUserId, ct);
+    }
+    private ProjectTaskDto Map(ProjectTask x, bool canCreateChild, Guid projectOwnerUserId)
+    {
+        var canDelete = WorkAccessQueries.CanDeleteTask(x.CreatorId, access.UserId, access.IsAdministrator, projectOwnerUserId);
+        return new(x.Id, x.ProjectId, x.ParentTaskId, x.Code, x.Title, x.Description, x.StartDate, x.DueDate,
+            x.Priority, x.Status, x.ProgressPercent, x.CreatorId, canDelete, canDelete, canCreateChild);
+    }
     private static string Correlation() => System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
 }
 

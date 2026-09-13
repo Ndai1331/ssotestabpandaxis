@@ -5,82 +5,112 @@
 @inject IUiMessageService UiMessage
 
 <PageTitle>@L["Menu:Surveys"] · HCS</PageTitle>
-<section class="hcs-catalog-page">
-    <header class="hcs-catalog-titlebar">
-        <div class="min-w-0"><h1>@L["Feature:SurveySessions"]</h1></div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync" Disabled="@isLoading">@L["Catalog:Refresh"]</Button>
-            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
+<section class="page page-wf page-dm">
+    <div class="page-head">
+        <h1>@L["Feature:SurveySessions"]</h1>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+                @L["Catalog:Refresh"]
+            </button>
+            <button class="btn btn-primary" type="button" @onclick="OpenCreate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Catalog:New"]
+            </button>
         </div>
-    </header>
-    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
-        <div class="hcs-catalog-filter-row">
-            <Addons Class="hcs-catalog-search">
-                <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
-                <Addon AddonType="AddonType.End">
-                    <Button Color="Color.Primary" Clicked="SearchAsync"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
-                </Addon>
-            </Addons>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-toggle" Clicked="() => showFilters = !showFilters">
-                <i class="fa fa-sliders me-2"></i>@L["Catalog:Filter"]
-                <i class="fa @(showFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2"></i>
-            </Button>
-        </div>
-        @if (showFilters)
-        {
-            <div class="hcs-catalog-advanced-filter">
-                <Field>
-                    <FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                    <Select TValue="string" @bind-Value="statusFilter" @bind-Value:after="SearchAsync">
-                        <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                        <SelectItem Value="@("Active")">@L["Catalog:Active"]</SelectItem>
-                        <SelectItem Value="@("Closed")">@L["Catalog:Closed"]</SelectItem>
-                    </Select>
-                </Field>
-                <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
+    </div>
+    <section class="docs-main">
+        <form class="docs-toolbar" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+            <label class="sr-only" for="ss-q">@L["Catalog:SearchPlaceholder"]</label>
+            <input class="input docs-search" id="ss-q" type="search" @bind="filter" @bind:event="oninput"
+                   placeholder="@L["Catalog:SearchPlaceholder"]" autocomplete="off" />
+            <button class="btn btn-primary" type="submit" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:SearchButton"]
+            </button>
+            <HcsDismissible Class="filter-pop" @bind-IsOpen="showFilters">
+                <button class="btn btn-outline @(string.IsNullOrEmpty(statusFilter) ? null : "is-filtered")" type="button"
+                        aria-expanded="@showFilters.ToString().ToLowerInvariant()"
+                        @onclick="() => showFilters = !showFilters">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                    @L["Catalog:Filter"]
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="filter-menu @(showFilters ? "is-open" : null)" role="menu">
+                    <button type="button" class="@(string.IsNullOrEmpty(statusFilter) ? "is-active" : null)" @onclick="FilterAll">@L["Catalog:AllStatuses"]</button>
+                    <button type="button" class="@(statusFilter == "Active" ? "is-active" : null)" @onclick="FilterActive">@L["Catalog:Active"]</button>
+                    <button type="button" class="@(statusFilter == "Closed" ? "is-active" : null)" @onclick="FilterClosed">@L["Catalog:Closed"]</button>
+                </div>
+            </HcsDismissible>
+        </form>
+        <div class="docs-table-wrap">
+            @if (isLoading && !loaded)
+            {
+                <DocsEmpty Loading="true" />
+            }
+            else if (pageItems.Count == 0)
+            {
+                <DocsEmpty Hint="@L["Catalog:EmptyDescription"]" />
+            }
+            else
+            {
+                <table class="docs-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Catalog:Code"]</th>
+                            <th scope="col">@L["Feature:StartDate"]</th>
+                            <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                            <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in pageItems)
+                    {
+                        <tr @key="item.Id">
+                            <td>
+                                <div class="pj-name" title="@item.Name">
+                                    <strong>@item.Name</strong>
+                                    <span>#@item.Code</span>
+                                </div>
+                            </td>
+                            <td>@item.StartsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @item.EndsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><span class="hcs-status-badge @SessionStatusClass(item.Status)">@SessionStatusText(item.Status)</span></td>
+                            <td>
+                                <div class="doc-actions">
+                                    <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => Edit(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                    </button>
+                                    <button class="btn btn-outline btn-sm" type="button" @onclick="@(() => ChangeStatusAsync(item, "Active"))">@L["Catalog:Active"]</button>
+                                    <button class="btn btn-outline btn-sm" type="button" @onclick="@(() => ChangeStatusAsync(item, "Closed"))">@L["Catalog:Closed"]</button>
+                                    @if (item.LocationId is { } locationId)
+                                    {
+                                        <a class="btn btn-outline btn-sm" href="@($"/survey-collections/{locationId}")">@L["Feature:Collect"]</a>
+                                    }
+                                    <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                <button type="button" disabled="@(!CanPrev)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
+                <button type="button" disabled="@(!CanPrev)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
+                <button type="button" disabled="@(!CanNext)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
+                <button type="button" disabled="@(!CanNext)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
+                <label class="sr-only" for="ss-page-size">@L["Catalog:PageSize"]</label>
+                <select id="ss-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                    @foreach (var size in pageSizes)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
             </div>
-        }
-    </CardBody></Card>
-    <Card Class="hcs-catalog-grid-card"><CardBody>
-        <DataGrid TItem="SurveySessionDto" Data="@pageItems" TotalItems="@totalCount" ReadData="OnReadAsync"
-                  ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
-                  Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
-            <EmptyTemplate>
-                <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div>
-            </EmptyTemplate>
-            <LoadingTemplate>
-                <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
-            </LoadingTemplate>
-            <DataGridColumns>
-                <DataGridColumn TItem="SurveySessionDto" Caption="@L["Catalog:Code"].Value">
-                    <DisplayTemplate Context="cell">
-                        <strong>@cell.Item.Name</strong>
-                        <span class="hcs-catalog-code">#@cell.Item.Code</span>
-                    </DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="SurveySessionDto" Caption="@L["Feature:StartDate"].Value">
-                    <DisplayTemplate Context="cell">@cell.Item.StartsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @cell.Item.EndsAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="SurveySessionDto" Caption="@L["Catalog:Status"].Value">
-                    <DisplayTemplate Context="cell"><span class="hcs-status-badge @SessionStatusClass(cell.Item.Status)">@SessionStatusText(cell.Item.Status)</span></DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="SurveySessionDto" Caption="@L["Catalog:Actions"].Value">
-                    <DisplayTemplate Context="cell">
-                        <div class="hcs-row-actions">
-                            <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Clicked="() => Edit(cell.Item)"><Icon Name="@IconName.Edit" /></Button>
-                            <Button Size="Size.Small" Color="Color.Success" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(cell.Item, "Active"))">@L["Catalog:Active"]</Button>
-                            <Button Size="Size.Small" Color="Color.Secondary" Outline="true" Class="hcs-action-button" Clicked="@(() => ChangeStatusAsync(cell.Item, "Closed"))">@L["Catalog:Closed"]</Button>
-                            @if (cell.Item.LocationId is { } locationId)
-                            {
-                                <a class="btn btn-sm btn-outline-primary hcs-action-button" href="@($"/survey-collections/{locationId}")">@L["Feature:Collect"]</a>
-                            }
-                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button hcs-action-button--delete" Clicked="() => DeleteAsync(cell.Item)"><Icon Name="@IconName.Delete" /></Button>
-                        </div>
-                    </DisplayTemplate>
-                </DataGridColumn>
-            </DataGridColumns>
-        </DataGrid>
-    </CardBody></Card>
+        </div>
+    </section>
 </section>
 
 <Modal @ref="modal" Size="ModalSize.Default"><ModalContent Centered Class="hcs-catalog-modal">
@@ -119,13 +149,34 @@
     private string filter = "", statusFilter = "";
     private bool isLoading, showFilters, loaded;
     private int totalCount, pageSize = 20, currentPage = 1;
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
 
-    private async Task OnReadAsync(DataGridReadDataEventArgs<SurveySessionDto> args)
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private Task GoFirst() { currentPage = 1; ApplyPage(); return Task.CompletedTask; }
+    private Task GoPrev() { if (!CanPrev) return Task.CompletedTask; currentPage--; ApplyPage(); return Task.CompletedTask; }
+    private Task GoNext() { if (!CanNext) return Task.CompletedTask; currentPage++; ApplyPage(); return Task.CompletedTask; }
+    private Task GoLast() { currentPage = PageCount; ApplyPage(); return Task.CompletedTask; }
+    private Task OnPageSizeChanged(ChangeEventArgs args)
     {
-        currentPage = Math.Max(args.Page, 1);
-        pageSize = Math.Clamp(args.PageSize, 10, 100);
-        if (!loaded) await LoadAsync();
-        else ApplyPage();
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        ApplyPage();
+        return Task.CompletedTask;
+    }
+    private Task FilterAll() => SetStatusFilter(string.Empty);
+    private Task FilterActive() => SetStatusFilter("Active");
+    private Task FilterClosed() => SetStatusFilter("Closed");
+    private Task SetStatusFilter(string value)
+    {
+        statusFilter = value;
+        showFilters = false;
+        currentPage = 1;
+        ApplyPage();
+        return Task.CompletedTask;
     }
 
     private Task SearchAsync() { currentPage = 1; ApplyPage(); return Task.CompletedTask; }

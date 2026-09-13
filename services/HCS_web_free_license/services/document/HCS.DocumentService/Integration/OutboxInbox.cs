@@ -72,6 +72,8 @@ public static class OutboxFactory
         DocumentAssignedEto => DocumentIntegrationEventNames.DocumentAssigned,
         DocumentWorkflowChangedEto => DocumentIntegrationEventNames.WorkflowChanged,
         DocumentSignedEto => DocumentIntegrationEventNames.Signed,
+        DocumentSentToInboxEto => DocumentIntegrationEventNames.SentToInbox,
+        DocumentInboxClearedEto => DocumentIntegrationEventNames.InboxCleared,
         _ => throw new NotSupportedException($"No canonical name registered for {value.GetType().Name}.")
     };
 }
@@ -145,6 +147,8 @@ public sealed class AbpOutboxEventPublisher(ITypedDistributedEventPublisher even
         AuditRecordCapturedEto.EventName => PublishTypedAsync<AuditRecordCapturedEto>(message),
         DocumentIntegrationEventNames.WorkflowChanged => PublishTypedAsync<DocumentWorkflowChangedEto>(message),
         DocumentIntegrationEventNames.Signed => PublishTypedAsync<DocumentSignedEto>(message),
+        DocumentIntegrationEventNames.SentToInbox => PublishTypedAsync<DocumentSentToInboxEto>(message),
+        DocumentIntegrationEventNames.InboxCleared => PublishTypedAsync<DocumentInboxClearedEto>(message),
         _ => throw new NotSupportedException($"Unknown outbox event type: {message.EventName}")
     };
 

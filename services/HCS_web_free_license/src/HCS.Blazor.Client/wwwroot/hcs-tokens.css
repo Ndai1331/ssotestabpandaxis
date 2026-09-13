@@ -1,166 +1,280 @@
+/* HCS — Hành chính số
+   SOURCE OF TRUTH — edit here, then used by css/tokens.css
+   Three-layer tokens: primitive → semantic → component
+   Visual direction: HCS teal #007f7c + existing UI
+   Type: Minimal Swiss (Inter). Density: dashboard. */
+
 :root {
-    /* Requested HCS brand palette. Keep these names canonical for new UI. */
-    --color-primary: #00B4A9;
-    --color-secondary: #007F7C;
-    --color-primary-dark: #007F7C;
-    --color-primary-light: #E0F7F5;
-    --color-teal-top: #007F7C;
-    --color-accent: #E31E24;
-    --color-text: #1A1A2E;
-    --color-muted: #5C6578;
-    --color-border: #DDE4EE;
-    --color-bg: #F5F8FC;
+  /* ——— Primitive ——— */
+  --color-teal-50: #EAF5F4;
+  --color-teal-100: #C5E6E5;
+  --color-teal-200: #8DCECC;
+  --color-teal-300: #4AADAA;
+  --color-teal-400: #1A938F;
+  --color-teal-500: #007f7c;
+  --color-teal-600: #006866;
+  --color-teal-700: #004F4D;
+  --color-teal-800: #003B3A;
+  --color-teal-900: #002827;
 
-    /* Compatibility aliases for existing Blazorise/page styles. */
-    --hcs-color-primary: var(--color-primary);
-    --hcs-color-primary-strong: var(--color-primary-dark);
-    --hcs-color-primary-light: var(--color-primary-light);
-    --hcs-color-primary-soft: var(--color-primary-light);
-    --hcs-color-sidebar: var(--color-teal-top);
-    --hcs-color-ink: var(--color-text);
-    --hcs-color-muted: var(--color-muted);
-    --hcs-color-background: var(--color-bg);
-    --hcs-color-surface: #ffffff;
-    --hcs-color-surface-muted: #eef3f7;
-    --hcs-color-border: var(--color-border);
-    --hcs-input-background: var(--hcs-color-surface);
-    --hcs-input-border: var(--hcs-color-border);
-    --hcs-input-border-hover: #b8c5d3;
-    --hcs-input-border-focus: var(--hcs-color-primary);
-    --hcs-input-background-disabled: var(--hcs-color-surface-muted);
-    --hcs-input-background-readonly: var(--hcs-color-background);
-    --hcs-color-success: var(--color-secondary);
-    --hcs-color-warning: #a35a00;
-    --hcs-color-danger: var(--color-accent);
-    --hcs-color-info: var(--color-primary);
-    --hcs-color-heading: var(--color-primary);
-    --hcs-color-link: var(--color-primary);
-    --hcs-color-link-hover: var(--color-primary-dark);
+  --color-cyan-500: #0891B2;
+  --color-cyan-600: #0E7490;
 
-    --hcs-font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
-    --hcs-font-size-body: 1rem;
-    --hcs-line-height-body: 1.5;
-    --hcs-line-height-relaxed: 1.7;
-    --hcs-font-weight-regular: 400;
-    --hcs-font-weight-medium: 500;
-    --hcs-font-weight-semibold: 600;
-    --hcs-font-weight-bold: 700;
-    --hcs-text-xs: .75rem;
-    --hcs-text-sm: .875rem;
-    --hcs-text-md: 1rem;
-    --hcs-text-lg: 1.125rem;
-    --hcs-text-xl: 1.25rem;
-    --hcs-text-2xl: 1.5rem;
-    --hcs-text-3xl: 2rem;
-    --hcs-font-size-title: clamp(1.25rem, 1.6vw, 1.6rem);
-    --hcs-font-size-section-title: 1.1rem;
-    --hcs-font-size-card-title: .98rem;
+  --color-blue-400: #60A5FA;
+  --color-blue-500: #3B6FF5;
+  --color-blue-600: #2563EB;
 
-    --hcs-breakpoint-sm: 576px;
-    --hcs-breakpoint-md: 768px;
-    --hcs-breakpoint-lg: 992px;
-    --hcs-breakpoint-xl: 1200px;
-    --hcs-space-1: .25rem;
-    --hcs-space-2: .5rem;
-    --hcs-space-3: .75rem;
-    --hcs-space-4: 1rem;
-    --hcs-space-5: 1.5rem;
-    --hcs-space-6: 2rem;
-    --hcs-space-7: 2.5rem;
-    --hcs-space-8: 3rem;
-    /* Air gap between a field and its open option list / popover. */
-    --hcs-popover-offset: var(--hcs-space-1);
+  --color-green-500: #22C55E;
+  --color-green-600: #16A34A;
+  --color-red-500: #EF4444;
+  --color-red-600: #DC2626;
+  --color-amber-500: #F59E0B;
+  --color-pink-500: #F472B6;
+  --color-rose-500: #F43F5E;
+  --color-violet-500: #8B5CF6;
+  --color-purple-500: #A78BFA;
+  --color-sky-500: #38BDF8;
 
-    --hcs-content-max-width: 1540px;
-    --hcs-page-gutter: clamp(1rem, 3vw, 2.5rem);
-    --hcs-control-height: 2rem;
-    --hcs-control-height-compact: 2.5rem;
-    --hcs-touch-target: 2rem;
-    /* Shared geometry for Bootstrap/Blazorise buttons and button links. */
-    --hcs-button-border-width: 1px;
-    --hcs-button-height: 2.5rem;
-    --hcs-button-height-sm: 2rem;
-    --hcs-button-padding-y: .5rem;
-    --hcs-button-padding-x: 1rem;
-    --hcs-button-padding-y-sm: .375rem;
-    --hcs-button-padding-x-sm: .75rem;
-    --hcs-button-line-height: 1.25;
-    --hcs-action-button-size: 2.7rem;
-    --hcs-action-button-padding: .45rem;
-    --hcs-radius-sm: 5px;
-    --hcs-radius-md: 8px;
-    --hcs-radius-lg: 12px;
-    --hcs-shadow-sm: 0 1px 2px rgba(19, 47, 70, .05), 0 4px 12px rgba(19, 47, 70, .04);
-    --hcs-shadow-md: 0 10px 24px rgba(19, 47, 70, .1);
-    --hcs-z-base: 0;
-    --hcs-z-sticky: 100;
-    --hcs-z-overlay: 200;
-    --hcs-z-drawer: 250;
-    --hcs-z-modal: 300;
-    --hcs-z-popover: 350;
-    --hcs-z-tooltip: 400;
-    --hcs-z-notification: 500;
-    /* Corporate motion system: quick feedback, calm entrances, fast exits. */
-    --hcs-motion-duration-instant: 80ms;
-    --hcs-motion-duration-quick: 140ms;
-    --hcs-motion-duration-standard: 200ms;
-    --hcs-motion-duration-slow: 300ms;
-    --hcs-motion-duration-modal: 320ms;
-    --hcs-motion-duration-spinner: 1200ms;
-    --hcs-motion-duration-skeleton: 1600ms;
-    --hcs-motion-stagger: 40ms;
-    --hcs-motion-distance-sm: 4px;
-    --hcs-motion-distance-md: 8px;
-    --hcs-motion-press-scale: .985;
-    --hcs-motion-scrim-opacity: .48;
-    --hcs-motion-ease-standard: cubic-bezier(.2, 0, 0, 1);
-    --hcs-motion-ease-enter: cubic-bezier(.2, 0, 0, 1);
-    --hcs-motion-ease-exit: cubic-bezier(.3, 0, 1, 1);
-    --hcs-motion-ease-ambient: cubic-bezier(.4, 0, .2, 1);
-    /* Compatibility aliases used by existing shell/component styles. */
-    --hcs-motion-fast: var(--hcs-motion-duration-quick);
-    --hcs-motion-normal: var(--hcs-motion-duration-standard);
-    --hcs-motion-ease: var(--hcs-motion-ease-standard);
-    --hcs-focus-ring: 0 0 0 .2rem rgba(0, 180, 169, .28);
-    --hcs-safe-area-top: env(safe-area-inset-top, 0px);
-    --hcs-safe-area-right: env(safe-area-inset-right, 0px);
-    --hcs-safe-area-bottom: env(safe-area-inset-bottom, 0px);
-    --hcs-safe-area-left: env(safe-area-inset-left, 0px);
-}
+  --color-gray-50: #F8FAFC;
+  --color-gray-100: #F1F5F9;
+  --color-gray-200: #E2E8F0;
+  --color-gray-300: #CBD5E1;
+  --color-gray-400: #94A3B8;
+  --color-gray-500: #64748B;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1E293B;
+  --color-gray-900: #0F172A;
 
-html { min-width: 320px; scroll-behavior: smooth; }
-body { background: var(--hcs-color-background); color: var(--hcs-color-ink); font-family: var(--hcs-font-family); font-size: var(--hcs-font-size-body); line-height: var(--hcs-line-height-body); margin: 0; overflow-x: hidden; }
-*, *::before, *::after { box-sizing: border-box; }
-button, a, input, select, textarea { touch-action: manipulation; }
+  --color-white: #FFFFFF;
+  --color-black: #000000;
 
-@media (max-width: 767.98px) {
-    :root {
-        --hcs-page-gutter: 1rem;
-        --hcs-control-height: 2.75rem;
-        --hcs-button-height: 2.75rem;
-        --hcs-button-height-sm: 2.75rem;
-    }
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-md: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 50px rgba(15, 23, 42, 0.16);
+  --shadow-focus: 0 0 0 3px rgba(0, 127, 124, 0.28);
+
+  --duration-fast: 150ms;
+  --duration: 200ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --z-nav: 40;
+  --z-header: 50;
+  --z-dropdown: 60;
+  --z-overlay: 80;
+  --z-modal: 90;
+
+  /* ——— Semantic ——— */
+  --color-primary: var(--color-teal-500);
+  --color-primary-hover: var(--color-teal-600);
+  --color-primary-active: var(--color-teal-700);
+  --color-primary-foreground: var(--color-white);
+  --color-primary-soft: #E6F3F2;
+
+  --color-background: #F3F7F8;
+  --color-foreground: var(--color-gray-800);
+  --color-muted: var(--color-gray-500);
+  --color-muted-foreground: var(--color-gray-500);
+  --color-surface: var(--color-white);
+  --color-surface-foreground: var(--color-gray-800);
+  --color-border: #E6EEF0;
+  --color-input: #D7E2E6;
+  --color-ring: var(--color-teal-500);
+
+  --color-success: var(--color-green-600);
+  --color-danger: var(--color-red-600);
+  --color-warning: var(--color-amber-500);
+  --color-info: var(--color-blue-500);
+  --color-nav: var(--color-teal-500);
+  --color-nav-foreground: var(--color-white);
+
+  --color-htl: #4E9BC7;
+
+  /* ——— Component ——— */
+  --button-bg: var(--color-primary);
+  --button-fg: var(--color-primary-foreground);
+  --button-hover-bg: var(--color-primary-hover);
+  --button-active-bg: var(--color-primary-active);
+  --button-radius: var(--radius-xl);
+  --button-height: 40px;
+  --button-font-size: var(--font-size-md);
+  --button-font-weight: var(--font-weight-semibold);
+
+  --input-bg: var(--color-white);
+  --input-border: var(--color-input);
+  --input-fg: var(--color-foreground);
+  --input-placeholder: var(--color-gray-400);
+  --input-radius: var(--radius-xl);
+  --input-radius-multiline: var(--radius-xl);
+  --input-height: 40px;
+  --input-focus-border: var(--color-primary);
+  --input-focus-ring: var(--shadow-focus);
+
+  --card-bg: var(--color-surface);
+  --card-radius: var(--radius-xl);
+  --card-padding: var(--space-5);
+  --card-shadow: var(--shadow-sm);
+  --card-border: var(--color-border);
+
+  --header-height: 64px;
+  --nav-height: 52px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    :root {
-        --hcs-motion-duration-instant: 0ms;
-        --hcs-motion-duration-quick: 0ms;
-        --hcs-motion-duration-standard: 0ms;
-        --hcs-motion-duration-slow: 0ms;
-        --hcs-motion-duration-modal: 0ms;
-        --hcs-motion-duration-spinner: 0ms;
-        --hcs-motion-duration-skeleton: 0ms;
-        --hcs-motion-stagger: 0ms;
-        --hcs-motion-distance-sm: 0px;
-        --hcs-motion-distance-md: 0px;
-        --hcs-motion-fast: 0ms;
-        --hcs-motion-normal: 0ms;
-        --hcs-motion-ease: linear;
-        --hcs-motion-ease-standard: linear;
-        --hcs-motion-ease-enter: linear;
-        --hcs-motion-ease-exit: linear;
-        --hcs-motion-ease-ambient: linear;
-    }
-    html { scroll-behavior: auto; }
+  :root {
+    --duration-fast: 0.01ms;
+    --duration: 0.01ms;
+  }
+}
+
+/* ——— Blazor compatibility aliases ——— */
+:root {
+  --color-secondary: var(--color-teal-400);
+  --color-primary-dark: var(--color-primary-hover);
+  --color-primary-light: var(--color-primary-soft);
+  --color-teal-top: var(--color-primary);
+  --color-accent: var(--color-danger);
+  --color-text: var(--color-foreground);
+  --color-bg: var(--color-background);
+
+  --hcs-color-primary: var(--color-primary);
+  --hcs-color-primary-strong: var(--color-primary-hover);
+  --hcs-color-primary-light: var(--color-primary-soft);
+  --hcs-color-primary-soft: var(--color-primary-soft);
+  --hcs-color-sidebar: var(--color-nav);
+  --hcs-color-ink: var(--color-foreground);
+  --hcs-color-muted: var(--color-muted);
+  --hcs-color-background: var(--color-background);
+  --hcs-color-surface: var(--color-surface);
+  --hcs-color-surface-muted: var(--color-gray-50);
+  --hcs-color-border: var(--color-border);
+  --hcs-input-background: var(--input-bg);
+  --hcs-input-border: var(--input-border);
+  --hcs-input-border-hover: var(--color-gray-300);
+  --hcs-input-border-focus: var(--input-focus-border);
+  --hcs-input-background-disabled: var(--color-gray-100);
+  --hcs-input-background-readonly: var(--color-background);
+  --hcs-color-success: var(--color-success);
+  --hcs-color-warning: var(--color-warning);
+  --hcs-color-danger: var(--color-danger);
+  --hcs-color-info: var(--color-info);
+  --hcs-color-heading: var(--color-primary);
+  --hcs-color-link: var(--color-primary);
+  --hcs-color-link-hover: var(--color-primary-hover);
+
+  --hcs-font-family: var(--font-sans);
+  --hcs-font-size-body: var(--font-size-base);
+  --hcs-line-height-body: var(--line-height-normal);
+  --hcs-font-weight-regular: var(--font-weight-regular);
+  --hcs-font-weight-medium: var(--font-weight-medium);
+  --hcs-font-weight-semibold: var(--font-weight-semibold);
+  --hcs-font-weight-bold: var(--font-weight-bold);
+  --hcs-text-xs: var(--font-size-xs);
+  --hcs-text-sm: var(--font-size-sm);
+  --hcs-text-md: var(--font-size-base);
+  --hcs-text-lg: var(--font-size-lg);
+  --hcs-text-xl: var(--font-size-xl);
+  --hcs-text-2xl: var(--font-size-2xl);
+  --hcs-text-3xl: var(--font-size-3xl);
+  --hcs-font-size-title: 1.375rem;
+  --hcs-font-size-section-title: 1.1rem;
+  --hcs-font-size-card-title: 0.98rem;
+
+  --hcs-space-1: var(--space-1);
+  --hcs-space-2: var(--space-2);
+  --hcs-space-3: var(--space-3);
+  --hcs-space-4: var(--space-4);
+  --hcs-space-5: var(--space-6);
+  --hcs-space-6: var(--space-8);
+  --hcs-space-7: var(--space-10);
+  --hcs-space-8: var(--space-12);
+  --hcs-popover-offset: var(--space-1);
+
+  --hcs-content-max-width: 1540px;
+  --hcs-page-gutter: clamp(1rem, 3vw, 2.5rem);
+  --hcs-control-height: 2.5rem;
+  --hcs-control-height-compact: 2.5rem;
+  --hcs-touch-target: 2.75rem;
+  --hcs-button-border-width: 1px;
+  --hcs-button-height: var(--button-height);
+  --hcs-button-height-sm: 2rem;
+  --hcs-button-padding-y: 0.5rem;
+  --hcs-button-padding-x: 1rem;
+  --hcs-button-padding-y-sm: 0.375rem;
+  --hcs-button-padding-x-sm: 0.75rem;
+  --hcs-button-line-height: 1.25;
+  --hcs-action-button-size: 2.5rem;
+  --hcs-action-button-padding: 0.45rem;
+  --hcs-radius-sm: var(--radius-sm);
+  --hcs-radius-md: var(--radius-md);
+  --hcs-radius-lg: var(--radius-lg);
+  --hcs-shadow-sm: var(--shadow-sm);
+  --hcs-shadow-md: var(--shadow-md);
+  --hcs-header-height: 64px;
+  --hcs-nav-height: 52px;
+  --hcs-z-base: 0;
+  --hcs-z-sticky: 100;
+  --hcs-z-overlay: 200;
+  --hcs-z-drawer: 250;
+  --hcs-z-modal: 300;
+  --hcs-z-popover: 350;
+  --hcs-z-tooltip: 400;
+  --hcs-z-notification: 500;
+  --hcs-motion-duration-instant: 80ms;
+  --hcs-motion-duration-quick: var(--duration-fast);
+  --hcs-motion-duration-standard: var(--duration);
+  --hcs-motion-duration-slow: 300ms;
+  --hcs-motion-duration-modal: 320ms;
+  --hcs-motion-duration-spinner: 1200ms;
+  --hcs-motion-duration-skeleton: 1600ms;
+  --hcs-motion-stagger: 40ms;
+  --hcs-motion-distance-sm: 4px;
+  --hcs-motion-distance-md: 8px;
+  --hcs-motion-press-scale: .985;
+  --hcs-motion-scrim-opacity: .48;
+  --hcs-motion-ease-standard: var(--ease);
+  --hcs-motion-ease-enter: var(--ease);
+  --hcs-motion-ease-exit: var(--ease);
+  --hcs-motion-ease-ambient: var(--ease);
+  --hcs-focus-ring: var(--shadow-focus);
+  --hcs-radius: var(--radius-md);
 }

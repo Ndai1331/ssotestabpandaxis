@@ -100,6 +100,12 @@ public sealed class ProjectTask : FullAuditedAggregateRoot<Guid>
         Status = Check.NotNullOrWhiteSpace(status, nameof(status), WorkConsts.StatusLength);
         ProgressPercent = progressPercent;
     }
+
+    public void SetCreatedBy(Guid userId)
+    {
+        if (userId == Guid.Empty) throw new BusinessException("Work:OwnerRequired");
+        CreatorId = userId;
+    }
 }
 
 public sealed class ProjectTaskAssignment : Entity<Guid>

@@ -33,6 +33,20 @@
             form.setAttribute('aria-busy', 'true');
 
             const submitter = event.submitter;
+            // Disabled submit buttons are omitted from the POST body. Copy Action
+            // first so .NET 10 still binds the required OnPostAsync(action) argument.
+            const actionValue = submitter?.getAttribute('name') === 'Action'
+                ? submitter.value
+                : 'Login';
+            let actionInput = form.querySelector('input[type="hidden"][name="Action"]');
+            if (!actionInput) {
+                actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'Action';
+                form.appendChild(actionInput);
+            }
+            actionInput.value = actionValue;
+
             const loadingText = submitter?.dataset.loadingText;
             if (submitter && loadingText) {
                 submitter.dataset.originalText = submitter.textContent || '';

@@ -75,6 +75,27 @@ public sealed class DocumentAggregateTests
         Assert.Contains(document.Assignments, a => a.AssigneeUserId == to && a.Responsibility == "VIEW" && a.IsCurrent);
         document.RevokeInbox(from, Now);
         Assert.All(document.Assignments.Where(a => a.Responsibility == "VIEW"), a => Assert.False(a.IsCurrent));
+        Assert.False(DocumentSendState.IsActivelySent(document.History));
+        document.Send(to, null, from, Now.AddMinutes(1));
+        Assert.True(DocumentSendState.IsActivelySent(document.History));
+    }
+
+    [Fact]
+    public void Record_access_is_allowed_after_approval()
+    {
+        var document = Create();
+        var actor = Guid.NewGuid();
+        document.AddFile(Guid.NewGuid(), "a.pdf", "application/pdf", 10, new string('a', 64), "documents/a", null, Now);
+        document.Submit(null, Now);
+        document.StartReview(null, Now);
+        document.CompleteReview(true, null, null, Now);
+        document.RecordAccess("Viewed", actor, Now);
+        document.RecordAccess("printed", actor, Now.AddSeconds(1));
+        document.RecordAccess("DOWNLOADED", actor, Now.AddSeconds(2));
+        Assert.Contains(document.History, x => x.Action == "Viewed" && x.ActorUserId == actor);
+        Assert.Contains(document.History, x => x.Action == "Printed" && x.ActorUserId == actor);
+        Assert.Contains(document.History, x => x.Action == "Downloaded" && x.ActorUserId == actor);
+        Assert.Throws<ArgumentException>(() => document.RecordAccess("Edited", actor, Now));
     }
 
     [Fact]
@@ -87,7 +108,45 @@ public sealed class DocumentAggregateTests
         Assert.Equal(DocumentSourceType.Workflow, copy.SourceType);
         Assert.Equal(document.Id, copy.ParentDocumentId);
         Assert.Equal(typeId, copy.DocumentTypeId);
+        Assert.Null(copy.DocumentCode);
         Assert.NotEqual(document.Id, copy.Id);
+    }
+
+    [Fact]
+    public void Document_code_is_optional_and_copied_for_workflow()
+    {
+        var document = Create();
+        document.SetDocumentCode("QD-1551");
+        Assert.Equal("QD-1551", document.DocumentCode);
+        document.SetDocumentCode("  ");
+        Assert.Null(document.DocumentCode);
+        document.SetDocumentCode("CV-12");
+        var copy = document.DuplicateAsWorkflow(Guid.NewGuid(), "CV-12-WF", null, Now);
+        Assert.Equal("CV-12", copy.DocumentCode);
+    }
+
+    [Fact]
+    public void Issuing_unit_uses_existing_organization_unit_and_is_copied_for_workflow()
+    {
+        var document = Create();
+        var unitId = Guid.NewGuid();
+        document.SetOrganizationUnit(unitId);
+        Assert.Equal(unitId, document.OrganizationUnitId);
+        document.SetOrganizationUnit(Guid.Empty);
+        Assert.Null(document.OrganizationUnitId);
+        document.SetOrganizationUnit(unitId);
+        var copy = document.DuplicateAsWorkflow(Guid.NewGuid(), "CV-13-WF", null, Now);
+        Assert.Equal(unitId, copy.OrganizationUnitId);
+    }
+
+    [Fact]
+    public void Send_does_not_overwrite_issuing_unit()
+    {
+        var document = Create();
+        var unitId = Guid.NewGuid();
+        document.SetOrganizationUnit(unitId);
+        document.Send(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Now);
+        Assert.Equal(unitId, document.OrganizationUnitId);
     }
 
     [Fact]
@@ -107,7 +166,8 @@ public sealed class DocumentAggregateTests
     {
         var number = DocumentAppService.GenerateNumber(Now);
 
-        Assert.Matches("^VB-20260803-[A-F0-9]{8}$", number);
+        Assert.Equal("20260803-070000", number);
+        Assert.Matches(@"^\d{8}-\d{6}$", number);
     }
 
     [Fact]

@@ -157,6 +157,10 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
         SendNoContentAsync(HttpMethod.Delete, $"/api/events/attachments/{fileId:D}", cancellationToken);
     public Task<PublicEventDto> GetPublicEventAsync(string code, string token, CancellationToken cancellationToken = default) =>
         GetAsync<PublicEventDto>($"/api/events/public/{Uri.EscapeDataString(code)}?token={Uri.EscapeDataString(token)}", cancellationToken);
+    public Task<PublicEventConfirmResultDto> ConfirmPublicEventAsync(string code, string token, PublicEventCheckInRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<PublicEventConfirmResultDto>(HttpMethod.Post, $"/api/events/public/{Uri.EscapeDataString(code)}/confirm?token={Uri.EscapeDataString(token)}", request, cancellationToken);
+    public Task<PublicEventConfirmResultDto> DeclinePublicEventAsync(string code, string token, PublicEventCheckInRequest request, CancellationToken cancellationToken = default) =>
+        SendAsync<PublicEventConfirmResultDto>(HttpMethod.Post, $"/api/events/public/{Uri.EscapeDataString(code)}/decline?token={Uri.EscapeDataString(token)}", request, cancellationToken);
     public Task<PublicEventCheckInResultDto> CheckInPublicEventAsync(string code, string token, PublicEventCheckInRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<PublicEventCheckInResultDto>(HttpMethod.Post, $"/api/events/public/{Uri.EscapeDataString(code)}/check-in?token={Uri.EscapeDataString(token)}", request, cancellationToken);
 

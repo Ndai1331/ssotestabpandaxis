@@ -10,11 +10,13 @@
 @inject NavigationManager Navigation
 @inject IStringLocalizer<HCSResource> Localizer
 @inject AccountProfileClient Account
+@inject IJSRuntime Js
 @implements IDisposable
 
 <div class="hcs-app-shell @(mobileNavOpen ? "hcs-app-shell--nav-open" : null)" @onkeydown="HandleKeyDown">
     <a class="hcs-skip-link" href="#main-content" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">@Localizer["Menu:SkipToContent"]</a>
     <header class="hcs-header">
+        <HcsBusyBar />
         <div class="hcs-header__top">
             <a class="hcs-brand" href="/workspace" aria-label="HCS - @Localizer["Menu:Workspace"]" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
                 <span class="hcs-brand__mark" aria-hidden="true"><img src="/images/logo/logo.png" alt="" width="100" height="70" /></span>
@@ -33,13 +35,20 @@
 
             <div class="hcs-header__actions" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
                 <CultureSelector />
-                <button class="hcs-icon-button" type="button" data-hcs-notification-trigger="true" aria-label='@Localizer["Notifications:Title"]' @onclick="ToggleNotificationsAsync">
-                    <i class="fa fa-bell" aria-hidden="true"></i>
-                    @if (unreadNotifications > 0)
-                    {
-                        <span class="hcs-icon-badge">@unreadNotifications</span>
-                    }
-                </button>
+                <div class="hcs-top-pop">
+                    <button class="hcs-icon-button" type="button" data-hcs-notification-trigger="true" aria-label='@Localizer["Notifications:Title"]' @onclick="ToggleNotificationsAsync">
+                        <i class="fa fa-bell" aria-hidden="true"></i>
+                        @if (unreadNotifications > 0)
+                        {
+                            <span class="hcs-icon-badge">@unreadNotifications</span>
+                        }
+                    </button>
+                    <AuthorizeView>
+                        <Authorized>
+                            <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" ChatUnreadCountChanged="OnChatUnreadChanged" />
+                        </Authorized>
+                    </AuthorizeView>
+                </div>
                 <AuthorizeView Policy="Collaboration.Chat">
                     <Authorized>
                         <a class="hcs-icon-button hcs-icon-link" href="/chat" aria-label='@Localizer["Chat:HeaderShortcut"]'>
@@ -57,10 +66,6 @@
                             <summary aria-label='@Localizer["Auth:OpenAccountMenu"]'
                                      @onclick="ToggleUserMenu"
                                      @onclick:preventDefault="true">
-                                <span class="hcs-user-menu__copy">
-                                    <strong>@DisplayName(authenticationState.User)</strong>
-                                    <small>@RoleName(authenticationState.User)</small>
-                                </span>
                                 @AvatarMarkup(authenticationState.User, large: false)
                                 <i class="fa fa-chevron-down" aria-hidden="true"></i>
                             </summary>
@@ -315,12 +320,49 @@
     }
 
     <main id="main-content" class="hcs-main-content" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">@Body</main>
-    <div class="hcs-app-shell__notifications" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
-        <AuthorizeView>
+    <nav class="hcs-bottom-nav" aria-label="@Localizer["Menu:BottomNav"]">
+        <AuthorizeView Policy="Documents.View">
             <Authorized>
-                <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" ChatUnreadCountChanged="OnChatUnreadChanged" />
+                <a class="@BottomNavClass("documents")" href="/manage-documents?sourceType=0" aria-current="@(IsBottomNavActive("documents") ? "page" : null)">
+                    <i class="fa fa-file-lines" aria-hidden="true"></i>
+                    <span>@Localizer["Menu:Documents"]</span>
+                </a>
             </Authorized>
         </AuthorizeView>
+        <AuthorizeView Policy="Documents.Signing.Execute">
+            <Authorized>
+                <a class="@BottomNavClass("signing")" href="/document-signing" aria-current="@(IsBottomNavActive("signing") ? "page" : null)">
+                    <i class="fa fa-signature" aria-hidden="true"></i>
+                    <span>@Localizer["Menu:DocumentSigning"]</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
+        <a class="@BottomNavClass("workspace") hcs-bottom-nav__item--center" href="/workspace" aria-current="@(IsBottomNavActive("workspace") ? "page" : null)">
+            <i class="fa fa-house" aria-hidden="true"></i>
+            <span>@Localizer["Menu:Workspace"]</span>
+        </a>
+        <AuthorizeView Policy="Collaboration.Chat">
+            <Authorized>
+                <a class="@BottomNavClass("chat")" href="/chat" aria-current="@(IsBottomNavActive("chat") ? "page" : null)">
+                    <i class="fa fa-comments" aria-hidden="true"></i>
+                    <span>@Localizer["Menu:BottomChat"]</span>
+                    @if (unreadChat > 0)
+                    {
+                        <span class="hcs-icon-badge">@unreadChat</span>
+                    }
+                </a>
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView Policy="WorkManagement.ProjectTasks">
+            <Authorized>
+                <a class="@BottomNavClass("tasks")" href="/tasks" aria-current="@(IsBottomNavActive("tasks") ? "page" : null)">
+                    <i class="fa fa-list-check" aria-hidden="true"></i>
+                    <span>@Localizer["Menu:Tasks"]</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
+    </nav>
+    <div class="hcs-app-shell__notifications" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
         <UiNotificationAlert />
         <UiMessageAlert />
     </div>
@@ -374,6 +416,10 @@
             if (wasMobileNavOpen)
             {
                 await navToggle.FocusAsync();
+            }
+            else
+            {
+                await BlurActiveAsync();
             }
 
             StateHasChanged();
@@ -490,6 +536,22 @@
         {
             await navToggle.FocusAsync();
         }
+        else
+        {
+            await BlurActiveAsync();
+        }
+    }
+
+    private async Task BlurActiveAsync()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("hcsBlurActive");
+        }
+        catch
+        {
+            // Helper may not be loaded yet during first paint.
+        }
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs args)
@@ -508,6 +570,30 @@
     private async Task CloseMobileNavAndFocus()
     {
         await CloseMobileNav();
+    }
+
+    private string BottomNavClass(string section) =>
+        IsBottomNavActive(section) ? "hcs-bottom-nav__item is-active" : "hcs-bottom-nav__item";
+
+    private bool IsBottomNavActive(string section)
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri).Split('#', '?')[0].Trim('/');
+        var path = "/" + relative.ToLowerInvariant();
+        return section switch
+        {
+            "documents" => path.StartsWith("/manage-documents", StringComparison.Ordinal)
+                || path.StartsWith("/my-documents", StringComparison.Ordinal)
+                || path.StartsWith("/document-detail", StringComparison.Ordinal)
+                || path.StartsWith("/document-assignments", StringComparison.Ordinal)
+                || path.StartsWith("/document-files", StringComparison.Ordinal)
+                || path.StartsWith("/document-histories", StringComparison.Ordinal),
+            "signing" => path.StartsWith("/document-signing", StringComparison.Ordinal),
+            "workspace" => path is "/" or "/workspace",
+            "chat" => path.StartsWith("/chat", StringComparison.Ordinal),
+            "tasks" => path.StartsWith("/tasks", StringComparison.Ordinal)
+                || path.StartsWith("/project-task", StringComparison.Ordinal),
+            _ => false
+        };
     }
 
     private bool IsMenuHrefActive(string href)
@@ -549,7 +635,6 @@
     private string DisplayName(System.Security.Claims.ClaimsPrincipal user) =>
         user.Identity?.Name ?? user.FindFirst("preferred_username")?.Value ?? Localizer["Auth:UserFallback"];
     private string Email(System.Security.Claims.ClaimsPrincipal user) => user.FindFirst("email")?.Value ?? Localizer["Auth:AccountFallback"];
-    private string RoleName(System.Security.Claims.ClaimsPrincipal user) => user.IsInRole("admin") ? Localizer["Auth:AdminRole"] : Localizer["Auth:UserRole"];
     private string Initials(System.Security.Claims.ClaimsPrincipal user)
     {
         var value = DisplayName(user).Trim();

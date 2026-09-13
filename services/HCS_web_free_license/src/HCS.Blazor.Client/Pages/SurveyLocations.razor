@@ -8,88 +8,117 @@
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Menu:SurveyLocations"] · HCS</PageTitle>
-<section class="hcs-catalog-page" aria-labelledby="survey-locations-title">
-    <header class="hcs-catalog-titlebar">
-        <div class="min-w-0">
-            <h1 id="survey-locations-title">@L["Menu:SurveyLocations"]</h1>
+<section class="page page-wf page-dm" aria-labelledby="survey-locations-title">
+    <div class="page-head">
+        <h1 id="survey-locations-title">@L["Menu:SurveyLocations"]</h1>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="ExportAsync" disabled="@(pageItems.Count == 0 || isLoading)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+                @L["Catalog:Export"]
+            </button>
+            <button class="btn btn-primary" type="button" @onclick="OpenCreate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Catalog:New"]
+            </button>
         </div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="ExportAsync" Disabled="@(pageItems.Count == 0 || isLoading)">
-                <i class="fa fa-download me-1" aria-hidden="true"></i> @L["Catalog:Export"]
-            </Button>
-            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate">
-                <Icon Name="@IconName.Add" /> @L["Catalog:New"]
-            </Button>
-        </div>
-    </header>
-    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
-        <div class="hcs-catalog-filter-row">
-            <Addons Class="hcs-catalog-search">
-                <Addon AddonType="AddonType.Body">
-                    <TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" Autofocus="true" />
-                </Addon>
-                <Addon AddonType="AddonType.End">
-                    <Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading">
-                        <i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]
-                    </Button>
-                </Addon>
-            </Addons>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-toggle" Clicked="() => showFilters = !showFilters">
-                <i class="fa fa-sliders me-2"></i>@L["Catalog:Filter"]
-                <i class="fa @(showFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2"></i>
-            </Button>
-        </div>
-        @if (showFilters)
-        {
-            <div class="hcs-catalog-advanced-filter">
-                <Field>
-                    <FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                    <Select TValue="string" @bind-Value="statusFilter">
-                        <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                        <SelectItem Value="@("true")">@L["Catalog:Active"]</SelectItem>
-                        <SelectItem Value="@("false")">@L["Catalog:Inactive"]</SelectItem>
-                    </Select>
-                </Field>
-                <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
+    </div>
+    <section class="docs-main">
+        <form class="docs-toolbar" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+            <label class="sr-only" for="sl-q">@L["Catalog:SearchPlaceholder"]</label>
+            <input class="input docs-search" id="sl-q" type="search" @bind="filter" @bind:event="oninput"
+                   placeholder="@L["Catalog:SearchPlaceholder"]" autocomplete="off" />
+            <button class="btn btn-primary" type="submit" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:SearchButton"]
+            </button>
+            <HcsDismissible Class="filter-pop" @bind-IsOpen="showFilters">
+                <button class="btn btn-outline @(string.IsNullOrEmpty(statusFilter) ? null : "is-filtered")" type="button"
+                        aria-expanded="@showFilters.ToString().ToLowerInvariant()"
+                        @onclick="() => showFilters = !showFilters">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                    @L["Catalog:Filter"]
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="filter-menu @(showFilters ? "is-open" : null)" role="menu">
+                    <button type="button" class="@(string.IsNullOrEmpty(statusFilter) ? "is-active" : null)" @onclick="FilterAll">@L["Catalog:AllStatuses"]</button>
+                    <button type="button" class="@(statusFilter == "true" ? "is-active" : null)" @onclick="FilterActive">@L["Catalog:Active"]</button>
+                    <button type="button" class="@(statusFilter == "false" ? "is-active" : null)" @onclick="FilterInactive">@L["Catalog:Inactive"]</button>
+                </div>
+            </HcsDismissible>
+        </form>
+        <div class="docs-table-wrap">
+            @if (isLoading && pageItems.Count == 0)
+            {
+                <DocsEmpty Loading="true" />
+            }
+            else if (pageItems.Count == 0)
+            {
+                <DocsEmpty Hint="@L["Catalog:EmptyDescription"]" />
+            }
+            else
+            {
+                <table class="docs-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Catalog:Code"]</th>
+                            <th scope="col">@L["Catalog:Name"]</th>
+                            <th scope="col">@L["Feature:Description"]</th>
+                            <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                            <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in pageItems)
+                    {
+                        <tr @key="item.Id">
+                            <td class="doc-code">@item.Code</td>
+                            <td>@item.Name</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.Description) ? "—" : item.Description)</td>
+                            <td>
+                                <span class="dm-status @(item.IsActive ? "is-on" : "is-off")" title="@(item.IsActive ? L["Catalog:Active"] : L["Catalog:Inactive"])">
+                                    @if (item.IsActive)
+                                    {
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+                                    }
+                                    else
+                                    {
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                                    }
+                                </span>
+                            </td>
+                            <td>
+                                <div class="doc-actions">
+                                    <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => OpenEdit(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                    </button>
+                                    <button class="doc-action" type="button" title="@L["Feature:CopyLink"]" aria-label="@L["Feature:CopyLink"]" @onclick="() => CopyCollectionLinkAsync(item.Id)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l1-1a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-1 1a5 5 0 0 0 7 7l1-1"/></svg>
+                                    </button>
+                                    <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                <button type="button" disabled="@(!CanPrev)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
+                <button type="button" disabled="@(!CanPrev)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
+                <button type="button" disabled="@(!CanNext)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
+                <button type="button" disabled="@(!CanNext)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
+                <label class="sr-only" for="sl-page-size">@L["Catalog:PageSize"]</label>
+                <select id="sl-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                    @foreach (var size in pageSizes)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
             </div>
-        }
-    </CardBody></Card>
-    <Card Class="hcs-catalog-grid-card"><CardBody>
-        <DataGrid TItem="SurveyLocationDto" Data="@pageItems" TotalItems="@totalCount" ReadData="OnReadAsync"
-                  ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
-                  Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
-            <EmptyTemplate>
-                <div class="hcs-empty py-5"><i class="fa fa-inbox" aria-hidden="true"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Catalog:EmptyDescription"]</p></div>
-            </EmptyTemplate>
-            <LoadingTemplate>
-                <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
-            </LoadingTemplate>
-            <DataGridColumns>
-                <DataGridColumn TItem="SurveyLocationDto" Caption="">
-                    <DisplayTemplate><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" aria-hidden="true" /></DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="SurveyLocationDto" Field="@nameof(SurveyLocationDto.Code)" Caption="@L["Catalog:Code"].Value" />
-                <DataGridColumn TItem="SurveyLocationDto" Field="@nameof(SurveyLocationDto.Name)" Caption="@L["Catalog:Name"].Value" />
-                <DataGridColumn TItem="SurveyLocationDto" Field="@nameof(SurveyLocationDto.Description)" Caption="@L["Feature:Description"].Value" />
-                <DataGridColumn TItem="SurveyLocationDto" Caption="@L["Catalog:Status"].Value">
-                    <DisplayTemplate Context="cell">
-                        <span class="hcs-status-icon @(cell.Item.IsActive ? "hcs-status-icon--active" : "hcs-status-icon--inactive")" title="@(cell.Item.IsActive ? L["Catalog:Active"].Value : L["Catalog:Inactive"].Value)">
-                            <i class="fa @(cell.Item.IsActive ? "fa-check" : "fa-xmark")" aria-hidden="true"></i>
-                        </span>
-                    </DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="SurveyLocationDto" Caption="@L["Catalog:Actions"].Value">
-                    <DisplayTemplate Context="cell">
-                        <div class="hcs-row-actions">
-                            <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--edit" Title="@L["Catalog:Edit"]" Clicked="() => OpenEdit(cell.Item)"><Icon Name="@IconName.Edit" /></Button>
-                            <Button Color="Color.Info" Outline="true" Size="Size.Small" Class="hcs-action-button" Title="@L["Feature:CopyLink"]" Clicked="() => CopyCollectionLinkAsync(cell.Item.Id)"><Icon Name="@IconName.Link" /></Button>
-                            <Button Color="Color.Danger" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--delete" Title="@L["Catalog:Delete"]" Clicked="() => DeleteAsync(cell.Item)"><Icon Name="@IconName.Delete" /></Button>
-                        </div>
-                    </DisplayTemplate>
-                </DataGridColumn>
-            </DataGridColumns>
-        </DataGrid>
-    </CardBody></Card>
+        </div>
+    </section>
 </section>
 
 <Modal @ref="modal"><ModalContent Centered Class="hcs-catalog-modal">
@@ -124,15 +153,36 @@
     private Guid? editingId;
     private string filter = "";
     private string statusFilter = "";
-    private bool isLoading, isSaving, showFilters, loaded;
+    private bool isLoading, isSaving, showFilters;
     private int totalCount, pageSize = 20, currentPage = 1;
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
 
-    private async Task OnReadAsync(DataGridReadDataEventArgs<SurveyLocationDto> args)
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private Task GoFirst() { currentPage = 1; ApplyPage(); return Task.CompletedTask; }
+    private Task GoPrev() { if (!CanPrev) return Task.CompletedTask; currentPage--; ApplyPage(); return Task.CompletedTask; }
+    private Task GoNext() { if (!CanNext) return Task.CompletedTask; currentPage++; ApplyPage(); return Task.CompletedTask; }
+    private Task GoLast() { currentPage = PageCount; ApplyPage(); return Task.CompletedTask; }
+    private Task OnPageSizeChanged(ChangeEventArgs args)
     {
-        currentPage = Math.Max(args.Page, 1);
-        pageSize = Math.Clamp(args.PageSize, 10, 100);
-        if (!loaded) await LoadAsync();
-        else ApplyPage();
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        ApplyPage();
+        return Task.CompletedTask;
+    }
+    private Task FilterAll() => SetStatusFilter(string.Empty);
+    private Task FilterActive() => SetStatusFilter("true");
+    private Task FilterInactive() => SetStatusFilter("false");
+    private Task SetStatusFilter(string value)
+    {
+        statusFilter = value;
+        showFilters = false;
+        currentPage = 1;
+        ApplyPage();
+        return Task.CompletedTask;
     }
 
     private async Task LoadAsync()
@@ -143,7 +193,6 @@
             allItems.Clear();
             allItems.AddRange(await Work.GetLocationsAsync());
             Cache.Set(false, allItems.Select(x => new SurveyCatalogItem(x.Id, x.Code, x.Name, 0, x.IsActive)).ToList());
-            loaded = true;
             ApplyPage();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }

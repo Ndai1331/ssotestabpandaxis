@@ -5,13 +5,11 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Blazorise;
-using Blazorise.DataGrid;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Volo.Abp.AspNetCore.Components.Messages;
-using Volo.Abp.BlazoriseUI.Components;
 
 namespace HCS.Blazor.Client.Pages.Organization;
 
@@ -30,7 +28,6 @@ public partial class OrganizationCatalog : System.IDisposable
 
     private readonly List<OrganizationCatalogRow> rows = [];
     private readonly List<DepartmentCatalogDto> departmentOptions = [];
-    private DataGrid<OrganizationCatalogRow>? dataGrid;
     private Modal? editModal;
     private Validations? validations;
     private OrganizationCatalogFormModel form = new();
@@ -92,11 +89,38 @@ public partial class OrganizationCatalog : System.IDisposable
             await LoadDepartmentOptionsAsync();
         }
 
-        // Same component instance can receive a new MasterType without remounting.
-        if (definitionChanged && isAuthorized && dataGrid is not null)
+        if (definitionChanged && isAuthorized)
         {
-            await dataGrid.Reload();
+            await LoadPageAsync(currentPage, pageSize);
         }
+    }
+
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
+
+    private Task GoFirst() { currentPage = 1; return LoadPageAsync(currentPage, pageSize); }
+    private Task GoPrev() { if (!CanPrev) return Task.CompletedTask; currentPage--; return LoadPageAsync(currentPage, pageSize); }
+    private Task GoNext() { if (!CanNext) return Task.CompletedTask; currentPage++; return LoadPageAsync(currentPage, pageSize); }
+    private Task GoLast() { currentPage = PageCount; return LoadPageAsync(currentPage, pageSize); }
+
+    private Task OnPageSizeChanged(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, PageSizeOptions[0], PageSizeOptions[^1]);
+        currentPage = 1;
+        return LoadPageAsync(currentPage, pageSize);
+    }
+
+    private Task FilterAllAsync() => SetStatusFilterAsync(string.Empty);
+    private Task FilterActiveAsync() => SetStatusFilterAsync("true");
+    private Task FilterInactiveAsync() => SetStatusFilterAsync("false");
+
+    private Task SetStatusFilterAsync(string value)
+    {
+        statusFilter = value;
+        showAdvancedFilters = false;
+        return SearchAsync();
     }
 
     public void Dispose()

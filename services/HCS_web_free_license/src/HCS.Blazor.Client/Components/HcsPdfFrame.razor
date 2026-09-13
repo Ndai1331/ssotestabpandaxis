@@ -1,19 +1,150 @@
 @namespace HCS.Blazor.Client.Components
+@using System.Globalization
+@inherits HCSComponentBase
+@inject IJSRuntime Js
 
 @if (!string.IsNullOrWhiteSpace(Source))
 {
-    <div class="hcs-pdf-frame hcs-pdf-frame--fill" title="@Title">
-        <PdfViewerContainer Height="EffectiveHeight">
-            <PdfViewerToolbar ShowDownloading="false" />
-            <PdfViewer @key="Source" Source="@Source" />
-        </PdfViewerContainer>
+    <div class="hcs-pdf-frame @(MatchParent ? "hcs-pdf-frame--fill" : null) @(rotation % 180 == 90 ? "is-rotated" : null)">
+        <div class="hcs-pdf-toolbar" role="toolbar" aria-label="@L["Work:PdfPreview"]">
+            <button type="button" class="hcs-pdf-tool" @onclick="ZoomOut" disabled="@(zoomIndex == 0)"
+                    title="@L["Document:PdfZoomOut"]" aria-label="@L["Document:PdfZoomOut"]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3M8 11h6"/></svg>
+            </button>
+            <span class="hcs-pdf-zoom">@ZoomSteps[zoomIndex]%</span>
+            <button type="button" class="hcs-pdf-tool" @onclick="ZoomIn" disabled="@(zoomIndex == ZoomSteps.Length - 1)"
+                    title="@L["Document:PdfZoomIn"]" aria-label="@L["Document:PdfZoomIn"]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3M11 8v6M8 11h6"/></svg>
+            </button>
+            <button type="button" class="hcs-pdf-tool" @onclick="Rotate"
+                    title="@L["Document:PdfRotate"]" aria-label="@L["Document:PdfRotate"]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+            </button>
+            <button type="button" class="hcs-pdf-tool" @onclick="PrintAsync"
+                    title="@L["Document:PdfPrint"]" aria-label="@L["Document:PdfPrint"]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>
+            </button>
+            <button type="button" class="hcs-pdf-tool" @onclick="DownloadAsync"
+                    title="@L["Document:DownloadFile"]" aria-label="@L["Document:DownloadFile"]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 20h14"/></svg>
+            </button>
+        </div>
+        <div class="hcs-pdf-frame__viewport">
+            <div class="hcs-pdf-frame__sheet" style="@SheetStyle">
+                <iframe @ref="frame"
+                        class="hcs-pdf-frame__embed"
+                        src="@EmbedSrc"
+                        title="@Title"
+                        type="application/pdf"
+                        height="100%"></iframe>
+            </div>
+        </div>
     </div>
 }
 @code {
+    private static readonly int[] ZoomSteps = [75, 100, 125, 150, 200];
+
     [Parameter] public string? Source { get; set; }
     [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? FileName { get; set; }
     [Parameter] public IFluentSizing? ViewerHeight { get; set; }
     [Parameter] public bool MatchParent { get; set; }
+    [Parameter] public EventCallback OnPrinted { get; set; }
+    [Parameter] public EventCallback OnDownloaded { get; set; }
 
-    private IFluentSizing EffectiveHeight => MatchParent ? Height.Is100 : ViewerHeight ?? Height.Rem(50);
+    private int zoomIndex = 1;
+    private int rotation;
+    private string? lastSource;
+    private ElementReference frame;
+
+    private string EmbedSrc
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Source))
+            {
+                return "";
+            }
+
+            var hash = Source.IndexOf('#', StringComparison.Ordinal);
+            var url = hash >= 0 ? Source[..hash] : Source;
+            return url + "#toolbar=0&navpanes=0&scrollbar=1&view=FitH";
+        }
+    }
+
+    private string SheetStyle
+    {
+        get
+        {
+            var scale = (ZoomSteps[zoomIndex] / 100d).ToString("0.##", CultureInfo.InvariantCulture);
+            return $"transform:rotate({rotation}deg) scale({scale})";
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (lastSource == Source)
+        {
+            return;
+        }
+
+        lastSource = Source;
+        zoomIndex = 1;
+        rotation = 0;
+    }
+
+    private void ZoomOut()
+    {
+        if (zoomIndex > 0)
+        {
+            zoomIndex--;
+        }
+    }
+
+    private void ZoomIn()
+    {
+        if (zoomIndex < ZoomSteps.Length - 1)
+        {
+            zoomIndex++;
+        }
+    }
+
+    private void Rotate() => rotation = (rotation + 90) % 360;
+
+    private async Task PrintAsync()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("hcsPdf.print", frame);
+            await OnPrinted.InvokeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private async Task DownloadAsync()
+    {
+        var url = Source?.Split('#')[0];
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
+
+        var name = string.IsNullOrWhiteSpace(FileName) ? "document.pdf" : FileName;
+        try
+        {
+            await Js.InvokeVoidAsync("hcsPdf.download", url, name);
+            await OnDownloaded.InvokeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
 }

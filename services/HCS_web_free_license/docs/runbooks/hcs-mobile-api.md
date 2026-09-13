@@ -709,14 +709,16 @@ Create/update event body `{group,name,content?,description?,location?,startTime,
 
 Attendee body có `userId?,username?,surname?,name?,fullName,cccd?,phoneNumber?,email,address?,registrationStatus,checkInStatus,note?`. Update không cần `userId`. Bulk delete nhận raw JSON array GUID; response là số lượng đã xóa. Import trả `{imported,skipped}`.
 
-Public event check-in không cần bearer:
+Public event RSVP/check-in requires a signed-in user (BFF cookie or bearer). Confirm or decline only while status is `Preparing`; check-in only while `Ongoing`.
 
 ```text
 GET  /events/public/{code}?token={qr_token}
+POST /events/public/{code}/confirm?token={qr_token}
+POST /events/public/{code}/decline?token={qr_token}
 POST /events/public/{code}/check-in?token={qr_token}
 ```
 
-Check-in body `{fullName?,cccd?,phoneNumber?,email?}`, response `{fullName,checkedInAt}`. Không đưa endpoint public này vào luồng admin attendance.
+Public GET returns `{code,name,startTime,endTime,location,attachments,status,content,description,registrationStatus,checkInStatus,checkedInAt}`. Confirm/decline/check-in bodies are empty; confirm and decline return `{fullName,registrationStatus}`, check-in returns `{fullName,checkedInAt}`. Không đưa endpoint public này vào luồng admin attendance.
 
 ### 6.5. Surveys, employee ratings, dashboard và reports
 

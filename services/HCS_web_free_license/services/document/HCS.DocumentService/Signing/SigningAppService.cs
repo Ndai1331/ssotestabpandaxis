@@ -55,19 +55,27 @@ public sealed class SigningAppService(
         DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningExecute);
 
         var query = db.WorkflowInstances.AsNoTracking().Include(x => x.Tasks)
-            .Where(x => x.Status == WorkflowInstanceStatus.Running
-                && x.Tasks.Any(task => task.Status == ApprovalTaskStatus.Pending)
-                && db.Documents.Any(document => document.Id == x.DocumentId
-                    && document.SourceType == DocumentSourceType.Workflow));
+            .Where(x => db.Documents.Any(document => document.Id == x.DocumentId
+                    && document.SourceType == DocumentSourceType.Workflow)
+                && (x.Tasks.Any(task => task.Status == ApprovalTaskStatus.Pending)
+                    || x.Tasks.Any(task => task.Status != ApprovalTaskStatus.Pending
+                        && (task.AssigneeUserId == userId || task.DecidedBy == userId))
+                    || db.Documents.Any(document => document.Id == x.DocumentId && document.FromUserId == userId)));
         if (!DocumentAccess.IsElevated(principal))
         {
             query = query.Where(instance =>
-                db.Documents.Any(document => document.Id == instance.DocumentId &&
-                    (document.Assignments.Any(a => a.AssigneeUserId == userId) ||
+                instance.Tasks.Any(task => task.AssigneeUserId == userId || task.DecidedBy == userId)
+                || db.Documents.Any(document => document.Id == instance.DocumentId &&
+                    (document.FromUserId == userId ||
+                     document.Assignments.Any(a => a.AssigneeUserId == userId) ||
                      document.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))));
         }
 
-        var instances = await query.OrderByDescending(x => x.CreationTime).Take(200).ToListAsync(cancellationToken);
+        var instances = await query
+            .OrderByDescending(x => x.Tasks.Any(task => task.Status == ApprovalTaskStatus.Pending))
+            .ThenByDescending(x => x.CreationTime)
+            .Take(200)
+            .ToListAsync(cancellationToken);
         if (instances.Count == 0) return [];
 
         var documentIds = instances.Select(x => x.DocumentId).Distinct().ToArray();
@@ -81,27 +89,57 @@ public sealed class SigningAppService(
             .Where(x => definitionIds.Contains(x.Id)).Include(x => x.Steps)
             .ToDictionaryAsync(x => x.Id, cancellationToken);
 
-        return instances.SelectMany(instance =>
-                instance.Tasks.Where(task => task.Status == ApprovalTaskStatus.Pending)
-                    .Select(task => (instance, task)))
-            .Where(x => documents.ContainsKey(x.instance.DocumentId)
-                && definitions.TryGetValue(x.instance.DefinitionId, out var definition)
-                && definition.Steps.Any(step => step.Code == x.task.StepCode
-                    && (step.Type is "SIGN" or "PROCESS")))
+        return instances
+            .Where(instance => documents.ContainsKey(instance.DocumentId)
+                && definitions.ContainsKey(instance.DefinitionId))
+            .SelectMany(instance =>
+            {
+                var document = documents[instance.DocumentId];
+                var definition = definitions[instance.DefinitionId];
+                return SelectQueueTasks(instance.Tasks, definition.Steps, userId, document.FromUserId)
+                    .Select(task => (instance, task, document, definition));
+            })
+            .OrderBy(x => x.task.Status == ApprovalTaskStatus.Pending ? 0 : 1)
+            .ThenByDescending(x => x.task.DecidedAt ?? x.instance.CreationTime)
             .Select(x => new SigningQueueItemDto(
-                MapQueueDocument(documents[x.instance.DocumentId]),
+                MapQueueDocument(x.document),
                 new ApprovalTaskDto(x.task.Id, x.task.InstanceId, x.task.StepCode, x.task.Status,
                     x.task.DecidedBy, x.task.DecidedAt, x.task.AssigneeUserId, x.task.DueAt, x.task.Comment),
                 WorkflowAppService.Map(x.instance),
-                WorkflowAppService.MapDefinition(definitions[x.instance.DefinitionId])))
+                WorkflowAppService.MapDefinition(x.definition)))
             .ToList();
+    }
+
+    internal static IReadOnlyList<ApprovalTask> SelectQueueTasks(
+        IEnumerable<ApprovalTask> tasks,
+        IEnumerable<WorkflowStep> steps,
+        Guid userId,
+        Guid? submittedByUserId)
+    {
+        var actionCodes = steps
+            .Where(step => WorkflowStepTypes.IsBlocking(step.Type))
+            .Select(step => step.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var actionTasks = tasks.Where(task => actionCodes.Contains(task.StepCode)).ToList();
+        var selected = actionTasks.Where(task =>
+            task.Status == ApprovalTaskStatus.Pending
+            || task.AssigneeUserId == userId
+            || task.DecidedBy == userId).ToList();
+        if (submittedByUserId == userId && selected.Count == 0 && actionTasks.Count > 0)
+        {
+            selected.Add(actionTasks
+                .OrderByDescending(task => task.DecidedAt ?? task.CreationTime)
+                .First());
+        }
+
+        return selected;
     }
 
     private static SigningQueueDocumentDto MapQueueDocument(DocumentAggregate document) =>
         new(document.Id, document.Number, document.Title, document.Description, document.Status,
             document.Files.Select(file => new DocumentFileDto(file.Id, file.FileName, file.ContentType,
                 file.Size, file.Sha256, file.CreationTime, file.PairedFileId)).ToList(),
-            document.CreationTime, document.SourceType, document.FromUserId);
+            document.CreationTime, document.SourceType, document.FromUserId, document.DocumentCode);
 
     public async Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {

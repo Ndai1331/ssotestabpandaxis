@@ -5,7 +5,7 @@
 .hcs-event-filter-range__label { align-items: center; color: var(--color-muted, #5C6578); display: inline-flex; font-size: .8rem; gap: .4rem; margin-bottom: .45rem; }
 .hcs-event-filter-range .hcs-datepicker, .hcs-event-filter-range .b-is-datepicker { max-width: 28rem; overflow: visible; }
 .hcs-event-filter-range .form-control, .hcs-event-filter-range .b-is-datepicker .form-control { height: 36px; max-height: 36px; min-height: 36px; padding-bottom: .35rem; padding-top: .35rem; }
-.hcs-event-filter-range .datepicker-calendar.dropdown-menu { background-color: #fff !important; border: 1px solid var(--hcs-color-border, #dde4ee) !important; box-shadow: var(--hcs-shadow-md); z-index: var(--hcs-z-popover) !important; }
+.hcs-event-filter-range .datepicker-calendar.dropdown-menu { background-color: #fff !important; border: 1px solid var(--input-border, var(--hcs-input-border, #D7E2E6)) !important; box-shadow: var(--hcs-shadow-md); z-index: var(--hcs-z-popover) !important; }
 .hcs-event-filter-range .datepicker-backdrop { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 .hcs-event-filter-action { padding-bottom: .05rem; }
 .hcs-event-kpi-grid { display: grid; gap: 1rem; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 1rem; }

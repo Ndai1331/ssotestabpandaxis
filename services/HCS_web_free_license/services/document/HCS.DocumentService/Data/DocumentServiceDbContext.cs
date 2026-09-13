@@ -34,12 +34,15 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
         builder.Entity<DocumentAggregate>(b =>
         {
             b.ToTable("Documents"); b.HasKey(x => x.Id); b.Property(x => x.Number).HasMaxLength(64).IsRequired();
+            b.Property(x => x.DocumentCode).HasMaxLength(64);
             b.Property(x => x.Title).HasMaxLength(256).IsRequired(); b.Property(x => x.Description).HasMaxLength(2000);
             b.Property(x => x.Version).IsRowVersion();
             b.HasIndex(x => x.Number, "IX_Documents_Number").IsUnique();
             b.HasIndex(x => x.Number, "IX_Documents_Number_Trgm")
                 .HasMethod("gin").HasOperators("gin_trgm_ops");
             b.HasIndex(x => x.Title, "IX_Documents_Title_Trgm")
+                .HasMethod("gin").HasOperators("gin_trgm_ops");
+            b.HasIndex(x => x.DocumentCode, "IX_Documents_DocumentCode_Trgm")
                 .HasMethod("gin").HasOperators("gin_trgm_ops");
             b.HasIndex(x => x.SourceType);
             b.HasIndex(x => x.ParentDocumentId);

@@ -1,19 +1,8 @@
 @inherits HCSComponentBase
 @implements IAsyncDisposable
-<select id="@selectId" class="@CssClass form-select" multiple="@Multiple"></select>
-<style>
-    select.hcs-catalog-select2 + .select2-container { width: 100% !important; }
-    select.hcs-catalog-select2 + .select2-container .select2-selection--single {
-        box-sizing: border-box;
-        height: 36px !important;
-        max-height: 36px !important;
-        min-height: 36px !important;
-    }
-    select.hcs-catalog-select2 + .select2-container .select2-selection--multiple {
-        min-height: 36px;
-        border-radius: 5px;
-    }
-</style>
+<div class="hcs-select2">
+    <select id="@selectId" class="@CssClass form-select" multiple="@Multiple"></select>
+</div>
 @code {
     private readonly string selectId = "hcs-cs2-" + Guid.NewGuid().ToString("n");
     private DotNetObjectReference<CatalogSelect2>? dotNetRef;
@@ -84,8 +73,8 @@
     }
 
     private string CurrentSignature() => Multiple
-        ? SignatureOf(Values)
-        : (Value?.ToString("N") ?? "");
+        ? SignatureOf(Values) + "|" + string.Join("\n", SelectedTexts ?? [])
+        : (Value?.ToString("N") ?? "") + "|" + (SelectedText ?? "");
 
     private static string SignatureOf(IEnumerable<Guid> ids) =>
         string.Join(",", ids.Select(x => x.ToString("N")).OrderBy(x => x, StringComparer.Ordinal));

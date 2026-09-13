@@ -1,0 +1,167 @@
+/* HCS — Hành chính số
+   SOURCE OF TRUTH — edit here, then used by css/tokens.css
+   Three-layer tokens: primitive → semantic → component
+   Visual direction: HCS teal #007f7c + existing UI
+   Type: Minimal Swiss (Inter). Density: dashboard. */
+
+:root {
+  /* ——— Primitive ——— */
+  --color-teal-50: #EAF5F4;
+  --color-teal-100: #C5E6E5;
+  --color-teal-200: #8DCECC;
+  --color-teal-300: #4AADAA;
+  --color-teal-400: #1A938F;
+  --color-teal-500: #007f7c;
+  --color-teal-600: #006866;
+  --color-teal-700: #004F4D;
+  --color-teal-800: #003B3A;
+  --color-teal-900: #002827;
+
+  --color-cyan-500: #0891B2;
+  --color-cyan-600: #0E7490;
+
+  --color-blue-400: #60A5FA;
+  --color-blue-500: #3B6FF5;
+  --color-blue-600: #2563EB;
+
+  --color-green-500: #22C55E;
+  --color-green-600: #16A34A;
+  --color-red-500: #EF4444;
+  --color-red-600: #DC2626;
+  --color-amber-500: #F59E0B;
+  --color-pink-500: #F472B6;
+  --color-rose-500: #F43F5E;
+  --color-violet-500: #8B5CF6;
+  --color-purple-500: #A78BFA;
+  --color-sky-500: #38BDF8;
+
+  --color-gray-50: #F8FAFC;
+  --color-gray-100: #F1F5F9;
+  --color-gray-200: #E2E8F0;
+  --color-gray-300: #CBD5E1;
+  --color-gray-400: #94A3B8;
+  --color-gray-500: #64748B;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1E293B;
+  --color-gray-900: #0F172A;
+
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-md: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 50px rgba(15, 23, 42, 0.16);
+  --shadow-focus: 0 0 0 3px rgba(0, 127, 124, 0.28);
+
+  --duration-fast: 150ms;
+  --duration: 200ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --z-nav: 40;
+  --z-header: 50;
+  --z-dropdown: 60;
+  --z-overlay: 80;
+  --z-modal: 90;
+
+  /* ——— Semantic ——— */
+  --color-primary: var(--color-teal-500);
+  --color-primary-hover: var(--color-teal-600);
+  --color-primary-active: var(--color-teal-700);
+  --color-primary-foreground: var(--color-white);
+  --color-primary-soft: #E6F3F2;
+
+  --color-background: #F3F7F8;
+  --color-foreground: var(--color-gray-800);
+  --color-muted: var(--color-gray-500);
+  --color-muted-foreground: var(--color-gray-500);
+  --color-surface: var(--color-white);
+  --color-surface-foreground: var(--color-gray-800);
+  --color-border: #E6EEF0;
+  --color-input: #D7E2E6;
+  --color-ring: var(--color-teal-500);
+
+  --color-success: var(--color-green-600);
+  --color-danger: var(--color-red-600);
+  --color-warning: var(--color-amber-500);
+  --color-info: var(--color-blue-500);
+  --color-nav: var(--color-teal-500);
+  --color-nav-foreground: var(--color-white);
+
+  --color-htl: #4E9BC7;
+
+  /* ——— Component ——— */
+  --button-bg: var(--color-primary);
+  --button-fg: var(--color-primary-foreground);
+  --button-hover-bg: var(--color-primary-hover);
+  --button-active-bg: var(--color-primary-active);
+  --button-radius: var(--radius-xl);
+  --button-height: 40px;
+  --button-font-size: var(--font-size-md);
+  --button-font-weight: var(--font-weight-semibold);
+
+  --input-bg: var(--color-white);
+  --input-border: var(--color-input);
+  --input-fg: var(--color-foreground);
+  --input-placeholder: var(--color-gray-400);
+  --input-radius: var(--radius-xl);
+  --input-radius-multiline: var(--radius-xl);
+  --input-height: 40px;
+  --input-focus-border: var(--color-primary);
+  --input-focus-ring: var(--shadow-focus);
+
+  --card-bg: var(--color-surface);
+  --card-radius: var(--radius-xl);
+  --card-padding: var(--space-5);
+  --card-shadow: var(--shadow-sm);
+  --card-border: var(--color-border);
+
+  --header-height: 64px;
+  --nav-height: 52px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0.01ms;
+    --duration: 0.01ms;
+  }
+}

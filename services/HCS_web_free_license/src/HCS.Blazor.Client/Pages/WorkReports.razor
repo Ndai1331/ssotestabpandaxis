@@ -5,8 +5,52 @@
 @inject IHttpClientFactory HttpClientFactory
 
 <PageTitle>Báo cáo · HCS</PageTitle>
-<section class="hcs-document-page" aria-labelledby="reports-title">
- <header class="hcs-document-page__header"><div><p class="hcs-document-page__eyebrow">Báo cáo</p><h1 id="reports-title">Báo cáo vận hành</h1><p>Tổng hợp số liệu đã được materialize từ Dự án, Công việc, Lịch và Khảo sát.</p></div><button class="btn btn-outline-primary" @onclick="LoadAsync" disabled="@loading">@(loading?"Đang tải…":"Làm mới")</button></header>
- <div class="card hcs-document-list"><div class="card-body p-0">@if(loading){<p class="p-4 mb-0" role="status" aria-live="polite">Đang tải báo cáo…</p>}else if(rows.Count==0){<div class="p-4"><h2>Chưa có số liệu</h2><p class="mb-0">Dữ liệu báo cáo sẽ xuất hiện khi nghiệp vụ phát sinh và read-model được làm mới.</p></div>}else{<div class="hcs-table-wrap hcs-table-wrap--stacked"><p class="hcs-table-mobile-hint">Trên điện thoại, mỗi dòng được hiển thị theo dạng thẻ.</p><table class="table table-hover align-middle mb-0"><thead><tr><th>Nhóm</th><th>Chỉ tiêu</th><th>Giá trị</th><th>Cập nhật</th></tr></thead><tbody>@foreach(var row in rows){<tr><td data-label="Nhóm">@row.Dimension</td><td data-label="Chỉ tiêu"><strong>@row.Label</strong><br/><small>@row.Key</small></td><td data-label="Giá trị">@row.Value</td><td data-label="Cập nhật">@row.RefreshedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>}</tbody></table></div>}</div></div>
+<section class="page page-wf" aria-labelledby="reports-title">
+    <div class="page-head">
+        <div>
+            <h1 id="reports-title">Báo cáo vận hành</h1>
+            <p class="event-panel-kicker">Tổng hợp số liệu đã được materialize từ Dự án, Công việc, Lịch và Khảo sát.</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@loading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+                @(loading ? "Đang tải…" : "Làm mới")
+            </button>
+        </div>
+    </div>
+    <div class="docs-table-wrap">
+        @if (loading)
+        {
+            <DocsEmpty Loading="true" Title="Đang tải báo cáo…" />
+        }
+        else if (rows.Count == 0)
+        {
+            <DocsEmpty Title="Chưa có số liệu" Hint="Dữ liệu báo cáo sẽ xuất hiện khi nghiệp vụ phát sinh và read-model được làm mới." />
+        }
+        else
+        {
+            <table class="docs-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Nhóm</th>
+                        <th scope="col">Chỉ tiêu</th>
+                        <th scope="col">Giá trị</th>
+                        <th scope="col">Cập nhật</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        <tr>
+                            <td>@row.Dimension</td>
+                            <td><strong>@row.Label</strong><br /><small>@row.Key</small></td>
+                            <td>@row.Value</td>
+                            <td>@row.RefreshedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
 </section>
 @code {private readonly List<ReportRow> rows=[];private bool loading;protected override Task OnInitializedAsync()=>LoadAsync();private async Task LoadAsync(){loading=true;try{using var c=HttpClientFactory.CreateClient("HCS.Bff");rows.Clear();rows.AddRange(await c.GetFromJsonAsync<List<ReportRow>>("/api/reports")??[]);}catch{await NotifyErrorAsync("Không thể tải báo cáo. Hãy kiểm tra quyền truy cập.");}finally{loading=false;}}private sealed record ReportRow(string Dimension,string Key,string Label,decimal Value,DateTime RefreshedAt);}

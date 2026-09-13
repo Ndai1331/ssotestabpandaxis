@@ -51,7 +51,8 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
         }
     }
 
-    public async Task<(DocumentFile File, Stream Content)> OpenAuthorizedAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken)
+    public async Task<(DocumentFile File, Stream Content, string DownloadFileName)> OpenAuthorizedAsync(
+        Guid documentId, Guid fileId, CancellationToken cancellationToken)
     {
         var (principal, userId) = RequireCurrentUser(DocumentPermissions.View);
         var document = await db.Documents.AsNoTracking().Include(x => x.Assignments).Include(x => x.History)
@@ -60,17 +61,39 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
         DocumentAccess.EnsureCanView(document, userId, principal);
         var file = await db.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == fileId && x.DocumentId == documentId && !x.IsPendingDeletion, cancellationToken)
             ?? throw new KeyNotFoundException("Document file not found.");
-        return (file, await blobs.GetAsync(file.BlobName, cancellationToken: cancellationToken));
+        var downloadFileName = DocumentDownloadFileName.For(document.DocumentCode, document.Number, document.Title, file.FileName);
+        return (file, await blobs.GetAsync(file.BlobName, cancellationToken: cancellationToken), downloadFileName);
     }
 
     public async Task DeleteAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken)
     {
         var (principal, userId) = RequireCurrentUser(DocumentPermissions.ManageFiles);
         var document = await LoadManagedDocumentAsync(documentId, userId, principal, cancellationToken);
-        var file = document.BeginFileDeletion(fileId, userId, DateTime.UtcNow);
+        var now = DateTime.UtcNow;
+        var existingFileIds = document.Files.Select(x => x.Id).ToHashSet();
+        var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
+        var target = document.Files.SingleOrDefault(x => x.Id == fileId)
+            ?? throw new KeyNotFoundException("Document file not found.");
+        var deleteIds = new HashSet<Guid> { fileId };
+        if (target.PairedFileId is { } pairedId) deleteIds.Add(pairedId);
+        foreach (var other in document.Files.Where(x => x.PairedFileId == fileId).Select(x => x.Id))
+            deleteIds.Add(other);
+        foreach (var id in deleteIds)
+            document.BeginFileDeletion(id, userId, now);
+        TrackNewChildren(db, document, existingFileIds, existingHistoryIds);
         await db.SaveChangesAsync(cancellationToken);
-        await blobs.DeleteAsync(file.BlobName, cancellationToken: cancellationToken);
-        document.CompleteFileDeletion(fileId, userId, DateTime.UtcNow);
+
+        var pending = document.Files.Where(x => deleteIds.Contains(x.Id) && x.IsPendingDeletion).ToList();
+        foreach (var file in pending)
+        {
+            try { await blobs.DeleteAsync(file.BlobName, cancellationToken: cancellationToken); }
+            catch (Exception ex) { logger.LogWarning(ex, "Blob delete failed for {Blob}; file row will still be removed.", file.BlobName); }
+        }
+
+        existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
+        foreach (var file in pending)
+            document.CompleteFileDeletion(file.Id, userId, now);
+        TrackNewChildren(db, document, existingFileIds, existingHistoryIds);
         await db.SaveChangesAsync(cancellationToken);
     }
 

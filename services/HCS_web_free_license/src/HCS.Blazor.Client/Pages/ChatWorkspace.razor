@@ -24,27 +24,31 @@
 @implements IAsyncDisposable
 
 <PageTitle>@T("Chat:Title") · HCS</PageTitle>
+<HeadContent>
+    <link rel="stylesheet" href="prototype/chat.css" />
+    <link rel="stylesheet" href="prototype/host.css" />
+</HeadContent>
 
-<main class="hcs-chat-page" aria-labelledby="chat-title">
+<main class="hcs-chat-page page-chat chat-app" aria-labelledby="chat-title" @onclick="CloseMessageMenu">
     <h1 id="chat-title" class="visually-hidden">@T("Chat:Title")</h1>
-    <section class="hcs-chat @(infoOpen ? "hcs-chat--info-open" : "hcs-chat--info-collapsed")" aria-label="@T("Chat:Title")">
-        <aside class="hcs-chat__conversations @(mobileView == MobileView.List ? "hcs-chat__panel--mobile-active" : null)" aria-label="@T("Chat:ConversationList")">
-            <div class="hcs-chat__toolbar">
-                <label class="hcs-chat__search">
-                    <span class="visually-hidden">@T("Chat:Search")</span>
-                    <i class="fa fa-magnifying-glass" aria-hidden="true"></i>
-                    <input @bind="conversationSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" />
-                </label>
-                <button class="hcs-chat__icon" type="button" title="@T("Chat:Retry")" aria-label="@T("Chat:Retry")" @onclick="LoadConversationsAsync" disabled="@isLoadingConversations">
-                    <i class="fa fa-rotate @(isLoadingConversations ? "fa-spin" : null)" aria-hidden="true"></i>
-                </button>
-                @* <button class="hcs-chat__compose" type="button" title="@T("Chat:NewConversation")" aria-label="@T("Chat:NewConversation")" @onclick="OpenNewConversation">
-                    <i class="fa fa-pen-to-square" aria-hidden="true"></i>
-                </button> *@
+    <section class="hcs-chat chat-shell @(infoOpen ? "hcs-chat--info-open is-info-open" : "hcs-chat--info-collapsed") @(mobileView == MobileView.Thread ? "is-thread-open" : null)" aria-label="@T("Chat:Title")">
+        <aside class="hcs-chat__conversations chat-list @(mobileView == MobileView.List ? "hcs-chat__panel--mobile-active" : null)" aria-label="@T("Chat:ConversationList")">
+            <div class="hcs-chat__toolbar chat-list-toolbar">
+                <label class="sr-only" for="chat-search">@T("Chat:Search")</label>
+                <div class="hcs-chat__search chat-search">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                    <input id="chat-search" @bind="conversationSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" autocomplete="off" />
+                </div>
             </div>
-            <nav class="hcs-chat__tabs" role="tablist">
-                <button class="@(leftTab == LeftTab.Conversations ? "is-active" : null)" type="button" role="tab" @onclick="() => leftTab = LeftTab.Conversations">@T("Chat:ConversationsTab")</button>
-                <button class="@(leftTab == LeftTab.Contacts ? "is-active" : null)" type="button" role="tab" @onclick="ShowContactsTabAsync">@T("Chat:ContactsTab")</button>
+            <nav class="hcs-chat__tabs chat-list-tabs" role="tablist" aria-label="@T("Chat:ConversationList")">
+                <button class="chat-list-tab @(leftTab == LeftTab.Conversations ? "is-active" : null)" type="button" role="tab" aria-selected="@(leftTab == LeftTab.Conversations)" @onclick="() => leftTab = LeftTab.Conversations">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                    @T("Chat:ConversationsTab")
+                </button>
+                <button class="chat-list-tab @(leftTab == LeftTab.Contacts ? "is-active" : null)" type="button" role="tab" aria-selected="@(leftTab == LeftTab.Contacts)" @onclick="ShowContactsTabAsync">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                    @T("Chat:ContactsTab")
+                </button>
             </nav>
 
             @* The contact picker backs both the "new conversation" panel and the contacts tab. *@
@@ -52,12 +56,14 @@
             {
                 var contactListRole = showNewConversation ? "group" : "list";
                 var contactListLabel = showNewConversation ? T("Chat:SelectContacts") : T("Chat:Directory");
-                <section class="hcs-chat__new @(leftTab == LeftTab.Contacts && !showNewConversation ? "hcs-chat__new--directory" : null)" aria-labelledby="contact-picker-title">
+                <section class="hcs-chat__new chat-list-body chat-contacts @(leftTab == LeftTab.Contacts && !showNewConversation ? "hcs-chat__new--directory" : null)" aria-labelledby="contact-picker-title">
                     @if (showNewConversation)
                     {
                         <div class="hcs-chat__new-heading">
                             <h2 id="contact-picker-title">@T("Chat:NewConversation")</h2>
-                            <button class="hcs-chat__close" type="button" @onclick="CloseNewConversation" aria-label="@T("Chat:Cancel")"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+                            <button class="hcs-chat__close icon-btn" type="button" @onclick="CloseNewConversation" aria-label="@T("Chat:Cancel")">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                            </button>
                         </div>
                     }
                     else
@@ -75,17 +81,17 @@
                     }
                     else if (!FilteredContacts.Any())
                     {
-                        <p class="hcs-chat__state">@T("Chat:EmptyContacts")</p>
+                        <p class="hcs-chat__state chat-empty">@T("Chat:EmptyContacts")</p>
                     }
                     else
                     {
                         <div id="hcs-chat-contacts" class="hcs-chat__contacts" role="@contactListRole" aria-label="@contactListLabel" @onscroll="OnContactsScrollAsync">
                             @foreach (var contact in FilteredContacts)
                             {
-                                <label class="hcs-chat__contact">
+                                <label class="hcs-chat__contact chat-contact">
                                     <input type="checkbox" checked="@selectedContactIds.Contains(contact.Id)" @onchange="args => ToggleContact(contact.Id, args)" />
                                     @UserAvatar(contact.Id, contact.DisplayName, avatarUrl: contact.AvatarUrl)
-                                    <span><strong>@contact.DisplayName</strong><small>@@@contact.UserName</small></span>
+                                    <span class="chat-contact-meta"><strong>@contact.DisplayName</strong><span>@@@contact.UserName</span></span>
                                 </label>
                             }
                             @if (contactsLoadingMore)
@@ -113,39 +119,41 @@
             {
                 @if (isLoadingConversations)
                 {
-                    <p class="hcs-chat__state" role="status">@T("Chat:Loading")</p>
+                    <p class="hcs-chat__state chat-empty chat-list-body" role="status">@T("Chat:Loading")</p>
                 }
                 else if (conversationError is not null)
                 {
-                    <div class="hcs-chat__state hcs-chat__state--error" role="alert"><p>@conversationError</p><button class="btn btn-light btn-sm" type="button" @onclick="LoadConversationsAsync">@T("Chat:Retry")</button></div>
+                    <div class="hcs-chat__state hcs-chat__state--error chat-list-body" role="alert"><p>@conversationError</p><button class="btn btn-light btn-sm" type="button" @onclick="LoadConversationsAsync">@T("Chat:Retry")</button></div>
                 }
                 else if (!FilteredConversations.Any())
                 {
-                    <p class="hcs-chat__state">@T("Chat:EmptyConversations")</p>
+                    <p class="hcs-chat__state chat-empty chat-list-body">@T("Chat:EmptyConversations")</p>
                 }
                 else
                 {
-                    <nav class="hcs-chat__conversation-list">
+                    <nav class="hcs-chat__conversation-list chat-list-body">
                         @foreach (var conversation in FilteredConversations)
                         {
                             var isActive = selected?.Id == conversation.Id;
-                            <button @key="conversation.Id" class="hcs-chat__conversation @(isActive ? "active" : null) @(conversation.IsPinned ? "is-pinned" : null)" type="button" aria-current="@(isActive ? "true" : null)" @onclick="() => SelectAsync(conversation)">
+                            <button @key="conversation.Id" class="hcs-chat__conversation chat-item @(isActive ? "active is-active" : null) @(conversation.IsPinned ? "is-pinned" : null)" type="button" aria-current="@(isActive ? "true" : null)" @onclick="() => SelectAsync(conversation)">
                                 @ConversationAvatar(conversation, isOnline: IsConversationOnline(conversation))
-                                <span class="hcs-chat__conversation-copy">
-                                    <strong>@ConversationTitle(conversation)</strong>
-                                    <small>@(string.IsNullOrWhiteSpace(conversation.LastMessage) ? T("Chat:NoMessages") : conversation.LastMessage)</small>
+                                <span class="hcs-chat__conversation-copy chat-item-body">
+                                    <span class="chat-item-top">
+                                        <span class="chat-item-name">@ConversationTitle(conversation)</span>
+                                        <span class="chat-item-end">
+                                            @if (conversation.IsPinned)
+                                            {
+                                                <span class="chat-pin-mark" aria-label="@T("Chat:Pin")"></span>
+                                            }
+                                            <time datetime="@FormatMessageTimestamp(conversation.LastMessageAt)">@FormatConversationTime(conversation.LastMessageAt)</time>
+                                        </span>
+                                    </span>
+                                    <span class="chat-item-preview">@(string.IsNullOrWhiteSpace(conversation.LastMessage) ? T("Chat:NoMessages") : conversation.LastMessage)</span>
                                 </span>
-                                <span class="hcs-chat__conversation-meta">
-                                    <time datetime="@FormatMessageTimestamp(conversation.LastMessageAt)">@FormatConversationTime(conversation.LastMessageAt)</time>
-                                    @if (conversation.IsPinned)
-                                    {
-                                        <i class="fa fa-thumbtack" aria-label="@T("Chat:Pin")"></i>
-                                    }
-                                    @if (conversation.UnreadCount > 0)
-                                    {
-                                        <em aria-label="@conversation.UnreadCount @T("Chat:Unread")">@conversation.UnreadCount</em>
-                                    }
-                                </span>
+                                @if (conversation.UnreadCount > 0)
+                                {
+                                    <em class="hcs-chat__unread" aria-label="@conversation.UnreadCount @T("Chat:Unread")">@conversation.UnreadCount</em>
+                                }
                             </button>
                         }
                     </nav>
@@ -153,40 +161,57 @@
             }
         </aside>
 
-        <section class="hcs-chat__thread @(mobileView == MobileView.Thread ? "hcs-chat__panel--mobile-active" : null)" aria-label="@T("Chat:Title")">
+        <section class="hcs-chat__thread chat-thread @(mobileView == MobileView.Thread ? "hcs-chat__panel--mobile-active" : null)" aria-label="@T("Chat:Title")">
             @if (selected is null)
             {
-                <div class="hcs-chat__empty"><i class="fa fa-comments" aria-hidden="true"></i><h2>@T("Chat:ChooseConversation")</h2><p>@T("Chat:ChooseConversationDescription")</p></div>
+                <div class="hcs-chat__empty chat-empty">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                    <h2>@T("Chat:ChooseConversation")</h2>
+                    <p>@T("Chat:ChooseConversationDescription")</p>
+                </div>
             }
             else
             {
-                <header @key="selected.Id" class="hcs-chat__thread-header">
-                    <button class="hcs-chat__icon hcs-chat__back" type="button" aria-label="@T("Chat:ConversationList")" @onclick="ShowList"><i class="fa fa-arrow-left" aria-hidden="true"></i></button>
-                    <span class="hcs-chat__thread-avatar">
-                        @ConversationAvatar(selected, isOnline: IsConversationOnline(selected))
-                    </span>
-                    <div class="hcs-chat__thread-title">
-                        <h2>@ConversationTitle(selected)</h2>
-                        <small class="hcs-chat__thread-status">
-                            <span class="hcs-chat__presence hcs-chat__presence--inline @(IsConversationOnline(selected) ? null : "hcs-chat__presence--offline")" aria-hidden="true"></span>
+                <header @key="selected.Id" class="hcs-chat__thread-header chat-thread-head">
+                    <button class="hcs-chat__icon hcs-chat__back icon-btn chat-back" type="button" aria-label="@T("Chat:ConversationList")" @onclick="ShowList">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+                    </button>
+                    @ConversationAvatar(selected, isOnline: IsConversationOnline(selected))
+                    <div class="hcs-chat__thread-title chat-thread-meta">
+                        <h1>@ConversationTitle(selected)</h1>
+                        <p class="hcs-chat__thread-status">
+                            <span class="chat-status-dot @(IsConversationOnline(selected) ? "is-online" : null)" aria-hidden="true"></span>
                             @ThreadPresenceLabel(selected)
-                        </small>
+                        </p>
                     </div>
-                    <div class="hcs-chat__thread-actions">
-                        <button class="hcs-chat__icon hcs-chat__info-button @(infoOpen ? "is-active" : null)" type="button" aria-pressed="@infoOpen.ToString().ToLowerInvariant()" aria-label="@(infoOpen ? T("Chat:HideInformation") : T("Chat:Information"))" @onclick="ToggleInfo"><i class="fa fa-ellipsis-vertical" aria-hidden="true"></i></button>
+                    <button class="hcs-chat__icon icon-btn @(selected.IsPinned ? "is-active" : null)" type="button" id="chat-pin-conv" aria-pressed="@selected.IsPinned.ToString().ToLowerInvariant()" aria-label="@(selected.IsPinned ? T("Chat:Unpin") : T("Chat:Pin"))" @onclick="TogglePinnedAsync">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
+                    </button>
+                    <div class="hcs-chat__thread-actions chat-more">
+                        <button class="hcs-chat__icon hcs-chat__info-button icon-btn @(infoOpen ? "is-active" : null)" type="button" aria-pressed="@infoOpen.ToString().ToLowerInvariant()" aria-label="@(infoOpen ? T("Chat:HideInformation") : T("Chat:Information"))" @onclick="ToggleInfo">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>
+                        </button>
                     </div>
                 </header>
                 @if (realtimeUnavailable)
                 {
-                    <p class="hcs-chat__realtime-warning" role="status"><i class="fa fa-plug-circle-xmark" aria-hidden="true"></i>@T("Chat:ConnectionUnavailable")</p>
+                    <p class="hcs-chat__realtime-warning" role="status">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 8 4 12l4 4M16 8l4 4-4 4"/><path d="M10 16 14 8"/></svg>
+                        @T("Chat:ConnectionUnavailable")
+                    </p>
                 }
                 @if (pinnedMessages.Count > 0)
                 {
-                    <button class="hcs-chat__pinned-bar @(pinnedPanelOpen ? "is-open" : null)" type="button" aria-expanded="@pinnedPanelOpen.ToString().ToLowerInvariant()" aria-label="@T("Chat:ViewPinned")" @onclick="TogglePinnedPanel">
-                        <i class="fa fa-thumbtack" aria-hidden="true"></i>
-                        <span>@T("Chat:PinnedMessages") · @pinnedMessages.Count</span>
-                        <i class="fa fa-chevron-down" aria-hidden="true"></i>
-                    </button>
+                    <div class="hcs-chat__pinned-bar chat-pin-bar @(pinnedPanelOpen ? "is-open" : null)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
+                        <button class="chat-pin-bar-body" type="button" aria-expanded="@pinnedPanelOpen.ToString().ToLowerInvariant()" aria-label="@T("Chat:ViewPinned")" @onclick="TogglePinnedPanel">
+                            <strong>@T("Chat:PinnedMessages")</strong>
+                            <span>@PreviewText(pinnedMessages[0].Text, pinnedMessages[0].Attachments.FirstOrDefault()?.FileName)</span>
+                        </button>
+                        <button class="icon-btn" type="button" aria-label="@T("Chat:ViewPinned")" @onclick="TogglePinnedPanel">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="@(pinnedPanelOpen ? "M6 6l12 12M18 6 6 18" : "m6 9 6 6 6-6")"/></svg>
+                        </button>
+                    </div>
                     @if (pinnedPanelOpen)
                     {
                         <div class="hcs-chat__pinned-panel" role="list">
@@ -201,7 +226,7 @@
                     }
                 }
 
-                <div id="hcs-chat-messages" class="hcs-chat__messages" aria-live="polite" @onscroll="OnMessagesScrollAsync" @onclick="CloseMessageMenu">
+                <div id="hcs-chat-messages" class="hcs-chat__messages chat-msgs is-active" aria-live="polite" @onscroll="OnMessagesScrollAsync" @onclick="CloseMessageMenu">
                     @if (messages.Count < totalMessageCount)
                     {
                         <button class="hcs-chat__older" type="button" @onclick="LoadOlderMessagesAsync" disabled="@isLoadingMessages">@T("Chat:OlderMessages")</button>
@@ -220,102 +245,83 @@
                     }
                     else if (messages.Count == 0)
                     {
-                        <p class="hcs-chat__state">@T("Chat:NoMessages")</p>
+                        <p class="hcs-chat__state chat-empty">@T("Chat:NoMessages")</p>
                     }
                     else
                     {
                         @foreach (var message in messages)
                         {
                             var isMine = message.SenderUserId == currentUserId;
-                            <div class="hcs-chat__message-row @(isMine ? "hcs-chat__message-row--mine" : null) @(messageMenuId == message.Id ? "is-menu-open" : null)">
+                            var deletedClass = message.IsDeleted ? "is-recalled" : null;
+                            <div class="msg @(isMine ? "is-out" : "is-in") @(message.IsPinned ? "is-pinned" : null) @deletedClass @(messageMenuId == message.Id ? "is-menu-open" : null)">
                                 @if (!isMine)
                                 {
-                                    @UserAvatar(message.SenderUserId, MemberName(message.SenderUserId), "hcs-chat__avatar--small", isOnline: !isMine ? IsUserOnline(message.SenderUserId) : null)
+                                    @UserAvatar(message.SenderUserId, MemberName(message.SenderUserId), "sm", isOnline: IsUserOnline(message.SenderUserId))
                                 }
-                                <div class="hcs-chat__message-stack">
-                                <article id="@MessageElementId(message.Id)" class="hcs-chat__message @(isMine ? "hcs-chat__message--mine" : null) @(highlightedMessageId == message.Id ? "hcs-chat__message--jump" : null)">
-                                    @if (!isMine)
+                                <div class="msg-stack">
+                                    @if (isMine && !message.IsDeleted)
                                     {
-                                        <div class="hcs-chat__message-meta">
-                                            <strong>@MemberName(message.SenderUserId)</strong>
-                                            @if (message.IsPinned)
+                                        @MessageMoreMenu(message)
+                                    }
+                                    <div id="@MessageElementId(message.Id)" class="msg-bubble @(IsImageOnly(message) ? "msg-media" : null) @(highlightedMessageId == message.Id ? "is-jump" : null)">
+                                        @if (!isMine)
+                                        {
+                                            <span class="msg-name">@MemberName(message.SenderUserId)</span>
+                                        }
+                                        @if (message.IsDeleted)
+                                        {
+                                            <p>@T("Chat:DeletedMessage")</p>
+                                        }
+                                        else
+                                        {
+                                            @if (message.ReplyTo is not null || message.ReplyToMessageId is not null)
                                             {
-                                                <i class="fa fa-thumbtack hcs-chat__pin-mark" title="@T("Chat:PinMessage")" aria-label="@T("Chat:PinMessage")"></i>
-                                            }
-                                        </div>
-                                    }
-                                    @if (message.IsDeleted)
-                                    {
-                                        <p class="hcs-chat__message-deleted">@T("Chat:DeletedMessage")</p>
-                                    }
-                                    else
-                                    {
-                                        @if (message.ReplyTo is not null || message.ReplyToMessageId is not null)
-                                        {
-                                            <button class="hcs-chat__quote" type="button" @onclick="() => JumpToMessageAsync(message.ReplyToMessageId ?? message.ReplyTo?.Id ?? Guid.Empty)">
-                                                <strong>@(message.ReplyTo is null ? T("Chat:ReplyTo") : $"{T("Chat:ReplyTo")} {MemberName(message.ReplyTo.SenderUserId)}")</strong>
-                                                <p>@(message.ReplyTo?.IsDeleted == true ? T("Chat:DeletedMessage") : PreviewText(message.ReplyTo?.Text))</p>
-                                            </button>
-                                        }
-                                        @if (message.ForwardedFrom is not null || message.ForwardedFromMessageId is not null)
-                                        {
-                                            <div class="hcs-chat__forward-preview">
-                                                <strong>@T("Chat:ForwardedMessage")</strong>
-                                                <p>@(message.ForwardedFrom?.IsDeleted == true ? T("Chat:DeletedMessage") : PreviewText(message.ForwardedFrom?.Text, message.Text))</p>
-                                            </div>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(message.Text) && message.ForwardedFromMessageId is null)
-                                        {
-                                            <p>@message.Text</p>
-                                        }
-                                        else if (!string.IsNullOrWhiteSpace(message.Text) && message.Text != ChatModerationRules.ForwardedPlaceholder)
-                                        {
-                                            <p>@message.Text</p>
-                                        }
-                                        @if (message.Attachments.Count > 0)
-                                        {
-                                            <div class="hcs-chat__attachments">
-                                                @foreach (var attachment in message.Attachments)
-                                                {
-                                                    @if (IsImage(attachment))
-                                                    {
-                                                        <button class="hcs-chat__image" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
-                                                            <img src="@AttachmentUrl(attachment.Id)" crossorigin="use-credentials" alt="@attachment.FileName" />
-                                                        </button>
-                                                    }
-                                                    else
-                                                    {
-                                                        <a href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")"><i class="fa fa-paperclip" aria-hidden="true"></i>@attachment.FileName</a>
-                                                    }
-                                                }
-                                            </div>
-                                        }
-                                    }
-                                </article>
-                                <time class="hcs-chat__message-time" datetime="@FormatMessageTimestamp(message.CreatedAt)">@FormatMessageClock(message.CreatedAt)</time>
-                                </div>
-                                @if (!message.IsDeleted)
-                                {
-                                    <div class="hcs-chat__message-more @(messageMenuId == message.Id ? "is-open" : null)" @onclick:stopPropagation="true">
-                                        <button class="hcs-chat__message-more-trigger" type="button" aria-haspopup="true" aria-expanded="@(messageMenuId == message.Id ? "true" : "false")" aria-label="@T("Chat:MessageActions")" @onclick="() => ToggleMessageMenu(message.Id)">
-                                            <i class="fa fa-chevron-down" aria-hidden="true"></i>
-                                        </button>
-                                        @if (messageMenuId == message.Id)
-                                        {
-                                            <div class="hcs-chat__message-menu" role="menu">
-                                                <button type="button" role="menuitem" @onclick="() => ReplyFromMenu(message)"><i class="fa fa-reply" aria-hidden="true"></i>@T("Chat:Reply")</button>
-                                                <button type="button" role="menuitem" @onclick="() => ForwardFromMenu(message)"><i class="fa fa-share" aria-hidden="true"></i>@T("Chat:Forward")</button>
-                                                <button type="button" role="menuitem" disabled="@isPinningMessage" @onclick="() => ToggleMessagePinnedAsync(message)">
-                                                    <i class="fa fa-thumbtack" aria-hidden="true"></i>@(message.IsPinned ? T("Chat:UnpinMessage") : T("Chat:PinMessage"))
+                                                <button class="msg-quote" type="button" @onclick="() => JumpToMessageAsync(message.ReplyToMessageId ?? message.ReplyTo?.Id ?? Guid.Empty)">
+                                                    <strong>@(message.ReplyTo is null ? T("Chat:ReplyTo") : $"{T("Chat:ReplyTo")} {MemberName(message.ReplyTo.SenderUserId)}")</strong>
+                                                    <span>@(message.ReplyTo?.IsDeleted == true ? T("Chat:DeletedMessage") : PreviewText(message.ReplyTo?.Text))</span>
                                                 </button>
-                                                @if (CanDeleteMessage(message))
+                                            }
+                                            @if (message.ForwardedFrom is not null || message.ForwardedFromMessageId is not null)
+                                            {
+                                                <div class="msg-quote">
+                                                    <strong>@T("Chat:ForwardedMessage")</strong>
+                                                    <span>@(message.ForwardedFrom?.IsDeleted == true ? T("Chat:DeletedMessage") : PreviewText(message.ForwardedFrom?.Text, message.Text))</span>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(message.Text) && message.ForwardedFromMessageId is null)
+                                            {
+                                                <p>@message.Text</p>
+                                            }
+                                            else if (!string.IsNullOrWhiteSpace(message.Text) && message.Text != ChatModerationRules.ForwardedPlaceholder)
+                                            {
+                                                <p>@message.Text</p>
+                                            }
+                                            @foreach (var attachment in message.Attachments)
+                                            {
+                                                @if (IsImage(attachment))
                                                 {
-                                                    <button class="is-danger" type="button" role="menuitem" disabled="@isDeletingMessage" @onclick="() => DeleteFromMenuAsync(message)"><i class="fa fa-trash" aria-hidden="true"></i>@T("Chat:Delete")</button>
+                                                    <button class="msg-media-card chat-thumb-img is-teal" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
+                                                        <img src="@AttachmentUrl(attachment.Id)" crossorigin="use-credentials" alt="@attachment.FileName" />
+                                                    </button>
+                                                    <span class="msg-media-caption">@attachment.FileName</span>
                                                 }
-                                            </div>
+                                                else
+                                                {
+                                                    var badge = FileBadge(attachment.FileName);
+                                                    <a class="msg-file" href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")" aria-label="@attachment.FileName">
+                                                        <span class="chat-thumb-ext @badge.Css">@badge.Label</span>
+                                                        <span class="msg-file-name">@attachment.FileName</span>
+                                                    </a>
+                                                }
+                                            }
                                         }
+                                        <time class="msg-time" datetime="@FormatMessageTimestamp(message.CreatedAt)">@FormatMessageClock(message.CreatedAt)</time>
                                     </div>
-                                }
+                                    @if (!isMine && !message.IsDeleted)
+                                    {
+                                        @MessageMoreMenu(message)
+                                    }
+                                </div>
                             </div>
                         }
                     }
@@ -323,25 +329,31 @@
 
                 @if (permissions?.CanSend == true)
                 {
-                    <form class="hcs-chat__composer" @onsubmit="SendAsync" @onsubmit:preventDefault>
+                    <form class="chat-compose" @onsubmit="SendAsync" @onsubmit:preventDefault>
                         @if (replyingTo is not null)
                         {
-                            <div class="hcs-chat__reply-preview">
+                            <div class="chat-compose-banner">
                                 <div>
                                     <strong>@T("Chat:ReplyingTo") @MemberName(replyingTo.SenderUserId)</strong>
                                     <p>@PreviewText(replyingTo.Text)</p>
                                 </div>
-                                <button class="hcs-chat__close" type="button" aria-label="@T("Chat:CancelReply")" @onclick="CancelReply"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+                                <button class="icon-btn" type="button" aria-label="@T("Chat:CancelReply")" @onclick="CancelReply">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                                </button>
                             </div>
                         }
                         @if (pendingFiles.Count > 0)
                         {
-                            <div class="hcs-chat__pending-files" aria-label="@T("Chat:Attach")">
+                            <div class="chat-compose-files" aria-label="@T("Chat:Attach")">
                                 @foreach (var file in pendingFiles.ToArray())
                                 {
-                                    <span>
-                                        <i class="fa fa-paperclip" aria-hidden="true"></i>@file.Name
-                                        <button type="button" aria-label="@T("Chat:RemoveAttachment")" @onclick="() => RemovePendingFile(file)"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+                                    var chipBadge = FileBadge(file.Name);
+                                    <span class="chat-file-chip">
+                                        <span class="chat-thumb-ext @chipBadge.Css">@chipBadge.Label</span>
+                                        <span>@file.Name</span>
+                                        <button class="icon-btn" type="button" aria-label="@T("Chat:RemoveAttachment")" @onclick="() => RemovePendingFile(file)">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                                        </button>
                                     </span>
                                 }
                             </div>
@@ -350,174 +362,285 @@
                         {
                             <p class="hcs-chat__composer-error" role="alert">@messageError</p>
                         }
-                        <div class="hcs-chat__composer-row">
-                            <label class="hcs-chat__attach" title="@T("Chat:Attach")">
-                                <InputFile class="visually-hidden" OnChange="OnFilesSelected" multiple accept="image/*,.pdf,.txt,.docx,.xlsx,.mp4,.mp3" />
-                                <i class="fa fa-paperclip" aria-hidden="true"></i><span class="visually-hidden">@T("Chat:Attach")</span>
-                            </label>
-                            <div class="hcs-chat__composer-field">
-                                <i class="fa fa-comment-dots" aria-hidden="true"></i>
-                                <textarea @bind="messageText" @bind:event="oninput" @onkeydown="OnComposerKeyDown" @onkeydown:preventDefault="preventComposerDefault" rows="1" maxlength="4000" placeholder="@T("Chat:MessagePlaceholder")" aria-label="@T("Chat:MessagePlaceholder")"></textarea>
-                            </div>
-                            <button class="hcs-chat__send" type="submit" disabled="@(isSending || !CanSend)" title="@T("Chat:Send")" aria-label="@T("Chat:Send")">
-                                <i class="fa @(isSending ? "fa-spinner fa-spin" : "fa-paper-plane")" aria-hidden="true"></i>
-                            </button>
+                        <label class="icon-btn chat-attach" title="@T("Chat:Attach")">
+                            <InputFile class="sr-only" OnChange="OnFilesSelected" multiple accept="image/*,.pdf,.txt,.docx,.xlsx,.mp4,.mp3" />
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 11.6 12.8 20a5 5 0 0 1-7.1-7.1l9.2-9.2a3.2 3.2 0 0 1 4.5 4.5L10.2 17.4a1.4 1.4 0 1 1-2-2l8.2-8.2"/></svg>
+                            <span class="sr-only">@T("Chat:Attach")</span>
+                        </label>
+                        <label class="sr-only" for="chat-input">@T("Chat:MessagePlaceholder")</label>
+                        <div class="chat-input-wrap">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                            <textarea id="chat-input" @bind="messageText" @bind:event="oninput" @onkeydown="OnComposerKeyDown" @onkeydown:preventDefault="preventComposerDefault" rows="1" maxlength="4000" placeholder="@T("Chat:MessagePlaceholder")"></textarea>
                         </div>
+                        <button class="chat-send" type="submit" disabled="@(isSending || !CanSend)" title="@T("Chat:Send")" aria-label="@T("Chat:Send")">
+                            @if (isSending)
+                            {
+                                <svg class="chat-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                            }
+                            else
+                            {
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                            }
+                        </button>
                     </form>
                 }
             }
         </section>
 
-        <aside class="hcs-chat__info @(mobileView == MobileView.Info ? "hcs-chat__panel--mobile-active" : null)" aria-label="@T("Chat:Information")">
+        <aside class="hcs-chat__info chat-info @(mobileView == MobileView.Info ? "hcs-chat__panel--mobile-active" : null)" hidden="@(!infoOpen)" aria-label="@T("Chat:Information")">
             @if (selected is null)
             {
-                <div class="hcs-chat__info-empty"><i class="fa fa-circle-info" aria-hidden="true"></i><p>@T("Chat:ChooseConversation")</p></div>
+                <div class="hcs-chat__info-empty">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>
+                    <p>@T("Chat:ChooseConversation")</p>
+                </div>
             }
             else
             {
-                <header class="hcs-chat__panel-header"><div><small>@T("Chat:Information")</small><h2>@ConversationTitle(selected)</h2></div><button class="hcs-chat__icon hcs-chat__back" type="button" aria-label="@T("Chat:HideInformation")" @onclick="CloseInfo"><i class="fa fa-arrow-left" aria-hidden="true"></i></button></header>
-                <div class="hcs-chat__info-body">
-                    @ConversationAvatar(selected, "hcs-chat__avatar--large", isOnline: IsConversationOnline(selected))
-                    <p class="hcs-chat__info-type">@ConversationTypeLabel(selected.Type)</p>
+                <header class="hcs-chat__panel-header chat-info-head">
+                    <button class="hcs-chat__icon hcs-chat__back icon-btn chat-back" type="button" aria-label="@T("Chat:HideInformation")" @onclick="CloseInfo">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+                    </button>
+                    <p class="chat-info-kicker">@T("Chat:Information")</p>
+                </header>
+                <div class="hcs-chat__info-body chat-info-body">
+                    <div class="chat-info-profile">
+                        @ConversationAvatar(selected, "lg", isOnline: IsConversationOnline(selected))
+                        @if (isEditingName && permissions?.CanRename == true)
+                        {
+                            <form class="chat-rename-form" @onsubmit="RenameAsync" @onsubmit:preventDefault>
+                                <label class="sr-only" for="chat-rename">@T("Chat:Rename")</label>
+                                <input @ref="renameInputRef" class="input chat-rename-input" id="chat-rename" @bind="renameText" @bind:event="oninput" @onkeydown="OnRenameKeyDown" maxlength="80" autocomplete="off" disabled="@isRenaming" />
+                                <button class="btn btn-primary btn-sm" type="submit" disabled="@(isRenaming || string.IsNullOrWhiteSpace(renameText))">
+                                    @if (isRenaming)
+                                    {
+                                        <svg class="chat-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                                    }
+                                    else
+                                    {
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>
+                                    }
+                                    @T("Chat:Save")
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button class="chat-name-btn" type="button" disabled="@(permissions?.CanRename != true)" aria-label="@T("Chat:Rename")" @onclick="BeginRename">
+                                <span>@ConversationTitle(selected)</span>
+                                @if (permissions?.CanRename == true)
+                                {
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                }
+                            </button>
+                        }
+                        <p class="hcs-chat__info-type">@ConversationTypeLabel(selected.Type)</p>
+                    </div>
                     @if (!string.IsNullOrWhiteSpace(selected.Description))
                     {
                         <p class="hcs-chat__description">@selected.Description</p>
                     }
-                    @if (permissions?.CanRename == true)
-                    {
-                        <form class="hcs-chat__rename" @onsubmit="RenameAsync" @onsubmit:preventDefault>
-                            <label for="chat-rename">@T("Chat:Rename")</label>
-                            <input id="chat-rename" @bind="renameText" maxlength="256" />
-                            <button class="btn btn-sm btn-outline-primary" type="submit" disabled="@isRenaming">@T("Chat:Save")</button>
-                        </form>
-                    }
-                    <div class="hcs-chat__info-section"><h3>@T("Chat:Members")</h3><ul>
+                    <div class="hcs-chat__info-actions chat-info-actions">
+                        <button class="btn btn-outline btn-block" type="button" @onclick="TogglePinnedAsync">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
+                            <span>@(selected.IsPinned ? T("Chat:UnpinConversation") : T("Chat:PinConversation"))</span>
+                        </button>
+                    </div>
+                    <section class="hcs-chat__info-section chat-info-section" aria-labelledby="chat-members-label">
+                        <div class="chat-info-section-head">
+                            <h3 id="chat-members-label">@T("Chat:Members")</h3>
+                            @if (CanManageGroupMembers)
+                            {
+                                <button class="btn btn-ghost btn-sm" type="button" @onclick="OpenAddMembersAsync">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                    @T("Chat:AddMembers")
+                                </button>
+                            }
+                        </div>
+                        <ul class="chat-member-list">
                         @foreach (var member in selected.Members)
                         {
-                            <li>
-                                @UserAvatar(member.UserId, MemberName(member.UserId), "hcs-chat__avatar--small", isOnline: member.UserId != currentUserId ? IsUserOnline(member.UserId) : null)
-                                <span><strong>@MemberName(member.UserId)</strong><small>@(member.Role == ConversationMemberRole.Admin ? T("Chat:Administrator") : T("Chat:Member"))</small></span>
+                            <li class="chat-member">
+                                @UserAvatar(member.UserId, MemberName(member.UserId), "sm", isOnline: member.UserId != currentUserId ? IsUserOnline(member.UserId) : null)
+                                <span class="chat-member-meta"><strong>@MemberName(member.UserId)</strong><span>@(member.Role == ConversationMemberRole.Admin ? T("Chat:Administrator") : T("Chat:Member"))</span></span>
                                 @if (CanRemoveMember(member))
                                 {
-                                    <button class="hcs-chat__icon hcs-chat__member-remove" type="button" title="@T("Chat:RemoveMember")" aria-label="@T("Chat:RemoveMember")" @onclick="() => RemoveMemberAsync(member.UserId)" disabled="@isRemovingMember">
-                                        <i class="fa fa-user-minus" aria-hidden="true"></i>
+                                    <button class="doc-action is-danger" type="button" title="@T("Chat:RemoveMember")" aria-label="@T("Chat:RemoveMember")" @onclick="() => AskRemoveMember(member)" disabled="@isRemovingMember">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
                                     </button>
                                 }
                             </li>
                         }
-                    </ul></div>
-                    @if (permissions?.CanManageMembers == true && selected.Type != ConversationType.User && AvailableMemberContacts.Any())
-                    {
-                        <div class="hcs-chat__info-section">
-                            <h3>@T("Chat:AddMembers")</h3>
-                            <div class="hcs-chat__member-picker" role="group" aria-label="@T("Chat:SelectMembers")">
-                                @foreach (var contact in AvailableMemberContacts)
-                                {
-                                    <label class="hcs-chat__contact">
-                                        <input type="checkbox" checked="@selectedMemberIds.Contains(contact.Id)" @onchange="args => ToggleMember(contact.Id, args)" />
-                                        @UserAvatar(contact.Id, contact.DisplayName, "hcs-chat__avatar--small", avatarUrl: contact.AvatarUrl)
-                                        <span><strong>@contact.DisplayName</strong><small>@@@contact.UserName</small></span>
-                                    </label>
-                                }
-                            </div>
-                            <button class="btn btn-sm btn-outline-primary" type="button" @onclick="AddMembersAsync" disabled="@(isAddingMembers || selectedMemberIds.Count == 0)">
-                                <i class="fa @(isAddingMembers ? "fa-spinner fa-spin" : "fa-user-plus")" aria-hidden="true"></i>@T("Chat:AddMembers")
+                        </ul>
+                    </section>
+                    <section class="hcs-chat__info-section chat-info-section" aria-labelledby="chat-pins-label">
+                        <h3 id="chat-pins-label">@T("Chat:PinnedSection")</h3>
+                        @if (pinnedMessages.Count == 0)
+                        {
+                            <p class="chat-media-empty">@T("Chat:NoPinnedMessages")</p>
+                        }
+                        else
+                        {
+                            @foreach (var pinned in pinnedMessages)
+                            {
+                                <button class="chat-pin-info" type="button" @onclick="() => OpenPinnedMessageAsync(pinned)">
+                                    <strong>@T("Chat:PinnedSection")</strong>
+                                    <span>@PreviewText(pinned.Text, pinned.Attachments.FirstOrDefault()?.FileName)</span>
+                                </button>
+                            }
+                        }
+                    </section>
+                    <section class="hcs-chat__info-section chat-info-section" aria-labelledby="chat-media-label">
+                        <h3 id="chat-media-label">@T("Chat:SharedMedia")</h3>
+                        <div class="chat-media-tabs" role="tablist" aria-label="@T("Chat:SharedMedia")">
+                            <button class="chat-media-tab @(mediaPanel == MediaPanel.Photos ? "is-active" : null)" type="button" role="tab" id="chat-tab-photos" aria-selected="@(mediaPanel == MediaPanel.Photos)" aria-controls="chat-media-photos" @onclick="() => SetMediaPanel(MediaPanel.Photos)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+                                @T("Chat:Photos")
                             </button>
-                        </div>
-                    }
-                    <div class="hcs-chat__info-section">
-                        <h3>@T("Chat:SharedMedia")</h3>
-                        <div class="hcs-chat__media-actions">
-                            <button class="btn btn-outline-primary @(mediaPanel == MediaPanel.Photos ? "is-active" : null)" type="button" @onclick="() => ToggleMediaPanel(MediaPanel.Photos)">
-                                <i class="fa fa-image" aria-hidden="true"></i>@T("Chat:ViewPhotos")
-                            </button>
-                            <button class="btn btn-outline-primary @(mediaPanel == MediaPanel.Files ? "is-active" : null)" type="button" @onclick="() => ToggleMediaPanel(MediaPanel.Files)">
-                                <i class="fa fa-paperclip" aria-hidden="true"></i>@T("Chat:ViewFiles")
+                            <button class="chat-media-tab @(mediaPanel == MediaPanel.Files ? "is-active" : null)" type="button" role="tab" id="chat-tab-files" aria-selected="@(mediaPanel == MediaPanel.Files)" aria-controls="chat-media-files" @onclick="() => SetMediaPanel(MediaPanel.Files)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                                @T("Chat:Files")
                             </button>
                         </div>
                         @if (mediaPanel == MediaPanel.Photos)
                         {
-                            @if (!ConversationPhotos.Any())
-                            {
-                                <p class="hcs-chat__media-empty">@T("Chat:NoPhotos")</p>
-                            }
-                            else
-                            {
-                                <ul class="hcs-chat__media-list hcs-chat__media-list--photos">
+                            <div class="chat-media-grid" id="chat-media-photos" role="tabpanel" aria-labelledby="chat-tab-photos">
+                                @if (!ConversationPhotos.Any())
+                                {
+                                    <p class="chat-media-empty">@T("Chat:NoPhotos")</p>
+                                }
+                                else
+                                {
                                     @foreach (var attachment in ConversationPhotos)
                                     {
-                                        <li>
-                                            <button class="hcs-chat__media-photo" type="button" title="@T("Chat:ViewImage")" @onclick="() => OpenPreview(attachment)">
-                                                <img src="@AttachmentUrl(attachment.Id)" crossorigin="use-credentials" alt="@attachment.FileName" />
-                                            </button>
-                                        </li>
+                                        <button class="chat-thumb" type="button" title="@T("Chat:ViewImage")" aria-label="@attachment.FileName" @onclick="() => OpenPreview(attachment)">
+                                            <img src="@AttachmentUrl(attachment.Id)" crossorigin="use-credentials" alt="@attachment.FileName" />
+                                        </button>
                                     }
-                                </ul>
-                            }
+                                }
+                            </div>
                         }
-                        else if (mediaPanel == MediaPanel.Files)
+                        else
                         {
-                            @if (!ConversationFiles.Any())
-                            {
-                                <p class="hcs-chat__media-empty">@T("Chat:NoFiles")</p>
-                            }
-                            else
-                            {
-                                <ul class="hcs-chat__media-list">
+                            <div class="chat-media-grid" id="chat-media-files" role="tabpanel" aria-labelledby="chat-tab-files">
+                                @if (!ConversationFiles.Any())
+                                {
+                                    <p class="chat-media-empty">@T("Chat:NoFiles")</p>
+                                }
+                                else
+                                {
                                     @foreach (var attachment in ConversationFiles)
                                     {
-                                        <li>
-                                            <a class="hcs-chat__media-file" href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")">
-                                                <i class="fa fa-paperclip" aria-hidden="true"></i><span>@attachment.FileName</span>
-                                            </a>
-                                        </li>
+                                        <a class="chat-thumb chat-thumb-file" href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")" aria-label="@attachment.FileName">
+                                            @{ var mediaBadge = FileBadge(attachment.FileName); }
+                                            <span class="chat-thumb-ext @mediaBadge.Css">@mediaBadge.Label</span>
+                                            <span class="chat-thumb-name">@attachment.FileName</span>
+                                        </a>
                                     }
-                                </ul>
-                            }
+                                }
+                            </div>
                         }
-                    </div>
-                    <div class="hcs-chat__info-actions">
-                        <button class="btn btn-light" type="button" @onclick="TogglePinnedAsync"><i class="fa fa-thumbtack" aria-hidden="true"></i>@(selected.IsPinned ? T("Chat:Unpin") : T("Chat:Pin"))</button>
-                        @if (permissions?.CanLeave == true)
-                        {
-                            <button class="btn btn-outline-danger" type="button" @onclick="LeaveAsync" disabled="@isLeaving"><i class="fa @(isLeaving ? "fa-spinner fa-spin" : "fa-arrow-right-from-bracket")" aria-hidden="true"></i>@T("Chat:Leave")</button>
-                        }
-                    </div>
+                    </section>
+                    @if (permissions?.CanLeave == true)
+                    {
+                        <div class="hcs-chat__info-actions chat-info-actions">
+                            <button class="btn btn-danger btn-block" type="button" @onclick="LeaveAsync" disabled="@isLeaving">
+                                @if (isLeaving)
+                                {
+                                    <svg class="chat-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                                }
+                                else
+                                {
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 7H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/><path d="M16 3h5v5"/><path d="M10 14 21 3"/></svg>
+                                }
+                                @T("Chat:Leave")
+                            </button>
+                        </div>
+                    }
                 </div>
             }
         </aside>
     </section>
+    @if (messageMenuId is { } openMenuId && messages.FirstOrDefault(item => item.Id == openMenuId) is { } menuMessage)
+    {
+        <div class="msg-menu" id="chat-msg-menu" role="menu" aria-label="@T("Chat:MessageActions")" @onclick:stopPropagation="true">
+            <button type="button" role="menuitem" disabled="@isPinningMessage" @onclick="() => ToggleMessagePinnedAsync(menuMessage)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
+                @(menuMessage.IsPinned ? T("Chat:UnpinMessage") : T("Chat:PinMessage"))
+            </button>
+            <button type="button" role="menuitem" @onclick="() => ForwardFromMenu(menuMessage)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+                @T("Chat:Forward")
+            </button>
+            <button type="button" role="menuitem" @onclick="() => ReplyFromMenu(menuMessage)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                @T("Chat:Reply")
+            </button>
+            @if (CanDeleteMessage(menuMessage))
+            {
+                <button class="is-danger" type="button" role="menuitem" disabled="@isDeletingMessage" @onclick="() => DeleteFromMenuAsync(menuMessage)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                    @T("Chat:Delete")
+                </button>
+            }
+        </div>
+    }
     @if (previewAttachment is not null)
     {
-        <div class="hcs-chat-preview" role="dialog" aria-modal="true" aria-label="@T("Chat:ViewImage")" @onclick="ClosePreview">
-            <button class="hcs-chat-preview__close" type="button" aria-label="@T("Chat:ClosePreview")" @onclick="ClosePreview" @onclick:stopPropagation><i class="fa fa-xmark" aria-hidden="true"></i></button>
-            @if (IsImage(previewAttachment))
-            {
-                <img src="@AttachmentUrl(previewAttachment.Id)" crossorigin="use-credentials" alt="@previewAttachment.FileName" @onclick:stopPropagation />
-            }
-            <a class="hcs-chat-preview__download" href="@AttachmentUrl(previewAttachment.Id)" target="_blank" rel="noopener" @onclick:stopPropagation>@previewAttachment.FileName</a>
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="chat-preview-title" @onclick="ClosePreview">
+            <div class="chat-preview-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="chat-preview-title">@T("Chat:ViewImage")</h2>
+                    <button class="icon-btn" type="button" aria-label="@T("Chat:ClosePreview")" @onclick="ClosePreview">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                @if (IsImage(previewAttachment))
+                {
+                    <img src="@AttachmentUrl(previewAttachment.Id)" crossorigin="use-credentials" alt="@T("Chat:ViewImage")" />
+                }
+            </div>
         </div>
     }
     @if (forwardingMessage is not null)
     {
-        <div class="hcs-chat-modal" role="dialog" aria-modal="true" aria-labelledby="chat-forward-title" @onclick="CloseForward">
-            <div class="hcs-chat-modal__panel" @onclick:stopPropagation>
-                <h2 id="chat-forward-title">@T("Chat:Forward")</h2>
-                <input class="hcs-chat__contact-filter" @bind="forwardSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" />
-                <div class="hcs-chat-modal__list" role="listbox" aria-label="@T("Chat:ForwardTo")">
-                    @foreach (var conversation in ForwardTargets)
-                    {
-                        <button class="hcs-chat-modal__choice @(forwardTargetId == conversation.Id ? "is-active" : null)" type="button" role="option" aria-selected="@(forwardTargetId == conversation.Id)" @onclick="() => forwardTargetId = conversation.Id">
-                            @ConversationAvatar(conversation, "hcs-chat__avatar--small")
-                            <span>@ConversationTitle(conversation)</span>
-                        </button>
-                    }
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="chat-forward-title" @onclick="CloseForward">
+            <div class="chat-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="chat-forward-title">@T("Chat:Forward")</h2>
+                    <button class="icon-btn" type="button" aria-label="@T("Chat:Cancel")" @onclick="CloseForward">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
                 </div>
-                <textarea @bind="forwardComment" rows="2" maxlength="4000" placeholder="@T("Chat:ForwardCommentPlaceholder")"></textarea>
-                <div class="hcs-chat-modal__actions">
-                    <button class="btn btn-light" type="button" @onclick="CloseForward">@T("Chat:Cancel")</button>
+                <div class="chat-dialog-view">
+                    <input class="input" @bind="forwardSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" />
+                    <div class="forward-list" role="listbox" aria-label="@T("Chat:ForwardTo")">
+                        @foreach (var conversation in ForwardTargets)
+                        {
+                            <button class="forward-option @(forwardTargetId == conversation.Id ? "is-selected" : null)" type="button" role="option" aria-selected="@(forwardTargetId == conversation.Id)" @onclick="() => forwardTargetId = conversation.Id">
+                                @ConversationAvatar(conversation, "sm")
+                                <span>@ConversationTitle(conversation)</span>
+                            </button>
+                        }
+                    </div>
+                    <label class="field-label" for="forward-note">@T("Chat:ForwardCommentPlaceholder")</label>
+                    <input class="input" id="forward-note" @bind="forwardComment" maxlength="4000" placeholder="@T("Chat:ForwardCommentPlaceholder")" />
+                </div>
+                <div class="chat-dialog-foot">
+                    <button class="btn btn-outline" type="button" @onclick="CloseForward">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <span>@T("Chat:Cancel")</span>
+                    </button>
                     <button class="btn btn-primary" type="button" @onclick="ForwardAsync" disabled="@(isForwarding || forwardTargetId is null)">
-                        <i class="fa @(isForwarding ? "fa-spinner fa-spin" : "fa-share")" aria-hidden="true"></i>@T("Chat:Forward")
+                        @if (isForwarding)
+                        {
+                            <svg class="chat-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+                        }
+                        <span class="btn-label">@T("Chat:Forward")</span>
                     </button>
                 </div>
             </div>
@@ -525,26 +648,129 @@
     }
     @if (showTransferAdmin && selected is not null)
     {
-        <div class="hcs-chat-modal" role="dialog" aria-modal="true" aria-labelledby="chat-transfer-title" @onclick="CloseTransferAdmin">
-            <div class="hcs-chat-modal__panel" @onclick:stopPropagation>
-                <h2 id="chat-transfer-title">@T("Chat:TransferAdmin")</h2>
-                <p>@T("Chat:TransferAdminHint")</p>
-                @if (messageError is not null)
-                {
-                    <p class="hcs-chat-modal__error" role="alert">@messageError</p>
-                }
-                <div class="hcs-chat-modal__list" role="listbox" aria-label="@T("Chat:TransferAdmin")">
-                    @foreach (var member in TransferCandidates)
-                    {
-                        <button class="hcs-chat-modal__choice @(transferAdminTo == member.UserId ? "is-active" : null)" type="button" role="option" aria-selected="@(transferAdminTo == member.UserId)" @onclick="() => transferAdminTo = member.UserId">
-                            <span>@MemberName(member.UserId)</span>
-                        </button>
-                    }
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="chat-transfer-title" @onclick="CloseTransferAdmin">
+            <div class="chat-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="chat-transfer-title">@T("Chat:TransferAdmin")</h2>
+                    <button class="icon-btn" type="button" aria-label="@T("Chat:Cancel")" @onclick="CloseTransferAdmin">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
                 </div>
-                <div class="hcs-chat-modal__actions">
-                    <button class="btn btn-light" type="button" @onclick="CloseTransferAdmin">@T("Chat:Cancel")</button>
-                    <button class="btn btn-outline-danger" type="button" @onclick="ConfirmTransferLeaveAsync" disabled="@(isLeaving || transferAdminTo is null)">
-                        <i class="fa @(isLeaving ? "fa-spinner fa-spin" : "fa-arrow-right-from-bracket")" aria-hidden="true"></i>@T("Chat:Leave")
+                <div class="chat-dialog-view">
+                    <p class="chat-dialog-copy">@T("Chat:TransferAdminHint")</p>
+                    @if (messageError is not null)
+                    {
+                        <p class="chat-dialog-copy" role="alert">@messageError</p>
+                    }
+                    <div class="forward-list" role="listbox" aria-label="@T("Chat:TransferAdmin")">
+                        @foreach (var member in TransferCandidates)
+                        {
+                            <button class="forward-option @(transferAdminTo == member.UserId ? "is-selected" : null)" type="button" role="option" aria-selected="@(transferAdminTo == member.UserId)" @onclick="() => transferAdminTo = member.UserId">
+                                <span>@MemberName(member.UserId)</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+                <div class="chat-dialog-foot">
+                    <button class="btn btn-outline" type="button" @onclick="CloseTransferAdmin">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <span>@T("Chat:Cancel")</span>
+                    </button>
+                    <button class="btn btn-primary" type="button" @onclick="ConfirmTransferLeaveAsync" disabled="@(isLeaving || transferAdminTo is null)">
+                        @if (isLeaving)
+                        {
+                            <svg class="chat-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 7H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/><path d="M16 3h5v5"/><path d="M10 14 21 3"/></svg>
+                        }
+                        <span class="btn-label">@T("Chat:Leave")</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    @if (showAddMembers)
+    {
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="chat-add-members-title" @onclick="CloseAddMembers">
+            <div class="chat-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="chat-add-members-title">@T("Chat:AddMembers")</h2>
+                    <button class="icon-btn" type="button" aria-label="@T("Chat:Cancel")" @onclick="CloseAddMembers">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <div class="chat-dialog-view">
+                    <label class="sr-only" for="chat-add-member-search">@T("Chat:SearchPeople")</label>
+                    <input class="input" id="chat-add-member-search" @bind="addMemberSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:SearchPeople")" autocomplete="off" />
+                    <div class="forward-list" role="listbox" aria-multiselectable="true" aria-label="@T("Chat:SelectMembers")">
+                        @if (!FilteredAddMemberContacts.Any())
+                        {
+                            <p class="chat-dialog-copy">@T("Chat:NoMembersToAdd")</p>
+                        }
+                        else
+                        {
+                            @foreach (var contact in FilteredAddMemberContacts)
+                            {
+                                var selectedContact = selectedMemberIds.Contains(contact.Id);
+                                <button class="forward-option @(selectedContact ? "is-selected" : null)" type="button" role="option" aria-selected="@selectedContact" @onclick="() => ToggleMemberId(contact.Id)">
+                                    @UserAvatar(contact.Id, contact.DisplayName, "sm", avatarUrl: contact.AvatarUrl)
+                                    <span>@contact.DisplayName</span>
+                                </button>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="chat-dialog-foot">
+                    <button class="btn btn-outline" type="button" @onclick="CloseAddMembers">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <span>@T("Chat:Cancel")</span>
+                    </button>
+                    <button class="btn btn-primary" type="button" @onclick="AddMembersAsync" disabled="@(isAddingMembers || selectedMemberIds.Count == 0)">
+                        @if (isAddingMembers)
+                        {
+                            <svg class="chat-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        }
+                        <span class="btn-label">@T("Chat:AddMembers")</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    @if (memberPendingRemoval is { } pendingMember)
+    {
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="chat-remove-member-title" @onclick="CloseRemoveMember">
+            <div class="chat-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="chat-remove-member-title">@T("Chat:RemoveMember")</h2>
+                    <button class="icon-btn" type="button" aria-label="@T("Chat:Cancel")" @onclick="CloseRemoveMember">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <div class="chat-dialog-view">
+                    <p class="chat-dialog-copy">@T("Chat:RemoveMemberConfirm")</p>
+                    <p class="chat-dialog-copy"><strong>@MemberName(pendingMember.UserId)</strong></p>
+                </div>
+                <div class="chat-dialog-foot">
+                    <button class="btn btn-outline" type="button" @onclick="CloseRemoveMember">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <span>@T("Chat:Cancel")</span>
+                    </button>
+                    <button class="btn btn-danger" type="button" @onclick="ConfirmRemoveMemberAsync" disabled="@isRemovingMember">
+                        @if (isRemovingMember)
+                        {
+                            <svg class="chat-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                        }
+                        <span class="btn-label">@T("Chat:RemoveMember")</span>
                     </button>
                 </div>
             </div>
@@ -574,6 +800,12 @@
     private string groupName = string.Empty;
     private string messageText = string.Empty;
     private string renameText = string.Empty;
+    private string addMemberSearch = string.Empty;
+    private bool isEditingName;
+    private bool showAddMembers;
+    private bool focusRenameAfterRender;
+    private ElementReference renameInputRef;
+    private ConversationMemberDto? memberPendingRemoval;
     private string? conversationError;
     private string? contactsError;
     private string? messageError;
@@ -595,7 +827,7 @@
     private bool infoOpen;
     private bool preventComposerDefault;
     private MessageAttachmentDto? previewAttachment;
-    private MediaPanel mediaPanel = MediaPanel.None;
+    private MediaPanel mediaPanel = MediaPanel.Photos;
     private ChatMessageDto? replyingTo;
     private ChatMessageDto? forwardingMessage;
     private Guid? highlightedMessageId;
@@ -642,9 +874,19 @@
 
     private IEnumerable<ChatContactDto> FilteredContacts => contacts;
 
+    private bool CanManageGroupMembers =>
+        selected is not null &&
+        permissions?.CanManageMembers == true &&
+        selected.Type != ConversationType.User;
+
     private IEnumerable<ChatContactDto> AvailableMemberContacts => selected is null
         ? []
         : contacts.Where(contact => !selected.Members.Any(member => member.UserId == contact.Id));
+
+    private IEnumerable<ChatContactDto> FilteredAddMemberContacts => AvailableMemberContacts.Where(contact =>
+        string.IsNullOrWhiteSpace(addMemberSearch) ||
+        contact.DisplayName.Contains(addMemberSearch.Trim(), StringComparison.CurrentCultureIgnoreCase) ||
+        contact.UserName.Contains(addMemberSearch.Trim(), StringComparison.CurrentCultureIgnoreCase));
 
     private IEnumerable<ConversationDto> ForwardTargets => conversations.Where(conversation =>
         selected is not null &&
@@ -852,8 +1094,11 @@
         messageMenuId = null;
         pinnedPanelOpen = false;
         pinnedMessages.Clear();
+        isEditingName = false;
+        showAddMembers = false;
+        memberPendingRemoval = null;
         mobileView = MobileView.Thread;
-        mediaPanel = MediaPanel.None;
+        mediaPanel = MediaPanel.Photos;
         Realtime.ActiveConversationId = value.Id;
 
         try
@@ -1033,6 +1278,7 @@
             await Client.RenameConversationAsync(selected.Id, renameText.Trim());
             await LoadConversationsAsync();
             selected = conversations.FirstOrDefault(item => item.Id == selected.Id) ?? selected;
+            isEditingName = false;
         }
         catch (Exception exception)
         {
@@ -1056,6 +1302,8 @@
         {
             await Client.AddMembersAsync(selected.Id, selectedMemberIds.ToArray());
             selectedMemberIds.Clear();
+            addMemberSearch = string.Empty;
+            showAddMembers = false;
             selected = await Client.GetConversationAsync(selected.Id);
             permissions = await Client.GetPermissionsAsync(selected.Id);
             await LoadConversationsAsync();
@@ -1170,6 +1418,77 @@
         }
     }
 
+    private void ToggleMemberId(Guid userId)
+    {
+        if (!selectedMemberIds.Add(userId))
+        {
+            selectedMemberIds.Remove(userId);
+        }
+    }
+
+    private void BeginRename()
+    {
+        if (selected is null || permissions?.CanRename != true)
+        {
+            return;
+        }
+
+        isEditingName = true;
+        renameText = selected.Name ?? ConversationTitle(selected);
+        focusRenameAfterRender = true;
+    }
+
+    private void CancelRename()
+    {
+        isEditingName = false;
+        renameText = selected?.Name ?? string.Empty;
+    }
+
+    private Task OnRenameKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            CancelRename();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task OpenAddMembersAsync()
+    {
+        if (!CanManageGroupMembers)
+        {
+            return;
+        }
+
+        selectedMemberIds.Clear();
+        addMemberSearch = string.Empty;
+        showAddMembers = true;
+        if (contacts.Count == 0)
+        {
+            await LoadContactsAsync();
+        }
+    }
+
+    private void CloseAddMembers()
+    {
+        showAddMembers = false;
+        selectedMemberIds.Clear();
+        addMemberSearch = string.Empty;
+    }
+
+    private void AskRemoveMember(ConversationMemberDto member)
+    {
+        if (!CanRemoveMember(member))
+        {
+            return;
+        }
+
+        memberPendingRemoval = member;
+    }
+
+    private void CloseRemoveMember() => memberPendingRemoval = null;
+
     private void ToggleMember(Guid userId, ChangeEventArgs args)
     {
         var isChecked = args.Value is bool boolean && boolean || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
@@ -1207,9 +1526,12 @@
     private void ShowList()
     {
         infoOpen = false;
-        mediaPanel = MediaPanel.None;
+        mediaPanel = MediaPanel.Photos;
         messageMenuId = null;
         pinnedPanelOpen = false;
+        isEditingName = false;
+        showAddMembers = false;
+        memberPendingRemoval = null;
         mobileView = MobileView.List;
         Realtime.ActiveConversationId = null;
     }
@@ -1223,9 +1545,14 @@
     private void ToggleInfo()
     {
         infoOpen = !infoOpen;
-        if (!infoOpen)
+        if (infoOpen)
         {
-            mediaPanel = MediaPanel.None;
+            mediaPanel = MediaPanel.Photos;
+        }
+        else
+        {
+            isEditingName = false;
+            showAddMembers = false;
         }
         mobileView = infoOpen ? MobileView.Info : MobileView.Thread;
     }
@@ -1233,19 +1560,40 @@
     private void CloseInfo()
     {
         infoOpen = false;
-        mediaPanel = MediaPanel.None;
+        mediaPanel = MediaPanel.Photos;
+        isEditingName = false;
+        showAddMembers = false;
         mobileView = MobileView.Thread;
     }
 
-    private void ToggleMediaPanel(MediaPanel panel) =>
-        mediaPanel = mediaPanel == panel ? MediaPanel.None : panel;
+    private void SetMediaPanel(MediaPanel panel) => mediaPanel = panel;
 
     private void OpenPreview(MessageAttachmentDto attachment) => previewAttachment = attachment;
     private void ClosePreview() => previewAttachment = null;
 
     private static bool IsImage(MessageAttachmentDto attachment) =>
-        attachment.Kind == AttachmentKind.Image ||
-        attachment.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+        attachment.Kind == AttachmentKind.Image
+        || (!string.IsNullOrWhiteSpace(attachment.ContentType)
+            && attachment.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsImageOnly(ChatMessageDto message) =>
+        message.Attachments.Count > 0 && message.Attachments.All(IsImage);
+
+    private static (string Css, string Label) FileBadge(string? fileName)
+    {
+        var ext = System.IO.Path.GetExtension(fileName ?? string.Empty).TrimStart('.').ToUpperInvariant();
+        var css = ext switch
+        {
+            "PDF" => "is-pdf",
+            "DOC" or "DOCX" => "is-doc",
+            "XLS" or "XLSX" => "is-xls",
+            "PPT" or "PPTX" => "is-doc",
+            "TXT" => "is-txt",
+            _ => "is-txt"
+        };
+        var label = string.IsNullOrEmpty(ext) ? "FILE" : (ext.Length > 4 ? ext[..4] : ext);
+        return (css, label);
+    }
 
     private static string FormatMessageClock(DateTime value) =>
         value.Year < 2 ? string.Empty : ToLocal(value).ToString("h:mm tt");
@@ -1385,37 +1733,26 @@
             ? conversation.Members.FirstOrDefault(member => member.UserId != currentUserId)?.UserId
             : null;
 
+    private RenderFragment MessageMoreMenu(ChatMessageDto message) => @<div class="msg-more-wrap @(messageMenuId == message.Id ? "is-open" : null)" @onclick:stopPropagation="true">
+        <button class="msg-more" type="button" data-msg-more="@message.Id" aria-haspopup="menu" aria-expanded="@(messageMenuId == message.Id ? "true" : "false")" aria-label="@T("Chat:MessageActions")" @onclick="() => ToggleMessageMenu(message.Id)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+        </button>
+    </div>;
+
     private RenderFragment ConversationAvatar(ConversationDto conversation, string extraClass = "", bool? isOnline = null) => builder =>
     {
         builder.OpenElement(0, "span");
-        builder.AddAttribute(1, "class", AvatarWrapClass(extraClass));
-        builder.OpenElement(2, "span");
-        builder.AddAttribute(3, "class", string.IsNullOrWhiteSpace(extraClass)
-            ? "hcs-chat__avatar"
-            : $"hcs-chat__avatar {extraClass}");
-        builder.AddAttribute(4, "aria-hidden", "true");
-        var icon = ConversationTypeIcon(conversation.Type);
-        if (icon is null)
+        builder.AddAttribute(1, "class", ChatAvatarClass(extraClass, conversation.Type != ConversationType.User));
+        builder.AddAttribute(2, "aria-hidden", "true");
+        var userId = DirectConversationUserId(conversation);
+        AppendAvatarImageOrInitials(
+            builder,
+            3,
+            userId is { } id ? ResolveAvatarUrl(id) : null,
+            ConversationInitials(conversation));
+        if (conversation.Type == ConversationType.User && isOnline is { } online)
         {
-            var userId = DirectConversationUserId(conversation);
-            AppendAvatarImageOrInitials(
-                builder,
-                5,
-                userId is { } id ? ResolveAvatarUrl(id) : null,
-                ConversationInitials(conversation));
-        }
-        else
-        {
-            builder.OpenElement(6, "i");
-            builder.AddAttribute(7, "class", $"fa {icon}");
-            builder.AddAttribute(8, "aria-hidden", "true");
-            builder.CloseElement();
-        }
-
-        builder.CloseElement();
-        if (isOnline is { } online)
-        {
-            AppendPresenceBadge(builder, 9, online);
+            AppendPresenceBadge(builder, 8, online);
         }
 
         builder.CloseElement();
@@ -1429,17 +1766,12 @@
         string? avatarUrl = null) => builder =>
     {
         builder.OpenElement(0, "span");
-        builder.AddAttribute(1, "class", AvatarWrapClass(extraClass));
-        builder.OpenElement(2, "span");
-        builder.AddAttribute(3, "class", string.IsNullOrWhiteSpace(extraClass)
-            ? "hcs-chat__avatar"
-            : $"hcs-chat__avatar {extraClass}");
-        builder.AddAttribute(4, "aria-hidden", "true");
-        AppendAvatarImageOrInitials(builder, 5, ResolveAvatarUrl(userId, avatarUrl), Initials(displayName));
-        builder.CloseElement();
+        builder.AddAttribute(1, "class", ChatAvatarClass(extraClass));
+        builder.AddAttribute(2, "aria-hidden", "true");
+        AppendAvatarImageOrInitials(builder, 3, ResolveAvatarUrl(userId, avatarUrl), Initials(displayName));
         if (isOnline is { } online)
         {
-            AppendPresenceBadge(builder, 6, online);
+            AppendPresenceBadge(builder, 8, online);
         }
 
         builder.CloseElement();
@@ -1467,7 +1799,7 @@
         if (!string.IsNullOrWhiteSpace(avatarUrl) && !avatarLoadFailures.Contains(avatarUrl))
         {
             builder.OpenElement(sequence, "img");
-            builder.AddAttribute(sequence + 1, "class", "hcs-chat__avatar-image");
+            builder.AddAttribute(sequence + 1, "class", "chat-avatar-image");
             builder.AddAttribute(sequence + 2, "src", avatarUrl);
             builder.AddAttribute(sequence + 3, "alt", "");
             builder.AddAttribute(sequence + 4, "aria-hidden", "true");
@@ -1484,12 +1816,19 @@
 
     private void MarkAvatarLoadFailure(string avatarUrl) => avatarLoadFailures.Add(avatarUrl);
 
-    private static string AvatarWrapClass(string extraClass) =>
-        extraClass.Contains("hcs-chat__avatar--large", StringComparison.Ordinal)
-            ? "hcs-chat__avatar-wrap hcs-chat__avatar-wrap--large"
-            : extraClass.Contains("hcs-chat__avatar--small", StringComparison.Ordinal)
-                ? "hcs-chat__avatar-wrap hcs-chat__avatar-wrap--small"
-                : "hcs-chat__avatar-wrap";
+    private static string ChatAvatarClass(string extraClass, bool isGroup = false)
+    {
+        var size = HasCssToken(extraClass, "lg") || extraClass.Contains("hcs-chat__avatar--large", StringComparison.Ordinal)
+            ? " lg"
+            : HasCssToken(extraClass, "sm") || extraClass.Contains("hcs-chat__avatar--small", StringComparison.Ordinal)
+                ? " sm"
+                : string.Empty;
+        return $"chat-avatar{(isGroup ? " is-group" : string.Empty)}{size}";
+    }
+
+    private static bool HasCssToken(string extraClass, string token) =>
+        extraClass.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Any(part => part.Equals(token, StringComparison.OrdinalIgnoreCase));
 
     private void AppendPresenceBadge(
         Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder,
@@ -1499,24 +1838,16 @@
     {
         var label = isOnline ? T("Chat:Active") : T("Chat:Offline");
         var css = isOnline
-            ? (inline ? "hcs-chat__presence hcs-chat__presence--inline" : "hcs-chat__presence")
+            ? (inline ? "hcs-chat__presence hcs-chat__presence--inline chat-dot" : "hcs-chat__presence chat-dot")
             : (inline
-                ? "hcs-chat__presence hcs-chat__presence--inline hcs-chat__presence--offline"
-                : "hcs-chat__presence hcs-chat__presence--offline");
+                ? "hcs-chat__presence hcs-chat__presence--inline hcs-chat__presence--offline chat-dot is-offline"
+                : "hcs-chat__presence hcs-chat__presence--offline chat-dot is-offline");
         builder.OpenElement(sequence, "span");
         builder.AddAttribute(sequence + 1, "class", css);
         builder.AddAttribute(sequence + 2, "title", label);
         builder.AddAttribute(sequence + 3, "aria-label", label);
         builder.CloseElement();
     }
-
-    private static string? ConversationTypeIcon(ConversationType type) => type switch
-    {
-        ConversationType.Group => "fa-user-group",
-        ConversationType.Project => "fa-folder",
-        ConversationType.Task => "fa-square-check",
-        _ => null
-    };
 
     private string MemberName(Guid userId)
     {

@@ -93,6 +93,7 @@
         if ($el.data("select2")) {
             unbindDropdownPin($el);
             $el.off(".hcsCatalogSelect2");
+            $el.off("select2:open.hcsPop");
             $el.select2("destroy");
         }
 
@@ -130,7 +131,8 @@
                     };
                 }
             }
-        });
+        };
+        $el.select2(select2Options);
 
         $el.data("hcsCatalogSelect2DotNetRef", dotNetRef);
         bindChange($el, dotNetRef);
@@ -161,6 +163,7 @@
         $el.removeData("hcsCatalogSelect2DotNetRef");
         if ($el.data("select2")) {
             $el.off(".hcsCatalogSelect2");
+            $el.off("select2:open.hcsPop");
             $el.select2("destroy");
         }
     };
@@ -373,6 +376,35 @@
     };
 })();
 
+window.hcsPdf = {
+    print: function (iframe) {
+        var src = iframe && (iframe.getAttribute("src") || iframe.src) || "";
+        src = src.split("#")[0];
+        try {
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                return;
+            }
+        } catch (e) { }
+        if (src) {
+            window.open(src, "_blank", "noopener");
+        }
+    },
+    download: function (url, fileName) {
+        if (!url) {
+            return;
+        }
+        var anchor = document.createElement("a");
+        anchor.href = String(url).split("#")[0];
+        anchor.download = fileName || "document.pdf";
+        anchor.rel = "noopener";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+    }
+};
+
 window.hcsMatchBlockHeight = (function () {
     var observers = new WeakMap();
     function measure(source) {
@@ -507,10 +539,10 @@ window.hcsMatchBlockHeight = (function () {
 
     function place(calendar) {
         var input = findInput(calendar);
-        var modal = input && input.closest(".modal");
-        if (!input || !modal) return;
+        if (!input) return;
         calendar._hcsInput = input;
-        var body = modal.querySelector(".modal-body");
+        var modal = input.closest(".modal");
+        var body = modal && modal.querySelector(".modal-body");
         var scrollTop = body ? body.scrollTop : 0;
         host(calendar);
         var inputRect = input.getBoundingClientRect();
@@ -550,9 +582,6 @@ window.hcsMatchBlockHeight = (function () {
         placing = true;
         try {
             calendars().forEach(function (calendar) {
-                var modal = calendar.closest(".modal")
-                    || (calendar._hcsInput && calendar._hcsInput.closest(".modal"));
-                if (!modal) return;
                 if (isOpen(calendar)) place(calendar);
                 else clearPlace(calendar);
             });
@@ -581,6 +610,7 @@ window.hcsMatchBlockHeight = (function () {
             attributeFilter: ["class", "hidden"]
         });
         window.addEventListener("resize", requestScan);
+        window.addEventListener("scroll", requestScan, true);
     }
 
     if (document.body) start();

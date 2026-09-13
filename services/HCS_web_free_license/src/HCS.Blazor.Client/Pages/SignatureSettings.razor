@@ -5,63 +5,42 @@
 @using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>@L["Menu:SignatureSettings"] · HCS</PageTitle>
-<section class="hcs-catalog-page" aria-labelledby="provider-settings-title">
-    <header class="hcs-catalog-titlebar">
-        <div class="min-w-0">
-            <p class="hcs-catalog-titlebar__eyebrow">@L["Feature:ProviderSettings"]</p>
+<section class="page page-wf" aria-labelledby="provider-settings-title">
+    <div class="page-head">
+        <div>
             <h1 id="provider-settings-title">@L["Menu:SignatureSettings"]</h1>
-            <p class="text-muted mb-0">@L["Feature:ProviderSettingsHint"]</p>
+            <p class="event-panel-kicker">@L["Feature:ProviderSettingsHint"]</p>
         </div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreateAsync" Disabled="@isLoading">
-                <Icon Name="@IconName.Add" /> @L["Feature:AddProvider"]
-            </Button>
+        <div class="page-actions">
+            <button class="btn btn-primary" type="button" @onclick="OpenCreateAsync" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Feature:AddProvider"]
+            </button>
         </div>
-    </header>
+    </div>
 
     @if (isLoading)
     {
-        <Card Class="hcs-catalog-grid-card">
-            <CardBody>
-                <div class="hcs-loading py-5" role="status" aria-live="polite">
-                    <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
-                    <span>@L["Catalog:Loading"]</span>
-                </div>
-            </CardBody>
-        </Card>
+        <DocsEmpty Loading="true" />
     }
     else if (loadFailed)
     {
-        <Card Class="hcs-catalog-grid-card">
-            <CardBody>
-                <div class="alert alert-danger mb-3" role="alert">
-                    <strong>@L["Feature:ProviderLoadFailed"]</strong>
-                    <div>@L["Feature:ProviderLoadFailedHint"]</div>
-                </div>
-                <div class="hcs-catalog-page__actions">
-                    <Button Color="Color.Light" Outline="true" Clicked="LoadAsync">
-                        <i class="fa fa-rotate me-1" aria-hidden="true"></i>@L["Catalog:Retry"]
-                    </Button>
-                </div>
-            </CardBody>
-        </Card>
+        <DocsEmpty Title="@L["Feature:ProviderLoadFailed"]" Hint="@L["Feature:ProviderLoadFailedHint"]" />
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="LoadAsync">@L["Catalog:Retry"]</button>
+        </div>
     }
     else if (credentials.Count == 0)
     {
-        <Card Class="hcs-catalog-grid-card">
-            <CardBody>
-                <div class="hcs-empty py-5">
-                    <i class="fa fa-plug" aria-hidden="true"></i>
-                    <h2>@L["Feature:NoProviders"]</h2>
-                    <p>@L["Feature:NoProvidersHint"]</p>
-                    <div class="hcs-catalog-page__actions justify-content-center mt-3">
-                        <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreateAsync">
-                            <Icon Name="@IconName.Add" /> @L["Feature:AddProvider"]
-                        </Button>
-                    </div>
-                </div>
-            </CardBody>
-        </Card>
+        <DocsEmpty Title="@L["Feature:NoProviders"]" Hint="@L["Feature:NoProvidersHint"]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </DocsEmpty>
+        <div class="page-actions">
+            <button class="btn btn-primary" type="button" @onclick="OpenCreateAsync">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Feature:AddProvider"]
+            </button>
+        </div>
     }
     else
     {

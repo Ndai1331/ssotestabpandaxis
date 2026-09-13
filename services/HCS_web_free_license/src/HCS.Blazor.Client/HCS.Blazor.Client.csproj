@@ -8,6 +8,13 @@
     <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
   </PropertyGroup>
 
+  <!-- Incremental Debug rebuilds otherwise leave blazor.boot.json pointing at missing
+       fingerprinted .wasm/.pdb files, which then 404 and fail SRI (empty-body digest). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <WasmFingerprintAssets>false</WasmFingerprintAssets>
+    <StaticWebAssetFingerprintingEnabled>false</StaticWebAssetFingerprintingEnabled>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Blazorise.Bootstrap5" Version="2.3.0" />
     <PackageReference Include="Blazorise.Icons.FontAwesome" Version="2.3.0" />

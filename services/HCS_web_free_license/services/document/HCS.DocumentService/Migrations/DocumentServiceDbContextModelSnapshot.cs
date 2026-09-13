@@ -40,6 +40,10 @@ namespace HCS.DocumentService.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
+                    b.Property<string>("DocumentCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<Guid?>("DocumentTypeId")
                         .HasColumnType("uuid");
 
@@ -85,6 +89,11 @@ namespace HCS.DocumentService.Migrations
                     b.HasIndex("ParentDocumentId");
 
                     b.HasIndex("SourceType");
+
+                    b.HasIndex(new[] { "DocumentCode" }, "IX_Documents_DocumentCode_Trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "DocumentCode" }, "IX_Documents_DocumentCode_Trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "DocumentCode" }, "IX_Documents_DocumentCode_Trgm"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex(new[] { "Number" }, "IX_Documents_Number")
                         .IsUnique();

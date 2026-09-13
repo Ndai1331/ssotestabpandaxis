@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat nội bộ — HCS Hành chính số</title>
+  <meta name="description" content="Chat nội bộ và chat nhóm trong hệ thống Hành chính số HCS.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="app-page chat-app">
+  <a class="skip-link" href="#main">Bỏ qua tới nội dung chính</a>
+
+  <header class="topbar">
+    <a class="brand" href="home.html" aria-label="HCS Hành chính số">
+      <img src="assets/logo-hcs.svg" width="40" height="40" alt="">
+      <span class="brand-text">
+        <strong>HCS</strong>
+        <span>Hành chính số</span>
+      </span>
+    </a>
+    <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-controls="app-nav" aria-expanded="false" aria-label="Mở menu">
+      <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+      </svg>
+      <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18"/>
+      </svg>
+    </button>
+
+    <div class="topbar-actions">
+      <div class="top-pop" id="lang-pop">
+        <button class="lang-chip" type="button" id="lang-btn" aria-haspopup="true" aria-expanded="false" aria-controls="lang-menu" data-i18n-aria="chooseLang">
+          <span class="flag-slot" data-lang-flag aria-hidden="true"></span>
+          <span data-lang-code>VI</span>
+          <svg class="lang-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="top-pop" id="notify-pop">
+        <button class="icon-btn" type="button" id="notify-btn" aria-haspopup="true" aria-expanded="false" aria-controls="notify-panel" data-i18n-aria="notifications">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/>
+            <path d="M10 19a2 2 0 0 0 4 0"/>
+          </svg>
+          <span class="top-badge" data-notify-count hidden>0</span>
+        </button>
+      </div>
+      <a class="icon-btn" href="chat.html" data-i18n-aria="messages">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M4 6h16v10H7l-3 3V6z"/>
+        </svg>
+      </a>
+      <button class="user-menu" type="button" aria-haspopup="true" aria-label="Tài khoản">
+        <span class="user-meta">
+          <span class="name" id="user-name">hungtv</span>
+          <span class="role">Quản trị hệ thống</span>
+        </span>
+        <span class="avatar" id="user-avatar">HU</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="nav" id="app-nav" aria-label="Điều hướng chính">
+    <a class="nav-item" href="home.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg>
+      Workspace
+    </a>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+        Văn bản
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <span class="menu-label">Quản lý văn bản</span>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+          Văn bản của tôi
+        </a>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 12h12M12 6l6 6-6 6"/></svg>
+          Công văn đến
+        </a>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 12H8M12 6l-6 6 6 6"/></svg>
+          Công văn đi
+        </a>
+        <a href="ky-duyet.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          Hàng đợi ký
+        </a>
+        <div class="menu-sep"></div>
+        <a href="van-ban.html#tao" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Tạo văn bản mới
+        </a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.2 7.2 15.5 11M8.2 16.8 15.5 13"/></svg>
+        Quy trình
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="quy-trinh.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h9v4H4zM11 13h9v4h-9z"/></svg>
+          Quy trình của tôi
+        </a>
+        <a href="quy-trinh.html#theo-doi" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Theo dõi quy trình
+        </a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16l3-5 3 3 4-7"/></svg>
+        Dự án &amp; công việc
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="du-an.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h7l2 2h9v10H3z"/></svg>
+          Dự án
+        </a>
+        <a href="cong-viec.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+          Công việc
+        </a>
+      </div>
+    </div>
+
+    <a class="nav-item" href="lich.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+      Lịch
+    </a>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 8v13"/><path d="M8 12h8"/><path d="M7 4h10l-1 4H8z"/></svg>
+        Sự kiện
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="su-kien.html" role="menuitem">Dashboard sự kiện</a>
+        <a href="su-kien.html#danh-sach" role="menuitem">Danh sách sự kiện</a>
+        <a href="su-kien.html#tao" role="menuitem">Tạo sự kiện mới</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V8l8-4 8 4v11"/><path d="M4 19l8-4 8 4"/><path d="M12 4v11"/></svg>
+        Khảo sát
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="#" role="menuitem" data-mock-action="Khảo sát">Danh sách khảo sát</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4h8v4H8z"/><path d="M6 8h12v12H6z"/><path d="M9 12h6M9 16h4"/></svg>
+        Danh mục
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu menu-mega" role="menu">
+        <div class="mega-section">
+          <span class="menu-label">Danh mục văn bản</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Loại văn bản">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+              Loại văn bản
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Lĩnh vực">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 4 7v10l8 4 8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg>
+              Lĩnh vực
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Độ khẩn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+              Độ khẩn
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Độ mật">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 5 6v6c0 5 3.4 7.8 7 9 3.6-1.2 7-4 7-9V6z"/></svg>
+              Độ mật
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Phương thức xử lý">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M8 21H3v-5"/></svg>
+              Phương thức xử lý
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Trạng thái văn bản">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h8"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+              Trạng thái văn bản
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Phương thức ký">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+              Phương thức ký
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Cấu hình ký số">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 2l-2 2m-7.5 7.5 6-6"/><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 18.7 21 8.4"/></svg>
+              Cấu hình ký số
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Loại sự kiện">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+              Loại sự kiện
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục tổ chức</span>
+          <div class="mega-grid">
+            <a href="danh-muc.html" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V8l8-4 8 4v13"/><path d="M9 21v-6h6v6"/></svg>
+              Phòng ban
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Đơn vị">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+              Đơn vị
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Chức vụ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="4" y="7" width="16" height="13" rx="2"/></svg>
+              Chức vụ
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục y tế</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="ICD-10">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+              ICD-10
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Huyết áp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M19 14c1.2-1.2 2-2.7 2-4.5A5.5 5.5 0 0 0 12 6a5.5 5.5 0 0 0-9 3.5c0 1.8.8 3.3 2 4.5l7 7z"/></svg>
+              Huyết áp
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Đường huyết">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3s6 6.2 6 10a6 6 0 1 1-12 0c0-3.8 6-10 6-10z"/></svg>
+              Đường huyết
+            </a>
+            <a href="#" role="menuitem" data-mock-action="BMI">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19h16"/><path d="M7 19V9l5 4 5-8v14"/></svg>
+              BMI
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục địa giới</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Quốc gia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 3.8 6 3.8 9S14.5 18 12 21c-2.5-3-3.8-6-3.8-9S9.5 6 12 3z"/></svg>
+              Quốc gia
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Tỉnh/Thành">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V10l8-5 8 5v11"/><path d="M9 21v-6h6v6"/></svg>
+              Tỉnh/Thành
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Xã/Phường">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+              Xã/Phường
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục khảo sát</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Địa điểm khảo sát">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+              Địa điểm khảo sát
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Tiêu chí khảo sát">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+              Tiêu chí khảo sát
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Báo cáo</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Báo cáo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16l3-5 3 3 4-7"/></svg>
+              Báo cáo
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item is-active" type="button" data-nav-menu aria-expanded="false" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+        Mạng xã hội
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="bang-tin.html" role="menuitem">Bảng tin</a>
+        <a href="bang-tin.html#toi" role="menuitem">Trang cá nhân</a>
+        <a class="is-current" id="nav-chat-dm" href="chat.html" role="menuitem">Chat nội bộ</a>
+        <a id="nav-chat-group" href="chat.html#nhom" role="menuitem">Chat nhóm</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Quản trị
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="#" role="menuitem" data-mock-action="Người dùng">Người dùng</a>
+        <a href="#" role="menuitem" data-mock-action="Phân quyền">Phân quyền</a>
+        <div class="menu-sep"></div>
+        <a class="is-danger" href="login.html" role="menuitem">Đăng xuất</a>
+      </div>
+    </div>
+  </nav>
+  <div class="nav-overlay" id="nav-overlay" hidden></div>
+
+  <main id="main" class="page page-chat">
+    <div class="chat-shell" id="chat-shell">
+      <section class="chat-list" aria-label="Danh sách hội thoại">
+        <div class="chat-list-toolbar">
+          <label class="sr-only" for="chat-search">Tìm kiếm hội thoại</label>
+          <div class="chat-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            <input id="chat-search" type="search" placeholder="Tìm kiếm..." autocomplete="off">
+          </div>
+          <button class="icon-btn" type="button" id="chat-refresh" aria-label="Làm mới hội thoại">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+          </button>
+        </div>
+
+        <div class="chat-list-tabs" role="tablist" aria-label="Loại danh sách">
+          <button class="chat-list-tab is-active" type="button" role="tab" aria-selected="true" data-chat-list="chats">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+            Hội thoại
+          </button>
+          <button class="chat-list-tab" type="button" role="tab" aria-selected="false" data-chat-list="contacts">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+            Danh bạ
+          </button>
+        </div>
+
+        <div class="chat-list-body" id="chat-list-chats" role="tabpanel">
+          <button class="chat-item is-active" type="button" data-chat="phi-long" data-kind="dm" data-contact="long" data-name="nguyễn hồ phi long" data-status="Ngoại tuyến · Trao đổi riêng" data-initials="NH">
+            <span class="chat-avatar">
+              NH
+              <span class="chat-dot is-offline" aria-hidden="true"></span>
+            </span>
+            <span class="chat-item-body">
+              <span class="chat-item-top">
+                <span class="chat-item-name">nguyễn hồ phi long</span>
+                <span class="chat-item-end"><span class="chat-pin-mark" hidden aria-hidden="true"></span><time datetime="2026-08-26">26/08</time></span>
+              </span>
+              <span class="chat-item-preview">test ghim hội thoại</span>
+            </span>
+          </button>
+          <button class="chat-item" type="button" data-chat="nhom" data-kind="group" data-name="Nhóm Hành chính số" data-status="Chat nhóm · 5 thành viên" data-initials="HS">
+            <span class="chat-avatar is-group">
+              HS
+            </span>
+            <span class="chat-item-body">
+              <span class="chat-item-top">
+                <span class="chat-item-name">Nhóm Hành chính số</span>
+                <span class="chat-item-end"><span class="chat-pin-mark" hidden aria-hidden="true"></span><time datetime="2026-08-26">26/08</time></span>
+              </span>
+              <span class="chat-item-preview">Nhờ các anh chị rà soát công văn đến trước 17h.</span>
+            </span>
+          </button>
+          <button class="chat-item" type="button" data-chat="pho-truong" data-kind="dm" data-contact="ptp" data-name="Phó trưởng phòng" data-status="Ngoại tuyến · Trao đổi riêng" data-initials="PT">
+            <span class="chat-avatar">
+              PT
+              <span class="chat-dot is-offline" aria-hidden="true"></span>
+            </span>
+            <span class="chat-item-body">
+              <span class="chat-item-top">
+                <span class="chat-item-name">Phó trưởng phòng</span>
+                <span class="chat-item-end"><span class="chat-pin-mark" hidden aria-hidden="true"></span></span>
+              </span>
+              <span class="chat-item-preview">Chưa có tin nhắn</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="chat-list-body chat-contacts" id="chat-list-contacts" role="tabpanel" hidden>
+          <label class="sr-only" for="chat-contact-search">Tìm kiếm danh bạ</label>
+          <div class="chat-search chat-contact-search">
+            <input id="chat-contact-search" type="search" placeholder="Tìm kiếm..." autocomplete="off">
+          </div>
+          <div class="chat-contact-list" id="chat-contact-list">
+            <label class="chat-contact">
+              <input type="checkbox" name="chat-contact" value="admin" data-name="admin" data-handle="@admin" data-initials="A">
+              <span class="chat-avatar">A</span>
+              <span class="chat-contact-meta">
+                <strong>admin</strong>
+                <span>@admin</span>
+              </span>
+            </label>
+            <label class="chat-contact">
+              <input type="checkbox" name="chat-contact" value="long" data-chat="phi-long" data-name="nguyễn hồ phi long" data-handle="@long" data-initials="NH">
+              <span class="chat-avatar">NH</span>
+              <span class="chat-contact-meta">
+                <strong>nguyễn hồ phi long</strong>
+                <span>@long</span>
+              </span>
+            </label>
+            <label class="chat-contact">
+              <input type="checkbox" name="chat-contact" value="ptp" data-chat="pho-truong" data-name="Phó trưởng phòng" data-handle="@ptp" data-initials="PT">
+              <span class="chat-avatar">PT</span>
+              <span class="chat-contact-meta">
+                <strong>Phó trưởng phòng</strong>
+                <span>@ptp</span>
+              </span>
+            </label>
+            <label class="chat-contact">
+              <input type="checkbox" name="chat-contact" value="trang" data-name="Đặng Hiền trang" data-handle="@trang" data-initials="ĐH">
+              <span class="chat-avatar">ĐH</span>
+              <span class="chat-contact-meta">
+                <strong>Đặng Hiền trang</strong>
+                <span>@trang</span>
+              </span>
+            </label>
+          </div>
+          <div class="chat-contact-foot">
+            <div id="chat-group-name-wrap" hidden>
+              <label class="sr-only" for="chat-group-name">Nhập tên nhóm</label>
+              <input class="input chat-group-name" id="chat-group-name" type="text" placeholder="Nhập tên nhóm" autocomplete="off">
+            </div>
+            <button class="btn btn-primary" type="button" id="chat-create-conv">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span class="btn-label">Tạo cuộc trao đổi</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="chat-thread" aria-label="Nội dung trò chuyện">
+        <header class="chat-thread-head">
+          <button class="icon-btn chat-back" type="button" id="chat-back" aria-label="Quay lại danh sách hội thoại">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+          </button>
+          <span class="chat-avatar" id="chat-head-avatar">NH<span class="chat-dot is-offline" aria-hidden="true"></span></span>
+          <div class="chat-thread-meta">
+            <h1 id="chat-head-name">nguyễn hồ phi long</h1>
+            <p id="chat-head-status"><span class="chat-status-dot" aria-hidden="true"></span> Ngoại tuyến · Trao đổi riêng</p>
+          </div>
+          <button class="icon-btn" type="button" id="chat-pin-conv" aria-pressed="false" aria-label="Ghim hội thoại">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
+          </button>
+          <div class="chat-more">
+            <button class="icon-btn" type="button" id="chat-more-btn" aria-expanded="false" aria-controls="chat-info" aria-label="Thông tin trao đổi">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="chat-pin-bar" id="chat-pin-bar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
+          <button class="chat-pin-bar-body" type="button" id="chat-pin-jump">
+            <strong>Tin đã ghim</strong>
+            <span id="chat-pin-preview">test ghim hội thoại</span>
+          </button>
+          <button class="icon-btn" type="button" id="chat-pin-clear" aria-label="Bỏ ghim tin nhắn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+
+        <div class="chat-msgs is-active" data-chat-pane="phi-long" aria-live="polite">
+          <div class="msg is-out" data-msg-id="pl-1" data-type="text" data-author="me">
+            <div class="msg-stack">
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+              <div class="msg-bubble">Alo</div>
+            </div>
+          </div>
+          <div class="msg is-in" data-msg-id="pl-2" data-type="text" data-author="nguyễn hồ phi long">
+            <span class="chat-avatar sm">NH</span>
+            <div class="msg-stack">
+              <div class="msg-bubble">
+                <span class="msg-name">nguyễn hồ phi long</span>
+                nghe nghe
+              </div>
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="msg is-in is-pinned" data-msg-id="pl-3" data-type="text" data-author="nguyễn hồ phi long">
+            <span class="chat-avatar sm">NH</span>
+            <div class="msg-stack">
+              <div class="msg-bubble">
+                <span class="msg-name">nguyễn hồ phi long</span>
+                test ghim hội thoại
+              </div>
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-msgs" data-chat-pane="nhom" hidden aria-live="polite">
+          <div class="msg is-in" data-msg-id="nh-1" data-type="text" data-author="Trần Việt Hùng">
+            <span class="chat-avatar sm">TH</span>
+            <div class="msg-stack">
+              <div class="msg-bubble">
+                <span class="msg-name">Trần Việt Hùng</span>
+                Nhờ các anh chị rà soát công văn đến trước 17h.
+              </div>
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="msg is-in" data-msg-id="nh-2" data-type="image" data-author="nguyễn hồ phi long" data-file="anh-cuoc-hop.jpg" data-tone="teal">
+            <span class="chat-avatar sm">NH</span>
+            <div class="msg-stack">
+              <div class="msg-bubble msg-media">
+                <span class="msg-name">nguyễn hồ phi long</span>
+                <span class="msg-media-card chat-thumb-img is-teal" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+                </span>
+                <span class="msg-media-caption">anh-cuoc-hop.jpg</span>
+              </div>
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="msg is-out" data-msg-id="nh-3" data-type="file" data-author="me" data-file="Bien_ban_hop.pdf" data-ext="PDF">
+            <div class="msg-stack">
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+              <button class="msg-bubble msg-file" type="button" data-pdf-open="minutes" aria-label="Xem Bien_ban_hop.pdf">
+                <span class="chat-thumb-ext is-pdf">PDF</span>
+                <span class="msg-file-name">Bien_ban_hop.pdf</span>
+              </button>
+            </div>
+          </div>
+          <div class="msg is-in" data-msg-id="nh-4" data-type="text" data-author="nguyễn hồ phi long">
+            <span class="chat-avatar sm">NH</span>
+            <div class="msg-stack">
+              <div class="msg-bubble">
+                <span class="msg-name">nguyễn hồ phi long</span>
+                Nhóm mình họp 14h được không?
+              </div>
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="msg is-out" data-msg-id="nh-5" data-type="text" data-author="me">
+            <div class="msg-stack">
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+              <div class="msg-bubble">Được, mình sẽ chuẩn bị file.</div>
+            </div>
+          </div>
+          <div class="msg is-in" data-msg-id="nh-6" data-type="text" data-author="Phó trưởng phòng">
+            <span class="chat-avatar sm">PT</span>
+            <div class="msg-stack">
+              <div class="msg-bubble">
+                <span class="msg-name">Phó trưởng phòng</span>
+                Nhớ đính kèm biên bản cuộc họp.
+              </div>
+              <button class="msg-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Thao tác tin nhắn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-msgs" data-chat-pane="pho-truong" hidden aria-live="polite">
+          <p class="chat-empty">Chưa có tin nhắn</p>
+        </div>
+
+        <form class="chat-compose" id="chat-compose">
+          <button class="icon-btn chat-attach" type="button" data-mock-action="Đính kèm tệp" aria-label="Đính kèm tệp">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 11.6 12.8 20a5 5 0 0 1-7.1-7.1l9.2-9.2a3.2 3.2 0 0 1 4.5 4.5L10.2 17.4a1.4 1.4 0 1 1-2-2l8.2-8.2"/></svg>
+          </button>
+          <label class="sr-only" for="chat-input">Nhập tin nhắn</label>
+          <div class="chat-input-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+            <input id="chat-input" name="message" type="text" placeholder="Nhập tin nhắn..." autocomplete="off">
+          </div>
+          <button class="chat-send" type="submit" aria-label="Gửi tin nhắn" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+          </button>
+        </form>
+      </section>
+
+      <aside class="chat-info" id="chat-info" hidden>
+        <header class="chat-info-head">
+          <p class="chat-info-kicker">Thông tin trao đổi</p>
+          <button class="icon-btn" type="button" id="chat-info-close" aria-label="Đóng thông tin trao đổi">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+          </button>
+        </header>
+
+        <div class="chat-info-body">
+          <div class="chat-info-profile">
+            <span class="chat-avatar lg" id="chat-info-avatar">NH<span class="chat-dot is-offline" aria-hidden="true"></span></span>
+            <button class="chat-name-btn" type="button" id="chat-rename-start" aria-label="Đổi tên hội thoại">
+              <span id="chat-info-title">nguyễn hồ phi long</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+            </button>
+            <input class="input chat-rename-input" id="chat-rename" type="text" maxlength="80" autocomplete="off" aria-label="Tên hội thoại" hidden>
+            <p id="chat-info-kind">Trao đổi riêng</p>
+          </div>
+
+          <div class="chat-info-actions">
+            <button class="btn btn-outline btn-block" type="button" id="chat-info-pin">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
+              <span>Ghim hội thoại</span>
+            </button>
+          </div>
+
+          <section class="chat-info-section" aria-labelledby="chat-members-label">
+            <h3 id="chat-members-label">Thành viên</h3>
+            <ul class="chat-member-list" id="chat-info-members"></ul>
+          </section>
+
+          <section class="chat-info-section" aria-labelledby="chat-pins-label">
+            <h3 id="chat-pins-label">Tin đã ghim</h3>
+            <div id="chat-info-pins"></div>
+          </section>
+
+          <section class="chat-info-section" aria-labelledby="chat-media-label">
+            <h3 id="chat-media-label">Tệp phương tiện</h3>
+            <div class="chat-media-tabs" role="tablist" aria-label="Ảnh và file">
+              <button class="chat-media-tab is-active" type="button" role="tab" id="chat-tab-photos" aria-selected="true" aria-controls="chat-media-photos" data-media="photos">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+                Ảnh
+              </button>
+              <button class="chat-media-tab" type="button" role="tab" id="chat-tab-files" aria-selected="false" aria-controls="chat-media-files" data-media="files">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                File
+              </button>
+            </div>
+            <div class="chat-media-grid" id="chat-media-photos" role="tabpanel" aria-labelledby="chat-tab-photos"></div>
+            <div class="chat-media-grid" id="chat-media-files" role="tabpanel" aria-labelledby="chat-tab-files" hidden></div>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div class="msg-menu" id="msg-menu" hidden role="menu" aria-label="Thao tác tin nhắn"></div>
+
+  <div class="modal-overlay" id="chat-dialog" hidden>
+    <div class="chat-dialog" role="dialog" aria-modal="true" aria-labelledby="chat-dialog-title" tabindex="-1">
+      <div class="chat-dialog-head">
+        <h2 id="chat-dialog-title">Chuyển tiếp</h2>
+        <button class="icon-btn" type="button" data-chat-dialog-close aria-label="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="chat-dialog-view" data-dialog-view="forward">
+        <div class="chat-dialog-preview" id="forward-preview"></div>
+        <p class="field-label">Chọn hội thoại</p>
+        <div class="forward-list" id="forward-list" role="listbox" aria-label="Hội thoại nhận"></div>
+        <label class="field-label" for="forward-note">Ghi chú (tuỳ chọn)</label>
+        <input class="input" id="forward-note" type="text" placeholder="Thêm lời nhắn...">
+      </div>
+
+      <div class="chat-dialog-view" data-dialog-view="task" hidden>
+        <label class="field-label" for="task-title">Tên công việc</label>
+        <input class="input" id="task-title" type="text" placeholder="Nhập tên công việc">
+        <label class="field-label" for="task-assignee">Người thực hiện</label>
+        <select class="select" id="task-assignee"></select>
+        <label class="field-label" for="task-due">Hạn xử lý</label>
+        <input class="input" id="task-due" type="date" value="2026-09-12">
+        <label class="field-label" for="task-note">Ghi chú</label>
+        <input class="input" id="task-note" type="text" placeholder="Mô tả ngắn...">
+      </div>
+
+      <div class="chat-dialog-view" data-dialog-view="confirm" hidden>
+        <p class="chat-dialog-copy" id="confirm-copy">Bạn chắc chắn muốn thực hiện thao tác này?</p>
+      </div>
+
+      <div class="chat-dialog-foot">
+        <button class="btn btn-outline" type="button" data-chat-dialog-close>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          <span>Hủy</span>
+        </button>
+        <button class="btn btn-primary" type="button" id="chat-dialog-submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+          <span class="btn-label">Xác nhận</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="js/app.js"></script>
+</body>
+</html>
+<!-- leftover-start
+  <main id="main" class="page leftover-remove">
+    <div class="page-head">
+      <h1>Hàng đợi ký</h1>
+      <div class="page-actions">
+        <button class="btn btn-outline" type="button" data-mock-action="Đã xuất file Excel">Xuất file Excel</button>
+        <button class="btn btn-outline" type="button" id="refresh-queue">Làm mới</button>
+        <button class="btn btn-primary" type="button" data-mock-action="Tạo trình ký">Tạo trình ký</button>
+      </div>
+    </div>
+
+    <form class="queue-filter" id="queue-search-form">
+      <div class="queue-filter-grid">
+        <span class="queue-side-label" id="queue-range-label">Lọc theo khoảng ngày</span>
+        <div class="queue-field">
+          <label class="sr-only" for="queue-range">Khoảng ngày</label>
+          <input class="input" id="queue-range" name="range" type="text" autocomplete="off" aria-labelledby="queue-range-label">
+        </div>
+
+        <div class="queue-field">
+          <label class="field-label" for="queue-date-type">Lọc theo ngày</label>
+          <select class="select" id="queue-date-type" name="dateType">
+            <option selected>Ngày nhận văn bản</option>
+            <option>Ngày trình ký</option>
+            <option>Ngày tạo</option>
+          </select>
+        </div>
+
+        <span class="queue-side-label" id="queue-search-label">Tìm kiếm</span>
+        <div class="queue-field">
+          <label class="field-label" for="queue-presenter">Người trình</label>
+          <select class="select" id="queue-presenter" name="presenter">
+            <option value="">Người trình</option>
+            <option value="nguyen ho phi long">nguyễn hồ phi long</option>
+            <option value="tran viet hung">Trần Việt Hùng</option>
+          </select>
+        </div>
+        <div class="queue-field">
+          <label class="field-label" for="queue-dept">Phòng ban</label>
+          <select class="select" id="queue-dept" name="dept">
+            <option value="">Phòng ban</option>
+            <option>Phòng Tổ chức cán bộ</option>
+            <option>Phòng Kế hoạch</option>
+          </select>
+        </div>
+
+        <div class="queue-field queue-keyword">
+          <label class="sr-only" for="queue-q">Tìm theo số hoặc tiêu đề</label>
+          <input class="input" id="queue-q" name="q" type="search" placeholder="Tìm theo số hoặc tiêu đề" autocomplete="off" aria-labelledby="queue-search-label">
+        </div>
+        <button class="btn btn-primary queue-search-btn" type="submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+          Tìm kiếm
+        </button>
+      </div>
+    </form>
+
+    <div class="queue-tabs" role="tablist" aria-label="Nhóm hàng đợi ký">
+      <button class="queue-tab is-active" type="button" role="tab" aria-selected="true" data-queue="all">
+        Tất cả <span class="count">2</span>
+      </button>
+      <button class="queue-tab" type="button" role="tab" aria-selected="false" data-queue="to-me">
+        Gửi đến tôi <span class="count">0</span>
+      </button>
+      <button class="queue-tab" type="button" role="tab" aria-selected="false" data-queue="sent">
+        Tôi gửi đi <span class="count">1</span>
+      </button>
+    </div>
+
+    <div class="docs-table-wrap">
+      <table class="docs-table queue-table">
+        <thead>
+          <tr>
+            <th scope="col">Thao tác</th>
+            <th scope="col">Tiêu đề</th>
+            <th scope="col">Người trình</th>
+            <th scope="col">Phòng ban</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Bước hiện tại</th>
+            <th scope="col">Ngày nhận</th>
+          </tr>
+        </thead>
+        <tbody id="queue-body">
+          <tr data-queue="sent" data-text="quy trinh duyet nghi phep np-tpl-wf2 nguyen ho phi long">
+            <td>
+              <div class="doc-actions">
+                <button class="doc-action" type="button" aria-label="Xem thông tin quy trình duyệt nghỉ phép" data-open-process="process-np">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.9" fill="currentColor" stroke="none"/></svg>
+                </button>
+                <button class="doc-action" type="button" aria-label="Xem quy trình duyệt nghỉ phép" data-open-process="process-np">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </td>
+            <td>
+              <div class="doc-title">
+                <a href="#" data-open-process="process-np">Quy trình duyệt nghỉ phép</a>
+                <span class="doc-code">#NP-tpl-WF2</span>
+              </div>
+            </td>
+            <td>nguyễn hồ phi long</td>
+            <td></td>
+            <td><span class="status-overdue">Quá hạn</span></td>
+            <td>1 / 2</td>
+            <td>26/08/2026</td>
+          </tr>
+          <tr data-queue="other" data-text="dong bo du lieu ksk dinh ky toan dan 2062-wf tran viet hung">
+            <td>
+              <div class="doc-actions">
+                <button class="doc-action" type="button" aria-label="Xem thông tin đồng bộ dữ liệu KSK" data-open-process="process-ksk">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.9" fill="currentColor" stroke="none"/></svg>
+                </button>
+                <button class="doc-action" type="button" aria-label="Xem đồng bộ dữ liệu KSK" data-open-process="process-ksk">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </td>
+            <td>
+              <div class="doc-title">
+                <a href="#" data-open-process="process-ksk">Đồng bộ dữ liệu KSK định kỳ toàn dân</a>
+                <span class="doc-code">#2062-WF</span>
+              </div>
+            </td>
+            <td>Trần Việt Hùng</td>
+            <td></td>
+            <td><span class="status-overdue">Quá hạn</span></td>
+            <td>1 / 2</td>
+            <td>25/08/2026</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="queue-empty" id="queue-empty" hidden>Không có hồ sơ trong nhóm này.</p>
+
+      <div class="pager" aria-label="Phân trang">
+        <button type="button" disabled>First</button>
+        <button type="button" disabled>Prev</button>
+        <button type="button" disabled>Next</button>
+        <button type="button" disabled>Last</button>
+        <label class="sr-only" for="queue-page-size">Số dòng mỗi trang</label>
+        <select id="queue-page-size" aria-label="Số dòng mỗi trang">
+          <option selected>20</option>
+          <option>50</option>
+          <option>100</option>
+        </select>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="process-modal" hidden>
+    <div class="process-dialog" role="dialog" aria-modal="true" aria-labelledby="process-modal-title" tabindex="-1">
+      <div class="process-dialog-head">
+        <h2 id="process-modal-title">Xem thông tin quy trình</h2>
+        <button class="icon-btn process-close" type="button" data-close-modal aria-label="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="process-dialog-body" id="process-modal-body"></div>
+      <div class="process-dialog-foot">
+        <button class="btn btn-outline" type="button" data-close-modal>Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <template id="process-np">
+    <div class="process-hero">
+      <div>
+        <p class="process-hero-title">Quy trình duyệt nghỉ phép</p>
+        <p class="process-hero-code">#NP-tpl-WF2</p>
+      </div>
+      <div class="process-hero-meta">
+        <span class="badge badge-info">Đang xử lý</span>
+        <span>Bước hiện tại: Quản lý xem duyệt</span>
+      </div>
+    </div>
+    <div class="process-split">
+      <section class="process-flow" aria-label="Các bước quy trình">
+        <h3>Quy trình duyệt nghỉ phép</h3>
+        <ol class="flow-steps">
+          <li class="flow-step is-current">
+            <span class="flow-dot" aria-hidden="true"></span>
+            <div class="flow-body">
+              <div class="flow-title-row">
+                <strong>Quản lý xem duyệt</strong>
+                <span class="badge badge-info">Ký</span>
+              </div>
+              <p class="flow-wait">Đang chờ xử lý · 3 ngày</p>
+              <p class="flow-actor">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                Người thực hiện: admin
+              </p>
+              <span class="badge badge-overdue">Quá hạn</span>
+            </div>
+          </li>
+          <li class="flow-step">
+            <span class="flow-dot" aria-hidden="true"></span>
+            <div class="flow-body">
+              <div class="flow-title-row">
+                <strong>Quản lý chấp nhận</strong>
+                <span class="badge badge-warn">Xử lý</span>
+              </div>
+              <p class="flow-wait">Đang chờ · 1 ngày</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+      <section class="process-side">
+        <div class="process-side-tabs" role="tablist" aria-label="Chi tiết quy trình">
+          <button class="process-side-tab is-active" type="button" role="tab" aria-selected="true" data-process-tab="history">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Lịch sử trình ký
+          </button>
+          <button class="process-side-tab" type="button" role="tab" aria-selected="false" data-process-tab="files">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 11.6 12.8 20a5 5 0 0 1-7.1-7.1l9.2-9.2a3.2 3.2 0 0 1 4.5 4.5L10.2 17.4a1.4 1.4 0 1 1-2-2l8.2-8.2"/></svg>
+            Tệp đính kèm
+          </button>
+        </div>
+        <div class="process-pane" data-pane="history">
+          <div class="process-pane-head">
+            <h3>Lịch sử trình ký</h3>
+            <span class="process-pane-count">1</span>
+          </div>
+          <ol class="history-list">
+            <li>
+              <span class="history-dot" aria-hidden="true"></span>
+              <div>
+                <strong>Đã trình ký</strong>
+                <p>Người trình: nguyễn hồ phi long · 26/08/2026 19:34</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+        <div class="process-pane" data-pane="files" hidden>
+          <div class="process-pane-head">
+            <h3>Tệp đính kèm</h3>
+            <span class="process-pane-count">0</span>
+          </div>
+          <p class="process-empty">Chưa có tệp đính kèm.</p>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <template id="process-ksk">
+    <div class="process-hero">
+      <div>
+        <p class="process-hero-title">Đồng bộ dữ liệu KSK định kỳ toàn dân</p>
+        <p class="process-hero-code">#2062-WF</p>
+      </div>
+      <div class="process-hero-meta">
+        <span class="badge badge-info">Đang xử lý</span>
+        <span>Bước hiện tại: Quản lý xem duyệt</span>
+      </div>
+    </div>
+    <div class="process-split">
+      <section class="process-flow" aria-label="Các bước quy trình">
+        <h3>Đồng bộ dữ liệu KSK định kỳ toàn dân</h3>
+        <ol class="flow-steps">
+          <li class="flow-step is-current">
+            <span class="flow-dot" aria-hidden="true"></span>
+            <div class="flow-body">
+              <div class="flow-title-row">
+                <strong>Quản lý xem duyệt</strong>
+                <span class="badge badge-info">Ký</span>
+              </div>
+              <p class="flow-wait">Đang chờ xử lý · 4 ngày</p>
+              <p class="flow-actor">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                Người thực hiện: admin
+              </p>
+              <span class="badge badge-overdue">Quá hạn</span>
+            </div>
+          </li>
+          <li class="flow-step">
+            <span class="flow-dot" aria-hidden="true"></span>
+            <div class="flow-body">
+              <div class="flow-title-row">
+                <strong>Quản lý chấp nhận</strong>
+                <span class="badge badge-warn">Xử lý</span>
+              </div>
+              <p class="flow-wait">Đang chờ · 1 ngày</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+      <section class="process-side">
+        <div class="process-side-tabs" role="tablist" aria-label="Chi tiết quy trình">
+          <button class="process-side-tab is-active" type="button" role="tab" aria-selected="true" data-process-tab="history">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Lịch sử trình ký
+          </button>
+          <button class="process-side-tab" type="button" role="tab" aria-selected="false" data-process-tab="files">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 11.6 12.8 20a5 5 0 0 1-7.1-7.1l9.2-9.2a3.2 3.2 0 0 1 4.5 4.5L10.2 17.4a1.4 1.4 0 1 1-2-2l8.2-8.2"/></svg>
+            Tệp đính kèm
+          </button>
+        </div>
+        <div class="process-pane" data-pane="history">
+          <div class="process-pane-head">
+            <h3>Lịch sử trình ký</h3>
+            <span class="process-pane-count">1</span>
+          </div>
+          <ol class="history-list">
+            <li>
+              <span class="history-dot" aria-hidden="true"></span>
+              <div>
+                <strong>Đã trình ký</strong>
+                <p>Người trình: Trần Việt Hùng · 25/08/2026 08:12</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+        <div class="process-pane" data-pane="files" hidden>
+          <div class="process-pane-head">
+            <h3>Tệp đính kèm</h3>
+            <span class="process-pane-count">0</span>
+          </div>
+          <p class="process-empty">Chưa có tệp đính kèm.</p>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="js/app.js"></script>
+</body>
+</html>
+-->

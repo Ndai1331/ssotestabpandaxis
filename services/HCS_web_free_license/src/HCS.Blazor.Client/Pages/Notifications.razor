@@ -7,121 +7,119 @@
 @using HCS.CollaborationService.Contracts
 
 <PageTitle>@L["Notifications:Title"] · HCS</PageTitle>
-<section class="hcs-catalog-page" aria-labelledby="notifications-title">
-    <header class="hcs-catalog-titlebar">
-        <div class="min-w-0">
-            <h1 id="notifications-title">@L["Notifications:Title"]</h1>
-        </div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Outline="true" Clicked="MarkAllReadAsync" Disabled="@(!allItems.Any(x => !x.IsRead) || isLoading)">
+<section class="page page-wf page-dm" aria-labelledby="notifications-title">
+    <div class="page-head">
+        <h1 id="notifications-title">@L["Notifications:Title"]</h1>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="MarkAllReadAsync" disabled="@(!allItems.Any(x => !x.IsRead) || isLoading)">
                 @L["Notifications:MarkAllAsRead"]
-            </Button>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync" Disabled="@isLoading">
+            </button>
+            <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
                 @L["Catalog:Refresh"]
-            </Button>
+            </button>
         </div>
-    </header>
-    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
-        <div class="hcs-catalog-filter-row">
-            <Addons Class="hcs-catalog-search">
-                <Addon AddonType="AddonType.Body">
-                    <TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" />
-                </Addon>
-                <Addon AddonType="AddonType.End">
-                    <Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading">
-                        <i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]
-                    </Button>
-                </Addon>
-            </Addons>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-toggle" Clicked="() => showFilters = !showFilters">
-                <i class="fa fa-sliders me-2"></i>@L["Catalog:Filter"]
-                <i class="fa @(showFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2"></i>
-            </Button>
-        </div>
-        @if (showFilters)
-        {
-            <div class="hcs-catalog-advanced-filter">
-                <Field>
-                    <FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                    <Select TValue="string" @bind-Value="statusFilter" @bind-Value:after="OnStatusChanged">
-                        <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                        <SelectItem Value="@("unread")">@L["Work:Unread"]</SelectItem>
-                        <SelectItem Value="@("read")">@L["Notifications:Read"]</SelectItem>
-                    </Select>
-                </Field>
-                <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
+    </div>
+
+    <section class="docs-main">
+        <form class="docs-toolbar" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+            <label class="sr-only" for="notif-q">@L["Catalog:SearchPlaceholder"]</label>
+            <input class="input docs-search" id="notif-q" type="search" @bind="filter" @bind:event="oninput"
+                   placeholder="@L["Catalog:SearchPlaceholder"]" autocomplete="off" />
+            <HcsDismissible Class="filter-pop" @bind-IsOpen="showFilters">
+                <button class="btn btn-outline @(string.IsNullOrEmpty(statusFilter) ? null : "is-filtered")" type="button"
+                        aria-expanded="@showFilters.ToString().ToLowerInvariant()"
+                        @onclick="() => showFilters = !showFilters">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                    @L["Catalog:Filter"]
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="filter-menu @(showFilters ? "is-open" : null)" role="menu">
+                    <button type="button" class="@(string.IsNullOrEmpty(statusFilter) ? "is-active" : null)" @onclick="FilterAll">@L["Catalog:AllStatuses"]</button>
+                    <button type="button" class="@(statusFilter == "unread" ? "is-active" : null)" @onclick='() => SetStatus("unread")'>@L["Work:Unread"]</button>
+                    <button type="button" class="@(statusFilter == "read" ? "is-active" : null)" @onclick='() => SetStatus("read")'>@L["Notifications:Read"]</button>
+                </div>
+            </HcsDismissible>
+            <button class="btn btn-primary" type="submit" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:SearchButton"]
+            </button>
+            <button class="btn btn-outline" type="button" @onclick="ResetSearchAsync" disabled="@isLoading">@L["Catalog:Reset"]</button>
+        </form>
+
+        <div class="docs-table-wrap">
+            @if (isLoading && pageItems.Count == 0)
+            {
+                <DocsEmpty Loading="true" />
+            }
+            else if (pageItems.Count == 0)
+            {
+                <DocsEmpty Hint="@L["Work:NoRecentNotifications"]" />
+            }
+            else
+            {
+                <table class="docs-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Notifications:TitleColumn"]</th>
+                            <th scope="col">@L["Notifications:Body"]</th>
+                            <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                            <th scope="col">@L["Notifications:CreatedAt"]</th>
+                            <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in pageItems)
+                    {
+                        <tr @key="item.Id">
+                            <td>
+                                <strong class="@(item.IsRead ? null : "fw-semibold")">@NotificationText.Localize(L, item.Title)</strong>
+                            </td>
+                            <td><span class="text-muted">@NotificationText.Localize(L, item.Body)</span></td>
+                            <td>
+                                @if (item.IsRead)
+                                {
+                                    <span class="hcs-status-badge hcs-status-badge--success">@L["Notifications:Read"]</span>
+                                }
+                                else
+                                {
+                                    <span class="hcs-status-badge hcs-status-badge--warning">@L["Work:Unread"]</span>
+                                }
+                            </td>
+                            <td>@NotificationText.FormatLocal(item.CreatedAt, "dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <div class="doc-actions">
+                                    <button class="doc-action" type="button" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenAsync(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                    @if (!item.IsRead)
+                                    {
+                                        <button class="doc-action" type="button" title="@L["Notifications:MarkAsRead"]" aria-label="@L["Notifications:MarkAsRead"]" @onclick="() => MarkReadAsync(item)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                <button type="button" disabled="@(!CanPrev || isLoading)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
+                <button type="button" disabled="@(!CanPrev || isLoading)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
+                <button type="button" disabled="@(!CanNext || isLoading)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
+                <button type="button" disabled="@(!CanNext || isLoading)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
+                <label class="sr-only" for="notif-page-size">@L["Catalog:PageSize"]</label>
+                <select id="notif-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                    @foreach (var size in pageSizes)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
             </div>
-        }
-    </CardBody></Card>
-    <Card Class="hcs-catalog-grid-card"><CardBody>
-        <DataGrid TItem="NotificationDto" Data="@pageItems" TotalItems="@totalCount" ReadData="OnReadAsync"
-                  ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
-                  Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
-            <EmptyTemplate>
-                <div class="hcs-empty py-5">
-                    <i class="fa fa-bell" aria-hidden="true"></i>
-                    <h2>@L["Catalog:EmptyTitle"]</h2>
-                    <p>@L["Work:NoRecentNotifications"]</p>
-                </div>
-            </EmptyTemplate>
-            <LoadingTemplate>
-                <div class="hcs-loading py-5" role="status">
-                    <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
-                    <span>@L["Catalog:Loading"]</span>
-                </div>
-            </LoadingTemplate>
-            <DataGridColumns>
-                <DataGridColumn TItem="NotificationDto" Caption="@L["Notifications:TitleColumn"].Value">
-                    <DisplayTemplate Context="cell">
-                        <strong class="@(cell.Item.IsRead ? null : "fw-semibold")">@NotificationText.Localize(L, cell.Item.Title)</strong>
-                    </DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="NotificationDto" Caption="@L["Notifications:Body"].Value">
-                    <DisplayTemplate Context="cell">
-                        <span class="text-muted">@NotificationText.Localize(L, cell.Item.Body)</span>
-                    </DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="NotificationDto" Caption="@L["Catalog:Status"].Value">
-                    <DisplayTemplate Context="cell">
-                        @if (cell.Item.IsRead)
-                        {
-                            <span class="hcs-status-badge hcs-status-badge--success">@L["Notifications:Read"]</span>
-                        }
-                        else
-                        {
-                            <span class="hcs-status-badge hcs-status-badge--warning">@L["Work:Unread"]</span>
-                        }
-                    </DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="NotificationDto" Caption="@L["Notifications:CreatedAt"].Value">
-                    <DisplayTemplate Context="cell">
-                        @NotificationText.FormatLocal(cell.Item.CreatedAt, "dd/MM/yyyy HH:mm")
-                    </DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="NotificationDto" Caption="@L["Catalog:Actions"].Value">
-                    <DisplayTemplate Context="cell">
-                        <div class="hcs-row-actions">
-                            <Button Size="Size.Small" Color="Color.Primary" Outline="true"
-                                    Class="hcs-action-button hcs-action-button--preview"
-                                    Clicked="() => OpenAsync(cell.Item)"
-                                    title="@L["Work:ViewDetail"]">
-                                <i class="fa fa-eye"></i>
-                            </Button>
-                            @if (!cell.Item.IsRead)
-                            {
-                                <Button Size="Size.Small" Color="Color.Primary" Outline="true"
-                                        Class="hcs-action-button"
-                                        Clicked="() => MarkReadAsync(cell.Item)"
-                                        title="@L["Notifications:MarkAsRead"]">
-                                    <i class="fa fa-check"></i>
-                                </Button>
-                            }
-                        </div>
-                    </DisplayTemplate>
-                </DataGridColumn>
-            </DataGridColumns>
-        </DataGrid>
-    </CardBody></Card>
+        </div>
+    </section>
 </section>
 
 @code {
@@ -129,16 +127,14 @@
     private readonly List<NotificationDto> allItems = [];
     private readonly List<NotificationDto> pageItems = [];
     private string filter = "", statusFilter = "";
-    private bool isLoading, showFilters, loaded;
+    private bool isLoading, showFilters;
     private int totalCount, pageSize = 20, currentPage = 1;
 
-    private async Task OnReadAsync(DataGridReadDataEventArgs<NotificationDto> args)
-    {
-        currentPage = Math.Max(args.Page, 1);
-        pageSize = Math.Clamp(args.PageSize, 10, 100);
-        if (!loaded) await LoadAsync();
-        else ApplyPage();
-    }
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
     {
@@ -155,7 +151,6 @@
                 if (items.Count < batch) break;
             }
 
-            loaded = true;
             ApplyPage();
         }
         catch (Exception ex)
@@ -179,6 +174,7 @@
             .ThenByDescending(x => x.Id)
             .ToList();
         totalCount = filtered.Count;
+        if (currentPage > PageCount) currentPage = PageCount;
         pageItems.Clear();
         pageItems.AddRange(filtered.Skip((currentPage - 1) * pageSize).Take(pageSize));
     }
@@ -214,10 +210,35 @@
         return Task.CompletedTask;
     }
 
-    private void OnStatusChanged()
+    private Task FilterAll()
     {
+        statusFilter = "";
+        showFilters = false;
         currentPage = 1;
         ApplyPage();
+        return Task.CompletedTask;
+    }
+
+    private Task SetStatus(string value)
+    {
+        statusFilter = value;
+        showFilters = false;
+        currentPage = 1;
+        ApplyPage();
+        return Task.CompletedTask;
+    }
+
+    private Task GoFirst() { currentPage = 1; ApplyPage(); return Task.CompletedTask; }
+    private Task GoPrev() { currentPage = Math.Max(1, currentPage - 1); ApplyPage(); return Task.CompletedTask; }
+    private Task GoNext() { currentPage = Math.Min(PageCount, currentPage + 1); ApplyPage(); return Task.CompletedTask; }
+    private Task GoLast() { currentPage = PageCount; ApplyPage(); return Task.CompletedTask; }
+    private Task OnPageSizeChanged(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        ApplyPage();
+        return Task.CompletedTask;
     }
 
     private async Task OpenAsync(NotificationDto item)

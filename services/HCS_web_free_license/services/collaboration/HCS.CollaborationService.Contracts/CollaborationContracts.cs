@@ -152,6 +152,8 @@ public static class NotificationLocalization
     public const string SocialReactionBody = "Notification:SocialReactionBody";
     public const string SocialCommentReactionTitle = "Notification:SocialCommentReaction";
     public const string SocialCommentReactionBody = "Notification:SocialCommentReactionBody";
+    public const string DocumentSentTitle = "Notification:DocumentSent";
+    public const string DocumentSentBody = "Notification:DocumentSentBody";
 
     private const char Separator = '\u001f';
 
@@ -220,6 +222,10 @@ public static class NotificationLocalization
         (SocialCommentReactionTitle, false) => "Your comment has a new reaction",
         (SocialCommentReactionBody, true) => "{0} đã tương tác với bình luận của bạn",
         (SocialCommentReactionBody, false) => "{0} reacted to your comment",
+        (DocumentSentTitle, true) => "Có văn bản mới",
+        (DocumentSentTitle, false) => "New document sent to you",
+        (DocumentSentBody, true) => "Bạn được gửi văn bản {0}",
+        (DocumentSentBody, false) => "You were sent document {0}",
         _ => key
     };
 }

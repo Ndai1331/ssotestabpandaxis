@@ -30,15 +30,14 @@
     }
     else if (rows.Count == 0)
     {
-        <div class="hcs-empty">
-            <i class="fa fa-inbox" aria-hidden="true"></i>
-            <h2>@(CanLoad ? "Chưa có dữ liệu" : "Sẵn sàng kết nối")</h2>
-            <p>@(CanLoad ? "Không tìm thấy bản ghi phù hợp." : "Chức năng dùng API bảo mật qua gateway và chỉ hiện thao tác khi backend hỗ trợ.")</p>
-            @if (CanLoad)
-            {
-                <button class="btn btn-outline-primary" @onclick="LoadAsync">Thử lại</button>
-            }
-        </div>
+        <DocsEmpty Title="@(CanLoad ? "Chưa có dữ liệu" : "Sẵn sàng kết nối")"
+                   Hint="@(CanLoad ? "Không tìm thấy bản ghi phù hợp." : "Chức năng dùng API bảo mật qua gateway và chỉ hiện thao tác khi backend hỗ trợ.")" />
+        @if (CanLoad)
+        {
+            <div class="page-actions">
+                <button class="btn btn-outline" type="button" @onclick="LoadAsync">Thử lại</button>
+            </div>
+        }
     }
     else
     {

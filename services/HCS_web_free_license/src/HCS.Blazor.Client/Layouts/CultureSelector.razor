@@ -18,6 +18,7 @@
             @onclick="Toggle">
         <span class="hcs-lang-switch__flag" aria-hidden="true">@FlagIcon(CurrentCulture)</span>
         <span class="hcs-lang-switch__code">@CurrentCode</span>
+        <i class="fa fa-chevron-down hcs-lang-switch__caret" aria-hidden="true"></i>
     </button>
 
     @if (isOpen)
@@ -26,7 +27,7 @@
         <div id="hcs-lang-switch-menu" class="hcs-lang-switch__panel" role="menu">
             @foreach (var language in availableLanguages)
             {
-                var isCurrent = string.Equals(language.CultureName, CurrentCulture, StringComparison.OrdinalIgnoreCase);
+                var isCurrent = IsSameCulture(language.CultureName, CurrentCulture);
                 <button class="hcs-lang-switch__item @(isCurrent ? "hcs-lang-switch__item--current" : null)"
                         type="button"
                         role="menuitem"
@@ -51,15 +52,15 @@
         get
         {
             var current = CultureInfo.CurrentUICulture.Name;
-            return availableLanguages.FirstOrDefault(language =>
-                       string.Equals(language.CultureName, current, StringComparison.OrdinalIgnoreCase))?.CultureName
+            return MatchLanguage(current)?.CultureName
                    ?? availableLanguages.FirstOrDefault(language => language.IsDefault)?.CultureName
                    ?? availableLanguages.FirstOrDefault()?.CultureName
                    ?? "en";
         }
     }
 
-    private string CurrentCode => CurrentCulture;
+    private string CurrentCode =>
+        CurrentCulture.StartsWith("vi", StringComparison.OrdinalIgnoreCase) ? "VI" : "EN";
 
     protected override async Task OnInitializedAsync()
     {
@@ -88,8 +89,7 @@
             if (isDisposed) return;
             availableLanguages = LanguageState.Languages.Count == 0 ? GetEmergencyLanguage() : LanguageState.Languages;
             var currentCulture = CultureInfo.CurrentUICulture.Name;
-            var currentStillEnabled = availableLanguages.Any(language =>
-                string.Equals(language.CultureName, currentCulture, StringComparison.OrdinalIgnoreCase));
+            var currentStillEnabled = MatchLanguage(currentCulture) is not null;
             if (!currentStillEnabled)
             {
                 var fallback = CurrentCulture;
@@ -113,54 +113,75 @@
 
     private async Task ChangeCultureAsync(string culture)
     {
-        var selected = availableLanguages.FirstOrDefault(language =>
-            string.Equals(language.CultureName, culture, StringComparison.OrdinalIgnoreCase));
-        if (selected is null || string.Equals(selected.CultureName, CurrentCulture, StringComparison.OrdinalIgnoreCase))
+        var selected = MatchLanguage(culture);
+        if (selected is null || IsSameCulture(selected.CultureName, CurrentCulture))
         {
             Close();
             return;
         }
 
+        var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+        if (string.IsNullOrWhiteSpace(returnUrl) || returnUrl == "/")
+        {
+            returnUrl = "/workspace";
+        }
+
+        // Full navigation through host endpoint so cookies + localStorage stay in sync.
+        var target =
+            $"/culture?culture={Uri.EscapeDataString(selected.CultureName)}" +
+            $"&uiCulture={Uri.EscapeDataString(selected.CultureName)}" +
+            $"&returnUrl={Uri.EscapeDataString(returnUrl)}";
         await JS.InvokeVoidAsync("hcsSetCulture", selected.CultureName);
-        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+        Navigation.NavigateTo(target, forceLoad: true);
+    }
+
+    private LanguageOptionDto? MatchLanguage(string culture) =>
+        availableLanguages.FirstOrDefault(language => IsSameCulture(language.CultureName, culture));
+
+    private static bool IsSameCulture(string left, string right)
+    {
+        if (string.Equals(left, right, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
+
+        return left.StartsWith(right + "-", StringComparison.OrdinalIgnoreCase)
+            || right.StartsWith(left + "-", StringComparison.OrdinalIgnoreCase)
+            || (left.Length >= 2 && right.Length >= 2
+                && string.Equals(left[..2], right[..2], StringComparison.OrdinalIgnoreCase));
     }
 
     private static IReadOnlyList<LanguageOptionDto> GetEmergencyLanguage()
     {
-        var cultureName = CultureInfo.CurrentUICulture.Name;
-        if (string.IsNullOrWhiteSpace(cultureName)) cultureName = "en";
-        return [new LanguageOptionDto { CultureName = cultureName, DisplayName = cultureName, IsDefault = true }];
+        return
+        [
+            new LanguageOptionDto { CultureName = "vi", DisplayName = "Tiếng Việt", IsDefault = true },
+            new LanguageOptionDto { CultureName = "en", DisplayName = "English", IsDefault = false }
+        ];
     }
 
     private static RenderFragment FlagIcon(string culture) => __builder =>
     {
         if (string.Equals(culture, "vi", StringComparison.OrdinalIgnoreCase) || culture.StartsWith("vi-", StringComparison.OrdinalIgnoreCase))
         {
-            <svg viewBox="0 0 60 60" width="24" height="24" focusable="false" aria-hidden="true">
-                <rect width="60" height="60" fill="#DA251D" />
-                <polygon fill="#FFCD00" points="30,11 33.53,22.45 45.53,22.45 35.85,29.55 39.53,41.18 30,34.4 20.47,41.18 24.15,29.55 14.47,22.45 26.47,22.45" />
+            <svg viewBox="0 0 18 12" width="18" height="12" focusable="false" aria-hidden="true">
+                <rect width="18" height="12" fill="#DA251D" />
+                <polygon fill="#FFCD00" points="9,2.2 9.88,4.9 12.7,4.9 10.41,6.58 11.29,9.28 9,7.6 6.71,9.28 7.59,6.58 5.3,4.9 8.12,4.9" />
             </svg>
         }
         else if (string.Equals(culture, "en", StringComparison.OrdinalIgnoreCase) || culture.StartsWith("en-", StringComparison.OrdinalIgnoreCase))
         {
-            <svg viewBox="0 0 60 60" width="24" height="24" focusable="false" aria-hidden="true">
-                <rect width="60" height="60" fill="#B31942" />
-                <rect y="4.62" width="60" height="4.62" fill="#fff" />
-                <rect y="13.85" width="60" height="4.62" fill="#fff" />
-                <rect y="23.08" width="60" height="4.62" fill="#fff" />
-                <rect y="32.31" width="60" height="4.62" fill="#fff" />
-                <rect y="41.54" width="60" height="4.62" fill="#fff" />
-                <rect y="50.77" width="60" height="4.62" fill="#fff" />
-                <rect width="26" height="32.31" fill="#0A3161" />
-                <g fill="#fff">
-                    <circle cx="4.3" cy="4.3" r=".7" /><circle cx="8.7" cy="4.3" r=".7" /><circle cx="13" cy="4.3" r=".7" /><circle cx="17.4" cy="4.3" r=".7" /><circle cx="21.7" cy="4.3" r=".7" />
-                    <circle cx="6.5" cy="8" r=".7" /><circle cx="10.8" cy="8" r=".7" /><circle cx="15.2" cy="8" r=".7" /><circle cx="19.5" cy="8" r=".7" />
-                    <circle cx="4.3" cy="11.7" r=".7" /><circle cx="8.7" cy="11.7" r=".7" /><circle cx="13" cy="11.7" r=".7" /><circle cx="17.4" cy="11.7" r=".7" /><circle cx="21.7" cy="11.7" r=".7" />
-                    <circle cx="6.5" cy="15.4" r=".7" /><circle cx="10.8" cy="15.4" r=".7" /><circle cx="15.2" cy="15.4" r=".7" /><circle cx="19.5" cy="15.4" r=".7" />
-                    <circle cx="4.3" cy="19.1" r=".7" /><circle cx="8.7" cy="19.1" r=".7" /><circle cx="13" cy="19.1" r=".7" /><circle cx="17.4" cy="19.1" r=".7" /><circle cx="21.7" cy="19.1" r=".7" />
-                    <circle cx="6.5" cy="22.8" r=".7" /><circle cx="10.8" cy="22.8" r=".7" /><circle cx="15.2" cy="22.8" r=".7" /><circle cx="19.5" cy="22.8" r=".7" />
-                    <circle cx="4.3" cy="26.5" r=".7" /><circle cx="8.7" cy="26.5" r=".7" /><circle cx="13" cy="26.5" r=".7" /><circle cx="17.4" cy="26.5" r=".7" /><circle cx="21.7" cy="26.5" r=".7" />
-                </g>
+            <svg viewBox="0 0 18 12" width="18" height="12" focusable="false" aria-hidden="true">
+                <rect width="18" height="12" fill="#012169" />
+                <path d="M0,0 L18,12 M18,0 L0,12" stroke="#fff" stroke-width="2" />
+                <path d="M0,0 L18,12 M18,0 L0,12" stroke="#C8102E" stroke-width="1" />
+                <path d="M9,0 V12 M0,6 H18" stroke="#fff" stroke-width="3.2" />
+                <path d="M9,0 V12 M0,6 H18" stroke="#C8102E" stroke-width="1.6" />
             </svg>
         }
         else

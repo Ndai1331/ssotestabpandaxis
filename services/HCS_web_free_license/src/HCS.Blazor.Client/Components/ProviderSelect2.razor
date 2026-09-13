@@ -1,7 +1,9 @@
 @implements IAsyncDisposable
 @using Microsoft.JSInterop
 
-<select id="@selectId" class="@CssClass form-select" aria-label="@AriaLabel"></select>
+<div class="hcs-select2">
+    <select id="@selectId" class="@CssClass form-select" aria-label="@AriaLabel"></select>
+</div>
 
 @code {
     private readonly string selectId = "hcs-provider-select2-" + Guid.NewGuid().ToString("n");

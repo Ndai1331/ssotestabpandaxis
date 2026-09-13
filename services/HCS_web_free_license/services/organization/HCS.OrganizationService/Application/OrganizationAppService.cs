@@ -394,10 +394,11 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     public virtual async Task DeleteCommuneAsync(Guid id, CancellationToken ct = default) => await DeleteAsync(_db.Communes, id, ct);
 
-    public virtual async Task<PagedResultDto<UserOrganizationMappingDto>> GetUserMappingsAsync(Guid? userId, int skipCount, int maxResultCount, CancellationToken ct = default)
+    public virtual async Task<PagedResultDto<UserOrganizationMappingDto>> GetUserMappingsAsync(Guid? userId, int skipCount, int maxResultCount, Guid? departmentId = null, CancellationToken ct = default)
     {
         var query = _db.UserOrganizationMappings.AsNoTracking();
         if (userId.HasValue) query = query.Where(x => x.UserId == userId.Value);
+        if (departmentId.HasValue) query = query.Where(x => x.DepartmentId == departmentId.Value);
         var total = await query.LongCountAsync(ct);
         var items = await query.OrderByDescending(x => x.IsPrimary).ThenBy(x => x.CreationTime)
             .Skip(Math.Max(0, skipCount)).Take(Math.Clamp(maxResultCount, 1, 1000)).Select(x => Map(x)).ToListAsync(ct);

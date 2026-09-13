@@ -36,7 +36,10 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
         PreConfigure<OpenIddictBuilder>(builder => builder.AddValidation(options =>
         {
             options.SetIssuer(new Uri(authority));
-            options.AddAudiences(configuration["AuthServer:Audience"] ?? "HCS");
+            options.AddAudiences("HCS");
+            var audience = configuration["AuthServer:Audience"];
+            if (!string.IsNullOrWhiteSpace(audience) && !string.Equals(audience, "HCS", StringComparison.Ordinal))
+                options.AddAudiences(audience);
             options.UseSystemNetHttp(http =>
             {
                 if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false))

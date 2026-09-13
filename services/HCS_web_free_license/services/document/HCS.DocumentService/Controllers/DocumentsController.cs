@@ -25,15 +25,24 @@ public sealed class DocumentsController(
         await documents.GetAsync(id, cancellationToken) is { } result ? Ok(result) : NotFound();
     [HttpPut("{id:guid}"), Authorize(Policy = DocumentPermissions.Update)]
     public Task<DocumentDto> Update(Guid id, UpdateDocumentRequest input, CancellationToken cancellationToken) => documents.UpdateAsync(id, input, cancellationToken);
-    [HttpPost("{id:guid}/assignments"), Authorize(Policy = DocumentPermissions.Assign)]
+    [HttpPost("{id:guid}/assignments")]
     public Task<DocumentDto> Assign(Guid id, AssignDocumentRequest input, CancellationToken cancellationToken) => documents.AssignAsync(id, input, cancellationToken);
     [HttpPost("{id:guid}/submit"), Authorize(Policy = DocumentPermissions.Update)]
     public Task<DocumentDto> Submit(Guid id, CancellationToken cancellationToken) => documents.SubmitAsync(id, cancellationToken);
-    [HttpPost("{id:guid}/send"), Authorize(Policy = DocumentPermissions.Assign)]
+    [HttpPost("{id:guid}/send")]
     public Task<DocumentDto> Send(Guid id, SendDocumentRequest input, CancellationToken cancellationToken) =>
         documents.SendAsync(id, input, cancellationToken);
     [HttpPost("{id:guid}/revoke"), Authorize(Policy = DocumentPermissions.Assign)]
     public Task<DocumentDto> Revoke(Guid id, CancellationToken cancellationToken) => documents.RevokeAsync(id, cancellationToken);
+    [HttpPost("{id:guid}/activity"), Authorize(Policy = DocumentPermissions.View)]
+    public Task<DocumentDto> RecordActivity(Guid id, DocumentActivityRequest input, CancellationToken cancellationToken) =>
+        documents.RecordActivityAsync(id, input, cancellationToken);
+    [HttpDelete("{id:guid}"), Authorize(Policy = DocumentPermissions.Update)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await documents.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
     [HttpPost("{id:guid}/files"), Authorize(Policy = DocumentPermissions.ManageFiles)]
     [RequestSizeLimit(DocumentFileService.MaxFileSize)]
     public async Task<DocumentFileDto> Upload(Guid id, IFormFile file, CancellationToken cancellationToken)
@@ -45,13 +54,13 @@ public sealed class DocumentsController(
     public async Task<IActionResult> Download(Guid id, Guid fileId, CancellationToken cancellationToken)
     {
         var result = await files.OpenAuthorizedAsync(id, fileId, cancellationToken);
-        return File(result.Content, result.File.ContentType, result.File.FileName, enableRangeProcessing: true);
+        return File(result.Content, result.File.ContentType, result.DownloadFileName, enableRangeProcessing: true);
     }
     [HttpGet("{id:guid}/files/{fileId:guid}/watermarked-content")]
     public async Task<IActionResult> DownloadWatermarked(Guid id, Guid fileId, CancellationToken cancellationToken)
     {
         var result = await watermarkedFiles.OpenAsync(id, fileId, cancellationToken);
-        return File(result.Bytes, result.File.ContentType, result.File.FileName);
+        return File(result.Bytes, result.File.ContentType, result.DownloadFileName);
     }
     [HttpDelete("{id:guid}/files/{fileId:guid}"), Authorize(Policy = DocumentPermissions.ManageFiles)]
     public async Task<IActionResult> DeleteFile(Guid id, Guid fileId, CancellationToken cancellationToken)

@@ -1,0 +1,9 @@
+2026-09-11 09:44:07.456 +07:00 [INF] Started database migrations...
+2026-09-11 09:44:09.113 +07:00 [ERR] An error occurred using the connection to database 'hcs_identity' on server 'tcp://127.0.0.1:5433'.
+2026-09-11 09:46:02.222 +07:00 [INF] Started database migrations...
+2026-09-11 09:46:03.623 +07:00 [ERR] Failed executing DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+2026-09-11 09:46:07.124 +07:00 [INF] Successfully completed host database migrations.
+2026-09-11 09:46:07.124 +07:00 [INF] You can safely end this process...

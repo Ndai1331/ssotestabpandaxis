@@ -63,6 +63,8 @@ public sealed class BffSecurityTests
     [InlineData("DELETE", "/api/documents/1", true)]
     [InlineData("POST", "/api/surveys/public/sessions", false)]
     [InlineData("POST", "/api/events/public/demo/check-in?token=test", false)]
+    [InlineData("POST", "/api/events/public/demo/confirm?token=test", false)]
+    [InlineData("POST", "/api/events/public/demo/decline?token=test", false)]
     public void Antiforgery_policy_covers_unsafe_api_and_hub_requests(string method, string path, bool expected)
     {
         var context = new DefaultHttpContext();

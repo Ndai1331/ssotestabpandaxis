@@ -7,12 +7,14 @@ public sealed record PagedWorkResponse<T>(long TotalCount, List<T> Items);
 
 public sealed record ProjectDto(
     Guid Id, string Code, string Name, string? Description, DateTime StartDate, DateTime EndDate,
-    string Status, Guid? OwnerDepartmentId, Guid OwnerUserId, int MemberCount = 0, int TaskCount = 0);
+    string Status, Guid? OwnerDepartmentId, Guid OwnerUserId, int MemberCount = 0, int TaskCount = 0,
+    bool CanManage = false, bool CanDelete = false);
 
 public sealed record ProjectMemberDto(Guid Id, Guid ProjectId, Guid UserId, string Role, bool IsActive);
 public sealed record ProjectTaskDto(
     Guid Id, Guid ProjectId, Guid? ParentTaskId, string Code, string Title, string? Description,
-    DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent);
+    DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent,
+    Guid? CreatorId = null, bool CanDelete = false, bool CanManageAssignments = false, bool CanCreateChild = false);
 public sealed record ProjectDetailDto(ProjectDto Project, List<ProjectMemberDto> Members, List<ProjectTaskDto> Tasks);
 public sealed record TaskAssignmentDto(Guid Id, Guid ProjectTaskId, Guid UserId, string AssignmentType);
 public sealed record TaskDocumentReferenceDto(Guid Id, Guid ProjectTaskId, Guid DocumentId, string? DocumentCode);

@@ -13,7 +13,7 @@
             <h2 id="personal-signatures-title">@L["Account:SignatureSection"]</h2>
             <p class="hcs-form-note">@L["Feature:SignatureImage"]</p>
         </div>
-        <button type="button" class="hcs-signature-button hcs-signature-button--primary" @onclick="OpenCreate" disabled="@isSaving">
+        <button type="button" class="hcs-signature-button hcs-signature-button--primary" @onclick="OpenCreateAsync" disabled="@isSaving">
             <i class="fa fa-plus" aria-hidden="true"></i>@L["Account:AddSignature"]
         </button>
     </div>
@@ -47,7 +47,7 @@
             <span class="hcs-signatures-empty__icon"><i class="fa fa-signature" aria-hidden="true"></i></span>
             <h3>@L["Account:NoSignatures"]</h3>
             <p>@L["Account:NoSignaturesHint"]</p>
-            <button type="button" class="hcs-signature-button hcs-signature-button--primary" @onclick="OpenCreate">
+            <button type="button" class="hcs-signature-button hcs-signature-button--primary" @onclick="OpenCreateAsync">
                 <i class="fa fa-plus" aria-hidden="true"></i>@L["Account:AddSignature"]
             </button>
         </div>
@@ -95,7 +95,7 @@
                                     <i class="fa fa-star" aria-hidden="true"></i>@L["Account:SetDefault"]
                                 </button>
                             }
-                            <button type="button" class="hcs-signature-icon-button" @onclick="() => OpenEdit(item)" aria-label='@string.Format(L["Account:EditSignature"].Value, item.FileName)' title='@L["Catalog:Edit"]' disabled="@isSaving">
+                            <button type="button" class="hcs-signature-icon-button" @onclick="() => OpenEditAsync(item)" aria-label='@string.Format(L["Account:EditSignature"].Value, item.FileName)' title='@L["Catalog:Edit"]' disabled="@isSaving">
                                 <i class="fa fa-pen" aria-hidden="true"></i>
                             </button>
                             <button type="button" class="hcs-signature-icon-button hcs-signature-icon-button--danger" @onclick="() => DeleteAsync(item)" aria-label='@string.Format(L["Account:DeleteSignature"].Value, item.FileName)' title='@L["Catalog:Delete"]' disabled="@isSaving">
@@ -109,79 +109,102 @@
     }
 </section>
 
-@if (editingSignature is not null || isCreateOpen)
-{
-    <div class="hcs-signature-dialog-backdrop" role="presentation" @onclick="CloseEdit">
-        <section class="hcs-signature-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-signature-title" tabindex="-1"
-                 @onclick:stopPropagation @onkeydown="HandleDialogKeyDown">
-            <div class="hcs-signature-dialog__header">
-                <div>
-                    <p class="hcs-account-eyebrow">@L["Account:SignaturesEyebrow"]</p>
-                    <h2 id="edit-signature-title">@(isCreateOpen ? L["Account:AddSignature"] : L["Account:EditSignatureTitle"])</h2>
-                </div>
-                <button type="button" class="hcs-signature-icon-button" @onclick="CloseEdit" aria-label='@L["Catalog:Close"]' title='@L["Catalog:Close"]'>
-                    <i class="fa fa-xmark" aria-hidden="true"></i>
-                </button>
-            </div>
-            <form class="hcs-signature-dialog__form" @onsubmit="SaveEditAsync" @onsubmit:preventDefault>
-                <div>
-                    <label class="form-label" for="signature-file-name">@L["Account:SignatureFileName"]</label>
-                    <input id="signature-file-name" class="form-control" @bind="editForm.FileName" maxlength="256" required autofocus />
-                    <p class="hcs-form-note">@L["Account:SignatureFileNameHint"]</p>
-                </div>
-                <div>
-                    <label class="form-label" for="signature-type">@L["Account:SignatureType"]</label>
-                    <select id="signature-type" class="form-control" value="@editForm.Type" @onchange="HandleTypeChanged">
+<Modal @ref="editModal" Closing="OnEditModalClosing">
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@(isCreateOpen ? L["Account:AddSignature"] : L["Account:EditSignatureTitle"])</ModalTitle>
+            <CloseButton Clicked="CloseEditAsync" />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            <form class="hcs-catalog-form" @onsubmit="SaveEditAsync" @onsubmit:preventDefault>
+                <Field>
+                    <FieldLabel>@L["Account:SignatureFileName"]</FieldLabel>
+                    <input id="signature-file-name" class="form-control" @bind="editForm.FileName" maxlength="256" required />
+                    <p class="hcs-form-note mb-0">@L["Account:SignatureFileNameHint"]</p>
+                </Field>
+                <Field>
+                    <FieldLabel>@L["Account:SignatureType"]</FieldLabel>
+                    <select id="signature-type" class="form-select" value="@editForm.Type" @onchange="HandleTypeChanged">
                         <option value="@UserSignatureType.Electronic">@L["Account:ElectronicSignature"]</option>
                         <option value="@UserSignatureType.Digital">@L["Account:DigitalSignature"]</option>
                     </select>
-                </div>
+                </Field>
                 @if (editForm.Type == UserSignatureType.Digital)
                 {
-                    <div>
-                        <label class="form-label">@L["Account:SelectProvider"]</label>
+                    <Field>
+                        <FieldLabel>@L["Account:SelectProvider"]</FieldLabel>
                         <ProviderSelect2 Value="editForm.ProviderCode" ValueChanged="SetProviderCode" Items="ProviderItems"
                                          Search="SearchProvidersAsync" Placeholder='@L["Account:SelectProvider"]' />
-                        @if (ProviderItems.Count == 0) { <p class="hcs-form-note text-danger">@L["Account:ProviderNotConfigured"]</p> }
-                    </div>
-                    <div>
-                        <label class="form-label">@L["Account:TokenApi"]</label>
+                        @if (ProviderItems.Count == 0)
+                        {
+                            <p class="hcs-form-note text-danger mb-0">@L["Account:ProviderNotConfigured"]</p>
+                        }
+                    </Field>
+                    <Field>
+                        <FieldLabel>@L["Account:TokenApi"]</FieldLabel>
                         <input class="form-control" @bind="editForm.TokenRef" required="@isCreateOpen" placeholder='@L["Account:TokenKeepHint"]' />
-                    </div>
-                    <div><label class="form-label">@L["Feature:SigningSecret"]</label><input class="form-control" type="password" @bind="editForm.Secret" autocomplete="new-password" required="@isCreateOpen" /></div>
-                    <div>
-                        <label class="form-label">@L["Account:SealImage"]</label>
-                        <InputFile @key="sealInputKey" class="form-control" accept="image/jpeg,image/png,image/webp" OnChange="SelectSealAsync" required="@(isCreateOpen && IsSealImageRequired)" />
-                        @if (sealFile is not null) { <p class="hcs-form-note"><i class="fa fa-stamp" aria-hidden="true"></i>@sealFile.Name</p> }
-                    </div>
+                    </Field>
+                    <Field>
+                        <FieldLabel>@L["Feature:SigningSecret"]</FieldLabel>
+                        <input class="form-control" type="password" @bind="editForm.Secret" autocomplete="new-password" required="@isCreateOpen" />
+                    </Field>
+                    <Field>
+                        <FieldLabel>@L["Account:SealImage"]</FieldLabel>
+                        <label class="vb-drop vb-file-chip @(sealFile is not null ? "has-file" : null)">
+                            <InputFile @key="sealInputKey" accept="image/jpeg,image/png,image/webp" OnChange="SelectSealAsync" />
+                            <span class="vb-file-icon" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                            </span>
+                            <span class="vb-file-copy">
+                                <strong>@L["Account:SealImage"]</strong>
+                                <span class="vb-file-chosen">@(sealFile?.Name ?? L["Work:DropFileHere"])</span>
+                            </span>
+                            <span class="vb-file-cta">@L["Work:ChooseFile"]</span>
+                        </label>
+                    </Field>
                 }
                 else
                 {
-                    <p class="hcs-form-note">@L["Account:ElectronicSignatureHint"]</p>
+                    <p class="hcs-form-note mb-0">@L["Account:ElectronicSignatureHint"]</p>
                 }
-                <div>
-                    <label class="form-label" for="signature-replacement-file">@(isCreateOpen ? L["Account:SignatureImage"] : L["Account:ReplaceSignatureImage"])</label>
-                    <InputFile @key="editInputKey" id="signature-replacement-file" class="form-control" accept="image/jpeg,image/png,image/webp,image/gif" OnChange="SelectReplacementFile" required="@isCreateOpen" />
-                    @if (replacementFile is not null)
-                    {
-                        <p class="hcs-form-note"><i class="fa fa-paperclip" aria-hidden="true"></i>@replacementFile.Name</p>
-                    }
+                <Field>
+                    <FieldLabel>@(isCreateOpen ? L["Account:SignatureImage"] : L["Account:ReplaceSignatureImage"])</FieldLabel>
+                    <label class="vb-drop vb-file-chip @(replacementFile is not null ? "has-file" : null)">
+                        <InputFile @key="editInputKey" id="signature-replacement-file" accept="image/jpeg,image/png,image/webp,image/gif" OnChange="SelectReplacementFile" />
+                        <span class="vb-file-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                        </span>
+                        <span class="vb-file-copy">
+                            <strong>@(isCreateOpen ? L["Account:SignatureImage"] : L["Account:ReplaceSignatureImage"])</strong>
+                            <span class="vb-file-chosen">@SignatureFileLabel</span>
+                        </span>
+                        <span class="vb-file-cta">@L["Work:ChooseFile"]</span>
+                    </label>
+                </Field>
+                <div class="hcs-form-row hcs-form-row--equal">
+                    <Field>
+                        <FieldLabel>@L["Account:ValidFrom"]</FieldLabel>
+                        <HcsDatePicker TValue="DateTime?" @bind-Value="editForm.ValidFrom" InputMode="DateInputMode.DateTime" ShowClearButton="true" />
+                    </Field>
+                    <Field>
+                        <FieldLabel>@L["Account:ValidTo"]</FieldLabel>
+                        <HcsDatePicker TValue="DateTime?" @bind-Value="editForm.ValidTo" InputMode="DateInputMode.DateTime" ShowClearButton="true" />
+                    </Field>
                 </div>
-                <div class="row g-2">
-                    <div class="col-md-6"><label class="form-label">@L["Account:ValidFrom"]</label><input class="form-control" type="datetime-local" @bind="editForm.ValidFrom" /></div>
-                    <div class="col-md-6"><label class="form-label">@L["Account:ValidTo"]</label><input class="form-control" type="datetime-local" @bind="editForm.ValidTo" /></div>
-                </div>
-                <label><input type="checkbox" @bind="editForm.IsActive" /> @L["Account:IsActive"]</label>
-                <div class="hcs-signature-dialog__actions">
-                    <button type="button" class="btn btn-secondary hcs-catalog-cancel" @onclick="CloseEdit" disabled="@isSaving">@L["Catalog:Cancel"]</button>
-                    <button type="submit" class="btn btn-primary hcs-catalog-save" disabled="@isSaving">
-                        <i class="fa @(isSaving ? "fa-spinner fa-spin" : "fa-floppy-disk")" aria-hidden="true"></i>@L["Catalog:SaveChanges"]
-                    </button>
-                </div>
+                <label class="hcs-signature-check">
+                    <input type="checkbox" @bind="editForm.IsActive" />
+                    <span>@L["Account:IsActive"]</span>
+                </label>
             </form>
-        </section>
-    </div>
-}
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseEditAsync" Disabled="@isSaving">@L["Catalog:Cancel"]</Button>
+            <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SaveEditAsync" Disabled="@isSaving">
+                <i class="fa @(isSaving ? "fa-spinner fa-spin" : "fa-floppy-disk")" aria-hidden="true"></i>@L["Catalog:SaveChanges"]
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
 
 @code {
     [Parameter] public Guid? UserId { get; set; }
@@ -194,12 +217,16 @@
     private UserSignatureDto? editingSignature;
     private IBrowserFile? replacementFile;
     private IBrowserFile? sealFile;
+    private Modal? editModal;
     private bool isLoading = true;
     private bool loadFailed;
     private bool isSaving;
     private bool isCreateOpen;
     private int editInputKey;
     private int sealInputKey;
+    private string SignatureFileLabel =>
+        replacementFile?.Name
+        ?? (isCreateOpen ? L["Work:DropFileHere"] : editingSignature?.FileName ?? L["Work:DropFileHere"]);
 
     protected override Task OnParametersSetAsync() => LoadAsync();
 
@@ -238,7 +265,7 @@
         }
     }
 
-    private void OpenCreate()
+    private async Task OpenCreateAsync()
     {
         isCreateOpen = true;
         editingSignature = null;
@@ -247,9 +274,10 @@
         sealFile = null;
         editInputKey++;
         sealInputKey++;
+        if (editModal is not null) await editModal.Show();
     }
 
-    private void OpenEdit(UserSignatureDto item)
+    private async Task OpenEditAsync(UserSignatureDto item)
     {
         editingSignature = item;
         isCreateOpen = false;
@@ -264,18 +292,34 @@
         editForm.IsActive = item.IsActive;
         replacementFile = null;
         editInputKey++;
+        if (editModal is not null) await editModal.Show();
     }
 
-    private void CloseEdit()
+    private Task CloseEditAsync() => isSaving ? Task.CompletedTask : editModal?.Hide() ?? Task.CompletedTask;
+
+    private Task OnEditModalClosing(ModalClosingEventArgs args)
     {
-        if (isSaving) return;
+        if (isSaving)
+        {
+            args.Cancel = true;
+            return Task.CompletedTask;
+        }
+
         editingSignature = null;
         isCreateOpen = false;
         replacementFile = null;
         sealFile = null;
+        return Task.CompletedTask;
     }
 
-    private void SelectReplacementFile(InputFileChangeEventArgs args) => replacementFile = args.File;
+    private void SelectReplacementFile(InputFileChangeEventArgs args)
+    {
+        replacementFile = args.File;
+        if (string.IsNullOrWhiteSpace(editForm.FileName) && args.File is not null)
+        {
+            editForm.FileName = Path.GetFileNameWithoutExtension(args.File.Name);
+        }
+    }
 
     private async Task SelectSealAsync(InputFileChangeEventArgs args)
     {
@@ -297,18 +341,11 @@
 
     private void SetProviderCode(string? value) => editForm.ProviderCode = value ?? "";
 
-    private void HandleDialogKeyDown(KeyboardEventArgs args)
-    {
-        if (string.Equals(args.Key, "Escape", StringComparison.Ordinal))
-        {
-            CloseEdit();
-        }
-    }
-
     private async Task SaveEditAsync()
     {
         if ((!isCreateOpen && editingSignature is null) || string.IsNullOrWhiteSpace(editForm.FileName)) return;
         if (isCreateOpen && replacementFile is null) return;
+        if (isCreateOpen && IsSealImageRequired && sealFile is null) return;
         var creating = isCreateOpen;
         isSaving = true;
         try
@@ -336,6 +373,8 @@
             await NotifySuccessAsync(L[creating ? "Catalog:Created" : "Account:SignatureUpdated"]);
             await LoadAsync();
             await OnChanged.InvokeAsync();
+            isSaving = false;
+            if (editModal is not null) await editModal.Hide();
         }
         catch (Exception ex)
         {

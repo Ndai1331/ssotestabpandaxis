@@ -1,80 +1,75 @@
 @namespace HCS.Blazor.Client.Components
 @inherits HCSComponentBase
 
-<Card Class="mb-2 hcs-catalog-filter-card">
-    <CardBody>
-        <Row Class="align-items-end g-3">
-            <Column ColumnSize="ColumnSize.Is12.OnMobile.Is7.OnDesktop">
-                <Row Class="align-items-center g-2">
-                    <Column ColumnSize="ColumnSize.Is12.OnMobile.Is4.OnDesktop">
-                        <label class="fw-bold mb-2 mb-md-0">@L["Work:FilterByDateRange"]</label>
-                    </Column>
-                    <Column ColumnSize="ColumnSize.Is12.OnMobile.Is8.OnDesktop">
-                        <HcsDatePicker TValue="IReadOnlyList<DateTime?>"
-                                       Value="SelectedDateRange"
-                                       ValueChanged="SelectedDateRangeChanged"
-                                       InputMode="DateInputMode.Date"
-                                       SelectionMode="DateInputSelectionMode.Range"
-                                       DisplayFormat="dd/MM/yyyy"
-                                       Placeholder="@L["Work:SelectDateRange"]" />
-                    </Column>
-                </Row>
-            </Column>
-            <Column ColumnSize="ColumnSize.Is12.OnMobile.Is5.OnDesktop">
-                <Field Margin="Margin.Is0">
-                    <FieldLabel>@L["Work:SigningExportDateFilter"]</FieldLabel>
-                    <Select TValue="string" SelectedValue="@DateFilterField" SelectedValueChanged="DateFilterFieldChanged">
-                        <SelectItem Value="@("IncomingDate")">@L["Work:SigningExportDateFilterIncoming"]</SelectItem>
-                        <SelectItem Value="@("WorkflowDeadline")">@L["Work:SigningExportDateFilterWorkflow"]</SelectItem>
-                    </Select>
-                </Field>
-            </Column>
-        </Row>
-        <Row Class="align-items-end g-3 mt-0">
-            <Column ColumnSize="ColumnSize.Is12.OnMobile.Is7.OnDesktop">
-                <Row Class="align-items-center g-2">
-                    <Column ColumnSize="ColumnSize.Is12.OnMobile.Is4.OnDesktop">
-                        <label class="fw-bold mb-2 mb-md-0">@L["Catalog:SearchButton"]</label>
-                    </Column>
-                    <Column ColumnSize="ColumnSize.Is12.OnMobile.Is8.OnDesktop">
-                        <FieldLabel>@L["Work:FilterSubmitter"]</FieldLabel>
-                        <UserSelect2 Value="SubmitterUserId"
-                                     ValueChanged="SubmitterUserIdChanged"
-                                     Placeholder="@L["Work:FilterSubmitter"]"
-                                     SelectedText="@SubmitterText"
-                                     Search="SearchUsers" />
-                    </Column>
-                </Row>
-            </Column>
-            <Column ColumnSize="ColumnSize.Is12.OnMobile.Is5.OnDesktop">
-                <FieldLabel>@L["Work:FilterDepartment"]</FieldLabel>
-                <CatalogSelect2 Value="DepartmentId"
-                                ValueChanged="DepartmentIdChanged"
-                                Placeholder="@L["Work:FilterDepartment"]"
-                                SelectedText="@DepartmentText"
-                                Search="SearchDepartments" />
-            </Column>
-        </Row>
-        <Row Class="align-items-end g-3 mt-0">
-            <Column ColumnSize="ColumnSize.Is12.OnMobile.Is7.OnDesktop">
-                <Row Class="align-items-center g-2">
-                    <Column ColumnSize="ColumnSize.Is12.OnMobile.Is4.OnDesktop"></Column>
-                    <Column ColumnSize="ColumnSize.Is12.OnMobile.Is8.OnDesktop">
-                        <TextInput Value="@FilterText" ValueChanged="OnFilterTextChanged" Placeholder="@L["Work:SearchByTitleOrNumber"]" />
-                    </Column>
-                </Row>
-            </Column>
-            <Column ColumnSize="ColumnSize.Is12.OnMobile.Is5.OnDesktop">
-                <Button Color="Color.Primary" Clicked="SearchClicked" Class="w-100 mt-2 mt-md-0">
-                    <i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]
-                </Button>
-            </Column>
-        </Row>
-    </CardBody>
-</Card>
+<form class="docs-filter-pop @(IsOpen ? "is-open" : null)" id="queue-filter-panel" hidden="@(!IsOpen)"
+      @onsubmit="OnSearch" @onsubmit:preventDefault>
+    <div class="vb-field-row">
+        <div class="filter-menu-field">
+            <label class="field-label" for="queue-status-filter">@L["Catalog:Status"]</label>
+            <select class="select input" id="queue-status-filter" value="@StatusFilter" @onchange="OnStatusChanged">
+                <option value="">@L["Catalog:AllStatuses"]</option>
+                @foreach (var option in StatusOptions)
+                {
+                    <option value="@option.Value">@L[option.LocKey]</option>
+                }
+            </select>
+        </div>
+        <div class="filter-menu-field">
+            <label class="field-label" for="queue-date-type">@L["Work:SigningExportDateFilter"]</label>
+            <select class="select input" id="queue-date-type" value="@DateFilterField" @onchange="OnDateTypeChanged">
+                <option value="IncomingDate">@L["Work:SigningExportDateFilterIncoming"]</option>
+                <option value="WorkflowDeadline">@L["Work:SigningExportDateFilterWorkflow"]</option>
+            </select>
+        </div>
+    </div>
+    <div class="vb-field-row">
+        <div class="filter-menu-field">
+            <label class="field-label" for="queue-presenter">@L["Work:FilterSubmitter"]</label>
+            <UserSelect2 Value="SubmitterUserId"
+                         ValueChanged="SubmitterUserIdChanged"
+                         Placeholder="@L["Work:FilterSubmitter"]"
+                         SelectedText="@SubmitterText"
+                         Search="SearchUsers" />
+        </div>
+        <div class="filter-menu-field">
+            <label class="field-label" for="queue-dept">@L["Work:FilterDepartment"]</label>
+            <CatalogSelect2 Value="DepartmentId"
+                            ValueChanged="DepartmentIdChanged"
+                            Placeholder="@L["Work:FilterDepartment"]"
+                            SelectedText="@DepartmentText"
+                            Search="SearchDepartments" />
+        </div>
+    </div>
+    <div class="vb-field-row">
+        <div class="filter-menu-field">
+            <label class="field-label">@L["Feature:StartDate"]</label>
+            <HcsDatePicker TValue="DateTime?" Value="FromDate" ValueChanged="FromDateChanged" />
+        </div>
+        <div class="filter-menu-field">
+            <label class="field-label">@L["Feature:EndDate"]</label>
+            <HcsDatePicker TValue="DateTime?" Value="ToDate" ValueChanged="ToDateChanged" />
+        </div>
+    </div>
+    <div class="docs-filter-actions">
+        <button class="btn btn-outline" type="button" @onclick="OnReset">@L["Catalog:Reset"]</button>
+        <button class="btn btn-primary" type="submit">@L["Catalog:SearchButton"]</button>
+    </div>
+</form>
 @code {
-    [Parameter] public IReadOnlyList<DateTime?> SelectedDateRange { get; set; } = [];
-    [Parameter] public EventCallback<IReadOnlyList<DateTime?>> SelectedDateRangeChanged { get; set; }
+    private static readonly (string Value, string LocKey)[] StatusOptions =
+    [
+        ("InProgress", "Work:Status.InProgress"),
+        ("Overdue", "Work:Overdue"),
+        ("Approved", "Work:ApprovalStatus.Approved"),
+        ("Rejected", "Work:ApprovalStatus.Rejected"),
+        ("Returned", "Work:ApprovalStatus.Returned"),
+        ("Completed", "Work:Status.Completed"),
+        ("Cancelled", "Work:ApprovalStatus.Cancelled")
+    ];
+
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string StatusFilter { get; set; } = "";
+    [Parameter] public EventCallback<string> StatusFilterChanged { get; set; }
     [Parameter] public string DateFilterField { get; set; } = "IncomingDate";
     [Parameter] public EventCallback<string> DateFilterFieldChanged { get; set; }
     [Parameter] public Guid? SubmitterUserId { get; set; }
@@ -83,15 +78,24 @@
     [Parameter] public Guid? DepartmentId { get; set; }
     [Parameter] public EventCallback<Guid?> DepartmentIdChanged { get; set; }
     [Parameter] public string? DepartmentText { get; set; }
-    [Parameter] public string FilterText { get; set; } = "";
-    [Parameter] public EventCallback<string> FilterTextChanged { get; set; }
+    [Parameter] public DateTime? FromDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> FromDateChanged { get; set; }
+    [Parameter] public DateTime? ToDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> ToDateChanged { get; set; }
     [Parameter] public EventCallback SearchClicked { get; set; }
+    [Parameter] public EventCallback ResetClicked { get; set; }
     [Parameter] public Func<string, int, Task<CatalogSelect2SearchResponse>> SearchUsers { get; set; } = default!;
     [Parameter] public Func<string, int, Task<CatalogSelect2SearchResponse>> SearchDepartments { get; set; } = default!;
 
-    private Task OnFilterTextChanged(string value)
+    private Task OnStatusChanged(ChangeEventArgs args) =>
+        StatusFilterChanged.InvokeAsync(args.Value?.ToString() ?? "");
+
+    private Task OnDateTypeChanged(ChangeEventArgs args)
     {
-        FilterText = value ?? "";
-        return FilterTextChanged.InvokeAsync(FilterText);
+        var value = args.Value?.ToString();
+        return DateFilterFieldChanged.InvokeAsync(string.IsNullOrWhiteSpace(value) ? "IncomingDate" : value);
     }
+
+    private Task OnSearch() => SearchClicked.InvokeAsync();
+    private Task OnReset() => ResetClicked.InvokeAsync();
 }

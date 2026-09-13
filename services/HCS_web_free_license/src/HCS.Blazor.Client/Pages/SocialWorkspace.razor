@@ -15,223 +15,269 @@
 
 <PageTitle>@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"]) · HCS</PageTitle>
 
-<section class="hcs-social-page" aria-label='@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"])'>
+<section class="hcs-social-page page-social" aria-label='@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"])'>
+    <div class="social-wrap" @onclick="ClosePostMenu">
     @if (!isProfile)
     {
-        <header class="hcs-social-hero">
+        <div class="page-head social-feed-head">
             <div>
-                <p class="hcs-social-eyebrow"><i class="fa fa-users" aria-hidden="true"></i> HCS Community</p>
+                <p class="social-kicker">@L["Social:Subtitle"]</p>
                 <h1 id="social-title">@L["Social:Title"]</h1>
-                <p>@L["Social:Subtitle"]</p>
             </div>
-            <a class="hcs-social-outline-button" href="/social/profile">
-                <i class="fa fa-user" aria-hidden="true"></i>
-                @L["Social:OpenProfile"]
-            </a>
-        </header>
+            <div class="page-actions">
+                <a class="btn btn-primary" href="/social/profile">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                    @L["Social:OpenProfile"]
+                </a>
+            </div>
+        </div>
     }
 
     @if (isProfile && myProfile is { } profile)
     {
-        <section class="hcs-social-profile-card hcs-social-profile-card--top" aria-labelledby="social-my-profile-title">
-            <div class="hcs-social-profile-card__cover">
-                <a class="hcs-social-profile-card__back" href="/social">
-                    <i class="fa fa-house" aria-hidden="true"></i>
+        <section class="social-cover hcs-social-profile-card hcs-social-profile-card--top" aria-labelledby="social-my-profile-title">
+            <div class="social-cover-bar hcs-social-profile-card__cover">
+                <a class="btn btn-cover hcs-social-profile-card__back" href="/social">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg>
                     @L["Social:BackToFeed"]
                 </a>
             </div>
-            <div class="hcs-social-profile-card__content">
-                @SocialAvatar(profile.UserId, profile.DisplayName, profile.AvatarUrl, "hcs-social-avatar--profile")
-                <div class="hcs-social-profile-card__identity">
-                    <h2 id="social-my-profile-title">@profile.DisplayName</h2>
-                    <p class="hcs-social-profile-card__username">@@@profile.UserName</p>
-                    <div class="hcs-social-profile-card__meta">
-                        <span><i class="fa fa-id-badge" aria-hidden="true"></i><b>@L["Social:Position"]:</b> @(profile.PositionName ?? L["Social:NoProfileValue"])</span>
+            <div class="social-cover-body hcs-social-profile-card__content">
+                @SocialAvatar(profile.UserId, profile.DisplayName, profile.AvatarUrl, "hcs-social-avatar--profile social-cover-avatar")
+                <div class="social-cover-meta hcs-social-profile-card__identity">
+                    <h1 id="social-my-profile-title">@profile.DisplayName</h1>
+                    <p class="social-handle hcs-social-profile-card__username">@@@profile.UserName</p>
+                    <ul class="social-contact hcs-social-profile-card__meta">
+                        <li>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            @L["Social:Position"]: <span>@(profile.PositionName ?? L["Social:NoProfileValue"])</span>
+                        </li>
                         @if (!string.IsNullOrWhiteSpace(profile.DepartmentName))
                         {
-                            <span><i class="fa fa-building" aria-hidden="true"></i><b>@L["Social:Department"]:</b> @profile.DepartmentName</span>
+                            <li>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V8l8-4 8 4v13"/><path d="M9 21v-6h6v6"/></svg>
+                                @L["Social:Department"]: <span>@profile.DepartmentName</span>
+                            </li>
                         }
-                        <span><i class="fa fa-phone" aria-hidden="true"></i><b>@L["Social:Phone"]:</b> @(profile.PhoneNumber ?? L["Social:NoProfileValue"])</span>
-                        <span><i class="fa fa-envelope" aria-hidden="true"></i><b>@L["Social:Email"]:</b> @(profile.Email ?? L["Social:NoProfileValue"])</span>
-                    </div>
+                        <li>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6.5 4h3l1.5 4-2 1.2a12 12 0 0 0 5.8 5.8L16 13l4 1.5v3A16 16 0 0 1 6.5 4z"/></svg>
+                            @L["Social:Phone"]: <span>@(profile.PhoneNumber ?? L["Social:NoProfileValue"])</span>
+                        </li>
+                        <li>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+                            @L["Social:Email"]:
+                            @if (!string.IsNullOrWhiteSpace(profile.Email))
+                            {
+                                <a href="mailto:@profile.Email">@profile.Email</a>
+                            }
+                            else
+                            {
+                                <span>@L["Social:NoProfileValue"]</span>
+                            }
+                        </li>
+                    </ul>
                 </div>
             </div>
         </section>
     }
 
-    <nav class="hcs-social-scope-tabs @(isChangingVisibility ? "is-loading" : null)"
-         aria-label='@L["Social:ViewLabel"]' aria-busy="@(isChangingVisibility)">
-        <span class="hcs-social-scope-tabs__label">@L["Social:ViewLabel"]</span>
-        @if (isProfile)
-        {
-            <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(null) ? "is-active" : null)"
-                    aria-pressed="@IsVisibilitySelected(null)" @onclick="() => SelectVisibilityAsync(null)"
-                    disabled="@(isLoading || isChangingVisibility)">
-                <i class="fa fa-layer-group" aria-hidden="true"></i>@L["Social:All"]
-            </button>
-        }
-        <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(SocialPostVisibility.Public) ? "is-active" : null)"
-                aria-pressed="@IsVisibilitySelected(SocialPostVisibility.Public)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Public)"
-                disabled="@(isLoading || isChangingVisibility)">
-            <i class="fa fa-globe" aria-hidden="true"></i>@L["Social:Public"]
-        </button>
-        <button type="button" class="hcs-social-scope-tab @(IsVisibilitySelected(SocialPostVisibility.Internal) ? "is-active" : null)"
-                aria-pressed="@IsVisibilitySelected(SocialPostVisibility.Internal)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Internal)"
-                title='@L["Social:InternalHint"]' disabled="@(isLoading || isChangingVisibility)">
-            <i class="fa fa-lock" aria-hidden="true"></i>@L["Social:Internal"]
-        </button>
-        @if (isChangingVisibility)
-        {
-            <span class="hcs-social-scope-tabs__loading" role="status" aria-live="polite">
-                <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
-                <span>@L["Social:Loading"]</span>
-            </span>
-        }
-    </nav>
-
-    <form class="hcs-social-search" @onsubmit="ApplySearchAsync" @onsubmit:preventDefault>
-        <div class="hcs-social-search__heading">
-            <i class="fa fa-magnifying-glass" aria-hidden="true"></i>
-            <span>@L["Social:SearchTitle"]</span>
-        </div>
-        <div class="hcs-social-search__modes" role="group" aria-label='@L["Social:SearchTitle"]'>
-            <button type="button" class="hcs-social-search__mode @(!peopleSearchMode ? "is-active" : null)"
-                    aria-pressed="@(!peopleSearchMode)" @onclick="() => SelectSearchMode(false)">
-                <i class="fa fa-newspaper" aria-hidden="true"></i>@L["Social:SearchTitle"]
-            </button>
-            <button type="button" class="hcs-social-search__mode @(peopleSearchMode ? "is-active" : null)"
-                    aria-pressed="@peopleSearchMode" @onclick="() => SelectSearchMode(true)">
-                <i class="fa fa-user-group" aria-hidden="true"></i>@L["Social:PeopleSearch"]
-            </button>
-        </div>
-        <div class="hcs-social-search__field hcs-social-search__field--keyword">
-            <label for="social-search-keyword">@(peopleSearchMode ? L["Social:PeopleSearch"] : L["Social:Keyword"])</label>
-            <input id="social-search-keyword" class="form-control" @bind="keywordInput"
-                   placeholder='@(peopleSearchMode ? L["Social:PeopleSearchPlaceholder"] : L["Social:KeywordPlaceholder"])' autocomplete="off" />
-        </div>
-        @if (!peopleSearchMode)
-        {
-            <div class="hcs-social-search__field">
-                <label for="social-search-hashtag">@L["Social:Hashtag"]</label>
-                <input id="social-search-hashtag" class="form-control" @bind="hashtagInput"
-                       placeholder="#hcs" autocomplete="off" />
+    <div class="social-toolbar card @(isChangingVisibility ? "is-loading" : null)">
+        <div class="social-toolbar-main">
+            <span class="social-toolbar-label">@L["Social:ViewLabel"]</span>
+            <div class="social-pills" role="tablist" aria-label='@L["Social:ViewLabel"]' aria-busy="@(isChangingVisibility)">
+                @if (isProfile)
+                {
+                    <button type="button" class="social-pill @(IsVisibilitySelected(null) ? "is-active" : null)"
+                            role="tab" aria-selected="@IsVisibilitySelected(null)" @onclick="() => SelectVisibilityAsync(null)"
+                            disabled="@(isLoading || isChangingVisibility)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+                        @L["Social:All"]
+                    </button>
+                }
+                <button type="button" class="social-pill @(IsVisibilitySelected(SocialPostVisibility.Public) ? "is-active" : null)"
+                        role="tab" aria-selected="@IsVisibilitySelected(SocialPostVisibility.Public)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Public)"
+                        disabled="@(isLoading || isChangingVisibility)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 3.8 6 3.8 9S14.5 18 12 21c-2.5-3-3.8-6-3.8-9S9.5 6 12 3z"/></svg>
+                    @L["Social:Public"]
+                </button>
+                <button type="button" class="social-pill @(IsVisibilitySelected(SocialPostVisibility.Internal) ? "is-active" : null)"
+                        role="tab" aria-selected="@IsVisibilitySelected(SocialPostVisibility.Internal)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Internal)"
+                        title='@L["Social:InternalHint"]' disabled="@(isLoading || isChangingVisibility)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                    @L["Social:Internal"]
+                </button>
+                @if (isChangingVisibility)
+                {
+                    <span class="social-toolbar-status" role="status" aria-live="polite">
+                        @SocialSpinner()
+                        <span>@L["Social:Loading"]</span>
+                    </span>
+                }
             </div>
-        }
-        <div class="hcs-social-search__actions">
-            <button class="hcs-social-search__submit" type="submit">
-                <i class="fa fa-search" aria-hidden="true"></i>@L["Social:Search"]
+            <button class="icon-btn social-search-toggle @(HasSearchFilters() ? "is-filtered" : null)" type="button"
+                    aria-expanded="@searchOpen.ToString().ToLowerInvariant()" aria-controls="social-search-form"
+                    aria-label='@L["Social:Search"]' @onclick="ToggleSearchPanel">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
             </button>
-            @if (!peopleSearchMode)
-            {
-                <button class="hcs-social-search__clear" type="button" @onclick="ClearSearchAsync"
-                        disabled="@(!HasSearchFilters())">@L["Social:ClearSearch"]</button>
-            }
         </div>
-    </form>
+
+        <form id="social-search-form" class="social-search-form hcs-social-search" hidden="@(!searchOpen)" @onsubmit="ApplySearchAsync" @onsubmit:preventDefault>
+            <div class="social-search-head hcs-social-search__heading">
+                <h2 id="social-search-title" class="sr-only">@L["Social:SearchTitle"]</h2>
+                <div class="social-search-modes hcs-social-search__modes" role="tablist" aria-label='@L["Social:SearchTitle"]'>
+                    <button type="button" class="social-mode hcs-social-search__mode @(!peopleSearchMode ? "is-active" : null)"
+                            role="tab" aria-selected="@(!peopleSearchMode)" @onclick="() => SelectSearchMode(false)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                        @L["Social:SearchTitle"]
+                    </button>
+                    <button type="button" class="social-mode hcs-social-search__mode @(peopleSearchMode ? "is-active" : null)"
+                            role="tab" aria-selected="@peopleSearchMode" @onclick="() => SelectSearchMode(true)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                        @L["Social:PeopleSearch"]
+                    </button>
+                </div>
+            </div>
+            <div class="social-search-row">
+                <div class="social-search-fields">
+                    <div class="field hcs-social-search__field hcs-social-search__field--keyword">
+                        <label class="field-label" for="social-search-keyword">@(peopleSearchMode ? L["Social:PeopleSearch"] : L["Social:Keyword"])</label>
+                        <input id="social-search-keyword" class="input" @bind="keywordInput"
+                               placeholder='@(peopleSearchMode ? L["Social:PeopleSearchPlaceholder"] : L["Social:KeywordPlaceholder"])' autocomplete="off" />
+                    </div>
+                    @if (!peopleSearchMode)
+                    {
+                        <div class="field hcs-social-search__field">
+                            <label class="field-label" for="social-search-hashtag">@L["Social:Hashtag"]</label>
+                            <input id="social-search-hashtag" class="input" @bind="hashtagInput"
+                                   placeholder="#hcs" autocomplete="off" />
+                        </div>
+                    }
+                </div>
+                <div class="social-search-actions hcs-social-search__actions">
+                    <button class="btn btn-primary social-search-btn hcs-social-search__submit" type="submit">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                        @L["Social:Search"]
+                    </button>
+                    @if (!peopleSearchMode)
+                    {
+                        <button class="btn btn-ghost hcs-social-search__clear" type="button" @onclick="ClearSearchAsync"
+                                disabled="@(!HasSearchFilters())">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                            @L["Social:ClearSearch"]
+                        </button>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
     @if (!string.IsNullOrWhiteSpace(searchError))
     {
-        <p class="hcs-social-search__error" role="alert"><i class="fa fa-triangle-exclamation" aria-hidden="true"></i>@searchError</p>
+        <p class="social-inline-error" role="alert">@SocialWarningIcon()@searchError</p>
     }
 
-    <div class="hcs-social-layout">
-        <main class="hcs-social-stream">
+    <div class="social-split hcs-social-layout">
+        <div class="social-main hcs-social-stream">
             @if (peopleSearchMode && peopleSearchExecuted)
             {
-                <section class="hcs-social-people-results" aria-labelledby="social-people-results-title">
-                    <div class="hcs-social-card-heading">
-                        <span class="hcs-social-card-heading__icon" aria-hidden="true"><i class="fa fa-user-group"></i></span>
-                        <div>
-                            <h2 id="social-people-results-title">@L["Social:PeopleResults"]</h2>
-                            <p>@keywordInput</p>
-                        </div>
-                    </div>
+                <section class="people-grid hcs-social-people-results" aria-labelledby="social-people-results-title">
+                    <h2 id="social-people-results-title" class="sr-only">@L["Social:PeopleResults"]</h2>
                     @if (isSearchingPeople)
                     {
-                        <p class="hcs-social-state hcs-social-state--compact" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Loading"]</p>
+                        <p class="social-empty" role="status">@SocialSpinner()@L["Social:Loading"]</p>
                     }
                     else if (!string.IsNullOrWhiteSpace(peopleSearchError))
                     {
-                        <p class="hcs-social-inline-error" role="alert">@peopleSearchError</p>
+                        <p class="social-inline-error" role="alert">@peopleSearchError</p>
                     }
                     else if (people.Count == 0)
                     {
-                        <p class="hcs-social-state hcs-social-state--compact">@L["Social:PeopleEmpty"]</p>
+                        <p class="social-empty">@L["Social:PeopleEmpty"]</p>
                     }
                     else
                     {
-                        <div class="hcs-social-people-grid">
-                            @foreach (var person in people)
-                            {
-                                <article class="hcs-social-person-card">
-                                    @SocialAvatar(person.UserId, person.DisplayName, person.AvatarUrl)
-                                    <div class="hcs-social-person-card__body">
-                                        <h3>@person.DisplayName</h3>
-                                        <p class="hcs-social-person-card__position">@(person.PositionName ?? L["Social:NoProfileValue"])</p>
-                                        @if (!string.IsNullOrWhiteSpace(person.DepartmentName))
-                                        {
-                                            <p class="hcs-social-person-card__department"><i class="fa fa-building" aria-hidden="true"></i>@person.DepartmentName</p>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(person.Email))
-                                        {
-                                            <a href="mailto:@person.Email" class="hcs-social-person-card__contact"><i class="fa fa-envelope" aria-hidden="true"></i>@person.Email</a>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(person.PhoneNumber))
-                                        {
-                                            <a href="tel:@person.PhoneNumber" class="hcs-social-person-card__contact"><i class="fa fa-phone" aria-hidden="true"></i>@person.PhoneNumber</a>
-                                        }
-                                    </div>
-                                </article>
-                            }
-                        </div>
+                        @foreach (var person in people)
+                        {
+                            <article class="people-card">
+                                @SocialAvatar(person.UserId, person.DisplayName, person.AvatarUrl)
+                                <span>
+                                    <strong>@person.DisplayName</strong>
+                                    <span>@(person.PositionName ?? L["Social:NoProfileValue"])</span>
+                                    @if (!string.IsNullOrWhiteSpace(person.DepartmentName))
+                                    {
+                                        <span>@person.DepartmentName</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(person.Email))
+                                    {
+                                        <a href="mailto:@person.Email">@person.Email</a>
+                                    }
+                                </span>
+                            </article>
+                        }
                     }
                 </section>
             }
-            <section class="hcs-social-composer" aria-labelledby="social-composer-title">
-                <div class="hcs-social-card-heading">
-                    @SocialAvatar(currentUserId ?? Guid.Empty, CurrentDisplayName(), null, "hcs-social-avatar--accent")
+            <section class="card social-composer hcs-social-composer" aria-labelledby="social-composer-title">
+                <div class="social-composer-head hcs-social-card-heading">
+                    @SocialAvatar(currentUserId ?? Guid.Empty, CurrentDisplayName(), null, "hcs-social-avatar--accent chat-avatar")
                     <div>
                         <h2 id="social-composer-title">@L["Social:ComposerTitle"]</h2>
                         <p>@L["Social:ContentLabel"]</p>
                     </div>
                 </div>
                 <form class="hcs-social-composer__form" @onsubmit="CreatePostAsync" @onsubmit:preventDefault>
-                    <label class="visually-hidden" for="social-content">@L["Social:ContentLabel"]</label>
-                    <textarea id="social-content" class="form-control" rows="3" @bind="content" @bind:event="oninput"
+                    <label class="sr-only" for="social-content">@L["Social:ContentLabel"]</label>
+                    <textarea id="social-content" class="input social-textarea" rows="3" @bind="content" @bind:event="oninput"
                               placeholder='@L["Social:ContentPlaceholder"]' disabled="@isPosting"></textarea>
-                    <div class="hcs-social-composer__controls">
-                        <div class="hcs-social-visibility">
-                            <label for="social-visibility">@L["Social:VisibilityLabel"]</label>
-                            <select id="social-visibility" class="form-select" @bind="visibility" disabled="@isPosting">
-                                <option value="@SocialPostVisibility.Public">@L["Social:Public"]</option>
-                                <option value="@SocialPostVisibility.Internal">@L["Social:Internal"]</option>
-                            </select>
-                        </div>
-                        <label class="hcs-social-media-picker" for="social-media">
-                            <i class="fa fa-photo-film" aria-hidden="true"></i>@L["Social:ChooseMedia"]
-                            <InputFile id="social-media" class="visually-hidden" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
-                                       multiple OnChange="UploadMediaAsync" disabled="@(isPosting || isUploadingMedia)" />
+                    <div class="social-composer-foot hcs-social-composer__controls">
+                        <label class="vis-switch" for="social-visibility-toggle">
+                            <input id="social-visibility-toggle" class="vis-switch-input" type="checkbox"
+                                   checked="@(visibility == SocialPostVisibility.Internal)"
+                                   @onchange="OnComposerVisibilityToggle"
+                                   disabled="@isPosting" aria-label='@L["Social:VisibilityLabel"]' />
+                            <span class="vis-switch-track" aria-hidden="true"><span class="vis-switch-thumb"></span></span>
+                            <span class="vis-switch-text">@(visibility == SocialPostVisibility.Internal ? L["Social:Internal"] : L["Social:Public"])</span>
                         </label>
-                        <button class="hcs-social-submit" type="submit" disabled="@(isPosting || isUploadingMedia || (string.IsNullOrWhiteSpace(content) && uploadedMedia.Count == 0))">
-                            <i class="fa @(isPosting ? "fa-spinner fa-spin" : "fa-paper-plane")" aria-hidden="true"></i>
-                            @(isPosting ? L["Social:Posting"] : L["Social:Post"])
-                        </button>
+                    <label class="btn btn-ghost social-media-picker" for="social-media">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+                        @L["Social:ChooseMedia"]
+                        <InputFile id="social-media" class="sr-only" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm"
+                                   multiple OnChange="UploadMediaAsync" disabled="@(isPosting || isUploadingMedia)" />
+                    </label>
+                    <button class="btn btn-primary hcs-social-submit" type="submit" disabled="@(isPosting || isUploadingMedia || (string.IsNullOrWhiteSpace(content) && uploadedMedia.Count == 0))">
+                        @if (isPosting)
+                        {
+                            @SocialSpinner()
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                        }
+                        @(isPosting ? L["Social:Posting"] : L["Social:Post"])
+                    </button>
                     </div>
                 </form>
                 @if (isUploadingMedia)
                 {
-                    <p class="hcs-social-progress" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Posting"]</p>
+                    <p class="social-progress" role="status">@SocialSpinner()@L["Social:Posting"]</p>
                 }
                 @if (uploadedMedia.Count > 0)
                 {
-                    <div class="hcs-social-selected-media" aria-label='@L["Social:SelectedMedia"]'>
+                    <div class="social-selected-media" aria-label='@L["Social:SelectedMedia"]'>
                         @foreach (var media in uploadedMedia)
                         {
-                            <span class="hcs-social-media-chip">
-                                <i class="fa @(media.Kind == SocialMediaKind.Video ? "fa-video" : "fa-image")" aria-hidden="true"></i>
+                            <span class="social-media-chip">
+                                @if (media.Kind == SocialMediaKind.Video)
+                                {
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 6 4-6 4V9z"/></svg>
+                                }
+                                else
+                                {
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+                                }
                                 <span>@media.FileName</span>
-                                <button type="button" title='@L["Social:RemoveMedia"]' aria-label='@L["Social:RemoveMedia"] @media.FileName'
+                                <button type="button" class="icon-btn" title='@L["Social:RemoveMedia"]' aria-label='@L["Social:RemoveMedia"] @media.FileName'
                                         @onclick="() => RemoveMediaAsync(media)" disabled="@isPosting">
-                                    <i class="fa fa-xmark" aria-hidden="true"></i>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                                 </button>
                             </span>
                         }
@@ -239,79 +285,133 @@
                 }
             </section>
 
+            @if (!(peopleSearchMode && peopleSearchExecuted))
+            {
             @if (isLoading || isChangingVisibility)
             {
-                <div class="hcs-social-state hcs-social-state--loading" role="status">
-                    <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Loading"]
+                <div class="social-empty" role="status">
+                    @SocialSpinner()@L["Social:Loading"]
                 </div>
             }
             else if (!string.IsNullOrWhiteSpace(loadError))
             {
-                <div class="hcs-social-state hcs-social-state--error" role="alert">
-                    <i class="fa fa-triangle-exclamation" aria-hidden="true"></i><span>@loadError</span>
-                    <button type="button" @onclick="LoadAsync">@L["Chat:Retry"]</button>
+                <div class="social-empty social-empty--error" role="alert">
+                    @SocialWarningIcon()
+                    <span>@loadError</span>
+                    <button class="btn btn-ghost" type="button" @onclick="LoadAsync">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 2l-2 2m-7.5 7.5 6-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 16l-2 2m7.5-7.5-6 6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                        @L["Chat:Retry"]
+                    </button>
                 </div>
             }
             else if (posts.Count == 0)
             {
-                <div class="hcs-social-state hcs-social-state--empty">
-                    <i class="fa fa-comments" aria-hidden="true"></i>
-                    <h2>@(isProfile ? L["Social:EmptyProfile"] : L["Social:EmptyFeed"])</h2>
-                    <p>@L["Social:ComposerTitle"]</p>
-                </div>
+                <p class="social-empty">
+                    @(isProfile ? L["Social:EmptyProfile"] : L["Social:EmptyFeed"])
+                </p>
             }
             else
             {
+                <div class="social-stream">
                 @foreach (var post in posts)
                 {
-                    <article class="hcs-social-post" aria-labelledby="post-@post.Id">
-                        <header class="hcs-social-post__header">
-                            @SocialAvatar(post.AuthorUserId, post.AuthorName, post.AvatarUrl)
-                            <div class="hcs-social-post__author">
-                                <h2 id="post-@post.Id">@post.AuthorName</h2>
-                                <time datetime="@post.CreatedAt.ToString("O")" title="@post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")">
-                                    @post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                                </time>
+                    <article class="post-card hcs-social-post" aria-labelledby="post-@post.Id">
+                        <header class="post-head hcs-social-post__header">
+                            @SocialAvatar(post.AuthorUserId, post.AuthorName, post.AvatarUrl, "chat-avatar")
+                            <div class="post-meta hcs-social-post__author">
+                                <a class="post-author" id="post-@post.Id">@post.AuthorName</a>
+                                <p>
+                                    <time datetime="@post.CreatedAt.ToString("O")" title="@post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")">
+                                        @post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    </time>
+                                    ·
+                                    <span class="post-vis @(post.Visibility == SocialPostVisibility.Internal ? "is-internal" : "is-public") hcs-social-visibility-badge @(post.Visibility == SocialPostVisibility.Internal ? "is-internal" : null)"
+                                          title="@(post.Visibility == SocialPostVisibility.Internal ? L["Social:Internal"] : L["Social:Public"])"
+                                          aria-label="@(post.Visibility == SocialPostVisibility.Internal ? L["Social:Internal"] : L["Social:Public"])">
+                                        @if (post.Visibility == SocialPostVisibility.Internal)
+                                        {
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                                        }
+                                        else
+                                        {
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                        }
+                                    </span>
+                                </p>
                             </div>
-                            <span class="hcs-social-visibility-badge @(post.Visibility == SocialPostVisibility.Internal ? "is-internal" : null)">
-                                <i class="fa @(post.Visibility == SocialPostVisibility.Internal ? "fa-lock" : "fa-globe")" aria-hidden="true"></i>
-                                @(post.Visibility == SocialPostVisibility.Internal ? L["Social:Internal"] : L["Social:Public"])
-                            </span>
                             @if (IsOwnPost(post))
                             {
-                                <div class="hcs-social-post__actions" aria-label='@L["Social:PostActions"]'>
-                                    <button type="button" class="hcs-social-post__action" title='@L["Social:Edit"]'
-                                            aria-label='@L["Social:Edit"]' @onclick="() => BeginEditPost(post)"
+                                <div class="post-more @(postMenuId == post.Id ? "is-open" : null)" @onclick:stopPropagation="true">
+                                    <button class="icon-btn post-more-toggle" type="button"
+                                            aria-haspopup="true" aria-expanded="@(postMenuId == post.Id ? "true" : "false")"
+                                            aria-label='@L["Social:PostActions"]'
+                                            title='@L["Social:PostActions"]'
+                                            @onclick="() => TogglePostMenu(post.Id)"
                                             disabled="@(isUpdatingPost || deletingPostId == post.Id)">
-                                        <i class="fa fa-pen" aria-hidden="true"></i>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <circle cx="5" cy="12" r="1.7"/>
+                                            <circle cx="12" cy="12" r="1.7"/>
+                                            <circle cx="19" cy="12" r="1.7"/>
+                                        </svg>
                                     </button>
-                                    <button type="button" class="hcs-social-post__action hcs-social-post__action--danger"
-                                            title='@L["Social:Delete"]' aria-label='@L["Social:Delete"]'
-                                            @onclick="() => DeletePostAsync(post)"
-                                            disabled="@(isUpdatingPost || deletingPostId == post.Id)">
-                                        <i class="fa @(deletingPostId == post.Id ? "fa-spinner fa-spin" : "fa-trash")" aria-hidden="true"></i>
-                                    </button>
+                                    @if (postMenuId == post.Id)
+                                    {
+                                        <div class="post-more-menu" role="menu">
+                                            <button type="button" class="post-more-item" role="menuitem" @onclick="() => BeginEditPost(post)"
+                                                    disabled="@(isUpdatingPost || deletingPostId == post.Id)">
+                                                <span class="post-more-icon" aria-hidden="true">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                                </span>
+                                                <span>@L["Social:Edit"]</span>
+                                            </button>
+                                            <button type="button" class="post-more-item is-danger" role="menuitem" @onclick="() => AskDeletePost(post)"
+                                                    disabled="@(isUpdatingPost || deletingPostId == post.Id)">
+                                                <span class="post-more-icon" aria-hidden="true">
+                                                    @if (deletingPostId == post.Id)
+                                                    {
+                                                        @SocialSpinner()
+                                                    }
+                                                    else
+                                                    {
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>
+                                                    }
+                                                </span>
+                                                <span>@L["Social:Delete"]</span>
+                                            </button>
+                                        </div>
+                                    }
                                 </div>
                             }
                         </header>
 
                         @if (editingPostId == post.Id)
                         {
-                            <form class="hcs-social-post__edit" @onsubmit="() => UpdatePostAsync(post)" @onsubmit:preventDefault>
-                                <label for="edit-social-content-@post.Id">@L["Social:ContentLabel"]</label>
-                                <textarea id="edit-social-content-@post.Id" class="form-control" rows="4"
+                            <form class="social-post-edit" @onsubmit="() => UpdatePostAsync(post)" @onsubmit:preventDefault>
+                                <label class="sr-only" for="edit-social-content-@post.Id">@L["Social:ContentLabel"]</label>
+                                <textarea id="edit-social-content-@post.Id" class="input social-textarea" rows="4"
                                           @bind="editingContent" @bind:event="oninput" disabled="@isUpdatingPost"></textarea>
-                                <div class="hcs-social-post__edit-controls">
-                                    <label for="edit-social-visibility-@post.Id">@L["Social:VisibilityLabel"]</label>
-                                    <select id="edit-social-visibility-@post.Id" class="form-select" @bind="editingVisibility" disabled="@isUpdatingPost">
-                                        <option value="@SocialPostVisibility.Public">@L["Social:Public"]</option>
-                                        <option value="@SocialPostVisibility.Internal">@L["Social:Internal"]</option>
-                                    </select>
-                                    <button type="button" class="hcs-social-post__edit-cancel" @onclick="CancelEditPost" disabled="@isUpdatingPost">
+                                <div class="social-composer-foot">
+                                    <label class="vis-switch" for="edit-social-visibility-@post.Id">
+                                        <input id="edit-social-visibility-@post.Id" class="vis-switch-input" type="checkbox"
+                                               checked="@(editingVisibility == SocialPostVisibility.Internal)"
+                                               @onchange="OnEditVisibilityToggle"
+                                               disabled="@isUpdatingPost" aria-label='@L["Social:VisibilityLabel"]' />
+                                        <span class="vis-switch-track" aria-hidden="true"><span class="vis-switch-thumb"></span></span>
+                                        <span class="vis-switch-text">@(editingVisibility == SocialPostVisibility.Internal ? L["Social:Internal"] : L["Social:Public"])</span>
+                                    </label>
+                                    <button class="btn btn-ghost" type="button" @onclick="CancelEditPost" disabled="@isUpdatingPost">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                                         @L["Social:Cancel"]
                                     </button>
-                                    <button type="submit" class="hcs-social-post__edit-save" disabled="@isUpdatingPost">
-                                        <i class="fa @(isUpdatingPost ? "fa-spinner fa-spin" : "fa-floppy-disk")" aria-hidden="true"></i>
+                                    <button class="btn btn-primary" type="submit" disabled="@isUpdatingPost">
+                                        @if (isUpdatingPost)
+                                        {
+                                            @SocialSpinner()
+                                        }
+                                        else
+                                        {
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                        }
                                         @(isUpdatingPost ? L["Social:Updating"] : L["Social:SaveChanges"])
                                     </button>
                                 </div>
@@ -319,11 +419,13 @@
                         }
                         else if (!string.IsNullOrWhiteSpace(post.Text))
                         {
-                            <p class="hcs-social-post__text">@RenderSocialPostText(post.Text)</p>
+                            <div class="post-body">
+                                <p>@RenderSocialPostText(post.Text)</p>
+                            </div>
                         }
                         @if (post.Media.Count > 0)
                         {
-                            <div class="hcs-social-media-grid @(post.Media.Count == 1 ? "is-single" : null)">
+                            <div class="post-media hcs-social-media-grid @(post.Media.Count == 1 ? "is-single" : null)">
                                 @foreach (var media in post.Media)
                                 {
                                     @if (media.Kind == SocialMediaKind.Video)
@@ -334,7 +436,10 @@
                                     }
                                     else
                                     {
-                                        <img src="@SocialMediaUrl(media.Id)" crossorigin="use-credentials" loading="lazy" alt="@media.FileName" />
+                                        <button class="social-media-open" type="button" title='@L["Chat:ViewImage"]' aria-label='@L["Chat:ViewImage"] @media.FileName'
+                                                @onclick="() => OpenImagePreview(SocialMediaUrl(media.Id), media.FileName)">
+                                            <img src="@SocialMediaUrl(media.Id)" crossorigin="use-credentials" loading="lazy" alt="@media.FileName" />
+                                        </button>
                                     }
                                 }
                             </div>
@@ -342,232 +447,199 @@
 
                         @if (post.LinkPreview is { } linkPreview)
                         {
-                            <a class="hcs-social-link-preview @(string.IsNullOrWhiteSpace(linkPreview.ImageUrl) ? "is-text-only" : null)"
+                            <a class="social-link-preview @(string.IsNullOrWhiteSpace(linkPreview.ImageUrl) ? "is-text-only" : null)"
                                href="@linkPreview.Url" target="_blank" rel="noopener noreferrer">
                                 @if (!string.IsNullOrWhiteSpace(linkPreview.ImageUrl))
                                 {
                                     <img src="@linkPreview.ImageUrl" loading="lazy" referrerpolicy="no-referrer" alt="@(linkPreview.Title ?? linkPreview.Url)" />
                                 }
-                                <span class="hcs-social-link-preview__body">
+                                <span class="social-link-preview__body">
                                     <small>@(linkPreview.SiteName ?? L["Social:LinkPreview"])</small>
                                     <strong>@(linkPreview.Title ?? linkPreview.Url)</strong>
                                     @if (!string.IsNullOrWhiteSpace(linkPreview.Description))
                                     {
                                         <span>@linkPreview.Description</span>
                                     }
-                                    <small class="hcs-social-link-preview__url">@linkPreview.Url</small>
+                                    <small class="social-link-preview__url">@linkPreview.Url</small>
                                 </span>
                             </a>
                         }
 
-                        <div class="hcs-social-post__engagement">
-                            <div class="hcs-social-reaction-summary" aria-label='@L["Social:ReactionSummary"]'>
-                                @foreach (var reaction in post.Reactions.Counts.Take(3))
-                                {
-                                    <span class="@ReactionColorClass(reaction.Type)" title='@ReactionLabel(reaction.Type)'>
-                                        <i class="fa @ReactionIcon(reaction.Type)" aria-hidden="true"></i>@reaction.Count
-                                    </span>
-                                }
+                        <div class="post-actions">
+                            <div class="react-wrap">
+                                <button class="post-action @(post.Reactions.CurrentUserReaction is not null ? $"is-on {ReactionColorClass(post.Reactions.CurrentUserReaction.Value)}" : null)"
+                                        type="button" data-react-open
+                                        disabled="@(reactionLoadingPostId == post.Id)" aria-haspopup="listbox">
+                                    @if (post.Reactions.CurrentUserReaction is { } currentReaction)
+                                    {
+                                        @((MarkupString)ReactionGlyph(currentReaction))
+                                        <span>@ReactionLabel(currentReaction)</span>
+                                    }
+                                    else
+                                    {
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 11v10H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3zm0 0 4.2-7.2A2 2 0 0 1 16 5v4h4.3a2 2 0 0 1 2 2.3l-1.2 8A2 2 0 0 1 19.1 21H8"/></svg>
+                                        <span>@L["Social:React"]</span>
+                                    }
+                                </button>
+                                <div class="react-bar" role="listbox" aria-label='@L["Social:React"]'>
+                                    @foreach (var reactionType in ReactionTypes)
+                                    {
+                                        <button type="button"
+                                                class="react-choice @ReactionColorClass(reactionType) @(post.Reactions.CurrentUserReaction == reactionType ? "is-on" : null)"
+                                                @onclick="() => ReactToPostAsync(post, reactionType)"
+                                                disabled="@(reactionLoadingPostId == post.Id)"
+                                                title='@ReactionLabel(reactionType)'
+                                                aria-label='@ReactionLabel(reactionType)'>
+                                            @((MarkupString)ReactionGlyph(reactionType))
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                            <button class="post-action" type="button" data-comment-toggle @onclick="() => ToggleCommentsAsync(post)"
+                                    aria-expanded="@expandedPostIds.Contains(post.Id)">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                                <span>@L["Social:Comment"]</span>
+                            </button>
+                            <button class="post-action" type="button" data-share @onclick="() => SharePostAsync(post)"
+                                    disabled="@(shareLoadingPostId == post.Id)" aria-label='@L["Social:Share"]'>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+                                <span>@L["Social:Share"]</span>
+                            </button>
+                            <div class="post-actions-meta">
                                 @if (post.Reactions.TotalCount > 0)
                                 {
-                                    <span>@post.Reactions.TotalCount</span>
+                                    <span data-react-summary class="post-react-summary" aria-label='@L["Social:ReactionSummary"]'>
+                                        @foreach (var reaction in post.Reactions.Counts.Take(3))
+                                        {
+                                            <span class="@ReactionColorClass(reaction.Type)" title='@ReactionLabel(reaction.Type)'>
+                                                @((MarkupString)ReactionGlyph(reaction.Type))
+                                            </span>
+                                        }
+                                        <span>@post.Reactions.TotalCount</span>
+                                    </span>
                                 }
+                                <button type="button" data-comment-toggle @onclick="() => OpenCommentsAsync(post)"
+                                        aria-expanded="@expandedPostIds.Contains(post.Id)">
+                                    @post.CommentCount @L["Social:Comments"]
+                                    @if (post.ShareCount > 0)
+                                    {
+                                        <span> · @post.ShareCount @L["Social:Shares"]</span>
+                                    }
+                                </button>
                             </div>
-                            <span class="hcs-social-engagement-counts">
-                                @if (post.CommentCount > 0)
-                                {
-                                    <button type="button" class="hcs-social-engagement-count hcs-social-engagement-count--comments"
-                                            @onclick="() => OpenCommentsAsync(post)"
-                                            aria-expanded="@expandedPostIds.Contains(post.Id)">
-                                        @post.CommentCount @L["Social:Comments"]
-                                    </button>
-                                }
-                                @if (post.ShareCount > 0)
-                                {
-                                    <span>@post.ShareCount @L["Social:Shares"]</span>
-                                }
-                            </span>
-                        </div>
-                        <div class="hcs-social-post__footer">
-                            <div class="hcs-social-reaction-actions" aria-label='@L["Social:React"]'>
-                                @foreach (var reactionType in ReactionTypes)
-                                {
-                                    <button type="button"
-                                            class="hcs-social-reaction-button @ReactionColorClass(reactionType) @(post.Reactions.CurrentUserReaction == reactionType ? "is-selected" : null)"
-                                            @onclick="() => ReactToPostAsync(post, reactionType)"
-                                            disabled="@(reactionLoadingPostId == post.Id)"
-                                            title='@ReactionLabel(reactionType)'
-                                            aria-label='@ReactionLabel(reactionType)'>
-                                        <i class="fa @ReactionIcon(reactionType)" aria-hidden="true"></i>
-                                    </button>
-                                }
-                            </div>
-                            <button type="button" class="hcs-social-comment-toggle" @onclick="() => ToggleCommentsAsync(post)"
-                                    aria-expanded="@expandedPostIds.Contains(post.Id)">
-                                <i class="fa fa-comment" aria-hidden="true"></i>@L["Social:Comment"]
-                            </button>
-                            <button type="button" class="hcs-social-share-button" @onclick="() => SharePostAsync(post)"
-                                    disabled="@(shareLoadingPostId == post.Id)" aria-label='@L["Social:Share"]'>
-                                <i class="fa @(shareLoadingPostId == post.Id ? "fa-spinner fa-spin" : "fa-share-nodes")" aria-hidden="true"></i>@L["Social:Share"]
-                            </button>
                         </div>
 
                         @if (expandedPostIds.Contains(post.Id))
                         {
-                            <section class="hcs-social-comments" aria-label='@L["Social:Comment"]'>
+                            <section class="post-comments" aria-label='@L["Social:Comment"]'>
                                 @if (commentLoadingPostId == post.Id)
                                 {
-                                    <p class="hcs-social-comments__state" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:LoadingComments"]</p>
+                                    <p class="social-comments-state" role="status">@SocialSpinner()@L["Social:LoadingComments"]</p>
                                 }
                                 else if (commentsByPost.TryGetValue(post.Id, out var comments) && comments.Count > 0)
                                 {
-                                    @foreach (var comment in comments)
+                                    @foreach (var thread in ThreadedComments(comments))
                                     {
-                                        <article class="hcs-social-comment @(comment.ParentCommentId.HasValue ? "is-reply" : null)">
-                                            @SocialAvatar(comment.AuthorUserId, comment.AuthorName, comment.AvatarUrl, "hcs-social-avatar--small")
-                                            <div class="hcs-social-comment__body">
-                                                <div class="hcs-social-comment__bubble">
-                                                    <strong>@comment.AuthorName</strong>
-                                                    @if (!string.IsNullOrWhiteSpace(comment.Text))
-                                                    {
-                                                        <p>@comment.Text</p>
-                                                    }
-                                                    @if (comment.Attachments.Count > 0)
-                                                    {
-                                                        <div class="hcs-social-comment__attachments" aria-label='@L["Social:CommentAttachments"]'>
-                                                            @foreach (var attachment in comment.Attachments)
-                                                            {
-                                                                @if (IsImageAttachment(attachment.ContentType))
-                                                                {
-                                                                    <a href="@SocialCommentAttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
-                                                                        <img src="@SocialCommentAttachmentUrl(attachment.Id)" crossorigin="use-credentials" loading="lazy" alt="@attachment.FileName" />
-                                                                    </a>
-                                                                }
-                                                                else
-                                                                {
-                                                                    <a class="hcs-social-comment__file" href="@SocialCommentAttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]'>
-                                                                        <i class="fa @FileIcon(attachment.FileName)" aria-hidden="true"></i>
-                                                                        <span>@attachment.FileName</span>
-                                                                        <small>@FormatFileSize(attachment.Size)</small>
-                                                                    </a>
-                                                                }
-                                                            }
-                                                        </div>
-                                                    }
-                                                    @if (comment.LinkPreview is { } commentLinkPreview)
-                                                    {
-                                                        <a class="hcs-social-link-preview hcs-social-link-preview--comment @(string.IsNullOrWhiteSpace(commentLinkPreview.ImageUrl) ? "is-text-only" : null)"
-                                                           href="@commentLinkPreview.Url" target="_blank" rel="noopener noreferrer">
-                                                            @if (!string.IsNullOrWhiteSpace(commentLinkPreview.ImageUrl))
-                                                            {
-                                                                <img src="@commentLinkPreview.ImageUrl" loading="lazy" referrerpolicy="no-referrer"
-                                                                     alt="@(commentLinkPreview.Title ?? commentLinkPreview.Url)" />
-                                                            }
-                                                            <span class="hcs-social-link-preview__body">
-                                                                <small>@(commentLinkPreview.SiteName ?? L["Social:LinkPreview"])</small>
-                                                                <strong>@(commentLinkPreview.Title ?? commentLinkPreview.Url)</strong>
-                                                                <small class="hcs-social-link-preview__url">@commentLinkPreview.Url</small>
-                                                            </span>
-                                                        </a>
-                                                    }
-                                                </div>
-                                                <div class="hcs-social-comment__actions">
-                                                    <time datetime="@comment.CreatedAt.ToString("O")">@comment.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
-                                                    <button type="button" @onclick="() => BeginReply(post, comment)">@L["Social:Reply"]</button>
-                                                    @if (IsOwnComment(comment))
-                                                    {
-                                                        <button type="button" class="hcs-social-comment-delete"
-                                                                title='@L["Social:DeleteComment"]' aria-label='@L["Social:DeleteComment"]'
-                                                                @onclick="() => DeleteCommentAsync(post, comment)"
-                                                                disabled="@(deletingCommentId == comment.Id)">
-                                                            <i class="fa @(deletingCommentId == comment.Id ? "fa-spinner fa-spin" : "fa-trash")" aria-hidden="true"></i>
-                                                            @L["Social:DeleteComment"]
-                                                        </button>
-                                                    }
-                                                </div>
-                                                <div class="hcs-social-comment__reaction-actions" aria-label='@L["Social:React"]'>
-                                                    @foreach (var reactionType in ReactionTypes)
-                                                    {
-                                                        <button type="button"
-                                                                class="hcs-social-comment-reaction @ReactionColorClass(reactionType) @(comment.Reactions.CurrentUserReaction == reactionType ? "is-selected" : null)"
-                                                                @onclick="() => ReactToCommentAsync(post, comment, reactionType)"
-                                                                disabled="@(reactionLoadingCommentId == comment.Id)"
-                                                                title='@ReactionLabel(reactionType)'
-                                                                aria-label='@ReactionLabel(reactionType)'>
-                                                            <i class="fa @ReactionIcon(reactionType)" aria-hidden="true"></i>
-                                                            @if (comment.Reactions.Counts.FirstOrDefault(item => item.Type == reactionType) is { } reactionCount)
-                                                            {
-                                                                <span>@reactionCount.Count</span>
-                                                            }
-                                                        </button>
-                                                    }
-                                                </div>
+                                        @CommentItem(post, thread.Root, isReply: false)
+                                        @if (thread.Replies.Count > 0)
+                                        {
+                                            <div class="comment-replies" role="group" aria-label='@L["Social:Reply"]'>
+                                                @foreach (var reply in thread.Replies)
+                                                {
+                                                    @CommentItem(post, reply, isReply: true)
+                                                }
                                             </div>
-                                        </article>
+                                        }
                                     }
                                 }
                                 else
                                 {
-                                    <p class="hcs-social-comments__state">@L["Social:EmptyComments"]</p>
+                                    <p class="social-comments-state">@L["Social:EmptyComments"]</p>
                                 }
 
                                 @if (commentsByPost.TryGetValue(post.Id, out var loadedComments) &&
                                     commentTotalCounts.TryGetValue(post.Id, out var commentTotal) && loadedComments.Count < commentTotal)
                                 {
-                                    <button type="button" class="hcs-social-load-more hcs-social-load-more--comments"
+                                    <button class="btn btn-ghost social-load-more" type="button"
                                             @onclick="() => LoadMoreCommentsAsync(post)"
                                             disabled="@(commentLoadingMorePostId == post.Id)"
                                             aria-label='@L["Social:LoadMoreComments"]'>
-                                        <i class="fa @(commentLoadingMorePostId == post.Id ? "fa-spinner fa-spin" : "fa-arrow-down")" aria-hidden="true"></i>
+                                        @if (commentLoadingMorePostId == post.Id)
+                                        {
+                                            @SocialSpinner()
+                                        }
+                                        else
+                                        {
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+                                        }
                                         @(commentLoadingMorePostId == post.Id ? L["Social:LoadingMoreComments"] : L["Social:LoadMoreComments"])
                                     </button>
                                 }
 
                                 @if (commentErrorPostId == post.Id)
                                 {
-                                    <p class="hcs-social-inline-error" role="alert">@L["Social:CommentError"]</p>
+                                    <p class="social-inline-error" role="alert">@L["Social:CommentError"]</p>
                                 }
-                                <form class="hcs-social-comment-form" @onsubmit="() => SubmitCommentAsync(post.Id)" @onsubmit:preventDefault>
+                                <form class="comment-form" @onsubmit="() => SubmitCommentAsync(post.Id)" @onsubmit:preventDefault>
                                     @if (replyingToPostId == post.Id && replyingToCommentId.HasValue)
                                     {
-                                        <div class="hcs-social-replying">
-                                            <span><i class="fa fa-reply" aria-hidden="true"></i>@L["Social:ReplyingTo"]</span>
-                                            <button type="button" @onclick="CancelReply">@L["Social:CancelReply"]</button>
+                                        <div class="comment-replying">
+                                            <span>@(string.IsNullOrWhiteSpace(replyingToName) ? L["Social:ReplyingTo"] : string.Format(L["Social:ReplyingToName"], replyingToName))</span>
+                                            <button type="button" data-reply @onclick="CancelReply">@L["Social:CancelReply"]</button>
                                         </div>
                                     }
-                                    <label class="visually-hidden" for="comment-@post.Id">@L["Social:Comment"]</label>
-                                    <textarea id="comment-@post.Id" class="form-control" rows="2" @bind="commentDraft" @bind:event="oninput"
-                                              placeholder='@L["Social:CommentPlaceholder"]' disabled="@isSubmittingComment"></textarea>
-                                    <div class="hcs-social-comment-form__footer">
-                                        <label class="hcs-social-comment-attachment-picker" for="@($"comment-attachment-{post.Id:D}")"
+                                    <div class="comment-compose">
+                                        @SocialAvatar(currentUserId ?? Guid.Empty, CurrentDisplayName(), null, "chat-avatar sm")
+                                        <label class="sr-only" for="comment-@post.Id">@L["Social:Comment"]</label>
+                                        <input id="comment-@post.Id" class="input" type="text" autocomplete="off"
+                                               @bind="commentDraft" @bind:event="oninput"
+                                               placeholder='@L["Social:CommentPlaceholder"]' disabled="@isSubmittingComment" />
+                                        <label class="icon-btn comment-attach" for="@($"comment-attachment-{post.Id:D}")"
                                                title='@L["Social:AddCommentAttachment"]'>
-                                            <i class="fa fa-paperclip" aria-hidden="true"></i><span>@L["Social:AddCommentAttachment"]</span>
-                                            <InputFile id="@($"comment-attachment-{post.Id:D}")" class="visually-hidden" multiple
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.5 12.5 21a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7l-9.2 9.1a2 2 0 1 1-2.8-2.8l8.1-8.2"/></svg>
+                                            <span class="sr-only">@L["Social:AddCommentAttachment"]</span>
+                                            <InputFile id="@($"comment-attachment-{post.Id:D}")" class="sr-only" multiple
                                                        accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
                                                        OnChange="args => UploadCommentAttachmentsAsync(post.Id, args)"
                                                        disabled="@(isSubmittingComment || isUploadingCommentAttachment)" />
                                         </label>
-                                        <button class="hcs-social-comment-submit" type="submit"
+                                        <button class="btn btn-primary btn-sm" type="submit"
                                                 disabled="@(isSubmittingComment || isUploadingCommentAttachment || (string.IsNullOrWhiteSpace(commentDraft) && commentAttachments.Count == 0))">
-                                            <i class="fa @(isSubmittingComment ? "fa-spinner fa-spin" : "fa-paper-plane")" aria-hidden="true"></i>@L["Social:SendComment"]
+                                            @if (isSubmittingComment)
+                                            {
+                                                @SocialSpinner()
+                                            }
+                                            else
+                                            {
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                                            }
+                                            @L["Social:SendComment"]
                                         </button>
                                     </div>
                                     @if (isUploadingCommentAttachment)
                                     {
-                                        <p class="hcs-social-progress" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i>@L["Social:Loading"]</p>
+                                        <p class="social-progress" role="status">@SocialSpinner()@L["Social:Loading"]</p>
                                     }
                                     @if (commentAttachments.Count > 0)
                                     {
-                                        <div class="hcs-social-selected-media hcs-social-selected-media--comments" aria-label='@L["Social:CommentAttachments"]'>
+                                        <div class="social-selected-media" aria-label='@L["Social:CommentAttachments"]'>
                                             @foreach (var attachment in commentAttachments)
                                             {
-                                                <span class="hcs-social-media-chip">
-                                                    <i class="fa @(IsImageAttachment(attachment.ContentType) ? "fa-image" : FileIcon(attachment.FileName))" aria-hidden="true"></i>
+                                                var chipBadge = FileBadge(attachment.FileName);
+                                                <span class="social-media-chip">
+                                                    @if (IsImageAttachment(attachment.ContentType))
+                                                    {
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="chat-thumb-ext @chipBadge.Css">@chipBadge.Label</span>
+                                                    }
                                                     <span>@attachment.FileName</span>
-                                                    <button type="button" title='@L["Social:RemoveCommentAttachment"]'
+                                                    <button type="button" class="icon-btn" title='@L["Social:RemoveCommentAttachment"]'
                                                             aria-label='@L["Social:RemoveCommentAttachment"] @attachment.FileName'
                                                             @onclick="() => RemoveCommentAttachmentAsync(attachment)" disabled="@isSubmittingComment">
-                                                        <i class="fa fa-xmark" aria-hidden="true"></i>
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                                                     </button>
                                                 </span>
                                             }
@@ -580,26 +652,114 @@
                 }
                 @if (posts.Count < totalCount)
                 {
-                    <button type="button" class="hcs-social-load-more" @onclick="LoadMoreAsync" disabled="@isLoadingMore">
-                        <i class="fa @(isLoadingMore ? "fa-spinner fa-spin" : "fa-arrow-down")" aria-hidden="true"></i>
+                    <button class="btn btn-ghost social-load-more" type="button" @onclick="LoadMoreAsync" disabled="@isLoadingMore">
+                        @if (isLoadingMore)
+                        {
+                            @SocialSpinner()
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+                        }
                         @(isLoadingMore ? L["Social:Loading"] : L["Chat:OlderMessages"])
                     </button>
                 }
+                </div>
             }
-        </main>
+            }
+        </div>
 
-        <aside class="hcs-social-aside" aria-label="HCS Community">
-            <div class="hcs-social-aside__card">
-                <span class="hcs-social-aside__icon" aria-hidden="true"><i class="fa fa-shield-heart"></i></span>
+        <aside class="social-aside" aria-label='@L["Social:Shortcuts"]'>
+            <section class="card social-aside-card is-hint" hidden="@(!isProfile)">
+                <div class="social-aside-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 5 3.4 7.8 7 9 3.6-1.2 7-4 7-9V6z"/></svg>
+                </div>
                 <h2>@L["Social:Internal"]</h2>
                 <p>@L["Social:InternalHint"]</p>
-            </div>
-            <div class="hcs-social-aside__card hcs-social-aside__card--soft">
-                <span class="hcs-social-aside__icon" aria-hidden="true"><i class="fa fa-circle-info"></i></span>
+            </section>
+            <section class="card social-aside-card" hidden="@isProfile">
+                <h2>@L["Social:Shortcuts"]</h2>
+                <a class="social-shortcut" href="/social/profile">
+                    <span class="chat-avatar sm">@(Initials(CurrentDisplayName()))</span>
+                    @L["Social:OpenProfile"]
+                </a>
+                <a class="social-shortcut" href="/chat">
+                    <span class="social-shortcut-icon" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                    </span>
+                    @L["Chat:Title"]
+                </a>
                 <p>@L["Social:PublicHint"]</p>
-            </div>
+            </section>
         </aside>
     </div>
+    </div>
+    @if (previewImageUrl is not null)
+    {
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="social-preview-title" @onclick="CloseImagePreview">
+            <div class="chat-preview-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="social-preview-title">@L["Chat:ViewImage"]</h2>
+                    <button class="icon-btn" type="button" aria-label='@L["Chat:ClosePreview"]' @onclick="CloseImagePreview">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <img src="@previewImageUrl" crossorigin="use-credentials" alt="@L["Chat:ViewImage"]" />
+            </div>
+        </div>
+    }
+    @if (postPendingDelete is { } pendingPost)
+    {
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="social-delete-post-title" @onclick="CloseDeletePost">
+            <div class="chat-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="social-delete-post-title">@L["Social:Delete"]</h2>
+                    <button class="icon-btn" type="button" aria-label='@L["Social:Cancel"]' @onclick="CloseDeletePost">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <div class="chat-dialog-view">
+                    <p class="chat-dialog-copy">@string.Format(L["Social:DeletePostConfirmation"].Value, pendingPost.AuthorName)</p>
+                </div>
+                <div class="chat-dialog-foot">
+                    <button class="btn btn-outline" type="button" @onclick="CloseDeletePost">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <span>@L["Social:Cancel"]</span>
+                    </button>
+                    <button class="btn btn-danger" type="button" @onclick="ConfirmDeletePostAsync" disabled="@deletingPostId.HasValue">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                        <span>@L["Social:Delete"]</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    @if (commentPendingDelete is not null && commentPendingDeletePost is not null)
+    {
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="social-delete-comment-title" @onclick="CloseDeleteComment">
+            <div class="chat-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="social-delete-comment-title">@L["Social:DeleteComment"]</h2>
+                    <button class="icon-btn" type="button" aria-label='@L["Social:Cancel"]' @onclick="CloseDeleteComment">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <div class="chat-dialog-view">
+                    <p class="chat-dialog-copy">@L["Social:DeleteCommentConfirmation"]</p>
+                </div>
+                <div class="chat-dialog-foot">
+                    <button class="btn btn-outline" type="button" @onclick="CloseDeleteComment">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <span>@L["Social:Cancel"]</span>
+                    </button>
+                    <button class="btn btn-danger" type="button" @onclick="ConfirmDeleteCommentAsync" disabled="@deletingCommentId.HasValue">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                        <span>@L["Social:DeleteAction"]</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
 </section>
 
 @code {
@@ -627,6 +787,7 @@
     private bool isUploadingCommentAttachment;
     private bool isSearchingPeople;
     private bool peopleSearchMode;
+    private bool searchOpen;
     private bool peopleSearchExecuted;
     private bool isSubmittingComment;
     private Guid? reactionLoadingPostId;
@@ -637,8 +798,12 @@
     private SocialPersonDto? myProfile;
     private string? personalAvatarDataUrl;
     private Guid? editingPostId;
+    private Guid? postMenuId;
     private Guid? deletingPostId;
     private Guid? deletingCommentId;
+    private SocialPostDto? postPendingDelete;
+    private SocialPostDto? commentPendingDeletePost;
+    private SocialCommentDto? commentPendingDelete;
     private bool isUpdatingPost;
     private string editingContent = string.Empty;
     private SocialPostVisibility editingVisibility;
@@ -655,6 +820,9 @@
     private Guid? commentErrorPostId;
     private Guid? replyingToPostId;
     private Guid? replyingToCommentId;
+    private string? replyingToName;
+    private string? previewImageUrl;
+    private string? previewImageName;
     private long totalCount;
     private string currentDisplayName = "HCS";
     private SocialPostVisibility? visibilityFilter;
@@ -714,6 +882,7 @@
             hashtagFilter = route.Hashtag;
             keywordInput = keywordFilter;
             hashtagInput = hashtagFilter;
+            searchOpen = searchOpen || !string.IsNullOrWhiteSpace(keywordFilter) || !string.IsNullOrWhiteSpace(hashtagFilter);
             searchError = null;
             people.Clear();
             peopleSearchExecuted = false;
@@ -884,17 +1053,6 @@
     private string ReactionLabel(SocialReactionType reactionType) =>
         L[$"Social:Reaction:{reactionType}"].Value;
 
-    private static string ReactionIcon(SocialReactionType reactionType) => reactionType switch
-    {
-        SocialReactionType.Like => "fa-thumbs-up",
-        SocialReactionType.Love => "fa-heart",
-        SocialReactionType.Haha => "fa-face-laugh",
-        SocialReactionType.Wow => "fa-face-surprise",
-        SocialReactionType.Sad => "fa-face-sad-cry",
-        SocialReactionType.Angry => "fa-face-angry",
-        _ => "fa-thumbs-up"
-    };
-
     private static string ReactionColorClass(SocialReactionType reactionType) => reactionType switch
     {
         SocialReactionType.Like => "is-like",
@@ -906,15 +1064,73 @@
         _ => "is-like"
     };
 
+    private static string ReactionGlyph(SocialReactionType reactionType) => reactionType switch
+    {
+        SocialReactionType.Love => """<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E11D48" d="M12 21S4 15.8 2.6 11.6C1.4 8 3.2 5 6.4 5c1.8 0 3.2 1 3.8 2.3C10.8 6 12.2 5 14 5c3.2 0 5 3 3.8 6.6C16 15.8 12 21 12 21z"/></svg>""",
+        SocialReactionType.Haha => """<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#F5B400"/><path d="M6.6 9.6c1.3-1.6 2.8-1.6 3.6 0" fill="none" stroke="#5C3D00" stroke-width="1.6" stroke-linecap="round"/><path d="M13.8 9.6c1.3-1.6 2.8-1.6 3.6 0" fill="none" stroke="#5C3D00" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="12" cy="15.1" rx="3.4" ry="2.5" fill="#5C3D00"/><path fill="#E11D48" d="M10.4 15.6c.5 1.2 1.1 1.7 1.6 1.7s1.1-.5 1.6-1.7c-.5.2-1 .3-1.6.3s-1.1-.1-1.6-.3z"/></svg>""",
+        SocialReactionType.Wow => """<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#F5B400"/><circle cx="8.4" cy="10" r="1.6" fill="#5C3D00"/><circle cx="15.6" cy="10" r="1.6" fill="#5C3D00"/><ellipse cx="12" cy="16.2" rx="2.2" ry="2.6" fill="#5C3D00"/></svg>""",
+        SocialReactionType.Sad => """<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#F59E0B"/><circle cx="8.4" cy="10" r="1.35" fill="#5C3D00"/><circle cx="15.6" cy="10" r="1.35" fill="#5C3D00"/><path d="M15.8 16.2c-1.3-1.6-2.8-2.3-3.8-2.3s-2.5.7-3.8 2.3" fill="none" stroke="#5C3D00" stroke-width="1.7" stroke-linecap="round"/></svg>""",
+        SocialReactionType.Angry => """<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#F97316"/><path d="M7 8.2 10.2 10M17 8.2 13.8 10" fill="none" stroke="#7C2D12" stroke-width="1.6" stroke-linecap="round"/><circle cx="8.4" cy="11.2" r="1.2" fill="#7C2D12"/><circle cx="15.6" cy="11.2" r="1.2" fill="#7C2D12"/><path d="M15.6 16.6c-1.2-1.4-2.6-2-3.6-2s-2.4.6-3.6 2" fill="none" stroke="#7C2D12" stroke-width="1.7" stroke-linecap="round"/></svg>""",
+        _ => """<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#1877F2" d="M10.2 8.2 11 3.8A2.2 2.2 0 0 1 13.2 2c.8 0 1.3.6 1.3 1.6V8h4.6a2 2 0 0 1 2 2.3l-1.1 7.2A2.3 2.3 0 0 1 17.8 20H9.5V9.2l.7-1z"/><path fill="#1877F2" d="M4 10h3.2v10H5.2A1.2 1.2 0 0 1 4 18.8V10z"/></svg>"""
+    };
+
+    private static RenderFragment SocialSpinner(int size = 16) => builder =>
+    {
+        builder.OpenElement(0, "svg");
+        builder.AddAttribute(1, "class", "social-spin");
+        builder.AddAttribute(2, "width", size);
+        builder.AddAttribute(3, "height", size);
+        builder.AddAttribute(4, "viewBox", "0 0 24 24");
+        builder.AddAttribute(5, "fill", "none");
+        builder.AddAttribute(6, "stroke", "currentColor");
+        builder.AddAttribute(7, "stroke-width", "2");
+        builder.AddAttribute(8, "aria-hidden", "true");
+        builder.OpenElement(9, "circle");
+        builder.AddAttribute(10, "cx", "12");
+        builder.AddAttribute(11, "cy", "12");
+        builder.AddAttribute(12, "r", "9");
+        builder.AddAttribute(13, "stroke-dasharray", "40 20");
+        builder.AddAttribute(14, "stroke-linecap", "round");
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private static RenderFragment SocialWarningIcon() => builder =>
+    {
+        builder.OpenElement(0, "svg");
+        builder.AddAttribute(1, "width", "16");
+        builder.AddAttribute(2, "height", "16");
+        builder.AddAttribute(3, "viewBox", "0 0 24 24");
+        builder.AddAttribute(4, "fill", "none");
+        builder.AddAttribute(5, "stroke", "currentColor");
+        builder.AddAttribute(6, "stroke-width", "1.8");
+        builder.AddAttribute(7, "aria-hidden", "true");
+        builder.OpenElement(8, "path");
+        builder.AddAttribute(9, "d", "M12 3 2 20h20L12 3z");
+        builder.CloseElement();
+        builder.OpenElement(10, "path");
+        builder.AddAttribute(11, "d", "M12 9v5M12 17h.01");
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
     private bool IsOwnPost(SocialPostDto post) => currentUserId == post.AuthorUserId;
 
     private bool IsOwnComment(SocialCommentDto comment) => currentUserId == comment.AuthorUserId;
+
+    private void ClosePostMenu() => postMenuId = null;
+
+    private void TogglePostMenu(Guid postId)
+    {
+        postMenuId = postMenuId == postId ? null : postId;
+    }
 
     private void BeginEditPost(SocialPostDto post)
     {
         if (!IsOwnPost(post) || isUpdatingPost || deletingPostId.HasValue)
             return;
 
+        postMenuId = null;
         editingPostId = post.Id;
         editingContent = post.Text;
         editingVisibility = post.Visibility;
@@ -967,14 +1183,31 @@
         finally { isUpdatingPost = false; }
     }
 
+    private void AskDeletePost(SocialPostDto post)
+    {
+        if (!IsOwnPost(post) || deletingPostId.HasValue || isUpdatingPost)
+            return;
+        postMenuId = null;
+        postPendingDelete = post;
+    }
+
+    private void CloseDeletePost() => postPendingDelete = null;
+
+    private Task ConfirmDeletePostAsync()
+    {
+        if (postPendingDelete is not { } post)
+            return Task.CompletedTask;
+        postPendingDelete = null;
+        return DeletePostAsync(post);
+    }
+
     private async Task DeletePostAsync(SocialPostDto post)
     {
         if (!IsOwnPost(post) || deletingPostId.HasValue || isUpdatingPost)
             return;
-        if (!await UiMessageService.Confirm(string.Format(L["Social:DeletePostConfirmation"].Value, post.AuthorName)))
-            return;
 
         deletingPostId = post.Id;
+        postMenuId = null;
         try
         {
             await Social.DeletePostAsync(post.Id);
@@ -999,11 +1232,32 @@
         finally { deletingPostId = null; }
     }
 
-    private async Task DeleteCommentAsync(SocialPostDto post, SocialCommentDto comment)
+    private void AskDeleteComment(SocialPostDto post, SocialCommentDto comment)
     {
         if (!IsOwnComment(comment) || deletingCommentId.HasValue)
             return;
-        if (!await UiMessageService.Confirm(L["Social:DeleteCommentConfirmation"].Value))
+        commentPendingDeletePost = post;
+        commentPendingDelete = comment;
+    }
+
+    private void CloseDeleteComment()
+    {
+        commentPendingDeletePost = null;
+        commentPendingDelete = null;
+    }
+
+    private Task ConfirmDeleteCommentAsync()
+    {
+        if (commentPendingDeletePost is not { } post || commentPendingDelete is not { } comment)
+            return Task.CompletedTask;
+        commentPendingDeletePost = null;
+        commentPendingDelete = null;
+        return DeleteCommentAsync(post, comment);
+    }
+
+    private async Task DeleteCommentAsync(SocialPostDto post, SocialCommentDto comment)
+    {
+        if (!IsOwnComment(comment) || deletingCommentId.HasValue)
             return;
 
         deletingCommentId = comment.Id;
@@ -1096,6 +1350,25 @@
             peopleSearchExecuted = false;
         }
     }
+
+    private void ToggleSearchPanel()
+    {
+        searchOpen = !searchOpen;
+    }
+
+    private void OnComposerVisibilityToggle(ChangeEventArgs args)
+    {
+        visibility = IsToggleChecked(args) ? SocialPostVisibility.Internal : SocialPostVisibility.Public;
+    }
+
+    private void OnEditVisibilityToggle(ChangeEventArgs args)
+    {
+        editingVisibility = IsToggleChecked(args) ? SocialPostVisibility.Internal : SocialPostVisibility.Public;
+    }
+
+    private static bool IsToggleChecked(ChangeEventArgs args) =>
+        args.Value is bool flag && flag
+        || args.Value is string text && bool.TryParse(text, out var parsed) && parsed;
 
     private async Task SearchPeopleAsync()
     {
@@ -1437,7 +1710,9 @@
     {
         expandedPostIds.Add(post.Id);
         replyingToPostId = post.Id;
-        replyingToCommentId = comment.Id;
+        var comments = commentsByPost.GetValueOrDefault(post.Id, []);
+        replyingToCommentId = ThreadRootId(comment, comments);
+        replyingToName = comment.AuthorName;
         commentDraft = string.Empty;
     }
 
@@ -1445,8 +1720,156 @@
     {
         replyingToPostId = null;
         replyingToCommentId = null;
+        replyingToName = null;
         commentDraft = string.Empty;
     }
+
+    private void OpenImagePreview(string url, string? name)
+    {
+        previewImageUrl = url;
+        previewImageName = name;
+    }
+
+    private void CloseImagePreview()
+    {
+        previewImageUrl = null;
+        previewImageName = null;
+    }
+
+    private readonly record struct CommentThread(SocialCommentDto Root, IReadOnlyList<SocialCommentDto> Replies);
+
+    private static Guid ThreadRootId(SocialCommentDto comment, IReadOnlyList<SocialCommentDto> comments)
+    {
+        var byId = comments.ToDictionary(item => item.Id);
+        var current = comment;
+        var seen = new HashSet<Guid> { current.Id };
+        while (current.ParentCommentId is { } parentId && byId.TryGetValue(parentId, out var parent) && seen.Add(parentId))
+            current = parent;
+        return current.Id;
+    }
+
+    private static IReadOnlyList<CommentThread> ThreadedComments(IReadOnlyList<SocialCommentDto> comments)
+    {
+        var byId = comments.ToDictionary(item => item.Id);
+        Guid RootId(SocialCommentDto comment)
+        {
+            var current = comment;
+            var seen = new HashSet<Guid> { current.Id };
+            while (current.ParentCommentId is { } parentId && byId.TryGetValue(parentId, out var parent) && seen.Add(parentId))
+                current = parent;
+            return current.Id;
+        }
+
+        var repliesByRoot = comments
+            .Where(item => RootId(item) != item.Id)
+            .GroupBy(RootId)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<SocialCommentDto>)group.OrderBy(item => item.CreatedAt).ThenBy(item => item.Id).ToArray());
+
+        return comments
+            .Where(item => RootId(item) == item.Id)
+            .Select(root => new CommentThread(root, repliesByRoot.GetValueOrDefault(root.Id, [])))
+            .ToArray();
+    }
+
+    private RenderFragment CommentItem(SocialPostDto post, SocialCommentDto comment, bool isReply) => @<article class="comment @(isReply ? "is-reply" : null)">
+        @SocialAvatar(comment.AuthorUserId, comment.AuthorName, comment.AvatarUrl, "chat-avatar sm")
+        <div class="comment-main">
+            <div class="comment-bubble">
+                <strong>@comment.AuthorName</strong>
+                @if (!string.IsNullOrWhiteSpace(comment.Text))
+                {
+                    <p>@comment.Text</p>
+                }
+                @if (comment.Attachments.Count > 0)
+                {
+                    <div class="comment-attachments" aria-label='@L["Social:CommentAttachments"]'>
+                        @foreach (var attachment in comment.Attachments)
+                        {
+                            @if (IsImageAttachment(attachment.ContentType))
+                            {
+                                <button class="comment-attachment-image" type="button" title='@L["Chat:ViewImage"]' aria-label='@L["Chat:ViewImage"] @attachment.FileName'
+                                        @onclick="() => OpenImagePreview(SocialCommentAttachmentUrl(attachment.Id), attachment.FileName)">
+                                    <img src="@SocialCommentAttachmentUrl(attachment.Id)" crossorigin="use-credentials" loading="lazy" alt="@attachment.FileName" />
+                                </button>
+                            }
+                            else
+                            {
+                                var badge = FileBadge(attachment.FileName);
+                                <a class="post-file" href="@SocialCommentAttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title='@L["Social:CommentAttachmentPreview"]' aria-label="@attachment.FileName">
+                                    <span class="chat-thumb-ext @badge.Css">@badge.Label</span>
+                                    <span>@attachment.FileName</span>
+                                    <small>@FormatFileSize(attachment.Size)</small>
+                                </a>
+                            }
+                        }
+                    </div>
+                }
+                @if (comment.LinkPreview is { } commentLinkPreview)
+                {
+                    <a class="social-link-preview is-comment @(string.IsNullOrWhiteSpace(commentLinkPreview.ImageUrl) ? "is-text-only" : null)"
+                       href="@commentLinkPreview.Url" target="_blank" rel="noopener noreferrer">
+                        @if (!string.IsNullOrWhiteSpace(commentLinkPreview.ImageUrl))
+                        {
+                            <img src="@commentLinkPreview.ImageUrl" loading="lazy" referrerpolicy="no-referrer"
+                                 alt="@(commentLinkPreview.Title ?? commentLinkPreview.Url)" />
+                        }
+                        <span class="social-link-preview__body">
+                            <small>@(commentLinkPreview.SiteName ?? L["Social:LinkPreview"])</small>
+                            <strong>@(commentLinkPreview.Title ?? commentLinkPreview.Url)</strong>
+                            <small class="social-link-preview__url">@commentLinkPreview.Url</small>
+                        </span>
+                    </a>
+                }
+            </div>
+            <div class="comment-meta">
+                <time datetime="@comment.CreatedAt.ToString("O")">@comment.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
+                <button type="button" class="comment-meta-btn" data-reply @onclick="() => BeginReply(post, comment)">@L["Social:Reply"]</button>
+                @if (IsOwnComment(comment))
+                {
+                    <button type="button" class="comment-meta-btn is-danger comment-delete"
+                            title='@L["Social:DeleteComment"]' aria-label='@L["Social:DeleteComment"]'
+                            @onclick="() => AskDeleteComment(post, comment)"
+                            disabled="@(deletingCommentId == comment.Id)">
+                        @if (deletingCommentId == comment.Id)
+                        {
+                            @SocialSpinner(12)
+                        }
+                        @L["Social:DeleteAction"]
+                    </button>
+                }
+                <span class="react-wrap">
+                    <button class="comment-meta-btn comment-react-open @(comment.Reactions.CurrentUserReaction is not null ? $"is-on {ReactionColorClass(comment.Reactions.CurrentUserReaction.Value)}" : null)"
+                            type="button" data-react-open
+                            disabled="@(reactionLoadingCommentId == comment.Id)">
+                        @if (comment.Reactions.CurrentUserReaction is { } commentReaction)
+                        {
+                            @((MarkupString)ReactionGlyph(commentReaction))
+                            <span>@ReactionLabel(commentReaction)</span>
+                        }
+                        else
+                        {
+                            @L["Social:React"]
+                        }
+                    </button>
+                    <div class="react-bar" role="listbox" aria-label='@L["Social:React"]'>
+                        @foreach (var reactionType in ReactionTypes)
+                        {
+                            <button type="button"
+                                    class="react-choice @ReactionColorClass(reactionType) @(comment.Reactions.CurrentUserReaction == reactionType ? "is-on" : null)"
+                                    @onclick="() => ReactToCommentAsync(post, comment, reactionType)"
+                                    disabled="@(reactionLoadingCommentId == comment.Id)"
+                                    title='@ReactionLabel(reactionType)'
+                                    aria-label='@ReactionLabel(reactionType)'>
+                                @((MarkupString)ReactionGlyph(reactionType))
+                            </button>
+                        }
+                    </div>
+                </span>
+            </div>
+        </div>
+    </article>;
 
     private async Task SubmitCommentAsync(Guid postId)
     {
@@ -1465,7 +1888,9 @@
                 AttachmentIds = commentAttachments.Select(attachment => attachment.Id).ToArray()
             });
             var current = commentsByPost.GetValueOrDefault(postId, []);
-            commentsByPost[postId] = current.Prepend(comment).Take(CommentsPageSize).ToArray();
+            commentsByPost[postId] = parentId.HasValue
+                ? current.Append(comment).ToArray()
+                : current.Prepend(comment).ToArray();
             commentTotalCounts[postId] = commentTotalCounts.GetValueOrDefault(postId) + 1;
             var index = posts.FindIndex(post => post.Id == postId);
             if (index >= 0) posts[index] = posts[index] with { CommentCount = posts[index].CommentCount + 1 };
@@ -1489,7 +1914,7 @@
 
             var hashtag = match.Groups["tag"].Value;
             builder.OpenElement(sequence++, "a");
-            builder.AddAttribute(sequence++, "class", "hcs-social-hashtag");
+            builder.AddAttribute(sequence++, "class", "post-tag");
             builder.AddAttribute(sequence++, "href", BuildViewUri(isProfile, visibilityFilter, hashtag: hashtag));
             builder.AddAttribute(sequence++, "title", string.Format(L["Social:SearchHashtag"].Value, match.Value));
             builder.AddAttribute(sequence++, "aria-label", string.Format(L["Social:SearchHashtag"].Value, match.Value));
@@ -1508,8 +1933,8 @@
     {
         var resolvedAvatarUrl = ResolveSocialAvatarUrl(userId, avatarUrl);
         var baseClass = string.IsNullOrWhiteSpace(extraClass)
-            ? "hcs-social-avatar"
-            : $"hcs-social-avatar {extraClass}";
+            ? "hcs-social-avatar chat-avatar"
+            : $"hcs-social-avatar chat-avatar {extraClass}";
 
         if (!string.IsNullOrWhiteSpace(resolvedAvatarUrl) && !avatarLoadFailures.Contains(resolvedAvatarUrl))
         {
@@ -1557,17 +1982,20 @@
     private static bool IsImageAttachment(string? contentType) =>
         contentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
 
-    private static string FileIcon(string? fileName)
+    private static (string Css, string Label) FileBadge(string? fileName)
     {
-        return Path.GetExtension(fileName ?? string.Empty).ToLowerInvariant() switch
+        var ext = Path.GetExtension(fileName ?? string.Empty).TrimStart('.').ToUpperInvariant();
+        var css = ext switch
         {
-            ".pdf" => "fa-file-pdf",
-            ".doc" or ".docx" => "fa-file-word",
-            ".xls" or ".xlsx" => "fa-file-excel",
-            ".ppt" or ".pptx" => "fa-file-powerpoint",
-            ".txt" => "fa-file-lines",
-            _ => "fa-file"
+            "PDF" => "is-pdf",
+            "DOC" or "DOCX" => "is-doc",
+            "XLS" or "XLSX" => "is-xls",
+            "PPT" or "PPTX" => "is-doc",
+            "TXT" => "is-txt",
+            _ => "is-txt"
         };
+        var label = string.IsNullOrEmpty(ext) ? "FILE" : (ext.Length > 4 ? ext[..4] : ext);
+        return (css, label);
     }
 
     private static string FormatFileSize(long size)

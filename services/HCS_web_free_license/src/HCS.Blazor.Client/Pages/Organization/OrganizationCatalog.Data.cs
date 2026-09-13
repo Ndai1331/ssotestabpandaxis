@@ -3,19 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Blazorise.DataGrid;
 
 namespace HCS.Blazor.Client.Pages.Organization;
 
 public partial class OrganizationCatalog
 {
-    private async Task OnDataGridReadAsync(DataGridReadDataEventArgs<OrganizationCatalogRow> args)
-    {
-        currentPage = Math.Max(1, args.Page);
-        pageSize = Math.Clamp(args.PageSize, PageSizeOptions[0], PageSizeOptions[^1]);
-        await LoadPageAsync(currentPage, pageSize, args.CancellationToken);
-    }
-
     private async Task LoadPageAsync(int page, int requestedPageSize, CancellationToken cancellationToken = default)
     {
         if (!isAuthorized)
@@ -127,28 +119,12 @@ public partial class OrganizationCatalog
         }
     }
 
-    private async Task RefreshAsync()
-    {
-        if (dataGrid is null)
-        {
-            await LoadPageAsync(currentPage, pageSize);
-            return;
-        }
+    private Task RefreshAsync() => LoadPageAsync(currentPage, pageSize);
 
-        await dataGrid.Reload();
-    }
-
-    private async Task SearchAsync()
+    private Task SearchAsync()
     {
         currentPage = 1;
-        if (dataGrid is null)
-        {
-            await LoadPageAsync(currentPage, pageSize);
-            return;
-        }
-
-        await dataGrid.Paginate("1");
-        await dataGrid.Reload();
+        return LoadPageAsync(currentPage, pageSize);
     }
 
     private Task StatusFilterChangedAsync() => SearchAsync();

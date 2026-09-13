@@ -1,31 +1,31 @@
 @inherits HCSComponentBase
 
-<div class="table-responsive">
-    <table class="table table-hover align-middle mb-0 hcs-catalog-grid hcs-task-tree">
-        <thead>
+<table class="docs-table task-tree">
+    <thead>
+        <tr>
+            <th scope="col">@L["Feature:TaskTitle"]</th>
+            <th scope="col">@L["Catalog:Code"]</th>
+            <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+            <th scope="col">@L["Feature:Priority"]</th>
+            <th scope="col">@L["Feature:EndDate"]</th>
+            <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Tasks.Count == 0)
+        {
             <tr>
-                <th style="width:2.5rem"></th>
-                <th>@L["Catalog:Code"]</th>
-                <th>@L["Feature:TaskTitle"]</th>
-                <th>@L["Work:DateRange"]</th>
-                <th>@L["Catalog:Status"]</th>
-                <th>@L["Feature:Priority"]</th>
-                <th>@L["Feature:Progress"]</th>
-                <th>@L["Catalog:Actions"]</th>
+                <td colspan="6">
+                    <DocsEmpty Title="@L["Feature:NoTasks"]" Hint="@L["Catalog:EmptyDescription"]" />
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @if (!Tasks.Any(x => x.ParentTaskId is null))
-            {
-                <tr><td colspan="8"><div class="hcs-empty py-4 mb-0"><i class="fa fa-inbox"></i><h2>@L["Feature:NoTasks"]</h2></div></td></tr>
-            }
-            else
-            {
-                @RenderLevel(null, 0)
-            }
-        </tbody>
-    </table>
-</div>
+        }
+        else
+        {
+            @RenderLevel(null, 0)
+        }
+    </tbody>
+</table>
 
 @code {
     [Parameter] public IReadOnlyList<ProjectTaskDto> Tasks { get; set; } = [];
@@ -34,19 +34,44 @@
     [Parameter] public Func<Guid, string>? ProjectNameOf { get; set; }
 
     private readonly HashSet<Guid> expanded = [];
+    private readonly HashSet<Guid> defaultExpanded = [];
 
-    private IEnumerable<ProjectTaskDto> ChildrenOf(Guid? parentId) =>
-        Tasks.Where(x => x.ParentTaskId == parentId);
+    protected override void OnParametersSet()
+    {
+        foreach (var task in Tasks)
+        {
+            if (defaultExpanded.Contains(task.Id) || !HasChildren(task.Id))
+            {
+                continue;
+            }
+
+            expanded.Add(task.Id);
+            defaultExpanded.Add(task.Id);
+        }
+    }
+
+    private bool HasChildren(Guid id) => Tasks.Any(x => x.ParentTaskId == id);
+
+    private IEnumerable<ProjectTaskDto> NodesOf(Guid? parentId)
+    {
+        if (parentId is not null)
+        {
+            return Tasks.Where(x => x.ParentTaskId == parentId);
+        }
+
+        var ids = Tasks.Select(x => x.Id).ToHashSet();
+        return Tasks.Where(x => x.ParentTaskId is null || !ids.Contains(x.ParentTaskId.Value));
+    }
 
     private RenderFragment RenderLevel(Guid? parentId, int level) => builder =>
     {
         var sequence = 0;
-        foreach (var task in ChildrenOf(parentId))
+        foreach (var task in NodesOf(parentId))
         {
-            var children = ChildrenOf(task.Id).ToList();
+            var hasChildren = HasChildren(task.Id);
             var open = expanded.Contains(task.Id);
-            builder.AddContent(sequence++, Row(task, level, children.Count > 0, open));
-            if (open && children.Count > 0)
+            builder.AddContent(sequence++, Row(task, level, hasChildren, open));
+            if (open && hasChildren)
             {
                 builder.AddContent(sequence++, RenderLevel(task.Id, level + 1));
             }
@@ -55,35 +80,47 @@
 
     private RenderFragment Row(ProjectTaskDto task, int level, bool hasChildren, bool open) => __builder =>
     {
-        <tr>
-            <td style="@($"padding-left:{level * 1.25 + 0.5}rem")">
-                @if (hasChildren)
-                {
-                    <button type="button" class="btn btn-link p-0" @onclick="() => Toggle(task.Id)">
-                        <i class="fa @(open ? "fa-chevron-up" : "fa-chevron-down")"></i>
+        <tr @key="task.Id" class="@(level > 0 ? "is-child" : null) @(hasChildren ? "is-parent" : null)" style="@($"--task-depth:{level}")">
+            <td>
+                <div class="task-tree-item">
+                    @if (hasChildren)
+                    {
+                        <button type="button"
+                                class="tree-toggle @(open ? "is-open" : null)"
+                                aria-expanded="@open.ToString().ToLowerInvariant()"
+                                aria-label="@L["Feature:ParentTask"]"
+                                @onclick="() => Toggle(task.Id)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="tree-toggle-spacer" aria-hidden="true"></span>
+                    }
+                    <div class="pj-name" title="@task.Title">
+                        <button type="button" class="wf-name" @onclick="() => ViewClicked.InvokeAsync(task)">@task.Title</button>
+                        @if (ProjectNameOf is not null)
+                        {
+                            <span>@ProjectNameOf(task.ProjectId)</span>
+                        }
+                    </div>
+                </div>
+            </td>
+            <td>@task.Code</td>
+            <td><span class="@WorkUi.TaskBadgeDs(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span></td>
+            <td>@L[WorkUi.PriorityKey(task.Priority)] · @task.ProgressPercent%</td>
+            <td>@WorkUi.FormatDay(task.DueDate)</td>
+            <td>
+                <div class="doc-actions">
+                    <button class="doc-action" type="button" title="@L["Work:View"]" aria-label="@L["Work:View"]" @onclick="() => ViewClicked.InvokeAsync(task)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
-                }
-            </td>
-            <td><span class="hcs-catalog-code">#@task.Code</span></td>
-            <td>
-                <button type="button" class="btn btn-link p-0 text-start" @onclick="() => ViewClicked.InvokeAsync(task)">
-                    <strong>@task.Title</strong>
-                </button>
-                @if (ProjectNameOf is not null)
-                {
-                    <span class="hcs-catalog-desc">@ProjectNameOf(task.ProjectId)</span>
-                }
-            </td>
-            <td>@WorkUi.FormatRange(task.StartDate, task.DueDate)</td>
-            <td><span class="@WorkUi.TaskBadgeClass(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span></td>
-            <td><span class="@WorkUi.PriorityBadgeClass(task.Priority)">@L[WorkUi.PriorityKey(task.Priority)]</span></td>
-            <td>@task.ProgressPercent%</td>
-            <td>
-                <div class="hcs-row-actions">
-                    <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button" Clicked="() => ViewClicked.InvokeAsync(task)">@L["Work:View"]</Button>
-                    <Button Color="Color.Light" Outline="true" Size="Size.Small" Class="hcs-action-button" Clicked="() => CreateClicked.InvokeAsync(task)" Title="@L["Feature:AddTask"]">
-                        <Icon Name="@IconName.Add" />
-                    </Button>
+                    @if (task.CanCreateChild)
+                    {
+                        <button class="doc-action" type="button" title="@L["Feature:AddTask"]" aria-label="@L["Feature:AddTask"]" @onclick="() => CreateClicked.InvokeAsync(task)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        </button>
+                    }
                 </div>
             </td>
         </tr>
@@ -91,6 +128,9 @@
 
     private void Toggle(Guid id)
     {
-        if (!expanded.Add(id)) expanded.Remove(id);
+        if (!expanded.Add(id))
+        {
+            expanded.Remove(id);
+        }
     }
 }

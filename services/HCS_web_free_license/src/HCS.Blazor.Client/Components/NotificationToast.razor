@@ -50,15 +50,12 @@
 
 @if (panelOpen)
 {
-    <div class="hcs-notification-panel">
+    <div class="hcs-notification-panel" role="dialog" aria-labelledby="hcs-notify-title">
         <header class="hcs-notification-panel__header">
-            <strong>@L["Notifications:Title"]</strong>
-            <div class="hcs-notification-panel__header-actions">
-                <a class="hcs-notification-panel__view-all" href="/notifications" @onclick="ClosePanel">
-                    @L["Notifications:ViewAll"]
-                </a>
-                <button type="button" class="btn-close" @onclick="ClosePanel"></button>
-            </div>
+            <h2 id="hcs-notify-title">@L["Notifications:Title"]</h2>
+            <button type="button" class="hcs-notification-panel__mark-all" @onclick="MarkAllReadAsync">
+                @L["Notifications:MarkAllAsRead"]
+            </button>
         </header>
         @if (recent.Count == 0)
         {
@@ -66,28 +63,28 @@
         }
         else
         {
-            <ul class="hcs-notification-panel__list">
+            <div class="hcs-notification-panel__list">
                 @foreach (var item in recent)
                 {
-                    <li>
-                        <a class="hcs-notification-panel__item @(item.IsRead ? null : "is-unread")"
-                           href="@NotificationText.ResolveLink(item)"
-                           @onclick="() => OpenNotificationAsync(item)" @onclick:preventDefault>
-                            <span class="hcs-notification-panel__dot @(item.IsRead ? "is-empty" : null)" aria-hidden="true"></span>
-                            <span class="hcs-notification-panel__content">
-                                <strong class="hcs-notification-panel__title">@NotificationText.Localize(L, item.Title)</strong>
-                                <span class="hcs-notification-panel__detail">@NotificationText.Localize(L, item.Body)</span>
-                            </span>
-                        </a>
-                    </li>
+                    var kind = NotificationText.ResolveKind(item);
+                    <a class="hcs-notification-panel__item @(item.IsRead ? null : "is-unread")"
+                       href="@NotificationText.ResolveLink(item)"
+                       @onclick="() => OpenNotificationAsync(item)" @onclick:preventDefault>
+                        <span class="hcs-notification-panel__ico is-@kind" aria-hidden="true">
+                            <i class="fa @IconFor(kind)"></i>
+                        </span>
+                        <span class="hcs-notification-panel__copy">
+                            <strong>@NotificationText.Localize(L, item.Title)</strong>
+                            <p>@NotificationText.Localize(L, item.Body)</p>
+                            <time datetime="@item.CreatedAt.ToUniversalTime().ToString("O")">@NotificationText.FormatLocal(item.CreatedAt, "dd/MM HH:mm")</time>
+                        </span>
+                    </a>
                 }
-            </ul>
-            <footer class="hcs-notification-panel__footer">
-                <button type="button" class="hcs-notification-panel__mark-all" @onclick="MarkAllReadAsync">
-                    @L["Notifications:MarkAllAsRead"]
-                </button>
-            </footer>
+            </div>
         }
+        <footer class="hcs-notification-panel__footer">
+            <a href="/notifications" @onclick="ClosePanel">@L["Notifications:ViewAll"]</a>
+        </footer>
     </div>
 }
 
@@ -246,7 +243,10 @@
             var shouldLoadItems = loadItems || nextCount != previousUnreadCount;
             IReadOnlyList<NotificationDto> items = [];
             if (shouldLoadItems)
-                items = await Chat.GetNotificationsAsync(unreadOnly: true, skip: 0, take: 20,
+                items = await Chat.GetNotificationsAsync(
+                    unreadOnly: showToasts && !panelOpen,
+                    skip: 0,
+                    take: 20,
                     cancellationToken: cancellationToken);
 
             var nextChatUnreadCount = await GetChatUnreadCountAsync(cancellationToken);
@@ -383,6 +383,7 @@
             unreadCount = 0;
             await UnreadCountChanged.InvokeAsync(unreadCount);
             StateHasChanged();
+            _ = RefreshAsync(showToasts: false, loadItems: true, cancellationToken: CancellationToken.None);
         });
     }
 
@@ -424,6 +425,15 @@
 
     private static string FormatClock(DateTime value) =>
         value.Year < 2 ? string.Empty : value.ToLocalTime().ToString("HH:mm");
+
+    private static string IconFor(string kind) => kind switch
+    {
+        "sign" => "fa-signature",
+        "chat" => "fa-comments",
+        "event" => "fa-calendar-check",
+        "social" => "fa-users",
+        _ => "fa-file-lines"
+    };
 
     public async ValueTask DisposeAsync()
     {

@@ -9,109 +9,148 @@
 @inject IJSRuntime JsRuntime
 
 <PageTitle>@L["Feature:ProjectsTitle"] · HCS</PageTitle>
-<section class="hcs-catalog-page" aria-labelledby="projects-title">
-    <header class="hcs-catalog-titlebar">
-        <div class="min-w-0">
-            <h1 id="projects-title">@L["Feature:ProjectsTitle"]</h1>
+<section class="page page-wf page-pj" aria-labelledby="projects-title">
+    <div class="page-head">
+        <h1 id="projects-title">@L["Feature:ProjectsTitle"]</h1>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="ExportAsync" disabled="@(items.Count == 0 || isLoading)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+                @L["Catalog:Export"]
+            </button>
+            <button class="btn btn-outline" type="button" @onclick="OpenCreateTask">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Work:NewTask"]
+            </button>
+            <button class="btn btn-primary" type="button" @onclick="OpenCreate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Work:NewProject"]
+            </button>
+            <button class="btn btn-outline @(showSearch ? "is-open" : null) @(IsSearchFiltered ? "is-filtered" : null)"
+                    type="button" aria-expanded="@showSearch.ToString().ToLowerInvariant()"
+                    aria-controls="pj-search-form" @onclick="ToggleSearch">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:Search"]
+            </button>
+            <HcsDismissible Class="filter-pop" @bind-IsOpen="showFilters">
+                <button class="btn btn-outline @(string.IsNullOrEmpty(status) ? null : "is-filtered")" type="button"
+                        aria-expanded="@showFilters.ToString().ToLowerInvariant()"
+                        aria-controls="pj-filter-menu" @onclick="ToggleFilters">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                    @L["Catalog:Filter"]
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="filter-menu @(showFilters ? "is-open" : null)" id="pj-filter-menu" role="menu">
+                    <button type="button" class="@(string.IsNullOrEmpty(status) ? "is-active" : null)" @onclick="FilterAll">@L["Catalog:AllStatuses"]</button>
+                    @foreach (var value in WorkUi.ProjectStatuses)
+                    {
+                        <button type="button" class="@(status == value ? "is-active" : null)" @onclick="() => SetStatus(value)">
+                            @L[WorkUi.ProjectStatusKey(value)]
+                        </button>
+                    }
+                </div>
+            </HcsDismissible>
         </div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="ExportAsync" Disabled="@(items.Count == 0 || isLoading)">
-                <i class="fa fa-download me-1" aria-hidden="true"></i> @L["Catalog:Export"]
-            </Button>
-            <Button Color="Color.Primary" Outline="true" Clicked="OpenCreateTask">
-                <Icon Name="@IconName.Add" /> @L["Work:NewTask"]
-            </Button>
-            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate">
-                <Icon Name="@IconName.Add" /> @L["Work:NewProject"]
-            </Button>
-        </div>
-    </header>
-    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
-        <div class="hcs-catalog-filter-row">
-            <Addons Class="hcs-catalog-search">
-                <Addon AddonType="AddonType.Body">
-                    <TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" />
-                </Addon>
-                <Addon AddonType="AddonType.End">
-                    <Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading">
-                        <i class="fa fa-search me-1" aria-hidden="true"></i> @L["Catalog:SearchButton"]
-                    </Button>
-                </Addon>
-            </Addons>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-toggle" Clicked="() => showFilters = !showFilters">
-                <i class="fa fa-sliders me-2" aria-hidden="true"></i>@L["Catalog:Filter"]
-                <i class="fa @(showFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2" aria-hidden="true"></i>
-            </Button>
-        </div>
-        @if (showFilters)
-        {
-            <div class="hcs-catalog-advanced-filter">
-                <Field>
-                    <FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                    <Select TValue="string" @bind-Value="status">
-                        <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                        @foreach (var value in WorkUi.ProjectStatuses)
-                        {
-                            <SelectItem Value="@value">@L[WorkUi.ProjectStatusKey(value)]</SelectItem>
-                        }
-                    </Select>
-                </Field>
-                <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
+    </div>
+
+    <section class="docs-main">
+        <form class="docs-toolbar list-search" id="pj-search-form" hidden="@(!showSearch)" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+            <label class="sr-only" for="pj-q">@L["Catalog:SearchPlaceholder"]</label>
+            <input class="input docs-search" id="pj-q" type="search" @bind="filter" @bind:event="oninput"
+                   placeholder="@L["Catalog:SearchPlaceholder"]" autocomplete="off" />
+            <button class="btn btn-primary" type="submit" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:SearchButton"]
+            </button>
+        </form>
+
+        <div class="docs-table-wrap">
+            @if (isLoading && items.Count == 0)
+            {
+                <DocsEmpty Loading="true" />
+            }
+            else if (items.Count == 0)
+            {
+                <DocsEmpty Title="@L["Feature:ProjectsEmpty"]" Hint="@L["Catalog:EmptyDescription"]" />
+            }
+            else
+            {
+                <table class="docs-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Catalog:Code"]</th>
+                            <th scope="col">@L["Work:DateRange"]</th>
+                            <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                            <th scope="col">@L["Catalog:Department"]</th>
+                            <th scope="col">@L["Work:Members"]</th>
+                            <th scope="col">@L["Menu:Tasks"]</th>
+                            <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in items)
+                    {
+                        <tr @key="item.Id">
+                            <td>
+                                <div class="pj-name" title="@item.Name">
+                                    <a href="@($"/project-detail/{item.Id}")">@item.Name</a>
+                                    <span>#@item.Code</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                                    {
+                                        <span>@item.Description</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>@WorkUi.FormatRange(item.StartDate, item.EndDate)</td>
+                            <td><span class="@WorkUi.ProjectBadgeDs(item.Status)">@L[WorkUi.ProjectStatusKey(item.Status)]</span></td>
+                            <td>@DepartmentName(item.OwnerDepartmentId)</td>
+                            <td>@item.MemberCount</td>
+                            <td>@item.TaskCount</td>
+                            <td>
+                                <div class="doc-actions">
+                                    <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => Edit(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                    </button>
+                                    <a class="doc-action" href="@($"/project-detail/{item.Id}")" title="@L["Menu:Tasks"]" aria-label="@L["Menu:Tasks"]">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+                                    </a>
+                                    <a class="doc-action" href="@($"/project-detail/{item.Id}")" title="@L["Work:Members"]" aria-label="@L["Work:Members"]">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+                                    </a>
+                                    <AuthorizeView Policy="Collaboration.Chat">
+                                        <Authorized>
+                                            <button class="doc-action" type="button" title="@L["Chat:OpenProjectChat"]" aria-label="@L["Chat:OpenProjectChat"]" @onclick="() => OpenProjectChatAsync(item)" disabled="@isOpeningChat">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+                                            </button>
+                                        </Authorized>
+                                    </AuthorizeView>
+                                    @if (item.CanDelete)
+                                    {
+                                        <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                <button type="button" disabled="@(!CanPrev)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
+                <button type="button" disabled="@(!CanPrev)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
+                <button type="button" disabled="@(!CanNext)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
+                <button type="button" disabled="@(!CanNext)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
+                <label class="sr-only" for="pj-page-size">@L["Catalog:PageSize"]</label>
+                <select id="pj-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                    @foreach (var size in pageSizes)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
             </div>
-        }
-    </CardBody></Card>
-    <Card Class="hcs-catalog-grid-card">
-        <CardBody>
-            <DataGrid TItem="ProjectDto" Data="@items" TotalItems="@totalCount" ReadData="OnReadAsync"
-                      ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
-                      Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
-                <EmptyTemplate>
-                    <div class="hcs-empty py-5"><i class="fa fa-inbox" aria-hidden="true"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["Feature:ProjectsEmpty"]</p></div>
-                </EmptyTemplate>
-                <LoadingTemplate>
-                    <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
-                </LoadingTemplate>
-                <DataGridColumns>
-                    <DataGridColumn TItem="ProjectDto" Caption="">
-                        <DisplayTemplate><input class="hcs-row-check" type="checkbox" disabled tabindex="-1" aria-hidden="true" /></DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="ProjectDto" Caption="@L["Catalog:Code"].Value">
-                        <DisplayTemplate Context="cell">
-                            <a href="@($"/project-detail/{cell.Item.Id}")"><strong>@cell.Item.Name</strong></a>
-                            <span class="hcs-catalog-code">#@cell.Item.Code</span>
-                            @if (!string.IsNullOrWhiteSpace(cell.Item.Description)) { <span class="hcs-catalog-desc">@cell.Item.Description</span> }
-                        </DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="ProjectDto" Caption="@L["Work:DateRange"].Value">
-                        <DisplayTemplate Context="cell">@WorkUi.FormatRange(cell.Item.StartDate, cell.Item.EndDate)</DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="ProjectDto" Caption="@L["Catalog:Status"].Value">
-                        <DisplayTemplate Context="cell"><span class="@WorkUi.ProjectBadgeClass(cell.Item.Status)">@L[WorkUi.ProjectStatusKey(cell.Item.Status)]</span></DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="ProjectDto" Caption="@L["Catalog:Department"].Value">
-                        <DisplayTemplate Context="cell">@DepartmentName(cell.Item.OwnerDepartmentId)</DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="ProjectDto" Caption="@L["Work:Members"].Value" Field="@nameof(ProjectDto.MemberCount)" />
-                    <DataGridColumn TItem="ProjectDto" Caption="@L["Menu:Tasks"].Value" Field="@nameof(ProjectDto.TaskCount)" />
-                    <DataGridColumn TItem="ProjectDto" Caption="@L["Catalog:Actions"].Value">
-                        <DisplayTemplate Context="cell">
-                            <div class="hcs-row-actions">
-                                <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--edit" Title="@L["Catalog:Edit"]" Clicked="() => Edit(cell.Item)"><Icon Name="@IconName.Edit" /></Button>
-                                <Button Color="Color.Success" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--tasks" Title="@L["Menu:Tasks"]" Clicked="@(() => Navigation.NavigateTo($"/project-detail/{cell.Item.Id}"))"><Icon Name="@IconName.List" /></Button>
-                                <Button Color="Color.Info" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--members" Title="@L["Work:Members"]" Clicked="@(() => Navigation.NavigateTo($"/project-detail/{cell.Item.Id}"))"><Icon Name="@IconName.Users" /></Button>
-                                <AuthorizeView Policy="Collaboration.Chat">
-                                    <Authorized>
-                                        <Button Color="Color.Info" Outline="true" Size="Size.Small" Class="hcs-action-button" Title="@L["Chat:OpenProjectChat"]" Clicked="() => OpenProjectChatAsync(cell.Item)" Disabled="@isOpeningChat"><Icon Name="@IconName.Comment" /></Button>
-                                    </Authorized>
-                                </AuthorizeView>
-                                <Button Color="Color.Danger" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--delete" Title="@L["Catalog:Delete"]" Clicked="() => DeleteAsync(cell.Item)"><Icon Name="@IconName.Delete" /></Button>
-                            </div>
-                        </DisplayTemplate>
-                    </DataGridColumn>
-                </DataGridColumns>
-            </DataGrid>
-        </CardBody>
-    </Card>
+        </div>
+    </section>
 </section>
 
 <Modal @ref="modal" Size="ModalSize.Default">
@@ -163,19 +202,49 @@
     private ProjectTaskCreateModal? createTaskModal;
     private Guid? editingId;
     private string? filter, status;
-    private bool isLoading, isSaving, showFilters, isOpeningChat;
+    private bool isLoading, isSaving, showFilters, showSearch, isOpeningChat;
     private int totalCount, pageSize = 20, currentPage = 1;
+
+    private bool IsSearchFiltered => !string.IsNullOrWhiteSpace(filter);
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
 
     protected override async Task OnInitializedAsync()
     {
         try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
+        await LoadAsync();
     }
 
-    private async Task OnReadAsync(DataGridReadDataEventArgs<ProjectDto> args)
+    private void ToggleSearch()
     {
-        currentPage = Math.Max(args.Page, 1);
-        pageSize = Math.Clamp(args.PageSize, 10, 100);
-        await LoadAsync();
+        showSearch = !showSearch;
+        if (showSearch) showFilters = false;
+    }
+    private void ToggleFilters()
+    {
+        showFilters = !showFilters;
+        if (showFilters) showSearch = false;
+    }
+    private Task FilterAll() => SetStatus(null);
+    private Task SetStatus(string? value)
+    {
+        status = value;
+        showFilters = false;
+        currentPage = 1;
+        return LoadAsync();
+    }
+    private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
+    private Task GoFirst() { currentPage = 1; return LoadAsync(); }
+    private Task GoPrev() { if (!CanPrev) return Task.CompletedTask; currentPage--; return LoadAsync(); }
+    private Task GoNext() { if (!CanNext) return Task.CompletedTask; currentPage++; return LoadAsync(); }
+    private Task GoLast() { currentPage = PageCount; return LoadAsync(); }
+    private Task OnPageSizeChanged(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        return LoadAsync();
     }
 
     private async Task LoadAsync()
@@ -186,13 +255,12 @@
             var result = await Work.GetProjectsAsync(new WorkListQuery(filter, string.IsNullOrWhiteSpace(status) ? null : status, (currentPage - 1) * pageSize, pageSize));
             items.Clear(); items.AddRange(result.Items);
             totalCount = (int)result.TotalCount;
+            currentPage = Math.Clamp(currentPage, 1, PageCount);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
 
-    private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
-    private Task ResetSearchAsync() { filter = status = null; showFilters = false; currentPage = 1; return LoadAsync(); }
     private async Task OpenCreate()
     {
         editingId = null;

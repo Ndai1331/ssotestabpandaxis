@@ -1,66 +1,132 @@
 @page "/events"
 @attribute [Authorize(Policy = "WorkManagement.Events")]
-@using Blazorise.DataGrid
 @using System.Threading
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
 @inject IUiMessageService UiMessage
 @inject IJSRuntime JsRuntime
-@inject NavigationManager Navigation
 
 <PageTitle>@L["Menu:ManagedEvents"] · HCS</PageTitle>
-<section class="hcs-catalog-page hcs-event-page" aria-labelledby="events-title">
-    <header class="hcs-catalog-titlebar">
-        <div class="min-w-0"><h1 id="events-title">@L["Menu:ManagedEvents"]</h1></div>
-        <div class="hcs-catalog-page__actions"><Button Color="Color.Primary" Outline="true" Clicked="ExportAsync" Disabled="@(items.Count == 0 || isLoading)"><i class="fa fa-download me-1" aria-hidden="true"></i>@L["Catalog:Export"]</Button><Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Event:Create"]</Button></div>
-    </header>
-    <Card Class="hcs-catalog-filter-card"><CardBody>
-        <div class="hcs-event-filters hcs-event-list-filters">
-            <div class="hcs-event-filter-field">
-                <label class="hcs-event-filter-label" for="event-list-search">@L["Catalog:Search"]</label>
-                <Addons Class="hcs-catalog-search"><Addon AddonType="AddonType.Body"><TextInput Id="event-list-search" @bind-Value="filter" Placeholder="@L["Event:SearchPlaceholder"]" /></Addon><Addon AddonType="AddonType.End"><Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></Addon></Addons>
-            </div>
-            <div class="hcs-event-filter-field">
-                <label class="hcs-event-filter-label" for="event-list-group">@L["Event:Group"]</label>
-                <TextInput Id="event-list-group" @bind-Value="group" />
-            </div>
-            <div class="hcs-event-filter-field">
-                <label class="hcs-event-filter-label" for="event-list-status">@L["Catalog:Status"]</label>
-                <Select Id="event-list-status" TValue="string" @bind-Value="status"><SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>@foreach (var value in Statuses) { <SelectItem Value="@value">@StatusLabel(value)</SelectItem>}</Select>
-            </div>
-            <div class="hcs-event-filter-action">
-                <span class="hcs-event-filter-label-spacer" aria-hidden="true"></span>
-                <Button Color="Color.Light" Outline="true" Class="hcs-event-reset" Clicked="ResetAsync">@L["Catalog:Reset"]</Button>
+<section class="page page-wf page-dm" aria-labelledby="events-title">
+    <div class="page-head">
+        <h1 id="events-title">@L["Menu:ManagedEvents"]</h1>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="ExportAsync" disabled="@(items.Count == 0 || isLoading)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+                @L["Catalog:Export"]
+            </button>
+            <button class="btn btn-primary" type="button" @onclick="OpenCreate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Event:Create"]
+            </button>
+        </div>
+    </div>
+
+    <section class="docs-main">
+        <form class="docs-toolbar" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+            <label class="sr-only" for="event-list-search">@L["Catalog:SearchPlaceholder"]</label>
+            <input class="input docs-search" id="event-list-search" type="search" @bind="filter" @bind:event="oninput"
+                   placeholder="@L["Event:SearchPlaceholder"]" autocomplete="off" />
+            <label class="sr-only" for="event-list-group">@L["Event:Group"]</label>
+            <input class="input docs-search" id="event-list-group" type="text" @bind="group" @bind:event="oninput"
+                   placeholder="@L["Event:Group"]" autocomplete="off" />
+            <HcsDismissible Class="filter-pop" @bind-IsOpen="showFilters">
+                <button class="btn btn-outline @(string.IsNullOrEmpty(status) ? null : "is-filtered")" type="button"
+                        aria-expanded="@showFilters.ToString().ToLowerInvariant()"
+                        @onclick="() => showFilters = !showFilters">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                    @L["Catalog:Filter"]
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="filter-menu @(showFilters ? "is-open" : null)" role="menu">
+                    <button type="button" class="@(string.IsNullOrEmpty(status) ? "is-active" : null)" @onclick="FilterAll">@L["Catalog:AllStatuses"]</button>
+                    @foreach (var value in Statuses)
+                    {
+                        <button type="button" class="@(status == value ? "is-active" : null)" @onclick="() => SetStatus(value)">
+                            @StatusLabel(value)
+                        </button>
+                    }
+                </div>
+            </HcsDismissible>
+            <button class="btn btn-primary" type="submit" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:SearchButton"]
+            </button>
+            <button class="btn btn-outline" type="button" @onclick="ResetAsync" disabled="@isLoading">@L["Catalog:Reset"]</button>
+        </form>
+
+        <div class="docs-table-wrap">
+            @if (isLoading && items.Count == 0)
+            {
+                <DocsEmpty Loading="true" />
+            }
+            else if (items.Count == 0)
+            {
+                <DocsEmpty Title="@L["Event:EmptyTitle"]" Hint="@L["Event:EmptyDescription"]" />
+            }
+            else
+            {
+                <table class="docs-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Catalog:Code"]</th>
+                            <th scope="col">@L["Event:Group"]</th>
+                            <th scope="col">@L["Event:Time"]</th>
+                            <th scope="col">@L["Event:Location"]</th>
+                            <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                            <th scope="col">@L["Event:Attendees"]</th>
+                            <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in items)
+                    {
+                        <tr @key="item.Id">
+                            <td>
+                                <div class="pj-name" title="@item.Name">
+                                    <a href="@($"/events/{item.Id:D}")">@item.Name</a>
+                                    <span>#@item.Code</span>
+                                </div>
+                            </td>
+                            <td>@item.Group</td>
+                            <td>
+                                @item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                <br />
+                                <small>@item.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                            </td>
+                            <td>@(item.Location ?? L["Event:OnlineOrNotSet"])</td>
+                            <td><span class="@StatusClass(item.Status)">@StatusLabel(item.Status)</span></td>
+                            <td>@item.AttendeeCount</td>
+                            <td>
+                                <div class="doc-actions">
+                                    <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => EditAsync(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                    </button>
+                                    <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+            <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                <button type="button" disabled="@(!CanPrev || isLoading)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
+                <button type="button" disabled="@(!CanPrev || isLoading)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
+                <button type="button" disabled="@(!CanNext || isLoading)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
+                <button type="button" disabled="@(!CanNext || isLoading)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
+                <label class="sr-only" for="ev-page-size">@L["Catalog:PageSize"]</label>
+                <select id="ev-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                    @foreach (var size in pageSizes)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
             </div>
         </div>
-    </CardBody></Card>
-    <Card Class="hcs-catalog-grid-card"><CardBody>
-        <DataGrid TItem="EventListItemDto" @ref="dataGrid" @bind-Page="currentPage" Data="@items" TotalItems="@totalCount" ReadData="OnReadAsync"
-                  ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
-                  Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid hcs-event-grid">
-            <EmptyTemplate>
-                <div class="hcs-empty py-5"><i class="fa fa-calendar-plus" aria-hidden="true"></i><h2>@L["Event:EmptyTitle"]</h2><p>@L["Event:EmptyDescription"]</p><Button Color="Color.Primary" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Event:Create"]</Button></div>
-            </EmptyTemplate>
-            <LoadingTemplate>
-                <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
-            </LoadingTemplate>
-            <DataGridColumns>
-                <DataGridColumn TItem="EventListItemDto" Caption='@L["Catalog:Code"].Value'>
-                    <DisplayTemplate Context="cell"><a class="hcs-event-name" href="@($"/events/{cell.Item.Id:D}")">@cell.Item.Name</a><small class="hcs-catalog-code">#@cell.Item.Code</small></DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="EventListItemDto" Field="@nameof(EventListItemDto.Group)" Caption='@L["Event:Group"].Value' />
-                <DataGridColumn TItem="EventListItemDto" Caption='@L["Event:Time"].Value'>
-                    <DisplayTemplate Context="cell">@cell.Item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br /><small>@cell.Item.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="EventListItemDto" Caption='@L["Event:Location"].Value'><DisplayTemplate Context="cell">@(cell.Item.Location ?? L["Event:OnlineOrNotSet"])</DisplayTemplate></DataGridColumn>
-                <DataGridColumn TItem="EventListItemDto" Caption='@L["Catalog:Status"].Value'><DisplayTemplate Context="cell"><span class="@StatusClass(cell.Item.Status)">@StatusLabel(cell.Item.Status)</span></DisplayTemplate></DataGridColumn>
-                <DataGridColumn TItem="EventListItemDto" Field="@nameof(EventListItemDto.AttendeeCount)" Caption='@L["Event:Attendees"].Value' />
-                <DataGridColumn TItem="EventListItemDto" Caption='@L["Catalog:Actions"].Value'>
-                    <DisplayTemplate Context="cell"><div class="hcs-row-actions"><Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button" Title='@L["Catalog:Edit"].Value' Clicked="@(() => EditAsync(cell.Item))"><Icon Name="@IconName.Edit" /><span class="visually-hidden">@L["Catalog:Edit"]</span></Button><Button Size="Size.Small" Color="Color.Danger" Outline="true" Class="hcs-action-button" Title='@L["Catalog:Delete"].Value' Clicked="@(() => DeleteAsync(cell.Item))"><Icon Name="@IconName.Delete" /><span class="visually-hidden">@L["Catalog:Delete"]</span></Button></div></DisplayTemplate>
-                </DataGridColumn>
-            </DataGridColumns>
-        </DataGrid>
-    </CardBody></Card>
+    </section>
 </section>
 
 <Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal"><ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@(editingId is null ? L["Event:Create"] : L["Event:Edit"])</ModalTitle><CloseButton /></ModalHeader><ModalBody Class="hcs-catalog-modal__body"><div class="hcs-catalog-form">
@@ -105,43 +171,51 @@
     private readonly List<EventListItemDto> items = [];
     private readonly EventForm form = new();
     private Modal? modal;
-    private DataGrid<EventListItemDto>? dataGrid;
     private Guid? editingId;
     private string filter = "", group = "", status = "";
     private const int MaxEventAttachmentCount = 10;
     private const long MaxEventAttachmentSize = 25 * 1024 * 1024;
     private readonly List<IBrowserFile> selectedCreateAttachments = [];
     private string? attachmentError;
-    private bool isLoading, isSaving;
+    private bool isLoading, isSaving, showFilters;
     private int totalCount, pageSize = 20, currentPage = 1;
 
-    private async Task OnReadAsync(DataGridReadDataEventArgs<EventListItemDto> args)
-    {
-        currentPage = Math.Max(args.Page, 1);
-        pageSize = Math.Clamp(args.PageSize, pageSizes[0], pageSizes[^1]);
-        await LoadAsync(args.CancellationToken);
-    }
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
     private async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         isLoading = true;
-        try { var result = await Work.GetEventsAsync(filter, group, status, (currentPage - 1) * pageSize, pageSize, cancellationToken); items.Clear(); items.AddRange(result.Items); totalCount = (int)result.TotalCount; }
+        try
+        {
+            var result = await Work.GetEventsAsync(filter, group, status, (currentPage - 1) * pageSize, pageSize, cancellationToken);
+            items.Clear();
+            items.AddRange(result.Items);
+            totalCount = (int)result.TotalCount;
+        }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
-    private async Task ReloadFromFirstPageAsync()
+
+    private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
+    private Task ResetAsync() { filter = group = status = ""; showFilters = false; currentPage = 1; return LoadAsync(); }
+    private Task FilterAll() { status = ""; showFilters = false; currentPage = 1; return LoadAsync(); }
+    private Task SetStatus(string value) { status = value; showFilters = false; currentPage = 1; return LoadAsync(); }
+    private Task GoFirst() { currentPage = 1; return LoadAsync(); }
+    private Task GoPrev() { currentPage = Math.Max(1, currentPage - 1); return LoadAsync(); }
+    private Task GoNext() { currentPage = Math.Min(PageCount, currentPage + 1); return LoadAsync(); }
+    private Task GoLast() { currentPage = PageCount; return LoadAsync(); }
+    private Task OnPageSizeChanged(ChangeEventArgs args)
     {
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
         currentPage = 1;
-        if (dataGrid is not null)
-        {
-            await dataGrid.Reload();
-        }
-        else
-        {
-            await LoadAsync();
-        }
+        return LoadAsync();
     }
-    private Task SearchAsync() => ReloadFromFirstPageAsync();
-    private Task ResetAsync() { filter = group = status = ""; return ReloadFromFirstPageAsync(); }
+
     private async Task OpenCreate()
     {
         editingId = null; form.Reset(); selectedCreateAttachments.Clear(); attachmentError = null;
@@ -236,7 +310,13 @@
     private async Task DeleteAsync(EventListItemDto item)
     {
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Name))) return;
-        try { await Work.DeleteEventAsync(item.Id); await NotifySuccessAsync(L["Catalog:Deleted"]); if (items.Count == 1 && currentPage > 1) currentPage--; if (dataGrid is not null) await dataGrid.Reload(); else await LoadAsync(); }
+        try
+        {
+            await Work.DeleteEventAsync(item.Id);
+            await NotifySuccessAsync(L["Catalog:Deleted"]);
+            if (items.Count == 1 && currentPage > 1) currentPage--;
+            await LoadAsync();
+        }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
     private async Task ExportAsync()

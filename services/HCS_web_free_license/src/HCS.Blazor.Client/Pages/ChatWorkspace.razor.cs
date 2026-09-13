@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using HCS.CollaborationService.Contracts;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
 namespace HCS.Blazor.Client.Pages;
@@ -26,6 +28,26 @@ public partial class ChatWorkspace
             await TryChatScriptAsync(() => Js.InvokeVoidAsync("hcsChat.scrollToMessage", MessageElementId(messageId)));
             allowOlderScroll = true;
             StateHasChanged();
+        }
+
+        if (focusRenameAfterRender)
+        {
+            focusRenameAfterRender = false;
+            try
+            {
+                await renameInputRef.FocusAsync();
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        if (messageMenuId is { } menuId)
+        {
+            await TryChatScriptAsync(() => Js.InvokeVoidAsync(
+                "hcsChat.positionMenu",
+                "chat-msg-menu",
+                $"[data-msg-more='{menuId:D}']"));
         }
     }
 
@@ -74,6 +96,11 @@ public partial class ChatWorkspace
 
     private async Task OnMessagesScrollAsync()
     {
+        if (messageMenuId is not null)
+        {
+            CloseMessageMenu();
+        }
+
         if (!allowOlderScroll || selected is null || isLoadingMessages || messages.Count >= totalMessageCount)
         {
             return;
@@ -289,9 +316,9 @@ public partial class ChatWorkspace
         }
     }
 
-    private async Task RemoveMemberAsync(Guid userId)
+    private async Task ConfirmRemoveMemberAsync()
     {
-        if (selected is null || isRemovingMember || !await UiMessageService.Confirm(T("Chat:RemoveMemberConfirm")))
+        if (selected is null || memberPendingRemoval is null || isRemovingMember)
         {
             return;
         }
@@ -299,7 +326,8 @@ public partial class ChatWorkspace
         isRemovingMember = true;
         try
         {
-            await Client.RemoveMemberAsync(selected.Id, userId);
+            await Client.RemoveMemberAsync(selected.Id, memberPendingRemoval.UserId);
+            memberPendingRemoval = null;
             selected = await Client.GetConversationAsync(selected.Id);
             permissions = await Client.GetPermissionsAsync(selected.Id);
             await LoadConversationsAsync();

@@ -12,6 +12,7 @@ using HCS.Localization;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.JSInterop;
 
 namespace HCS.Blazor.Client.Pages;
 
@@ -38,6 +39,7 @@ public partial class AdministrationLanguages : IDisposable
     private bool canManageTexts;
     private bool isEditingCurrentDefault;
     private Guid? editingId;
+    private Guid? actionMenuId;
     private int totalCount;
     private int pageSize = 20;
     private int currentPage = 1;
@@ -60,6 +62,17 @@ public partial class AdministrationLanguages : IDisposable
         if (firstRender && isAuthorized && dataGrid is not null)
         {
             await dataGrid.Reload();
+        }
+
+        if (actionMenuId is { } menuId)
+        {
+            try
+            {
+                await JsRuntime.InvokeVoidAsync("hcsChat.positionMenu", "language-row-menu", $"[data-lang-more='{menuId:D}']");
+            }
+            catch
+            {
+            }
         }
     }
 
@@ -283,6 +296,24 @@ public partial class AdministrationLanguages : IDisposable
     {
         if (!canManageTexts) return;
         Navigation.NavigateTo($"/administration/language-texts?cultureName={Uri.EscapeDataString(language.CultureName)}");
+    }
+
+    private void CloseActionMenu() => actionMenuId = null;
+    private void ToggleActionMenu(Guid id) => actionMenuId = actionMenuId == id ? null : id;
+    private Task OpenEditFromMenuAsync(LanguageDto language)
+    {
+        CloseActionMenu();
+        return OpenEditModalAsync(language);
+    }
+    private void OpenTranslationsFromMenu(LanguageDto language)
+    {
+        CloseActionMenu();
+        OpenTranslations(language);
+    }
+    private Task DeleteFromMenuAsync(LanguageDto language)
+    {
+        CloseActionMenu();
+        return DeleteAsync(language);
     }
 
     private sealed class LanguageFormModel

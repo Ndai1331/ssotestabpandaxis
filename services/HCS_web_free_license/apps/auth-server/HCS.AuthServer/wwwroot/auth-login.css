@@ -1,28 +1,43 @@
-/* HCS Auth login — keep ABP Account markup; fix cramped form + mobile. */
+/* HCS Auth login — aligned to docs/hcs-hanh-chinh-so/login.html
+   Keep current photo background: /background-login.png */
+
 body:has(.hcs-auth-login-page) {
-    --hcs-login-ink: #1a445c;
-    --hcs-login-muted: #5f7a8a;
-    --hcs-login-line: #DDE4EE;
-    --hcs-login-field: #f2f5fc;
-    --hcs-login-primary: #00B4A9;
-    --hcs-login-primary-strong: #007F7C;
-    --hcs-login-control-radius: 5px;
-    --hcs-login-focus-ring: 0 0 0 .2rem rgba(0, 180, 169, .28);
+    --hcs-login-ink: #1E293B;
+    --hcs-login-muted: #64748B;
+    --hcs-login-line: #D7E2E6;
+    --hcs-login-field: #FFFFFF;
+    --hcs-login-primary: #007F7C;
+    --hcs-login-primary-strong: #006866;
+    --hcs-login-primary-soft: #E6F3F2;
+    --hcs-login-htl: #4E9BC7;
+    --hcs-login-control-radius: 8px;
+    --hcs-login-focus-ring: 0 0 0 3px rgba(0, 127, 124, .28);
+    --hcs-login-font: "Be Vietnam Pro", "Inter", "Segoe UI", system-ui, sans-serif;
     background-color: #eef4f7;
     background-image:
-        linear-gradient(90deg, rgba(248, 252, 253, .26), rgba(248, 252, 253, .08)),
+        linear-gradient(180deg, rgba(240, 248, 250, .18), rgba(240, 248, 250, .08)),
         url('/background-login.png');
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: fixed;
     color: var(--hcs-login-ink);
+    font-family: var(--hcs-login-font);
     min-height: 100dvh;
 }
 
 body:has(.hcs-auth-login-page) .lpx-sidebar-container,
 body:has(.hcs-auth-login-page) .lpx-topbar-container,
-body:has(.hcs-auth-login-page) footer {
+body:has(.hcs-auth-login-page) footer,
+body:has(.hcs-auth-login-page) .lpx-login-brand-text,
+body:has(.hcs-auth-login-page) .lpx-login-logo,
+body:has(.hcs-auth-login-page) .lpx-login-name,
+body:has(.hcs-auth-login-page) .lpx-login-title,
+body:has(.hcs-auth-login-page) .lpx-language-selection,
+body:has(.hcs-auth-login-page) .lpx-language-selection-wrapper,
+body:has(.hcs-auth-login-page) .dropdown:has([data-lpx-language-option]),
+body:has(.hcs-auth-login-page) [data-lpx-language-option],
+body:has(.hcs-auth-login-page) .lpx-content > .container > .row > [class*="col"] > .card.mb-3 {
     display: none !important;
 }
 
@@ -36,17 +51,13 @@ body:has(.hcs-auth-login-page) .lpx-content {
     align-items: center;
     display: flex;
     justify-content: center;
-    padding: clamp(1.25rem, 3vw, 3rem) clamp(.85rem, 2vw, 1.5rem);
+    padding: 1.5rem 1rem;
 }
 
-/* Give the form real breathing room — ABP often nests a narrow column. */
 body:has(.hcs-auth-login-page) .lpx-content > .container {
     margin: 0 auto;
-    max-width: min(36.5rem, 100%);
-    padding-left: 0;
-    align-content: center;
-    justify-content: center;
-    padding-right: 0;
+    max-width: min(440px, 100%);
+    padding: 0;
     width: 100%;
 }
 
@@ -58,255 +69,287 @@ body:has(.hcs-auth-login-page) .lpx-content > .container > .row {
 body:has(.hcs-auth-login-page) .lpx-content > .container > .row > [class*="col"] {
     flex: 0 0 100%;
     max-width: 100%;
-    padding-left: 0;
-    padding-right: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.hcs-auth-login-page {
+    margin: 0 auto;
+    max-width: 440px;
     position: relative;
     width: 100%;
 }
 
-/* Brand */
-body:has(.hcs-auth-login-page) .lpx-login-brand-text {
-    display: none !important;
-}
-
-body:has(.hcs-auth-login-page) .lpx-login-logo,
-body:has(.hcs-auth-login-page) .lpx-login-name,
-body:has(.hcs-auth-login-page) .lpx-login-title {
-    display: none !important;
-}
-
-body:has(.hcs-auth-login-page) .lpx-login-logo {
-    background-color: transparent !important;
-    background-image: url('/images/logo/logo.png') !important;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
-    border-radius: 0;
-    box-shadow: none;
-    height: 72px !important;
-    position: relative;
-    width: 108px !important;
-}
-
-body:has(.hcs-auth-login-page) .lpx-login-logo::after {
-    content: none;
-}
-
-body:has(.hcs-auth-login-page) .lpx-login-name {
-    color: #1b617f !important;
-    font-size: 0;
-    letter-spacing: .12em;
-    margin-top: .65rem;
-    text-transform: uppercase;
-}
-
-body:has(.hcs-auth-login-page) .lpx-login-name::after {
-    color: #6d8795;
-    content: "HCS\A HÀNH CHÍNH SỐ";
-    display: block;
-    font: 800 .72rem/1.35 "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
-    letter-spacing: .1em;
-    margin-top: .3rem;
-    text-align: center;
-    white-space: pre;
-}
-
-body:has(.hcs-auth-login-page) .lpx-login-title {
-    display: none !important;
-}
-
-/* Hide LeptonX language/tenant card — language lives inside the login card */
-body:has(.hcs-auth-login-page) .lpx-content > .container > .row > [class*="col"] > .card.mb-3 {
-    display: none !important;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language {
-    align-items: center;
-    display: grid;
-    gap: .75rem;
-    grid-template-columns: 1fr 1fr;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language > .form-label {
-    margin-bottom: 0;
-    white-space: nowrap;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown {
-    width: 100%;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle {
-    align-items: center;
-    background: var(--hcs-login-field);
-    border: 1px solid var(--hcs-login-line);
-    border-radius: var(--hcs-login-control-radius);
-    color: var(--hcs-login-ink);
-    display: inline-flex;
-    font-weight: 700;
-    gap: .55rem;
-    justify-content: flex-start;
-    min-height: 3.15rem;
-    padding: .75rem 2.2rem .75rem 1rem;
-    position: relative;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle::after {
-    margin-left: auto;
-    position: absolute;
-    right: .9rem;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle .bi-translate {
-    color: #355b72;
-    font-size: 1.05rem;
-    line-height: 1;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-menu {
-    border: 1px solid var(--hcs-login-line);
-    border-radius: 8px;
-    box-shadow: 0 12px 28px rgba(24, 62, 80, .12);
-    padding: .35rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-item {
-    border-radius: var(--hcs-login-control-radius);
-    font-weight: 600;
-    padding: .55rem .75rem;
-}
-
-/* Main login card */
-body:has(.hcs-auth-login-page) .card.mt-3.shadow-sm.rounded {
-    background: rgba(255, 255, 255, .97);
-    border: 0;
-    border-radius: 1.35rem !important;
-    box-shadow: 0 28px 68px rgba(28, 56, 75, .2) !important;
+.hcs-auth-login-card {
+    background: #fff !important;
+    border: 0 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, .16) !important;
     margin: 0 !important;
     overflow: visible;
     width: 100%;
 }
 
-body:has(.hcs-auth-login-page) .card.mt-3.shadow-sm.rounded > .card-body {
-    padding: clamp(1.5rem, 4.2vw, 3.2rem) !important;
+.hcs-auth-login-card > .card-body {
+    padding: 32px 36px 28px !important;
 }
 
-body:has(.hcs-auth-login-page) h4,
-body:has(.hcs-auth-login-page) .card-body > h4 {
-    color: #174b67;
-    font: 700 clamp(1.25rem, 3.5vw, 1.45rem)/1.3 "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
-    margin: 0 0 .85rem;
+.hcs-login-card-brand {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+    margin: 0 0 1.5rem;
 }
 
-/* Login errors live on Alerts (wrong password), not field validation. Keep them in the card. */
-body:has(.hcs-auth-login-page) #AbpPageAlerts,
-body:has(.hcs-auth-login-page) .hcs-login-alerts {
-    display: block !important;
+.hcs-login-card-brand__logo {
+    align-items: center;
+    display: flex;
+    flex: 0 0 48px;
+    height: 48px;
+    justify-content: center;
+    width: 48px;
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-alerts .alert,
-body:has(.hcs-auth-login-page) #AbpPageAlerts .alert,
-body:has(.hcs-auth-login-page) .abp-alert {
+.hcs-login-card-logo {
+    display: block;
+    height: 48px;
+    object-fit: contain;
+    width: 48px;
+}
+
+.hcs-login-card-brand__copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.hcs-login-card-brand__copy strong {
+    color: #1E293B;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.hcs-login-card-brand__copy span {
+    color: var(--hcs-login-muted);
+    font-size: .8125rem;
+    line-height: 1.35;
+}
+
+/* Alerts */
+.hcs-login-alerts .alert,
+#AbpPageAlerts .alert,
+.abp-alert {
     border: 1px solid;
-    border-radius: .7rem;
-    font-size: .92rem;
-    font-weight: 650;
+    border-radius: 8px;
+    font-size: .875rem;
+    font-weight: 600;
     line-height: 1.45;
     margin: 0 0 1rem;
-    padding: .85rem 1rem;
+    padding: .75rem 1rem;
 }
 
-body:has(.hcs-auth-login-page) .alert-danger,
-body:has(.hcs-auth-login-page) .abp-alert-danger {
-    background: #fdecee;
-    border-color: #f1b4bc;
-    color: #9b1c2e;
+.alert-danger,
+.abp-alert-danger {
+    background: #FEF2F2;
+    border-color: #FECACA;
+    color: #DC2626;
 }
 
-body:has(.hcs-auth-login-page) .alert-warning,
-body:has(.hcs-auth-login-page) .abp-alert-warning {
-    background: #fff6e5;
-    border-color: #efd39a;
-    color: #8a5a00;
+.alert-warning,
+.abp-alert-warning {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+    color: #A35A00;
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-validation-summary:empty {
-    display: none;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-validation-summary {
-    font-size: .9rem;
-    font-weight: 650;
+.hcs-login-validation-summary:empty { display: none; }
+.hcs-login-validation-summary {
+    font-size: .875rem;
+    font-weight: 600;
     margin-bottom: 1rem;
 }
 
-body:has(.hcs-auth-login-page) .mb-3,
-body:has(.hcs-auth-login-page) .form-group {
-    margin-bottom: 1.05rem !important;
+/* Language row — template .lang-row */
+.hcs-login-language {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
 }
 
-body:has(.hcs-auth-login-page) .form-label {
+.hcs-login-language > .form-label {
+    color: var(--hcs-login-muted);
+    font-size: .8125rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.hcs-login-language .dropdown {
+    min-width: 168px;
+    width: auto;
+}
+
+.hcs-login-language .dropdown-toggle {
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--hcs-login-primary);
+    border-radius: var(--hcs-login-control-radius);
+    color: #334155;
+    display: inline-flex;
+    font-size: .8125rem;
+    font-weight: 500;
+    gap: .5rem;
+    justify-content: flex-start;
+    min-height: 40px;
+    padding: 0 2rem 0 .85rem;
+    position: relative;
+    width: 100%;
+}
+
+.hcs-login-language .dropdown-toggle::after {
+    margin-left: auto;
+    position: absolute;
+    right: .75rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.hcs-login-language .dropdown-toggle .bi-translate {
+    color: var(--hcs-login-muted);
+}
+
+.hcs-login-language .dropdown-menu {
+    border: 1px solid var(--hcs-login-line);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+    padding: .35rem;
+}
+
+.hcs-login-language .dropdown-item {
+    border-radius: 6px;
+    font-size: .8125rem;
+    font-weight: 500;
+    padding: .5rem .75rem;
+}
+
+.hcs-login-language .dropdown-item.active,
+.hcs-login-language .dropdown-item:active {
+    background-color: var(--hcs-login-primary) !important;
+}
+
+.hcs-login-language .dropdown-toggle:focus,
+.hcs-login-language .dropdown-toggle:focus-visible {
+    border-color: var(--hcs-login-primary);
+    box-shadow: var(--hcs-login-focus-ring);
+}
+
+/* Form fields */
+.hcs-login-form .mb-3,
+.hcs-login-form .form-group {
+    margin-bottom: 1rem !important;
+}
+
+.hcs-login-form .form-label {
     color: var(--hcs-login-muted);
     display: block;
-    font-size: .84rem;
-    font-weight: 700;
+    font-size: .8125rem;
+    font-weight: 600;
     margin-bottom: .45rem;
 }
 
-body:has(.hcs-auth-login-page) .form-control {
+.hcs-login-form .form-control {
     background: var(--hcs-login-field);
     border: 1px solid var(--hcs-login-line);
     border-radius: var(--hcs-login-control-radius);
     color: var(--hcs-login-ink);
-    font-size: 1.05rem;
+    font-size: .9375rem;
     line-height: 1.4;
-    min-height: 4rem;
-    padding: .95rem 1.1rem;
+    min-height: 44px;
+    padding: .65rem .9rem;
     width: 100%;
 }
 
-body:has(.hcs-auth-login-page) .input-group {
-    align-items: stretch;
-    display: flex;
-    flex-wrap: nowrap;
-    width: 100%;
-}
-
-body:has(.hcs-auth-login-page) .input-group > .form-control {
-    border-bottom-right-radius: 0;
-    border-top-right-radius: 0;
-    flex: 1 1 auto;
-    min-width: 0;
-    width: 1%;
-}
-
-body:has(.hcs-auth-login-page) #PasswordVisibilityButton,
-body:has(.hcs-auth-login-page) .input-group-text,
-body:has(.hcs-auth-login-page) .input-group > .btn {
-    align-items: center;
-    background: var(--hcs-login-field);
-    border: 1px solid var(--hcs-login-line);
-    border-left: 0;
-    border-radius: 0 var(--hcs-login-control-radius) var(--hcs-login-control-radius) 0;
-    color: #67808e;
-    display: inline-flex;
-    flex: 0 0 auto;
-    justify-content: center;
-    min-height: 4rem;
-    min-width: 3.15rem;
-    padding: 0 .9rem;
-}
-
-body:has(.hcs-auth-login-page) .form-control:focus {
+.hcs-login-form .form-control:focus,
+.hcs-login-form .form-control:focus-visible {
     background: var(--hcs-login-field);
     border-color: var(--hcs-login-primary);
     box-shadow: var(--hcs-login-focus-ring);
     outline: 0;
 }
 
-body:has(.hcs-auth-login-page) .form-check {
+/* Password field — fixed single-line chrome (avoid Bootstrap input-group stretch) */
+.hcs-login-password {
+    align-items: center;
+    background: var(--hcs-login-field);
+    border: 1px solid var(--hcs-login-line);
+    border-radius: var(--hcs-login-control-radius);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    height: 44px;
+    max-height: 44px;
+    min-height: 44px;
+    overflow: hidden;
+    transition: border-color .15s ease, box-shadow .15s ease;
+    width: 100%;
+}
+
+.hcs-login-password__input,
+.hcs-login-password > .form-control,
+.hcs-login-password > .form-control:focus,
+.hcs-login-password > .form-control:focus-visible {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    flex: 1 1 auto;
+    height: 44px !important;
+    line-height: 1.25 !important;
+    max-height: 44px !important;
+    min-height: 0 !important;
+    min-width: 0;
+    outline: none;
+    padding: 0 .9rem !important;
+    width: auto !important;
+}
+
+.hcs-login-password__toggle {
+    align-items: center;
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--hcs-login-muted);
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 44px;
+    height: 44px;
+    justify-content: center;
+    line-height: 1;
+    margin: 0;
+    max-height: 44px;
+    min-height: 0 !important;
+    min-width: 44px;
+    padding: 0;
+    width: 44px;
+}
+
+.hcs-login-password__toggle:hover {
+    color: var(--hcs-login-primary);
+}
+
+.hcs-login-password:focus-within {
+    border-color: var(--hcs-login-primary);
+    box-shadow: var(--hcs-login-focus-ring);
+}
+
+.hcs-login-password:has(.input-validation-error):not(:focus-within) {
+    border-color: #EF4444;
+}
+
+.hcs-login-form .form-check {
     align-items: center;
     display: flex;
     gap: .55rem;
@@ -315,300 +358,85 @@ body:has(.hcs-auth-login-page) .form-check {
     padding-left: 0;
 }
 
-body:has(.hcs-auth-login-page) .form-check-input {
-    flex: 0 0 auto;
+.hcs-login-form .form-check-input {
+    accent-color: var(--hcs-login-primary);
     float: none;
-    height: 1.1rem;
+    height: 1rem;
     margin: 0;
     position: static;
-    width: 1.1rem;
+    width: 1rem;
 }
 
-body:has(.hcs-auth-login-page) .form-check-input.mb-4 {
-    margin-bottom: 0 !important;
-}
-
-body:has(.hcs-auth-login-page) .form-check-label {
+.hcs-login-form .form-check-label {
     color: var(--hcs-login-muted);
-    font-size: .9rem;
-    font-weight: 600;
-    line-height: 1.1rem;
+    font-size: .875rem;
+    font-weight: 500;
     margin: 0;
-    padding: 0;
 }
 
-body:has(.hcs-auth-login-page) button[type="submit"][value="Login"],
-body:has(.hcs-auth-login-page) button[type="submit"][name="Action"][value="Login"] {
+/* Primary login button */
+.hcs-login-form button[type="submit"][name="Action"][value="Login"] {
+    align-items: center;
     background: var(--hcs-login-primary);
     border: 1px solid var(--hcs-login-primary);
     border-radius: var(--hcs-login-control-radius);
     color: #fff;
-    display: block;
-    font-size: 1rem;
-    font-weight: 750;
-    margin-top: .15rem;
-    min-height: 4rem;
-    padding: .75rem 1rem;
-    width: 100%;
-}
-
-body:has(.hcs-auth-login-page) button[type="submit"][value="Login"]:hover,
-body:has(.hcs-auth-login-page) button[type="submit"][value="Login"]:focus,
-body:has(.hcs-auth-login-page) button[type="submit"][name="Action"][value="Login"]:hover,
-body:has(.hcs-auth-login-page) button[type="submit"][name="Action"][value="Login"]:focus {
-    background: var(--hcs-login-primary-strong);
-    border-color: var(--hcs-login-primary-strong);
-}
-
-/* External providers (Keycloak, …) */
-body:has(.hcs-auth-login-page) button[type="submit"][name="provider"] {
-    border-radius: var(--hcs-login-control-radius);
-    font-weight: 650;
-    min-height: 2.85rem;
-    width: 100%;
-}
-
-body:has(.hcs-auth-login-page) a {
-    color: black;
-}
-
-@media (max-width: 576px) {
-    body:has(.hcs-auth-login-page) {
-        background-attachment: scroll;
-        background-position: center top;
-    }
-
-    body:has(.hcs-auth-login-page) .lpx-content {
-        align-items: stretch;
-        padding: 1rem .75rem 1.5rem;
-    }
-
-    body:has(.hcs-auth-login-page) .lpx-content > .container {
-        max-width: 100%;
-    }
-
-    body:has(.hcs-auth-login-page) .lpx-login-logo {
-        height: 56px !important;
-        width: 88px !important;
-    }
-
-    body:has(.hcs-auth-login-page) .lpx-login-logo::after {
-        content: none;
-    }
-
-    body:has(.hcs-auth-login-page) .card.mt-3.shadow-sm.rounded {
-        border-radius: .95rem !important;
-        box-shadow: 0 14px 32px rgba(24, 62, 80, .12) !important;
-    }
-
-    body:has(.hcs-auth-login-page) .card.mt-3.shadow-sm.rounded > .card-body {
-        padding: 1.2rem 1rem 1.35rem !important;
-    }
-
-    body:has(.hcs-auth-login-page) .form-control,
-    body:has(.hcs-auth-login-page) #PasswordVisibilityButton,
-    body:has(.hcs-auth-login-page) .input-group > .btn,
-    body:has(.hcs-auth-login-page) button[type="submit"][value="Login"],
-    body:has(.hcs-auth-login-page) button[type="submit"][name="Action"][value="Login"] {
-        min-height: 3.5rem;
-    }
-
-    body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle {
-        min-height: 3.4rem;
-    }
-}
-
-@media (min-width: 768px) {
-    body:has(.hcs-auth-login-page) .lpx-content > .container {
-        max-width: 36.5rem;
-    }
-}
-
-
-/* Stable HCS hooks layered over the ABP account layout. */
-body:has(.hcs-auth-login-page) {
-    --hcs-login-ink: #19334c;
-    --hcs-login-muted: #63798b;
-    --hcs-login-line: #DDE4EE;
-    --hcs-login-field: #f2f5fc;
-    --hcs-login-primary: #00B4A9;
-    --hcs-login-primary-strong: #007F7C;
-    --hcs-login-control-radius: 5px;
-    --hcs-login-focus-ring: 0 0 0 .2rem rgba(0, 180, 169, .28);
-    background-color: #eef4f7;
-    background-image:
-        linear-gradient(90deg, rgba(248, 252, 253, .26), rgba(248, 252, 253, .08)),
-        url('/background-login.png');
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-attachment: fixed;
-    color: var(--hcs-login-ink);
-}
-
-body:has(.hcs-auth-login-page) .hcs-auth-login-page {
-    margin: 0 auto;
-    max-width: 36.5rem;
-    padding: 0;
-    width: 100%;
-}
-
-body:has(.hcs-auth-login-page) .hcs-auth-login-card {
-    background: rgba(255, 255, 255, .97);
-    border: 0;
-    border-radius: 1.35rem !important;
-    box-shadow: 0 28px 68px rgba(28, 56, 75, .2) !important;
-    margin: 0 !important;
-    width: 100%;
-}
-
-body:has(.hcs-auth-login-page) .hcs-auth-login-card > .card-body {
-    padding: clamp(1.5rem, 4.2vw, 3.2rem) !important;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-card-brand {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    justify-content: flex-start;
-    margin: 0 0 .25rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-card-brand__logo {
-    align-items: center;
-    background: transparent;
-    border-radius: .75rem;
-    display: flex;
-    flex: 0 0 4.5rem;
-    height: 4.5rem;
+    display: inline-flex;
+    font-size: .875rem;
+    font-weight: 600;
+    gap: .5rem;
     justify-content: center;
-    overflow: hidden;
-    width: 4.5rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-card-logo {
-    display: block;
-    height: 3.6rem;
-    object-fit: contain;
-    width: 3.6rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-card-brand__copy {
-    color: var(--hcs-login-ink);
-    display: grid;
-    gap: .18rem;
-    min-width: 0;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-card-brand__copy strong {
-    font-size: 1.08rem;
-    font-weight: 700;
-    line-height: 1.25;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-card-brand__copy span {
-    color: var(--hcs-login-muted);
-    font-size: .96rem;
-    line-height: 1.35;
-}
-
-body:has(.hcs-auth-login-page) .hcs-auth-login-card h1 {
-    color: #1c2432;
-    font: 400 clamp(2.2rem, 5vw, 3.25rem)/1.1 "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
-    letter-spacing: -.03em;
-    margin: 0 0 1.8rem;
-    text-wrap: balance;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-subtitle {
-    color: var(--hcs-login-muted);
-    font-size: .95rem;
-    line-height: 1.55;
-    margin: .55rem 0 1.25rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form .form-control,
-body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton,
-body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .btn,
-body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"] {
-    min-height: 2.85rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form .form-control {
-    background: var(--hcs-login-field);
-    border-color: var(--hcs-login-line);
-    border-radius: var(--hcs-login-control-radius);
-    font-size: 1.05rem;
-    padding: .95rem 1.1rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"] {
-    background: var(--hcs-login-primary);
-    border-color: var(--hcs-login-primary);
-    border-radius: var(--hcs-login-control-radius);
-    font-size: 1.05rem;
-    font-weight: 700;
+    min-height: 44px;
+    padding: 0 1rem;
     width: 100%;
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"]:hover,
-body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"]:focus-visible {
+.hcs-login-form button[type="submit"][name="Action"][value="Login"]:hover,
+.hcs-login-form button[type="submit"][name="Action"][value="Login"]:focus-visible {
     background: var(--hcs-login-primary-strong);
     border-color: var(--hcs-login-primary-strong);
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-language {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+/* SSO — template divider + outline button */
+.hcs-login-external__title {
+    color: #1E293B;
+    font-size: .875rem;
+    font-weight: 600;
+    margin: 1.25rem 0 .65rem;
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle {
-    min-height: 3.4rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-external__title {
-    color: var(--hcs-login-ink);
-    font-size: 1rem;
-    font-weight: 700;
-    margin: 0 0 .5rem;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-external form {
+.hcs-login-external form {
     display: grid;
     gap: .55rem;
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider,
-body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider.btn-primary {
-    background: transparent !important;
+.hcs-login-external .hcs-login-provider,
+.hcs-login-external .hcs-login-provider.btn-primary {
+    align-items: center;
+    background: #fff !important;
     border: 1px solid var(--hcs-login-primary) !important;
     border-radius: var(--hcs-login-control-radius);
-    color: var(--hcs-login-primary-strong) !important;
+    color: var(--hcs-login-primary) !important;
     cursor: pointer;
-    display: block;
-    font-weight: 700;
-    margin: 0;
-    min-height: 2.85rem;
+    display: inline-flex !important;
+    font-size: .875rem;
+    font-weight: 600;
+    gap: .5rem;
+    justify-content: center;
+    min-height: 44px;
     width: 100%;
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider:hover,
-body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider.btn-primary:hover {
-    background: rgba(0, 180, 169, .1) !important;
-    border-color: var(--hcs-login-primary-strong) !important;
-    color: var(--hcs-login-primary-strong) !important;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider:focus-visible,
-body:has(.hcs-auth-login-page) .hcs-login-external .hcs-login-provider.btn-primary:focus-visible {
-    background: rgba(0, 180, 169, .1) !important;
-    border-color: var(--hcs-login-primary-strong) !important;
+.hcs-login-external .hcs-login-provider:hover,
+.hcs-login-external .hcs-login-provider:focus-visible {
+    background: var(--hcs-login-primary-soft) !important;
+    border-color: var(--hcs-login-primary) !important;
     box-shadow: var(--hcs-login-focus-ring);
-    color: var(--hcs-login-primary-strong) !important;
-    outline: none;
+    color: var(--hcs-login-primary) !important;
 }
 
-body:has(.hcs-auth-login-page) .hcs-login-form button:disabled,
-body:has(.hcs-auth-login-page) .hcs-login-external button:disabled {
+.hcs-login-form button:disabled,
+.hcs-login-external button:disabled {
     cursor: wait;
     opacity: .72;
 }
@@ -619,140 +447,29 @@ body:has(.hcs-auth-login-page) .hcs-login-external button:disabled {
         background-position: center top;
     }
 
-    body:has(.hcs-auth-login-page) .hcs-auth-login-page {
-        max-width: none;
+    body:has(.hcs-auth-login-page) .lpx-content {
+        padding: 1rem .75rem 1.25rem;
     }
 
-    body:has(.hcs-auth-login-page) .hcs-login-language {
+    .hcs-auth-login-card > .card-body {
+        padding: 24px 20px !important;
+    }
+
+    .hcs-login-language {
         align-items: stretch;
-        grid-template-columns: 1fr;
+        flex-direction: column;
+        gap: .5rem;
     }
 
-    body:has(.hcs-auth-login-page) .hcs-auth-login-card > .card-body {
-        padding: 1.15rem 1rem 1.3rem !important;
+    .hcs-login-language .dropdown {
+        min-width: 0;
+        width: 100%;
     }
-
-    body:has(.hcs-auth-login-page) .hcs-login-card-brand {
-        gap: .75rem;
-        margin-bottom: 1.75rem;
-    }
-
-    body:has(.hcs-auth-login-page) .hcs-login-card-brand__logo {
-        flex-basis: 3.75rem;
-        height: 3.75rem;
-        width: 3.75rem;
-    }
-
-    body:has(.hcs-auth-login-page) .hcs-login-card-logo {
-        height: 3rem;
-        width: 3rem;
-    }
-
-    body:has(.hcs-auth-login-page) .hcs-login-card-brand__copy strong {
-        font-size: 1rem;
-    }
-
-    body:has(.hcs-auth-login-page) .hcs-auth-login-card h1 {
-        font-size: 2.25rem;
-        margin-bottom: 1.45rem;
-    }
-
-    body:has(.hcs-auth-login-page) .hcs-login-form .form-control,
-    body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton,
-    body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .btn,
-    body:has(.hcs-auth-login-page) .hcs-login-form button[type="submit"][name="Action"][value="Login"] {
-        min-height: 3.5rem;
-    }
-}
-
-
-/* custom css */
-
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-item.active,
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-item:active {
-    background-color: var(--hcs-login-primary) !important;
-}
-
-/* Password field: one chrome around input + visibility toggle. */
-body:has(.hcs-auth-login-page) .hcs-login-form .input-group,
-body:has(.hcs-auth-login-page) .hcs-login-password {
-    background: var(--hcs-login-field);
-    border: 1px solid var(--hcs-login-line);
-    border-radius: var(--hcs-login-control-radius);
-    overflow: visible;
-    position: relative;
-    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .form-control,
-body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .form-control:focus,
-body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .form-control:focus-visible,
-body:has(.hcs-auth-login-page) .hcs-login-password > .form-control,
-body:has(.hcs-auth-login-page) .hcs-login-password > .form-control:focus,
-body:has(.hcs-auth-login-page) .hcs-login-password > .form-control:focus-visible {
-    background: transparent !important;
-    border: 0 !important;
-    border-radius: var(--hcs-login-control-radius) 0 0 var(--hcs-login-control-radius) !important;
-    box-shadow: none !important;
-    outline: none;
-    z-index: 0;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form .input-group > .btn,
-body:has(.hcs-auth-login-page) .hcs-login-password__toggle,
-body:has(.hcs-auth-login-page) .hcs-login-password > #PasswordVisibilityButton,
-body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton {
-    background: transparent !important;
-    border: 0 !important;
-    border-radius: 0 var(--hcs-login-control-radius) var(--hcs-login-control-radius) 0 !important;
-    cursor: pointer;
-    flex: 0 0 auto;
-    min-width: 2.75rem;
-    z-index: 1;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton:hover,
-body:has(.hcs-auth-login-page) .hcs-login-password__toggle:hover {
-    color: var(--hcs-login-primary-strong);
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form .input-group:focus-within,
-body:has(.hcs-auth-login-page) .hcs-login-password:focus-within {
-    background: var(--hcs-login-field);
-    border-color: var(--hcs-login-primary);
-    box-shadow: var(--hcs-login-focus-ring);
-    outline: 0;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form .form-control:focus,
-body:has(.hcs-auth-login-page) .hcs-login-form .form-control:focus-visible {
-    background: var(--hcs-login-field);
-    border-color: var(--hcs-login-primary);
-    box-shadow: var(--hcs-login-focus-ring);
-    outline: 0;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle:focus,
-body:has(.hcs-auth-login-page) .hcs-login-language .dropdown-toggle:focus-visible {
-    border-color: var(--hcs-login-primary);
-    box-shadow: var(--hcs-login-focus-ring);
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form #PasswordVisibilityButton:focus-visible,
-body:has(.hcs-auth-login-page) .hcs-login-password__toggle:focus-visible {
-    color: var(--hcs-login-primary-strong);
-    outline: 2px solid var(--hcs-login-primary);
-    outline-offset: -6px;
-    border-radius: var(--hcs-login-control-radius) !important;
-}
-
-body:has(.hcs-auth-login-page) .hcs-login-form .input-group:has(.input-validation-error):not(:focus-within),
-body:has(.hcs-auth-login-page) .hcs-login-password:has(.input-validation-error):not(:focus-within) {
-    border-color: #d96a78;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    body:has(.hcs-auth-login-page) .hcs-login-password {
+    .hcs-login-password,
+    .hcs-login-form .input-group {
         transition: none;
     }
 }

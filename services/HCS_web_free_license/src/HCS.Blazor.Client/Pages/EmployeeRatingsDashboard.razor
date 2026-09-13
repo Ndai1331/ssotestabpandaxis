@@ -45,7 +45,7 @@
                     <h2 id="top-rated-title">@L["EmployeeRatings:TopFive"]</h2>
                     @if (TopRated.Count == 0)
                     {
-                        <div class="hcs-empty py-4"><i class="fa fa-chart-column" aria-hidden="true"></i><p>@L["EmployeeRatings:NoData"]</p></div>
+                        <DocsEmpty Compact="true" Title="@L["EmployeeRatings:NoData"]" />
                     }
                     else
                     {
@@ -70,7 +70,7 @@
                     <h2 id="department-title">@L["EmployeeRatings:DepartmentComparison"]</h2>
                     @if (DepartmentRows.Count == 0)
                     {
-                        <div class="hcs-empty py-4"><i class="fa fa-chart-line" aria-hidden="true"></i><p>@L["EmployeeRatings:NoData"]</p></div>
+                        <DocsEmpty Compact="true" Title="@L["EmployeeRatings:NoData"]" />
                     }
                     else
                     {

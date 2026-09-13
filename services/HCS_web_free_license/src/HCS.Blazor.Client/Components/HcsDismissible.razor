@@ -1,0 +1,79 @@
+@namespace HCS.Blazor.Client.Components
+@using System.Collections.Generic
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+
+<div @ref="root" class="@CssClass" @attributes="AdditionalAttributes">
+    @ChildContent
+</div>
+@code {
+    [Inject] private IJSRuntime Js { get; set; } = default!;
+
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private ElementReference root;
+    private DotNetObjectReference<HcsDismissible>? dotNetRef;
+    private bool bound;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen)
+        {
+            await BindAsync();
+            return;
+        }
+
+        await UnbindAsync();
+    }
+
+    [JSInvokable]
+    public void CloseFromOutside()
+    {
+        if (!IsOpen) return;
+        _ = NotifyClosedAsync();
+    }
+
+    private async Task BindAsync()
+    {
+        if (bound) return;
+        dotNetRef ??= DotNetObjectReference.Create(this);
+        try
+        {
+            await Js.InvokeVoidAsync("hcsPop.bind", root, dotNetRef);
+            bound = true;
+        }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
+        catch (JSException) { }
+    }
+
+    private async Task UnbindAsync()
+    {
+        if (!bound) return;
+        bound = false;
+        try { await Js.InvokeVoidAsync("hcsPop.unbind", root); }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
+        catch (JSException) { }
+    }
+
+    private async Task NotifyClosedAsync()
+    {
+        if (IsOpenChanged.HasDelegate)
+            await IsOpenChanged.InvokeAsync(false);
+        if (OnClose.HasDelegate)
+            await OnClose.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await UnbindAsync();
+        dotNetRef?.Dispose();
+        dotNetRef = null;
+    }
+}

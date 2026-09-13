@@ -1,4 +1,5 @@
 @page "/workspace"
+@using System.Globalization
 @attribute [Authorize(Policy = "WorkManagement.Dashboard")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
@@ -9,7 +10,10 @@
 <PageTitle>@L["Feature:WorkspaceTitle"] · HCS</PageTitle>
 <section class="hcs-workspace">
     <div class="hcs-ws-filter">
-        <span class="hcs-ws-filter-label"><i class="fa fa-calendar-day" aria-hidden="true"></i> @L["Work:FilterByDateRange"]</span>
+        <span class="hcs-ws-filter-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+            @L["Work:FilterByDateRange"]
+        </span>
         <div class="hcs-ws-filter-dates">
             <HcsDatePicker TValue="IReadOnlyList<DateTime?>"
                            Value="selectedDates"
@@ -19,24 +23,40 @@
                            DisplayFormat="dd/MM/yyyy"
                            Placeholder="@L["Work:SelectDateRange"]" />
         </div>
-        <button type="button" class="hcs-ws-search" @onclick="LoadAsync" disabled="@isLoading">
-            <i class="fa fa-search" aria-hidden="true"></i> @L["Catalog:SearchButton"]
+        <button type="button" class="btn btn-primary" @onclick="LoadAsync" disabled="@isLoading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            @L["Catalog:SearchButton"]
         </button>
     </div>
 
-
     <div class="hcs-ws-kpis">
-        @Kpi("fa-calendar-days", "#fef0f5", "#e8437a", events.Count, L["Work:Events"])
-        @Kpi("fa-file-lines", "#fef2f2", "#dc2626", documents.Count, L["Menu:Documents"])
-        @Kpi("fa-folder-open", "#eff6ff", "#2563eb", projects.Count, L["Menu:Projects"])
-        @Kpi("fa-list-check", "#eaf3de", "#1d9e75", myTasks.Count, L["Work:MyTasks"])
+        <a class="hcs-ws-kpi" href="/events">
+            <span class="hcs-ws-kpi-icon pink" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+            <div class="hcs-ws-kpi-num">@events.Count</div>
+            <div class="hcs-ws-kpi-lbl">@L["Work:Events"]</div>
+        </a>
+        <a class="hcs-ws-kpi" href="/manage-documents">
+            <span class="hcs-ws-kpi-icon red" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span>
+            <div class="hcs-ws-kpi-num">@documents.Count</div>
+            <div class="hcs-ws-kpi-lbl">@L["Menu:Documents"]</div>
+        </a>
+        <a class="hcs-ws-kpi" href="/projects">
+            <span class="hcs-ws-kpi-icon blue" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h7l2 2h9v10H3z"/></svg></span>
+            <div class="hcs-ws-kpi-num">@projects.Count</div>
+            <div class="hcs-ws-kpi-lbl">@L["Menu:Projects"]</div>
+        </a>
+        <a class="hcs-ws-kpi" href="/tasks">
+            <span class="hcs-ws-kpi-icon green" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg></span>
+            <div class="hcs-ws-kpi-num">@myTasks.Count</div>
+            <div class="hcs-ws-kpi-lbl">@L["Work:MyTasks"]</div>
+        </a>
     </div>
 
     <div class="hcs-ws-grid-73">
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon" style="background:#fef0f5;color:#e8437a;"><i class="fa fa-calendar-days"></i></div>
+                    <div class="hcs-ws-card-icon pink" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Work:Calendar"]</div>
                         <div class="hcs-ws-card-sub">@L["Work:Total"] @visibleDaysEvents.Count @L["Work:Events"]</div>
@@ -69,9 +89,9 @@
                                         <span class="hcs-ws-ev-accent"></span>
                                         <div class="hcs-ws-ev-body">
                                             <div class="hcs-ws-ev-name">@item.Title</div>
-                                            <div class="hcs-ws-ev-meta"><i class="fa fa-clock me-1"></i>@item.StartTime.ToLocalTime().ToString("HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")@ProjectLabel(item)</div>
+                                            <div class="hcs-ws-ev-meta">@item.StartTime.ToLocalTime().ToString("HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")@ProjectLabel(item)</div>
                                         </div>
-                                        <a class="hcs-ws-view" href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@L["Work:View"]</a>
+                                        <a class="btn btn-primary btn-sm" href="@WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id)">@L["Work:View"]</a>
                                     </div>
                                 }
                             </div>
@@ -83,7 +103,7 @@
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa fa-bell"></i></div>
+                    <div class="hcs-ws-card-icon teal" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Work:Notifications"]</div>
                         <div class="hcs-ws-card-sub">@notifications.Count(x => !x.IsRead) @L["Work:Unread"]</div>
@@ -97,7 +117,7 @@
                     <div class="hcs-ws-notif">
                         @foreach (var item in notifications)
                         {
-                            <a class="hcs-ws-notif-row text-decoration-none @(item.IsRead ? null : "is-unread")" href="@(string.IsNullOrWhiteSpace(item.Link) ? "/workspace" : item.Link)">
+                            <a class="hcs-ws-notif-row text-decoration-none @(item.IsRead ? null : "is-unread")" href="@NotificationText.ResolveLink(item)">
                                 <span class="@(item.IsRead ? null : "hcs-ws-ndot")" aria-hidden="true"></span>
                                 <div class="hcs-ws-notif-content">
                                     <div class="hcs-ws-n-title">@NotificationText.Localize(L, item.Title)</div>
@@ -116,7 +136,7 @@
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="fa fa-diagram-project"></i></div>
+                    <div class="hcs-ws-card-icon purple" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.2 7.2 15.5 11M8.2 16.8 15.5 13"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Menu:Workflows"]</div>
                         <div class="hcs-ws-card-sub">@workflows.Count @L["Menu:Documents"]</div>
@@ -125,30 +145,13 @@
             </header>
             <div class="hcs-ws-card-body">
                 @if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
-                else
-                {
-                    <div class="hcs-ws-workflow-chart" aria-label="@WorkflowChartSummary()">
-                        <div class="hcs-ws-donut" role="img" aria-label="@WorkflowChartSummary()" style="background:@WorkflowChartStyle">
-                            <span class="hcs-ws-donut-total">@workflows.Count</span>
-                            <span class="hcs-ws-donut-label">@L["Menu:Documents"]</span>
-                        </div>
-                        <div class="hcs-ws-wf" aria-label="@L["Catalog:Status"]">
-                            @foreach (var group in workflowGroups)
-                            {
-                                <div class="hcs-ws-wf-row">
-                                    <div class="hcs-ws-wf-left"><span class="hcs-ws-wf-dot" style="background:@group.Color"></span><span>@group.Label</span></div>
-                                    <div><span class="hcs-ws-wf-val" style="color:@group.Color">@group.Count</span> <span class="hcs-ws-card-sub">@group.Percent%</span></div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
+                else { @StatusDonut(workflows.Count, L["Menu:Documents"], workflowGroups) }
             </div>
         </article>
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon" style="background:#fef2f2;color:#dc2626;"><i class="fa fa-file-lines"></i></div>
+                    <div class="hcs-ws-card-icon red" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Menu:Documents"]</div>
                         <div class="hcs-ws-card-sub">@documents.Count @L["Menu:Documents"]</div>
@@ -163,12 +166,14 @@
                         @foreach (var item in documents.Take(6))
                         {
                             <div class="hcs-ws-doc-row">
-                                <i class="fa fa-file-lines" style="color:#9ca3af"></i>
+                                <svg class="hcs-ws-file-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
                                 <div class="hcs-ws-doc-name">@item.Title</div>
                                 <span class="hcs-status-badge @DocumentStatusUi.BadgeClass(item.Status)">@L[DocumentStatusUi.TextKey(item.Status)]</span>
-                                <a class="hcs-ws-view" href="@($"/document-detail/{item.Id}")">@L["Work:View"]</a>
-                                <button type="button" class="hcs-ws-icon-action" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewDocumentAsync(item.Id)">
-                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                <a class="icon-btn" href="@($"/document-detail/{item.Id}")" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></svg>
+                                </a>
+                                <button type="button" class="icon-btn eye" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewDocumentAsync(item.Id)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </button>
                             </div>
                         }
@@ -182,42 +187,29 @@
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa fa-chart-column"></i></div>
+                    <div class="hcs-ws-card-icon blue" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16l3-5 3 3 4-7"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Menu:Projects"]</div>
-                        <div class="hcs-ws-card-sub">@L["Work:ProgressPercent"]</div>
+                        <div class="hcs-ws-card-sub">@projects.Count @L["Menu:Projects"]</div>
                     </div>
                 </div>
             </header>
             <div class="hcs-ws-card-body">
                 @if (projects.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoProjectsFound"]</div> }
-                else
-                {
-                    <div class="hcs-ws-chart">
-                        @foreach (var project in projects.Take(6))
-                        {
-                            var progress = WorkUi.ProjectProgress(project.Status);
-                            <div class="hcs-ws-chart-row">
-                                <span class="hcs-ws-chart-lbl">@project.Name</span>
-                                <div class="hcs-ws-chart-track"><div class="hcs-ws-chart-fill" style="width:@progress%"></div></div>
-                                <span class="hcs-ws-chart-pct">@progress%</span>
-                            </div>
-                        }
-                    </div>
-                }
+                else { @StatusDonut(projects.Count, L["Menu:Projects"], projectGroups) }
             </div>
         </article>
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa fa-folder-open"></i></div>
+                    <div class="hcs-ws-card-icon teal" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h7l2 2h9v10H3z"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Menu:Projects"]</div>
                         <div class="hcs-ws-card-sub">@projects.Count(x => x.Status == "Completed") @L["Work:Of"] @projects.Count @L["Menu:Projects"]</div>
                     </div>
                 </div>
                 <AuthorizeView Policy="WorkManagement.Projects">
-                    <Authorized><button type="button" class="hcs-ws-action" @onclick="OpenCreateProjectModalAsync"><i class="fa fa-plus"></i> @L["Work:NewProject"]</button></Authorized>
+                    <Authorized><button type="button" class="btn btn-primary btn-sm hcs-ws-add" title="@L["Work:NewProject"]" aria-label="@L["Work:NewProject"]" @onclick="OpenCreateProjectModalAsync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></Authorized>
                 </AuthorizeView>
             </header>
             <div class="hcs-ws-card-body">
@@ -233,14 +225,17 @@
                                     <a class="hcs-ws-proj-name text-decoration-none" href="@($"/project-detail/{project.Id}")">@project.Name</a>
                                     <div class="hcs-ws-proj-actions">
                                         <span class="@WorkUi.ProjectBadgeClass(project.Status)">@L[WorkUi.ProjectStatusKey(project.Status)]</span>
-                                        <button type="button" class="hcs-ws-icon-action" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenProjectDetailModalAsync(project.Id)">
-                                            <i class="fa fa-eye" aria-hidden="true"></i>
+                                        <button type="button" class="icon-btn eye" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenProjectDetailModalAsync(project.Id)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                                         </button>
                                     </div>
                                 </div>
                                 <div class="hcs-ws-pbar"><div class="hcs-ws-pbf" style="width:@progress%"></div></div>
                                 <div class="hcs-ws-proj-foot">
-                                    <span><i class="fa fa-users me-1"></i>@project.MemberCount @L["Work:Members"]</span>
+                                    <span class="hcs-ws-people">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+                                        @project.MemberCount @L["Work:Members"]
+                                    </span>
                                     <span>@project.EndDate.ToLocalTime().ToString("dd/MM/yyyy")</span>
                                 </div>
                             </div>
@@ -255,7 +250,7 @@
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon" style="background:#eaf3de;color:#1d9e75;"><i class="fa fa-list-check"></i></div>
+                    <div class="hcs-ws-card-icon green" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Menu:Tasks"]</div>
                         <div class="hcs-ws-card-sub">@tasks.Count @L["Menu:Tasks"]</div>
@@ -264,34 +259,20 @@
             </header>
             <div class="hcs-ws-card-body">
                 @if (tasks.Count == 0) { <div class="hcs-ws-empty">@L["Feature:NoTasks"]</div> }
-                else
-                {
-                    <div class="hcs-ws-task">
-                        @foreach (var task in tasks.Take(6))
-                        {
-                            <div class="hcs-ws-task-row">
-                                <a class="hcs-ws-task-name text-decoration-none" href="@($"/project-task-detail/{task.Id}")">@task.Title</a>
-                                <span class="@WorkUi.TaskBadgeClass(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span>
-                                <button type="button" class="hcs-ws-icon-action" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenTaskDetailModalAsync(task.Id)">
-                                    <i class="fa fa-eye" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        }
-                    </div>
-                }
+                else { @StatusDonut(tasks.Count, L["Menu:Tasks"], taskGroups) }
             </div>
         </article>
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon" style="background:#eaf3de;color:#1d9e75;"><i class="fa fa-user-check"></i></div>
+                    <div class="hcs-ws-card-icon green" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Work:MyTasks"]</div>
                         <div class="hcs-ws-card-sub">@myTasks.Count @L["Menu:Tasks"]</div>
                     </div>
                 </div>
                 <AuthorizeView Policy="WorkManagement.ProjectTasks">
-                    <Authorized><button type="button" class="hcs-ws-action" @onclick="OpenCreateTaskModalAsync"><i class="fa fa-plus"></i> @L["Work:NewTask"]</button></Authorized>
+                    <Authorized><button type="button" class="btn btn-primary btn-sm hcs-ws-add" title="@L["Work:NewTask"]" aria-label="@L["Work:NewTask"]" @onclick="OpenCreateTaskModalAsync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></Authorized>
                 </AuthorizeView>
             </header>
             <div class="hcs-ws-card-body">
@@ -304,8 +285,8 @@
                             <div class="hcs-ws-task-row">
                                 <a class="hcs-ws-task-name text-decoration-none" href="@($"/project-task-detail/{task.Id}")">@task.Title</a>
                                 <span class="@WorkUi.ProgressBadgeClass(task.ProgressPercent)">@task.ProgressPercent%</span>
-                                <button type="button" class="hcs-ws-icon-action" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenTaskDetailModalAsync(task.Id)">
-                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                <button type="button" class="icon-btn eye" title="@L["Work:ViewDetail"]" aria-label="@L["Work:ViewDetail"]" @onclick="() => OpenTaskDetailModalAsync(task.Id)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </button>
                             </div>
                         }
@@ -481,37 +462,90 @@
         .OrderBy(x => x.StartTime)
         .ToList();
     private List<ProjectTaskDto> myTasks => tasks.Where(x => x.Status is not "Completed" and not "Cancelled").ToList();
-    private IReadOnlyList<(string Label, int Count, int Percent, string Color)> workflowGroups
+    private IReadOnlyList<(string Label, int Count, int Percent, string Color)> workflowGroups => StatusGroups(workflows,
+        (L["Work:Status.Doing"], "#355dff", x => x.Status == WorkflowInstanceStatus.Running),
+        (L["Work:Status.Done"], "#1d9e75", x => x.Status == WorkflowInstanceStatus.Completed),
+        (L["Work:Status.Cancelled"], "#dc2626", x => x.Status is WorkflowInstanceStatus.Cancelled or WorkflowInstanceStatus.Rejected or WorkflowInstanceStatus.Returned));
+    private IReadOnlyList<(string Label, int Count, int Percent, string Color)> projectGroups => StatusGroups(projects,
+        (L["Work:Status.Planning"], "#64748B", x => x.Status is "Draft" or "Planning"),
+        (L["Work:Status.InProgress"], "#355dff", x => x.Status == "Active"),
+        (L["Work:Status.Completed"], "#1d9e75", x => x.Status == "Completed"),
+        (L["Work:Status.Cancelled"], "#dc2626", x => x.Status == "Cancelled"));
+    private IReadOnlyList<(string Label, int Count, int Percent, string Color)> taskGroups => StatusGroups(tasks,
+        (L["Work:Status.Todo"], "#64748B", x => x.Status == "New"),
+        (L["Work:Status.Doing"], "#355dff", x => x.Status == "InProgress"),
+        (L["Work:Status.Waiting"], "#D97706", x => x.Status == "Waiting"),
+        (L["Work:Status.Done"], "#1d9e75", x => x.Status == "Completed"),
+        (L["Work:Status.Cancelled"], "#dc2626", x => x.Status == "Cancelled"));
+
+    private static IReadOnlyList<(string Label, int Count, int Percent, string Color)> StatusGroups<T>(
+        IReadOnlyCollection<T> items, params (string Label, string Color, Func<T, bool> Match)[] defs)
     {
-        get
-        {
-            var total = Math.Max(workflows.Count, 1);
-            return new (string Label, string Color, Func<WorkflowInstanceDto, bool> Match)[]
-            {
-                (L["Work:Status.Doing"], "#355dff", x => x.Status == WorkflowInstanceStatus.Running),
-                (L["Work:Status.Done"], "#1d9e75", x => x.Status == WorkflowInstanceStatus.Completed),
-                (L["Work:Status.Cancelled"], "#dc2626", x => x.Status is WorkflowInstanceStatus.Cancelled or WorkflowInstanceStatus.Rejected or WorkflowInstanceStatus.Returned)
-            }.Select(x => (x.Label, workflows.Count(x.Match), (int)Math.Round(100d * workflows.Count(x.Match) / total), x.Color)).ToList();
-        }
-    }
-    private string WorkflowChartStyle
-    {
-        get
-        {
-            if (workflows.Count == 0) return "conic-gradient(#eef3f7 0 100%)";
-            var cursor = 0d;
-            var stops = workflowGroups.Select(group =>
-            {
-                var next = cursor + 100d * group.Count / workflows.Count;
-                var stop = $"{group.Color} {cursor:0.##}% {next:0.##}%";
-                cursor = next;
-                return stop;
-            });
-            return $"conic-gradient({string.Join(", ", stops)})";
-        }
+        var total = Math.Max(items.Count, 1);
+        return defs.Select(def => (def.Label, items.Count(def.Match), (int)Math.Round(100d * items.Count(def.Match) / total), def.Color)).ToList();
     }
 
-    private string WorkflowChartSummary() => string.Join(", ", workflowGroups.Select(group => $"{group.Label}: {group.Count} ({group.Percent}%)"));
+    private static List<(string Color, double Percent, double Offset)> DonutSlices(
+        IReadOnlyList<(string Label, int Count, int Percent, string Color)> groups, int total)
+    {
+        var slices = new List<(string Color, double Percent, double Offset)>();
+        if (total <= 0)
+        {
+            return slices;
+        }
+
+        var offset = 0d;
+        foreach (var group in groups)
+        {
+            if (group.Count <= 0)
+            {
+                continue;
+            }
+
+            var percent = 100d * group.Count / total;
+            slices.Add((group.Color, percent, offset));
+            offset += percent;
+        }
+
+        return slices;
+    }
+
+    private static string DonutNumber(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+
+    private RenderFragment StatusDonut(int total, string unit, IReadOnlyList<(string Label, int Count, int Percent, string Color)> groups)
+    {
+        var slices = DonutSlices(groups, total);
+        var summary = string.Join(", ", groups.Select(group => $"{group.Label}: {group.Count} ({group.Percent}%)"));
+        return @<div class="hcs-ws-donut-chart" aria-label="@summary">
+            <div class="hcs-ws-donut" role="img" aria-label="@summary">
+                <svg viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+                    <circle class="hcs-ws-donut-track" cx="18" cy="18" r="15.9155" fill="none" pathLength="100"></circle>
+                    @foreach (var slice in slices)
+                    {
+                        <circle @key="slice.Offset" cx="18" cy="18" r="15.9155" fill="none" pathLength="100"
+                                stroke="@slice.Color"
+                                stroke-dasharray="@(DonutNumber(slice.Percent) + " " + DonutNumber(100 - slice.Percent))"
+                                stroke-dashoffset="@DonutNumber(-slice.Offset)"></circle>
+                    }
+                </svg>
+                <div class="hcs-ws-donut-hole">
+                    <span class="hcs-ws-donut-total">@total</span>
+                    <span class="hcs-ws-donut-label">@unit</span>
+                </div>
+            </div>
+            <ul class="hcs-ws-legend" aria-label="@L["Catalog:Status"]">
+                @foreach (var group in groups)
+                {
+                    <li>
+                        <span class="hcs-ws-wf-dot" style="background:@group.Color" aria-hidden="true"></span>
+                        <span>@group.Label</span>
+                        <span class="hcs-ws-wf-val" style="color:@group.Color">@group.Count</span>
+                        <span class="hcs-ws-card-sub">@group.Percent%</span>
+                    </li>
+                }
+            </ul>
+        </div>;
+    }
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -696,17 +730,6 @@
         }
         return string.IsNullOrWhiteSpace(item.Description) ? "" : $" · {item.Description}";
     }
-
-    private RenderFragment Kpi(string icon, string background, string color, int value, string label) => __builder =>
-    {
-        <div class="hcs-ws-kpi">
-            <div class="hcs-ws-kpi-top">
-                <div class="hcs-ws-kpi-icon" style="@($"background:{background};color:{color}")"><i class="fa @icon"></i></div>
-            </div>
-            <div class="hcs-ws-kpi-num">@value</div>
-            <div class="hcs-ws-kpi-lbl">@label</div>
-        </div>
-    };
 
     private sealed class ProjectForm
     {

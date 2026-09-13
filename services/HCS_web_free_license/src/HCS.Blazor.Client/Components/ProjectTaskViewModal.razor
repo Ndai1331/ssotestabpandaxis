@@ -53,14 +53,17 @@
                             </div>
                         </TabPanel>
                         <TabPanel Name="assignments">
-                            <Field>
-                                <UserSelect2 Value="assigneeId"
-                                             ValueChanged="value => assigneeId = value"
-                                             Placeholder="@L["Chat:SelectContacts"]"
-                                             SelectedText="@Name(assigneeId)"
-                                             Search="SearchContactsAsync" />
-                            </Field>
-                            <Button Color="Color.Primary" Class="mb-3" Clicked="AddAssignmentAsync">@L["Feature:Assign"]</Button>
+                            @if (detail.Task.CanManageAssignments)
+                            {
+                                <Field>
+                                    <UserSelect2 Value="assigneeId"
+                                                 ValueChanged="value => assigneeId = value"
+                                                 Placeholder="@L["Chat:SelectContacts"]"
+                                                 SelectedText="@Name(assigneeId)"
+                                                 Search="SearchContactsAsync" />
+                                </Field>
+                                <Button Color="Color.Primary" Class="mb-3" Clicked="AddAssignmentAsync">@L["Feature:Assign"]</Button>
+                            }
                             @if (detail.Assignments.Count == 0) { <p class="text-muted">@L["Catalog:EmptyTitle"]</p> }
                             else
                             {
@@ -69,7 +72,10 @@
                                     {
                                         <li class="list-group-item d-flex justify-content-between">
                                             <span>@Name(assignment.UserId) · @assignment.AssignmentType</span>
-                                            <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveAssignmentAsync(assignment)">@L["Catalog:Delete"]</Button>
+                                            @if (detail.Task.CanManageAssignments)
+                                            {
+                                                <Button Size="Size.Small" Color="Color.Danger" Outline="true" Clicked="() => RemoveAssignmentAsync(assignment)">@L["Catalog:Delete"]</Button>
+                                            }
                                         </li>
                                     }
                                 </ul>
@@ -182,6 +188,7 @@
             detail = await Work.GetTaskAsync(detail.Task.Id);
             Bind(detail.Task);
             await NotifySuccessAsync(L["Catalog:Updated"]);
+            await HideAsync();
             await OnChanged.InvokeAsync();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
@@ -190,7 +197,7 @@
 
     private async Task AddAssignmentAsync()
     {
-        if (detail is null || assigneeId is not { } userId) return;
+        if (detail is null || !detail.Task.CanManageAssignments || assigneeId is not { } userId) return;
         try
         {
             await Work.AddAssignmentAsync(detail.Task.Id, new AddTaskAssignmentRequest(userId, "Assignee"));

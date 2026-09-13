@@ -11,7 +11,7 @@
         <ModalBody Class="hcs-catalog-modal__body border-none">
             @if (document is null || instance is null || definition is null)
             {
-                <div class="hcs-empty py-4"><i class="fa fa-inbox" aria-hidden="true"></i><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
+                <DocsEmpty Compact="true" />
             }
             else
             {
@@ -65,7 +65,7 @@
                                     <div class="hcs-workflow-panel-heading"><strong>@L["Feature:WorkflowHistory"]</strong><span class="hcs-catalog-desc">@workflowHistory.Count</span></div>
                                     @if (workflowHistory.Count == 0)
                                     {
-                                        <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
+                                        <DocsEmpty Compact="true" />
                                     }
                                     else
                                     {
@@ -81,7 +81,7 @@
                                     <div class="hcs-workflow-panel-heading"><strong>@L["Feature:Attachments"]</strong><span class="hcs-catalog-desc">@document.Files.Count</span></div>
                                     @if (document.Files.Count == 0)
                                     {
-                                        <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
+                                        <DocsEmpty Compact="true" />
                                     }
                                     else
                                     {
@@ -207,7 +207,7 @@
         try
         {
             var content = DocumentFilePick.IsPdf(file) ? await Documents.GetWatermarkedFileContentAsync(document.Id, file.Id) : await Documents.GetFileContentAsync(document.Id, file.Id);
-            await Js.InvokeVoidAsync("hcsDownloadBytes", file.FileName, content.ContentType, content.Bytes);
+            await Js.InvokeVoidAsync("hcsDownloadBytes", DocumentDownloadFileName.For(document, file.FileName), content.ContentType, content.Bytes);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }

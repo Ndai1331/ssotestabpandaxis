@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${HCS_POSTGRES_PASSWORD:?set HCS_POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${HCS_POSTGRES_PORT:-5432}:5432"
     volumes:
       - hcs-postgres:/var/lib/postgresql/data
       - ./postgres/init-databases.sql:/docker-entrypoint-initdb.d/10-hcs-databases.sql:ro
@@ -33,6 +33,9 @@ services:
 
   rabbitmq:
     image: rabbitmq:4.1-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${HCS_RABBITMQ_USER:?set HCS_RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${HCS_RABBITMQ_PASSWORD:?set HCS_RABBITMQ_PASSWORD}
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
@@ -66,8 +69,8 @@ services:
     image: quay.io/keycloak/keycloak:26.3
     command: ["start-dev", "--http-port=8080"]
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${HCS_KEYCLOAK_ADMIN:?set HCS_KEYCLOAK_ADMIN}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${HCS_KEYCLOAK_ADMIN_PASSWORD:?set HCS_KEYCLOAK_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${HCS_KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${HCS_KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_HOSTNAME: http://localhost:5110
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HTTP_ENABLED: "true"

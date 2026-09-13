@@ -21,6 +21,10 @@
 .hcs-document-preview-pane .hcs-pdf-frame {
     min-height: 28rem;
 }
+.hcs-document-preview-pane .hcs-pdf-frame__viewport,
+.hcs-document-preview-pane .hcs-pdf-frame__embed {
+    min-height: 0;
+}
 .hcs-document-preview-pane .hcs-file-preview-card {
     margin: 0;
     max-width: none;
@@ -126,8 +130,8 @@
 
 .hcs-app-shell .hcs-touch-target,
 .hcs-app-shell .btn,
-.hcs-app-shell button,
-.hcs-app-shell [role="button"] {
+.hcs-app-shell button:not(.week-cell):not(.hcs-ws-dn):not(.tree-toggle):not(.icon-btn):not(.cal-type):not(.cal-event):not(.queue-tab):not(.doc-action):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear),
+.hcs-app-shell [role="button"]:not(.week-cell):not(.hcs-ws-dn):not(.icon-btn):not(.queue-tab):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear) {
     min-height: var(--hcs-touch-target);
 }
 
@@ -265,15 +269,14 @@
 .hcs-app-shell .hcs-status-badge,
 .hcs-app-shell .hcs-priority-badge,
 .hcs-app-shell .hcs-progress-badge {
-    line-height: 1.25;
-    max-width: 100%;
-    overflow-wrap: anywhere;
+    line-height: 1;
+    overflow-wrap: normal;
+    word-break: normal;
 }
 
 .hcs-app-shell .hcs-icon-button,
 .hcs-app-shell .hcs-nav-toggle,
 .hcs-app-shell .hcs-user-menu summary,
-.hcs-app-shell .hcs-nav-menu__panel a,
 .hcs-app-shell .hcs-nav-menu__trigger {
     min-height: var(--hcs-touch-target);
 }
@@ -446,35 +449,17 @@
 /* Cross-page responsive defaults. Keep complex data grids scrollable; opt simple
    four-column tables into the stacked pattern with .hcs-table-wrap--stacked. */
 .hcs-app-shell .hcs-workspace {
-    --ws-pink: var(--hcs-color-primary);
-    --ws-pink-light: var(--hcs-color-primary-soft);
-    --ws-text: var(--hcs-color-ink);
-    --ws-muted: var(--hcs-color-muted);
-    --ws-faint: #718694;
-    --ws-line: var(--hcs-color-border);
-    --ws-bg: var(--hcs-color-background);
+    --ws-accent: var(--color-primary);
+    --ws-text: var(--color-foreground, var(--hcs-color-ink));
+    --ws-muted: var(--color-muted, var(--hcs-color-muted));
+    --ws-faint: var(--color-gray-400, #94A3B8);
+    --ws-line: var(--color-border, var(--hcs-color-border));
 }
 
-.hcs-app-shell .hcs-workspace :where(.hcs-ws-search, .hcs-ws-action, .hcs-ws-view, .hcs-ws-dn),
-.hcs-app-shell .hcs-chat-page :where(.hcs-chat__compose, .hcs-chat__icon, .hcs-chat__close, .hcs-chat__tabs button),
 .hcs-app-shell .hcs-account-page :where(.hcs-account-tab, .hcs-account-avatar__upload),
 .hcs-app-shell .hcs-notification-panel :where(button, a),
 .hcs-app-shell .hcs-signatures-panel :where(button, label[role="button"]) {
     min-height: var(--hcs-touch-target);
-}
-
-.hcs-app-shell :where(.hcs-chat__compose, .hcs-chat__icon, .hcs-chat__close) {
-    height: var(--hcs-touch-target);
-    width: var(--hcs-touch-target);
-}
-
-.hcs-app-shell .hcs-chat__tabs button {
-    padding-block: var(--hcs-space-3);
-}
-
-.hcs-app-shell :where(.hcs-chat__contact-filter, .hcs-chat__search, .hcs-chat__composer-field) {
-    font-size: 1rem;
-    min-height: var(--hcs-control-height);
 }
 
 .hcs-app-shell :where(.hcs-table-wrap, .table-responsive, .hcs-users-grid-card .card-body) {
@@ -524,6 +509,7 @@
 body:has(.hcs-app-shell) .hcs-datepicker-layer .datepicker-calendar.dropdown-menu,
 body:has(.hcs-app-shell) .datepicker-calendar.dropdown-menu[data-hcs-hosted] {
     background: #fff;
+    border: 1px solid var(--hcs-input-border);
     box-shadow: var(--hcs-shadow-md, 0 12px 32px rgba(23, 50, 68, .18));
     color: var(--hcs-color-ink);
     z-index: 1065;
@@ -579,30 +565,9 @@ body:has(.hcs-app-shell) .datepicker-day-outside:not(.datepicker-day-selected) {
         flex-wrap: wrap;
     }
 
-    .hcs-app-shell .hcs-workspace .hcs-ws-action {
+    .hcs-app-shell .hcs-workspace .hcs-ws-card-hd .btn:not(.hcs-ws-add) {
         flex: 1 1 100%;
         justify-content: center;
-    }
-
-    .hcs-app-shell .hcs-chat {
-        border-inline: 0;
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .hcs-app-shell .hcs-chat--info-open {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .hcs-app-shell .hcs-chat__conversations,
-    .hcs-app-shell .hcs-chat__info {
-        display: none;
-    }
-
-    .hcs-app-shell .hcs-chat--info-open .hcs-chat__info {
-        display: flex;
-        inset: var(--hcs-header-h, 4rem) 0 0;
-        position: fixed;
-        z-index: var(--hcs-z-drawer);
     }
 
     .hcs-app-shell .hcs-account-tabs {
@@ -818,12 +783,12 @@ body:has(.hcs-app-shell) .datepicker-day-outside:not(.datepicker-day-selected) {
 /* Bootstrap resolves anchor colors from the RGB variables above. Keep
    ordinary content links on the HCS primary scale while preserving the
    branded shell, button, menu and preview-link treatments. */
-.hcs-app-shell :where(a[href]:not(.btn):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)) {
+.hcs-app-shell :where(a[href]:not(.btn):not(.kpi):not(.notice):not(.event-link):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)):not(.page-home a) {
     color: var(--hcs-color-link);
 }
 
-.hcs-app-shell :where(a[href]:not(.btn):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)):hover,
-.hcs-app-shell :where(a[href]:not(.btn):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)):focus-visible {
+.hcs-app-shell :where(a[href]:not(.btn):not(.kpi):not(.notice):not(.event-link):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)):not(.page-home a):hover,
+.hcs-app-shell :where(a[href]:not(.btn):not(.kpi):not(.notice):not(.event-link):not(.hcs-brand):not(.hcs-icon-button):not(.hcs-top-nav__link):not(.hcs-nav-menu__panel a):not(.hcs-user-menu__panel a):not(.hcs-skip-link):not(.hcs-chat-preview__download)):not(.page-home a):focus-visible {
     color: var(--hcs-color-link-hover);
 }
 
@@ -1097,15 +1062,15 @@ body:has(.hcs-app-shell) .modal .btn.hcs-catalog-save:hover:not(:disabled) {
 body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel,
 body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel {
     background-color: var(--hcs-color-surface, #fff) !important;
-    border-color: var(--hcs-color-primary) !important;
-    color: var(--hcs-color-primary) !important;
+    border-color: var(--hcs-color-danger) !important;
+    color: var(--hcs-color-danger) !important;
 }
 
 body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel:hover:not(:disabled),
 body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel:hover:not(:disabled) {
-    background-color: var(--hcs-color-primary-soft) !important;
-    border-color: var(--hcs-color-primary) !important;
-    color: var(--hcs-color-primary-strong) !important;
+    background-color: color-mix(in srgb, var(--hcs-color-danger) 8%, var(--hcs-color-surface, #fff)) !important;
+    border-color: var(--hcs-color-danger) !important;
+    color: var(--hcs-color-danger) !important;
 }
 
 body:has(.hcs-app-shell) .btn.hcs-catalog-cancel:focus-visible,
@@ -1181,12 +1146,25 @@ body:has(.hcs-app-shell) .datepicker .datepicker-header .datepicker-next {
 .hcs-app-shell .btn-danger, .hcs-app-shell .btn-outline-danger { color: var(--hcs-color-danger); }
 .hcs-app-shell .btn-danger { background: var(--hcs-color-danger); border-color: var(--hcs-color-danger); color: #fff; }
 
-.hcs-app-shell :where(.form-control, .form-select, select, textarea, .b-is-datepicker .form-control, .select2-container .select2-selection) {
+.hcs-app-shell :where(.form-control, .form-select, select, .select, .b-is-datepicker .form-control, .select2-container .select2-selection) {
     background-color: var(--hcs-color-surface);
-    border-color: var(--hcs-color-border);
-    border-radius: var(--hcs-radius-sm);
+    border-color: var(--hcs-input-border);
+    border-radius: var(--input-radius);
     color: var(--hcs-color-ink);
-    min-height: var(--hcs-control-height);
+    min-height: var(--input-height);
+}
+
+.hcs-app-shell .pager select {
+    min-height: 32px;
+    height: 32px;
+    border-radius: var(--radius-xl);
+}
+
+.hcs-app-shell textarea.form-control,
+.hcs-app-shell textarea.input,
+.hcs-app-shell .hcs-catalog-form textarea {
+    border-radius: var(--input-radius-multiline, var(--radius-xl));
+    min-height: 7rem;
 }
 
 /* Same halo as Auth login: 1px teal border + 0.2rem translucent spread.
@@ -1235,7 +1213,7 @@ body:has(.hcs-app-shell) .b-numeric > .b-numeric-handler-wrap {
     background: var(--hcs-input-background);
     border: 0;
     border-left: 1px solid var(--hcs-input-border);
-    border-radius: 0 var(--hcs-radius) var(--hcs-radius) 0;
+    border-radius: 0 var(--input-radius) var(--input-radius) 0;
 }
 body:has(.hcs-app-shell) .b-numeric:focus-within > .b-numeric-handler-wrap { opacity: 1; }
 body:has(.hcs-app-shell) .b-numeric .b-numeric-handler.btn {
@@ -1394,13 +1372,13 @@ body:has(.hcs-app-shell) .select2-container .select2-selection--single {
     align-items: center;
     background-color: var(--hcs-color-surface);
     border: 1px solid var(--hcs-color-border) !important;
-    border-radius: var(--hcs-radius-sm) !important;
+    border-radius: var(--input-radius) !important;
     box-sizing: border-box;
     color: var(--hcs-color-ink);
     display: flex;
-    height: 36px !important;
-    max-height: 36px !important;
-    min-height: 36px !important;
+    height: var(--input-height) !important;
+    max-height: none !important;
+    min-height: var(--input-height) !important;
     overflow: hidden;
     padding: 0 !important;
     position: relative;
@@ -1416,7 +1394,7 @@ body:has(.hcs-app-shell) .select2-container--default .select2-selection--single 
     line-height: 1.25 !important;
     min-width: 0;
     overflow: hidden;
-    padding: 0 1.75rem 0 .5rem !important;
+    padding: 0 3.5rem 0 .75rem !important;
     width: 100%;
 }
 
@@ -1424,25 +1402,45 @@ body:has(.hcs-app-shell) .select2-container--default .select2-selection--single 
     color: inherit !important;
 }
 
-body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__clear {
-    color: inherit;
+body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__clear,
+body:has(.hcs-app-shell) .select2-selection--single button.select2-selection__clear,
+.hcs-app-shell .select2-selection--single .select2-selection__clear {
+    align-items: center;
+    appearance: none !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: var(--color-muted, #64748b);
+    cursor: pointer;
+    display: inline-flex !important;
     float: none !important;
-    font-size: 1.15rem;
+    font-size: 1.125rem;
     font-weight: 400;
-    height: 1.5rem;
-    line-height: 1.5rem;
+    height: 24px !important;
+    justify-content: center;
+    line-height: 1 !important;
     margin: 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
     position: absolute;
-    right: 1.5rem;
+    right: 2.25rem;
     text-align: center;
     top: 50%;
     transform: translateY(-50%);
-    width: 1.25rem;
-    z-index: 1;
+    width: 24px !important;
+    z-index: 2;
 }
 
-body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__clear:hover {
-    color: var(--hcs-color-ink);
+body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__clear:hover,
+.hcs-app-shell .select2-selection--single .select2-selection__clear:hover {
+    color: var(--hcs-color-ink, var(--color-gray-800, #1e293b));
+}
+
+body:has(.hcs-app-shell) .select2-selection--single .select2-selection__clear span,
+body:has(.hcs-app-shell) .select2-selection--single .select2-selection__clear-icon {
+    font-size: inherit;
+    line-height: 1;
 }
 
 body:has(.hcs-app-shell) .select2-container--default .select2-selection--single .select2-selection__arrow {
@@ -1485,10 +1483,7 @@ body:has(.hcs-app-shell) .select2-dropdown {
 }
 
 body:has(.hcs-app-shell) .select2-dropdown--below {
-    border-top: 0;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-    margin-top: 0;
+    margin-top: 8px;
 }
 
 body:has(.hcs-app-shell) .select2-dropdown--above {
@@ -1531,7 +1526,7 @@ body:has(.hcs-app-shell) .select2-results {
 
 body:has(.hcs-app-shell) .select2-search--dropdown .select2-search__field {
     background: var(--hcs-color-surface);
-    border: 1px solid var(--hcs-color-border) !important;
+    border: 1px solid var(--hcs-input-border) !important;
     border-radius: var(--hcs-radius-sm);
     box-shadow: none !important;
     box-sizing: border-box;
@@ -1617,8 +1612,8 @@ body:has(.hcs-app-shell) .select2-results__message {
     body:has(.hcs-app-shell) select.form-select:not([multiple]):not([size]):not(.hcs-catalog-select2)::picker(select) {
         appearance: base-select;
         background: var(--hcs-color-surface);
-        border: 1px solid var(--hcs-color-border);
-        border-radius: var(--hcs-radius-sm);
+        border: 1px solid var(--hcs-input-border);
+        border-radius: var(--input-radius, var(--hcs-radius-sm));
         box-shadow: var(--hcs-shadow-md);
         color: var(--hcs-color-ink);
         margin-block: var(--hcs-popover-offset, .25rem);
@@ -1675,7 +1670,7 @@ body:has(.hcs-app-shell) .select2-results__message {
 .hcs-app-shell :where(.modal-body, .hcs-catalog-modal__body) { background: var(--hcs-color-surface); padding: var(--hcs-space-5); }
 .hcs-app-shell :where(.alert) { border-radius: var(--hcs-radius-md); font-size: .86rem; }
 
-.hcs-app-shell :where(.hcs-status-badge, .hcs-priority-badge, .hcs-progress-badge) { border: 1px solid transparent; border-radius: 999px; font-size: .72rem; font-weight: 700; padding: .55rem; }
+.hcs-app-shell :where(.hcs-status-badge, .hcs-priority-badge, .hcs-progress-badge) { border: 1px solid transparent; border-radius: var(--radius-full, 9999px); font-size: 11px; font-weight: 600; padding: 0 8px; }
 .hcs-app-shell .hcs-status-badge--success, .hcs-app-shell .hcs-progress-badge--done { background: #e3f3ed; color: #12634f; }
 .hcs-app-shell .hcs-status-badge--danger, .hcs-app-shell .hcs-priority-badge--high { background: #fbe8e7; color: #9b2118; }
 .hcs-app-shell .hcs-status-badge--warning, .hcs-app-shell .hcs-priority-badge--normal { background: #fff2d9; color: #8a4d00; }
@@ -1686,18 +1681,6 @@ body:has(.hcs-app-shell) .select2-results__message {
     .hcs-app-shell :where(.hcs-page__header, .hcs-document-page__header, .hcs-catalog-titlebar) { align-items: stretch; flex-direction: column; margin-bottom: var(--hcs-space-4); }
     .hcs-app-shell :where(.hcs-page__actions, .hcs-catalog-page__actions) { width: 100%; }
     .hcs-app-shell :where(.hcs-page__actions > .btn, .hcs-catalog-page__actions > .btn) { flex: 1 1 auto; }
-    .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) { padding: var(--hcs-space-4) var(--hcs-page-gutter) calc(var(--hcs-space-6) + env(safe-area-inset-bottom)); }
-}
-
-@media (max-width: 1100px) {
-    .hcs-app-shell .hcs-main-content:has(.hcs-chat-page) { padding: var(--hcs-space-4) var(--hcs-page-gutter) calc(var(--hcs-space-6) + env(safe-area-inset-bottom)); }
-}
-
-.hcs-app-shell .hcs-main-content:has(.hcs-chat-page) {
-    height: auto;
-    margin-left: 0;
-    max-width: none;
-    padding: clamp(1rem, 2.2vw, 2rem) var(--hcs-page-gutter) calc(2rem + env(safe-area-inset-bottom));
 }
 
 .hcs-app-shell .hcs-survey-results__filter-row { align-items: flex-end; gap: var(--hcs-space-3); }
@@ -1707,16 +1690,12 @@ body:has(.hcs-app-shell) .select2-results__message {
 .hcs-app-shell .hcs-catalog-form .select2-container .select2-selection--single,
 .hcs-catalog-form .select2-container .select2-selection--single {
     background-color: var(--catalog-input, var(--hcs-color-surface));
-    border-color: #e2eaf0 !important;
-    color: #24465e;
-    height: 36px !important;
-    max-height: 36px !important;
-    min-height: 36px !important;
+    color: var(--color-gray-700);
 }
 
 .hcs-app-shell .hcs-catalog-form .select2-container--focus .select2-selection--single,
 .hcs-app-shell .hcs-catalog-form .select2-container--open .select2-selection--single {
-    border-color: var(--hcs-color-primary) !important;
+    border-color: var(--hcs-input-border-focus) !important;
 }
 
 /* Shared field surfaces, including forms and modals portaled outside the shell.
@@ -1725,17 +1704,17 @@ body:has(.hcs-app-shell) :is(.hcs-catalog-search, .hcs-users-search-bar) {
     --hcs-input-background: var(--hcs-color-background);
 }
 
-body:has(.hcs-app-shell) :is(.form-control, .form-select, .select2-container .select2-selection, .hcs-datepicker__icon) {
+body:has(.hcs-app-shell) :is(.form-control, .form-select, select, .select, .select2-container .select2-selection, .hcs-datepicker__icon) {
     background-color: var(--hcs-input-background) !important;
     border-color: var(--hcs-input-border) !important;
 }
 
-body:has(.hcs-app-shell) :is(.form-control, .form-select):hover:where(:not(:focus):not(:disabled):not([readonly])),
+body:has(.hcs-app-shell) :is(.form-control, .form-select, select, .select):hover:where(:not(:focus):not(:disabled):not([readonly])),
 body:has(.hcs-app-shell) .select2-container:where(:not(.select2-container--disabled):not(.select2-container--focus):not(.select2-container--open)) .select2-selection:hover {
     border-color: var(--hcs-input-border-hover) !important;
 }
 
-body:has(.hcs-app-shell) :is(.form-control, .form-select):focus,
+body:has(.hcs-app-shell) :is(.form-control, .form-select, select, .select):focus,
 body:has(.hcs-app-shell) :is(.select2-container--focus, .select2-container--open) .select2-selection {
     border-color: var(--hcs-input-border-focus) !important;
 }
@@ -1806,7 +1785,9 @@ body:has(.hcs-app-shell) .select2-dropdown .hcs-user-option {
 
     to {
         opacity: 1;
-        transform: translate3d(0, 0, 0) scale(1);
+        /* `none` (not identity translate3d) so fill-mode does not create a
+           containing block that traps Bootstrap `position: fixed` modals. */
+        transform: none;
     }
 }
 
@@ -1883,8 +1864,9 @@ body:has(.hcs-app-shell) .select2-dropdown .hcs-user-option {
 .hcs-app-shell .hcs-lang-switch__trigger,
 .hcs-app-shell .hcs-lang-switch__item,
 .hcs-app-shell .hcs-nav-menu__panel a,
-.hcs-app-shell .hcs-notification-panel__list a,
+.hcs-app-shell .hcs-notification-panel__item,
 .hcs-app-shell .hcs-notification-panel__mark-all,
+.hcs-app-shell .hcs-notification-panel__footer a,
 .hcs-app-shell .hcs-account-tab,
 .hcs-app-shell .hcs-user-tabs button,
 .hcs-app-shell .hcs-signing-tab,
@@ -1950,11 +1932,16 @@ body:has(.hcs-app-shell) .select2-dropdown .hcs-user-option {
 
 .modal-backdrop.show { opacity: var(--hcs-motion-scrim-opacity); }
 
-.hcs-app-shell .dropdown-menu,
+.hcs-app-shell .dropdown-menu:not(.datepicker-calendar),
 .hcs-app-shell .hcs-lang-switch__panel,
 .hcs-app-shell .hcs-notification-panel {
     animation: hcs-motion-surface-enter var(--hcs-motion-duration-quick) var(--hcs-motion-ease-enter) both;
     transform-origin: top right;
+}
+
+.hcs-app-shell .datepicker-calendar.dropdown-menu {
+    animation: none;
+    transform-origin: top left;
 }
 
 .hcs-app-shell .hcs-chat-modal {
@@ -1966,9 +1953,12 @@ body:has(.hcs-app-shell) .select2-dropdown .hcs-user-option {
     transform-origin: top center;
 }
 
-.hcs-app-shell .hcs-user-tab-panel:not([hidden]),
-.hcs-app-shell .hcs-account-panel,
-.hcs-app-shell .hcs-signatures-panel {
+/* Animate inner content, not modal hosts. A filled transform on
+   `.hcs-account-panel` / `.hcs-user-tab-panel` makes `.modal` overlay only
+   that panel (hero, tabs and the rest of the page stay undimmed). */
+.hcs-app-shell .hcs-account-panel > .hcs-account-content-grid,
+.hcs-app-shell .hcs-signatures-panel,
+.hcs-app-shell .hcs-user-tab-panel:not([hidden]) > :not(.hcs-user-signing):not(.modal) {
     animation: hcs-motion-surface-enter var(--hcs-motion-duration-standard) var(--hcs-motion-ease-enter) both;
 }
 

@@ -1,0 +1,36 @@
+@inherits HCSComponentBase
+
+<div class="docs-empty @(Compact ? "docs-empty--compact" : null)" role="status" aria-live="@(Loading ? "polite" : null)">
+    <span class="docs-empty__icon" aria-hidden="true">
+        @if (Loading)
+        {
+            <svg class="chat-spin" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+        }
+        else if (ChildContent is not null)
+        {
+            @ChildContent
+        }
+        else
+        {
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+        }
+    </span>
+    <p class="docs-empty__title">@ResolvedTitle</p>
+    @if (!Loading && !string.IsNullOrWhiteSpace(Hint))
+    {
+        <p class="docs-empty__hint">@Hint</p>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string ResolvedTitle =>
+        !string.IsNullOrWhiteSpace(Title)
+            ? Title
+            : Loading ? L["Catalog:Loading"] : L["Catalog:EmptyTitle"];
+}

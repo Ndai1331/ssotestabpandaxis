@@ -158,11 +158,9 @@
         parentTaskId = parentId;
         this.linkedDocumentId = linkedDocumentId;
         documentId = linkedDocumentId;
-        if (projects.Count == 0)
-        {
-            var page = await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100));
-            projects.AddRange(page.Items);
-        }
+        projects.Clear();
+        var page = await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100));
+        projects.AddRange(page.Items);
         if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
         await LoadParentsAsync();
         if (modal is not null) await modal.Show();

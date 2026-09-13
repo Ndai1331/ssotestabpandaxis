@@ -19,7 +19,8 @@ public static class WorkPermissions
 public sealed record PagedWorkDto<T>(long TotalCount, IReadOnlyList<T> Items);
 
 public sealed record ProjectDto(Guid Id, string Code, string Name, string? Description, DateTime StartDate,
-    DateTime EndDate, string Status, Guid? OwnerDepartmentId, Guid OwnerUserId, int MemberCount = 0, int TaskCount = 0);
+    DateTime EndDate, string Status, Guid? OwnerDepartmentId, Guid OwnerUserId, int MemberCount = 0, int TaskCount = 0,
+    bool CanManage = false, bool CanDelete = false);
 public sealed record ProjectDetailDto(ProjectDto Project, IReadOnlyList<ProjectMemberDto> Members,
     IReadOnlyList<ProjectTaskDto> Tasks);
 public sealed record CreateProjectDto(string Code, string Name, string? Description, DateTime StartDate,
@@ -30,7 +31,8 @@ public sealed record ProjectMemberDto(Guid Id, Guid ProjectId, Guid UserId, stri
 public sealed record AddProjectMemberDto(Guid UserId, string Role);
 
 public sealed record ProjectTaskDto(Guid Id, Guid ProjectId, Guid? ParentTaskId, string Code, string Title,
-    string? Description, DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent);
+    string? Description, DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent,
+    Guid? CreatorId = null, bool CanDelete = false, bool CanManageAssignments = false, bool CanCreateChild = false);
 public sealed record CreateProjectTaskDto(Guid ProjectId, Guid? ParentTaskId, string Code, string Title,
     string? Description, DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent);
 public sealed record UpdateProjectTaskDto(string Title, string? Description, DateTime StartDate, DateTime DueDate,
@@ -71,8 +73,10 @@ public sealed record UpdateEventAttendeeDto(string? Username, string? Surname, s
     string CheckInStatus, string? Note);
 public sealed record ChangeEventAttendeeStatusDto(string? RegistrationStatus, string? CheckInStatus);
 public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location,
-    IReadOnlyList<EventAttachmentDto> Attachments);
+    IReadOnlyList<EventAttachmentDto> Attachments, string Status, string? Content, string? Description,
+    string? RegistrationStatus, string? CheckInStatus, DateTime? CheckedInAt);
 public sealed record PublicEventCheckInDto();
+public sealed record PublicEventConfirmResultDto(string FullName, string RegistrationStatus);
 public sealed record PublicEventCheckInResultDto(string FullName, DateTime CheckedInAt);
 public sealed record EventImportResultDto(int Imported, int Skipped);
 public sealed record CreateCalendarEventDto(string Title, string? Description, DateTime StartTime, DateTime EndTime,

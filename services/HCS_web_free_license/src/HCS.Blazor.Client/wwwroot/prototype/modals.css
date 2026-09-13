@@ -1,0 +1,257 @@
+/* Form + overlay popups: 16px radius, primary title bar, icon buttons, red cancel/delete.
+   Notification dialogs stay in messages.css (higher specificity on .hcs-app-shell__notifications). */
+
+body:has(.hcs-app-shell) .modal-content,
+body:has(.hcs-app-shell) .hcs-catalog-modal,
+.hcs-app-shell .chat-dialog,
+.hcs-app-shell .process-dialog,
+.hcs-app-shell .chat-preview-dialog {
+  --hcs-modal-icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E");
+  --hcs-modal-icon-close: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
+  --hcs-modal-icon-trash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12'/%3E%3C/svg%3E");
+  border-radius: var(--radius-xl, 16px) !important;
+  overflow: visible;
+}
+
+body:has(.hcs-app-shell) .modal-header,
+body:has(.hcs-app-shell) .hcs-catalog-modal__header,
+.hcs-app-shell .chat-dialog-head,
+.hcs-app-shell .process-dialog-head {
+  align-items: center;
+  background: var(--color-primary) !important;
+  border-bottom: 0 !important;
+  border-top-left-radius: var(--radius-xl, 16px);
+  border-top-right-radius: var(--radius-xl, 16px);
+  color: var(--color-primary-foreground, var(--color-white)) !important;
+  display: flex;
+  gap: 8px;
+  height: 48px;
+  justify-content: space-between;
+  max-height: 48px;
+  min-height: 48px !important;
+  padding: 0 12px 0 24px !important;
+}
+
+body:has(.hcs-app-shell) .modal-title,
+body:has(.hcs-app-shell) .hcs-catalog-modal__header .modal-title,
+.hcs-app-shell .chat-dialog-head h2,
+.hcs-app-shell .process-dialog-head h2 {
+  color: var(--color-primary-foreground, var(--color-white)) !important;
+  flex: 1;
+  font-size: 16px !important;
+  font-weight: var(--font-weight-semibold, 600) !important;
+  line-height: 1.25;
+  margin: 0;
+}
+
+body:has(.hcs-app-shell) .modal-dialog.hcs-catalog-modal--pdf .modal-header,
+body:has(.hcs-app-shell) .modal-dialog.hcs-catalog-modal--pdf .hcs-catalog-modal__header {
+  overflow: hidden;
+}
+
+body:has(.hcs-app-shell) .modal-dialog.hcs-catalog-modal--pdf .modal-title,
+body:has(.hcs-app-shell) .modal-dialog.hcs-catalog-modal--pdf .hcs-catalog-modal__title {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body:has(.hcs-app-shell) .modal-header .btn-close,
+body:has(.hcs-app-shell) .hcs-catalog-modal__header .btn-close,
+body:has(.hcs-app-shell) .modal-header .close,
+body:has(.hcs-app-shell) .hcs-catalog-modal__header .close,
+.hcs-app-shell .chat-dialog-head .icon-btn,
+.hcs-app-shell .process-dialog-head .icon-btn,
+.hcs-app-shell .process-close {
+  align-items: center;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--color-primary-foreground, var(--color-white)) !important;
+  display: inline-flex !important;
+  flex-shrink: 0;
+  height: 32px !important;
+  justify-content: center;
+  margin: 0 0 0 auto !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  opacity: 1 !important;
+  padding: 0 !important;
+  width: 32px !important;
+}
+
+body:has(.hcs-app-shell) .modal-header .btn-close,
+body:has(.hcs-app-shell) .hcs-catalog-modal__header .btn-close {
+  background-image: none !important;
+}
+
+body:has(.hcs-app-shell) .modal-header .btn-close::before,
+body:has(.hcs-app-shell) .hcs-catalog-modal__header .btn-close::before {
+  background-color: var(--color-white);
+  content: "";
+  display: block;
+  height: 16px;
+  margin: 0;
+  -webkit-mask: var(--hcs-modal-icon-close) center / 16px 16px no-repeat;
+  mask: var(--hcs-modal-icon-close) center / 16px 16px no-repeat;
+  width: 16px;
+}
+
+body:has(.hcs-app-shell) .modal-body,
+body:has(.hcs-app-shell) .hcs-catalog-modal__body,
+.hcs-app-shell .chat-dialog-view,
+.hcs-app-shell .process-dialog-body {
+  padding-top: 28px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+body:has(.hcs-app-shell) .modal-footer,
+body:has(.hcs-app-shell) .hcs-catalog-modal__footer,
+body:has(.hcs-app-shell) .hcs-language-modal__footer,
+.hcs-app-shell .chat-dialog-foot,
+.hcs-app-shell .process-dialog-foot,
+.hcs-app-shell .hcs-public-survey__dialog-footer {
+  background: var(--color-white);
+  border-top: 0 !important;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 12px 24px 16px !important;
+}
+
+body:has(.hcs-app-shell) .modal-footer .btn,
+body:has(.hcs-app-shell) .hcs-catalog-modal__footer .btn,
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn,
+.hcs-app-shell .chat-dialog-foot .btn,
+.hcs-app-shell .process-dialog-foot .btn,
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn {
+  align-items: center;
+  border-radius: var(--button-radius, var(--radius-xl, 16px)) !important;
+  display: inline-flex !important;
+  font-weight: var(--font-weight-medium, 500);
+  gap: 8px;
+  height: 40px;
+  justify-content: center;
+  min-height: 40px !important;
+  padding: 0 16px !important;
+}
+
+body:has(.hcs-app-shell) .modal-footer .btn:not(:has(svg)):not(:has(i))::before,
+body:has(.hcs-app-shell) .hcs-catalog-modal__footer .btn:not(:has(svg)):not(:has(i))::before,
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn:not(:has(svg)):not(:has(i))::before,
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn:not(:has(svg)):not(:has(i))::before {
+  background-color: currentColor;
+  content: "";
+  flex-shrink: 0;
+  height: 16px;
+  -webkit-mask: var(--hcs-modal-btn-icon, var(--hcs-modal-icon-check)) center / 16px 16px no-repeat;
+  mask: var(--hcs-modal-btn-icon, var(--hcs-modal-icon-check)) center / 16px 16px no-repeat;
+  width: 16px;
+}
+
+body:has(.hcs-app-shell) .modal-footer :is(.btn-primary, .hcs-catalog-save, .hcs-modal-save),
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn-primary,
+.hcs-app-shell .chat-dialog-foot .btn-primary,
+.hcs-app-shell .process-dialog-foot .btn-primary,
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn-primary {
+  --hcs-modal-btn-icon: var(--hcs-modal-icon-check);
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground, var(--color-white)) !important;
+}
+
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-secondary,
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-light,
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline,
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-secondary,
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-light,
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-primary,
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel,
+body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel,
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-light,
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary,
+.hcs-app-shell .chat-dialog-foot .btn.btn-outline,
+.hcs-app-shell .process-dialog-foot .btn.btn-outline,
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-light {
+  --hcs-modal-btn-icon: var(--hcs-modal-icon-close);
+  background: var(--color-white) !important;
+  border: 1px solid var(--color-danger) !important;
+  color: var(--color-danger) !important;
+}
+
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-secondary:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-light:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-secondary:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-light:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-primary:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel:hover:not(:disabled),
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-light:hover:not(:disabled),
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary:hover:not(:disabled),
+.hcs-app-shell .chat-dialog-foot .btn.btn-outline:hover:not(:disabled),
+.hcs-app-shell .process-dialog-foot .btn.btn-outline:hover:not(:disabled),
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-light:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-white)) !important;
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger) !important;
+}
+
+body:has(.hcs-app-shell) .modal-footer :is(.btn-danger, .btn-outline-danger),
+.hcs-app-shell .chat-dialog-foot .btn-danger,
+.hcs-app-shell .process-dialog-foot .btn-danger {
+  --hcs-modal-btn-icon: var(--hcs-modal-icon-trash);
+  background: var(--color-danger) !important;
+  border-color: var(--color-danger) !important;
+  color: var(--color-white) !important;
+}
+
+body:has(.hcs-app-shell) .modal-footer .btn svg,
+.hcs-app-shell .chat-dialog-foot .btn svg,
+.hcs-app-shell .process-dialog-foot .btn svg {
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
+}
+
+body:has(.hcs-app-shell) .modal .form-check-input:checked {
+  accent-color: var(--color-primary);
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+body:has(.hcs-app-shell) .modal .sign-template {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--color-gray-50, #F8FAFC);
+  border: 1px solid var(--color-border, #E5E7EB);
+  border-radius: var(--radius-lg, 12px);
+}
+
+body:has(.hcs-app-shell) .modal .sign-template .checkbox {
+  color: var(--color-gray-800);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium, 500);
+  margin: 0;
+  min-height: 24px;
+  padding: 0;
+}
+
+body:has(.hcs-app-shell) .modal .sign-template .vb-drop {
+  cursor: default;
+  margin: 0;
+}
+
+body:has(.hcs-app-shell) .modal .sign-template .vb-file-chosen {
+  color: var(--color-gray-700);
+  font-size: 12px;
+}
+
+body:has(.hcs-app-shell) .modal .vb-file-chip {
+  cursor: pointer;
+  margin: 0;
+}

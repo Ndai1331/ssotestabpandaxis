@@ -1,0 +1,387 @@
+/* ABP / Blazorise notification popups — match HCS dialog + toast tokens.
+   Loaded last so main.css 8px !important radius cannot flatten these surfaces. */
+
+.hcs-app-shell__notifications {
+  --hcs-msg-width: min(420px, calc(100vw - 32px));
+}
+
+/* ——— Message dialogs (IUiMessageService Success / Error / Warn / Info / Confirm) ——— */
+.hcs-app-shell .hcs-app-shell__notifications .modal {
+  z-index: var(--hcs-z-notification, 500);
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-dialog,
+body:has(.hcs-app-shell) .hcs-app-shell__notifications .modal-dialog {
+  max-width: var(--hcs-msg-width) !important;
+  margin-inline: auto;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-content {
+  background: var(--color-surface, var(--color-white));
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-xl, 16px) !important;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-header {
+  align-items: center;
+  background: transparent;
+  border-bottom: 0 !important;
+  justify-content: center;
+  padding: 20px 24px 0 !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-title {
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  width: 100%;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-header .btn-close,
+.hcs-app-shell .hcs-app-shell__notifications .modal-header .close {
+  display: none;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body {
+  overflow: visible;
+  padding: 28px 24px 12px !important;
+  text-align: center;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body :is(.display-1, .display-2, .display-3, h1, h2, h3) {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  margin: 0 0 16px !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body .b-icon,
+.hcs-app-shell .hcs-app-shell__notifications .modal-body > i[class*="fa-"],
+.hcs-app-shell .hcs-app-shell__notifications .modal-body :is(.text-center, .display-1, .display-2, .display-3, h1, h2, h3) > i[class*="fa-"] {
+  align-items: center;
+  border-radius: var(--radius-full, 9999px) !important;
+  display: inline-flex !important;
+  flex-shrink: 0;
+  font-size: 1.5rem !important;
+  height: 56px;
+  justify-content: center;
+  line-height: 1 !important;
+  margin: 0 auto 4px;
+  width: 56px;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body .b-icon i {
+  background: transparent !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  height: auto;
+  line-height: 1;
+  margin: 0;
+  width: auto;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body .b-icon.text-danger i,
+.hcs-app-shell .hcs-app-shell__notifications .modal-body i.fa-thumbs-down {
+  background-color: currentColor !important;
+  font-size: 0 !important;
+  height: 28px !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 8v5'/%3E%3Ccircle cx='12' cy='16' r='0.9' fill='black' stroke='none'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 8v5'/%3E%3Ccircle cx='12' cy='16' r='0.9' fill='black' stroke='none'/%3E%3C/svg%3E") center / contain no-repeat;
+  width: 28px !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body :is(.text-success, .b-icon.text-success, i.text-success) {
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-white));
+  color: var(--color-success) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body :is(.text-danger, .b-icon.text-danger, i.text-danger) {
+  background: color-mix(in srgb, var(--color-danger) 14%, var(--color-white));
+  color: var(--color-danger) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body :is(.text-warning, .b-icon.text-warning, i.text-warning) {
+  background: color-mix(in srgb, var(--color-warning) 16%, var(--color-white));
+  color: var(--color-warning) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body :is(.text-info, .b-icon.text-info, i.text-info) {
+  background: color-mix(in srgb, var(--color-info) 14%, var(--color-white));
+  color: var(--color-info) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body :is(.text-primary, .b-icon.text-primary, i.text-primary) {
+  background: var(--color-primary-soft);
+  color: var(--color-primary) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body :is(.text-secondary, .b-icon.text-secondary, i.text-secondary) {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-body p {
+  color: var(--color-foreground);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  margin: 0;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer {
+  background: transparent;
+  border-top: 0 !important;
+  gap: 10px;
+  justify-content: center;
+  padding: 8px 24px 24px !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn {
+  align-items: center;
+  border-radius: var(--button-radius, var(--radius-xl, 16px)) !important;
+  display: inline-flex !important;
+  font-weight: var(--font-weight-semibold);
+  gap: 8px;
+  height: 40px;
+  min-height: 40px !important;
+  min-width: 96px;
+  padding: 0 20px !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn:not(:has(svg)):not(:has(i))::before {
+  background-color: currentColor;
+  content: "";
+  flex-shrink: 0;
+  height: 16px;
+  -webkit-mask: var(--hcs-modal-btn-icon) center / 16px 16px no-repeat;
+  mask: var(--hcs-modal-btn-icon) center / 16px 16px no-repeat;
+  width: 16px;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn-primary {
+  --hcs-modal-btn-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E");
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn-primary:hover,
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn-primary:focus-visible {
+  background: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer :is(.btn-secondary, .btn-light, .btn-outline, .btn-outline-secondary, .btn-outline-primary) {
+  --hcs-modal-btn-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
+  background: var(--color-white) !important;
+  border: 1px solid var(--color-danger) !important;
+  color: var(--color-danger) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer :is(.btn-secondary, .btn-light, .btn-outline, .btn-outline-secondary, .btn-outline-primary):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-white)) !important;
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer :is(.btn-danger, .btn-outline-danger) {
+  --hcs-modal-btn-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12'/%3E%3C/svg%3E");
+  background: var(--color-danger) !important;
+  border-color: var(--color-danger) !important;
+  color: var(--color-white) !important;
+}
+
+.hcs-app-shell .hcs-app-shell__notifications + .modal-backdrop,
+.hcs-app-shell .hcs-app-shell__notifications .modal-backdrop,
+body:has(.hcs-app-shell__notifications .modal.show) .modal-backdrop {
+  background: var(--color-gray-900);
+  z-index: calc(var(--hcs-z-notification, 500) - 1);
+}
+
+body:has(.hcs-app-shell__notifications .modal.show) .modal-backdrop.show {
+  opacity: 0.45;
+}
+
+/* ——— Snackbar toasts (IUiNotificationService) ——— */
+.hcs-app-shell .snackbar,
+body:has(.hcs-app-shell) .snackbar {
+  align-items: flex-start;
+  background: var(--color-gray-900) !important;
+  border-radius: var(--radius-lg, 12px) !important;
+  box-shadow: var(--shadow-md);
+  color: var(--color-white) !important;
+  font-size: var(--font-size-sm);
+  gap: 10px;
+  left: auto !important;
+  max-width: min(360px, calc(100vw - 32px));
+  min-width: 240px;
+  padding: 12px 16px !important;
+  right: 20px !important;
+  width: auto;
+  z-index: var(--hcs-z-notification, 500);
+}
+
+.hcs-app-shell .snackbar.snackbar-show,
+body:has(.hcs-app-shell) .snackbar.snackbar-show {
+  transform: translateY(-20px);
+}
+
+.hcs-app-shell .snackbar-success,
+body:has(.hcs-app-shell) .snackbar-success {
+  background: var(--color-gray-900) !important;
+  color: var(--color-white) !important;
+}
+
+.hcs-app-shell .snackbar-danger,
+body:has(.hcs-app-shell) .snackbar-danger {
+  background: var(--color-gray-900) !important;
+  box-shadow: var(--shadow-md), inset 3px 0 0 var(--color-danger);
+}
+
+.hcs-app-shell .snackbar-warning,
+body:has(.hcs-app-shell) .snackbar-warning {
+  background: var(--color-gray-900) !important;
+  box-shadow: var(--shadow-md), inset 3px 0 0 var(--color-warning);
+}
+
+.hcs-app-shell .snackbar-info,
+body:has(.hcs-app-shell) .snackbar-info {
+  background: var(--color-gray-900) !important;
+  box-shadow: var(--shadow-md), inset 3px 0 0 var(--color-info);
+}
+
+.hcs-app-shell .snackbar-primary,
+body:has(.hcs-app-shell) .snackbar-primary {
+  background: var(--color-gray-900) !important;
+  box-shadow: var(--shadow-md), inset 3px 0 0 var(--color-primary);
+}
+
+.hcs-app-shell .snackbar-body,
+body:has(.hcs-app-shell) .snackbar-body {
+  align-items: center;
+  gap: 10px;
+  white-space: normal;
+}
+
+.hcs-app-shell .snackbar-action-button,
+body:has(.hcs-app-shell) .snackbar-action-button {
+  border-radius: var(--radius-full);
+  color: var(--color-teal-200) !important;
+  font-weight: var(--font-weight-semibold);
+  margin-left: 8px;
+  min-height: 32px;
+  padding: 0 8px;
+  text-transform: none;
+}
+
+.hcs-app-shell .snackbar-action-button:hover,
+.hcs-app-shell .snackbar-action-button:focus-visible,
+body:has(.hcs-app-shell) .snackbar-action-button:hover,
+body:has(.hcs-app-shell) .snackbar-action-button:focus-visible {
+  background: color-mix(in srgb, var(--color-white) 10%, transparent);
+  color: var(--color-white) !important;
+}
+
+/* Realtime notification toasts */
+.hcs-notification-toast-container {
+  z-index: var(--hcs-z-notification, 500);
+}
+
+.hcs-notification-toast {
+  border-radius: var(--radius-lg, 12px) !important;
+}
+
+.hcs-notification-panel {
+  border-radius: var(--radius-xl, 16px) !important;
+}
+
+@media (max-width: 575.98px) {
+  .hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* Last-loaded: table icon + pager hover, native select chrome (no search). */
+body:has(.hcs-app-shell) :is(button.doc-action, a.doc-action),
+.hcs-app-shell :is(button.doc-action, a.doc-action, .hcs-action-button, .hcs-row-actions > .btn) {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+body:has(.hcs-app-shell) :is(button.doc-action, a.doc-action):hover:not(:disabled),
+.hcs-app-shell :is(button.doc-action, a.doc-action, .hcs-action-button, .hcs-row-actions > .btn):hover:not(:disabled) {
+  background: var(--color-primary-soft, #E0F7F5) !important;
+  border-color: var(--color-primary, #00B4A9) !important;
+  color: var(--color-primary, #00B4A9) !important;
+}
+
+body:has(.hcs-app-shell) :is(button.doc-action, a.doc-action).is-danger:hover:not(:disabled),
+.hcs-app-shell :is(button.doc-action, a.doc-action, .hcs-action-button, .hcs-row-actions > .btn).is-danger:hover:not(:disabled),
+.hcs-app-shell :is(.hcs-action-button, .hcs-row-actions > .btn).btn-outline-danger:hover:not(:disabled) {
+  background: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: var(--color-danger, #e11d48) !important;
+}
+
+body:has(.hcs-app-shell) .pager button,
+.hcs-app-shell .pager button {
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+body:has(.hcs-app-shell) .pager button:hover:not(:disabled),
+.hcs-app-shell .pager button:hover:not(:disabled) {
+  background: var(--color-primary-soft, #E0F7F5) !important;
+  color: var(--color-primary, #00B4A9) !important;
+}
+
+body:has(.hcs-app-shell) select:not([multiple]):not([size]):not(.hcs-catalog-select2):not(.pager select):not(.hcs-audit-page-size) {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--color-white, #fff) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  border: 1px solid var(--input-border, var(--hcs-input-border, #D7E2E6)) !important;
+  border-radius: var(--input-radius, var(--radius-xl, 16px)) !important;
+  box-shadow: none !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 2.25rem 0 16px !important;
+}
+
+body:has(.hcs-app-shell) select:not([multiple]):not([size]):not(.hcs-catalog-select2):not(.pager select):not(.hcs-audit-page-size):hover:not(:disabled):not(:focus):not(:focus-visible) {
+  border-color: var(--hcs-input-border-hover, var(--color-gray-300, #CBD5E1)) !important;
+}
+
+body:has(.hcs-app-shell) select:not([multiple]):not([size]):not(.hcs-catalog-select2):not(.pager select):not(.hcs-audit-page-size):is(:focus, :focus-visible):not(:disabled) {
+  border-color: var(--input-focus-border, var(--hcs-input-border-focus, var(--color-primary, #007f7c))) !important;
+  box-shadow: var(--input-focus-ring, var(--hcs-focus-ring, var(--shadow-focus))) !important;
+}
+
+body:has(.hcs-app-shell) :is(.form-select, select.select):not(:focus):not(:focus-visible),
+body:has(.hcs-app-shell) .select2-container:not(.select2-container--focus):not(.select2-container--open) .select2-selection,
+body:has(.hcs-app-shell) .select2-dropdown,
+body:has(.hcs-app-shell) .select2-dropdown .select2-search__field:not(:focus):not(:focus-visible),
+body:has(.hcs-app-shell) .datepicker-calendar.dropdown-menu {
+  border-color: var(--input-border, var(--hcs-input-border, #D7E2E6)) !important;
+}
+
+body:has(.hcs-app-shell) :is(.form-select, select.select):hover:not(:disabled):not(:focus):not(:focus-visible),
+body:has(.hcs-app-shell) .select2-container:not(.select2-container--disabled):not(.select2-container--focus):not(.select2-container--open) .select2-selection:hover {
+  border-color: var(--hcs-input-border-hover, var(--color-gray-300, #CBD5E1)) !important;
+}
+
+body:has(.hcs-app-shell) :is(.select2-container--focus, .select2-container--open) .select2-selection,
+body:has(.hcs-app-shell) .select2-dropdown .select2-search__field:is(:focus, :focus-visible),
+body:has(.hcs-app-shell) :is(.form-select, select.select):is(:focus, :focus-visible) {
+  border-color: var(--input-focus-border, var(--hcs-input-border-focus, var(--color-primary, #007f7c))) !important;
+}
+
+@supports selector(::picker(select)) {
+  body:has(.hcs-app-shell) :is(select, .form-select)::picker(select) {
+    border-color: var(--input-border, var(--hcs-input-border, #D7E2E6)) !important;
+  }
+}

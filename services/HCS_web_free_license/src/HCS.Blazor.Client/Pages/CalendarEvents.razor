@@ -8,52 +8,65 @@
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Menu:CalendarEvents"] · HCS</PageTitle>
-<section class="hcs-catalog-page">
-    <header class="hcs-catalog-titlebar">
-        <div><h1>@L["Feature:CalendarTitle"]</h1></div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
-        </div>
-    </header>
-    <div class="hcs-cal-toolbar">
-        <div class="hcs-cal-toolbar__nav">
-            <Button Color="Color.Primary" Outline="true" Class="hcs-cal-toolbar__button" Clicked="PrevAsync">@L["Feature:Prev"]</Button>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-cal-toolbar__button" Clicked="NextAsync">@L["Feature:Next"]</Button>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-cal-toolbar__button" Clicked="TodayAsync">@L["Feature:Today"]</Button>
-        </div>
-        <strong class="hcs-cal-toolbar__title">@viewTitle</strong>
-        <div class="hcs-cal-toolbar__views">
-            <Button Color="Color.Primary" Outline="@(!IsView(MonthView))" Clicked="() => SetViewAsync(MonthView)">@L["Feature:MonthView"]</Button>
-            <Button Color="Color.Primary" Outline="@(!IsView(WeekView))" Clicked="() => SetViewAsync(WeekView)">@L["Feature:WeekView"]</Button>
-            <Button Color="Color.Primary" Outline="@(!IsView(DayView))" Clicked="() => SetViewAsync(DayView)">@L["Feature:DayView"]</Button>
-            <Button Color="Color.Primary" Outline="@(!IsView(ListView))" Clicked="() => SetViewAsync(ListView)">@L["Feature:ListView"]</Button>
+<section class="page page-wf page-cal">
+    <div class="page-head">
+        <h1>@L["Feature:CalendarTitle"]</h1>
+        <div class="page-actions">
+            <button class="btn btn-primary" type="button" @onclick="OpenCreate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Catalog:New"]
+            </button>
         </div>
     </div>
-    <Card Class="mb-2 hcs-catalog-filter-card"><CardBody>
-        <div class="hcs-catalog-filter-row">
-            <Addons Class="hcs-catalog-search">
-                <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
-                <Addon AddonType="AddonType.End">
-                    <Button Color="Color.Primary" Clicked="ApplySearch"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
-                </Addon>
-            </Addons>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearch">@L["Catalog:Reset"]</Button>
-            <div class="hcs-cal-legend" aria-label="@L["Feature:CalendarTitle"]">
-                <span class="hcs-cal-legend__item hcs-cal-legend__item--project">@L["Feature:CalendarLegendProject"]</span>
-                <span class="hcs-cal-legend__item hcs-cal-legend__item--task">@L["Feature:CalendarLegendTask"]</span>
-                <span class="hcs-cal-legend__item hcs-cal-legend__item--event">@L["Feature:CalendarLegendEvent"]</span>
-            </div>
+    <div class="cal-nav">
+        <div class="cal-nav-left">
+            <button class="btn btn-outline btn-sm" type="button" @onclick="PrevAsync">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+                @L["Feature:Prev"]
+            </button>
+            <button class="btn btn-outline btn-sm" type="button" @onclick="NextAsync">
+                @L["Feature:Next"]
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+            </button>
+            <button class="btn btn-outline btn-sm" type="button" @onclick="TodayAsync">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                @L["Feature:Today"]
+            </button>
         </div>
-    </CardBody></Card>
-    @if (isLoading && events.Count == 0) { <p>@L["Catalog:Loading"]</p> }
-    <Card Class="hcs-catalog-grid-card hcs-cal-card">
-        <CardBody Class="p-0">
-            <HcsCalendar @ref="calendar"
-                         Events="MappedEvents"
-                         EventClicked="OnEventClicked"
-                         DatesChanged="OnDatesChanged" />
-        </CardBody>
-    </Card>
+        <h2 class="cal-month-title">@viewTitle</h2>
+        <div class="cal-nav-right" role="tablist" aria-label="@L["Feature:CalendarTitle"]">
+            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(MonthView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(MonthView)" @onclick="() => SetViewAsync(MonthView)">@L["Feature:MonthView"]</button>
+            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(WeekView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(WeekView)" @onclick="() => SetViewAsync(WeekView)">@L["Feature:WeekView"]</button>
+            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(DayView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(DayView)" @onclick="() => SetViewAsync(DayView)">@L["Feature:DayView"]</button>
+            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(ListView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(ListView)" @onclick="() => SetViewAsync(ListView)">@L["Feature:ListView"]</button>
+        </div>
+    </div>
+    <form class="docs-toolbar list-search" @onsubmit="ApplySearch" @onsubmit:preventDefault>
+        <label class="sr-only" for="cal-q">@L["Catalog:SearchPlaceholder"]</label>
+        <input class="input docs-search" id="cal-q" type="search" @bind="filter" @bind:event="oninput" placeholder="@L["Catalog:SearchPlaceholder"]" autocomplete="off" />
+        <button class="btn btn-primary" type="submit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            @L["Catalog:SearchButton"]
+        </button>
+        <button class="btn btn-outline" type="button" @onclick="ResetSearch">@L["Catalog:Reset"]</button>
+    </form>
+    <div class="cal-toolbar">
+        <div class="cal-legend" aria-label="@L["Feature:CalendarTitle"]">
+            <span class="cal-type is-active"><span class="cal-type-dot is-project" aria-hidden="true"></span>@L["Feature:CalendarLegendProject"]</span>
+            <span class="cal-type is-active"><span class="cal-type-dot is-task" aria-hidden="true"></span>@L["Feature:CalendarLegendTask"]</span>
+            <span class="cal-type is-active"><span class="cal-type-dot is-event" aria-hidden="true"></span>@L["Feature:CalendarLegendEvent"]</span>
+        </div>
+    </div>
+    @if (isLoading && events.Count == 0)
+    {
+        <DocsEmpty Loading="true" />
+    }
+    <div class="cal-board">
+        <HcsCalendar @ref="calendar"
+                     Events="MappedEvents"
+                     EventClicked="OnEventClicked"
+                     DatesChanged="OnDatesChanged" />
+    </div>
 </section>
 <Modal @ref="modal" Size="ModalSize.Large"><ModalContent Centered Class="hcs-catalog-modal">
     <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:EventCreate"]</ModalTitle><CloseButton /></ModalHeader>

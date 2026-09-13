@@ -1,24 +1,44 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
+@inject OrganizationCatalogClient Catalog
 @inject IJSRuntime Js
 @implements IAsyncDisposable
 
 <Modal @ref="modal" Size="ModalSize.ExtraLarge">
     <ModalContent Centered Class="hcs-catalog-modal hcs-catalog-modal--pdf">
         <ModalHeader Class="hcs-catalog-modal__header">
-            <ModalTitle>@title</ModalTitle>
+            <ModalTitle Class="hcs-catalog-modal__title" title="@title">@title</ModalTitle>
             <CloseButton Clicked="HideAsync" />
         </ModalHeader>
-        <ModalBody Class="hcs-catalog-modal__body hcs-catalog-modal__body--pdf">
+        <ModalBody Class="@BodyClass">
+            @if (showHistory)
+            {
+                <div class="process-side-tabs hcs-inbox-preview-tabs" role="tablist" aria-label="@L["Feature:ViewDocument"]">
+                    <button class="process-side-tab @(activeTab == "pdf" ? "is-active" : null)" type="button" role="tab"
+                            aria-selected="@(activeTab == "pdf")" @onclick='() => SelectTabAsync("pdf")'>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+                        @L["Feature:ViewDocument"]
+                    </button>
+                    <button class="process-side-tab @(activeTab == "history" ? "is-active" : null)" type="button" role="tab"
+                            aria-selected="@(activeTab == "history")" @onclick='() => SelectTabAsync("history")'>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                        @L["Feature:History"]
+                        @if (InboxHistory.Count > 0)
+                        {
+                            <span class="hcs-inbox-preview-count">@InboxHistory.Count</span>
+                        }
+                    </button>
+                </div>
+            }
             @if (isLoading)
             {
                 <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
             }
-            else if (!string.IsNullOrWhiteSpace(error))
+            else if (!string.IsNullOrWhiteSpace(error) && (!showHistory || activeTab == "pdf"))
             {
-                <p class="text-muted mb-0">@error</p>
+                <p class="text-muted mb-0 p-4">@error</p>
             }
-            else if (!string.IsNullOrWhiteSpace(pdfUrl))
+            else
             {
                 <HcsPdfFrame Source="@pdfUrl" Title="@L["Work:PdfPreview"]" MatchParent="true" />
             }
@@ -29,37 +49,94 @@
                     <div class="min-w-0"><strong class="d-block text-truncate">@selectedFile.FileName</strong><span class="hcs-catalog-desc">@selectedFile.ContentType · @FormatSize(selectedFile.Size)</span></div>
                     <Button Color="Color.Primary" Outline="true" Clicked="DownloadSelectedAsync"><i class="fa fa-download me-1" aria-hidden="true"></i>@L["Work:View"]</Button>
                 </div>
+                @if (showHistory)
+                {
+                    <div class="hcs-inbox-preview-pane hcs-inbox-preview-pane--history" hidden="@(activeTab != "history")" role="tabpanel">
+                        @if (InboxHistory.Count == 0)
+                        {
+                            <DocsEmpty Compact="true" />
+                        }
+                        else
+                        {
+                            <ol class="vb-timeline">
+                                @foreach (var item in InboxHistory)
+                                {
+                                    <li class="vb-timeline-item">
+                                        <time datetime="@item.OccurredAt.ToString("o")">@item.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time>
+                                        <strong>@HistoryTitle(item)</strong>
+                                        @if (!string.IsNullOrWhiteSpace(HistoryDetailText(item)))
+                                        {
+                                            <p>@HistoryDetailText(item)</p>
+                                        }
+                                    </li>
+                                }
+                            </ol>
+                        }
+                    </div>
+                }
             }
         </ModalBody>
-        <PdfViewerTaskActionsFooter OnClose="HideAsync" ShowAssignTask="ShowAssignTask" OnAssignTask="OnAssignTask" />
+        <PdfViewerTaskActionsFooter Class="hcs-catalog-modal__footer" OnClose="HideAsync" ShowAssignTask="ShowAssignTask" OnAssignTask="AssignFromPreviewAsync" />
     </ModalContent>
 </Modal>
 @code {
     [Parameter] public bool ShowAssignTask { get; set; }
     [Parameter] public EventCallback OnAssignTask { get; set; }
 
+    private static readonly HashSet<string> InboxHistoryActions =
+        new(StringComparer.OrdinalIgnoreCase) { "Sent", "Assigned", "Revoked", "Viewed", "Printed", "Downloaded" };
+
     private Modal? modal;
     private string title = "";
     private string? pdfUrl;
     private string? error;
     private bool isLoading;
+    private bool showHistory;
+    private bool viewedRecorded;
+    private string activeTab = "pdf";
     private DocumentFileDto? selectedFile;
+    private DocumentDto? document;
+    private readonly Dictionary<Guid, string> personNames = [];
+    private readonly Dictionary<Guid, string> orgNames = [];
     public Guid? DocumentId { get; private set; }
+    private string BodyClass =>
+        "hcs-catalog-modal__body hcs-catalog-modal__body--pdf" + (showHistory ? " is-inbox" : "");
+    private string DownloadFileName => document is null
+        ? DocumentDownloadFileName.For(null, null, title, selectedFile?.FileName)
+        : DocumentDownloadFileName.For(document, selectedFile?.FileName);
+    private IReadOnlyList<DocumentHistoryDto> InboxHistory =>
+        (document?.History ?? [])
+            .Where(IsInboxHistory)
+            .OrderByDescending(x => x.OccurredAt)
+            .ToList();
 
-    public async Task ShowAsync(Guid documentId, IReadOnlyList<DocumentFileDto> files, string? documentTitle = null, Guid? selectedFileId = null)
+    public async Task ShowAsync(Guid documentId, IReadOnlyList<DocumentFileDto> files, string? documentTitle = null,
+        Guid? selectedFileId = null, bool showHistory = false)
     {
         DocumentId = documentId;
         title = string.IsNullOrWhiteSpace(documentTitle) ? L["Work:PdfPreview"] : documentTitle;
         error = null;
         selectedFile = null;
+        document = null;
+        this.showHistory = showHistory;
+        viewedRecorded = false;
+        activeTab = "pdf";
+        personNames.Clear();
+        orgNames.Clear();
         isLoading = true;
         await RevokeAsync();
         if (modal is not null) await modal.Show();
         try
         {
             // List rows omit files; always fetch current detail before choosing a preview.
-            var document = await Documents.GetDocumentAsync(documentId);
-            files = document.Files;
+            var loaded = await Documents.GetDocumentAsync(documentId);
+            document = loaded;
+            files = loaded.Files;
+            if (showHistory)
+            {
+                await LoadLookupsAsync();
+                await RecordActivityInternalAsync("Viewed");
+            }
             var file = selectedFileId is { } requestedFileId
                 ? files.FirstOrDefault(x => x.Id == requestedFileId)
                 : null;
@@ -91,7 +168,15 @@
     public async Task HideAsync()
     {
         await RevokeAsync();
+        showHistory = false;
+        activeTab = "pdf";
         if (modal is not null) await modal.Hide();
+    }
+
+    private async Task AssignFromPreviewAsync()
+    {
+        await HideAsync();
+        await OnAssignTask.InvokeAsync();
     }
 
     private async Task RevokeAsync()
@@ -112,9 +197,145 @@
             var content = DocumentFilePick.IsPdf(selectedFile)
                 ? await Documents.GetWatermarkedFileContentAsync(documentId, selectedFile.Id)
                 : await Documents.GetFileContentAsync(documentId, selectedFile.Id);
-            await Js.InvokeVoidAsync("hcsDownloadBytes", selectedFile.FileName, content.ContentType, content.Bytes);
+            await Js.InvokeVoidAsync("hcsDownloadBytes", DownloadFileName, content.ContentType, content.Bytes);
+            await RecordActivityInternalAsync("Downloaded");
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
+    }
+
+    private Task RecordPrintedAsync() => RecordActivityInternalAsync("Printed");
+    private Task RecordDownloadedAsync() => RecordActivityInternalAsync("Downloaded");
+
+    private async Task SelectTabAsync(string tab)
+    {
+        activeTab = tab;
+        if (tab == "history" && DocumentId is { } id)
+        {
+            try
+            {
+                document = await Documents.GetDocumentAsync(id);
+                await LoadLookupsAsync();
+            }
+            catch
+            {
+                /* keep the last known history if refresh fails */
+            }
+        }
+    }
+
+    private async Task RecordActivityInternalAsync(string action)
+    {
+        if (!showHistory || DocumentId is not { } id) return;
+        if (string.Equals(action, "Viewed", StringComparison.OrdinalIgnoreCase) && viewedRecorded) return;
+        try
+        {
+            document = await Documents.RecordActivityAsync(id, action);
+            if (string.Equals(action, "Viewed", StringComparison.OrdinalIgnoreCase)) viewedRecorded = true;
+            await LoadLookupsAsync();
+        }
+        catch
+        {
+            /* Preview must still open if activity logging fails. */
+        }
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        if (document is null) return;
+        var ids = document.History
+            .SelectMany(HistoryLookupIds)
+            .Concat(document.Assignments.Select(x => x.AssigneeUserId))
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+        if (ids.Count > 0)
+        {
+            try
+            {
+                foreach (var user in await Documents.GetWorkflowUserLookupAsync(ids))
+                {
+                    var name = UserDisplayNames.FirstReal(user.DisplayName, user.UserName);
+                    if (!string.IsNullOrWhiteSpace(name)) personNames[user.UserId] = name;
+                }
+            }
+            catch { /* names are best-effort */ }
+        }
+
+        if (orgNames.Count > 0) return;
+        try
+        {
+            foreach (var department in await Catalog.GetDepartmentLookupAsync())
+                orgNames[department.Id] = department.Name;
+            foreach (var unit in await Catalog.GetUnitLookupAsync())
+                orgNames.TryAdd(unit.Id, unit.Name);
+        }
+        catch { /* department names are best-effort */ }
+    }
+
+    private static IEnumerable<Guid> HistoryLookupIds(DocumentHistoryDto item)
+    {
+        if (item.ActorUserId is { } actor && actor != Guid.Empty) yield return actor;
+        if (TryHistoryTargetId(item, out var target)) yield return target;
+    }
+
+    private static bool IsInboxHistory(DocumentHistoryDto item)
+    {
+        if (!InboxHistoryActions.Contains(item.Action)) return false;
+        if (!string.Equals(item.Action, "Assigned", StringComparison.OrdinalIgnoreCase)) return true;
+        return item.Detail?.EndsWith(":VIEW", StringComparison.OrdinalIgnoreCase) == true
+            || string.Equals(item.Detail, "VIEW", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryHistoryTargetId(DocumentHistoryDto item, out Guid id)
+    {
+        id = Guid.Empty;
+        if (string.IsNullOrWhiteSpace(item.Detail)) return false;
+        var raw = item.Detail;
+        var colon = raw.IndexOf(':');
+        var token = colon > 0 ? raw[..colon] : raw;
+        return Guid.TryParse(token, out id);
+    }
+
+    private string HistoryTitle(DocumentHistoryDto item)
+    {
+        var action = HistoryActionText(item.Action);
+        var actor = PersonName(item.ActorUserId);
+        return string.IsNullOrWhiteSpace(actor) ? action : $"{action} · {actor}";
+    }
+
+    private string HistoryActionText(string action)
+    {
+        var key = $"Document:History.{action}";
+        var text = L[key];
+        return text.Value == key ? action : text.Value;
+    }
+
+    private string HistoryDetailText(DocumentHistoryDto item)
+    {
+        if (string.Equals(item.Action, "Assigned", StringComparison.OrdinalIgnoreCase)
+            && TryHistoryTargetId(item, out var assigneeId))
+        {
+            var name = PersonName(assigneeId);
+            return string.IsNullOrWhiteSpace(name) ? "" : string.Format(L["Document:History.SentToPerson"], name);
+        }
+
+        if (string.Equals(item.Action, "Sent", StringComparison.OrdinalIgnoreCase)
+            && TryHistoryTargetId(item, out var receiverId))
+        {
+            if (orgNames.TryGetValue(receiverId, out var org) && !string.IsNullOrWhiteSpace(org))
+                return string.Format(L["Document:History.SentToDepartment"], org);
+            var name = PersonName(receiverId);
+            return string.IsNullOrWhiteSpace(name) ? "" : string.Format(L["Document:History.SentToPerson"], name);
+        }
+
+        if (string.IsNullOrWhiteSpace(item.Detail) || Guid.TryParse(item.Detail, out _)) return "";
+        return item.Detail;
+    }
+
+    private string PersonName(Guid? id)
+    {
+        if (id is not { } value) return "";
+        return personNames.TryGetValue(value, out var name) ? name : "";
     }
 
     private static string FormatSize(long size) => size switch

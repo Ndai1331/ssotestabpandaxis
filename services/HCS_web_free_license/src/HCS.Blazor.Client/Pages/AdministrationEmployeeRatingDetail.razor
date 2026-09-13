@@ -57,7 +57,7 @@
                     <h2 id="rating-trend-title">@L["EmployeeRatings:Trend"]</h2>
                     @if (detail.Trend.Count == 0)
                     {
-                        <div class="hcs-empty py-4"><i class="fa fa-chart-line" aria-hidden="true"></i><p>@L["EmployeeRatings:NoTrend"]</p></div>
+                        <DocsEmpty Compact="true" Title="@L["EmployeeRatings:NoTrend"]" />
                     }
                     else
                     {

@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Blazorise;
-using Blazorise.DataGrid;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -30,7 +29,6 @@ public partial class ReferenceCatalog : IDisposable
     private readonly List<CountryCatalogDto> countryOptions = [];
     private readonly List<ProvinceCatalogDto> provinceOptions = [];
     private readonly HashSet<Guid> isDeleting = [];
-    private DataGrid<ReferenceCatalogRow>? dataGrid;
     private Modal? editModal;
     private ReferenceCatalogFormModel form = new();
     private string? filterText;
@@ -64,6 +62,7 @@ public partial class ReferenceCatalog : IDisposable
             loadVersion++;
             loadedDefinitionKey = definitionKey;
             filterText = null;
+            currentPage = 1;
             rows.Clear();
             totalCount = 0;
             errorMessage = null;
@@ -75,8 +74,25 @@ public partial class ReferenceCatalog : IDisposable
         if (isAuthorized)
         {
             await LoadRequiredLookupsAsync();
-            if (definitionChanged && dataGrid is not null) await dataGrid.Reload();
+            if (definitionChanged) await LoadPageAsync(currentPage, pageSize);
         }
+    }
+
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
+
+    private Task GoFirst() { currentPage = 1; return LoadPageAsync(currentPage, pageSize); }
+    private Task GoPrev() { if (!CanPrev) return Task.CompletedTask; currentPage--; return LoadPageAsync(currentPage, pageSize); }
+    private Task GoNext() { if (!CanNext) return Task.CompletedTask; currentPage++; return LoadPageAsync(currentPage, pageSize); }
+    private Task GoLast() { currentPage = PageCount; return LoadPageAsync(currentPage, pageSize); }
+
+    private Task OnPageSizeChanged(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, PageSizeOptions[0], PageSizeOptions[^1]);
+        currentPage = 1;
+        return LoadPageAsync(currentPage, pageSize);
     }
 
     public void Dispose()
@@ -119,13 +135,6 @@ public partial class ReferenceCatalog : IDisposable
         {
             await ShowErrorAsync(L["Catalog:LookupError"].Value);
         }
-    }
-
-    private async Task OnDataGridReadAsync(DataGridReadDataEventArgs<ReferenceCatalogRow> args)
-    {
-        currentPage = Math.Max(1, args.Page);
-        pageSize = Math.Clamp(args.PageSize, PageSizeOptions[0], PageSizeOptions[^1]);
-        await LoadPageAsync(currentPage, pageSize, args.CancellationToken);
     }
 
     private async Task LoadPageAsync(int page, int requestedPageSize, CancellationToken cancellationToken = default)
@@ -197,12 +206,10 @@ public partial class ReferenceCatalog : IDisposable
         }
     }
 
-    private async Task SearchAsync()
+    private Task SearchAsync()
     {
         currentPage = 1;
-        if (dataGrid is null) { await LoadPageAsync(1, pageSize); return; }
-        await dataGrid.Paginate("1");
-        await dataGrid.Reload();
+        return LoadPageAsync(1, pageSize);
     }
 
     private async Task ResetSearchAsync()
@@ -211,11 +218,7 @@ public partial class ReferenceCatalog : IDisposable
         await SearchAsync();
     }
 
-    private async Task RefreshAsync()
-    {
-        if (dataGrid is null) { await LoadPageAsync(currentPage, pageSize); return; }
-        await dataGrid.Reload();
-    }
+    private Task RefreshAsync() => LoadPageAsync(currentPage, pageSize);
 
     private async Task OpenCreateModalAsync()
     {

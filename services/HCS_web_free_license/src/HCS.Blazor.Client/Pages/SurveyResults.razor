@@ -5,28 +5,27 @@
 
 <PageTitle>@L["Feature:SurveyResults"] · HCS</PageTitle>
 
-<section class="hcs-catalog-page">
-    <header class="hcs-catalog-titlebar">
-        <div class="min-w-0"><h1>@L["Feature:SurveyResults"]</h1><p class="text-muted mb-0">@L["SurveyResults:Subtitle"]</p></div>
-    </header>
-    <Card Class="mb-3 hcs-catalog-filter-card"><CardBody>
-        <div class="hcs-catalog-filter-row hcs-survey-results__filter-row">
-            <div class="hcs-survey-results__location-filter">
-                <span id="survey-location-label" class="form-label">@L["SurveyLocation"]</span>
-                <ProviderSelect2 Value="selectedLocationId"
-                                 ValueChanged="OnLocationChanged"
-                                 Items="LocationItems"
-                                 Placeholder="@L["All"]"
-                                 AriaLabel="@L["SurveyLocation"]"
-                                 Search="SearchLocationsAsync" />
-            </div>
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetAsync">@L["Catalog:Reset"]</Button>
+<section class="page page-wf">
+    <div class="page-head">
+        <div>
+            <h1>@L["Feature:SurveyResults"]</h1>
+            <p class="event-panel-kicker">@L["SurveyResults:Subtitle"]</p>
         </div>
-    </CardBody></Card>
-    <Card Class="hcs-catalog-grid-card"><CardBody>
+    </div>
+    <form class="docs-toolbar" @onsubmit:preventDefault>
+        <span class="filter-label" id="survey-location-label">@L["SurveyLocation"]</span>
+        <ProviderSelect2 Value="selectedLocationId"
+                         ValueChanged="OnLocationChanged"
+                         Items="LocationItems"
+                         Placeholder="@L["All"]"
+                         AriaLabel="@L["SurveyLocation"]"
+                         Search="SearchLocationsAsync" />
+        <button class="btn btn-outline" type="button" @onclick="ResetAsync">@L["Catalog:Reset"]</button>
+    </form>
+    <div class="event-panel">
         @if (isLoading)
         {
-            <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+            <DocsEmpty Loading="true" />
         }
         else
         {
@@ -59,31 +58,46 @@
                     }
                     else
                     {
-                        <div class="hcs-empty py-4"><i class="fa fa-inbox"></i><p>@L["NoSurveyData"]</p></div>
+                        <DocsEmpty Compact="true" Title="@L["NoSurveyData"]" />
                     }
                 </div>
             }
             else if (summaries.Items.Count == 0)
             {
-                <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2><p>@L["NoSurveyData"]</p></div>
+                <DocsEmpty Title="@L["Catalog:EmptyTitle"]" Hint="@L["NoSurveyData"]" />
             }
             else
             {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 hcs-catalog-grid">
-                        <thead><tr><th>@L["Feature:StarRating"]</th><th>@L["Menu:SurveyCriterias"]</th><th>@L["FullName"]</th><th>@L["PhoneNumber"]</th><th>@L["SurveyTime"]</th><th></th></tr></thead>
+                <div class="docs-table-wrap">
+                    <table class="docs-table">
+                        <thead><tr><th scope="col">@L["Feature:StarRating"]</th><th scope="col">@L["Menu:SurveyCriterias"]</th><th scope="col">@L["FullName"]</th><th scope="col">@L["PhoneNumber"]</th><th scope="col">@L["SurveyTime"]</th><th class="col-actions" scope="col"></th></tr></thead>
                         <tbody>
                             @foreach (var item in summaries.Items)
                             {
-                                <tr><td><span class="hcs-status-badge hcs-status-badge--info">@($"{WorkUi.ScoreToStars(item.Score)}★")</span></td><td>@item.SurveyCriteriaName</td><td>@(item.FullName ?? "—")</td><td>@(item.PhoneNumber ?? "—")</td><td>@item.SurveyTime.ToString("dd/MM/yyyy HH:mm")</td><td><button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => OpenDetailAsync(item)"><i class="fa fa-eye me-1"></i>@L["ViewDetail"]</button></td></tr>
+                                <tr>
+                                    <td><span class="hcs-status-badge hcs-status-badge--info">@($"{WorkUi.ScoreToStars(item.Score)}★")</span></td>
+                                    <td>@item.SurveyCriteriaName</td>
+                                    <td>@(item.FullName ?? "—")</td>
+                                    <td>@(item.PhoneNumber ?? "—")</td>
+                                    <td>@item.SurveyTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <button type="button" class="doc-action" @onclick="() => OpenDetailAsync(item)" title="@L["ViewDetail"]" aria-label="@L["ViewDetail"]">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
                             }
                         </tbody>
                     </table>
+                    <div class="pager">
+                        <span>@($"{summaries.TotalCount} {L["SurveyResults:Records"]}")</span>
+                        <button type="button" disabled="@(page == 0)" @onclick="PreviousPageAsync">@L["Previous"]</button>
+                        <button type="button" disabled="@(!HasNextPage)" @onclick="NextPageAsync">@L["Next"]</button>
+                    </div>
                 </div>
-                <div class="hcs-survey-results__pager"><span>@($"{summaries.TotalCount} {L["SurveyResults:Records"]}")</span><div><button type="button" class="btn btn-sm btn-light me-2" @onclick="PreviousPageAsync" disabled="@(page == 0)">@L["Previous"]</button><button type="button" class="btn btn-sm btn-light" @onclick="NextPageAsync" disabled="@(!HasNextPage)">@L["Next"]</button></div></div>
             }
         }
-    </CardBody></Card>
+    </div>
 </section>
 
 @if (showDetail)
@@ -107,11 +121,11 @@
                 }
                 @if (isDetailLoading)
                 {
-                    <div class="hcs-loading py-4"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+                    <DocsEmpty Loading="true" Compact="true" />
                 }
                 else if (details.Count == 0)
                 {
-                    <div class="hcs-empty py-4"><p>@L["NoSurveyData"]</p></div>
+                    <DocsEmpty Compact="true" Title="@L["NoSurveyData"]" />
                 }
                 else
                 {

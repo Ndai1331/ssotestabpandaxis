@@ -1,0 +1,431 @@
+/* HCS prototype bridge — map Blazor class names → designsystem/app.css look.
+   Source of truth: docs/hcs-hanh-chinh-so/designsystem + css/*.css */
+
+/* ——— Shared page head (catalog / documents / projects / workflows) ——— */
+.hcs-app-shell .hcs-catalog-titlebar,
+.hcs-app-shell .hcs-document-page__header,
+.hcs-app-shell .hcs-page__header,
+.hcs-app-shell .hcs-feature > header:first-child {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px var(--space-4);
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.hcs-app-shell .hcs-catalog-titlebar h1,
+.hcs-app-shell .hcs-document-page__header h1,
+.hcs-app-shell .hcs-page__header h1,
+.hcs-app-shell .hcs-catalog-page h1,
+.hcs-app-shell .hcs-feature h1 {
+  color: var(--color-primary);
+  font-size: 1.375rem; /* 22px */
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+.hcs-app-shell .hcs-catalog-page__actions,
+.hcs-app-shell .hcs-catalog-titlebar .hcs-catalog-page__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hcs-app-shell .hcs-catalog-page__actions .btn,
+.hcs-app-shell .hcs-catalog-create,
+.hcs-app-shell .hcs-catalog-export,
+.hcs-app-shell .hcs-catalog-filter-toggle {
+  border-radius: var(--button-radius) !important;
+  font-weight: var(--font-weight-semibold);
+  min-height: 40px;
+}
+
+.hcs-app-shell .hcs-catalog-filter-card,
+.hcs-app-shell .hcs-catalog-grid-card,
+.hcs-app-shell .hcs-document-filter-card {
+  background: var(--card-bg);
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--card-radius) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+.hcs-app-shell .hcs-catalog-filter-card .card-body,
+.hcs-app-shell .hcs-catalog-grid-card .card-body {
+  padding: var(--space-4) var(--space-5);
+}
+
+.hcs-app-shell .hcs-catalog-search .form-control,
+.hcs-app-shell .hcs-catalog-search input {
+  border-radius: var(--input-radius) !important;
+  min-height: 40px;
+}
+
+.hcs-app-shell .table,
+.hcs-app-shell .b-table,
+.hcs-app-shell table.table {
+  --bs-table-bg: transparent;
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.hcs-app-shell .table thead th,
+.hcs-app-shell .b-table thead th {
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-gray-600);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+}
+
+.hcs-app-shell .table tbody td,
+.hcs-app-shell .b-table tbody td {
+  border-bottom: 1px solid var(--color-gray-100);
+  color: var(--color-foreground);
+  font-size: var(--font-size-sm);
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+}
+
+.hcs-app-shell .table tbody tr:nth-child(odd),
+.hcs-app-shell .b-table tbody tr:nth-child(odd) {
+  background: #FBFCFD;
+}
+
+.hcs-app-shell :is(.badge, .hcs-status-badge, .hcs-priority-badge, .hcs-progress-badge) {
+  align-items: center;
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold, 600);
+  height: 24px;
+  justify-content: center;
+  line-height: 1;
+  max-height: 24px;
+  min-height: 24px;
+  overflow: hidden;
+  overflow-wrap: normal;
+  padding: 0 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.hcs-app-shell .badge {
+  border-radius: var(--radius-sm, 6px);
+}
+
+.hcs-app-shell :is(.hcs-status-badge, .hcs-priority-badge, .hcs-progress-badge) {
+  border-radius: var(--radius-full);
+}
+
+/* ——— Documents sidebar (docs-layout) ——— */
+.hcs-app-shell .hcs-document-layout {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
+.hcs-app-shell .hcs-document-type-sidebar {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+}
+
+.hcs-app-shell .hcs-document-type-tree-item {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-gray-700);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.hcs-app-shell .hcs-document-type-tree-item:hover {
+  background: var(--color-primary-soft);
+}
+
+.hcs-app-shell .hcs-document-type-tree-item.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-active);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 991.98px) {
+  .hcs-app-shell .hcs-document-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Social/chat visuals: prototype/social.css + prototype/chat.css (loaded before this file).
+   Do not restyle pills, posts, or composer here — higher-specificity rules were overriding the sample. */
+
+/* ——— Chat: fit split layout under the HCS header instead of 100vh ——— */
+.hcs-app-shell .hcs-main-content:has(.hcs-chat-page),
+.hcs-app-shell .hcs-main-content:has(.page-chat) {
+  background: var(--color-background);
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: auto;
+  max-width: none !important;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.hcs-app-shell .hcs-main-content > .hcs-chat-page,
+.hcs-app-shell .hcs-main-content > .page-chat,
+.hcs-app-shell .chat-app.hcs-chat-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  height: 100% !important;
+  margin: 0 !important;
+  max-width: none !important;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 16px 16px !important;
+  width: 100%;
+}
+
+.hcs-app-shell .chat-shell.hcs-chat,
+.hcs-app-shell .chat-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Avatar wrap: keep presence badge positioned like prototype .chat-avatar */
+.hcs-app-shell .hcs-chat__avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+.hcs-app-shell .hcs-chat__avatar-wrap .chat-dot,
+.hcs-app-shell .hcs-chat__avatar-wrap .hcs-chat__presence {
+  position: absolute;
+  bottom: 1px;
+  left: 1px;
+}
+
+.hcs-app-shell .hcs-chat__avatar-wrap--small .chat-avatar,
+.hcs-app-shell .hcs-chat__avatar-wrap .chat-avatar.sm,
+.hcs-app-shell .page-chat .chat-avatar.sm {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  font-size: 10px;
+}
+
+.hcs-app-shell .hcs-chat__avatar-wrap--large .chat-avatar,
+.hcs-app-shell .hcs-chat__avatar-wrap .chat-avatar.lg {
+  width: 104px;
+  height: 104px;
+  min-width: 104px;
+  font-size: 32px;
+}
+
+.hcs-app-shell .hcs-chat__avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+/* ——— Events / calendar light sync ——— */
+.hcs-app-shell .hcs-event-page,
+.hcs-app-shell .hcs-cal-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.hcs-app-shell .hcs-event-page h1,
+.hcs-app-shell .hcs-cal-page h1 {
+  color: var(--color-primary);
+  font-size: 1.375rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ——— Kanban (tasks) ——— */
+.hcs-app-shell .hcs-kanban-board {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: start;
+}
+
+.hcs-app-shell .hcs-kanban-column {
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  min-height: 320px;
+  padding: var(--space-3);
+}
+
+.hcs-app-shell .hcs-kanban-column.is-over {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.hcs-app-shell .hcs-kanban-hd {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  padding: 0 var(--space-1);
+}
+
+.hcs-app-shell .hcs-kanban-hd h2,
+.hcs-app-shell .hcs-kanban-hd strong {
+  color: var(--color-foreground);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.hcs-app-shell .hcs-kanban-count {
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-full);
+  color: var(--color-primary-active);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  min-width: 1.5rem;
+  padding: 0.15rem 0.45rem;
+  text-align: center;
+}
+
+.hcs-app-shell .hcs-kanban-zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 200px;
+}
+
+.hcs-app-shell .hcs-kanban-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: var(--space-3);
+}
+
+.hcs-app-shell .hcs-kanban-card:active {
+  cursor: grabbing;
+}
+
+.hcs-app-shell .hcs-kanban-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.hcs-app-shell .hcs-kanban-title a {
+  color: var(--color-foreground);
+  text-decoration: none;
+}
+
+.hcs-app-shell .hcs-kanban-title a:hover {
+  color: var(--color-primary);
+}
+
+.hcs-app-shell .hcs-kanban-project,
+.hcs-app-shell .hcs-kanban-code,
+.hcs-app-shell .hcs-kanban-dates {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.hcs-app-shell .hcs-kanban-foot {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+}
+
+.hcs-app-shell .hcs-kanban-avatar {
+  align-items: center;
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-full);
+  color: var(--color-primary-active);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+/* ——— Event KPI / detail tokens ——— */
+.hcs-app-shell .hcs-event-kpi,
+.hcs-app-shell .hcs-event-summary-strip {
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.hcs-app-shell .hcs-event-kpi--primary {
+  border-top-color: var(--color-primary) !important;
+}
+
+.hcs-app-shell .hcs-event-kpi__icon,
+.hcs-app-shell .hcs-event-name,
+.hcs-app-shell .hcs-event-detail .hcs-event-back {
+  color: var(--color-primary) !important;
+}
+
+.hcs-app-shell .hcs-event-kpi__icon {
+  background: var(--color-primary-soft) !important;
+}
+
+
+/* ——— Main content rhythm ——— */
+.hcs-app-shell .hcs-main-content {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+.hcs-app-shell .hcs-main-content > .hcs-catalog-page,
+.hcs-app-shell .hcs-main-content > .hcs-feature,
+.hcs-app-shell .hcs-main-content > .hcs-social-page,
+.hcs-app-shell .hcs-main-content > section:not(.hcs-chat-page):not(.page-chat),
+.hcs-app-shell .hcs-main-content > main:not(.hcs-chat-page):not(.page-chat) {
+  box-sizing: border-box;
+  margin-inline: auto;
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--space-5) 0 var(--space-8);
+  width: 100%;
+}
+
+.hcs-app-shell .hcs-main-content > .hcs-social-page {
+  max-width: 1280px;
+}
+
+.hcs-app-shell .hcs-main-content > .hcs-chat-page,
+.hcs-app-shell .hcs-main-content > .page-chat {
+  margin-inline: 0;
+  max-width: none;
+}

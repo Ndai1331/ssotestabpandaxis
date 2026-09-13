@@ -1,14 +1,23 @@
 using System.Security.Claims;
 using HCS.DocumentService.Integration;
+using HCS.DocumentService.Storage;
+using HCS.DocumentService.Workflows;
 using HCS.IntegrationEvents.Auditing;
 using HCS.IntegrationEvents.Documents;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Volo.Abp;
+using Volo.Abp.BlobStoring;
 
 namespace HCS.DocumentService.Documents;
 
-public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContextAccessor httpContext) : IDocumentAppService
+public sealed class DocumentAppService(
+    DocumentServiceDbContext db,
+    IHttpContextAccessor httpContext,
+    IBlobContainer<DocumentBlobContainer> documentBlobs,
+    IBlobContainer<SigningBlobContainer> signingBlobs,
+    ILogger<DocumentAppService> logger) : IDocumentAppService
 {
     public async Task<PagedDocumentsDto> GetListAsync(string? filter = null, DocumentStatus? status = null,
         bool mine = false, int skip = 0, int take = 50, int? sourceType = null,
@@ -25,31 +34,13 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         // number of children and made the list endpoint a hidden fan-out.
         var query = db.Documents.AsNoTracking()
             .Where(x => x.SourceType != DocumentSourceType.Workflow || sourceType == 3);
-        query = sourceType switch
-        {
-            1 => query.Where(x => x.SourceType == DocumentSourceType.Personal),
-            2 => query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId && a.IsCurrent &&
-                                  a.Responsibility == "VIEW" && a.StepCode == null)),
-            0 when !DocumentAccess.IsElevated(principal) =>
-                query.Where(x => x.SourceType == DocumentSourceType.Archive &&
-                                 (x.Assignments.Any(a => a.AssigneeUserId == userId) ||
-                                  x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))),
-            0 => query.Where(x => x.SourceType == DocumentSourceType.Archive),
-            3 when !DocumentAccess.IsElevated(principal) =>
-                query.Where(x => x.SourceType == DocumentSourceType.Workflow &&
-                                 (x.Assignments.Any(a => a.AssigneeUserId == userId) ||
-                                  x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))),
-            3 => query.Where(x => x.SourceType == DocumentSourceType.Workflow),
-            _ when mine || !DocumentAccess.IsElevated(principal) =>
-                query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) ||
-                                 x.History.Any(h => h.Action == "Created" && h.ActorUserId == userId)),
-            _ => query
-        };
+        query = DocumentAccess.FilterBySource(query, sourceType, userId, mine, principal);
         if (!string.IsNullOrWhiteSpace(filter))
         {
             var value = filter.Trim().ToLowerInvariant();
             query = query.Where(x => EF.Functions.ILike(x.Number, $"%{value}%") ||
-                                     EF.Functions.ILike(x.Title, $"%{value}%"));
+                                     EF.Functions.ILike(x.Title, $"%{value}%") ||
+                                     (x.DocumentCode != null && EF.Functions.ILike(x.DocumentCode, $"%{value}%")));
         }
         if (status.HasValue) query = query.Where(x => x.Status == status);
         if (documentTypeId.HasValue) query = query.Where(x => x.DocumentTypeId == documentTypeId);
@@ -60,9 +51,17 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         if (to.HasValue) query = query.Where(x => x.CreationTime < to.Value.ToUniversalTime().AddDays(1));
         var totalCount = await query.LongCountAsync(cancellationToken);
         var items = await query.OrderByDescending(x => x.CreationTime).Skip(skip).Take(take)
-            .Select(x => new { Document = x, FileCount = x.Files.Count(f => !f.IsPendingDeletion) })
+            .Select(x => new
+            {
+                Document = x,
+                FileCount = x.Files.Count(f => !f.IsPendingDeletion),
+                IsSent = x.History.Any(h => h.Action == DocumentSendState.SentAction) &&
+                         !x.History.Any(h => h.Action == DocumentSendState.RevokedAction &&
+                             h.OccurredAt >= x.History.Where(s => s.Action == DocumentSendState.SentAction)
+                                 .Max(s => s.OccurredAt))
+            })
             .ToListAsync(cancellationToken);
-        return new PagedDocumentsDto(totalCount, items.Select(x => MapList(x.Document, x.FileCount)).ToList());
+        return new PagedDocumentsDto(totalCount, items.Select(x => MapList(x.Document, x.FileCount, x.IsSent)).ToList());
     }
 
     public async Task<DocumentDto> CreateAsync(CreateDocumentRequest input, CancellationToken cancellationToken = default)
@@ -74,8 +73,10 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         var sourceType = input.SourceType is DocumentSourceType.Personal ? DocumentSourceType.Personal : DocumentSourceType.Archive;
         for (var attempt = 0; attempt < 3; attempt++)
         {
-            var number = ResolveNumber(input.Number, now);
+            var number = attempt == 0 ? ResolveNumber(input.Number, now) : GenerateNumber(now, attempt);
             var document = new DocumentAggregate(Guid.NewGuid(), number, input.Title, input.Description, userId, now, sourceType);
+            document.SetDocumentCode(input.DocumentCode);
+            document.SetOrganizationUnit(input.OrganizationUnitId);
             if (input.DocumentTypeId is not null || input.SectorId is not null || input.UrgencyId is not null || input.ConfidentialityId is not null)
                 document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, now);
             db.Documents.Add(document);
@@ -85,10 +86,8 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
                 await db.SaveChangesAsync(cancellationToken);
                 return Map(document);
             }
-            catch (DbUpdateException exception) when (IsUniqueViolation(exception) && string.IsNullOrWhiteSpace(input.Number) && attempt < 2)
+            catch (DbUpdateException exception) when (IsUniqueViolation(exception) && attempt < 2)
             {
-                // A generated number is already collision-resistant; retrying the
-                // insert handles the remaining race without polling the database.
                 db.ChangeTracker.Clear();
             }
             catch (DbUpdateException exception) when (IsUniqueViolation(exception))
@@ -121,6 +120,8 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
         var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         document.Update(input.Title, input.Description, userId, DateTime.UtcNow);
+        document.SetDocumentCode(input.DocumentCode);
+        document.SetOrganizationUnit(input.OrganizationUnitId);
         document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, DateTime.UtcNow);
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentUpdated", id, 200, null, DateTime.UtcNow);
@@ -132,13 +133,19 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
         var document = await LoadAsync(id, cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
+        if (!DocumentAccess.CanInboxViewAssign(document, userId, input.Responsibility))
+        {
+            DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
+            DocumentAccess.EnsureCanManage(document, userId, principal);
+        }
         var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
         var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         var now = DateTime.UtcNow;
         var before = document.Assignments.Count;
+        var existingView = document.Assignments.FirstOrDefault(x =>
+            x.AssigneeUserId == input.AssigneeUserId && x.Responsibility == input.Responsibility && x.StepCode == null);
+        var viewWasCurrent = existingView?.IsCurrent == true;
         var assignment = document.Assign(Guid.NewGuid(), input.AssigneeUserId, input.Responsibility, userId, now);
         if (document.Assignments.Count != before)
         {
@@ -146,6 +153,8 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
                 assignment.Id, input.AssigneeUserId, null, assignment.Responsibility);
             db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, now));
         }
+        if (IsInboxView(assignment.Responsibility, assignment.StepCode) && !viewWasCurrent)
+            EnqueueSentToInbox(document, userId, now, input.AssigneeUserId);
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentAssigned", id, 200, input.Responsibility, now);
         await db.SaveChangesAsync(cancellationToken);
@@ -172,14 +181,18 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
         var document = await LoadAsync(id, cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
+        DocumentAccess.EnsureCanSend(document, userId, principal);
+        if (!DocumentAccess.HasInboxView(document, userId))
+            DocumentAccess.RequirePermission(principal, DocumentPermissions.Assign);
         var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
         var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
-        document.Send(input.ReceiverUserId, input.OrganizationUnitId, userId, DateTime.UtcNow);
+        var now = DateTime.UtcNow;
+        document.Send(input.ReceiverUserId, input.OrganizationUnitId, userId, now);
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
-        AddAudit("DocumentSent", id, 200, input.ReceiverUserId?.ToString() ?? input.OrganizationUnitId?.ToString(), DateTime.UtcNow);
+        if (input.ReceiverUserId is { } receiverUserId)
+            EnqueueSentToInbox(document, userId, now, receiverUserId);
+        AddAudit("DocumentSent", id, 200, input.ReceiverUserId?.ToString() ?? input.OrganizationUnitId?.ToString(), now);
         await db.SaveChangesAsync(cancellationToken);
         return Map(document);
     }
@@ -193,11 +206,67 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         DocumentAccess.EnsureCanManage(document, userId, principal);
         var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
         var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
-        document.RevokeInbox(userId, DateTime.UtcNow);
+        var now = DateTime.UtcNow;
+        var wasSent = DocumentSendState.IsActivelySent(document.History);
+        document.RevokeInbox(userId, now);
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
-        AddAudit("DocumentRevoked", id, 200, null, DateTime.UtcNow);
+        if (wasSent)
+            EnqueueInboxCleared(id, now);
+        AddAudit("DocumentRevoked", id, 200, null, now);
         await db.SaveChangesAsync(cancellationToken);
         return Map(document);
+    }
+
+    public async Task<DocumentDto> RecordActivityAsync(Guid id, DocumentActivityRequest input, CancellationToken cancellationToken = default)
+    {
+        var principal = Principal;
+        var userId = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.View);
+        var document = await LoadAsync(id, cancellationToken);
+        DocumentAccess.EnsureCanView(document, userId, principal);
+        var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
+        var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
+        var now = DateTime.UtcNow;
+        try
+        {
+            document.RecordAccess(input.Action, userId, now);
+        }
+        catch (ArgumentException)
+        {
+            throw new BusinessException("Document:InvalidActivity");
+        }
+        TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
+        AddAudit("DocumentActivity", id, 200, input.Action, now);
+        await db.SaveChangesAsync(cancellationToken);
+        return Map(document);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var principal = Principal;
+        var userId = DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
+        var document = await LoadAsync(id, cancellationToken);
+        DocumentAccess.EnsureCanManage(document, userId, principal);
+        if (await db.WorkflowInstances.AnyAsync(x => x.DocumentId == id && x.Status == WorkflowInstanceStatus.Running, cancellationToken))
+            throw new BusinessException("Document:CannotDeleteWithRunningWorkflow");
+
+        var now = DateTime.UtcNow;
+        var documentBlobNames = document.Files.Select(x => x.BlobName).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().ToList();
+        var signingAttempts = await db.SigningAttempts.Where(x => x.DocumentId == id).ToListAsync(cancellationToken);
+        var signingBlobNames = signingAttempts.Select(x => x.OutputBlobName)
+            .Where(name => !string.IsNullOrWhiteSpace(name)).Cast<string>().Distinct().ToList();
+        var workflowInstances = await db.WorkflowInstances.Include(x => x.Tasks)
+            .Where(x => x.DocumentId == id).ToListAsync(cancellationToken);
+
+        EnqueueInboxCleared(id, now);
+        AddAudit("DocumentDeleted", id, 200, null, now);
+        db.SigningAttempts.RemoveRange(signingAttempts);
+        db.WorkflowInstances.RemoveRange(workflowInstances);
+        db.Documents.Remove(document);
+        await db.SaveChangesAsync(cancellationToken);
+        await TryDeleteBlobsAsync(documentBlobs, documentBlobNames, cancellationToken);
+        await TryDeleteBlobsAsync(signingBlobs, signingBlobNames, cancellationToken);
     }
 
     private IQueryable<DocumentAggregate> Query() => db.Documents.AsNoTracking().AsSplitQuery()
@@ -220,18 +289,77 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
         db.DocumentHistories.AddRange(document.History.Where(x => !existingHistoryIds.Contains(x.Id)));
     }
 
-    private static string ResolveNumber(string? requested, DateTime now)
+    private static string ResolveNumber(string? requested, DateTime now, int attempt = 0)
     {
         var normalized = requested?.Trim();
         if (!string.IsNullOrWhiteSpace(normalized)) return normalized;
-        return GenerateNumber(now);
+        return GenerateNumber(now, attempt);
     }
 
     private static bool IsUniqueViolation(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
-    internal static string GenerateNumber(DateTime now) =>
-        $"VB-{now:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+    private static readonly TimeZoneInfo VietnamZone = ResolveVietnamZone();
+
+    internal static string GenerateNumber(DateTime now, int attempt = 0)
+    {
+        var utc = now.Kind switch
+        {
+            DateTimeKind.Utc => now,
+            DateTimeKind.Local => now.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(now, DateTimeKind.Utc)
+        };
+        var local = TimeZoneInfo.ConvertTimeFromUtc(utc, VietnamZone);
+        var stamp = local.ToString("yyyyMMdd-HHmmss");
+        return attempt <= 0 ? stamp : $"{stamp}-{attempt}";
+    }
+
+    private static TimeZoneInfo ResolveVietnamZone()
+    {
+        foreach (var id in new[] { "SE Asia Standard Time", "Asia/Ho_Chi_Minh" })
+        {
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+            catch (TimeZoneNotFoundException) { }
+            catch (InvalidTimeZoneException) { }
+        }
+        return TimeZoneInfo.CreateCustomTimeZone("ICT", TimeSpan.FromHours(7), "ICT", "ICT");
+    }
+
+    private void EnqueueSentToInbox(DocumentAggregate document, Guid senderUserId, DateTime now, params Guid[] recipientUserIds)
+    {
+        var recipients = recipientUserIds.Where(id => id != Guid.Empty && id != senderUserId).Distinct().ToArray();
+        if (recipients.Length == 0) return;
+        var label = string.IsNullOrWhiteSpace(document.Title) ? document.Number : document.Title.Trim();
+        var integrationEvent = new DocumentSentToInboxEto(Guid.NewGuid(), now, CorrelationId, document.Id,
+            senderUserId, label, document.Number, recipients);
+        db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, now));
+    }
+
+    private void EnqueueInboxCleared(Guid documentId, DateTime now)
+    {
+        var integrationEvent = new DocumentInboxClearedEto(Guid.NewGuid(), now, CorrelationId, documentId);
+        db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, now));
+    }
+
+    private static bool IsInboxView(string responsibility, string? stepCode) =>
+        string.Equals(responsibility, "VIEW", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(stepCode);
+
+    private async Task TryDeleteBlobsAsync<TContainer>(IBlobContainer<TContainer> container, IEnumerable<string> blobNames,
+        CancellationToken cancellationToken)
+        where TContainer : class
+    {
+        foreach (var blobName in blobNames)
+        {
+            try
+            {
+                await container.DeleteAsync(blobName, cancellationToken: cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning(exception, "Could not delete blob {BlobName} after document removal", blobName);
+            }
+        }
+    }
 
     private void AddAudit(string action, Guid id, int status, string? detail, DateTime now)
     {
@@ -245,14 +373,15 @@ public sealed class DocumentAppService(DocumentServiceDbContext db, IHttpContext
     }
     internal static DocumentDto Map(DocumentAggregate x) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
         x.DocumentTypeId, x.SectorId, x.UrgencyId, x.ConfidentialityId,
-        x.Files.Select(f => new DocumentFileDto(f.Id, f.FileName, f.ContentType, f.Size, f.Sha256, f.CreationTime, f.PairedFileId)).ToList(),
+        x.Files.Where(f => !f.IsPendingDeletion)
+            .Select(f => new DocumentFileDto(f.Id, f.FileName, f.ContentType, f.Size, f.Sha256, f.CreationTime, f.PairedFileId)).ToList(),
         x.Assignments.Select(a => new DocumentAssignmentDto(a.Id, a.AssigneeUserId, a.Responsibility, a.AssignedAt, a.IsCurrent, a.StepCode)).ToList(),
         x.History.OrderBy(h => h.OccurredAt).Select(h => new DocumentHistoryDto(h.Id, h.Action, h.ActorUserId, h.Detail, h.OccurredAt)).ToList(),
         x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId,
-        x.Files.Count(f => !f.IsPendingDeletion));
+        x.Files.Count(f => !f.IsPendingDeletion), DocumentSendState.IsActivelySent(x.History), x.DocumentCode);
 
-    private static DocumentDto MapList(DocumentAggregate x, int fileCount) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
+    private static DocumentDto MapList(DocumentAggregate x, int fileCount, bool isSent) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
         x.DocumentTypeId, x.SectorId, x.UrgencyId, x.ConfidentialityId,
         Array.Empty<DocumentFileDto>(), Array.Empty<DocumentAssignmentDto>(), Array.Empty<DocumentHistoryDto>(),
-        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId, fileCount);
+        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId, fileCount, isSent, x.DocumentCode);
 }

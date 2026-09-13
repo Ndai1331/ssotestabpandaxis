@@ -22,14 +22,24 @@ public sealed class WorkRecordAuthorization(WorkManagementDbContext db, ICurrent
 
     public IQueryable<Domain.Project> VisibleProjects() => IsAdministrator
         ? db.Projects
-        : db.Projects.Where(x => x.OwnerUserId == UserId ||
-            db.ProjectMembers.Any(m => m.ProjectId == x.Id && m.UserId == UserId && m.IsActive));
+        : WorkAccessQueries.OwnedOrAssignedProjects(db.Projects, db.ProjectMembers, UserId);
+
+    public IQueryable<Domain.ProjectTask> VisibleTasks() => IsAdministrator
+        ? db.ProjectTasks
+        : WorkAccessQueries.CreatedOrAssignedTasks(db.ProjectTasks, db.ProjectTaskAssignments, db.Projects, UserId);
+
+    public async Task<HashSet<Guid>> CreatableProjectIdsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken ct)
+    {
+        var ids = projectIds.Distinct().ToList();
+        if (ids.Count == 0) return [];
+        if (IsAdministrator) return ids.ToHashSet();
+        return (await VisibleProjects().Where(x => ids.Contains(x.Id)).Select(x => x.Id).ToListAsync(ct)).ToHashSet();
+    }
 
     public async Task DemandProjectMemberAsync(Guid projectId, CancellationToken ct)
     {
         if (IsAdministrator) return;
-        if (!await db.Projects.AnyAsync(x => x.Id == projectId && (x.OwnerUserId == UserId ||
-                db.ProjectMembers.Any(m => m.ProjectId == x.Id && m.UserId == UserId && m.IsActive)), ct))
+        if (!await VisibleProjects().AnyAsync(x => x.Id == projectId, ct))
             throw new AbpAuthorizationException("Project membership required.");
     }
 
@@ -43,22 +53,17 @@ public sealed class WorkRecordAuthorization(WorkManagementDbContext db, ICurrent
     public async Task DemandTaskMemberAsync(Guid taskId, CancellationToken ct)
     {
         if (IsAdministrator) return;
-        if (!await db.ProjectTasks.AnyAsync(t => t.Id == taskId &&
-                (db.Projects.Any(p => p.Id == t.ProjectId && p.OwnerUserId == UserId) ||
-                 db.ProjectMembers.Any(m => m.ProjectId == t.ProjectId && m.UserId == UserId && m.IsActive) ||
-                 db.ProjectTaskAssignments.Any(a => a.ProjectTaskId == t.Id && a.UserId == UserId)), ct))
+        if (!await VisibleTasks().AnyAsync(t => t.Id == taskId, ct))
             throw new AbpAuthorizationException("Task membership required.");
     }
 
-    public Task DemandTaskOwnerAsync(Guid taskId, CancellationToken ct) => IsAdministrator
-        ? Task.CompletedTask
-        : DemandTaskOwnerCoreAsync(taskId, ct);
-
-    private async Task DemandTaskOwnerCoreAsync(Guid taskId, CancellationToken ct)
+    public async Task DemandTaskOwnerAsync(Guid taskId, CancellationToken ct)
     {
+        if (IsAdministrator) return;
         if (!await db.ProjectTasks.AnyAsync(t => t.Id == taskId &&
-                db.Projects.Any(p => p.Id == t.ProjectId && p.OwnerUserId == UserId), ct))
-            throw new AbpAuthorizationException("Project owner required.");
+                (t.CreatorId == UserId ||
+                 (t.CreatorId == null && db.Projects.Any(p => p.Id == t.ProjectId && p.OwnerUserId == UserId))), ct))
+            throw new AbpAuthorizationException("Task creator required.");
     }
 
     public async Task DemandSurveyOwnerAsync(Guid sessionId, CancellationToken ct)

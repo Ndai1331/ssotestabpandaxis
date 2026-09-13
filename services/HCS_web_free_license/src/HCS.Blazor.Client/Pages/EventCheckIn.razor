@@ -6,16 +6,78 @@
 
 <PageTitle>@(eventInfo?.Name ?? L["Event:CheckIn"]) · HCS</PageTitle>
 <main class="hcs-event-checkin" aria-labelledby="checkin-title">
-    <section class="hcs-event-checkin__card">
-        @if (isLoading) { <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div> }
-        else if (eventInfo is null) { <div class="hcs-empty"><i class="fa fa-triangle-exclamation" aria-hidden="true"></i><h1 id="checkin-title">@L["Event:PublicUnavailable"]</h1><p>@errorMessage</p></div> }
-        else if (checkedIn is not null) { <div class="hcs-event-checkin__success"><span class="hcs-event-checkin__success-icon"><i class="fa fa-check" aria-hidden="true"></i></span><h1 id="checkin-title">@L["Event:CheckInSuccess"]</h1><p>@string.Format(L["Event:CheckInSuccessDescription"], checkedIn.FullName)</p><time>@checkedIn.CheckedInAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</time></div> }
-        else
-        {
-            <div class="hcs-event-checkin__brand"><span><i class="fa fa-calendar-check" aria-hidden="true"></i></span><small>HCS · @L["Menu:EventManagement"]</small></div>
-            <h1 id="checkin-title">@eventInfo.Name</h1><p class="hcs-event-checkin__meta">@eventInfo.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @eventInfo.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")<br />@(eventInfo.Location ?? L["Event:OnlineOrNotSet"])</p>
-            <div class="hcs-event-checkin__notice"><i class="fa fa-circle-info me-2" aria-hidden="true"></i>@L["Event:CheckInAuthenticatedPrompt"]</div>
-            @if (!string.IsNullOrWhiteSpace(errorMessage)) { <div class="alert alert-danger" role="alert">@errorMessage</div> }
+    @if (isLoading)
+    {
+        <section class="hcs-event-checkin__card">
+            <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+        </section>
+    }
+    else if (eventInfo is null)
+    {
+        <section class="hcs-event-checkin__card">
+            <div class="hcs-empty">
+                <i class="fa fa-triangle-exclamation" aria-hidden="true"></i>
+                <h1 id="checkin-title">@L["Event:PublicUnavailable"]</h1>
+                <p>@errorMessage</p>
+            </div>
+        </section>
+    }
+    else
+    {
+        <article class="hcs-event-checkin__card">
+            <header class="hcs-event-checkin__brand">
+                <span aria-hidden="true"><i class="fa fa-calendar-check"></i></span>
+                <small>HCS · @L["Menu:EventManagement"]</small>
+            </header>
+
+            <div class="hcs-event-checkin__top">
+                <p class="hcs-event-checkin__kicker">@eventInfo.Code</p>
+                <span class="@StatusClass(eventInfo.Status)">@StatusLabel(eventInfo.Status)</span>
+            </div>
+            <h1 id="checkin-title">@eventInfo.Name</h1>
+            <ul class="hcs-event-checkin__meta">
+                <li>
+                    <i class="fa fa-clock" aria-hidden="true"></i>
+                    <span>
+                        <strong>@L["Event:Time"]</strong>
+                        @eventInfo.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        –
+                        @eventInfo.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    </span>
+                </li>
+                <li>
+                    <i class="fa fa-location-dot" aria-hidden="true"></i>
+                    <span>
+                        <strong>@L["Event:Location"]</strong>
+                        @(string.IsNullOrWhiteSpace(eventInfo.Location) ? L["Event:OnlineOrNotSet"] : eventInfo.Location)
+                    </span>
+                </li>
+            </ul>
+
+            @if (!string.IsNullOrWhiteSpace(eventInfo.Content))
+            {
+                <section class="hcs-event-checkin__copy" aria-labelledby="event-content-title">
+                    <h2 id="event-content-title">@L["Event:Content"]</h2>
+                    <p>@eventInfo.Content</p>
+                </section>
+            }
+            @if (!string.IsNullOrWhiteSpace(eventInfo.Description))
+            {
+                <section class="hcs-event-checkin__copy" aria-labelledby="event-note-title">
+                    <h2 id="event-note-title">@L["Event:Description"]</h2>
+                    <p>@eventInfo.Description</p>
+                </section>
+            }
+
+            <div class="hcs-event-checkin__notice @NoticeClass" role="status">
+                <i class="fa @NoticeIcon me-2" aria-hidden="true"></i>
+                @NoticeText
+            </div>
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">@errorMessage</div>
+            }
+
             @if (eventInfo.Attachments is { Count: > 0 })
             {
                 <section class="hcs-event-checkin__attachments" aria-labelledby="event-attachments-title">
@@ -31,20 +93,74 @@
                     </div>
                 </section>
             }
-            <div class="hcs-event-checkin__form">
-                <Button Color="Color.Primary" Class="w-100" Clicked="ConfirmParticipationAsync" Disabled="@isSubmitting"><i class="fa fa-check me-2" aria-hidden="true"></i>@L["Event:ConfirmParticipation"]</Button>
+
+            <div class="hcs-event-checkin__actions">
+                <button class="btn @(CanConfirm ? "btn-primary" : "btn-outline")" type="button"
+                        @onclick="ConfirmParticipationAsync" disabled="@(!CanConfirm || isSubmitting)">
+                    <i class="fa fa-check" aria-hidden="true"></i>
+                    @(IsConfirmed ? L["Event:Confirmed"] : L["Event:ConfirmParticipation"])
+                </button>
+                <button class="btn @(CanDecline ? "btn-danger" : "btn-outline")" type="button"
+                        @onclick="DeclineParticipationAsync" disabled="@(!CanDecline || isSubmitting)">
+                    <i class="fa fa-xmark" aria-hidden="true"></i>
+                    @(IsDeclined ? L["Event:Declined"] : L["Event:DeclineParticipation"])
+                </button>
+                <button class="btn @(CanCheckIn ? "btn-primary" : "btn-outline")" type="button"
+                        @onclick="CheckInAsync" disabled="@(!CanCheckIn || isSubmitting)">
+                    <i class="fa fa-user-check" aria-hidden="true"></i>
+                    @(IsCheckedIn ? L["Event:CheckedIn"] : L["Event:CheckIn"])
+                </button>
             </div>
-        }
-    </section>
+        </article>
+    }
 </main>
 
 @code {
     [Parameter] public string Code { get; set; } = "";
     [SupplyParameterFromQuery] public string? Token { get; set; }
-    private PublicEventDto? eventInfo; private PublicEventCheckInResultDto? checkedIn; private string? errorMessage; private bool isLoading, isSubmitting, isAuthenticated;
+    private PublicEventDto? eventInfo;
+    private string? errorMessage;
+    private bool isLoading, isSubmitting, isAuthenticated;
+    private bool IsPreparing => string.Equals(eventInfo?.Status, "Preparing", StringComparison.OrdinalIgnoreCase);
+    private bool IsOngoing => string.Equals(eventInfo?.Status, "Ongoing", StringComparison.OrdinalIgnoreCase);
+    private bool IsClosed => string.Equals(eventInfo?.Status, "Completed", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(eventInfo?.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
+    private bool IsConfirmed => string.Equals(eventInfo?.RegistrationStatus, "Confirmed", StringComparison.OrdinalIgnoreCase);
+    private bool IsDeclined => string.Equals(eventInfo?.RegistrationStatus, "Declined", StringComparison.OrdinalIgnoreCase);
+    private bool IsCheckedIn => string.Equals(eventInfo?.CheckInStatus, "CheckedIn", StringComparison.OrdinalIgnoreCase);
+    private bool CanConfirm => IsPreparing && !IsConfirmed;
+    private bool CanDecline => IsPreparing && !IsDeclined;
+    private bool CanCheckIn => IsOngoing && !IsCheckedIn;
+    private string NoticeClass => IsCheckedIn ? "is-done"
+        : IsClosed ? "is-warn"
+        : IsDeclined && !IsOngoing ? "is-declined"
+        : IsConfirmed && !IsOngoing ? "is-wait"
+        : "";
+    private string NoticeIcon => IsCheckedIn ? "fa-circle-check"
+        : IsClosed || (IsDeclined && !IsOngoing) ? "fa-triangle-exclamation"
+        : "fa-circle-info";
+    private string NoticeText
+    {
+        get
+        {
+            if (IsCheckedIn)
+            {
+                var time = eventInfo?.CheckedInAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+                return string.IsNullOrWhiteSpace(time)
+                    ? L["Event:CheckInSuccess"].Value
+                    : $"{L["Event:CheckInSuccess"]} · {time}";
+            }
+            if (IsClosed) return L["Event:EventClosedHint"];
+            if (IsOngoing) return L["Event:CheckInReadyHint"];
+            if (IsDeclined) return L["Event:DeclineHint"];
+            if (IsConfirmed) return L["Event:CheckInWaitHint"];
+            return L["Event:ConfirmHint"];
+        }
+    }
+
     protected override async Task OnParametersSetAsync()
     {
-        isLoading = true; checkedIn = null; errorMessage = null; isAuthenticated = false;
+        isLoading = true; errorMessage = null; isAuthenticated = false;
         try
         {
             var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -66,14 +182,51 @@
     private void LoginAsync() => LoginNavigation.NavigateTo(
         BffLoginUrlBuilder.Build(Configuration, LoginNavigation.Uri), forceLoad: true);
 
-    private async Task ConfirmParticipationAsync()
+    private Task ConfirmParticipationAsync() => SubmitAttendanceAsync(PublicAttendanceAction.Confirm);
+    private Task DeclineParticipationAsync() => SubmitAttendanceAsync(PublicAttendanceAction.Decline);
+    private Task CheckInAsync() => SubmitAttendanceAsync(PublicAttendanceAction.CheckIn);
+
+    private async Task SubmitAttendanceAsync(PublicAttendanceAction action)
     {
         isSubmitting = true; errorMessage = null;
-        try { checkedIn = await Work.CheckInPublicEventAsync(Code, Token ?? "", new()); }
-        catch (Exception ex) { errorMessage = MapBffError(ex); }
+        try
+        {
+            var token = Token ?? "";
+            switch (action)
+            {
+                case PublicAttendanceAction.Confirm:
+                    await Work.ConfirmPublicEventAsync(Code, token, new());
+                    break;
+                case PublicAttendanceAction.Decline:
+                    await Work.DeclinePublicEventAsync(Code, token, new());
+                    break;
+                default:
+                    await Work.CheckInPublicEventAsync(Code, token, new());
+                    break;
+            }
+            eventInfo = await Work.GetPublicEventAsync(Code, token);
+        }
+        catch (Exception ex) { errorMessage = MapBffError(ex, BffErrorKind.Save); }
         finally { isSubmitting = false; }
     }
 
+    private enum PublicAttendanceAction { Confirm, Decline, CheckIn }
+
     private string PublicAttachmentUrl(Guid fileId) => Work.BuildResourceUrl(
         $"/api/events/public/{Uri.EscapeDataString(Code)}/attachments/{fileId:D}?token={Uri.EscapeDataString(Token ?? string.Empty)}");
+    private string StatusLabel(string value) => value switch
+    {
+        "Preparing" => L["Event:Status.Preparing"].Value,
+        "Ongoing" => L["Event:Status.Ongoing"].Value,
+        "Completed" => L["Event:Status.Completed"].Value,
+        "Cancelled" => L["Event:Status.Cancelled"].Value,
+        _ => value
+    };
+    private static string StatusClass(string value) => value switch
+    {
+        "Ongoing" => "hcs-status-badge hcs-status-badge--success",
+        "Completed" => "hcs-status-badge hcs-status-badge--todo",
+        "Cancelled" => "hcs-status-badge hcs-status-badge--danger",
+        _ => "hcs-status-badge hcs-status-badge--planning"
+    };
 }

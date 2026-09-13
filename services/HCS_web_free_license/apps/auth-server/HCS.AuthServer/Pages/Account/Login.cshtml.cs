@@ -49,6 +49,12 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
     {
         ApplyDefaultReturnUrl();
         await LoadAuthenticationSettingsAsync();
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            action = "Login";
+            ModelState.Remove("action");
+        }
+
         return await base.OnPostAsync(action);
     }
 

@@ -110,12 +110,12 @@
 
 .hcs-language-grid ::deep .table th:last-child,
 .hcs-language-grid ::deep .table td:last-child {
+    overflow: visible;
     width: 1%;
 }
 
-.hcs-language-action-toggle {
-    min-width: 34px;
-    border: 1px solid #dce7ec;
+.hcs-language-grid ::deep .table-responsive {
+    overflow-x: auto;
 }
 
 .hcs-language-modal {

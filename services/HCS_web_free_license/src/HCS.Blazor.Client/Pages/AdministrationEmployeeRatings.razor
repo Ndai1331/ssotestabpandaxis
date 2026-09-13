@@ -56,7 +56,7 @@
             <div class="card-body p-0">
                 @if (!FilteredPeople.Any())
                 {
-                    <div class="hcs-empty py-5"><i class="fa fa-inbox" aria-hidden="true"></i><h2>@L["EmployeeRatings:EmptyTitle"]</h2><p>@L["EmployeeRatings:Empty"]</p></div>
+                    <DocsEmpty Title="@L["EmployeeRatings:EmptyTitle"]" Hint="@L["EmployeeRatings:Empty"]" />
                 }
                 else
                 {

@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sự kiện — HCS Hành chính số</title>
+  <meta name="description" content="Dashboard và danh sách sự kiện của hệ thống Hành chính số HCS.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/events.css">
+</head>
+<body class="app-page">
+  <a class="skip-link" href="#main">Bỏ qua tới nội dung chính</a>
+
+  <header class="topbar">
+    <a class="brand" href="home.html" aria-label="HCS Hành chính số">
+      <img src="assets/logo-hcs.svg" width="40" height="40" alt="">
+      <span class="brand-text">
+        <strong>HCS</strong>
+        <span>Hành chính số</span>
+      </span>
+    </a>
+    <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-controls="app-nav" aria-expanded="false" aria-label="Mở menu">
+      <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+      </svg>
+      <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18"/>
+      </svg>
+    </button>
+
+    <div class="topbar-actions">
+      <div class="top-pop" id="lang-pop">
+        <button class="lang-chip" type="button" id="lang-btn" aria-haspopup="true" aria-expanded="false" aria-controls="lang-menu" data-i18n-aria="chooseLang">
+          <span class="flag-slot" data-lang-flag aria-hidden="true"></span>
+          <span data-lang-code>VI</span>
+          <svg class="lang-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="top-pop" id="notify-pop">
+        <button class="icon-btn" type="button" id="notify-btn" aria-haspopup="true" aria-expanded="false" aria-controls="notify-panel" data-i18n-aria="notifications">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/>
+            <path d="M10 19a2 2 0 0 0 4 0"/>
+          </svg>
+          <span class="top-badge" data-notify-count hidden>0</span>
+        </button>
+      </div>
+      <a class="icon-btn" href="chat.html" data-i18n-aria="messages">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M4 6h16v10H7l-3 3V6z"/>
+        </svg>
+      </a>
+      <button class="user-menu" type="button" aria-haspopup="true" aria-label="Tài khoản">
+        <span class="user-meta">
+          <span class="name" id="user-name">hungtv</span>
+          <span class="role">Quản trị hệ thống</span>
+        </span>
+        <span class="avatar" id="user-avatar">HU</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="nav" id="app-nav" aria-label="Điều hướng chính">
+    <a class="nav-item" href="home.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg>
+      Workspace
+    </a>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+        Văn bản
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <span class="menu-label">Quản lý văn bản</span>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+          Văn bản của tôi
+        </a>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 12h12M12 6l6 6-6 6"/></svg>
+          Công văn đến
+        </a>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 12H8M12 6l-6 6 6 6"/></svg>
+          Công văn đi
+        </a>
+        <a href="ky-duyet.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          Hàng đợi ký
+        </a>
+        <div class="menu-sep"></div>
+        <a href="van-ban.html#tao" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Tạo văn bản mới
+        </a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.2 7.2 15.5 11M8.2 16.8 15.5 13"/></svg>
+        Quy trình
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="quy-trinh.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h9v4H4zM11 13h9v4h-9z"/></svg>
+          Quy trình của tôi
+        </a>
+        <a href="quy-trinh.html#theo-doi" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Theo dõi quy trình
+        </a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16l3-5 3 3 4-7"/></svg>
+        Dự án &amp; công việc
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="du-an.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h7l2 2h9v10H3z"/></svg>
+          Dự án
+        </a>
+        <a href="cong-viec.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+          Công việc
+        </a>
+      </div>
+    </div>
+
+    <a class="nav-item" href="lich.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+      Lịch
+    </a>
+
+    <div class="menu-wrap">
+      <button class="nav-item is-active" type="button" data-nav-menu aria-expanded="false" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 8v13"/><path d="M8 12h8"/><path d="M7 4h10l-1 4H8z"/></svg>
+        Sự kiện
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="su-kien.html" role="menuitem" id="nav-event-dash">Dashboard sự kiện</a>
+        <a href="su-kien.html#danh-sach" role="menuitem" id="nav-event-list">Danh sách sự kiện</a>
+        <a href="su-kien.html#tao" role="menuitem">Tạo sự kiện mới</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V8l8-4 8 4v11"/><path d="M4 19l8-4 8 4"/><path d="M12 4v11"/></svg>
+        Khảo sát
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="#" role="menuitem" data-mock-action="Khảo sát">Danh sách khảo sát</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4h8v4H8z"/><path d="M6 8h12v12H6z"/><path d="M9 12h6M9 16h4"/></svg>
+        Danh mục
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu menu-mega" role="menu">
+        <div class="mega-section">
+          <span class="menu-label">Danh mục văn bản</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Loại văn bản">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+              Loại văn bản
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Lĩnh vực">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 4 7v10l8 4 8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg>
+              Lĩnh vực
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Độ khẩn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+              Độ khẩn
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Độ mật">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 5 6v6c0 5 3.4 7.8 7 9 3.6-1.2 7-4 7-9V6z"/></svg>
+              Độ mật
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Phương thức xử lý">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M8 21H3v-5"/></svg>
+              Phương thức xử lý
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Trạng thái văn bản">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h8"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+              Trạng thái văn bản
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Phương thức ký">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+              Phương thức ký
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Cấu hình ký số">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 2l-2 2m-7.5 7.5 6-6"/><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 18.7 21 8.4"/></svg>
+              Cấu hình ký số
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Loại sự kiện">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+              Loại sự kiện
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục tổ chức</span>
+          <div class="mega-grid">
+            <a href="danh-muc.html" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V8l8-4 8 4v13"/><path d="M9 21v-6h6v6"/></svg>
+              Phòng ban
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Đơn vị">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+              Đơn vị
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Chức vụ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="4" y="7" width="16" height="13" rx="2"/></svg>
+              Chức vụ
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục y tế</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="ICD-10">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+              ICD-10
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Huyết áp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M19 14c1.2-1.2 2-2.7 2-4.5A5.5 5.5 0 0 0 12 6a5.5 5.5 0 0 0-9 3.5c0 1.8.8 3.3 2 4.5l7 7z"/></svg>
+              Huyết áp
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Đường huyết">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3s6 6.2 6 10a6 6 0 1 1-12 0c0-3.8 6-10 6-10z"/></svg>
+              Đường huyết
+            </a>
+            <a href="#" role="menuitem" data-mock-action="BMI">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19h16"/><path d="M7 19V9l5 4 5-8v14"/></svg>
+              BMI
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục địa giới</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Quốc gia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 3.8 6 3.8 9S14.5 18 12 21c-2.5-3-3.8-6-3.8-9S9.5 6 12 3z"/></svg>
+              Quốc gia
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Tỉnh/Thành">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V10l8-5 8 5v11"/><path d="M9 21v-6h6v6"/></svg>
+              Tỉnh/Thành
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Xã/Phường">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+              Xã/Phường
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục khảo sát</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Địa điểm khảo sát">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+              Địa điểm khảo sát
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Tiêu chí khảo sát">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+              Tiêu chí khảo sát
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Báo cáo</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Báo cáo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16l3-5 3 3 4-7"/></svg>
+              Báo cáo
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+        Mạng xã hội
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="bang-tin.html" role="menuitem">Bảng tin</a>
+        <a href="bang-tin.html#toi" role="menuitem">Trang cá nhân</a>
+        <a href="chat.html" role="menuitem">Chat nội bộ</a>
+        <a href="chat.html#nhom" role="menuitem">Chat nhóm</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Quản trị
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="#" role="menuitem" data-mock-action="Người dùng">Người dùng</a>
+        <a href="#" role="menuitem" data-mock-action="Phân quyền">Phân quyền</a>
+        <div class="menu-sep"></div>
+        <a class="is-danger" href="login.html" role="menuitem">Đăng xuất</a>
+      </div>
+    </div>
+  </nav>
+  <div class="nav-overlay" id="nav-overlay" hidden></div>
+
+  <main id="main" class="page">
+    <p class="page-crumb">Sự kiện</p>
+
+    <section id="view-event-dash">
+      <div class="page-head page-head-block">
+        <h1>Dashboard sự kiện</h1>
+        <div class="page-actions">
+          <a class="btn btn-outline" href="su-kien.html#danh-sach">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+            Danh sách sự kiện
+          </a>
+          <button class="btn btn-primary" type="button" data-event-create>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Tạo sự kiện mới
+          </button>
+          <button class="btn btn-outline" type="button" data-search-toggle="event-dash-filter" data-search-focus="event-from" aria-expanded="false" aria-controls="event-dash-filter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            Tìm kiếm
+          </button>
+        </div>
+      </div>
+
+      <form class="event-filter list-search" id="event-dash-filter" hidden>
+        <div class="field">
+          <label class="field-label" for="event-from">Từ ngày</label>
+          <input class="input" id="event-from" name="from" type="date" value="2026-11-08">
+        </div>
+        <div class="field">
+          <label class="field-label" for="event-to">Đến ngày</label>
+          <input class="input" id="event-to" name="to" type="date" value="2026-11-12">
+        </div>
+        <button class="btn btn-outline" type="submit" id="event-dash-refresh">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+          Làm mới
+        </button>
+      </form>
+
+      <section class="event-kpis" aria-label="Chỉ số sự kiện">
+        <article class="card event-kpi">
+          <span class="event-kpi-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          </span>
+          <div>
+            <div class="event-kpi-value" id="kpi-total">2</div>
+            <div class="event-kpi-label">Tổng sự kiện</div>
+          </div>
+        </article>
+        <article class="card event-kpi">
+          <span class="event-kpi-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8h12v10H6z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>
+          </span>
+          <div>
+            <div class="event-kpi-value" id="kpi-done">0</div>
+            <div class="event-kpi-label">Đã tổ chức</div>
+          </div>
+        </article>
+        <article class="card event-kpi">
+          <span class="event-kpi-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+          </span>
+          <div>
+            <div class="event-kpi-value" id="kpi-live">1</div>
+            <div class="event-kpi-label">Đang diễn ra</div>
+          </div>
+        </article>
+        <article class="card event-kpi">
+          <span class="event-kpi-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg>
+          </span>
+          <div>
+            <div class="event-kpi-value" id="kpi-soon">0</div>
+            <div class="event-kpi-label">Sắp diễn ra</div>
+          </div>
+        </article>
+        <article class="card event-kpi">
+          <span class="event-kpi-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+          </span>
+          <div>
+            <div class="event-kpi-value" id="kpi-people">2</div>
+            <div class="event-kpi-label">Tổng người tham dự</div>
+          </div>
+        </article>
+      </section>
+
+      <section class="event-panel" aria-labelledby="upcoming-title">
+        <div class="event-panel-head">
+          <div>
+            <p class="event-panel-kicker">Tiếp theo</p>
+            <h2 id="upcoming-title">Sự kiện sắp diễn ra</h2>
+          </div>
+          <a class="event-link" href="su-kien.html#danh-sach">
+            Xem tất cả
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+        <div class="event-empty">
+          <div class="event-empty-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 15h6"/></svg>
+          </div>
+          <h3>Chưa có sự kiện sắp diễn ra</h3>
+          <p>Tạo sự kiện mới hoặc rộng khoảng thời gian theo dõi.</p>
+        </div>
+      </section>
+    </section>
+
+    <section id="view-event-list" hidden>
+      <div class="page-head page-head-block">
+        <h1>Danh sách sự kiện</h1>
+        <div class="page-actions">
+          <button class="btn btn-outline" type="button" data-mock-action="Đã xuất file Excel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+            Xuất file Excel
+          </button>
+          <button class="btn btn-primary" type="button" data-event-create>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Tạo sự kiện mới
+          </button>
+          <button class="btn btn-outline" type="button" data-search-toggle="event-list-filter" data-search-focus="event-q" aria-expanded="false" aria-controls="event-list-filter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            Tìm kiếm
+          </button>
+        </div>
+      </div>
+
+      <form class="docs-toolbar list-search event-list-filter" id="event-list-filter" hidden>
+        <label class="sr-only" for="event-q">Nhập mã hoặc tên</label>
+        <input class="input docs-search" id="event-q" name="q" type="search" placeholder="Tìm theo mã hoặc tên sự kiện" autocomplete="off">
+        <button class="btn btn-primary" type="submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+          Tìm kiếm
+        </button>
+        <label class="sr-only" for="event-group">Nhóm sự kiện</label>
+        <select class="select" id="event-group" aria-label="Nhóm sự kiện">
+          <option value="">Nhóm sự kiện</option>
+          <option value="HOP">HOP</option>
+          <option value="General">General</option>
+        </select>
+        <label class="sr-only" for="event-status">Trạng thái</label>
+        <select class="select" id="event-status" aria-label="Trạng thái">
+          <option value="">Trạng thái</option>
+          <option value="preparing">Đang chuẩn bị</option>
+          <option value="live">Đang diễn ra</option>
+          <option value="done">Đã tổ chức</option>
+        </select>
+        <button class="btn btn-outline" type="button" id="event-list-reset">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+          Đặt lại
+        </button>
+      </form>
+
+      <div class="docs-table-wrap event-table-wrap">
+        <table class="docs-table event-table">
+          <thead>
+            <tr>
+              <th scope="col">Mã</th>
+              <th scope="col">Nhóm sự kiện</th>
+              <th scope="col">Thời gian</th>
+              <th scope="col">Địa điểm tổ chức</th>
+              <th scope="col">Trạng thái</th>
+              <th scope="col">Người tham dự</th>
+              <th scope="col">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="event-body">
+            <tr data-event-id="e1" data-name="test HOP" data-code="EVT-20260910092809-3C44CD0D" data-group="HOP" data-status="preparing" data-place="Phong 201" data-start="2026-09-10T17:27" data-end="2026-09-10T18:27" data-attendees="0" data-content="testest" data-note="gteeta">
+              <td>
+                <a class="event-name" href="#e1">test HOP</a>
+                <span class="event-code">#EVT-20260910092809-3C44CD0D</span>
+              </td>
+              <td>HOP</td>
+              <td class="event-time"><span>10/09/2026 17:27</span><span>10/09/2026 18:27</span></td>
+              <td>Phong 201</td>
+              <td><span class="badge badge-prep">Đang chuẩn bị</span></td>
+              <td>0</td>
+              <td>
+                <div class="event-actions">
+                  <a class="doc-action" href="#e1" aria-label="Chi tiết test HOP">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </a>
+                  <a class="doc-action" href="#e1" aria-label="Sửa test HOP">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  </a>
+                  <button class="doc-action is-danger" type="button" data-event-delete="e1" aria-label="Xóa test HOP">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr data-event-id="e2" data-name="Event test" data-code="EVT-20260910034856-BB1ACB7" data-group="General" data-status="live" data-place="Phòng họp" data-start="2026-09-10T11:48" data-end="2026-09-12T12:48" data-attendees="2" data-content="" data-note="">
+              <td>
+                <a class="event-name" href="#e2">Event test</a>
+                <span class="event-code">#EVT-20260910034856-BB1ACB7</span>
+              </td>
+              <td>General</td>
+              <td class="event-time"><span>10/09/2026 11:48</span><span>12/09/2026 12:48</span></td>
+              <td>Phòng họp</td>
+              <td><span class="badge badge-live">Đang diễn ra</span></td>
+              <td>2</td>
+              <td>
+                <div class="event-actions">
+                  <a class="doc-action" href="#e2" aria-label="Chi tiết Event test">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </a>
+                  <a class="doc-action" href="#e2" aria-label="Sửa Event test">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  </a>
+                  <button class="doc-action is-danger" type="button" data-event-delete="e2" aria-label="Xóa Event test">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pager">
+          <button type="button" disabled>First</button>
+          <button type="button" disabled>Prev</button>
+          <button type="button" disabled>Next</button>
+          <button type="button" disabled>Last</button>
+          <select aria-label="Số dòng mỗi trang">
+            <option selected>20</option>
+            <option>50</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-event-detail" hidden>
+      <a class="ed-back" href="#danh-sach">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>
+        Quay lại danh sách
+      </a>
+
+      <header class="ed-hero">
+        <div class="ed-hero-copy">
+          <h1 id="ed-title">Event test</h1>
+          <p class="ed-meta" id="ed-meta"></p>
+        </div>
+        <span class="badge badge-live" id="ed-badge">Đang diễn ra</span>
+      </header>
+
+      <dl class="ed-stats" aria-label="Thống kê sự kiện">
+        <div class="ed-stat">
+          <dt>Tổng người tham dự</dt>
+          <dd id="ed-stat-total">0</dd>
+        </div>
+        <div class="ed-stat">
+          <dt>Đã xác nhận</dt>
+          <dd id="ed-stat-confirmed">0</dd>
+        </div>
+        <div class="ed-stat">
+          <dt>Chưa xác nhận</dt>
+          <dd id="ed-stat-pending">0</dd>
+        </div>
+        <div class="ed-stat">
+          <dt>Từ chối</dt>
+          <dd id="ed-stat-declined">0</dd>
+        </div>
+        <div class="ed-stat">
+          <dt>Đã check-in</dt>
+          <dd id="ed-stat-in">0</dd>
+        </div>
+        <div class="ed-stat">
+          <dt>Chưa check-in</dt>
+          <dd id="ed-stat-out">0</dd>
+        </div>
+      </dl>
+
+      <div class="ed-split">
+        <section class="ed-card" aria-labelledby="ed-info-title">
+          <div class="ed-card-head">
+            <div>
+              <p class="ed-kicker">Thông tin sự kiện</p>
+              <h2 id="ed-info-title">Chỉnh sửa sự kiện</h2>
+            </div>
+            <button class="btn btn-primary" type="submit" form="ed-form" id="ed-save">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              Lưu thay đổi
+            </button>
+          </div>
+          <form class="ed-form" id="ed-form">
+            <input type="hidden" id="ed-id" name="id">
+            <div class="field">
+              <label class="field-label" for="ed-group">Nhóm sự kiện</label>
+              <input class="input" id="ed-group" name="group" type="text" required autocomplete="off">
+            </div>
+            <div class="field">
+              <label class="field-label" for="ed-name">Tên sự kiện</label>
+              <input class="input" id="ed-name" name="name" type="text" required autocomplete="off">
+            </div>
+            <div class="field">
+              <label class="field-label" for="ed-start">Thời gian bắt đầu</label>
+              <input class="input" id="ed-start" name="start" type="datetime-local" required>
+            </div>
+            <div class="field">
+              <label class="field-label" for="ed-end">Thời gian kết thúc</label>
+              <input class="input" id="ed-end" name="end" type="datetime-local" required>
+            </div>
+            <div class="field">
+              <label class="field-label" for="ed-place">Địa điểm tổ chức</label>
+              <input class="input" id="ed-place" name="place" type="text" autocomplete="off">
+            </div>
+            <div class="field">
+              <label class="field-label" for="ed-status">Trạng thái</label>
+              <select class="select" id="ed-status" name="status">
+                <option value="preparing">Đang chuẩn bị</option>
+                <option value="live">Đang diễn ra</option>
+                <option value="soon">Sắp diễn ra</option>
+                <option value="done">Đã tổ chức</option>
+              </select>
+            </div>
+            <div class="field ed-field-wide">
+              <label class="field-label" for="ed-content">Nội dung họp</label>
+              <textarea class="input" id="ed-content" name="content" rows="3"></textarea>
+            </div>
+            <div class="field ed-field-wide">
+              <label class="field-label" for="ed-note">Mô tả / Ghi chú</label>
+              <input class="input" id="ed-note" name="note" type="text" autocomplete="off">
+            </div>
+          </form>
+        </section>
+
+        <aside class="ed-card ed-qr-card" aria-labelledby="ed-qr-title">
+          <p class="ed-kicker">Check-in</p>
+          <h2 id="ed-qr-title">QR Code</h2>
+          <a class="ed-qr-open" id="ed-checkin-open" href="check-in.html#e2">
+            Mở trang check-in
+          </a>
+          <div class="ed-qr-box" id="ed-qr-mount" role="img" aria-label="Mã QR check-in sự kiện"></div>
+        </aside>
+      </div>
+
+      <section class="ed-card" aria-labelledby="ed-file-title">
+        <div class="ed-card-head">
+          <div>
+            <p class="ed-kicker">Tài liệu</p>
+            <h2 id="ed-file-title">Tài liệu đính kèm</h2>
+          </div>
+          <button class="btn btn-outline" type="button" id="ed-attach">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 12.4 12 21.8a6 6 0 0 1-8.5-8.5l11.3-11.3a4 4 0 0 1 5.7 5.7L9.2 19a2 2 0 0 1-2.8-2.8l9.2-9.2"/></svg>
+            Đính kèm tài liệu
+          </button>
+          <input id="ed-file" type="file" hidden accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
+        </div>
+        <div class="ed-table-wrap">
+          <table class="event-table ed-table">
+            <thead>
+              <tr>
+                <th scope="col">Tên tài liệu</th>
+                <th scope="col">Dung lượng</th>
+                <th scope="col">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="ed-file-body">
+              <tr data-file data-ed-for="e2">
+                <td>
+                  <span class="ed-file-name">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+                    Hồ sơ năng lực và dự án thực hiện.pdf
+                  </span>
+                </td>
+                <td>113.4 KB</td>
+                <td>
+                  <div class="event-actions">
+                    <button class="btn btn-outline btn-sm" type="button" data-ed-file-download>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
+                      Tải xuống
+                    </button>
+                    <button class="doc-action is-danger" type="button" data-ed-file-delete aria-label="Xóa tài liệu">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr id="ed-file-empty">
+                <td colspan="3" class="ed-empty-cell">Chưa có tài liệu đính kèm.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ed-card" aria-labelledby="ed-guest-title">
+        <div class="ed-card-head ed-card-head-stack">
+          <div>
+            <p class="ed-kicker">Quản lý người tham dự</p>
+            <h2 id="ed-guest-title">Người tham dự</h2>
+          </div>
+          <div class="ed-toolbar">
+            <button class="btn btn-primary" type="button" id="ed-guest-add">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Thêm người tham dự
+            </button>
+            <button class="btn btn-outline" type="button" data-mock-action="Đã nhập danh sách từ CSV.">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+              Import CSV
+            </button>
+            <button class="btn btn-outline" type="button" data-mock-action="Đã xuất file Excel danh sách khách mời.">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+              Xuất file Excel
+            </button>
+            <button class="btn btn-danger" type="button" id="ed-guest-delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+              Xóa đã chọn
+            </button>
+          </div>
+        </div>
+
+        <form class="ed-guest-filter" id="ed-guest-filter">
+          <div class="ed-guest-search">
+            <label class="sr-only" for="ed-guest-q">Tìm khách mời</label>
+            <input class="input" id="ed-guest-q" type="search" placeholder="Tìm họ tên, CCCD, điện thoại hoặc email" autocomplete="off">
+            <button class="btn btn-primary" type="submit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+              Tìm kiếm
+            </button>
+          </div>
+          <label class="sr-only" for="ed-guest-reg">Trạng thái đăng ký</label>
+          <select class="select ed-guest-select" id="ed-guest-reg" aria-label="Trạng thái đăng ký">
+            <option value="">Trạng thái đăng ký</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="pending">Chưa xác nhận</option>
+            <option value="declined">Từ chối</option>
+          </select>
+          <label class="sr-only" for="ed-guest-check">Trạng thái check-in</label>
+          <select class="select ed-guest-select" id="ed-guest-check" aria-label="Trạng thái check-in">
+            <option value="">Trạng thái check-in</option>
+            <option value="in">Đã check-in</option>
+            <option value="out">Chưa check-in</option>
+          </select>
+          <button class="btn btn-outline" type="button" id="ed-guest-reset">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+            Đặt lại
+          </button>
+        </form>
+
+        <div class="ed-table-wrap">
+          <table class="event-table ed-table">
+            <thead>
+              <tr>
+                <th scope="col" class="ed-check-col">
+                  <input id="ed-guest-all" type="checkbox" aria-label="Chọn tất cả">
+                </th>
+                <th scope="col">Họ tên đầy đủ</th>
+                <th scope="col">CCCD</th>
+                <th scope="col">Số điện thoại</th>
+                <th scope="col">Email</th>
+                <th scope="col">Trạng thái đăng ký</th>
+                <th scope="col">Trạng thái check-in</th>
+                <th scope="col">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="ed-guest-body">
+              <tr data-guest data-ed-for="e2" data-user="khoa" data-reg="confirmed" data-check="in">
+                <td><input type="checkbox" aria-label="Chọn Nguyễn Minh Khoa"></td>
+                <td>Nguyễn Minh Khoa</td>
+                <td>079201001234</td>
+                <td>0901234567</td>
+                <td>khoa.nm@hcs.vn</td>
+                <td><span class="badge badge-live">Đã xác nhận</span></td>
+                <td><span class="badge badge-live">Đã check-in</span></td>
+                <td>
+                  <button class="doc-action is-danger" type="button" data-ed-guest-delete aria-label="Xóa Nguyễn Minh Khoa">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                  </button>
+                </td>
+              </tr>
+              <tr data-guest data-ed-for="e2" data-user="ha" data-reg="confirmed" data-check="in">
+                <td><input type="checkbox" aria-label="Chọn Lê Thu Hà"></td>
+                <td>Lê Thu Hà</td>
+                <td>079201005678</td>
+                <td>0912345678</td>
+                <td>ha.lt@hcs.vn</td>
+                <td><span class="badge badge-live">Đã xác nhận</span></td>
+                <td><span class="badge badge-live">Đã check-in</span></td>
+                <td>
+                  <button class="doc-action is-danger" type="button" data-ed-guest-delete aria-label="Xóa Lê Thu Hà">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                  </button>
+                </td>
+              </tr>
+              <tr id="ed-guest-empty">
+                <td colspan="8" class="ed-empty-cell">Chưa có người tham dự.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="event-modal" hidden>
+    <div class="process-dialog event-dialog" role="dialog" aria-modal="true" aria-labelledby="event-modal-title" tabindex="-1">
+      <div class="process-dialog-head">
+        <h2 id="event-modal-title">Chỉnh sửa sự kiện</h2>
+        <button class="icon-btn process-close" type="button" data-event-close aria-label="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <form class="process-dialog-body event-form" id="event-form">
+        <input type="hidden" id="event-id" name="id">
+        <div class="field">
+          <label class="field-label" for="event-group-input">Nhóm sự kiện</label>
+          <input class="input" id="event-group-input" name="group" type="text" required>
+        </div>
+        <div class="field">
+          <label class="field-label" for="event-name">Tên sự kiện</label>
+          <input class="input" id="event-name" name="name" type="text" required>
+        </div>
+        <div class="field">
+          <label class="field-label" for="event-start">Thời gian bắt đầu</label>
+          <input class="input" id="event-start" name="start" type="datetime-local" required>
+        </div>
+        <div class="field">
+          <label class="field-label" for="event-end">Thời gian kết thúc</label>
+          <input class="input" id="event-end" name="end" type="datetime-local" required>
+        </div>
+        <div class="field">
+          <label class="field-label" for="event-place">Địa điểm tổ chức</label>
+          <input class="input" id="event-place" name="place" type="text">
+        </div>
+        <div class="field">
+          <label class="field-label" for="event-status-input">Trạng thái</label>
+          <select class="select" id="event-status-input" name="status">
+            <option value="preparing">Đang chuẩn bị</option>
+            <option value="live">Đang diễn ra</option>
+            <option value="soon">Sắp diễn ra</option>
+            <option value="done">Đã tổ chức</option>
+          </select>
+        </div>
+        <div class="field field-wide">
+          <label class="field-label" for="event-content">Nội dung họp</label>
+          <textarea class="input" id="event-content" name="content" rows="3"></textarea>
+        </div>
+        <div class="field field-wide">
+          <label class="field-label" for="event-note">Mô tả / Ghi chú</label>
+          <input class="input" id="event-note" name="note" type="text">
+        </div>
+      </form>
+      <div class="process-dialog-foot">
+        <button class="btn btn-outline" type="button" data-event-close>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          Hủy
+        </button>
+        <button class="btn btn-primary" type="submit" form="event-form" id="event-save">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+          <span class="btn-label">Lưu thay đổi</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="guest-modal" hidden>
+    <div class="process-dialog guest-dialog" role="dialog" aria-modal="true" aria-labelledby="guest-modal-title" tabindex="-1">
+      <div class="process-dialog-head">
+        <h2 id="guest-modal-title">Thêm người tham dự</h2>
+        <button class="icon-btn process-close" type="button" data-guest-close aria-label="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="process-dialog-body ed-pick">
+        <div class="ed-pick-search">
+          <label class="sr-only" for="guest-user-q">Tìm người dùng</label>
+          <input class="input" id="guest-user-q" type="search" placeholder="Tìm theo tên, email, điện thoại hoặc CCCD" autocomplete="off">
+        </div>
+        <label class="ed-pick-all">
+          <input type="checkbox" id="guest-user-all" aria-label="Chọn tất cả người dùng">
+          <span>Chọn tất cả</span>
+        </label>
+        <div class="ed-pick-list" id="guest-user-list" role="listbox" aria-multiselectable="true"></div>
+        <p class="ed-pick-empty" id="guest-user-empty" hidden>Không tìm thấy người dùng.</p>
+      </div>
+      <div class="process-dialog-foot">
+        <button class="btn btn-outline" type="button" data-guest-close>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          Hủy
+        </button>
+        <button class="btn btn-primary" type="button" id="guest-save">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+          Thêm đã chọn
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="js/app.js"></script>
+</body>
+</html>

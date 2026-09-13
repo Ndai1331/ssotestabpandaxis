@@ -1,164 +1,166 @@
-@using Blazorise.DataGrid
 @using HCS.Permissions
 @using Microsoft.AspNetCore.Authorization
 @inherits HCSComponentBase
 
 @if (isAuthorized)
 {
-        <section class="hcs-feature hcs-catalog-page" aria-labelledby="catalog-title">
-            <header class="hcs-catalog-titlebar">
-                <div class="min-w-0">
-                    <p class="visually-hidden">@L["Catalog:Section"]</p>
-                    <h1 id="catalog-title">@Definition.Title</h1>
-                    <p class="visually-hidden">@Definition.Description</p>
-                </div>
-                <div class="hcs-catalog-page__actions">
-                    <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="ExportCurrentPageAsync" Disabled="@(!rows.Any() || isLoading)">
-                        <i class="fa fa-download me-1" aria-hidden="true"></i> @L["Catalog:Export"]
-                    </Button>
+        <section class="page page-wf page-dm" aria-labelledby="catalog-title">
+            <div class="page-head">
+                <h1 id="catalog-title">@Definition.Title</h1>
+                <div class="page-actions">
+                    @if (errorCanRetry)
+                    {
+                        <button class="btn btn-outline" type="button" @onclick="RefreshAsync">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+                            @L["Catalog:Retry"]
+                        </button>
+                    }
+                    <button class="btn btn-outline" type="button" @onclick="ExportCurrentPageAsync" disabled="@(!rows.Any() || isLoading)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+                        @L["Catalog:Export"]
+                    </button>
                     @if (canCreate)
                     {
-                        <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreateModalAsync" Disabled="@isSaving">
-                            <Icon Name="@IconName.Add" /> @L["Catalog:New"]
-                        </Button>
+                        <button class="btn btn-primary" type="button" @onclick="OpenCreateModalAsync" disabled="@isSaving">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            @L["Catalog:New"]
+                        </button>
                     }
                 </div>
-            </header>
+            </div>
 
-            @if (errorCanRetry)
-            {
-                <div class="hcs-catalog-page__actions mb-3">
-                    <Button Color="Color.Light" Outline="true" Clicked="RefreshAsync">
-                        <i class="fa fa-rotate me-1" aria-hidden="true"></i> @L["Catalog:Retry"]
-                    </Button>
-                </div>
-            }
-
-            <Card Class="mb-2 hcs-catalog-filter-card">
-                <CardBody>
-                    <div class="hcs-catalog-filter-row">
-                        <Addons Class="hcs-catalog-search">
-                            <Addon AddonType="AddonType.Body">
-                                <TextInput @bind-Value="filterText" Autofocus="true" Placeholder="@(L["Catalog:SearchPlaceholder"].Value)" />
-                            </Addon>
-                            <Addon AddonType="AddonType.End">
-                                <Button Color="Color.Primary" Clicked="SearchAsync" Disabled="@isLoading">
-                                    <i class="fa fa-search me-1" aria-hidden="true"></i> @L["Catalog:SearchButton"]
-                                </Button>
-                            </Addon>
-                        </Addons>
-                        <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-toggle" Clicked="ToggleAdvancedFilters">
-                            <i class="fa fa-sliders me-2" aria-hidden="true"></i>@L["Catalog:Filter"]
-                            <i class="fa @(showAdvancedFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2" aria-hidden="true"></i>
-                        </Button>
-                    </div>
-                    @if (showAdvancedFilters)
-                    {
-                        <div class="hcs-catalog-advanced-filter">
-                            <Field>
-                                <FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                                <Select TValue="string" @bind-Value="statusFilter" @bind-Value:after="StatusFilterChangedAsync">
-                                    <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                                    <SelectItem Value="@("true")">@L["Catalog:Active"]</SelectItem>
-                                    <SelectItem Value="@("false")">@L["Catalog:Inactive"]</SelectItem>
-                                </Select>
-                            </Field>
-                            <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync" Disabled="@isLoading">
-                                @L["Catalog:Reset"]
-                            </Button>
+            <section class="docs-main">
+                <form class="docs-toolbar" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+                    <label class="sr-only" for="dm-q">@L["Catalog:SearchPlaceholder"]</label>
+                    <input class="input docs-search" id="dm-q" type="search" @bind="filterText" @bind:event="oninput"
+                           placeholder="@L["Catalog:SearchPlaceholder"]" autocomplete="off" />
+                    <button class="btn btn-primary" type="submit" disabled="@isLoading">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                        @L["Catalog:SearchButton"]
+                    </button>
+                    <HcsDismissible Class="filter-pop" @bind-IsOpen="showAdvancedFilters">
+                        <button class="btn btn-outline @(string.IsNullOrEmpty(statusFilter) ? null : "is-filtered")" type="button"
+                                aria-expanded="@showAdvancedFilters.ToString().ToLowerInvariant()"
+                                aria-controls="dm-filter-menu" @onclick="ToggleAdvancedFilters">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                            @L["Catalog:Filter"]
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        <div class="filter-menu @(showAdvancedFilters ? "is-open" : null)" id="dm-filter-menu" role="menu">
+                            <button type="button" class="@(string.IsNullOrEmpty(statusFilter) ? "is-active" : null)" @onclick="FilterAllAsync">@L["Catalog:AllStatuses"]</button>
+                            <button type="button" class="@(statusFilter == "true" ? "is-active" : null)" @onclick="FilterActiveAsync">@L["Catalog:Active"]</button>
+                            <button type="button" class="@(statusFilter == "false" ? "is-active" : null)" @onclick="FilterInactiveAsync">@L["Catalog:Inactive"]</button>
                         </div>
-                    }
-                </CardBody>
-            </Card>
+                    </HcsDismissible>
+                </form>
 
-            <Card Class="hcs-catalog-grid-card">
-                <CardBody>
-                    <DataGrid TItem="OrganizationCatalogRow"
-                              @ref="dataGrid"
-                              Data="@rows"
-                              ReadData="OnDataGridReadAsync"
-                              TotalItems="@totalCount"
-                              ShowPager="true"
-                              ShowPageSizes="true"
-                              PageSizes="@pageSizes"
-                              PageSize="@pageSize"
-                              Responsive="true"
-                              Striped="true"
-                              Hoverable="true"
-                              Class="hcs-catalog-grid">
-                        <EmptyTemplate>
-                            <div class="hcs-empty py-5">
-                                <i class="fa fa-inbox" aria-hidden="true"></i>
-                                <h2>@L["Catalog:EmptyTitle"]</h2>
-                                <p>@L["Catalog:EmptyDescription"]</p>
-                            </div>
-                        </EmptyTemplate>
-                        <LoadingTemplate>
-                            <div class="hcs-loading py-5" role="status" aria-live="polite">
-                                <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
-                                <span>@L["Catalog:Loading"]</span>
-                            </div>
-                        </LoadingTemplate>
-                        <DataGridColumns>
-                            <DataGridColumn TItem="OrganizationCatalogRow" Caption='@string.Empty'>
-                                <DisplayTemplate Context="cell">
-                                    <input class="hcs-row-check" type="checkbox" disabled tabindex="-1" aria-hidden="true" />
-                                </DisplayTemplate>
-                            </DataGridColumn>
-                            @if (Definition.Kind == OrganizationCatalogKind.MasterData && !Definition.IsTypedMasterData)
+                <div class="docs-table-wrap">
+                    @if (isLoading && rows.Count == 0)
+                    {
+                        <DocsEmpty Loading="true" />
+                    }
+                    else if (rows.Count == 0)
+                    {
+                        <DocsEmpty Hint="@L["Catalog:EmptyDescription"]" />
+                    }
+                    else
+                    {
+                        <table class="docs-table">
+                            <thead>
+                                <tr>
+                                    @if (Definition.Kind == OrganizationCatalogKind.MasterData && !Definition.IsTypedMasterData)
+                                    {
+                                        <th scope="col">@L["Catalog:Type"]</th>
+                                    }
+                                    <th scope="col">@L["Catalog:Code"]</th>
+                                    <th scope="col">@L["Catalog:Name"]</th>
+                                    @if (Definition.Kind is OrganizationCatalogKind.Department or OrganizationCatalogKind.Unit)
+                                    {
+                                        <th scope="col">@RelationColumnTitle</th>
+                                    }
+                                    @if (Definition.Kind == OrganizationCatalogKind.Position)
+                                    {
+                                        <th scope="col">@L["Catalog:SignOrder"]</th>
+                                    }
+                                    <th scope="col">@L["Catalog:SortOrder"]</th>
+                                    <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                                    @if (canUpdate || canDelete)
+                                    {
+                                        <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var row in rows)
                             {
-                                <DataGridColumn TItem="OrganizationCatalogRow" Field="Type" Caption='@L["Catalog:Type"].Value' />
+                                <tr @key="row.Id">
+                                    @if (Definition.Kind == OrganizationCatalogKind.MasterData && !Definition.IsTypedMasterData)
+                                    {
+                                        <td>@row.Type</td>
+                                    }
+                                    <td class="doc-code">@row.Code</td>
+                                    <td>@row.Name</td>
+                                    @if (Definition.Kind is OrganizationCatalogKind.Department or OrganizationCatalogKind.Unit)
+                                    {
+                                        <td>@RelationName(row.RelationId)</td>
+                                    }
+                                    @if (Definition.Kind == OrganizationCatalogKind.Position)
+                                    {
+                                        <td>@row.SignOrder</td>
+                                    }
+                                    <td>@row.SortOrder</td>
+                                    <td>
+                                        <span class="dm-status @(row.IsActive ? "is-on" : "is-off")" title="@(row.IsActive ? L["Catalog:Active"] : L["Catalog:Inactive"])">
+                                            @if (row.IsActive)
+                                            {
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+                                            }
+                                            else
+                                            {
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                                            }
+                                            <span class="visually-hidden">@(row.IsActive ? L["Catalog:Active"] : L["Catalog:Inactive"])</span>
+                                        </span>
+                                    </td>
+                                    @if (canUpdate || canDelete)
+                                    {
+                                        <td>
+                                            <div class="doc-actions">
+                                                @if (canUpdate)
+                                                {
+                                                    <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => OpenEditModalAsync(row)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                                    </button>
+                                                }
+                                                @if (canDelete)
+                                                {
+                                                    <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" disabled="@isDeleting.Contains(row.Id)" @onclick="() => DeleteAsync(row)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    }
+                                </tr>
                             }
-                            <DataGridColumn TItem="OrganizationCatalogRow" Field="Code" Caption='@L["Catalog:Code"].Value' />
-                            <DataGridColumn TItem="OrganizationCatalogRow" Field="Name" Caption='@L["Catalog:Name"].Value' />
-                            @if (Definition.Kind is OrganizationCatalogKind.Department or OrganizationCatalogKind.Unit)
+                            </tbody>
+                        </table>
+                    }
+                    <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                        <button type="button" disabled="@(!CanPrev)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
+                        <button type="button" disabled="@(!CanPrev)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
+                        <button type="button" disabled="@(!CanNext)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
+                        <button type="button" disabled="@(!CanNext)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
+                        <label class="sr-only" for="dm-page-size">@L["Catalog:PageSize"]</label>
+                        <select id="dm-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                            @foreach (var size in pageSizes)
                             {
-                                <DataGridColumn TItem="OrganizationCatalogRow" Caption="@RelationColumnTitle">
-                                    <DisplayTemplate Context="cell">
-                                        @RelationName(cell.Item.RelationId)
-                                    </DisplayTemplate>
-                                </DataGridColumn>
+                                <option value="@size">@size</option>
                             }
-                            @if (Definition.Kind == OrganizationCatalogKind.Position)
-                            {
-                            <DataGridColumn TItem="OrganizationCatalogRow" Field="SignOrder" Caption='@L["Catalog:SignOrder"].Value' />
-                            }
-                            <DataGridColumn TItem="OrganizationCatalogRow" Field="SortOrder" Caption='@L["Catalog:SortOrder"].Value' />
-                            <DataGridColumn TItem="OrganizationCatalogRow" Caption='@L["Catalog:Status"].Value'>
-                                <DisplayTemplate Context="cell">
-                                    <span class="hcs-status-icon @(cell.Item.IsActive ? "hcs-status-icon--active" : "hcs-status-icon--inactive")" title='@(cell.Item.IsActive ? L["Catalog:Active"].Value : L["Catalog:Inactive"].Value)'>
-                                        <i class="fa @(cell.Item.IsActive ? "fa-check" : "fa-xmark")" aria-hidden="true"></i>
-                                        <span class="visually-hidden">@(cell.Item.IsActive ? L["Catalog:Active"] : L["Catalog:Inactive"])</span>
-                                    </span>
-                                </DisplayTemplate>
-                            </DataGridColumn>
-                            @if (canUpdate || canDelete)
-                            {
-                            <DataGridColumn TItem="OrganizationCatalogRow" Caption='@L["Catalog:Actions"].Value'>
-                                <DisplayTemplate Context="cell">
-                                    <div class="hcs-row-actions" @onclick:stopPropagation="true">
-                                        @if (canUpdate)
-                                        {
-                                            <Button Color="Color.Primary" Outline="true" Size="Size.Small" Type="ButtonType.Button" Class="hcs-action-button hcs-action-button--edit" Title='@L["Catalog:Edit"].Value' Clicked="@(() => OpenEditModalAsync(cell.Item))">
-                                                <Icon Name="@IconName.Edit" />
-                                                <span class="visually-hidden">@L["Catalog:Edit"]</span>
-                                            </Button>
-                                        }
-                                        @if (canDelete)
-                                        {
-                                            <Button Color="Color.Danger" Outline="true" Size="Size.Small" Type="ButtonType.Button" Class="hcs-action-button hcs-action-button--delete" Title='@L["Catalog:Delete"].Value' Clicked="@(() => DeleteAsync(cell.Item))" Disabled="@isDeleting.Contains(cell.Item.Id)">
-                                                <Icon Name="@IconName.Delete" />
-                                                <span class="visually-hidden">@L["Catalog:Delete"]</span>
-                                            </Button>
-                                        }
-                                    </div>
-                                </DisplayTemplate>
-                            </DataGridColumn>
-                            }
-                        </DataGridColumns>
-                    </DataGrid>
-                </CardBody>
-            </Card>
+                        </select>
+                    </div>
+                </div>
+            </section>
         </section>
 
         <Modal @ref="editModal" Size="ModalSize.Default">

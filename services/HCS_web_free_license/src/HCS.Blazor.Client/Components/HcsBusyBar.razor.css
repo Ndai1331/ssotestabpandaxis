@@ -1,0 +1,53 @@
+.hcs-busy-bar {
+    height: 3px;
+    left: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: fixed;
+    right: 0;
+    top: 0;
+    visibility: hidden;
+    z-index: calc(var(--hcs-z-sticky, 100) + 8);
+}
+
+.hcs-busy-bar.is-on {
+    opacity: 1;
+    visibility: visible;
+}
+
+.hcs-busy-bar span {
+    background: linear-gradient(90deg, var(--hcs-color-primary, #007f7c), #5eead4, var(--hcs-color-primary, #007f7c));
+    background-size: 200% 100%;
+    border-radius: 0 2px 2px 0;
+    display: block;
+    height: 100%;
+    transform: translateX(-100%);
+    width: 40%;
+}
+
+.hcs-busy-bar.is-on:not(.is-done) span {
+    animation: hcs-busy-slide 1.05s ease-in-out infinite;
+}
+
+.hcs-busy-bar.is-done span {
+    animation: none;
+    transform: none;
+    transition: width 180ms ease-out, opacity 180ms ease-out;
+    width: 100%;
+}
+
+@keyframes hcs-busy-slide {
+    0% { transform: translateX(-120%); width: 30%; }
+    50% { width: 55%; }
+    100% { transform: translateX(320%); width: 30%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hcs-busy-bar.is-on:not(.is-done) span {
+        animation: none;
+        opacity: .85;
+        transform: none;
+        width: 100%;
+    }
+}

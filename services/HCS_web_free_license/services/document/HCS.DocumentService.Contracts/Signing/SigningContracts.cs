@@ -81,7 +81,7 @@ public sealed record SigningAttemptDto(Guid Id, Guid DocumentId, Guid FileId, Si
 public sealed record SigningReportDto(Guid DocumentId, int Completed, int Failed, IReadOnlyList<SigningAttemptDto> Attempts);
 public sealed record SigningQueueDocumentDto(Guid Id, string Number, string Title, string? Description, DocumentStatus Status,
     IReadOnlyList<DocumentFileDto> Files, DateTime CreationTime, DocumentSourceType SourceType = DocumentSourceType.Workflow,
-    Guid? FromUserId = null);
+    Guid? FromUserId = null, string? DocumentCode = null);
 public sealed record SigningQueueItemDto(SigningQueueDocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance,
     WorkflowDefinitionDto Definition);
 

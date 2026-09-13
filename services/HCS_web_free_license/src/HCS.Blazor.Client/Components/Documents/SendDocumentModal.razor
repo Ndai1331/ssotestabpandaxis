@@ -1,0 +1,369 @@
+@inherits HCSComponentBase
+@inject DocumentClient Documents
+@inject CollaborationClient Chat
+@inject OrganizationCatalogClient Catalog
+
+<Modal @ref="modal">
+    <ModalContent Centered Class="hcs-catalog-modal send-doc-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@L["Feature:SendDocument"]</ModalTitle>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            @if (!string.IsNullOrWhiteSpace(documentTitle))
+            {
+                <div class="send-doc-chip">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                    <span>@L["Feature:DocumentTitleField"]: @documentTitle@(string.IsNullOrWhiteSpace(documentNumber) ? null : $" - #{documentNumber}")</span>
+                </div>
+            }
+            <div class="field send-doc-to">
+                <span class="field-label">@L["Feature:SendTo"]</span>
+                <div class="send-doc-tabs" role="tablist" aria-label="@L["Feature:SendTo"]">
+                    <button type="button" class="send-doc-tab @(sendToDepartment ? null : "is-on")"
+                            role="tab" aria-selected="@(!sendToDepartment)" @onclick="() => SetMode(false)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                        @L["Feature:SendToPerson"]
+                    </button>
+                    <button type="button" class="send-doc-tab @(sendToDepartment ? "is-on" : null)"
+                            role="tab" aria-selected="@sendToDepartment" @onclick="() => SetMode(true)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-8h6v8"/></svg>
+                        @L["Feature:SendToDepartment"]
+                    </button>
+                </div>
+            </div>
+            <div class="send-doc-pane @(sendToDepartment ? "is-tree" : null)">
+            @if (!sendToDepartment)
+            {
+                <UserSelect2 Value="receiverUserId" ValueChanged="value => receiverUserId = value"
+                             SelectedItem="@ContactItem(receiverUserId)"
+                             SelectedText="@ContactName(receiverUserId)"
+                             Placeholder="@L["Chat:SelectContacts"]"
+                             Search="SearchContactsAsync" />
+            }
+            else if (departmentRoots.Count == 0)
+            {
+                <p class="vb-empty-data">@L["Catalog:EmptyTitle"]</p>
+            }
+            else
+            {
+                <ul class="send-dept-tree">
+                    @foreach (var node in departmentRoots)
+                    {
+                        @DepartmentNode(node)
+                    }
+                </ul>
+            }
+            </div>
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="HideAsync">@L["Catalog:Cancel"]</Button>
+            <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SendAsync" Disabled="@isSending">@L["Feature:Send"]</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@code {
+    [Parameter] public EventCallback OnSent { get; set; }
+
+    private Modal? modal;
+    private Guid documentId;
+    private string documentTitle = "";
+    private string? documentNumber;
+    private bool sendToDepartment;
+    private bool isSending;
+    private Guid? receiverUserId;
+    private readonly HashSet<Guid> selectedDepartments = [];
+    private readonly HashSet<Guid> expandedDepartments = [];
+    private readonly List<ChatContactDto> contacts = [];
+    private readonly List<DepartmentNodeModel> departmentRoots = [];
+    private readonly Dictionary<Guid, DepartmentNodeModel> departmentById = [];
+
+    private RenderFragment DepartmentNode(DepartmentNodeModel node) => @<li>
+        <div class="send-dept-row">
+            @if (node.Children.Count > 0)
+            {
+                <button class="send-dept-toggle @(expandedDepartments.Contains(node.Id) ? "is-open" : null)"
+                        type="button" aria-expanded="@expandedDepartments.Contains(node.Id)"
+                        aria-label="@node.Name" @onclick="() => ToggleExpand(node.Id)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
+            }
+            else
+            {
+                <span class="send-dept-toggle is-leaf" aria-hidden="true"></span>
+            }
+            <label>
+                <input type="checkbox" checked="@selectedDepartments.Contains(node.Id)"
+                       @onchange="() => ToggleDepartment(node.Id)" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-8h6v8"/></svg>
+                @node.Name
+            </label>
+        </div>
+        @if (node.Children.Count > 0 && expandedDepartments.Contains(node.Id))
+        {
+            <ul>
+                @foreach (var child in node.Children)
+                {
+                    @DepartmentNode(child)
+                }
+            </ul>
+        }
+    </li>;
+
+    public async Task ShowAsync(Guid id, string title, string? number = null)
+    {
+        documentId = id;
+        documentTitle = title;
+        documentNumber = number;
+        sendToDepartment = false;
+        receiverUserId = null;
+        selectedDepartments.Clear();
+        expandedDepartments.Clear();
+        if (contacts.Count == 0)
+        {
+            try { contacts.AddRange(await Chat.GetContactsAsync(null, 50)); }
+            catch { }
+        }
+        await LoadDepartmentsAsync();
+        if (modal is not null) await modal.Show();
+    }
+
+    private void SetMode(bool department)
+    {
+        sendToDepartment = department;
+    }
+
+    private async Task HideAsync()
+    {
+        if (modal is not null) await modal.Hide();
+    }
+
+    private async Task LoadDepartmentsAsync()
+    {
+        try
+        {
+            IReadOnlyList<DepartmentCatalogDto> items;
+            try
+            {
+                items = await Catalog.GetSendableDepartmentsAsync();
+            }
+            catch
+            {
+                items = await Catalog.GetDepartmentLookupAsync();
+            }
+
+            items = items
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.Name)
+                .ToList();
+            departmentById.Clear();
+            departmentRoots.Clear();
+            foreach (var item in items)
+            {
+                departmentById[item.Id] = new DepartmentNodeModel(item.Id, item.Name, item.ParentId);
+            }
+            foreach (var node in departmentById.Values)
+            {
+                if (node.ParentId is { } parentId && departmentById.TryGetValue(parentId, out var parent))
+                    parent.Children.Add(node);
+                else
+                    departmentRoots.Add(node);
+            }
+        }
+        catch { departmentRoots.Clear(); }
+    }
+
+    private void ToggleExpand(Guid id)
+    {
+        if (!expandedDepartments.Add(id))
+            expandedDepartments.Remove(id);
+    }
+
+    private void ToggleDepartment(Guid id)
+    {
+        if (!departmentById.TryGetValue(id, out var node)) return;
+        if (selectedDepartments.Contains(id))
+            UncheckCascade(node);
+        else
+            CheckCascade(node);
+    }
+
+    private void CheckCascade(DepartmentNodeModel node)
+    {
+        AddWithDescendants(node);
+        ExpandBranch(node);
+        SyncAncestors(node);
+    }
+
+    private void UncheckCascade(DepartmentNodeModel node)
+    {
+        RemoveWithDescendants(node);
+        var parentId = node.ParentId;
+        while (parentId is { } pid && departmentById.TryGetValue(pid, out var parent))
+        {
+            selectedDepartments.Remove(parent.Id);
+            parentId = parent.ParentId;
+        }
+    }
+
+    private void AddWithDescendants(DepartmentNodeModel node)
+    {
+        selectedDepartments.Add(node.Id);
+        foreach (var child in node.Children)
+            AddWithDescendants(child);
+    }
+
+    private void RemoveWithDescendants(DepartmentNodeModel node)
+    {
+        selectedDepartments.Remove(node.Id);
+        foreach (var child in node.Children)
+            RemoveWithDescendants(child);
+    }
+
+    private void ExpandBranch(DepartmentNodeModel node)
+    {
+        if (node.Children.Count == 0) return;
+        expandedDepartments.Add(node.Id);
+        foreach (var child in node.Children)
+            ExpandBranch(child);
+    }
+
+    private void SyncAncestors(DepartmentNodeModel node)
+    {
+        var parentId = node.ParentId;
+        while (parentId is { } pid && departmentById.TryGetValue(pid, out var parent))
+        {
+            if (!parent.Children.All(child => selectedDepartments.Contains(child.Id)))
+                break;
+            selectedDepartments.Add(parent.Id);
+            parentId = parent.ParentId;
+        }
+    }
+
+    private async Task SendAsync()
+    {
+        if (isSending) return;
+        if (!sendToDepartment)
+        {
+            if (receiverUserId is not { } userId)
+            {
+                await NotifyErrorAsync(L["Feature:SendNeedTarget"]);
+                return;
+            }
+            await SendCoreAsync(() => Documents.SendDocumentAsync(documentId, new SendDocumentRequest(userId)));
+            return;
+        }
+
+        if (selectedDepartments.Count == 0)
+        {
+            await NotifyErrorAsync(L["Feature:SendNeedTarget"]);
+            return;
+        }
+
+        var userIds = await CollectActiveDepartmentUsersAsync();
+        if (userIds.Count == 0)
+        {
+            await NotifyErrorAsync(L["Feature:SendNeedTarget"]);
+            return;
+        }
+
+        await SendCoreAsync(() => SendDepartmentsAsync(userIds));
+    }
+
+    private async Task SendDepartmentsAsync(IReadOnlyCollection<Guid> userIds)
+    {
+        foreach (var departmentId in selectedDepartments)
+            await Documents.SendDocumentAsync(documentId, new SendDocumentRequest(OrganizationUnitId: departmentId));
+
+        foreach (var userId in userIds)
+            await Documents.AssignAsync(documentId, new AssignDocumentRequest(userId, "VIEW"));
+    }
+
+    private async Task<HashSet<Guid>> CollectActiveDepartmentUsersAsync()
+    {
+        var userIds = new HashSet<Guid>();
+        foreach (var departmentId in ExpandCheckedDepartments())
+        {
+            foreach (var userId in await ActiveUsersInDepartmentAsync(departmentId))
+                userIds.Add(userId);
+        }
+        return userIds;
+    }
+
+    private HashSet<Guid> ExpandCheckedDepartments()
+    {
+        var ids = new HashSet<Guid>(selectedDepartments);
+        foreach (var id in selectedDepartments.ToArray())
+        {
+            if (!departmentById.TryGetValue(id, out var node)) continue;
+            CollectDescendants(node, ids);
+        }
+        return ids;
+    }
+
+    private static void CollectDescendants(DepartmentNodeModel node, HashSet<Guid> ids)
+    {
+        foreach (var child in node.Children)
+        {
+            ids.Add(child.Id);
+            CollectDescendants(child, ids);
+        }
+    }
+
+    private async Task<IReadOnlyList<Guid>> ActiveUsersInDepartmentAsync(Guid departmentId)
+    {
+        try
+        {
+            var mapped = await Catalog.GetDepartmentUsersAsync(departmentId);
+            var ids = mapped.Select(x => x.UserId).Where(x => x != Guid.Empty).Distinct().ToList();
+            if (ids.Count == 0) return [];
+            try
+            {
+                var active = await Documents.GetWorkflowUserLookupAsync(ids);
+                return active.Select(x => x.UserId).Distinct().ToList();
+            }
+            catch
+            {
+                return ids;
+            }
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private async Task SendCoreAsync(Func<Task> send)
+    {
+        isSending = true;
+        try
+        {
+            await send();
+            await HideAsync();
+            await NotifySuccessAsync(L["Feature:SendDocumentDone"]);
+            await OnSent.InvokeAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { isSending = false; }
+    }
+
+    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private CatalogSelect2Item? ContactItem(Guid? id) =>
+        id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
+
+    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
+    {
+        var found = await Chat.GetContactsAsync(term, 50);
+        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
+    }
+
+    private sealed class DepartmentNodeModel(Guid id, string name, Guid? parentId)
+    {
+        public Guid Id { get; } = id;
+        public string Name { get; } = name;
+        public Guid? ParentId { get; } = parentId;
+        public List<DepartmentNodeModel> Children { get; } = [];
+    }
+}

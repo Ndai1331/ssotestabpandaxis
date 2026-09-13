@@ -22,10 +22,13 @@ public static class DocumentPermissions
 
 public sealed record CreateDocumentRequest(string? Number, string Title, string? Description,
     Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null,
-    DocumentSourceType SourceType = DocumentSourceType.Archive);
+    DocumentSourceType SourceType = DocumentSourceType.Archive, string? DocumentCode = null,
+    Guid? OrganizationUnitId = null);
 public sealed record SendDocumentRequest(Guid? ReceiverUserId = null, Guid? OrganizationUnitId = null);
+public sealed record DocumentActivityRequest(string Action);
 public sealed record UpdateDocumentRequest(string Title, string? Description,
-    Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null);
+    Guid? DocumentTypeId = null, Guid? SectorId = null, Guid? UrgencyId = null, Guid? ConfidentialityId = null,
+    string? DocumentCode = null, Guid? OrganizationUnitId = null);
 public sealed record AddDocumentFileRequest(string FileName, string ContentType, long Size, string Sha256);
 public sealed record AssignDocumentRequest(Guid AssigneeUserId, string Responsibility);
 public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null);
@@ -37,7 +40,8 @@ public sealed record DocumentDto(Guid Id, string Number, string Title, string? D
     IReadOnlyList<DocumentFileDto> Files, IReadOnlyList<DocumentAssignmentDto> Assignments,
     IReadOnlyList<DocumentHistoryDto> History, DateTime CreationTime,
     DocumentSourceType SourceType = DocumentSourceType.Archive, Guid? ParentDocumentId = null,
-    Guid? FromUserId = null, Guid? OrganizationUnitId = null, int FileCount = 0);
+    Guid? FromUserId = null, Guid? OrganizationUnitId = null, int FileCount = 0, bool IsSent = false,
+    string? DocumentCode = null);
 public sealed record PagedDocumentsDto(long TotalCount, IReadOnlyList<DocumentDto> Items);
 
 public interface IDocumentAppService
@@ -53,4 +57,6 @@ public interface IDocumentAppService
     Task<DocumentDto> SubmitAsync(Guid id, CancellationToken cancellationToken = default);
     Task<DocumentDto> SendAsync(Guid id, SendDocumentRequest input, CancellationToken cancellationToken = default);
     Task<DocumentDto> RevokeAsync(Guid id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<DocumentDto> RecordActivityAsync(Guid id, DocumentActivityRequest input, CancellationToken cancellationToken = default);
 }

@@ -117,6 +117,11 @@ window.hcsSetCulture = (culture) => {
     document.cookie = `Abp.Localization.CultureName=${selected}${attrs}`;
     document.cookie = `.AspNetCore.Culture=${encoded}${attrs}`;
     window.localStorage?.setItem("hcs.culture", selected);
+    try {
+        document.documentElement.lang = selected;
+    } catch {
+        // ignore
+    }
 };
 
 window.hcsNotifications = (() => {
@@ -127,7 +132,7 @@ window.hcsNotifications = (() => {
             this.unbindOutsideClick();
             outsideClickHandler = (event) => {
                 const target = event.target;
-                if (!(target instanceof Element) || target.closest(".hcs-notification-panel, [data-hcs-notification-trigger]")) {
+                if (!(target instanceof Element) || target.closest(".hcs-notification-panel, .hcs-top-pop, [data-hcs-notification-trigger]")) {
                     return;
                 }
 
@@ -146,3 +151,69 @@ window.hcsNotifications = (() => {
         }
     };
 })();
+
+window.hcsPop = (() => {
+    const handlers = new WeakMap();
+    const IGNORE = [
+        ".flatpickr-calendar",
+        ".datepicker-calendar",
+        ".datepicker-backdrop",
+        ".hcs-datepicker-layer",
+        ".select2-dropdown",
+        ".select2-container",
+        ".select2-results",
+        ".hcs-select2-pop",
+        ".msg-menu",
+        ".b-modal",
+        ".modal"
+    ].join(",");
+
+    const close = (dotNetRef) => {
+        try {
+            dotNetRef.invokeMethod("CloseFromOutside");
+        } catch {
+            dotNetRef.invokeMethodAsync("CloseFromOutside").catch(() => { });
+        }
+    };
+
+    return {
+        bind(element, dotNetRef) {
+            if (!(element instanceof Element)) {
+                return;
+            }
+
+            this.unbind(element);
+            const handler = (event) => {
+                const target = event.target;
+                if (!(target instanceof Element) || element.contains(target) || target.closest(IGNORE)) {
+                    return;
+                }
+
+                close(dotNetRef);
+            };
+            document.addEventListener("pointerdown", handler, true);
+            handlers.set(element, handler);
+        },
+
+        unbind(element) {
+            if (!(element instanceof Element)) {
+                return;
+            }
+
+            const handler = handlers.get(element);
+            if (!handler) {
+                return;
+            }
+
+            document.removeEventListener("pointerdown", handler, true);
+            handlers.delete(element);
+        }
+    };
+})();
+
+window.hcsBlurActive = () => {
+    const el = document.activeElement;
+    if (el instanceof HTMLElement && el !== document.body) {
+        el.blur();
+    }
+};

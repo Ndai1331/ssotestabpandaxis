@@ -137,7 +137,8 @@ public sealed class WorkflowAssigneeCandidatesController(
     }
 
     private bool CanResolveUserLookup() =>
-        User.HasClaim("permission", HCSPermissions.Documents.SigningExecute)
+        User.HasClaim("permission", HCSPermissions.Documents.Assign)
+        || User.HasClaim("permission", HCSPermissions.Documents.SigningExecute)
         || User.HasClaim("permission", HCSPermissions.Documents.WorkflowStart)
         || User.HasClaim("permission", HCSPermissions.Collaboration.Chat);
 }

@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Localization;
 using StackExchange.Redis;
 using System;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -78,9 +79,11 @@ public sealed class HCSBlazorModule : AbpModule
             // Enabled languages are validated by the platform culture filter. An empty
             // supported-culture list lets CultureInfo resolve newly-created valid tags
             // such as fr-FR, zh-CN, or another BCP-47 culture at runtime.
-            options.SetDefaultCulture("en");
+            options.SetDefaultCulture("vi");
             options.SupportedCultures?.Clear();
             options.SupportedUICultures?.Clear();
+            options.RequestCultureProviders.Insert(0, new Microsoft.AspNetCore.Localization.CookieRequestCultureProvider());
+            options.RequestCultureProviders.Insert(0, new Microsoft.AspNetCore.Localization.QueryStringRequestCultureProvider());
         });
 
         context.Services.AddRazorComponents()
@@ -327,6 +330,38 @@ public sealed class HCSBlazorModule : AbpModule
 
         app.UseConfiguredEndpoints(endpoints =>
         {
+            endpoints.MapGet("/culture", (HttpContext httpContext, string? culture, string? uiCulture, string? returnUrl) =>
+            {
+                var selected = NormalizeCulture(culture) ?? "vi";
+                var selectedUi = NormalizeCulture(uiCulture) ?? selected;
+                var cookieValue = CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(selected, selectedUi));
+                var cookieOptions = new Microsoft.AspNetCore.Http.CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddYears(2),
+                    IsEssential = true,
+                    Path = "/",
+                    SameSite = SameSiteMode.Lax,
+                    Secure = httpContext.Request.IsHttps
+                };
+                httpContext.Response.Cookies.Append(CookieRequestCultureProvider.DefaultCookieName, cookieValue, cookieOptions);
+                httpContext.Response.Cookies.Append("Abp.Localization.CultureName", selectedUi, cookieOptions);
+                httpContext.Response.Cookies.Append("hcs.culture", selectedUi, cookieOptions);
+
+                var target = string.IsNullOrWhiteSpace(returnUrl) || !IsLocalUrl(returnUrl)
+                    ? "/workspace"
+                    : returnUrl;
+                var secure = httpContext.Request.IsHttps ? "; secure" : "";
+                var targetJson = System.Text.Json.JsonSerializer.Serialize(target);
+                var html =
+                    "<!DOCTYPE html><html lang=\"" + selectedUi + "\"><head><meta charset=\"utf-8\"><title>HCS</title></head>" +
+                    "<body><script>" +
+                    "try{localStorage.setItem('hcs.culture'," + System.Text.Json.JsonSerializer.Serialize(selectedUi) + ");" +
+                    "document.cookie='hcs.culture=" + selectedUi + "; path=/; max-age=31536000; samesite=lax" + secure + "';}catch(e){}" +
+                    "location.replace(" + targetJson + ");" +
+                    "</script></body></html>";
+                return Results.Content(html, "text/html; charset=utf-8");
+            });
+
             endpoints.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode()
                 .AddInteractiveWebAssemblyRenderMode()
@@ -335,4 +370,24 @@ public sealed class HCSBlazorModule : AbpModule
                         .Value.AdditionalAssemblies.ToArray());
         });
     }
+
+    private static string? NormalizeCulture(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        try
+        {
+            return CultureInfo.GetCultureInfo(value.Trim().Replace('_', '-')).Name;
+        }
+        catch (CultureNotFoundException)
+        {
+            return null;
+        }
+    }
+
+    private static bool IsLocalUrl(string url) =>
+        url.StartsWith('/') && !url.StartsWith("//", StringComparison.Ordinal);
 }

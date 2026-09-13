@@ -9,6 +9,7 @@ using HCS.Blazor.Client.Services;
 using HCS.Localization;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace HCS.Blazor.Client.Pages;
 
@@ -33,6 +34,7 @@ public partial class AdministrationLanguageTexts
     private bool isAuthorized;
     private bool canManageTexts;
     private Guid? editingId;
+    private Guid? actionMenuId;
     private int totalCount;
     private int pageSize = 20;
     private int currentPage = 1;
@@ -63,6 +65,17 @@ public partial class AdministrationLanguageTexts
         if (firstRender && isAuthorized && !string.IsNullOrWhiteSpace(selectedCultureName) && dataGrid is not null)
         {
             await dataGrid.Reload();
+        }
+
+        if (actionMenuId is { } menuId)
+        {
+            try
+            {
+                await JsRuntime.InvokeVoidAsync("hcsChat.positionMenu", "language-text-row-menu", $"[data-lang-text-more='{menuId:D}']");
+            }
+            catch
+            {
+            }
         }
     }
 
@@ -244,6 +257,19 @@ public partial class AdministrationLanguageTexts
             await ShowErrorAsync(errorMessage, BffErrorMapper.GetStatusCode(exception));
         }
     }
+
+    private Task OpenEditFromMenuAsync(LanguageTextDto text)
+    {
+        CloseActionMenu();
+        return OpenEditModalAsync(text);
+    }
+    private Task DeleteFromMenuAsync(LanguageTextDto text)
+    {
+        CloseActionMenu();
+        return DeleteAsync(text);
+    }
+    private void CloseActionMenu() => actionMenuId = null;
+    private void ToggleActionMenu(Guid id) => actionMenuId = actionMenuId == id ? null : id;
 
     private sealed class LanguageTextFormModel
     {

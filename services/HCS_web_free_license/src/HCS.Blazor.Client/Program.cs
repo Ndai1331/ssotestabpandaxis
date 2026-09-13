@@ -21,6 +21,8 @@ public class Program
         var host = builder.Build();
         await ApplySavedCultureAsync(host.Services);
         await application.InitializeApplicationAsync(host.Services);
+        // ABP application-configuration may reset culture during init — re-apply user choice.
+        await ApplySavedCultureAsync(host.Services);
 
         await host.RunAsync();
     }
@@ -33,7 +35,7 @@ public class Program
             var cultureName = await js.InvokeAsync<string>("hcsGetCulture");
             if (string.IsNullOrWhiteSpace(cultureName))
             {
-                return;
+                cultureName = "vi";
             }
 
             var culture = new CultureInfo(cultureName);
@@ -45,6 +47,16 @@ public class Program
         catch (Exception)
         {
             // Keep the runtime default when the host script is not available yet.
+            try
+            {
+                var culture = new CultureInfo("vi");
+                CultureInfo.DefaultThreadCurrentCulture = culture;
+                CultureInfo.DefaultThreadCurrentUICulture = culture;
+            }
+            catch
+            {
+                // ignore
+            }
         }
     }
 }

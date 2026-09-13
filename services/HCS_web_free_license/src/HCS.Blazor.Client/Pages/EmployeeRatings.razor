@@ -42,7 +42,9 @@
     }
     else if (!FilteredPeople.Any())
     {
-        <div class="hcs-empty py-5"><i class="fa fa-users-slash" aria-hidden="true"></i><h2>@L["EmployeeRatings:EmptyTitle"]</h2><p>@L["EmployeeRatings:Empty"]</p></div>
+        <DocsEmpty Title="@L["EmployeeRatings:EmptyTitle"]" Hint="@L["EmployeeRatings:Empty"]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>
+        </DocsEmpty>
     }
     else
     {

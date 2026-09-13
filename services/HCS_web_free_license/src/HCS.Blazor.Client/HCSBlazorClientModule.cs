@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using HCS.Blazor.Client.Navigation;
 using HCS.Blazor.Client.Authentication;
+using HCS.Blazor.Client.Services;
 using HCS.Blazor.Client.Auditing;
 using HCS.Blazor.Client.Collaboration;
 using HCS.Blazor.Client.Layouts;
@@ -61,6 +62,8 @@ public class HCSBlazorClientModule : AbpModule
             // ABP dynamic proxies (application-configuration, Identity, …) must send BFF cookies.
             options.ProxyClientBuildActions.Add((_, clientBuilder) =>
             {
+                clientBuilder.AddHttpMessageHandler<BusyHttpMessageHandler>();
+                clientBuilder.AddHttpMessageHandler<CultureHttpMessageHandler>();
                 clientBuilder.AddHttpMessageHandler<BffHttpMessageHandler>();
             });
         });
@@ -154,8 +157,13 @@ public class HCSBlazorClientModule : AbpModule
             ? absoluteGatewayUrl
             : new Uri(new Uri(environment.BaseAddress), configuredGatewayUrl.EnsureEndsWith('/'));
         context.Services.AddSingleton(new ChatRealtimeConnection(gatewayBaseAddress));
+        context.Services.AddSingleton<HcsBusyTracker>();
         context.Services.AddTransient(_ => new BffHttpMessageHandler(gatewayBaseAddress));
+        context.Services.AddTransient<CultureHttpMessageHandler>();
+        context.Services.AddTransient<BusyHttpMessageHandler>();
         context.Services.AddHttpClient("HCS.Bff", client => client.BaseAddress = gatewayBaseAddress)
+            .AddHttpMessageHandler<BusyHttpMessageHandler>()
+            .AddHttpMessageHandler<CultureHttpMessageHandler>()
             .AddHttpMessageHandler<BffHttpMessageHandler>();
         context.Services.AddScoped<BffAuthenticationStateProvider>();
         context.Services.AddScoped<AuthenticationStateProvider>(provider =>

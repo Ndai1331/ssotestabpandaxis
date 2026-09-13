@@ -18,6 +18,7 @@
 </div>
 
 @code {
+    private const string DefaultDateDisplayFormat = "dd/MM/yyyy";
     private const string DefaultDateTimeDisplayFormat = "dd/MM/yyyy HH:mm";
 
     private DatePicker<TValue>? picker;
@@ -36,7 +37,7 @@
 
     private string? ResolvedDisplayFormat =>
         DisplayFormat
-        ?? (InputMode == DateInputMode.DateTime ? DefaultDateTimeDisplayFormat : null);
+        ?? (InputMode == DateInputMode.DateTime ? DefaultDateTimeDisplayFormat : DefaultDateDisplayFormat);
 
     private bool ResolvedTimeAs24hr =>
         TimeAs24hr ?? InputMode == DateInputMode.DateTime;

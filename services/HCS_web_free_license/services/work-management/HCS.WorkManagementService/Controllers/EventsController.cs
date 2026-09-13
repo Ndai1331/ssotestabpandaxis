@@ -47,7 +47,8 @@ public sealed class EventsController(EventAppService service, WorkAssetService a
     public async Task<IActionResult> DeleteAttendee(Guid id, CancellationToken ct) { await service.DeleteAttendeeAsync(id, ct); return NoContent(); }
 
     [HttpPost("{eventId:guid}/attendees/delete-bulk")]
-    public Task<int> DeleteAttendees(Guid eventId, IReadOnlyCollection<Guid> ids, CancellationToken ct) => service.DeleteAttendeesAsync(eventId, ids, ct);
+    public Task<int> DeleteAttendees(Guid eventId, [FromBody] IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
+        service.DeleteAttendeesAsync(eventId, ids ?? [], ct);
 
     [HttpPost("{eventId:guid}/attendees/import")]
     [RequestSizeLimit(2 * 1024 * 1024)]
@@ -93,6 +94,14 @@ public sealed class EventsController(EventAppService service, WorkAssetService a
         var result = await assets.GetPublicEventFileAsync(code, token, fileId, ct);
         return File(result.Stream, result.File.ContentType, result.File.FileName);
     }
+
+    [AllowAnonymous, HttpPost("public/{code}/confirm")]
+    public Task<PublicEventConfirmResultDto> PublicConfirm(string code, [FromQuery] string token,
+        PublicEventCheckInDto input, CancellationToken ct) => service.ConfirmPublicAsync(code, token, input, ct);
+
+    [AllowAnonymous, HttpPost("public/{code}/decline")]
+    public Task<PublicEventConfirmResultDto> PublicDecline(string code, [FromQuery] string token,
+        PublicEventCheckInDto input, CancellationToken ct) => service.DeclinePublicAsync(code, token, input, ct);
 
     [AllowAnonymous, HttpPost("public/{code}/check-in")]
     public Task<PublicEventCheckInResultDto> PublicCheckIn(string code, [FromQuery] string token,

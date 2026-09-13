@@ -6,196 +6,288 @@
 @attribute [Authorize(Policy = "Documents.View")]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
-@inject CollaborationClient Chat
 @inject OrganizationCatalogClient Catalog
 @inject NavigationManager Navigation
 @implements IDisposable
 @using System.Threading
 
 <PageTitle>@PageTitle · HCS</PageTitle>
-<section class="hcs-catalog-page" @key="SourceType">
-    <header class="hcs-catalog-titlebar">
-        <div><h1>@PageTitle</h1></div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
+<section class="page page-wf page-vb" @key="SourceType" aria-labelledby="docs-title">
+    <div class="page-head">
+        <h1 id="docs-title">@PageTitle</h1>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+                @L["Catalog:Refresh"]
+            </button>
             @if (CanCreate)
             {
-                <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenCreate"><Icon Name="@IconName.Add" /> @L["Catalog:New"]</Button>
+                <button class="btn btn-primary" type="button" @onclick="OpenCreate">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    @L["Catalog:New"]
+                </button>
             }
+            <button class="btn btn-outline @(showSearch ? "is-open" : null) @(IsSearchFiltered ? "is-filtered" : null)"
+                    type="button" aria-expanded="@showSearch.ToString().ToLowerInvariant()"
+                    aria-controls="docs-search-form" @onclick="ToggleSearch">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:Search"]
+            </button>
+            <HcsDismissible Class="filter-pop" @bind-IsOpen="showFilters">
+                <button class="btn btn-outline @(showFilters ? "is-open" : null) @(IsAdvancedFiltered ? "is-filtered" : null)" type="button"
+                        aria-expanded="@showFilters.ToString().ToLowerInvariant()"
+                        aria-controls="docs-filter-panel" @onclick="ToggleFilters">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                    @L["Catalog:Filter"]
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <form class="docs-filter-pop @(showFilters ? "is-open" : null)" id="docs-filter-panel" hidden="@(!showFilters)"
+                      @onsubmit="SearchAsync" @onsubmit:preventDefault>
+                    <div class="vb-field-row">
+                        <div class="filter-menu-field">
+                            <label class="field-label" for="docs-status-filter">@L["Catalog:Status"]</label>
+                            <select class="select input" id="docs-status-filter" @bind="statusFilter">
+                                <option value="">@L["Catalog:AllStatuses"]</option>
+                                @foreach (var status in Enum.GetValues<DocumentStatus>())
+                                {
+                                    <option value="@status">@L[DocumentStatusUi.TextKey(status)]</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="filter-menu-field">
+                            <label class="field-label" for="docs-sector-filter">@L["Menu:Sectors"]</label>
+                            <select class="select input" id="docs-sector-filter" @bind="sectorFilter">
+                                <option value="">@L["Catalog:AllStatuses"]</option>
+                                @foreach (var item in sectors)
+                                {
+                                    <option value="@item.Id">@item.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="vb-field-row">
+                        <div class="filter-menu-field">
+                            <label class="field-label" for="docs-urgency-filter">@L["Menu:UrgencyLevels"]</label>
+                            <select class="select input" id="docs-urgency-filter" @bind="urgencyFilter">
+                                <option value="">@L["Catalog:AllStatuses"]</option>
+                                @foreach (var item in urgencies)
+                                {
+                                    <option value="@item.Id">@item.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="filter-menu-field">
+                            <label class="field-label" for="docs-confidentiality-filter">@L["Menu:ConfidentialityLevels"]</label>
+                            <select class="select input" id="docs-confidentiality-filter" @bind="confidentialityFilter">
+                                <option value="">@L["Catalog:AllStatuses"]</option>
+                                @foreach (var item in confidentialities)
+                                {
+                                    <option value="@item.Id">@item.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="vb-field-row">
+                        <div class="filter-menu-field">
+                            <label class="field-label">@L["Feature:StartDate"]</label>
+                            <HcsDatePicker TValue="DateTime?" @bind-Value="fromDate" />
+                        </div>
+                        <div class="filter-menu-field">
+                            <label class="field-label">@L["Feature:EndDate"]</label>
+                            <HcsDatePicker TValue="DateTime?" @bind-Value="toDate" />
+                        </div>
+                    </div>
+                    <div class="docs-filter-actions">
+                        <button class="btn btn-outline" type="button" @onclick="ResetSearchAsync">@L["Catalog:Reset"]</button>
+                        <button class="btn btn-primary" type="submit" disabled="@isLoading">@L["Catalog:SearchButton"]</button>
+                    </div>
+                </form>
+            </HcsDismissible>
         </div>
-    </header>
-    <div class="hcs-document-layout">
-        <aside class="hcs-document-type-sidebar" aria-label="@L["Menu:DocumentTypes"]">
-            <button type="button" class="hcs-document-type-tree-item @(selectedTypeId is null ? "active" : null)" @onclick="() => SelectType(null)">
+    </div>
+
+    <div class="docs-layout">
+        <aside class="docs-side" aria-label="@L["Menu:DocumentTypes"]">
+            <button class="docs-cat @(selectedTypeId is null ? "is-active" : null)" type="button" @onclick="() => SelectType(null)">
                 @L["Catalog:AllStatuses"]
             </button>
             @foreach (var type in documentTypes)
             {
-                <button type="button" class="hcs-document-type-tree-item @(selectedTypeId == type.Id ? "active" : null)" @onclick="() => SelectType(type.Id)">
+                <button class="docs-cat @(selectedTypeId == type.Id ? "is-active" : null)" type="button" @onclick="() => SelectType(type.Id)">
                     @type.Name
                 </button>
             }
         </aside>
-        <div>
-            <Card Class="mb-2 hcs-catalog-filter-card hcs-document-filter-card"><CardBody>
-                <div class="hcs-catalog-filter-row hcs-document-filter-row">
-                    <Addons Class="hcs-catalog-search">
-                        <Addon AddonType="AddonType.Body"><TextInput @bind-Value="filter" Placeholder="@L["Catalog:SearchPlaceholder"]" /></Addon>
-                        <Addon AddonType="AddonType.End">
-                            <Button Color="Color.Primary" Clicked="SearchAsync"><i class="fa fa-search me-1"></i> @L["Catalog:SearchButton"]</Button>
-                        </Addon>
-                    </Addons>
-                    <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-filter-toggle" Clicked="() => showFilters = !showFilters">
-                        <i class="fa fa-sliders me-2"></i>@L["Catalog:Filter"]
-                        <i class="fa @(showFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2"></i>
-                    </Button>
-                </div>
-                @if (showFilters)
+
+        <section class="docs-main">
+            <form class="docs-toolbar list-search" id="docs-search-form" hidden="@(!showSearch)" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+                <label class="sr-only" for="docs-q">@L["Work:SearchByTitleOrNumber"]</label>
+                <input class="input docs-search" id="docs-q" type="search" @bind="filter" @bind:event="oninput"
+                       placeholder="@L["Work:SearchByTitleOrNumber"]" autocomplete="off" />
+                <button class="btn btn-primary" type="submit" disabled="@isLoading">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                    @L["Catalog:SearchButton"]
+                </button>
+            </form>
+
+            <div class="docs-table-wrap">
+                @if (isLoading && items.Count == 0)
                 {
-                    <div class="hcs-catalog-advanced-filter hcs-document-advanced-filter">
-                        <Field>
-                            <FieldLabel>@L["Feature:DocumentTitleField"]</FieldLabel>
-                            <TextInput @bind-Value="titleFilter" />
-                        </Field>
-                        <Field>
-                            <FieldLabel>@L["Feature:DocumentNumber"]</FieldLabel>
-                            <TextInput @bind-Value="numberFilter" />
-                        </Field>
-                        <Field>
-                            <FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                            <Select TValue="string" @bind-Value="statusFilter">
-                                <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                                @foreach (var status in Enum.GetValues<DocumentStatus>())
-                                {
-                                    <SelectItem Value="@status.ToString()">@L[DocumentStatusUi.TextKey(status)]</SelectItem>
-                                }
-                            </Select>
-                        </Field>
-                        <Field>
-                            <FieldLabel>@L["Menu:Sectors"]</FieldLabel>
-                            <Select TValue="string" @bind-Value="sectorFilter">
-                                <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                                @foreach (var item in sectors) { <SelectItem Value="@item.Id.ToString()">@item.Name</SelectItem> }
-                            </Select>
-                        </Field>
-                        <Field>
-                            <FieldLabel>@L["Menu:UrgencyLevels"]</FieldLabel>
-                            <Select TValue="string" @bind-Value="urgencyFilter">
-                                <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                                @foreach (var item in urgencies) { <SelectItem Value="@item.Id.ToString()">@item.Name</SelectItem> }
-                            </Select>
-                        </Field>
-                        <Field>
-                            <FieldLabel>@L["Menu:ConfidentialityLevels"]</FieldLabel>
-                            <Select TValue="string" @bind-Value="confidentialityFilter">
-                                <SelectItem Value="@string.Empty">@L["Catalog:AllStatuses"]</SelectItem>
-                                @foreach (var item in confidentialities) { <SelectItem Value="@item.Id.ToString()">@item.Name</SelectItem> }
-                            </Select>
-                        </Field>
-                        <Field>
-                            <FieldLabel>@L["Feature:StartDate"]</FieldLabel>
-                            <HcsDatePicker TValue="DateTime?" @bind-Value="fromDate" />
-                        </Field>
-                        <Field>
-                            <FieldLabel>@L["Feature:EndDate"]</FieldLabel>
-                            <HcsDatePicker TValue="DateTime?" @bind-Value="toDate" />
-                        </Field>
-                        <Button Color="Color.Light" Outline="true" Class="hcs-catalog-filter-reset" Clicked="ResetSearchAsync">@L["Catalog:Reset"]</Button>
-                    </div>
+                    <DocsEmpty Loading="true" />
                 }
-            </CardBody></Card>
-            <Card Class="hcs-catalog-grid-card"><CardBody>
-                <DataGrid TItem="DocumentDto" Data="@items" TotalItems="@totalCount" ReadData="OnReadAsync"
-                          ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
-                          Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
-                    <EmptyTemplate>
-                        <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2></div>
-                    </EmptyTemplate>
-                    <LoadingTemplate>
-                        <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
-                    </LoadingTemplate>
-                    <DataGridColumns>
-                        <DataGridColumn TItem="DocumentDto" Caption="@L["Catalog:Actions"].Value">
-                            <DisplayTemplate Context="cell">
-                                <div class="hcs-row-actions">
-                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => PreviewAsync(cell.Item)" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]"><i class="fa fa-eye" aria-hidden="true"></i></Button>
-                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--edit" Clicked="() => Navigation.NavigateTo(DetailHref(cell.Item.Id))" Title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]"><i class="fa fa-pen" aria-hidden="true"></i></Button>
-                                    @if (CanManage)
-                                    {
-                                        <AuthorizeView Policy="Documents.Assign">
-                                            <Authorized>
-                                                <Button Size="Size.Small" Color="Color.Info" Outline="true" Class="hcs-action-button hcs-action-button--send" Clicked="() => OpenSend(cell.Item)" Title="@L["Feature:SendDocument"]" aria-label="@L["Feature:SendDocument"]"><i class="fa fa-paper-plane" aria-hidden="true"></i></Button>
-                                            </Authorized>
-                                        </AuthorizeView>
-                                        <AuthorizeView Policy="Documents.Workflow.Start">
-                                            <Authorized>
-                                                        <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--sign" Clicked="() => OpenSubmit(cell.Item)" Title="@L["Work:SubmitWorkflow"]" aria-label="@L["Work:SubmitWorkflow"]"><i class="fa fa-signature" aria-hidden="true"></i></Button>
-                                            </Authorized>
-                                        </AuthorizeView>
-                                    }
-                                </div>
-                            </DisplayTemplate>
-                        </DataGridColumn>
-                        <DataGridColumn TItem="DocumentDto" Caption="@L["Feature:DocumentNumber"].Value">
-                            <DisplayTemplate Context="cell"><span class="hcs-catalog-code">#@cell.Item.Number</span></DisplayTemplate>
-                        </DataGridColumn>
-                        <DataGridColumn TItem="DocumentDto" Caption="@L["Feature:DocumentTitleField"].Value">
-                            <DisplayTemplate Context="cell">
-                                <a href="@DetailHref(cell.Item.Id)"><strong>@cell.Item.Title</strong></a>
-                                <span class="hcs-catalog-desc">@cell.Item.CreationTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
-                            </DisplayTemplate>
-                        </DataGridColumn>
-                        <DataGridColumn TItem="DocumentDto" Caption="@L["Catalog:Status"].Value">
-                            <DisplayTemplate Context="cell"><span class="hcs-status-badge @DocumentStatusUi.BadgeClass(cell.Item.Status)">@L[DocumentStatusUi.TextKey(cell.Item.Status)]</span></DisplayTemplate>
-                        </DataGridColumn>
-                        <DataGridColumn TItem="DocumentDto" Caption="@L["Feature:Files"].Value">
-                            <DisplayTemplate Context="cell">@cell.Item.FileCount</DisplayTemplate>
-                        </DataGridColumn>
-                    </DataGridColumns>
-                </DataGrid>
-            </CardBody></Card>
-        </div>
+                else if (items.Count == 0)
+                {
+                    <DocsEmpty Hint="@L["Catalog:EmptyDescription"]" />
+                }
+                else
+                {
+                    <table class="docs-table">
+                        <thead>
+                            <tr>
+                                <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                                <th scope="col">@L["Feature:DocumentTitleField"]</th>
+                                <th scope="col">@L["Feature:DocumentCode"]</th>
+                                <th scope="col">@L["Feature:ArchiveNumber"]</th>
+                                <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                                <th scope="col">@L["Catalog:DocumentTypeTitle"]</th>
+                                <th scope="col">@L["Catalog:SectorTitle"]</th>
+                                @if (!IsInbox)
+                                {
+                                    <th scope="col">@L["Feature:Sent"]</th>
+                                }
+                                <th scope="col">@L["Feature:Files"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in items)
+                        {
+                            <tr @key="item.Id">
+                                <td class="col-actions">
+                                    <div class="doc-actions">
+                                        <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewAsync(item)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </button>
+                                        @if (!IsInbox)
+                                        {
+                                            <a class="doc-action" href="@DetailHref(item.Id)" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                            </a>
+                                        }
+                                        @if (IsInbox)
+                                        {
+                                            <button class="doc-action" type="button" title="@L["Feature:SendDocument"]" aria-label="@L["Feature:SendDocument"]" @onclick="() => OpenSend(item)" disabled="@IsMutating(item.Id)">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                                            </button>
+                                        }
+                                        @if (CanManage)
+                                        {
+                                            <AuthorizeView Policy="Documents.Assign">
+                                                <Authorized>
+                                                    <button class="doc-action" type="button" title="@L["Feature:SendDocument"]" aria-label="@L["Feature:SendDocument"]" @onclick="() => OpenSend(item)" disabled="@IsMutating(item.Id)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                                                    </button>
+                                                    @if (item.IsSent)
+                                                    {
+                                                        <button class="doc-action" type="button" title="@L["Feature:RevokeSend"]" aria-label="@L["Feature:RevokeSend"]" @onclick="() => RevokeAsync(item)" disabled="@IsMutating(item.Id)">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 1 1 0 11H11"/></svg>
+                                                        </button>
+                                                    }
+                                                </Authorized>
+                                            </AuthorizeView>
+                                            <AuthorizeView Policy="Documents.Workflow.Start">
+                                                <Authorized>
+                                                    <button class="doc-action" type="button" title="@L["Work:SubmitWorkflow"]" aria-label="@L["Work:SubmitWorkflow"]" @onclick="() => OpenSubmit(item)" disabled="@IsMutating(item.Id)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>
+                                                    </button>
+                                                </Authorized>
+                                            </AuthorizeView>
+                                            <AuthorizeView Policy="Documents.Update">
+                                                <Authorized>
+                                                    <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)" disabled="@IsMutating(item.Id)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                                    </button>
+                                                </Authorized>
+                                            </AuthorizeView>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="doc-title" title="@item.Title">
+                                        @if (IsInbox)
+                                        {
+                                            <button type="button" class="doc-title-open" @onclick="() => PreviewAsync(item)">
+                                                <strong>@item.Title</strong>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <a href="@DetailHref(item.Id)"><strong>@item.Title</strong></a>
+                                        }
+                                        <span>@item.CreationTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                    </div>
+                                </td>
+                                <td><span class="doc-code">@(string.IsNullOrWhiteSpace(item.DocumentCode) ? "—" : item.DocumentCode)</span></td>
+                                <td><span class="doc-code">#@item.Number</span></td>
+                                <td>
+                                    <span class="badge @DocumentStatusBadge(item.Status)">@L[DocumentStatusUi.TextKey(item.Status)]</span>
+                                </td>
+                                <td>@CatalogName(documentTypes, item.DocumentTypeId)</td>
+                                <td>@CatalogName(sectors, item.SectorId)</td>
+                                @if (!IsInbox)
+                                {
+                                    <td>@(item.IsSent ? L["Catalog:Yes"] : L["Catalog:No"])</td>
+                                }
+                                <td>@item.FileCount</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+                <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                    <button type="button" disabled="@(!CanPrev || isLoading)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
+                    <button type="button" disabled="@(!CanPrev || isLoading)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
+                    <button type="button" disabled="@(!CanNext || isLoading)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
+                    <button type="button" disabled="@(!CanNext || isLoading)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
+                    <label class="sr-only" for="docs-page-size">@L["Catalog:PageSize"]</label>
+                    <select id="docs-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                        @foreach (var size in pageSizes)
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </section>
     </div>
 </section>
+
 <DocumentPdfPreviewModal @ref="previewModal" ShowAssignTask="true" OnAssignTask="AssignFromPreviewAsync" />
 <ProjectTaskCreateModal @ref="taskModal" />
 <SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
-<Modal @ref="sendModal"><ModalContent Centered Class="hcs-catalog-modal">
-    <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:SendDocument"]</ModalTitle><CloseButton /></ModalHeader>
-    <ModalBody Class="hcs-catalog-modal__body">
-        <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
-            <UserSelect2 Value="sendReceiverId" ValueChanged="value => sendReceiverId = value"
-                         SelectedItem="@ContactItem(sendReceiverId)"
-                         Placeholder="@L["Chat:SelectContacts"]" SelectedText="@ContactName(sendReceiverId)"
-                         Search="SearchContactsAsync" />
-        </Field>
-    </ModalBody>
-    <ModalFooter Class="hcs-catalog-modal__footer">
-        <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="() => sendModal!.Hide()">@L["Catalog:Cancel"]</Button>
-        <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SendAsync">@L["Feature:SendDocument"]</Button>
-    </ModalFooter>
-</ModalContent></Modal>
+<SendDocumentModal @ref="sendModal" OnSent="LoadAsync" />
+
 @code {
     [SupplyParameterFromQuery(Name = "sourceType")] public int? SourceTypeQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "preview")] public Guid? PreviewDocumentId { get; set; }
 
     private static readonly int[] pageSizes = [10, 20, 50, 100];
     private readonly List<DocumentDto> items = [];
-    private readonly List<ChatContactDto> contacts = [];
     private readonly List<MasterDataCatalogDto> documentTypes = [];
     private readonly List<MasterDataCatalogDto> sectors = [];
     private readonly List<MasterDataCatalogDto> urgencies = [];
     private readonly List<MasterDataCatalogDto> confidentialities = [];
+    private readonly HashSet<Guid> mutatingIds = [];
     private DocumentPdfPreviewModal? previewModal;
     private ProjectTaskCreateModal? taskModal;
     private SubmitWorkflowModal? submitModal;
-    private Modal? sendModal;
-    private DocumentDto? sending;
+    private SendDocumentModal? sendModal;
     private DocumentDto? previewing;
-    private Guid? sendReceiverId, selectedTypeId;
-    private string filter = "", titleFilter = "", numberFilter = "", statusFilter = "", sectorFilter = "", urgencyFilter = "", confidentialityFilter = "";
+    private Guid? selectedTypeId;
+    private string filter = "", statusFilter = "", sectorFilter = "", urgencyFilter = "", confidentialityFilter = "";
     private DateTime? fromDate, toDate;
-    private bool showFilters, catalogsLoaded;
+    private bool showFilters, showSearch, catalogsLoaded, isLoading;
     private int lastLoadedSource = int.MinValue;
+    private Guid? openedPreviewId;
     private int loadGeneration, totalCount, pageSize = 20, currentPage = 1;
 
     private int SourceType
@@ -210,17 +302,34 @@
     }
     private bool CanCreate => SourceType is 0 or 1;
     private bool CanManage => SourceType is 0 or 1;
+    private bool IsInbox => SourceType == 2;
     private string PageTitle => SourceType switch
     {
         1 => L["Menu:MyDocuments"],
         2 => L["Menu:DocumentsSentToMe"],
         _ => L["Menu:DocumentList"]
     };
+    private bool IsSearchFiltered => !string.IsNullOrWhiteSpace(filter);
+    private bool IsAdvancedFiltered =>
+        !string.IsNullOrWhiteSpace(statusFilter)
+        || !string.IsNullOrWhiteSpace(sectorFilter)
+        || !string.IsNullOrWhiteSpace(urgencyFilter)
+        || !string.IsNullOrWhiteSpace(confidentialityFilter)
+        || fromDate is not null
+        || toDate is not null;
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
 
     protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
     protected override async Task OnParametersSetAsync() => await ReloadIfSourceChangedAsync(resetFilter: lastLoadedSource != int.MinValue);
+    protected override async Task OnAfterRenderAsync(bool firstRender) => await OpenInboxPreviewFromQueryAsync();
     private void OnLocationChanged(object? sender, LocationChangedEventArgs args) =>
-        _ = InvokeAsync(() => ReloadIfSourceChangedAsync(resetFilter: true));
+        _ = InvokeAsync(async () =>
+        {
+            await ReloadIfSourceChangedAsync(resetFilter: true);
+            await OpenInboxPreviewFromQueryAsync();
+        });
     public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 
     private async Task ReloadIfSourceChangedAsync(bool resetFilter)
@@ -231,6 +340,7 @@
         lastLoadedSource = source;
         currentPage = 1;
         await EnsureCatalogsAsync();
+        await LoadAsync();
     }
 
     private async Task EnsureCatalogsAsync()
@@ -248,26 +358,42 @@
         catch { /* catalog permission is optional */ }
     }
 
+    private void ToggleSearch()
+    {
+        showSearch = !showSearch;
+        if (showSearch) showFilters = false;
+    }
+    private void ToggleFilters()
+    {
+        showFilters = !showFilters;
+        if (showFilters) showSearch = false;
+    }
     private Task SearchAsync() { currentPage = 1; return LoadAsync(); }
     private Task ResetSearchAsync() { ResetFilters(); showFilters = false; currentPage = 1; return LoadAsync(); }
     private void ResetFilters()
     {
-        filter = titleFilter = numberFilter = statusFilter = sectorFilter = urgencyFilter = confidentialityFilter = "";
+        filter = statusFilter = sectorFilter = urgencyFilter = confidentialityFilter = "";
         fromDate = toDate = null;
         selectedTypeId = null;
     }
     private Task SelectType(Guid? id) { selectedTypeId = id; currentPage = 1; return LoadAsync(); }
 
-    private async Task OnReadAsync(DataGridReadDataEventArgs<DocumentDto> args)
+    private Task GoFirst() { currentPage = 1; return LoadAsync(); }
+    private Task GoPrev() { currentPage = Math.Max(1, currentPage - 1); return LoadAsync(); }
+    private Task GoNext() { currentPage = Math.Min(PageCount, currentPage + 1); return LoadAsync(); }
+    private Task GoLast() { currentPage = PageCount; return LoadAsync(); }
+    private Task OnPageSizeChanged(ChangeEventArgs args)
     {
-        currentPage = Math.Max(args.Page, 1);
-        pageSize = Math.Clamp(args.PageSize, 10, 100);
-        await LoadAsync();
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        return LoadAsync();
     }
 
     private async Task LoadAsync()
     {
         var generation = Interlocked.Increment(ref loadGeneration);
+        isLoading = true;
         try
         {
             var search = CombinedFilter();
@@ -281,55 +407,88 @@
             totalCount = (int)page.TotalCount;
         }
         catch (Exception ex) { if (generation == loadGeneration) await NotifyErrorAsync(ex); }
+        finally { if (generation == loadGeneration) isLoading = false; }
     }
 
-    private string? CombinedFilter()
-    {
-        if (!string.IsNullOrWhiteSpace(numberFilter)) return SearchText.Normalize(numberFilter);
-        if (!string.IsNullOrWhiteSpace(titleFilter)) return SearchText.Normalize(titleFilter);
-        return SearchText.NormalizeOrNull(filter);
-    }
+    private string? CombinedFilter() => SearchText.NormalizeOrNull(filter);
 
     private static Guid? ParseGuid(string value) => Guid.TryParse(value, out var id) ? id : null;
+    private static string CatalogName(IEnumerable<MasterDataCatalogDto> items, Guid? id) =>
+        id is { } value ? items.FirstOrDefault(x => x.Id == value)?.Name ?? "—" : "—";
+    private static string DocumentStatusBadge(DocumentStatus status) => status switch
+    {
+        DocumentStatus.Approved => "badge-success",
+        DocumentStatus.Rejected => "badge-danger",
+        DocumentStatus.InReview or DocumentStatus.Submitted => "badge-warning",
+        DocumentStatus.Archived => "badge-muted",
+        _ => "badge-info"
+    };
     private string DetailHref(Guid id) => $"/document-detail/{id}?sourceType={SourceType}";
     private void OpenCreate() => Navigation.NavigateTo($"/document-detail?sourceType={SourceType}");
     private Task PreviewAsync(DocumentDto item)
     {
         previewing = item;
-        return previewModal?.ShowAsync(item.Id, item.Files, item.Title) ?? Task.CompletedTask;
+        return previewModal?.ShowAsync(item.Id, item.Files, item.Title, showHistory: IsInbox) ?? Task.CompletedTask;
+    }
+
+    private async Task OpenInboxPreviewFromQueryAsync()
+    {
+        if (!IsInbox || previewModal is null)
+            return;
+        if (PreviewDocumentId is not { } id || id == Guid.Empty)
+        {
+            openedPreviewId = null;
+            return;
+        }
+        if (openedPreviewId == id) return;
+        openedPreviewId = id;
+        var item = items.FirstOrDefault(x => x.Id == id);
+        if (item is null)
+        {
+            try { item = await Documents.GetDocumentAsync(id); }
+            catch (Exception ex)
+            {
+                openedPreviewId = null;
+                await NotifyErrorAsync(ex);
+                return;
+            }
+        }
+        await PreviewAsync(item);
+        Navigation.NavigateTo("/manage-documents?sourceType=2", replace: true);
     }
     private Task AssignFromPreviewAsync() =>
         taskModal?.ShowAsync(linkedDocumentId: previewing?.Id) ?? Task.CompletedTask;
     private Task OpenSubmit(DocumentDto item) => submitModal?.ShowAsync(item.Id) ?? Task.CompletedTask;
-    private async Task OpenSend(DocumentDto item)
+    private Task OpenSend(DocumentDto item) => sendModal?.ShowAsync(item.Id, item.Title, item.Number) ?? Task.CompletedTask;
+    private bool IsMutating(Guid id) => mutatingIds.Contains(id);
+
+    private async Task RevokeAsync(DocumentDto item)
     {
-        sending = item;
-        sendReceiverId = null;
-        if (contacts.Count == 0)
-        {
-            try { contacts.AddRange(await Chat.GetContactsAsync(null, 50)); }
-            catch { }
-        }
-        if (sendModal is not null) await sendModal.Show();
-    }
-    private async Task SendAsync()
-    {
-        if (sending is null || sendReceiverId is null) { await NotifyErrorAsync(L["Catalog:TypeRequired"]); return; }
+        if (IsMutating(item.Id)) return;
+        if (!await UiMessageService.Confirm(string.Format(L["Feature:RevokeSendConfirm"], item.Title))) return;
+        mutatingIds.Add(item.Id);
         try
         {
-            await Documents.SendDocumentAsync(sending.Id, new SendDocumentRequest(sendReceiverId));
-            if (sendModal is not null) await sendModal.Hide();
-            await NotifySuccessAsync(L["Catalog:Updated"]);
+            await Documents.RevokeDocumentAsync(item.Id);
+            await NotifySuccessAsync(L["Feature:RevokeSendDone"]);
             await LoadAsync();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { mutatingIds.Remove(item.Id); }
     }
-    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
-    private CatalogSelect2Item? ContactItem(Guid? id) =>
-        id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
-    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
+
+    private async Task DeleteAsync(DocumentDto item)
     {
-        var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
+        if (IsMutating(item.Id)) return;
+        if (!await UiMessageService.Confirm(string.Format(L["Feature:DeleteDocumentConfirm"], item.Title))) return;
+        mutatingIds.Add(item.Id);
+        try
+        {
+            await Documents.DeleteDocumentAsync(item.Id);
+            await NotifySuccessAsync(L["Feature:DeleteDocumentDone"]);
+            await LoadAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { mutatingIds.Remove(item.Id); }
     }
 }

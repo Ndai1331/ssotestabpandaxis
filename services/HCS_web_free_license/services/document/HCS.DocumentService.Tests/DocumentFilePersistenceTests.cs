@@ -103,4 +103,42 @@ public sealed class DocumentFilePersistenceTests
         Assert.Equal(2, saved.Files.Count);
         Assert.Equal(2, saved.History.Count(x => x.Action == "FileAdded"));
     }
+
+    [Fact]
+    public async Task Deleting_a_loaded_file_tracks_new_history_as_added()
+    {
+        var options = new DbContextOptionsBuilder<DocumentServiceDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        await using var db = new DocumentServiceDbContext(options);
+        db.Database.EnsureCreated();
+
+        var document = new DocumentAggregate(Guid.NewGuid(), "CV-DEL", "Original", null, Guid.NewGuid(), Now);
+        var file = document.AddFile(Guid.NewGuid(), "memo.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 10, new string('c', 64),
+            "documents/memo", null, Now);
+        db.Documents.Add(document);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var loaded = await db.Documents.Include(x => x.Files).Include(x => x.History)
+            .SingleAsync(x => x.Id == document.Id);
+        var existingFileIds = loaded.Files.Select(x => x.Id).ToHashSet();
+        var existingHistoryIds = loaded.History.Select(x => x.Id).ToHashSet();
+        loaded.BeginFileDeletion(file.Id, Guid.NewGuid(), Now.AddMinutes(1));
+        DocumentFileService.TrackNewChildren(db, loaded, existingFileIds, existingHistoryIds);
+        db.ChangeTracker.DetectChanges();
+        Assert.Contains(loaded.History, history => history.Action == "FileDeletionStarted" &&
+            db.Entry(history).State == EntityState.Added);
+        await db.SaveChangesAsync();
+
+        existingHistoryIds = loaded.History.Select(x => x.Id).ToHashSet();
+        loaded.CompleteFileDeletion(file.Id, Guid.NewGuid(), Now.AddMinutes(2));
+        DocumentFileService.TrackNewChildren(db, loaded, existingFileIds, existingHistoryIds);
+        await db.SaveChangesAsync();
+
+        var saved = await db.Documents.AsNoTracking().Include(x => x.Files).Include(x => x.History)
+            .SingleAsync(x => x.Id == document.Id);
+        Assert.Empty(saved.Files);
+        Assert.Contains(saved.History, history => history.Action == "FileRemoved");
+    }
 }

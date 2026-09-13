@@ -1,0 +1,102 @@
+@namespace HCS.Blazor.Client.Components
+@using System.Threading
+@inherits HCSComponentBase
+@inject HcsBusyTracker Tracker
+@implements IDisposable
+
+<div class="hcs-busy-bar @(visible ? "is-on" : null) @(finishing ? "is-done" : null)"
+     role="progressbar"
+     aria-busy="@visible.ToString().ToLowerInvariant()"
+     aria-hidden="@((!visible).ToString().ToLowerInvariant())"
+     aria-label="@L["Ui:Working"]">
+    <span></span>
+</div>
+
+@code {
+    private bool visible, finishing, disposed;
+    private CancellationTokenSource? delayCts;
+
+    protected override void OnInitialized() => Tracker.Changed += OnBusyChanged;
+
+    private void OnBusyChanged()
+    {
+        if (disposed)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(SyncAsync);
+    }
+
+    private async Task SyncAsync()
+    {
+        if (disposed)
+        {
+            return;
+        }
+
+        delayCts?.Cancel();
+        delayCts?.Dispose();
+        delayCts = new CancellationTokenSource();
+        var token = delayCts.Token;
+
+        if (Tracker.IsBusy)
+        {
+            finishing = false;
+            try
+            {
+                await Task.Delay(140, token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (disposed)
+            {
+                return;
+            }
+
+            visible = true;
+            StateHasChanged();
+            return;
+        }
+
+        if (!visible)
+        {
+            return;
+        }
+
+        finishing = true;
+        StateHasChanged();
+        try
+        {
+            await Task.Delay(280, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (disposed)
+        {
+            return;
+        }
+
+        visible = finishing = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (disposed)
+        {
+            return;
+        }
+
+        disposed = true;
+        Tracker.Changed -= OnBusyChanged;
+        delayCts?.Cancel();
+        delayCts?.Dispose();
+    }
+}

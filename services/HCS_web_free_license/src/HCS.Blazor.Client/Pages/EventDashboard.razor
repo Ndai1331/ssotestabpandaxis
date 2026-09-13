@@ -5,51 +5,83 @@
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Menu:EventDashboard"] · HCS</PageTitle>
-<section class="hcs-catalog-page hcs-event-page" aria-labelledby="event-dashboard-title">
-    <header class="hcs-catalog-titlebar">
-        <div class="min-w-0">
-            <h1 id="event-dashboard-title">@L["Menu:EventDashboard"]</h1>
+<section class="page page-wf hcs-event-page" aria-labelledby="event-dashboard-title">
+    <div class="page-head">
+        <h1 id="event-dashboard-title">@L["Menu:EventDashboard"]</h1>
+        <div class="page-actions">
+            <a class="btn btn-outline" href="/events">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+                @L["Menu:ManagedEvents"]
+            </a>
+            <a class="btn btn-primary" href="/events">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                @L["Event:Create"]
+            </a>
         </div>
-        <div class="hcs-catalog-page__actions">
-            <a class="btn btn-outline-primary" href="/events"><i class="fa fa-list me-1" aria-hidden="true"></i>@L["Menu:ManagedEvents"]</a>
-            <a class="btn btn-primary" href="/events"><i class="fa fa-plus me-1" aria-hidden="true"></i>@L["Event:Create"]</a>
-        </div>
-    </header>
+    </div>
 
-    <Card Class="hcs-catalog-filter-card hcs-event-filter-card"><CardBody>
-        <div class="hcs-event-filter-grid">
-            <div class="hcs-event-filter-range">
-                <span class="hcs-event-filter-range__label"><i class="fa fa-calendar-day" aria-hidden="true"></i>@L["Work:FilterByDateRange"]</span>
-                <HcsDatePicker TValue="IReadOnlyList<DateTime?>"
-                               Value="selectedDates"
-                               ValueChanged="OnRangeChanged"
-                               InputMode="DateInputMode.Date"
-                               SelectionMode="DateInputSelectionMode.Range"
-                               DisplayFormat="dd/MM/yyyy"
-                               Placeholder="@L["Work:SelectDateRange"]" />
-            </div>
-            <div class="hcs-event-filter-action"><Button Color="Color.Primary" Clicked="LoadAsync" Disabled="@isLoading"><i class="fa fa-search me-1" aria-hidden="true"></i>@L["Catalog:SearchButton"]</Button></div>
-        </div>
-    </CardBody></Card>
+    <form class="docs-toolbar event-filter" @onsubmit="LoadAsync" @onsubmit:preventDefault>
+        <span class="filter-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+            @L["Work:FilterByDateRange"]
+        </span>
+        <HcsDatePicker TValue="IReadOnlyList<DateTime?>"
+                       Value="selectedDates"
+                       ValueChanged="OnRangeChanged"
+                       InputMode="DateInputMode.Date"
+                       SelectionMode="DateInputSelectionMode.Range"
+                       DisplayFormat="dd/MM/yyyy"
+                       Placeholder="@L["Work:SelectDateRange"]" />
+        <button class="btn btn-primary" type="submit" disabled="@isLoading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            @L["Catalog:SearchButton"]
+        </button>
+    </form>
 
     @if (isLoading)
     {
-        <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+        <DocsEmpty Loading="true" />
     }
     else if (dashboard is not null)
     {
-        <div class="hcs-event-kpi-grid" aria-label="@L["Menu:EventDashboard"]">
-            <article class="hcs-event-kpi hcs-event-kpi--primary"><span class="hcs-event-kpi__icon"><i class="fa fa-calendar-days" aria-hidden="true"></i></span><span><small>@L["Event:TotalEvents"]</small><strong>@dashboard.TotalEvents</strong></span></article>
-            <article class="hcs-event-kpi"><span class="hcs-event-kpi__icon"><i class="fa fa-hourglass-end" aria-hidden="true"></i></span><span><small>@L["Event:CompletedEvents"]</small><strong>@dashboard.CompletedEvents</strong></span></article>
-            <article class="hcs-event-kpi"><span class="hcs-event-kpi__icon"><i class="fa fa-bolt" aria-hidden="true"></i></span><span><small>@L["Event:OngoingEvents"]</small><strong>@dashboard.OngoingEvents</strong></span></article>
-            <article class="hcs-event-kpi"><span class="hcs-event-kpi__icon"><i class="fa fa-clock" aria-hidden="true"></i></span><span><small>@L["Event:UpcomingEvents"]</small><strong>@dashboard.UpcomingEvents</strong></span></article>
-            <article class="hcs-event-kpi"><span class="hcs-event-kpi__icon"><i class="fa fa-user-group" aria-hidden="true"></i></span><span><small>@L["Event:TotalAttendees"]</small><strong>@dashboard.TotalAttendees</strong></span></article>
-        </div>
-        <Card Class="hcs-catalog-grid-card hcs-event-timeline-card"><CardBody>
-            <div class="hcs-event-section-heading"><div><h2>@L["Event:UpcomingList"]</h2></div><a href="/events">@L["Event:ViewAll"] <i class="fa fa-arrow-right ms-1" aria-hidden="true"></i></a></div>
+        <section class="event-kpis" aria-label="@L["Menu:EventDashboard"]">
+            <article class="card event-kpi">
+                <span class="event-kpi-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+                <div><div class="event-kpi-value">@dashboard.TotalEvents</div><div class="event-kpi-label">@L["Event:TotalEvents"]</div></div>
+            </article>
+            <article class="card event-kpi">
+                <span class="event-kpi-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 5 5L20 7"/></svg></span>
+                <div><div class="event-kpi-value">@dashboard.CompletedEvents</div><div class="event-kpi-label">@L["Event:CompletedEvents"]</div></div>
+            </article>
+            <article class="card event-kpi">
+                <span class="event-kpi-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>
+                <div><div class="event-kpi-value">@dashboard.OngoingEvents</div><div class="event-kpi-label">@L["Event:OngoingEvents"]</div></div>
+            </article>
+            <article class="card event-kpi">
+                <span class="event-kpi-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+                <div><div class="event-kpi-value">@dashboard.UpcomingEvents</div><div class="event-kpi-label">@L["Event:UpcomingEvents"]</div></div>
+            </article>
+            <article class="card event-kpi">
+                <span class="event-kpi-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 20a8 8 0 0 1 16 0"/></svg></span>
+                <div><div class="event-kpi-value">@dashboard.TotalAttendees</div><div class="event-kpi-label">@L["Event:TotalAttendees"]</div></div>
+            </article>
+        </section>
+        <section class="event-panel" aria-labelledby="upcoming-title">
+            <div class="event-panel-head">
+                <div>
+                    <p class="event-panel-kicker">@L["Event:UpcomingList"]</p>
+                    <h2 id="upcoming-title">@L["Event:UpcomingList"]</h2>
+                </div>
+                <a class="event-link" href="/events">
+                    @L["Event:ViewAll"]
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </a>
+            </div>
             @if (dashboard.Upcoming.Count == 0)
             {
-                <div class="hcs-empty py-5"><i class="fa fa-calendar-xmark" aria-hidden="true"></i><h3>@L["Event:NoUpcoming"]</h3><p>@L["Event:NoUpcomingDescription"]</p></div>
+                <DocsEmpty Compact="true" Title="@L["Event:NoUpcoming"]" Hint="@L["Event:NoUpcomingDescription"]">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 15h6"/></svg>
+                </DocsEmpty>
             }
             else
             {
@@ -59,13 +91,13 @@
                         <a class="hcs-event-timeline__item" href="@($"/events/{item.Id:D}")">
                             <time datetime="@item.StartTime.ToString("O")"><strong>@item.StartTime.ToLocalTime().ToString("dd")</strong><span>@item.StartTime.ToLocalTime().ToString("MMM").ToUpperInvariant()</span></time>
                             <span class="hcs-event-timeline__line" aria-hidden="true"></span>
-                            <span class="hcs-event-timeline__content"><strong>@item.Name</strong><small>#@item.Code · @item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")</small><small><i class="fa fa-location-dot me-1" aria-hidden="true"></i>@(item.Location ?? L["Event:OnlineOrNotSet"])</small></span>
+                            <span class="hcs-event-timeline__content"><strong>@item.Name</strong><small>#@item.Code · @item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @item.EndTime.ToLocalTime().ToString("HH:mm")</small><small>@(item.Location ?? L["Event:OnlineOrNotSet"])</small></span>
                             <span class="@StatusClass(item.Status)">@StatusLabel(item.Status)</span>
                         </a>
                     }
                 </div>
             }
-        </CardBody></Card>
+        </section>
     }
 </section>
 

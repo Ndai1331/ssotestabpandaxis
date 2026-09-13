@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mạng xã hội — HCS Hành chính số</title>
+  <meta name="description" content="Bảng tin và trang cá nhân mạng xã hội nội bộ HCS.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/social.css">
+</head>
+<body class="app-page">
+  <a class="skip-link" href="#main">Bỏ qua tới nội dung chính</a>
+
+  <header class="topbar">
+    <a class="brand" href="home.html" aria-label="HCS Hành chính số">
+      <img src="assets/logo-hcs.svg" width="40" height="40" alt="">
+      <span class="brand-text">
+        <strong>HCS</strong>
+        <span>Hành chính số</span>
+      </span>
+    </a>
+    <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-controls="app-nav" aria-expanded="false" aria-label="Mở menu">
+      <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+      </svg>
+      <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M6 6l12 12M18 6 6 18"/>
+      </svg>
+    </button>
+
+    <div class="topbar-actions">
+      <div class="top-pop" id="lang-pop">
+        <button class="lang-chip" type="button" id="lang-btn" aria-haspopup="true" aria-expanded="false" aria-controls="lang-menu" data-i18n-aria="chooseLang">
+          <span class="flag-slot" data-lang-flag aria-hidden="true"></span>
+          <span data-lang-code>VI</span>
+          <svg class="lang-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="top-pop" id="notify-pop">
+        <button class="icon-btn" type="button" id="notify-btn" aria-haspopup="true" aria-expanded="false" aria-controls="notify-panel" data-i18n-aria="notifications">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/>
+            <path d="M10 19a2 2 0 0 0 4 0"/>
+          </svg>
+          <span class="top-badge" data-notify-count hidden>0</span>
+        </button>
+      </div>
+      <a class="icon-btn" href="chat.html" data-i18n-aria="messages">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M4 6h16v10H7l-3 3V6z"/>
+        </svg>
+      </a>
+      <a class="user-menu" href="bang-tin.html#toi" aria-label="Tài khoản">
+        <span class="user-meta">
+          <span class="name" id="user-name">hungtv</span>
+          <span class="role">Quản trị hệ thống</span>
+        </span>
+        <span class="avatar" id="user-avatar">HU</span>
+      </a>
+    </div>
+  </header>
+
+  <nav class="nav" id="app-nav" aria-label="Điều hướng chính">
+    <a class="nav-item" href="home.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg>
+      Workspace
+    </a>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+        Văn bản
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <span class="menu-label">Quản lý văn bản</span>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+          Văn bản của tôi
+        </a>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 12h12M12 6l6 6-6 6"/></svg>
+          Công văn đến
+        </a>
+        <a href="van-ban.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 12H8M12 6l-6 6 6 6"/></svg>
+          Công văn đi
+        </a>
+        <a href="ky-duyet.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          Hàng đợi ký
+        </a>
+        <div class="menu-sep"></div>
+        <a href="van-ban.html#tao" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Tạo văn bản mới
+        </a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.2 7.2 15.5 11M8.2 16.8 15.5 13"/></svg>
+        Quy trình
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="quy-trinh.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h9v4H4zM11 13h9v4h-9z"/></svg>
+          Quy trình của tôi
+        </a>
+        <a href="quy-trinh.html#theo-doi" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Theo dõi quy trình
+        </a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16l3-5 3 3 4-7"/></svg>
+        Dự án &amp; công việc
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="du-an.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h7l2 2h9v10H3z"/></svg>
+          Dự án
+        </a>
+        <a href="cong-viec.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+          Công việc
+        </a>
+      </div>
+    </div>
+
+    <a class="nav-item" href="lich.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+      Lịch
+    </a>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 8v13"/><path d="M8 12h8"/><path d="M7 4h10l-1 4H8z"/></svg>
+        Sự kiện
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="su-kien.html" role="menuitem">Dashboard sự kiện</a>
+        <a href="su-kien.html#danh-sach" role="menuitem">Danh sách sự kiện</a>
+        <a href="su-kien.html#tao" role="menuitem">Tạo sự kiện mới</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V8l8-4 8 4v11"/><path d="M4 19l8-4 8 4"/><path d="M12 4v11"/></svg>
+        Khảo sát
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="#" role="menuitem" data-mock-action="Khảo sát">Danh sách khảo sát</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4h8v4H8z"/><path d="M6 8h12v12H6z"/><path d="M9 12h6M9 16h4"/></svg>
+        Danh mục
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu menu-mega" role="menu">
+        <div class="mega-section">
+          <span class="menu-label">Danh mục văn bản</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Loại văn bản">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+              Loại văn bản
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Lĩnh vực">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 4 7v10l8 4 8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg>
+              Lĩnh vực
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Độ khẩn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+              Độ khẩn
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Độ mật">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 5 6v6c0 5 3.4 7.8 7 9 3.6-1.2 7-4 7-9V6z"/></svg>
+              Độ mật
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Phương thức xử lý">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M8 21H3v-5"/></svg>
+              Phương thức xử lý
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Trạng thái văn bản">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h8"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+              Trạng thái văn bản
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Phương thức ký">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+              Phương thức ký
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Cấu hình ký số">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 2l-2 2m-7.5 7.5 6-6"/><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 18.7 21 8.4"/></svg>
+              Cấu hình ký số
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Loại sự kiện">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+              Loại sự kiện
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục tổ chức</span>
+          <div class="mega-grid">
+            <a href="danh-muc.html" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V8l8-4 8 4v13"/><path d="M9 21v-6h6v6"/></svg>
+              Phòng ban
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Đơn vị">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+              Đơn vị
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Chức vụ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="4" y="7" width="16" height="13" rx="2"/></svg>
+              Chức vụ
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục y tế</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="ICD-10">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+              ICD-10
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Huyết áp">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M19 14c1.2-1.2 2-2.7 2-4.5A5.5 5.5 0 0 0 12 6a5.5 5.5 0 0 0-9 3.5c0 1.8.8 3.3 2 4.5l7 7z"/></svg>
+              Huyết áp
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Đường huyết">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3s6 6.2 6 10a6 6 0 1 1-12 0c0-3.8 6-10 6-10z"/></svg>
+              Đường huyết
+            </a>
+            <a href="#" role="menuitem" data-mock-action="BMI">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19h16"/><path d="M7 19V9l5 4 5-8v14"/></svg>
+              BMI
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục địa giới</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Quốc gia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 3.8 6 3.8 9S14.5 18 12 21c-2.5-3-3.8-6-3.8-9S9.5 6 12 3z"/></svg>
+              Quốc gia
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Tỉnh/Thành">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V10l8-5 8 5v11"/><path d="M9 21v-6h6v6"/></svg>
+              Tỉnh/Thành
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Xã/Phường">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+              Xã/Phường
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Danh mục khảo sát</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Địa điểm khảo sát">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+              Địa điểm khảo sát
+            </a>
+            <a href="#" role="menuitem" data-mock-action="Tiêu chí khảo sát">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+              Tiêu chí khảo sát
+            </a>
+          </div>
+        </div>
+
+        <div class="mega-section">
+          <span class="menu-label">Báo cáo</span>
+          <div class="mega-grid">
+            <a href="#" role="menuitem" data-mock-action="Báo cáo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16l3-5 3 3 4-7"/></svg>
+              Báo cáo
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item is-active" type="button" data-nav-menu aria-expanded="false" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+        Mạng xã hội
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a class="is-current" id="nav-feed" href="bang-tin.html" role="menuitem">Bảng tin</a>
+        <a id="nav-profile" href="bang-tin.html#toi" role="menuitem">Trang cá nhân</a>
+        <a href="chat.html" role="menuitem">Chat nội bộ</a>
+        <a href="chat.html#nhom" role="menuitem">Chat nhóm</a>
+      </div>
+    </div>
+
+    <div class="menu-wrap">
+      <button class="nav-item" type="button" data-nav-menu aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Quản trị
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="menu" role="menu">
+        <a href="#" role="menuitem" data-mock-action="Người dùng">Người dùng</a>
+        <a href="#" role="menuitem" data-mock-action="Phân quyền">Phân quyền</a>
+        <div class="menu-sep"></div>
+        <a class="is-danger" href="login.html" role="menuitem">Đăng xuất</a>
+      </div>
+    </div>
+  </nav>
+  <div class="nav-overlay" id="nav-overlay" hidden></div>
+
+  <main id="main" class="page page-social">
+    <div class="social-wrap" id="social-app">
+      <section class="social-cover" id="view-profile" hidden>
+        <div class="social-cover-bar">
+          <a class="btn btn-cover" href="bang-tin.html">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg>
+            Về bảng tin
+          </a>
+        </div>
+        <div class="social-cover-body">
+          <span class="social-cover-avatar" aria-hidden="true">TH</span>
+          <div class="social-cover-meta">
+            <h1>Trần Việt Hùng</h1>
+            <p class="social-handle">@hungtv</p>
+            <ul class="social-contact">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Chức vụ: <span>Chưa cập nhật</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6.5 4h3l1.5 4-2 1.2a12 12 0 0 0 5.8 5.8L16 13l4 1.5v3A16 16 0 0 1 6.5 4z"/></svg>
+                Điện thoại: <span>Chưa cập nhật</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+                Email: <a href="mailto:hungtv@gmail.com">hungtv@gmail.com</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="social-feed-head" id="view-feed">
+        <div>
+          <p class="social-kicker">Mạng xã hội nội bộ</p>
+          <h1>Bảng tin</h1>
+        </div>
+        <a class="btn btn-primary" href="bang-tin.html#toi">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+          Trang cá nhân
+        </a>
+      </div>
+
+      <div class="social-toolbar card">
+        <div class="social-toolbar-main">
+          <span class="social-toolbar-label">Xem bài viết</span>
+          <div class="social-pills" role="tablist" aria-label="Lọc bài viết">
+            <button class="social-pill is-active" type="button" role="tab" aria-selected="true" data-wall-filter="all">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+              Tất cả
+            </button>
+            <button class="social-pill" type="button" role="tab" aria-selected="false" data-wall-filter="public">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 3.8 6 3.8 9S14.5 18 12 21c-2.5-3-3.8-6-3.8-9S9.5 6 12 3z"/></svg>
+              Công khai
+            </button>
+            <button class="social-pill" type="button" role="tab" aria-selected="false" data-wall-filter="internal">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+              Nội bộ
+            </button>
+          </div>
+          <button class="icon-btn social-search-toggle" type="button" id="social-search-toggle" aria-expanded="false" aria-controls="social-search-form" aria-label="Tìm kiếm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+          </button>
+        </div>
+
+        <form class="social-search-form" id="social-search-form" hidden>
+          <div class="social-search-head">
+            <h2 id="social-search-title" class="sr-only">Tìm kiếm</h2>
+            <div class="social-search-modes" role="tablist" aria-label="Chế độ tìm">
+              <button class="social-mode is-active" type="button" role="tab" aria-selected="true" data-search-mode="posts">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                Tìm kiếm bài viết
+              </button>
+              <button class="social-mode" type="button" role="tab" aria-selected="false" data-search-mode="people">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                Tìm cá nhân
+              </button>
+            </div>
+          </div>
+          <div class="social-search-row">
+            <div class="social-search-fields">
+              <div class="field">
+                <label class="field-label" for="social-q">Từ khóa</label>
+                <input class="input" id="social-q" name="q" type="search" placeholder="Nhập nội dung cần tìm..." autocomplete="off">
+              </div>
+              <div class="field">
+                <label class="field-label" for="social-tag">Hashtag</label>
+                <input class="input" id="social-tag" name="tag" type="text" placeholder="#hcs" autocomplete="off">
+              </div>
+            </div>
+            <div class="social-search-actions">
+              <button class="btn btn-primary social-search-btn" type="submit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                Tìm kiếm
+              </button>
+              <button class="btn btn-ghost" type="button" id="social-search-clear">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                Xóa bộ lọc
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="social-split">
+        <div class="social-main">
+          <section class="card social-composer" aria-labelledby="composer-title">
+            <div class="social-composer-head">
+              <span class="chat-avatar">TH</span>
+              <div>
+                <h2 id="composer-title">Bạn đang nghĩ gì?</h2>
+                <p>Nội dung bài viết</p>
+              </div>
+            </div>
+            <form id="social-compose">
+              <label class="sr-only" for="social-compose-text">Nội dung bài viết</label>
+              <textarea class="input social-textarea" id="social-compose-text" rows="3" placeholder="Chia sẻ một cập nhật với đồng nghiệp..."></textarea>
+              <div class="social-composer-foot">
+                <label class="vis-switch" for="social-compose-vis">
+                  <input class="vis-switch-input" type="checkbox" id="social-compose-vis" checked aria-label="Phạm vi: Nội bộ">
+                  <span class="vis-switch-track" aria-hidden="true"><span class="vis-switch-thumb"></span></span>
+                  <span class="vis-switch-text" data-vis-label>Nội bộ</span>
+                </label>
+                <button class="btn btn-primary" type="submit">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  Đăng bài
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <div id="people-results" class="people-grid" hidden></div>
+          <p class="social-empty" id="social-empty" hidden>Không có bài viết phù hợp.</p>
+          <div class="social-stream" id="social-stream">
+            <article class="post-card" data-post-id="p1" data-wall="me" data-visibility="internal" data-author="me" data-text="chuẩn bị họp giao ban tuần #hcs" data-tags="#hcs" data-react-count="4" data-comment-count="2">
+              <header class="post-head">
+                <span class="chat-avatar">TH</span>
+                <div class="post-meta">
+                  <a class="post-author" href="bang-tin.html#toi">Trần Việt Hùng</a>
+                  <p><time datetime="2026-09-10T21:40">10 phút trước</time> · <span class="post-vis is-internal">Nội bộ</span></p>
+                </div>
+              </header>
+              <div class="post-body">
+                <p>Chuẩn bị họp giao ban tuần: các anh chị rà soát công văn đến trước 17h giúp mình nhé.</p>
+                <p class="post-tags"><button type="button" data-tag="#hcs">#hcs</button></p>
+              </div>
+              <div class="post-stats">
+                <span data-react-summary>4 cảm xúc</span>
+                <button type="button" data-comment-toggle>2 bình luận</button>
+              </div>
+              <div class="post-actions">
+                <div class="react-wrap">
+                  <button class="post-action" type="button" data-react-open>Cảm xúc</button>
+                  <div class="react-bar" role="listbox" aria-label="Chọn cảm xúc"></div>
+                </div>
+                <button class="post-action" type="button" data-comment-toggle>Bình luận</button>
+                <button class="post-action" type="button" data-share>Chia sẻ</button>
+              </div>
+              <div class="post-comments">
+                <article class="comment">
+                  <span class="chat-avatar sm">NH</span>
+                  <div>
+                    <div class="comment-bubble"><strong>nguyễn hồ phi long</strong><p>Mình đã rà xong 3 công văn ạ.</p></div>
+                    <div class="comment-meta"><time>8 phút trước</time> · <button type="button" data-reply="nguyễn hồ phi long">Trả lời</button>
+                      <span class="react-wrap">
+                        <button class="comment-react-open" type="button" data-react-open>Cảm xúc</button>
+                        <div class="react-bar" role="listbox" aria-label="Chọn cảm xúc"></div>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+                <article class="comment">
+                  <span class="chat-avatar sm">PT</span>
+                  <div>
+                    <div class="comment-bubble"><strong>Phó trưởng phòng</strong><p>Nhớ đính kèm biên bản cuộc họp.</p></div>
+                    <div class="comment-meta"><time>5 phút trước</time> · <button type="button" data-reply="Phó trưởng phòng">Trả lời</button>
+                      <span class="react-wrap">
+                        <button class="comment-react-open" type="button" data-react-open>Cảm xúc</button>
+                        <div class="react-bar" role="listbox" aria-label="Chọn cảm xúc"></div>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+                <form class="comment-compose">
+                  <span class="chat-avatar sm">TH</span>
+                  <label class="sr-only" for="c-p1">Viết bình luận</label>
+                  <input class="input" id="c-p1" type="text" placeholder="Viết bình luận..." autocomplete="off">
+                  <button class="btn btn-primary btn-sm" type="submit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                    Gửi
+                  </button>
+                </form>
+              </div>
+            </article>
+
+            <article class="post-card" data-post-id="p2" data-wall="feed" data-visibility="public" data-author="phi-long" data-text="ảnh cuộc họp hành chính số #hcs" data-tags="#hcs" data-react-count="6" data-comment-count="1">
+              <header class="post-head">
+                <span class="chat-avatar">NH</span>
+                <div class="post-meta">
+                  <span class="post-author">nguyễn hồ phi long</span>
+                  <p><time datetime="2026-09-10T16:20">Hôm nay 16:20</time> · <span class="post-vis is-public">Công khai</span></p>
+                </div>
+              </header>
+              <div class="post-body">
+                <p>Ảnh buổi họp triển khai Hành chính số. Cảm ơn cả nhóm đã đồng hành.</p>
+                <p class="post-tags"><button type="button" data-tag="#hcs">#hcs</button></p>
+              </div>
+              <div class="post-media" aria-hidden="true">
+                <span class="msg-media-card chat-thumb-img is-teal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+                </span>
+              </div>
+              <div class="post-stats">
+                <span data-react-summary>6 cảm xúc</span>
+                <button type="button" data-comment-toggle>1 bình luận</button>
+              </div>
+              <div class="post-actions">
+                <div class="react-wrap">
+                  <button class="post-action" type="button" data-react-open>Cảm xúc</button>
+                  <div class="react-bar" role="listbox" aria-label="Chọn cảm xúc"></div>
+                </div>
+                <button class="post-action" type="button" data-comment-toggle>Bình luận</button>
+                <button class="post-action" type="button" data-share>Chia sẻ</button>
+              </div>
+              <div class="post-comments" hidden>
+                <article class="comment">
+                  <span class="chat-avatar sm">TH</span>
+                  <div>
+                    <div class="comment-bubble"><strong>Trần Việt Hùng</strong><p>Ảnh rõ quá, mình sẽ đưa vào báo cáo tuần.</p></div>
+                    <div class="comment-meta"><time>2 giờ trước</time> · <button type="button" data-reply="Trần Việt Hùng">Trả lời</button>
+                      <span class="react-wrap">
+                        <button class="comment-react-open" type="button" data-react-open>Cảm xúc</button>
+                        <div class="react-bar" role="listbox" aria-label="Chọn cảm xúc"></div>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+                <form class="comment-compose">
+                  <span class="chat-avatar sm">TH</span>
+                  <label class="sr-only" for="c-p2">Viết bình luận</label>
+                  <input class="input" id="c-p2" type="text" placeholder="Viết bình luận..." autocomplete="off">
+                  <button class="btn btn-primary btn-sm" type="submit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                    Gửi
+                  </button>
+                </form>
+              </div>
+            </article>
+
+            <article class="post-card" data-post-id="p3" data-wall="me" data-visibility="public" data-author="me" data-text="hướng dẫn trình ký văn bản điện tử #hcs #kyduyet" data-tags="#hcs #kyduyet" data-react-count="3" data-comment-count="0">
+              <header class="post-head">
+                <span class="chat-avatar">TH</span>
+                <div class="post-meta">
+                  <a class="post-author" href="bang-tin.html#toi">Trần Việt Hùng</a>
+                  <p><time datetime="2026-09-09T09:00">Hôm qua 09:00</time> · <span class="post-vis is-public">Công khai</span></p>
+                </div>
+              </header>
+              <div class="post-body">
+                <p>Đã cập nhật hướng dẫn trình ký văn bản điện tử. File đính kèm bên dưới, mọi người xem giúp trước khi áp dụng từ tuần sau.</p>
+                <p class="post-tags"><button type="button" data-tag="#hcs">#hcs</button> <button type="button" data-tag="#kyduyet">#kyduyet</button></p>
+              </div>
+              <button class="post-file" type="button" data-pdf-open="guide" aria-label="Xem Huong_dan_trinh_ky.pdf">
+                <span class="chat-thumb-ext is-pdf">PDF</span>
+                <span>Huong_dan_trinh_ky.pdf</span>
+              </button>
+              <div class="post-stats">
+                <span data-react-summary>3 cảm xúc</span>
+                <button type="button" data-comment-toggle>0 bình luận</button>
+              </div>
+              <div class="post-actions">
+                <div class="react-wrap">
+                  <button class="post-action" type="button" data-react-open>Cảm xúc</button>
+                  <div class="react-bar" role="listbox" aria-label="Chọn cảm xúc"></div>
+                </div>
+                <button class="post-action" type="button" data-comment-toggle>Bình luận</button>
+                <button class="post-action" type="button" data-share>Chia sẻ</button>
+              </div>
+              <div class="post-comments" hidden>
+                <form class="comment-compose">
+                  <span class="chat-avatar sm">TH</span>
+                  <label class="sr-only" for="c-p3">Viết bình luận</label>
+                  <input class="input" id="c-p3" type="text" placeholder="Viết bình luận..." autocomplete="off">
+                  <button class="btn btn-primary btn-sm" type="submit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                    Gửi
+                  </button>
+                </form>
+              </div>
+            </article>
+
+            <article class="post-card" data-post-id="p4" data-wall="feed" data-visibility="internal" data-author="pho-truong" data-text="nhắc hạn xử lý công văn mật #hcs" data-tags="#hcs" data-react-count="2" data-comment-count="0">
+              <header class="post-head">
+                <span class="chat-avatar">PT</span>
+                <div class="post-meta">
+                  <span class="post-author">Phó trưởng phòng</span>
+                  <p><time datetime="2026-09-09T14:10">Hôm qua 14:10</time> · <span class="post-vis is-internal">Nội bộ</span></p>
+                </div>
+              </header>
+              <div class="post-body">
+                <p>Nhắc các đầu mối: công văn mật cần xử lý trong ngày, không chuyển tiếp ra ngoài nhóm.</p>
+                <p class="post-tags"><button type="button" data-tag="#hcs">#hcs</button></p>
+              </div>
+              <div class="post-stats">
+                <span data-react-summary>2 cảm xúc</span>
+                <button type="button" data-comment-toggle>0 bình luận</button>
+              </div>
+              <div class="post-actions">
+                <div class="react-wrap">
+                  <button class="post-action" type="button" data-react-open>Cảm xúc</button>
+                  <div class="react-bar" role="listbox" aria-label="Chọn cảm xúc"></div>
+                </div>
+                <button class="post-action" type="button" data-comment-toggle>Bình luận</button>
+                <button class="post-action" type="button" data-share>Chia sẻ</button>
+              </div>
+              <div class="post-comments" hidden>
+                <form class="comment-compose">
+                  <span class="chat-avatar sm">TH</span>
+                  <label class="sr-only" for="c-p4">Viết bình luận</label>
+                  <input class="input" id="c-p4" type="text" placeholder="Viết bình luận..." autocomplete="off">
+                  <button class="btn btn-primary btn-sm" type="submit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                    Gửi
+                  </button>
+                </form>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <aside class="social-aside">
+          <section class="card social-aside-card is-hint" id="aside-profile" hidden>
+            <div class="social-aside-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 5 3.4 7.8 7 9 3.6-1.2 7-4 7-9V6z"/></svg>
+            </div>
+            <h2>Nội bộ</h2>
+            <p>Chỉ bạn nhìn thấy trong trang cá nhân. Bài viết nội bộ không xuất hiện trên bảng tin công khai.</p>
+          </section>
+
+          <section class="card social-aside-card" id="aside-feed">
+            <h2>Lối tắt</h2>
+            <a class="social-shortcut" href="bang-tin.html#toi">
+              <span class="chat-avatar sm">TH</span>
+              Trang cá nhân
+            </a>
+            <a class="social-shortcut" href="chat.html">
+              <span class="chat-avatar sm">NH</span>
+              Chat nội bộ
+            </a>
+            <h2 class="social-aside-sub">Đồng nghiệp</h2>
+            <a class="social-shortcut" href="chat.html">
+              <span class="chat-avatar sm">NH</span>
+              nguyễn hồ phi long
+            </a>
+            <a class="social-shortcut" href="chat.html">
+              <span class="chat-avatar sm">PT</span>
+              Phó trưởng phòng
+            </a>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="js/app.js"></script>
+</body>
+</html>

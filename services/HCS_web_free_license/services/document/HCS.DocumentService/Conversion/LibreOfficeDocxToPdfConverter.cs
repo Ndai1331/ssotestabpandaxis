@@ -68,7 +68,7 @@ public sealed class LibreOfficeDocxToPdfConverter(IConfiguration configuration, 
         {
             if (File.Exists(candidate)) return candidate;
         }
-        return FindOnPath("soffice") ?? FindOnPath("soffice.bin") ?? "";
+        return FindOnPath("soffice") ?? FindOnPath("soffice.com") ?? FindOnPath("soffice.bin") ?? "";
     }
 
     private static IEnumerable<string> CandidatePaths()
@@ -85,7 +85,10 @@ public sealed class LibreOfficeDocxToPdfConverter(IConfiguration configuration, 
         }
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
+            yield return @"C:\Program Files\LibreOffice\program\soffice.com";
             yield return @"C:\Program Files\LibreOffice\program\soffice.exe";
+            yield return @"C:\Program Files (x86)\LibreOffice\program\soffice.com";
+            yield return @"C:\Program Files (x86)\LibreOffice\program\soffice.exe";
         }
     }
 

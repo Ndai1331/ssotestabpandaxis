@@ -60,7 +60,7 @@ public interface IOrganizationAppService
     Task<CommuneDto> UpdateCommuneAsync(Guid id, UpsertCommuneDto input, CancellationToken ct = default);
     Task DeleteCommuneAsync(Guid id, CancellationToken ct = default);
 
-    Task<PagedResultDto<UserOrganizationMappingDto>> GetUserMappingsAsync(Guid? userId, int skipCount, int maxResultCount, CancellationToken ct = default);
+    Task<PagedResultDto<UserOrganizationMappingDto>> GetUserMappingsAsync(Guid? userId, int skipCount, int maxResultCount, Guid? departmentId = null, CancellationToken ct = default);
     Task<IReadOnlyList<UserDepartmentLookupDto>> GetUserDepartmentsAsync(
         IReadOnlyCollection<Guid> userIds, CancellationToken ct = default);
     Task<UserOrganizationMappingDto> CreateUserMappingAsync(UpsertUserOrganizationMappingDto input, CancellationToken ct = default);

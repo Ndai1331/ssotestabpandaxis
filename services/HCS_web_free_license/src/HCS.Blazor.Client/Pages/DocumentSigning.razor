@@ -10,106 +10,158 @@
 @implements IAsyncDisposable
 
 <PageTitle>@L["Menu:DocumentSigning"] · HCS</PageTitle>
-<section class="hcs-catalog-page">
-    <header class="hcs-catalog-titlebar">
-        <div><h1>@L["Feature:SigningQueue"]</h1></div>
-        <div class="hcs-catalog-page__actions">
-            <Button Color="Color.Primary" Outline="true" Class="hcs-catalog-export" Clicked="ExportAsync">@L["Catalog:Export"]</Button>
-            <Button Color="Color.Primary" Outline="true" Clicked="LoadAsync">@L["Catalog:Refresh"]</Button>
+<section class="page page-wf page-sign" aria-labelledby="sign-queue-title">
+    <div class="page-head">
+        <h1 id="sign-queue-title">@L["Feature:SigningQueue"]</h1>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="ExportAsync" disabled="@(VisibleQueue.Count == 0)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
+                @L["Catalog:Export"]
+            </button>
+            <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+                @L["Catalog:Refresh"]
+            </button>
             <AuthorizeView Policy="Documents.Workflow.Start">
                 <Authorized>
-                    <Button Color="Color.Primary" Class="hcs-catalog-create" Clicked="OpenSubmit">@L["Work:CreateSigning"]</Button>
+                    <button class="btn btn-primary" type="button" @onclick="OpenSubmit">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                        @L["Work:CreateSigning"]
+                    </button>
                 </Authorized>
             </AuthorizeView>
-        </div>
-    </header>
-    <DocumentSigningFilterBar SelectedDateRange="selectedDates"
-                              SelectedDateRangeChanged="OnDateRangeChanged"
-                              DateFilterField="@dateFilterField"
-                              DateFilterFieldChanged="OnDateFilterFieldChanged"
-                              SubmitterUserId="submitterId" SubmitterUserIdChanged="OnSubmitterChanged"
-                              SubmitterText="@ContactName(submitterId)"
-                              DepartmentId="departmentId" DepartmentIdChanged="OnDepartmentChanged"
-                              DepartmentText="@DepartmentName(departmentId)"
-                              FilterText="@filter" FilterTextChanged="OnFilterTextChanged"
-                              SearchClicked="ApplyFilter"
-                              SearchUsers="SearchContactsAsync"
-                              SearchDepartments="SearchDepartmentsAsync" />
-    <Card Class="hcs-catalog-grid-card"><CardBody Class="p-0">
-        <div class="hcs-signing-tabs">
-            @foreach (var tab in InboxTabs)
-            {
-                <button type="button" class="hcs-signing-tab @(inboxFilter == tab.Key ? "hcs-signing-tab--active" : null)" @onclick="@(() => SetInbox(tab.Key))">
-                    @tab.Label <span class="hcs-signing-count">@tab.Count</span>
+            <button class="btn btn-outline @(showSearch ? "is-open" : null) @(IsSearchFiltered ? "is-filtered" : null)"
+                    type="button" aria-expanded="@showSearch.ToString().ToLowerInvariant()"
+                    aria-controls="queue-search-form" @onclick="ToggleSearch">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:Search"]
+            </button>
+            <HcsDismissible Class="filter-pop" @bind-IsOpen="showFilters">
+                <button class="btn btn-outline @(showFilters ? "is-open" : null) @(IsAdvancedFiltered ? "is-filtered" : null)" type="button"
+                        aria-expanded="@showFilters.ToString().ToLowerInvariant()"
+                        aria-controls="queue-filter-panel" @onclick="ToggleFilters">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                    @L["Catalog:Filter"]
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
-            }
+                <DocumentSigningFilterBar IsOpen="showFilters"
+                                          StatusFilter="@statusFilter" StatusFilterChanged="OnStatusFilterChanged"
+                                          DateFilterField="@dateFilterField" DateFilterFieldChanged="OnDateFilterFieldChanged"
+                                          SubmitterUserId="submitterId" SubmitterUserIdChanged="OnSubmitterChanged"
+                                          SubmitterText="@ContactName(submitterId)"
+                                          DepartmentId="departmentId" DepartmentIdChanged="OnDepartmentChanged"
+                                          DepartmentText="@DepartmentName(departmentId)"
+                                          FromDate="fromDate" FromDateChanged="OnFromDateChanged"
+                                          ToDate="toDate" ToDateChanged="OnToDateChanged"
+                                          SearchClicked="ApplyFilter"
+                                          ResetClicked="ResetSearch"
+                                          SearchUsers="SearchContactsAsync"
+                                          SearchDepartments="SearchDepartmentsAsync" />
+            </HcsDismissible>
         </div>
-        @if (isLoading)
+    </div>
+
+    <form class="docs-toolbar list-search" id="queue-search-form" hidden="@(!showSearch)" @onsubmit="ApplyFilter" @onsubmit:preventDefault>
+        <label class="sr-only" for="queue-q">@L["Work:SearchByTitleOrNumber"]</label>
+        <input class="input docs-search" id="queue-q" type="search" @bind="filter" @bind:event="oninput"
+               placeholder="@L["Work:SearchByTitleOrNumber"]" autocomplete="off" />
+        <button class="btn btn-primary" type="submit" disabled="@isLoading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            @L["Catalog:SearchButton"]
+        </button>
+    </form>
+
+    <div class="queue-tabs" role="tablist" aria-label="@L["Feature:SigningQueue"]">
+        @foreach (var tab in InboxTabs)
         {
-            <div class="hcs-signing-grid-loading" role="status" aria-live="polite" aria-label="@L["Catalog:Loading"]">
-                <div class="hcs-signing-grid-loading__table" aria-hidden="true">
-                    <div class="hcs-signing-grid-loading__row hcs-signing-grid-loading__row--head">
-                        @for (var column = 0; column < 7; column++) { <span></span> }
-                    </div>
-                    @for (var row = 0; row < 6; row++)
+            <button type="button" class="queue-tab @(inboxFilter == tab.Key ? "is-active" : null)"
+                    role="tab" aria-selected="@(inboxFilter == tab.Key)" @onclick="@(() => SetInbox(tab.Key))">
+                @tab.Label
+                <span class="count">@tab.Count</span>
+            </button>
+        }
+    </div>
+
+    <div class="docs-table-wrap">
+            @if (isLoading)
+            {
+                <DocsEmpty Loading="true" />
+            }
+            else if (PageItems.Count == 0)
+            {
+                <DocsEmpty Hint="@L["Catalog:EmptyDescription"]" />
+            }
+            else
+            {
+                <table class="docs-table queue-table">
+                    <thead>
+                        <tr>
+                            <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                            <th scope="col">@L["Feature:DocumentTitleField"]</th>
+                            <th scope="col">@L["Work:FilterSubmitter"]</th>
+                            <th scope="col">@L["Work:FilterDepartment"]</th>
+                            <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                            <th scope="col">@L["Work:CurrentStep"]</th>
+                            <th scope="col">@L["Work:ReceivedDate"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in PageItems)
                     {
-                        <div class="hcs-signing-grid-loading__row">
-                            @for (var column = 0; column < 7; column++) { <span></span> }
-                        </div>
+                        <tr @key="item.Task.Id">
+                            <td class="col-actions">
+                                <div class="doc-actions">
+                                    <button class="doc-action" type="button" title="@L["Work:WorkflowInfo"]" aria-label="@L["Work:WorkflowInfo"]" @onclick="() => OpenInfo(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>
+                                    </button>
+                                    <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewAsync(item)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                    @if (CanActOn(item))
+                                    {
+                                        <button class="doc-action" type="button" title="@SignActionTitle(item)" aria-label="@SignActionTitle(item)" @onclick="() => OpenSign(item)">
+                                            @if (IsSignStep(item))
+                                            {
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                            }
+                                            else
+                                            {
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+                                            }
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div class="doc-title" title="@item.Document.Title">
+                                    <a href="@($"/document-detail/{item.Document.Id}?sourceType=3")">@item.Document.Title</a>
+                                    <span class="doc-code">#@item.Document.Number</span>
+                                </div>
+                            </td>
+                            <td>@SubmitterName(item)</td>
+                            <td>@DepartmentName(DepartmentId(item))</td>
+                            <td><span class="@StatusClass(item)">@StatusText(item)</span></td>
+                            <td>@CurrentStepLabel(item)</td>
+                            <td>@item.Document.CreationTime.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                        </tr>
                     }
-                </div>
-                <span class="visually-hidden">@L["Catalog:Loading"]</span>
+                    </tbody>
+                </table>
+            }
+            <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                <button type="button" disabled="@(!CanPrevPage || isLoading)" @onclick="GoFirstPage">@L["Catalog:PagerFirst"]</button>
+                <button type="button" disabled="@(!CanPrevPage || isLoading)" @onclick="GoPrevPage">@L["Catalog:PagerPrev"]</button>
+                <button type="button" disabled="@(!CanNextPage || isLoading)" @onclick="GoNextPage">@L["Catalog:PagerNext"]</button>
+                <button type="button" disabled="@(!CanNextPage || isLoading)" @onclick="GoLastPage">@L["Catalog:PagerLast"]</button>
+                <label class="sr-only" for="sign-page-size">@L["Catalog:PageSize"]</label>
+                <select id="sign-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                    @foreach (var size in pageSizes)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
             </div>
-        }
-        else
-        {
-            <DataGrid TItem="SigningQueueItem" Data="@PageItems" TotalItems="@VisibleQueue.Count" ReadData="OnReadAsync"
-                      ShowPager="true" ShowPageSizes="true" PageSizes="@pageSizes" PageSize="@pageSize"
-                      Responsive="true" Striped="true" Hoverable="true" Class="hcs-catalog-grid">
-                <EmptyTemplate>
-                    <div class="hcs-empty py-5"><i class="fa fa-inbox"></i><h2>@L["Catalog:EmptyTitle"]</h2></div>
-                </EmptyTemplate>
-                <LoadingTemplate>
-                    <div class="hcs-loading py-5"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
-                </LoadingTemplate>
-                <DataGridColumns>
-                    <DataGridColumn TItem="SigningQueueItem" Caption="@L["Catalog:Actions"].Value">
-                        <DisplayTemplate Context="cell">
-                            <div class="hcs-row-actions">
-                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => OpenInfo(cell.Item)" Title="@L["Work:WorkflowInfo"]" aria-label="@L["Work:WorkflowInfo"]"><i class="fa fa-info-circle" aria-hidden="true"></i></Button>
-                                <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Clicked="() => PreviewAsync(cell.Item)" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]"><i class="fa fa-eye" aria-hidden="true"></i></Button>
-                                @if (CanActOn(cell.Item))
-                                {
-                                    <Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--sign" Clicked="() => OpenSign(cell.Item)" Title="@SignActionTitle(cell.Item)" aria-label="@SignActionTitle(cell.Item)"><i class="@(IsSignStep(cell.Item) ? "fa fa-signature" : "fa fa-check-square")" aria-hidden="true"></i></Button>
-                                }
-                            </div>
-                        </DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="SigningQueueItem" Caption="@L["Feature:DocumentTitleField"].Value">
-                        <DisplayTemplate Context="cell">
-                            <a href="@($"/document-detail/{cell.Item.Document.Id}?sourceType=3")"><strong>@cell.Item.Document.Title</strong></a>
-                            <span class="hcs-catalog-code">#@cell.Item.Document.Number</span>
-                        </DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="SigningQueueItem" Caption="@L["Work:FilterSubmitter"].Value">
-                        <DisplayTemplate Context="cell">@SubmitterName(cell.Item)</DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="SigningQueueItem" Caption="@L["Work:FilterDepartment"].Value">
-                        <DisplayTemplate Context="cell">@DepartmentName(DepartmentId(cell.Item))</DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="SigningQueueItem" Caption="@L["Catalog:Status"].Value">
-                        <DisplayTemplate Context="cell"><span class="hcs-status-badge @StatusClass(cell.Item)">@StatusText(cell.Item)</span></DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="SigningQueueItem" Caption="@L["Work:CurrentStep"].Value">
-                        <DisplayTemplate Context="cell">@CurrentStepLabel(cell.Item)</DisplayTemplate>
-                    </DataGridColumn>
-                    <DataGridColumn TItem="SigningQueueItem" Caption="@L["Work:ReceivedDate"].Value">
-                        <DisplayTemplate Context="cell">@cell.Item.Document.CreationTime.ToLocalTime().ToString("dd/MM/yyyy")</DisplayTemplate>
-                    </DataGridColumn>
-                </DataGridColumns>
-            </DataGrid>
-        }
-    </CardBody></Card>
+        </div>
 </section>
 
 <Modal @ref="modal" Size="ModalSize.ExtraLarge" Closing="OnSignModalClosing">
@@ -118,150 +170,211 @@
         <ModalBody Class="hcs-catalog-modal__body">
             @if (selected is not null)
             {
-                <Row Class="hcs-signing-modal-row">
-                    <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop">
-                        <Card Class="border-none h-100">
-                            <CardHeader Class="p-2"><Heading Size="HeadingSize.Is6" Class="fw-bolder mb-0">@ActionModalTitle(selected)</Heading></CardHeader>
-                            <CardBody>
-                                <div class="hcs-signing-action-summary mb-3">
-                                    <div><strong>@selected.Document.Title</strong><span class="hcs-catalog-code">#@selected.Document.Number</span></div>
-                                    <div class="hcs-catalog-desc"><span class="hcs-status-badge hcs-status-badge--info">@ApprovalStatusText(selected.Task.Status)</span> · @L["Work:Assignee"]: @SignerName(selected.Task.AssigneeUserId)</div>
-                                </div>
-                                <div class="mb-3">
-                                    @foreach (var step in selected.Definition.Steps.OrderBy(x => x.Order))
-                                    {
-                                        var isCurrent = string.Equals(step.Code, selected.Task.StepCode, StringComparison.OrdinalIgnoreCase);
-                                        var stepTask = selected.Instance.Tasks.FirstOrDefault(x => string.Equals(x.StepCode, step.Code, StringComparison.OrdinalIgnoreCase));
-                                        <div class="hcs-signing-step @(isCurrent ? "hcs-signing-step--current" : null)">
+                <div class="process-hero">
+                    <div>
+                        <p class="process-hero-title" title="@selected.Document.Title">@selected.Document.Title</p>
+                        <p class="process-hero-code">#@selected.Document.Number</p>
+                    </div>
+                    <div class="process-hero-meta">
+                        <span class="badge badge-info">@ApprovalStatusText(selected.Task.Status)</span>
+                        <span>@L["Work:Assignee"]: @SignerName(selected.Task.AssigneeUserId)</span>
+                    </div>
+                </div>
+                <div class="process-split">
+                    <div class="process-flow">
+                        <h3>@selected.Definition.Name</h3>
+                        <ol class="flow-steps">
+                            @foreach (var step in selected.Definition.Steps.OrderBy(x => x.Order))
+                            {
+                                var isCurrent = string.Equals(step.Code, selected.Task.StepCode, StringComparison.OrdinalIgnoreCase);
+                                var stepTask = selected.Instance.Tasks.FirstOrDefault(x => string.Equals(x.StepCode, step.Code, StringComparison.OrdinalIgnoreCase));
+                                <li class="flow-step @(isCurrent ? "is-current" : null)">
+                                    <span class="flow-dot" aria-hidden="true"></span>
+                                    <div class="flow-body">
+                                        <div class="flow-title-row">
                                             <strong>@step.Name</strong>
-                                            <span class="hcs-status-badge hcs-status-badge--info ms-1">@L[$"Work:StepType.{step.Type}"]</span>
-                                            @if (isCurrent) { <span class="hcs-status-badge hcs-status-badge--success ms-1">@L["Work:CurrentStep"]</span> }
-                                            @if (stepTask is not null) { <span class="hcs-catalog-desc ms-1">@ApprovalStatusText(stepTask.Status)</span> }
-                                            @if (!string.IsNullOrWhiteSpace(stepTask?.Comment)) { <div class="hcs-workflow-step-comment mt-2"><strong>@L["Feature:Comment"]:</strong> @stepTask.Comment</div> }
+                                            <span class="badge badge-info">@L[$"Work:StepType.{step.Type}"]</span>
+                                        </div>
+                                        @if (stepTask is not null)
+                                        {
+                                            <p class="flow-wait">
+                                                @ApprovalStatusText(stepTask.Status)
+                                                @if (step.SlaDays is { } sla) { <span> · @sla @L["Work:Days"]</span> }
+                                            </p>
+                                        }
+                                        @if (isCurrent)
+                                        {
+                                            <p class="flow-actor">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                                                @L["Work:Assignee"]: @SignerName(selected.Task.AssigneeUserId)
+                                            </p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(stepTask?.Comment))
+                                        {
+                                            <div class="hcs-workflow-step-comment"><strong>@L["Feature:Comment"]:</strong> @stepTask.Comment</div>
+                                        }
+                                    </div>
+                                </li>
+                            }
+                        </ol>
+                        <div class="field">
+                            <label class="field-label" for="sign-comment">@L["Feature:Comment"]</label>
+                            <textarea class="input" id="sign-comment" rows="3" @bind="form.Comment"></textarea>
+                        </div>
+                        @if (IsSignStep(selected))
+                        {
+                            <div class="field">
+                                <label class="field-label" for="sign-kind">@L["Feature:Kind"]</label>
+                                <select class="select" id="sign-kind" value="@form.Kind" @onchange="OnSigningKindSelectChanged">
+                                    <option value="0">@L["Feature:Electronic"]</option>
+                                    <option value="1">@L["Feature:RemoteCa"]</option>
+                                    <option value="2">@L["Feature:Hsm"]</option>
+                                    <option value="3">@L["Feature:UsbToken"]</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="sign-signature">@L["Feature:UserSignatures"]</label>
+                                <select class="select" id="sign-signature" @bind="form.SignatureId">
+                                    <option value="">—</option>
+                                    @foreach (var signature in SignaturesForSelectedKind)
+                                    {
+                                        <option value="@signature.Id.ToString()">@signature.FileName · @SignatureTypeLabel(signature.Type) @(signature.IsDefault ? $"({L["Feature:DefaultSignature"]})" : "")</option>
+                                    }
+                                </select>
+                                @if (SigningOptionsLoadFailed)
+                                {
+                                    <p class="hcs-catalog-desc" role="alert">
+                                        @L["Feature:SigningOptionsLoadFailed"]
+                                        <button type="button" class="btn btn-outline" @onclick="LoadSigningOptionsAsync" disabled="@isLoadingSigningOptions">@L["Catalog:Retry"]</button>
+                                    </p>
+                                }
+                                else if (SignaturesForSelectedKind.Count == 0)
+                                {
+                                    <p class="hcs-catalog-desc">@L["Feature:NoMatchingSignature"]</p>
+                                }
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="sign-file">@L["Feature:Files"]</label>
+                                <select class="select" id="sign-file" @bind="form.FileId">
+                                    <option value="">@L["Catalog:ChooseType"]</option>
+                                    @foreach (var file in selected.Document.Files.Where(DocumentFilePick.IsPdf))
+                                    {
+                                        <option value="@file.Id.ToString()">@file.FileName</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        @if (report is not null)
+                        {
+                            <p class="hcs-catalog-desc">@L["Feature:Completed"]: @report.Completed · @L["Feature:Failed"]: @report.Failed</p>
+                        }
+                    </div>
+                    <section class="process-side hcs-signing-side-pane" aria-label="@L["Feature:WorkflowHistory"]">
+                        <div class="process-side-tabs" role="tablist" aria-label="@L["Feature:WorkflowHistory"]">
+                            <button class="process-side-tab @(approvalSideTab == "history" ? "is-active" : null)" type="button" role="tab"
+                                    aria-selected="@(approvalSideTab == "history")" aria-controls="sign-pane-history" id="sign-tab-history"
+                                    @onclick="@(() => SetApprovalSideTab("history"))">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                                @L["Feature:WorkflowHistory"]
+                            </button>
+                            <button class="process-side-tab @(approvalSideTab == "files" ? "is-active" : null)" type="button" role="tab"
+                                    aria-selected="@(approvalSideTab == "files")" aria-controls="sign-pane-files" id="sign-tab-files"
+                                    @onclick="@(() => SetApprovalSideTab("files"))">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 11.6 12.8 20a5 5 0 0 1-7.1-7.1l9.2-9.2a3.2 3.2 0 0 1 4.5 4.5L10.2 17.4a1.4 1.4 0 1 1-2-2l8.2-8.2"/></svg>
+                                @L["Feature:Attachments"]
+                            </button>
+                        </div>
+                        <div class="process-pane" id="sign-pane-history" role="tabpanel" aria-labelledby="sign-tab-history" hidden="@(approvalSideTab != "history")">
+                            @{ var workflowHistory = BuildWorkflowHistory(selected); }
+                            <div class="process-pane-head">
+                                <h3>@L["Feature:WorkflowHistory"]</h3>
+                                <span class="process-pane-count">@workflowHistory.Count</span>
+                            </div>
+                            @if (workflowHistory.Count == 0)
+                            {
+                                <p class="process-empty">@L["Catalog:EmptyDescription"]</p>
+                            }
+                            else
+                            {
+                                <ol class="history-list">
+                                    @foreach (var entry in workflowHistory)
+                                    {
+                                        <li>
+                                            <span class="history-dot" aria-hidden="true"></span>
+                                            <div>
+                                                <strong>@WorkflowHistoryLabel(entry)</strong>
+                                                @if (!string.IsNullOrWhiteSpace(entry.StepName))
+                                                {
+                                                    <span class="hcs-catalog-desc"> · @entry.StepName</span>
+                                                }
+                                                <p>@WorkflowActorLabel(entry) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                                                @if (!string.IsNullOrWhiteSpace(entry.Detail))
+                                                {
+                                                    <p>@L["Feature:Comment"]: @entry.Detail</p>
+                                                }
+                                            </div>
+                                        </li>
+                                    }
+                                </ol>
+                            }
+                        </div>
+                        <div class="process-pane" id="sign-pane-files" role="tabpanel" aria-labelledby="sign-tab-files" hidden="@(approvalSideTab != "files")">
+                            <div class="process-pane-head">
+                                <h3>@L["Feature:Attachments"]</h3>
+                                <span class="process-pane-count">@selected.Document.Files.Count</span>
+                            </div>
+                            @if (selected.Document.Files.Count == 0)
+                            {
+                                <p class="process-empty">@L["Work:NoFileChosen"]</p>
+                            }
+                            else
+                            {
+                                <div class="hcs-workflow-files">
+                                    @foreach (var file in selected.Document.Files)
+                                    {
+                                        <div class="hcs-workflow-file @(signPreviewFile?.Id == file.Id ? "hcs-workflow-file--active" : null)">
+                                            <div class="min-w-0">
+                                                <strong class="d-block text-truncate">@file.FileName</strong>
+                                                <span class="hcs-catalog-desc">@file.ContentType · @FormatSize(file.Size)</span>
+                                            </div>
+                                            <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewSigningFileAsync(file)">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </button>
                                         </div>
                                     }
                                 </div>
-                                <Field><FieldLabel>@L["Feature:Comment"]</FieldLabel>
-                                    <textarea class="form-control" rows="3" @bind="form.Comment"></textarea>
-                                </Field>
-                                @if (IsSignStep(selected))
+                                @if (signPreviewFile is not null && !string.IsNullOrWhiteSpace(signPdfUrl))
                                 {
-                                    <Field><FieldLabel>@L["Feature:Kind"]</FieldLabel>
-                                        <Select TValue="int" Value="@form.Kind" ValueChanged="OnSigningKindChanged">
-                                            <SelectItem Value="0">@L["Feature:Electronic"]</SelectItem>
-                                            <SelectItem Value="1">@L["Feature:RemoteCa"]</SelectItem>
-                                            <SelectItem Value="2">@L["Feature:Hsm"]</SelectItem>
-                                            <SelectItem Value="3">@L["Feature:UsbToken"]</SelectItem>
-                                        </Select>
-                                    </Field>
-                                    <Field><FieldLabel>@L["Feature:UserSignatures"]</FieldLabel>
-                                        <Select TValue="string" @bind-Value="form.SignatureId">
-                                            <SelectItem Value="@string.Empty">—</SelectItem>
-                                            @foreach (var signature in SignaturesForSelectedKind)
-                                            {
-                                                <SelectItem Value="@signature.Id.ToString()">@signature.FileName · @SignatureTypeLabel(signature.Type) @(signature.IsDefault ? $"({L["Feature:DefaultSignature"]})" : "")</SelectItem>
-                                            }
-                                        </Select>
-                                        @if (SigningOptionsLoadFailed)
-                                        {
-                                            <div class="form-text text-danger" role="alert">
-                                                @L["Feature:SigningOptionsLoadFailed"]
-                                                <button type="button" class="btn btn-link p-0 align-baseline" @onclick="LoadSigningOptionsAsync" disabled="@isLoadingSigningOptions">@L["Catalog:Retry"]</button>
-                                            </div>
-                                        }
-                                        else if (SignaturesForSelectedKind.Count == 0)
-                                        {
-                                            <FieldHelp>@L["Feature:NoMatchingSignature"]</FieldHelp>
-                                        }
-                                    </Field>
-                                    <Field><FieldLabel>@L["Feature:Files"]</FieldLabel>
-                                        <Select TValue="string" @bind-Value="form.FileId">
-                                            <SelectItem Value="@string.Empty">@L["Catalog:ChooseType"]</SelectItem>
-                                            @foreach (var file in selected.Document.Files.Where(DocumentFilePick.IsPdf)) { <SelectItem Value="@file.Id.ToString()">@file.FileName</SelectItem> }
-                                        </Select>
-                                    </Field>
+                                    <div class="hcs-signing-preview"><HcsPdfFrame Source="@signPdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(28)" FileName="@SignPdfDownloadName" /></div>
                                 }
-                                @if (report is not null)
+                                else if (!string.IsNullOrWhiteSpace(signPdfError))
                                 {
-                                    <p class="mb-0">@L["Feature:Completed"]: @report.Completed · @L["Feature:Failed"]: @report.Failed</p>
+                                    <p class="hcs-catalog-desc" role="alert">@signPdfError</p>
                                 }
-                            </CardBody>
-                        </Card>
-                    </Column>
-                    <Column ColumnSize="ColumnSize.Is12.OnMobile.Is6.OnDesktop">
-                        <div class="hcs-signing-side-pane">
-                            <Tabs SelectedTab="@approvalSideTab" SelectedTabChanged="OnApprovalSideTabChanged">
-                                <Items>
-                                    <Tab Name="history"><i class="fa fa-clock-rotate-left me-1" aria-hidden="true"></i>@L["Feature:WorkflowHistory"]</Tab>
-                                    <Tab Name="files"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Feature:Attachments"]</Tab>
-                                </Items>
-                                <Content>
-                                    <TabPanel Name="history">
-                                        @{ var workflowHistory = BuildWorkflowHistory(selected); }
-                                        <div class="hcs-workflow-panel-heading"><strong>@L["Feature:WorkflowHistory"]</strong><span class="hcs-catalog-desc">@workflowHistory.Count</span></div>
-                                        @if (workflowHistory.Count == 0)
-                                        {
-                                            <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
-                                        }
-                                        else
-                                        {
-                                            <ol class="hcs-workflow-history list-unstyled mb-0">
-                                                @foreach (var entry in workflowHistory)
-                                                {
-                                                    <li><span class="hcs-workflow-history__dot" aria-hidden="true"></span><div><strong>@WorkflowHistoryLabel(entry)</strong>@if (!string.IsNullOrWhiteSpace(entry.StepName)) { <span class="hcs-catalog-desc"> · @entry.StepName</span> }<div class="hcs-catalog-desc">@WorkflowActorLabel(entry) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>@if (!string.IsNullOrWhiteSpace(entry.Detail)) { <div class="small">@L["Feature:Comment"]: @entry.Detail</div> }</div></li>
-                                                }
-                                            </ol>
-                                        }
-                                    </TabPanel>
-                                    <TabPanel Name="files">
-                                        <div class="hcs-workflow-panel-heading"><strong>@L["Feature:Attachments"]</strong><span class="hcs-catalog-desc">@selected.Document.Files.Count</span></div>
-                                        @if (selected.Document.Files.Count == 0)
-                                        {
-                                            <div class="hcs-empty py-4"><p class="mb-0">@L["Catalog:EmptyTitle"]</p></div>
-                                        }
-                                        else
-                                        {
-                                            <div class="hcs-workflow-files">
-                                                @foreach (var file in selected.Document.Files)
-                                                {
-                                                    <div class="hcs-workflow-file @(signPreviewFile?.Id == file.Id ? "hcs-workflow-file--active" : null)"><div class="min-w-0"><strong class="d-block text-truncate">@file.FileName</strong><span class="hcs-catalog-desc">@file.ContentType · @FormatSize(file.Size)</span></div><Button Size="Size.Small" Color="Color.Primary" Outline="true" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" Clicked="() => PreviewSigningFileAsync(file)"><i class="fa fa-eye" aria-hidden="true"></i></Button></div>
-                                                }
-                                            </div>
-                                            @if (signPreviewFile is not null && !string.IsNullOrWhiteSpace(signPdfUrl))
-                                            {
-                                                <div class="hcs-signing-preview mt-3"><HcsPdfFrame Source="@signPdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(28)" /></div>
-                                            }
-                                            else if (!string.IsNullOrWhiteSpace(signPdfError))
-                                            {
-                                                <Alert Color="Color.Warning" Dismissible="false" Class="mt-3">@signPdfError</Alert>
-                                            }
-                                            else if (signPreviewFile is not null)
-                                            {
-                                                <div class="hcs-file-preview-card"><i class="fa fa-file-lines" aria-hidden="true"></i><div class="min-w-0"><strong class="d-block text-truncate">@signPreviewFile.FileName</strong><span class="hcs-catalog-desc">@L["Work:PreviewPdfOnly"]</span></div></div>
-                                            }
-                                        }
-                                    </TabPanel>
-                                </Content>
-                            </Tabs>
+                                else if (signPreviewFile is not null)
+                                {
+                                    <div class="hcs-file-preview-card"><i class="fa fa-file-lines" aria-hidden="true"></i><div class="min-w-0"><strong class="d-block text-truncate">@signPreviewFile.FileName</strong><span class="hcs-catalog-desc">@L["Work:PreviewPdfOnly"]</span></div></div>
+                                }
+                            }
                         </div>
-                    </Column>
-                </Row>
+                    </section>
+                </div>
             }
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
-            <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseSignAsync">@L["Catalog:Cancel"]</Button>
+            <button class="btn btn-outline" type="button" @onclick="CloseSignAsync">@L["Catalog:Cancel"]</button>
             @if (selected is { } selectedItem && CanActOn(selectedItem))
             {
                 @if (CanReturn)
                 {
-                    <Button Color="Color.Warning" Clicked="() => DecideAsync(true, true)" Disabled="@isDecisionPending">@L["Work:Return"]</Button>
+                    <button class="btn btn-outline" type="button" @onclick="() => DecideAsync(true, true)" disabled="@isDecisionPending">@L["Work:Return"]</button>
                 }
                 @if (selectedItem.Task.Status == ApprovalTaskStatus.Pending)
                 {
-                    <Button Color="Color.Info" Outline="true" Clicked="ExtendDueDateAsync" Disabled="@isDecisionPending">@L["Work:ExtendDueDate"]</Button>
+                    <button class="btn btn-outline" type="button" @onclick="ExtendDueDateAsync" disabled="@isDecisionPending">@L["Work:ExtendDueDate"]</button>
                 }
-                <Button Color="Color.Danger" Clicked="() => DecideAsync(false, false)" Disabled="@isDecisionPending">@L["Feature:Reject"]</Button>
-                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="ApproveAsync" Disabled="@(isDecisionPending || !HasValidSelectedSignature)">@ActionModalTitle(selectedItem)</Button>
+                <button class="btn btn-danger" type="button" @onclick="() => DecideAsync(false, false)" disabled="@isDecisionPending">@L["Feature:Reject"]</button>
+                <button class="btn btn-primary" type="button" @onclick="ApproveAsync" disabled="@(isDecisionPending || !HasValidSelectedSignature)">@ActionModalTitle(selectedItem)</button>
             }
         </ModalFooter>
     </ModalContent>
@@ -290,13 +403,17 @@
     private SigningReportDto? report;
     private Guid? currentUserId, submitterId, departmentId;
     private string currentUserDisplayName = "";
-    private IReadOnlyList<DateTime?> selectedDates = [];
+    private DateTime? fromDate, toDate;
     private string dateFilterField = "IncomingDate";
     private string? signPdfUrl;
     private string? signPdfError;
     private DocumentFileDto? signPreviewFile;
+    private string SignPdfDownloadName => selected is null
+        ? DocumentDownloadFileName.For(null, null, null, signPreviewFile?.FileName)
+        : DocumentDownloadFileName.For(selected.Document, signPreviewFile?.FileName);
     private string approvalSideTab = "history";
-    private string filter = "", search = "", inboxFilter = "all";
+    private string filter = "", search = "", inboxFilter = "all", statusFilter = "";
+    private bool showSearch, showFilters;
     private readonly Dictionary<Guid, string> workflowUserNames = [];
     private bool isDecisionPending, isLoading = true;
     private int pageSize = 20, currentPage = 1;
@@ -325,25 +442,30 @@
         ("byMe", L["Feature:SigningSentByMe"], CountByMe)
     ];
 
-    private List<SigningQueueItem> VisibleQueue
-    {
-        get
-        {
-            var (from, to) = RangeBounds(selectedDates);
-            return queue.Where(item => MatchesFilters(item, from, to)).ToList();
-        }
-    }
+    private bool IsSearchFiltered => !string.IsNullOrWhiteSpace(filter) || !string.IsNullOrWhiteSpace(search);
+    private bool IsAdvancedFiltered =>
+        !string.IsNullOrWhiteSpace(statusFilter)
+        || submitterId is not null
+        || departmentId is not null
+        || fromDate is not null
+        || toDate is not null
+        || dateFilterField != "IncomingDate";
 
-    private bool MatchesFilters(SigningQueueItem item, DateTime? from, DateTime? to)
+    private List<SigningQueueItem> VisibleQueue =>
+        queue.Where(MatchesFilters).ToList();
+
+    private bool MatchesFilters(SigningQueueItem item)
     {
         if (!string.IsNullOrWhiteSpace(search)
             && !item.Document.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
             && !item.Document.Number.Contains(search, StringComparison.OrdinalIgnoreCase))
             return false;
-        var when = DateOf(item);
-        if (from is { } fromValue && (when is not { } fromWhen || fromWhen < fromValue.ToUniversalTime()))
+        if (!string.IsNullOrWhiteSpace(statusFilter) && StatusFilterKey(item) != statusFilter)
             return false;
-        if (to is { } toValue && (when is not { } toWhen || toWhen > toValue.ToUniversalTime().AddDays(1)))
+        var when = DateOf(item);
+        if (fromDate is { } fromValue && (when is not { } fromWhen || fromWhen < fromValue.ToUniversalTime()))
+            return false;
+        if (toDate is { } toValue && (when is not { } toWhen || toWhen > toValue.ToUniversalTime().AddDays(1)))
             return false;
         if (submitterId is { } user && !IsSubmittedBy(item, user))
             return false;
@@ -357,10 +479,18 @@
     private List<SigningQueueItem> PageItems =>
         VisibleQueue.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
 
-    private void OnReadAsync(DataGridReadDataEventArgs<SigningQueueItem> args)
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(VisibleQueue.Count / (double)pageSize));
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < PageCount;
+    private void GoFirstPage() => currentPage = 1;
+    private void GoPrevPage() => currentPage = Math.Max(1, currentPage - 1);
+    private void GoNextPage() => currentPage = Math.Min(PageCount, currentPage + 1);
+    private void GoLastPage() => currentPage = PageCount;
+    private void OnPageSizeChanged(ChangeEventArgs args)
     {
-        currentPage = Math.Max(args.Page, 1);
-        pageSize = Math.Clamp(args.PageSize, 10, 100);
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
     }
 
     protected override async Task OnInitializedAsync()
@@ -415,17 +545,31 @@
     }
 
     private void ApplyFilter() { search = SearchText.Normalize(filter); currentPage = 1; }
-    private void OnDateRangeChanged(IReadOnlyList<DateTime?> value) => selectedDates = value ?? [];
+    private void ToggleSearch()
+    {
+        showSearch = !showSearch;
+        if (showSearch) showFilters = false;
+    }
+    private void ToggleFilters()
+    {
+        showFilters = !showFilters;
+        if (showFilters) showSearch = false;
+    }
+    private void ResetSearch()
+    {
+        filter = search = statusFilter = "";
+        submitterId = departmentId = null;
+        fromDate = toDate = null;
+        dateFilterField = "IncomingDate";
+        showFilters = false;
+        currentPage = 1;
+    }
+    private void OnStatusFilterChanged(string value) => statusFilter = value ?? "";
     private void OnDateFilterFieldChanged(string value) => dateFilterField = string.IsNullOrWhiteSpace(value) ? "IncomingDate" : value;
     private void OnSubmitterChanged(Guid? value) => submitterId = value;
     private void OnDepartmentChanged(Guid? value) => departmentId = value;
-    private void OnFilterTextChanged(string value) => filter = value ?? "";
-    private static (DateTime? From, DateTime? To) RangeBounds(IReadOnlyList<DateTime?> dates)
-    {
-        var values = dates.Where(x => x.HasValue).Select(x => x!.Value).OrderBy(x => x).ToList();
-        if (values.Count == 0) return (null, null);
-        return (values[0], values[^1]);
-    }
+    private void OnFromDateChanged(DateTime? value) => fromDate = value;
+    private void OnToDateChanged(DateTime? value) => toDate = value;
     private DateTime? DateOf(SigningQueueItem item) =>
         dateFilterField == "WorkflowDeadline" ? item.Task.DueAt : item.Document.CreationTime;
     private void SetInbox(string value) { inboxFilter = value; currentPage = 1; }
@@ -454,11 +598,7 @@
         infoItem = item;
         return infoModal?.ShowAsync(item.Document, item.Instance, item.Definition) ?? Task.CompletedTask;
     }
-    private Task OnApprovalSideTabChanged(string value)
-    {
-        approvalSideTab = value;
-        return Task.CompletedTask;
-    }
+    private void SetApprovalSideTab(string value) => approvalSideTab = value;
 
     private async Task LoadAsync()
     {
@@ -503,6 +643,11 @@
         form.Kind = value;
         SelectDefaultSignatureForSelectedKind();
         return Task.CompletedTask;
+    }
+    private Task OnSigningKindSelectChanged(ChangeEventArgs args)
+    {
+        _ = int.TryParse(args.Value?.ToString(), out var kind);
+        return OnSigningKindChanged(kind);
     }
 
     private void SelectDefaultSignatureForSelectedKind()
@@ -667,14 +812,29 @@
     private bool IsSentBy(SigningQueueItem item) => currentUserId is { } me && IsSubmittedBy(item, me);
     private bool IsOverdue(SigningQueueItem item) =>
         item.Task.DueAt is { } due && due < DateTime.UtcNow && item.Task.Status == ApprovalTaskStatus.Pending;
-    private (string Css, string Text) StatusOf(SigningQueueItem item)
+    private string StatusFilterKey(SigningQueueItem item)
     {
-        if (item.Instance.Status == WorkflowInstanceStatus.Cancelled)
-            return ("hcs-status-badge--todo", L["Work:Status.Cancelled"]);
-        if (IsOverdue(item))
-            return ("hcs-status-badge--danger", L["Work:Overdue"]);
-        return ("hcs-status-badge--success", L["Work:Status.InProgress"]);
+        if (item.Task.Status != ApprovalTaskStatus.Pending)
+            return item.Task.Status.ToString();
+        return item.Instance.Status switch
+        {
+            WorkflowInstanceStatus.Completed => "Completed",
+            WorkflowInstanceStatus.Rejected => "Rejected",
+            WorkflowInstanceStatus.Returned => "Returned",
+            WorkflowInstanceStatus.Cancelled => "Cancelled",
+            _ => IsOverdue(item) ? "Overdue" : "InProgress"
+        };
     }
+    private (string Css, string Text) StatusOf(SigningQueueItem item) => StatusFilterKey(item) switch
+    {
+        nameof(ApprovalTaskStatus.Approved) => ("badge hcs-status-badge--success", L["Work:ApprovalStatus.Approved"]),
+        nameof(ApprovalTaskStatus.Rejected) => ("badge hcs-status-badge--danger", L["Work:ApprovalStatus.Rejected"]),
+        nameof(ApprovalTaskStatus.Returned) => ("badge badge-warn", L["Work:ApprovalStatus.Returned"]),
+        nameof(ApprovalTaskStatus.Cancelled) or "Cancelled" => ("badge badge-muted", L["Work:ApprovalStatus.Cancelled"]),
+        "Completed" => ("badge hcs-status-badge--success", L["Work:Status.Completed"]),
+        "Overdue" => ("status-overdue", L["Work:Overdue"]),
+        _ => ("badge badge-info", L["Work:Status.InProgress"])
+    };
     private string StatusClass(SigningQueueItem item) => StatusOf(item).Css;
     private string StatusText(SigningQueueItem item) => StatusOf(item).Text;
     private string ApprovalStatusText(ApprovalTaskStatus status) => L[$"Work:ApprovalStatus.{status}"].Value;
@@ -774,7 +934,7 @@
     private static DocumentDto ToDocumentDto(SigningQueueDocumentDto document) => new(
         document.Id, document.Number, document.Title, document.Description, document.Status,
         null, null, null, null, document.Files, [], [], document.CreationTime,
-        document.SourceType, null, document.FromUserId, null);
+        document.SourceType, null, document.FromUserId, null, 0, false, document.DocumentCode);
 
     private sealed class SignForm
     {

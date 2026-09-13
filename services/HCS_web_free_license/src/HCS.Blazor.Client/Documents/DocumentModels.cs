@@ -38,16 +38,20 @@ public sealed record DocumentDto(
     List<DocumentFileDto> Files, List<DocumentAssignmentDto> Assignments,
     List<DocumentHistoryDto> History, DateTime CreationTime,
     DocumentSourceType SourceType = DocumentSourceType.Archive, Guid? ParentDocumentId = null,
-    Guid? FromUserId = null, Guid? OrganizationUnitId = null, int FileCount = 0);
+    Guid? FromUserId = null, Guid? OrganizationUnitId = null, int FileCount = 0, bool IsSent = false,
+    string? DocumentCode = null);
 
 public sealed record CreateDocumentRequest(
     string? Number, string Title, string? Description,
     Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId,
-    DocumentSourceType SourceType = DocumentSourceType.Archive);
+    DocumentSourceType SourceType = DocumentSourceType.Archive, string? DocumentCode = null,
+    Guid? OrganizationUnitId = null);
 public sealed record SendDocumentRequest(Guid? ReceiverUserId = null, Guid? OrganizationUnitId = null);
+public sealed record DocumentActivityRequest(string Action);
 public sealed record UpdateDocumentRequest(
     string Title, string? Description,
-    Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId);
+    Guid? DocumentTypeId, Guid? SectorId, Guid? UrgencyId, Guid? ConfidentialityId,
+    string? DocumentCode = null, Guid? OrganizationUnitId = null);
 public sealed record AssignDocumentRequest(Guid AssigneeUserId, string Responsibility);
 
 public sealed record WorkflowStepInput(string Code, string Name, int Order, string RequiredPermission, string Type = "PROCESS",
@@ -74,7 +78,7 @@ public sealed record WorkflowInstanceDto(
     List<ApprovalTaskDto> Tasks, DateTime CreationTime);
 public sealed record SigningQueueDocumentDto(Guid Id, string Number, string Title, string? Description, DocumentStatus Status,
     List<DocumentFileDto> Files, DateTime CreationTime, DocumentSourceType SourceType = DocumentSourceType.Workflow,
-    Guid? FromUserId = null);
+    Guid? FromUserId = null, string? DocumentCode = null);
 public sealed record SigningQueueItemDto(SigningQueueDocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance,
     WorkflowDefinitionDto Definition);
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);

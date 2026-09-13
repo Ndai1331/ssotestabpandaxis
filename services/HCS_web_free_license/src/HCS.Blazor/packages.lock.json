@@ -31,9 +31,9 @@
       },
       "Microsoft.AspNetCore.App.Internal.Assets": {
         "type": "Direct",
-        "requested": "[10.0.1, )",
-        "resolved": "10.0.1",
-        "contentHash": "rafnWkNfJPA0nCZ5u9bFLiIhCv+aGDWBPJMejuROFMHEpsNhTdv8Cvhv+2jIH+b5485FhndbiwOQJUBMeBa6BQ=="
+        "requested": "[10.0.10, )",
+        "resolved": "10.0.10",
+        "contentHash": "8k0KoYKvNrSqP8E3oDJMBVKavlTEE6BacdLGtEDcxv9Hz0XxWFkD6JdLJsxXUlGeAfZ6YfvWmxKenl73qeCTSA=="
       },
       "Microsoft.AspNetCore.Components.WebAssembly.Server": {
         "type": "Direct",
@@ -318,11 +318,6 @@
         "type": "Transitive",
         "resolved": "10.0.2",
         "contentHash": "LG9Yll3B5aNpxv0+D47g6LiOiKBIlodhcHdQwcYzo8VeexFLGqx5ymetmA2aBRyo9cCcWsQWrFsdbsr8LvmWDw=="
-      },
-      "Microsoft.DotNet.HotReload.WebAssembly.Browser": {
-        "type": "Transitive",
-        "resolved": "10.0.101",
-        "contentHash": "30d2d7ti8GiDYf9zg4+w5cvH3jm9HAQMyXzZgCVpEjmh3WLErJazuu2tyoIO75uNYLWPD/NNTTRD9SoPpDiACw=="
       },
       "Microsoft.Extensions.Caching.Hybrid": {
         "type": "Transitive",
@@ -1644,7 +1639,6 @@
           "Microsoft.AspNetCore.Components.WebAssembly": "[10.0.9, )",
           "Microsoft.AspNetCore.Components.WebAssembly.DevServer": "[10.0.9, )",
           "Microsoft.AspNetCore.SignalR.Client": "[10.0.9, )",
-          "Microsoft.DotNet.HotReload.WebAssembly.Browser": "[10.0.101, )",
           "Volo.Abp.AspNetCore.Components.WebAssembly.LeptonXLiteTheme": "[5.6.0, )",
           "Volo.Abp.Autofac.WebAssembly": "[10.6.0, )",
           "Volo.Abp.FeatureManagement.Blazor.WebAssembly": "[10.6.0, )",

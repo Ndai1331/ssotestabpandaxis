@@ -18,6 +18,7 @@ public sealed class DocumentAggregate
         Number = Required(number, 64, nameof(number));
         Title = Required(title, 256, nameof(title));
         Description = Trim(description, 2000);
+        DocumentCode = null;
         Status = DocumentStatus.Draft;
         SourceType = sourceType;
         CreationTime = now;
@@ -26,6 +27,7 @@ public sealed class DocumentAggregate
 
     public Guid Id { get; private set; }
     public string Number { get; private set; } = string.Empty;
+    public string? DocumentCode { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public DocumentStatus Status { get; private set; }
@@ -49,6 +51,18 @@ public sealed class DocumentAggregate
         Title = Required(title, 256, nameof(title));
         Description = Trim(description, 2000);
         AddHistory("Updated", actorUserId, null, now);
+    }
+
+    public void SetDocumentCode(string? documentCode)
+    {
+        EnsureMutable();
+        DocumentCode = Trim(documentCode, 64);
+    }
+
+    public void SetOrganizationUnit(Guid? organizationUnitId)
+    {
+        EnsureMutable();
+        OrganizationUnitId = organizationUnitId is { } id && id != Guid.Empty ? id : null;
     }
 
     public void Classify(Guid? documentTypeId, Guid? sectorId, Guid? urgencyId, Guid? confidentialityId, Guid? actorUserId, DateTime now)
@@ -100,7 +114,6 @@ public sealed class DocumentAggregate
         if (receiverUserId is null && organizationUnitId is null)
             throw new ArgumentException("A receiver or organization unit is required.");
         FromUserId = fromUserId;
-        OrganizationUnitId = organizationUnitId;
         if (receiverUserId is { } userId)
             Assign(Guid.NewGuid(), userId, "VIEW", fromUserId, now);
         AddHistory("Sent", fromUserId, receiverUserId?.ToString() ?? organizationUnitId?.ToString(), now);
@@ -131,6 +144,8 @@ public sealed class DocumentAggregate
         copy.SectorId = SectorId;
         copy.UrgencyId = UrgencyId;
         copy.ConfidentialityId = ConfidentialityId;
+        copy.DocumentCode = DocumentCode;
+        copy.OrganizationUnitId = OrganizationUnitId;
         copy.AddHistory("DuplicatedForWorkflow", actorUserId, Id.ToString(), now);
         return copy;
     }
@@ -177,6 +192,19 @@ public sealed class DocumentAggregate
         if (Status != DocumentStatus.InReview) throw new InvalidOperationException("The document is not in review.");
         Status = approved ? DocumentStatus.Approved : DocumentStatus.Rejected;
         AddHistory(approved ? "Approved" : "Rejected", actorUserId, detail, now);
+    }
+
+    public void RecordAccess(string action, Guid actorUserId, DateTime now, string? detail = null)
+    {
+        if (actorUserId == Guid.Empty) throw new ArgumentException("Actor is required.", nameof(actorUserId));
+        var canonical = Required(action, 128, nameof(action)).ToUpperInvariant() switch
+        {
+            "VIEWED" => "Viewed",
+            "PRINTED" => "Printed",
+            "DOWNLOADED" => "Downloaded",
+            _ => throw new ArgumentException("Unsupported access action.", nameof(action))
+        };
+        AddHistory(canonical, actorUserId, Trim(detail, 2000), now);
     }
 
     private void EnsureMutable()
@@ -258,6 +286,30 @@ public sealed class DocumentHistory
     public Guid? ActorUserId { get; private set; }
     public string? Detail { get; private set; }
     public DateTime OccurredAt { get; private set; }
+}
+
+internal static class DocumentSendState
+{
+    public const string SentAction = "Sent";
+    public const string RevokedAction = "Revoked";
+
+    public static bool IsActivelySent(IEnumerable<DocumentHistory> history)
+    {
+        DateTime? lastSent = null;
+        DateTime? lastRevoked = null;
+        foreach (var item in history)
+        {
+            if (item.Action == SentAction)
+                lastSent = Later(lastSent, item.OccurredAt);
+            else if (item.Action == RevokedAction)
+                lastRevoked = Later(lastRevoked, item.OccurredAt);
+        }
+
+        return lastSent is { } sentAt && (lastRevoked is null || lastRevoked < sentAt);
+    }
+
+    private static DateTime Later(DateTime? current, DateTime candidate) =>
+        current is { } value && value >= candidate ? value : candidate;
 }
 
 internal static class Hashing

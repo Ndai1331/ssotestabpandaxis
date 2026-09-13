@@ -1,4 +1,4 @@
-﻿@using System.Globalization
+@using System.Globalization
 @using Microsoft.Extensions.Hosting
 @using Volo.Abp.AspNetCore.Components.Server.LeptonXLiteTheme.Bundling
 @using Volo.Abp.Localization
@@ -12,12 +12,12 @@
 <html lang="@CultureInfo.CurrentCulture.Name" dir="@rtl" data-enhance-nav="false">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>HCS</title>
     <base href="/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
 
     <AbpStyles BundleName="@BlazorLeptonXLiteThemeBundles.Styles.Global" />
 
@@ -26,7 +26,16 @@
     <link href="hcs-tokens.css" rel="stylesheet"/>
     <link href="main.css" rel="stylesheet"/>
     <link href="hcs-components.css" rel="stylesheet"/>
+    <link href="prototype/base.css" rel="stylesheet"/>
+    <link href="prototype/pages.css" rel="stylesheet"/>
+    <link href="prototype/chat.css" rel="stylesheet"/>
+    <link href="prototype/social.css" rel="stylesheet"/>
+    <link href="prototype/events.css" rel="stylesheet"/>
+    <link href="prototype/bridge.css" rel="stylesheet"/>
     <link href="libs/select2/css/select2.min.css" rel="stylesheet"/>
+    <link href="prototype/host.css" rel="stylesheet"/>
+    <link href="prototype/modals.css" rel="stylesheet"/>
+    <link href="prototype/messages.css" rel="stylesheet"/>
     <link href="_content/Blazorise.PdfViewer/vendors/pdf_viewer.min.css" rel="stylesheet"/>
     <HeadOutlet />
 </head>
@@ -35,8 +44,6 @@
         <div class="hcs-boot-screen__card">
             <img class="hcs-boot-screen__logo" src="/images/logo/logo.png" alt="HCS" width="88" height="62" />
             <div class="hcs-boot-screen__spinner" aria-hidden="true"></div>
-            <p class="hcs-boot-screen__title">Đang tải hệ thống</p>
-            <p class="hcs-boot-screen__brand">HCS · Hành chính số</p>
             <p class="hcs-boot-screen__hint" aria-label="@HintText">
                 @for (var i = 0; i < HintText.Length; i++)
                 {

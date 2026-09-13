@@ -68,6 +68,8 @@ The licensed source at `../HCS_web_with_license` is read-only migration input an
 
 Local HTTPS ports are AuthServer `44401`, Gateway/BFF `44402`, Blazor `44403`, Platform `44411`, Organization `44412`, Document `44413`, Work Management `44414`, and Collaboration `44415`.
 
+**Sửa UI / seed DB trên máy (localhost:44403):** [`docs/runbooks/local-ui.md`](./docs/runbooks/local-ui.md) — lệnh `./scripts/run-local-ui.sh`.
+
 ## Docker Compose: runtime mặc định
 
 Docker Compose chạy toàn bộ tám HCS host, DbMigrator, PostgreSQL, Redis, RabbitMQ, MinIO và Caddy HTTPS proxy. Tạo `.env` từ `.env.k8s.example`, điền toàn bộ secret (bao gồm `HCS_ADMIN_PASSWORD`), sau đó:

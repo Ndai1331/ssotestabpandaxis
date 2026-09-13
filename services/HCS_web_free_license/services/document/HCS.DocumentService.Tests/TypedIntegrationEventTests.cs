@@ -30,6 +30,8 @@ public sealed class TypedIntegrationEventTests
     [Theory]
     [InlineData("workflow")]
     [InlineData("signed")]
+    [InlineData("sent")]
+    [InlineData("cleared")]
     public async Task Document_events_use_stable_versioned_names(string eventKind)
     {
         var bus = new RecordingEventPublisher();
@@ -37,15 +39,24 @@ public sealed class TypedIntegrationEventTests
         var eventData = eventKind == "workflow"
             ? (IntegrationEvent)new DocumentWorkflowChangedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, "corr",
                 Guid.NewGuid(), Guid.NewGuid(), "Completed")
-            : new DocumentSignedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, "corr", Guid.NewGuid(), Guid.NewGuid(),
-                "in", "out", "remote-ca");
+            : eventKind == "signed"
+            ? new DocumentSignedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, "corr", Guid.NewGuid(), Guid.NewGuid(),
+                "in", "out", "remote-ca")
+            : eventKind == "sent"
+            ? new DocumentSentToInboxEto(Guid.NewGuid(), DateTimeOffset.UtcNow, "corr", Guid.NewGuid(), Guid.NewGuid(),
+                "Công văn", "CV-001", [Guid.NewGuid()])
+            : new DocumentInboxClearedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, "corr", Guid.NewGuid());
         var message = OutboxFactory.CreateCanonical(eventData, "corr", DateTime.UtcNow);
 
         await publisher.PublishAsync(message, default);
 
-        Assert.Equal(eventKind == "workflow"
-            ? DocumentIntegrationEventNames.WorkflowChanged
-            : DocumentIntegrationEventNames.Signed, message.EventName);
+        Assert.Equal(eventKind switch
+        {
+            "workflow" => DocumentIntegrationEventNames.WorkflowChanged,
+            "signed" => DocumentIntegrationEventNames.Signed,
+            "sent" => DocumentIntegrationEventNames.SentToInbox,
+            _ => DocumentIntegrationEventNames.InboxCleared
+        }, message.EventName);
         Assert.Equal(eventData.GetType(), bus.LastEventType);
     }
 

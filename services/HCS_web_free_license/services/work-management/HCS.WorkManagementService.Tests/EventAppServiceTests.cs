@@ -36,16 +36,7 @@ public sealed class EventAppServiceTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
-        var currentUser = new TestCurrentUser
-        {
-            IsAuthenticated = true,
-            Id = userId,
-            UserName = "long",
-            Name = "Long",
-            SurName = "Nguyen",
-            Email = "long@example.test",
-            PhoneNumber = "0900000000"
-        };
+        var currentUser = AuthenticatedUser(userId);
         await using var db = CreateDb();
         var item = CreateEvent();
         db.ManagedEvents.Add(item);
@@ -86,6 +77,104 @@ public sealed class EventAppServiceTests
         Assert.Equal("agenda.pdf", attachment.FileName);
         Assert.Equal("application/pdf", attachment.ContentType);
         Assert.Equal(2048, attachment.Size);
+        Assert.Equal(ManagedEventStatuses.Ongoing, result.Status);
+        Assert.Equal("Agenda notes", result.Content);
+        Assert.Equal("Bring badge", result.Description);
+    }
+
+    [Fact]
+    public async Task Public_confirm_on_preparing_event_does_not_check_in()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        await using var db = CreateDb();
+        var item = CreateEvent(ManagedEventStatuses.Preparing);
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(userId));
+
+        var result = await service.ConfirmPublicAsync(item.Code, item.QrToken, new(), cancellationToken);
+        var attendee = await db.EventAttendees.SingleAsync(x => x.EventId == item.Id, cancellationToken);
+
+        Assert.Equal("Nguyen Long", result.FullName);
+        Assert.Equal(EventRegistrationStatuses.Confirmed, result.RegistrationStatus);
+        Assert.Equal(EventRegistrationStatuses.Confirmed, attendee.RegistrationStatus);
+        Assert.Equal(EventCheckInStatuses.NotCheckedIn, attendee.CheckInStatus);
+        Assert.Null(attendee.CheckedInAt);
+    }
+
+    [Fact]
+    public async Task Public_decline_on_preparing_event_does_not_check_in()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        await using var db = CreateDb();
+        var item = CreateEvent(ManagedEventStatuses.Preparing);
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(userId));
+
+        var result = await service.DeclinePublicAsync(item.Code, item.QrToken, new(), cancellationToken);
+        var attendee = await db.EventAttendees.SingleAsync(x => x.EventId == item.Id, cancellationToken);
+
+        Assert.Equal("Nguyen Long", result.FullName);
+        Assert.Equal(EventRegistrationStatuses.Declined, result.RegistrationStatus);
+        Assert.Equal(EventRegistrationStatuses.Declined, attendee.RegistrationStatus);
+        Assert.Equal(EventCheckInStatuses.NotCheckedIn, attendee.CheckInStatus);
+        Assert.Null(attendee.CheckedInAt);
+    }
+
+    [Fact]
+    public async Task Public_decline_can_replace_a_previous_confirmation()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent(ManagedEventStatuses.Preparing);
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
+
+        await service.ConfirmPublicAsync(item.Code, item.QrToken, new(), cancellationToken);
+        var result = await service.DeclinePublicAsync(item.Code, item.QrToken, new(), cancellationToken);
+        var attendee = await db.EventAttendees.SingleAsync(x => x.EventId == item.Id, cancellationToken);
+
+        Assert.Equal(EventRegistrationStatuses.Declined, result.RegistrationStatus);
+        Assert.Equal(EventRegistrationStatuses.Declined, attendee.RegistrationStatus);
+        Assert.Equal(EventCheckInStatuses.NotCheckedIn, attendee.CheckInStatus);
+    }
+
+    [Fact]
+    public async Task Public_confirm_is_rejected_when_event_is_ongoing()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent();
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
+
+        var exception = await Assert.ThrowsAsync<BusinessException>(() =>
+            service.ConfirmPublicAsync(item.Code, item.QrToken, new(), cancellationToken));
+
+        Assert.Equal("Work:EventConfirmNotOpen", exception.Code);
+        Assert.Empty(await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(cancellationToken));
+    }
+
+    [Fact]
+    public async Task Public_check_in_is_rejected_when_event_is_preparing()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent(ManagedEventStatuses.Preparing);
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
+
+        var exception = await Assert.ThrowsAsync<BusinessException>(() =>
+            service.CheckInPublicAsync(item.Code, item.QrToken, new(), cancellationToken));
+
+        Assert.Equal("Work:EventCheckInNotOpen", exception.Code);
+        Assert.Empty(await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(cancellationToken));
     }
 
     private static EventAppService CreateService(WorkManagementDbContext db, ICurrentUser currentUser) =>
@@ -96,9 +185,20 @@ public sealed class EventAppServiceTests
         new(new DbContextOptionsBuilder<WorkManagementDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
-    private static ManagedEvent CreateEvent() =>
-        new(Guid.NewGuid(), "EVT-TEST", "General", "Test event", null, null, null,
-            DateTime.UtcNow, DateTime.UtcNow.AddHours(1), ManagedEventStatuses.Ongoing, "qr-token", Guid.NewGuid());
+    private static ManagedEvent CreateEvent(string status = ManagedEventStatuses.Ongoing) =>
+        new(Guid.NewGuid(), "EVT-TEST", "General", "Test event", "Agenda notes", "Bring badge", null,
+            DateTime.UtcNow, DateTime.UtcNow.AddHours(1), status, "qr-token", Guid.NewGuid());
+
+    private static TestCurrentUser AuthenticatedUser(Guid userId) => new()
+    {
+        IsAuthenticated = true,
+        Id = userId,
+        UserName = "long",
+        Name = "Long",
+        SurName = "Nguyen",
+        Email = "long@example.test",
+        PhoneNumber = "0900000000"
+    };
 
     private sealed class TestCurrentUser : ICurrentUser
     {

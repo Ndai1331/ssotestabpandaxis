@@ -124,5 +124,9 @@ public sealed class DomainBehaviorTests
         var body = NotificationLocalization.Encode(NotificationLocalization.SocialReactionBody, "Nguyễn Văn A");
         NotificationLocalization.Format(body, "vi").ShouldBe("Nguyễn Văn A đã tương tác với bài viết của bạn");
         NotificationLocalization.Format(body, "en").ShouldBe("Nguyễn Văn A reacted to your post");
+        NotificationLocalization.Format(NotificationLocalization.DocumentSentTitle, "vi").ShouldBe("Có văn bản mới");
+        NotificationLocalization.Format(
+                NotificationLocalization.Encode(NotificationLocalization.DocumentSentBody, "Công văn 01"), "en")
+            .ShouldBe("You were sent document Công văn 01");
     }
 }
