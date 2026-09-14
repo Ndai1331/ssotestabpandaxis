@@ -5,7 +5,6 @@
 @using System.Globalization
 @using System.Net
 @using System.Threading
-@using Blazorise.DataGrid
 @using HCS.Blazor.Client.Pages.Organization
 @using HCS.Localization
 @using Microsoft.AspNetCore.Components
@@ -14,23 +13,27 @@
 @using Volo.Abp.AspNetCore.Components.Messages
 @inject IdentityAdminClient IdentityClient
 @inject OrganizationCatalogClient OrganizationClient
-@inject DocumentClient Documents
 @inject IUiMessageService UiMessageService
 @inject IStringLocalizer<HCSResource> L
 
-<PageTitle>Người dùng · HCS</PageTitle>
+<PageTitle>@L["Menu:Users"] · HCS</PageTitle>
 
 <AuthorizeView Roles="admin">
     <Authorized>
-        <main class="hcs-admin-page hcs-users-page">
-            <header class="hcs-admin-heading hcs-users-heading">
-                <h1>Người dùng</h1>
-                <div class="hcs-users-heading__actions">
-                    <Button Color="Color.Primary" Class="hcs-users-create-button" Clicked="OpenCreateUserAsync" Disabled="@isSaving">
-                        <i class="fa fa-plus" aria-hidden="true"></i> Người dùng mới
-                    </Button>
+        <section class="page page-wf page-admin-users" aria-labelledby="users-title">
+            <div class="page-head">
+                <h1 id="users-title">@L["Menu:Users"]</h1>
+                <div class="page-actions">
+                    <button class="btn btn-outline" type="button" @onclick="RefreshUsersAsync" disabled="@isLoadingUsers">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+                        @L["Catalog:Refresh"]
+                    </button>
+                    <button class="btn btn-primary" type="button" @onclick="OpenCreateUserAsync" disabled="@isSaving">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        @L["Users:CreateTitle"]
+                    </button>
                 </div>
-            </header>
+            </div>
 
             @if (!string.IsNullOrWhiteSpace(errorMessage))
             {
@@ -38,141 +41,124 @@
                     <span>@errorMessage</span>
                     @if (canRetry)
                     {
-                        <Button Color="Color.Light" Size="Size.Small" Clicked="RefreshUsersAsync">Thử lại</Button>
+                        <button class="btn btn-outline" type="button" @onclick="RefreshUsersAsync">@L["Roles:Retry"]</button>
                     }
                 </div>
             }
 
-            <Card Class="hcs-users-filter-card">
-                <CardBody>
-                    <div class="hcs-users-filter-row">
-                        <Addons Class="hcs-users-search-bar">
-                            <Addon AddonType="AddonType.Body">
-                                <TextInput @bind-Value="filterText" Placeholder="Tìm kiếm" Class="hcs-users-search-input" Autocomplete="off" name="hcsUserSearch" />
-                            </Addon>
-                            <Addon AddonType="AddonType.End">
-                                <Button Color="Color.Primary" Clicked="SearchUsersAsync" Disabled="@isLoadingUsers">
-                                    <i class="fa fa-search me-1" aria-hidden="true"></i> Tìm kiếm
-                                </Button>
-                            </Addon>
-                        </Addons>
-                        <Button Color="Color.Primary" Outline="true" Class="hcs-users-filter-toggle" Clicked="ToggleAdvancedFilters">
-                            <i class="fa fa-sliders me-2" aria-hidden="true"></i>Bộ lọc
-                            <i class="fa @(showAdvancedFilters ? "fa-chevron-up" : "fa-chevron-down") ms-2" aria-hidden="true"></i>
-                        </Button>
-                    </div>
-                    @if (showAdvancedFilters)
-                    {
-                        <div class="hcs-users-advanced-filters">
-                            <Field>
-                                <FieldLabel>Trạng thái</FieldLabel>
-                                <Select TValue="string" @bind-Value="statusFilter" @bind-Value:after="StatusFilterChangedAsync">
-                                    <SelectItem Value="@string.Empty">Tất cả</SelectItem>
-                                    <SelectItem Value="@("active")">Đang hoạt động</SelectItem>
-                                    <SelectItem Value="@("inactive")">Đã khóa</SelectItem>
-                                </Select>
-                            </Field>
-                            <Button Color="Color.Light" Outline="true" Class="hcs-users-filter-reset" Clicked="ResetSearchAsync" Disabled="@isLoadingUsers">
-                                Đặt lại
-                            </Button>
-                        </div>
-                    }
-                </CardBody>
-            </Card>
+            <form class="docs-toolbar list-search" id="users-search-form" @onsubmit="SearchUsersAsync" @onsubmit:preventDefault>
+                <label class="sr-only" for="users-q">@L["Users:SearchPlaceholder"]</label>
+                <input class="input docs-search" id="users-q" type="search" @bind="filterText" @bind:event="oninput"
+                       placeholder="@L["Users:SearchPlaceholder"]" autocomplete="off" />
+                <button class="btn btn-primary" type="submit" disabled="@isLoadingUsers">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                    @L["Catalog:SearchButton"]
+                </button>
+                <label class="filter-label" for="users-status-filter">@L["Catalog:Status"]</label>
+                <select class="select input" id="users-status-filter" value="@statusFilter" @onchange="OnStatusFilterChanged">
+                    <option value="">@L["Catalog:AllStatuses"]</option>
+                    <option value="active">@L["Catalog:Active"]</option>
+                    <option value="inactive">@L["Catalog:Inactive"]</option>
+                </select>
+            </form>
 
-            <Card Class="hcs-users-grid-card">
-                <CardBody>
-                    <DataGrid TItem="IdentityAdminUserDto"
-                              @ref="usersGrid"
-                              Data="@users"
-                              ReadData="OnUsersGridReadAsync"
-                              TotalItems="@totalUsers"
-                              ShowPager="true"
-                              ShowPageSizes="true"
-                              PageSizes="@pageSizes"
-                              PageSize="@pageSize"
-                              Responsive="true"
-                              Striped="true"
-                              Hoverable="true"
-                              Class="hcs-users-grid">
-                        <EmptyTemplate>
-                            <DocsEmpty Title="Chưa có người dùng" Hint="Hãy tạo tài khoản đầu tiên để bắt đầu quản trị." />
-                        </EmptyTemplate>
-                        <LoadingTemplate>
-                            <div class="hcs-loading py-5" role="status" aria-live="polite">
-                                <i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Đang tải dữ liệu…
-                            </div>
-                        </LoadingTemplate>
-                        <DataGridColumns>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption='HÀNH ĐỘNG' Sortable="false" Width="Width.Px(185)">
-                                <DisplayTemplate Context="cell">
-                                    <Dropdown>
-                                        <DropdownToggle Color="Color.Primary" Size="Size.Small">Hành động</DropdownToggle>
-                                        <DropdownMenu>
-                                            <DropdownItem Clicked="@(() => OpenEditUserAsync(cell.Item))"><Icon Name="IconName.Edit" /> Sửa</DropdownItem>
-                                            <DropdownDivider />
-                                            <DropdownItem Clicked="@(() => DeleteUserAsync(cell.Item))" TextColor="TextColor.Danger"><Icon Name="IconName.Delete" /> Xóa</DropdownItem>
-                                        </DropdownMenu>
-                                    </Dropdown>
-                                </DisplayTemplate>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption='THÔNG TIN CHUNG' Sortable="false" Width="Width.Px(330)">
-                                <DisplayTemplate Context="cell">
-                                    <div class="hcs-user-general-info">
-                                        <div><strong>Tên người dùng:</strong> @cell.Item.UserName</div>
-                                        <div><strong>Email:</strong> @cell.Item.Email</div>
-                                        <div><strong>Họ và tên:</strong> @FullName(cell.Item)</div>
-                                        <div><strong>Vai trò:</strong> @RoleSummary(cell.Item.Id)</div>
-                                        <div><strong>Chức vụ:</strong> @PositionSummary(cell.Item.Id)</div>
-                                        <div><strong>Phòng ban:</strong> @DepartmentSummary(cell.Item.Id)</div>
+            <div class="docs-table-wrap">
+                @if (isLoadingUsers)
+                {
+                    <DocsEmpty Loading="true" />
+                }
+                else if (users.Count == 0)
+                {
+                    <DocsEmpty Title="@L["Users:EmptyTitle"]" Hint="@L["Catalog:EmptyDescription"]" />
+                }
+                else
+                {
+                    <table class="docs-table">
+                        <thead>
+                            <tr>
+                                <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
+                                <th scope="col">@L["Account:UserName"]</th>
+                                <th scope="col">@L["FullName"]</th>
+                                <th scope="col">@L["Account:Email"]</th>
+                                <th scope="col">@L["Menu:Roles"]</th>
+                                <th scope="col">@L["Catalog:Department"]</th>
+                                <th class="col-status" scope="col">@L["Catalog:Status"]</th>
+                                <th scope="col">@L["Users:CreatedAt"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var user in users)
+                        {
+                            <tr @key="user.Id">
+                                <td class="col-actions">
+                                    <div class="doc-actions">
+                                        <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => OpenEditUserAsync(user)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                        </button>
+                                        <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteUserAsync(user)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                        </button>
                                     </div>
-                                </DisplayTemplate>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption="KÍCH HOẠT" TextAlignment="TextAlignment.Center">
-                                <DisplayTemplate Context="cell">@StatusIcon(cell.Item.IsActive)</DisplayTemplate>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption="KHÓA TÀI KHOẢN" TextAlignment="TextAlignment.Center">
-                                <DisplayTemplate Context="cell">@StatusIcon(cell.Item.LockoutEnabled)</DisplayTemplate>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption="EMAIL ĐÃ XÁC NHẬN" TextAlignment="TextAlignment.Center">
-                                <DisplayTemplate Context="cell">@StatusIcon(cell.Item.EmailConfirmed)</DisplayTemplate>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption="XÁC THỰC HAI YẾU TỐ" TextAlignment="TextAlignment.Center">
-                                <DisplayTemplate Context="cell">@StatusIcon(cell.Item.TwoFactorEnabled)</DisplayTemplate>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption="SỐ LẦN ĐĂNG NHẬP SAI" TextAlignment="TextAlignment.Center">
-                                <DisplayTemplate Context="cell">@cell.Item.AccessFailedCount</DisplayTemplate>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption="THỜI GIAN TẠO">
-                                <DisplayTemplate Context="cell">@FormatDate(cell.Item.CreationTime)</DisplayTemplate>
-                            </DataGridColumn>
-                            <DataGridColumn TItem="IdentityAdminUserDto" Caption="THỜI GIAN SỬA CUỐI">
-                                <DisplayTemplate Context="cell">@FormatDate(cell.Item.LastModificationTime)</DisplayTemplate>
-                            </DataGridColumn>
-                        </DataGridColumns>
-                    </DataGrid>
-                </CardBody>
-            </Card>
-        </main>
+                                </td>
+                                <td>
+                                    <button type="button" class="doc-title-open" @onclick="() => OpenEditUserAsync(user)">@user.UserName</button>
+                                </td>
+                                <td>@FullName(user)</td>
+                                <td>@user.Email</td>
+                                <td>@RoleSummary(user.Id)</td>
+                                <td>
+                                    <div>@DepartmentSummary(user.Id)</div>
+                                    <span class="doc-code">@PositionSummary(user.Id)</span>
+                                </td>
+                                <td>
+                                    <div class="admin-user-status">
+                                        <span class="@(user.IsActive ? "badge hcs-status-badge--success" : "badge badge-muted")">@(user.IsActive ? L["Catalog:Active"] : L["Catalog:Inactive"])</span>
+                                        @if (user.IsLockedOut)
+                                        {
+                                            <span class="badge badge-warn">@L["Users:Locked"]</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>@FormatDate(user.CreationTime)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+                <div class="pager" aria-label="@L["Catalog:PageSize"]">
+                    <button type="button" disabled="@(!CanPrevPage || isLoadingUsers)" @onclick="GoFirstPage">@L["Catalog:PagerFirst"]</button>
+                    <button type="button" disabled="@(!CanPrevPage || isLoadingUsers)" @onclick="GoPrevPage">@L["Catalog:PagerPrev"]</button>
+                    <button type="button" disabled="@(!CanNextPage || isLoadingUsers)" @onclick="GoNextPage">@L["Catalog:PagerNext"]</button>
+                    <button type="button" disabled="@(!CanNextPage || isLoadingUsers)" @onclick="GoLastPage">@L["Catalog:PagerLast"]</button>
+                    <label class="sr-only" for="users-page-size">@L["Catalog:PageSize"]</label>
+                    <select id="users-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
+                        @foreach (var size in PageSizeOptions)
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </section>
 
-        <Modal @ref="userModal" Size="ModalSize.ExtraLarge" Class="hcs-user-modal">
-            <ModalContent Centered="true" Class="hcs-user-modal">
-                <ModalHeader>
-                    <ModalTitle>@(editingUserId.HasValue ? "Chỉnh sửa người dùng" : "Tạo người dùng mới")</ModalTitle>
+        <Modal @ref="userModal" Size="ModalSize.ExtraLarge">
+            <ModalContent Centered Class="hcs-catalog-modal">
+                <ModalHeader Class="hcs-catalog-modal__header">
+                    <ModalTitle>@(editingUserId.HasValue ? L["Users:EditTitle"] : L["Users:CreateTitle"])</ModalTitle>
                     <CloseButton Clicked="CloseUserModalAsync" />
                 </ModalHeader>
-                <ModalBody>
+                <ModalBody Class="hcs-catalog-modal__body">
                     @if (!string.IsNullOrWhiteSpace(formErrorMessage))
                     {
                         <div class="hcs-admin-alert" role="alert">@formErrorMessage</div>
                     }
-                    <div class="hcs-user-tabs" role="tablist">
-                        <button class="@(activeUserTab == "info" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "info")">Thông tin người dùng</button>
-                        <button class="@(activeUserTab == "roles" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "roles")">Vai trò (@userForm.RoleNames.Count)</button>
-                        <button class="@(activeUserTab == "departments" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "departments")">Cây phòng ban (@(string.IsNullOrWhiteSpace(userForm.DepartmentId) ? 0 : 1))</button>
+                    <div class="process-side-tabs" role="tablist">
+                        <button class="process-side-tab @(activeUserTab == "info" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "info")">Thông tin người dùng</button>
+                        <button class="process-side-tab @(activeUserTab == "roles" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "roles")">Vai trò (@userForm.RoleNames.Count)</button>
+                        <button class="process-side-tab @(activeUserTab == "departments" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "departments")">Cây phòng ban (@(string.IsNullOrWhiteSpace(userForm.DepartmentId) ? 0 : 1))</button>
                         @if (editingUserId.HasValue)
                         {
-                            <button class="@(activeUserTab == "signatures" ? "is-active" : null)" type="button" role="tab" @onclick="ShowSignaturesTabAsync">@L["Admin:SignaturesTab"]</button>
+                            <button class="process-side-tab @(activeUserTab == "signatures" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "signatures")">@L["Admin:SignaturesTab"]</button>
                         }
                     </div>
 
@@ -270,16 +256,16 @@
                         </div>
                     }
                 </ModalBody>
-                <ModalFooter>
-                    <Button Color="Color.Secondary" Class="hcs-modal-cancel" Clicked="CloseUserModalAsync">Hủy</Button>
-                    <Button Color="Color.Primary" Class="hcs-modal-save" Clicked="SaveUserAsync" Loading="@isSaving" Disabled="@isSaving">Lưu</Button>
+                <ModalFooter Class="hcs-catalog-modal__footer">
+                    <button class="btn btn-outline" type="button" @onclick="CloseUserModalAsync">@L["Catalog:Cancel"]</button>
+                    <button class="btn btn-primary" type="button" @onclick="SaveUserAsync" disabled="@isSaving">@L["Catalog:SaveChanges"]</button>
                 </ModalFooter>
             </ModalContent>
         </Modal>
 
     </Authorized>
     <NotAuthorized>
-        <main class="hcs-admin-page"><div class="hcs-admin-alert" role="alert">Tài khoản của bạn không có quyền quản trị người dùng.</div></main>
+        <section class="page page-wf"><div class="hcs-admin-alert" role="alert">@L["Users:NoAdminPermission"]</div></section>
     </NotAuthorized>
 </AuthorizeView>
 
@@ -294,7 +280,6 @@
     private readonly Dictionary<Guid, string> userDepartmentNames = [];
     private readonly Dictionary<Guid, string> userPositionNames = [];
 
-    private DataGrid<IdentityAdminUserDto>? usersGrid;
     private Modal? userModal;
     private IdentityAdminUserForm userForm = new();
     private Guid? editingUserId;
@@ -304,40 +289,41 @@
     private string? errorMessage;
     private string? formErrorMessage;
     private string activeUserTab = "info";
-    private bool showAdvancedFilters;
     private bool isLoadingUsers;
     private bool isSaving;
     private bool canRetry;
     private int totalUsers;
     private int pageSize = 20;
-    private IReadOnlyList<int> pageSizes => PageSizeOptions;
+    private int currentPage = 1;
+
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalUsers / (double)Math.Max(pageSize, 1)));
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < PageCount;
 
     protected override async Task OnInitializedAsync()
     {
         await Task.WhenAll(LoadRolesAsync(), LoadOrganizationLookupsAsync());
+        await LoadUsersAsync();
     }
 
-    private async Task OnUsersGridReadAsync(DataGridReadDataEventArgs<IdentityAdminUserDto> args)
+    private async Task LoadUsersAsync()
     {
-        var requestedPageSize = Math.Clamp(args.PageSize, 1, 100);
         isLoadingUsers = true;
         errorMessage = null;
         canRetry = false;
         try
         {
-            var result = await IdentityClient.GetUsersAsync(filterText, (Math.Max(1, args.Page) - 1) * requestedPageSize, requestedPageSize, args.CancellationToken);
+            var skip = (Math.Max(1, currentPage) - 1) * pageSize;
+            var result = await IdentityClient.GetUsersAsync(filterText, skip, pageSize);
             var loadedUsers = result.Items.AsEnumerable();
             if (statusFilter == "active") loadedUsers = loadedUsers.Where(user => user.IsActive);
             if (statusFilter == "inactive") loadedUsers = loadedUsers.Where(user => !user.IsActive);
             users.Clear();
             users.AddRange(loadedUsers);
             totalUsers = Math.Min(int.MaxValue, (int)result.TotalCount);
-            pageSize = requestedPageSize;
-            await LoadUserRoleSummariesAsync(users, args.CancellationToken);
-            await LoadUserOrganizationSummariesAsync(users, args.CancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
+            currentPage = Math.Clamp(currentPage, 1, PageCount);
+            await LoadUserRoleSummariesAsync(users, CancellationToken.None);
+            await LoadUserOrganizationSummariesAsync(users, CancellationToken.None);
         }
         catch (IdentityAdminApiException exception)
         {
@@ -437,32 +423,39 @@
         userForm = new IdentityAdminUserForm();
         activeUserTab = "info";
         formErrorMessage = null;
-        ResetSigningState();
         if (userModal is not null) await userModal.Show();
     }
 
     private async Task OpenEditUserAsync(IdentityAdminUserDto user)
     {
-        editingUserId = user.Id;
-        editingConcurrencyStamp = user.ConcurrencyStamp;
+        var latest = user;
+        try
+        {
+            latest = await IdentityClient.GetUserAsync(user.Id);
+        }
+        catch (IdentityAdminApiException)
+        {
+        }
+
+        editingUserId = latest.Id;
+        editingConcurrencyStamp = latest.ConcurrencyStamp;
         userForm = new IdentityAdminUserForm
         {
-            UserName = user.UserName,
-            Surname = user.Surname,
-            Name = user.Name,
-            Email = user.Email,
-            PhoneNumber = user.PhoneNumber,
-            IsActive = user.IsActive,
-            LockoutEnabled = user.LockoutEnabled,
-            EmailConfirmed = user.EmailConfirmed
+            UserName = latest.UserName,
+            Surname = latest.Surname,
+            Name = latest.Name,
+            Email = latest.Email,
+            PhoneNumber = latest.PhoneNumber,
+            IsActive = latest.IsActive,
+            LockoutEnabled = latest.LockoutEnabled,
+            EmailConfirmed = latest.EmailConfirmed
         };
         formErrorMessage = null;
         activeUserTab = "info";
-        ResetSigningState();
         try
         {
-            foreach (var role in await IdentityClient.GetUserRolesAsync(user.Id)) userForm.RoleNames.Add(role.Name);
-            var mappings = await IdentityClient.GetUserMappingsAsync(user.Id);
+            foreach (var role in await IdentityClient.GetUserRolesAsync(latest.Id)) userForm.RoleNames.Add(role.Name);
+            var mappings = await IdentityClient.GetUserMappingsAsync(latest.Id);
             var mapping = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
             if (mapping is not null)
             {
@@ -511,10 +504,35 @@
                 savedUser = await IdentityClient.CreateUserAsync(userForm);
             }
 
-            await IdentityClient.UpdateUserRolesAsync(savedUser.Id, userForm.RoleNames);
-            await SyncOrganizationMappingAsync(savedUser.Id);
+            string? secondaryError = null;
+            try
+            {
+                await IdentityClient.UpdateUserRolesAsync(savedUser.Id, userForm.RoleNames);
+            }
+            catch (IdentityAdminApiException exception)
+            {
+                secondaryError = FriendlyApiError(exception, "Users:SaveError");
+            }
+
+            try
+            {
+                await SyncOrganizationMappingAsync(savedUser.Id);
+            }
+            catch (IdentityAdminApiException exception)
+            {
+                secondaryError ??= FriendlyApiError(exception, "Users:SaveError");
+            }
+
             await CloseUserModalAsync();
-            await UiMessageService.Success(wasEditing ? L["Users:Updated"].Value : L["Users:Created"].Value);
+            if (secondaryError is null)
+            {
+                await UiMessageService.Success(wasEditing ? L["Users:Updated"].Value : L["Users:Created"].Value);
+            }
+            else
+            {
+                await UiMessageService.Warn(secondaryError);
+            }
+
             await RefreshUsersAsync();
         }
         catch (IdentityAdminApiException exception)
@@ -551,11 +569,15 @@
         if (primary is null)
         {
             await IdentityClient.CreateUserMappingAsync(userId, departmentId, positionId);
+            return;
         }
-        else
+
+        if (primary.DepartmentId == departmentId && primary.PositionId == positionId)
         {
-            await IdentityClient.UpdateUserMappingAsync(primary.Id, userId, departmentId, positionId);
+            return;
         }
+
+        await IdentityClient.UpdateUserMappingAsync(primary.Id, userId, departmentId, positionId, primary.UnitId);
     }
 
     private async Task DeleteUserAsync(IdentityAdminUserDto user)
@@ -565,7 +587,8 @@
         {
             await IdentityClient.DeleteUserAsync(user.Id);
             await UiMessageService.Success(L["Users:Deleted"].Value);
-            await RefreshUsersAsync();
+            if (users.Count == 1 && currentPage > 1) currentPage--;
+            await LoadUsersAsync();
         }
         catch (IdentityAdminApiException exception)
         {
@@ -601,35 +624,37 @@
         return null;
     }
 
-    private async Task SearchUsersAsync()
+    private Task SearchUsersAsync()
     {
-        if (usersGrid is not null)
-        {
-            await usersGrid.Paginate("1");
-            await usersGrid.Reload();
-            return;
-        }
-
-        await RefreshUsersAsync();
+        currentPage = 1;
+        return LoadUsersAsync();
     }
 
-    private Task StatusFilterChangedAsync() => SearchUsersAsync();
-
-    private async Task ResetSearchAsync()
-    {
-        filterText = null;
-        statusFilter = string.Empty;
-        await SearchUsersAsync();
-    }
-
-    private async Task RefreshUsersAsync()
+    private Task RefreshUsersAsync()
     {
         errorMessage = null;
-        if (usersGrid is null) return;
-        await usersGrid.Reload();
+        return LoadUsersAsync();
     }
 
-    private void ToggleAdvancedFilters() => showAdvancedFilters = !showAdvancedFilters;
+    private Task OnStatusFilterChanged(ChangeEventArgs args)
+    {
+        statusFilter = args.Value?.ToString() ?? string.Empty;
+        currentPage = 1;
+        return LoadUsersAsync();
+    }
+
+    private Task GoFirstPage() { currentPage = 1; return LoadUsersAsync(); }
+    private Task GoPrevPage() { currentPage = Math.Max(1, currentPage - 1); return LoadUsersAsync(); }
+    private Task GoNextPage() { currentPage = Math.Min(PageCount, currentPage + 1); return LoadUsersAsync(); }
+    private Task GoLastPage() { currentPage = PageCount; return LoadUsersAsync(); }
+
+    private Task OnPageSizeChanged(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        return LoadUsersAsync();
+    }
 
     private string RoleSummary(Guid userId) => userRoleNames.TryGetValue(userId, out var names) && !string.IsNullOrWhiteSpace(names) ? names : "—";
     private string DepartmentSummary(Guid userId) => userDepartmentNames.TryGetValue(userId, out var name) && !string.IsNullOrWhiteSpace(name) ? name : "—";
@@ -641,10 +666,11 @@
         ? $"{position.Code} — {position.Name}"
         : positionId.ToString("D");
     private static string FullName(IdentityAdminUserDto user) => string.Join(' ', new[] { user.Surname, user.Name }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim() is { Length: > 0 } fullName ? fullName : "—";
-    private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy\nHH:mm:ss", CultureInfo.InvariantCulture) ?? "—";
-    private static MarkupString StatusIcon(bool value) => new($"<span class=\"hcs-admin-status-icon {(value ? "is-active" : "is-inactive")}\"><i class=\"fa {(value ? "fa-check" : "fa-xmark")}\" aria-hidden=\"true\"></i><span class=\"visually-hidden\">{(value ? "Có" : "Không")}</span></span>");
+    private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture) ?? "—";
 
-    private string FriendlyApiError(IdentityAdminApiException exception, string fallbackKey) => exception.StatusCode switch
+    private string FriendlyApiError(IdentityAdminApiException exception, string fallbackKey) =>
+        exception.UserMessage
+        ?? exception.StatusCode switch
     {
         HttpStatusCode.BadRequest => L["Users:BadRequest"].Value,
         HttpStatusCode.Unauthorized => L["Users:SessionExpired"].Value,
@@ -653,52 +679,4 @@
         HttpStatusCode.Conflict => L["Users:Conflict"].Value,
         _ => L[fallbackKey].Value
     };
-
-    private Task ShowSignaturesTabAsync()
-    {
-        activeUserTab = "signatures";
-        return Task.CompletedTask;
-    }
-
-    private void ResetSigningState()
-    {
-        // User signatures remain per-user; shared signing credentials are managed
-        // from /signature-settings and no longer reset with this modal.
-    }
-
-    private string SigningKindName(int kind) => kind switch
-    {
-        1 => L["Feature:RemoteCa"],
-        2 => L["Feature:Hsm"],
-        3 => L["Feature:UsbToken"],
-        _ => L["Feature:Electronic"]
-    };
-
-    private sealed class SigningForm
-    {
-        public int Kind { get; set; }
-        public string ProviderCode { get; set; } = string.Empty;
-        public string Endpoint { get; set; } = string.Empty;
-        public string Secret { get; set; } = string.Empty;
-        public int ApiTimeoutSeconds { get; set; } = 30;
-        public int SignWidth { get; set; } = 150;
-        public int SignHeight { get; set; } = 70;
-        public bool AllowElectronicSign { get; set; } = true;
-        public bool AllowDigitalSign { get; set; } = true;
-        public bool RequireOtp { get; set; }
-
-        public void Reset()
-        {
-            Kind = 0;
-            ProviderCode = string.Empty;
-            Endpoint = string.Empty;
-            Secret = string.Empty;
-            ApiTimeoutSeconds = 30;
-            SignWidth = 150;
-            SignHeight = 70;
-            AllowElectronicSign = true;
-            AllowDigitalSign = true;
-            RequireOtp = false;
-        }
-    }
 }

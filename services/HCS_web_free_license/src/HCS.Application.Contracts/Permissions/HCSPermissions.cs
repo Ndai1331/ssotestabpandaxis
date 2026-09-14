@@ -132,4 +132,22 @@ public static class HCSPermissions
         public const string Notifications = Default + ".Notifications";
         public const string Administration = Default + ".Administration";
     }
+
+    /// <summary>
+    /// Permission definition group names aligned with the Blazor top menu.
+    /// Permission names themselves stay unchanged.
+    /// </summary>
+    public static class MenuGroups
+    {
+        public const string Workspace = "HCS.Workspace";
+        public const string Documents = "Documents";
+        public const string Workflows = "HCS.Workflows";
+        public const string ProjectsAndTasks = "HCS.ProjectsAndTasks";
+        public const string Calendar = "HCS.Calendar";
+        public const string Events = "HCS.Events";
+        public const string Surveys = "HCS.Surveys";
+        public const string Catalogs = HCSCatalogPermissions.Group;
+        public const string Social = "Collaboration";
+        public const string Administration = GroupName;
+    }
 }

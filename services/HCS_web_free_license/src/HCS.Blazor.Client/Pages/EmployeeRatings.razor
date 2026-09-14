@@ -10,27 +10,48 @@
 <section class="hcs-rating-page" aria-labelledby="employee-ratings-title">
     <header class="hcs-rating-page__header">
         <div>
-            <p class="hcs-document-page__eyebrow">@L["Menu:Social"]</p>
+            <p class="hcs-rating-page__kicker">@L["Menu:Social"]</p>
             <h1 id="employee-ratings-title">@L["Feature:EmployeeRatings"]</h1>
-            <p class="text-muted mb-0">@L["EmployeeRatings:Subtitle"]</p>
-        </div>
-        <div class="hcs-rating-page__filters" role="search">
-            <label class="visually-hidden" for="employee-rating-search">@L["EmployeeRatings:Search"]</label>
-            <div class="input-group">
-                <span class="input-group-text" aria-hidden="true"><i class="fa fa-search"></i></span>
-                <input id="employee-rating-search" class="form-control" type="search"
-                       placeholder="@L["EmployeeRatings:SearchPlaceholder"]" @bind="searchText" @bind:event="oninput" />
-            </div>
-            <label class="visually-hidden" for="employee-rating-department">@L["EmployeeRatings:Department"]</label>
-            <select id="employee-rating-department" class="form-select" @bind="selectedDepartment">
-                <option value="">@L["EmployeeRatings:AllDepartments"]</option>
-                @foreach (var department in DepartmentNames)
-                {
-                    <option value="@department">@department</option>
-                }
-            </select>
+            <p class="hcs-rating-page__lede">@L["EmployeeRatings:Subtitle"]</p>
         </div>
     </header>
+
+    <EmployeeRatingNav />
+
+    <div class="hcs-rating-filters" role="search">
+        <label class="visually-hidden" for="employee-rating-search">@L["EmployeeRatings:Search"]</label>
+        <div class="hcs-rating-filters__search">
+            <i class="fa fa-search" aria-hidden="true"></i>
+            <input id="employee-rating-search" class="form-control" type="search"
+                   placeholder="@L["EmployeeRatings:SearchPlaceholder"]" @bind="searchText" @bind:event="oninput" />
+        </div>
+        <label class="visually-hidden" for="employee-rating-department">@L["EmployeeRatings:Department"]</label>
+        <select id="employee-rating-department" class="form-select" @bind="selectedDepartment">
+            <option value="">@L["EmployeeRatings:AllDepartments"]</option>
+            @foreach (var department in DepartmentNames)
+            {
+                <option value="@department">@department</option>
+            }
+        </select>
+    </div>
+
+    @if (!isLoading && !hasError)
+    {
+        <div class="hcs-rating-stats" aria-live="polite">
+            <div class="hcs-rating-stat">
+                <strong>@people.Count</strong>
+                <span>@L["EmployeeRatings:ColleagueCount"]</span>
+            </div>
+            <div class="hcs-rating-stat">
+                <strong>@PendingTodayCount</strong>
+                <span>@L["EmployeeRatings:PendingToday"]</span>
+            </div>
+            <div class="hcs-rating-stat hcs-rating-stat--hint">
+                <i class="fa fa-clock" aria-hidden="true"></i>
+                <span>@L["EmployeeRatings:OnePerDay"]</span>
+            </div>
+        </div>
+    }
 
     @if (isLoading)
     {
@@ -51,36 +72,63 @@
         <div class="hcs-rating-grid">
             @foreach (var person in FilteredPeople)
             {
-                <article class="hcs-rating-card">
+                var ratedToday = person.Summary.MyTodayScore.HasValue;
+                var interactiveScore = person.HoverScore ?? person.Summary.MyTodayScore ?? 0;
+                var averageStars = person.Summary.ReviewCount <= 0
+                    ? 0
+                    : (int)Math.Round(person.Summary.AverageScore, MidpointRounding.AwayFromZero);
+                <article class="hcs-rating-card @(ratedToday ? "is-rated" : null)">
                     <div class="hcs-rating-card__identity">
                         @if (!string.IsNullOrWhiteSpace(person.User.AvatarUrl) && !person.AvatarFailed)
                         {
-                            <img class="hcs-rating-avatar" src="@person.User.AvatarUrl" alt="@person.User.DisplayName" @onerror="() => OnAvatarError(person)" />
+                            <img class="hcs-rating-avatar" src="@person.User.AvatarUrl" alt="" @onerror="() => OnAvatarError(person)" />
                         }
                         else
                         {
                             <span class="hcs-rating-avatar hcs-rating-avatar--fallback" aria-hidden="true">@person.Initials</span>
                         }
-                        <div class="min-w-0">
+                        <div class="hcs-rating-card__who min-w-0">
                             <h2>@person.User.DisplayName</h2>
-                            <p>@person.DepartmentName</p>
+                            @if (person.HasDepartment)
+                            {
+                                <span class="hcs-rating-chip">@person.DepartmentName</span>
+                            }
+                        </div>
+                        <div class="hcs-rating-card__scorebox" aria-label="@ScoreSummary(person)">
+                            @if (person.Summary.ReviewCount == 0)
+                            {
+                                <span class="hcs-rating-card__noscore">@L["EmployeeRatings:NoScore"]</span>
+                            }
+                            else
+                            {
+                                <div class="hcs-rating-meter" aria-hidden="true">
+                                    @foreach (var score in Enumerable.Range(1, 5))
+                                    {
+                                        <i class="@(score <= averageStars ? "fa-solid" : "fa-regular") fa-star"></i>
+                                    }
+                                </div>
+                                <strong>@person.Summary.AverageScore.ToString("0.0")</strong>
+                                <span>@person.Summary.ReviewCount @L["EmployeeRatings:Reviews"]</span>
+                            }
                         </div>
                     </div>
-                    <div class="hcs-rating-card__summary" aria-label="@($"{L["EmployeeRatings:Average"]}: {person.Summary.AverageScore:0.0}/5, {person.Summary.ReviewCount} {L["EmployeeRatings:Reviews"]}")">
-                        <span class="hcs-rating-score"><i class="fa fa-star" aria-hidden="true"></i> @person.Summary.AverageScore.ToString("0.0")/5</span>
-                        <span>@person.Summary.ReviewCount @L["EmployeeRatings:Reviews"]</span>
-                    </div>
                     <div class="hcs-rating-card__action">
-                        <span class="hcs-rating-card__action-label">@L["EmployeeRatings:RatePrompt"]</span>
+                        <div class="hcs-rating-card__action-head">
+                            <span class="hcs-rating-card__action-label">@(ratedToday ? L["EmployeeRatings:YourScore"] : L["EmployeeRatings:RatePrompt"])</span>
+                            @if (ratedToday)
+                            {
+                                <span class="hcs-rating-card__locked"><i class="fa fa-check-circle" aria-hidden="true"></i>@L["EmployeeRatings:RatedToday"]</span>
+                            }
+                        </div>
                         <div class="hcs-rating-stars" role="group" aria-label="@L["EmployeeRatings:RatePrompt"]" @onmouseleave="() => ClearHover(person)">
                             @foreach (var score in Enumerable.Range(1, 5))
                             {
                                 var starScore = score;
-                                var active = (person.HoverScore ?? 0) >= starScore;
+                                var active = interactiveScore >= starScore;
                                 <button type="button" class="hcs-rating-star @(active ? "is-active" : null)"
                                         aria-label="@($"{L["EmployeeRatings:Rate"]} {starScore}/5")"
                                         title="@($"{starScore}/5")"
-                                        disabled="@(person.IsSubmitting || person.Summary.MyTodayScore.HasValue)"
+                                        disabled="@(person.IsSubmitting || ratedToday)"
                                         @onmouseenter="() => SetHover(person, starScore)"
                                         @onfocus="() => SetHover(person, starScore)"
                                         @onclick="() => RateAsync(person, starScore)">
@@ -88,14 +136,6 @@
                                 </button>
                             }
                         </div>
-                        @if (person.Summary.MyTodayScore.HasValue)
-                        {
-                            <span class="hcs-rating-card__locked"><i class="fa fa-check-circle" aria-hidden="true"></i>@L["EmployeeRatings:AlreadyRatedToday"]</span>
-                        }
-                        else
-                        {
-                            <span class="hcs-rating-card__hint">@L["EmployeeRatings:OnePerDay"]</span>
-                        }
                     </div>
                 </article>
             }
@@ -119,10 +159,17 @@
             || string.Equals(person.DepartmentName, selectedDepartment, StringComparison.Ordinal));
 
     private IEnumerable<string> DepartmentNames => people.Select(x => x.DepartmentName)
-        .Where(x => !string.IsNullOrWhiteSpace(x) && x != "—")
+        .Where(x => !string.IsNullOrWhiteSpace(x))
         .Distinct(StringComparer.Ordinal).OrderBy(x => x);
 
+    private int PendingTodayCount => people.Count(person => !person.Summary.MyTodayScore.HasValue);
+
     protected override Task OnInitializedAsync() => LoadAsync();
+
+    private string ScoreSummary(EmployeeRatingPerson person) =>
+        person.Summary.ReviewCount == 0
+            ? L["EmployeeRatings:NoScore"]
+            : $"{L["EmployeeRatings:Average"]}: {person.Summary.AverageScore:0.0}/5, {person.Summary.ReviewCount} {L["EmployeeRatings:Reviews"]}";
 
     private async Task LoadAsync()
     {
@@ -159,9 +206,19 @@
     {
         if (person.IsSubmitting || person.Summary.MyTodayScore.HasValue) return;
         person.IsSubmitting = true;
+        person.HoverScore = score;
         try
         {
             await Work.SubmitEmployeeRatingAsync(new SubmitEmployeeRatingRequest(person.User.UserId, score));
+            person.Summary = person.Summary with
+            {
+                MyTodayScore = score,
+                ReviewCount = person.Summary.ReviewCount + 1,
+                AverageScore = person.Summary.ReviewCount <= 0
+                    ? score
+                    : Math.Round(((person.Summary.AverageScore * person.Summary.ReviewCount) + score)
+                        / (person.Summary.ReviewCount + 1), 1, MidpointRounding.AwayFromZero)
+            };
             await NotifySuccessAsync(L["EmployeeRatings:SaveSuccess"]);
             await RefreshSummariesAsync();
         }
@@ -188,7 +245,17 @@
                 ? summary : new EmployeeRatingSummaryDto(person.User.UserId, 0, 0, Enumerable.Range(1, 5).ToDictionary(x => x, _ => 0));
     }
 
-    private static void SetHover(EmployeeRatingPerson person, int score) => person.HoverScore = score;
-    private static void ClearHover(EmployeeRatingPerson person) => person.HoverScore = null;
+    private static void SetHover(EmployeeRatingPerson person, int score)
+    {
+        if (person.Summary.MyTodayScore.HasValue) return;
+        person.HoverScore = score;
+    }
+
+    private static void ClearHover(EmployeeRatingPerson person)
+    {
+        if (person.Summary.MyTodayScore.HasValue) return;
+        person.HoverScore = null;
+    }
+
     private static void OnAvatarError(EmployeeRatingPerson person) => person.AvatarFailed = true;
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 
 namespace HCS.Blazor.Client.Pages;
 
@@ -20,6 +21,7 @@ internal sealed class IdentityAdminUserDto
     public string PhoneNumber { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public bool LockoutEnabled { get; set; }
+    public bool IsLockedOut { get; set; }
     public bool TwoFactorEnabled { get; set; }
     public int AccessFailedCount { get; set; }
     public DateTimeOffset? CreationTime { get; set; }
@@ -77,6 +79,7 @@ internal sealed class IdentityAdminPermission
 {
     public string Name { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
+    public string? ParentName { get; set; }
     public bool IsGranted { get; set; }
     // Older permission-management responses do not include this field. Treat
     // an omitted value as editable and let the API enforce the final policy.
@@ -98,4 +101,30 @@ internal sealed class IdentityAdminApiException(System.Net.HttpStatusCode status
 {
     public System.Net.HttpStatusCode StatusCode { get; } = statusCode;
     public string? ResponseBody { get; } = responseBody;
+
+    public string? UserMessage
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ResponseBody)) return null;
+            try
+            {
+                using var document = JsonDocument.Parse(ResponseBody);
+                var root = document.RootElement;
+                if (root.TryGetProperty("error", out var error) &&
+                    error.TryGetProperty("message", out var message) &&
+                    message.GetString() is { Length: > 0 } text)
+                {
+                    return error.TryGetProperty("details", out var details) && details.GetString() is { Length: > 0 } extra
+                        ? $"{text} {extra}"
+                        : text;
+                }
+            }
+            catch (JsonException)
+            {
+            }
+
+            return null;
+        }
+    }
 }

@@ -15,6 +15,7 @@ public sealed class EmployeeRatingPerson
     public bool IsSubmitting { get; set; }
     public bool AvatarFailed { get; set; }
     public int? HoverScore { get; set; }
+    public bool HasDepartment => !string.IsNullOrWhiteSpace(DepartmentName);
 
     public string Initials => string.Join("", User.DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
         .TakeLast(2).Select(x => x[0])).ToUpperInvariant();
@@ -41,7 +42,8 @@ public sealed class EmployeeRatingDirectoryService(
         {
             User = user,
             DepartmentName = departments.TryGetValue(user.UserId, out var department)
-                ? department.DepartmentName ?? "—" : "—"
+                ? department.DepartmentName?.Trim() ?? string.Empty
+                : string.Empty
         }).ToList();
     }
 }

@@ -54,6 +54,19 @@ internal static class DocumentAccess
 
     public static bool IsElevated(ClaimsPrincipal principal) => ElevatedRoles.Any(principal.IsInRole);
 
+    public static bool CanActOnWorkflowTask(ClaimsPrincipal principal, Guid userId, Guid? assigneeUserId)
+    {
+        if (IsElevated(principal))
+            return true;
+        return assigneeUserId is { } assignee && assignee == userId;
+    }
+
+    public static void EnsureCanActOnWorkflowTask(ClaimsPrincipal principal, Guid userId, Guid? assigneeUserId)
+    {
+        if (!CanActOnWorkflowTask(principal, userId, assigneeUserId))
+            throw new UnauthorizedAccessException("Only the assigned user can act on this workflow step.");
+    }
+
     public static bool IsCreator(DocumentAggregate document, Guid userId) =>
         document.History.Any(x => x.Action == CreatedAction && x.ActorUserId == userId);
 

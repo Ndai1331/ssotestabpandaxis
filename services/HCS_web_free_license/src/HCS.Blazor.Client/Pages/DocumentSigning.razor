@@ -1,6 +1,6 @@
 @page "/document-signing"
 @page "/document-signing/{RelatedId:guid}"
-@attribute [Authorize(Policy = "Documents.Signing.Execute")]
+@attribute [Authorize]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject CollaborationClient Chat

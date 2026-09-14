@@ -1,326 +1,275 @@
-.hcs-admin-page {
-    max-width: 1480px;
-    margin: 0 auto;
-    color: #193b57;
-}
-
-.hcs-admin-heading {
-    display: flex;
-    justify-content: space-between;
-}
-
-.hcs-roles-page {
-    max-width: 1480px;
-}
-
-.hcs-roles-heading {
-    align-items: center;
-    margin-bottom: 1.35rem;
-}
-
-.hcs-roles-heading h1 {
-    margin: 0;
-    color: var(--hcs-color-heading, var(--color-primary));
-    font-size: var(--hcs-font-size-title, clamp(1.25rem, 1.6vw, 1.6rem));
-    font-weight: 750;
-}
-
-.hcs-roles-heading p {
-    margin: .35rem 0 0;
-    color: #70899a;
-}
-
-.hcs-roles-heading__actions {
-    display: flex;
-    align-items: center;
-    gap: .7rem;
-}
-
-.hcs-role-create,
-.hcs-roles-refresh,
-.hcs-role-permissions-save,
-.hcs-role-delete {
-    min-height: 36px;
-    max-height: 36px;
-    border-radius: 5px;
-    font-weight: 750;
-}
-
-.hcs-role-create {
-    background: var(--hcs-color-primary, #00B4A9);
-    border-color: var(--hcs-color-primary, #00B4A9);
-}
-
-.hcs-roles-refresh {
-    background: #fff;
-    border: 1px solid var(--hcs-color-primary, #00B4A9);
-    color: var(--hcs-color-primary, #00B4A9);
-}
-
 .hcs-admin-alert {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin: 0 0 1rem;
+    margin: 0;
     padding: .8rem 1rem;
-    border-radius: 5px;
-    background: #fff3e6;
+    border: 1px solid color-mix(in srgb, #d97706 28%, var(--color-gray-100, #e8eef3));
+    border-radius: var(--radius-xl, 16px);
+    background: #fff8ee;
     color: #965216;
 }
 
-.hcs-roles-layout {
+.admin-roles-layout {
     display: grid;
     grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: start;
+    gap: 1rem;
+    align-items: stretch;
+    min-height: min(36rem, calc(100dvh - 12.5rem));
 }
 
-.hcs-roles-list-card,
-.hcs-role-permissions-card {
-    border: 0;
-    border-radius: 5px;
-    box-shadow: 0 9px 28px rgb(21 59 85 / 7%);
-}
-
-.hcs-role-permissions-card {
+.admin-roles-pane {
     display: flex;
     flex-direction: column;
-    max-height: calc(100dvh - 12.5rem);
-    min-height: 32rem;
+    min-width: 0;
+    min-height: 0;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--color-gray-100, #e2eaf0);
+    border-radius: var(--radius-xl, 16px);
+    background: var(--color-white, #fff);
 }
 
-.hcs-roles-list-card ::deep .card-header,
-.hcs-role-permissions-card ::deep .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 4.2rem;
-    padding: 1.1rem 1.35rem;
-    border-bottom: 1px solid #edf2f5;
-    background: transparent;
-}
-
-.hcs-roles-list-card ::deep .card-title,
-.hcs-role-permissions-card ::deep .card-title {
+.admin-roles-pane h2 {
     margin: 0;
     color: var(--hcs-color-heading, var(--color-primary));
     font-size: var(--hcs-font-size-card-title, .98rem);
     font-weight: 750;
 }
 
-.hcs-roles-list-card ::deep .card-body,
-.hcs-role-permissions-card ::deep .card-body {
-    padding: 1.1rem 1.35rem;
-}
-
-.hcs-role-permissions-card ::deep .card-body {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.hcs-roles-list {
+.admin-roles-list {
     display: grid;
-    gap: .6rem;
+    gap: .55rem;
+    margin-top: .85rem;
+    overflow: auto;
 }
 
-.hcs-role-option {
+.admin-role-option {
     display: grid;
-    gap: .35rem;
+    gap: .4rem;
     width: 100%;
-    padding: .75rem .85rem;
-    border: 1px solid #e2eaf0;
-    border-radius: 5px;
-    background: #fff;
-    color: #355770;
+    height: auto !important;
+    min-height: 40px;
+    padding: .75rem .85rem !important;
+    border: 1px solid var(--color-gray-100, #e2eaf0);
+    border-radius: var(--radius-xl, 16px);
+    background: var(--color-white, #fff);
+    color: var(--color-gray-700, #355770);
     text-align: left;
-    transition: border-color .16s ease, background-color .16s ease, color .16s ease;
 }
 
-.hcs-role-option:hover {
-    border-color: #9aaeff;
-    background: #f5f7ff;
+.admin-role-option:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-white));
+    background: var(--color-primary-soft, #e7f8f6);
 }
 
-.hcs-role-option.is-active {
+.admin-role-option.is-active {
     border-color: var(--color-primary);
     background: var(--color-primary);
     color: #fff;
 }
 
-.hcs-role-option__name {
+.admin-role-option__name {
     overflow-wrap: anywhere;
     font-weight: 750;
 }
 
-.hcs-role-option__tags {
+.admin-role-option__tags {
     display: flex;
     flex-wrap: wrap;
     gap: .35rem;
 }
 
-.hcs-role-option__tags small {
-    padding: .12rem .4rem;
-    border-radius: 5px;
-    background: #eef2f7;
-    color: #587286;
-    font-size: .7rem;
-    font-weight: 700;
-}
-
-.hcs-role-option.is-active .hcs-role-option__tags small {
+.admin-role-option.is-active .badge {
     background: rgb(255 255 255 / 22%);
     color: #fff;
 }
 
-.hcs-role-permissions-card__subtitle {
+.admin-roles-perms {
+    max-height: calc(100dvh - 12.5rem);
+}
+
+.admin-roles-perms__head p {
     margin: .25rem 0 0;
-    color: #70899a;
+    color: var(--color-muted, #70899a);
     font-size: .82rem;
 }
 
-.hcs-role-permissions-card ::deep .card-footer {
+.admin-roles-perms__body {
     display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 1rem;
-    padding: 1rem 1.35rem 1.35rem;
-    border-top: 1px solid #edf2f5;
-    background: #fff;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: .9rem;
+    min-height: 0;
+    margin-top: .9rem;
+    overflow: hidden;
 }
 
-.hcs-role-permissions-hint {
-    margin: 0 auto 0 0;
-    color: #965216;
-    font-size: .85rem;
-}
-
-.hcs-role-permissions-save {
-    background: var(--hcs-color-primary, #00B4A9);
-    border: 1px solid var(--hcs-color-primary, #00B4A9);
-}
-
-.hcs-role-delete {
-    background: var(--hcs-color-danger, #E31E24);
-    border: 1px solid var(--hcs-color-danger, #E31E24);
-    color: #fff;
-}
-
-.hcs-roles-state {
-    display: grid;
-    place-items: center;
-    min-height: 12rem;
-    padding: 3rem 1rem;
-}
-
-.hcs-roles-state p {
-    margin: 0;
-}
-
-.hcs-role-permissions-card .hcs-permission-toolbar {
+.admin-permission-toolbar {
     display: grid;
     flex: 0 0 auto;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 1.4rem;
-    margin-bottom: 1.1rem;
+    gap: 1rem;
 }
 
-.hcs-role-permissions-card ::deep .hcs-permission-toolbar .form-control {
-    min-height: 36px;
-    border: 1px solid #dfe8ef;
-    border-radius: 5px;
-    background: #f0f5f9;
-    box-shadow: none;
-}
-
-.hcs-permission-layout {
+.admin-permission-layout {
     display: grid;
     flex: 1 1 auto;
-    grid-template-columns: 280px minmax(0, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 1rem;
     min-height: 0;
 }
 
-.hcs-permission-groups {
+.admin-permission-groups {
     display: flex;
     flex-direction: column;
-    gap: .7rem;
+    gap: .55rem;
     min-width: 0;
     min-height: 0;
     margin: 0;
-    padding: 1.1rem;
+    padding: .9rem;
     overflow-y: auto;
-    border: 1px solid #e2eaf0;
-    border-radius: 5px;
+    border: 1px solid var(--color-gray-100, #e2eaf0);
+    border-radius: var(--radius-xl, 16px);
 }
 
-.hcs-permission-groups legend {
+.admin-permission-groups legend {
     width: auto;
-    padding: 0 .55rem;
-    color: #355770;
-    font-size: 1.05rem;
+    padding: 0 .45rem;
+    color: var(--color-gray-700, #355770);
+    font-size: .95rem;
     font-weight: 700;
 }
 
-.hcs-permission-groups button {
+.admin-permission-groups button {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: .6rem;
-    min-height: 2.85rem;
-    padding: .65rem .8rem;
-    border: 1px solid #e1eaf0;
-    border-radius: 5px;
-    background: #fff;
-    color: #355770;
+    width: 100%;
+    height: auto !important;
+    min-height: 40px;
+    padding: .65rem .8rem !important;
+    border: 1px solid var(--color-gray-100, #e1eaf0);
+    border-radius: var(--radius-xl, 16px);
+    background: var(--color-white, #fff);
+    color: var(--color-gray-700, #355770);
     text-align: left;
     font-size: .92rem;
 }
 
-.hcs-permission-groups button small {
-    color: #7990a0;
+.admin-permission-groups button small {
+    color: var(--color-muted, #7990a0);
     font-size: .75rem;
     font-weight: 700;
 }
 
-.hcs-permission-groups button.is-active {
-    border-color: var(--color-secondary);
-    background: var(--color-secondary);
+.admin-permission-groups button.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
     color: #fff;
     font-weight: 750;
 }
 
-.hcs-permission-groups button.is-active small {
+.admin-permission-groups button.is-active small {
     color: rgb(255 255 255 / 80%);
 }
 
-.hcs-permission-items {
+.admin-permission-items {
     min-width: 0;
     min-height: 0;
-    padding: .35rem .2rem;
+    padding: .2rem .15rem;
     overflow-y: auto;
 }
 
-.hcs-permission-items hr {
+.admin-permission-items hr {
     margin: 1rem 0 .25rem;
-    border-color: #e2eaf0;
+    border-color: var(--color-gray-100, #e2eaf0);
 }
 
-.hcs-permission-row {
+.admin-permission-empty {
+    margin: .5rem 0 0;
+    color: var(--color-muted, #70899a);
+}
+
+.admin-permission-select-all {
+    margin-bottom: .75rem;
+}
+
+.admin-permission-table-wrap {
+    overflow: auto;
+    max-width: 100%;
+}
+
+.admin-permission-table {
+    width: 100%;
+    min-width: 28rem;
+    border-collapse: collapse;
+}
+
+.admin-permission-table th,
+.admin-permission-table td {
+    padding: .7rem .65rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-gray-100, #edf2f5);
+}
+
+.admin-permission-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--color-white, #fff);
+    color: var(--color-muted, #70899a);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-permission-table tbody tr:nth-child(odd) {
+    background: #f7f8fa;
+}
+
+.admin-permission-table .col-action {
+    width: 4.5rem;
+    text-align: center;
+}
+
+.admin-permission-table .col-action .form-check-input {
+    margin: 0;
+}
+
+.admin-permission-feature {
+    color: var(--color-gray-700, #355770);
+    font-weight: 650;
+}
+
+.admin-permission-code {
+    display: block;
+    margin-top: .15rem;
+    color: var(--color-muted, #7990a0);
+    font-size: .74rem;
+    overflow-wrap: anywhere;
+}
+
+.admin-permission-none {
+    color: #c5d0d8;
+}
+
+.admin-permission-extras {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: .7rem 0;
-    border-bottom: 1px solid #edf2f5;
+    flex-wrap: wrap;
+    gap: .4rem 1rem;
 }
 
-.hcs-role-permissions-card ::deep .form-check {
+.admin-permission-table td:first-child,
+.admin-permission-extras {
+    white-space: normal;
+}
+
+.page-admin-roles ::deep .form-check {
     display: flex;
     align-items: flex-start;
     gap: .55rem;
@@ -328,84 +277,43 @@
     min-width: 0;
 }
 
-.hcs-role-permissions-card ::deep .form-check-label {
-    color: #355770;
-    font-size: .95rem;
+.page-admin-roles ::deep .form-check-label {
+    color: var(--color-gray-700, #355770);
 }
 
-.hcs-role-permissions-card ::deep .form-check-input {
+.page-admin-roles ::deep .form-check-input,
+::deep .form-check-input {
     flex: 0 0 auto;
     width: 1.15rem;
     height: 1.15rem;
     margin-top: .15rem;
-    cursor: pointer;
-    accent-color: var(--color-secondary);
+    accent-color: var(--color-primary);
 }
 
-.hcs-role-permissions-card ::deep .form-check-input:checked {
-    background-color: var(--color-secondary);
-    border-color: var(--color-secondary);
+.page-admin-roles ::deep .form-check-input:checked,
+::deep .form-check-input:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
 }
 
-.form-check-input:checked {
-    background-color: var(--color-secondary) !important;
-    border-color: var(--color-secondary) !important;
+.admin-roles-perms__footer {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-gray-100, #edf2f5);
 }
 
-.hcs-permission-row small {
-    color: #7990a0;
-    font-size: .76rem;
-    text-align: right;
+.admin-roles-hint {
+    margin: 0 auto 0 0;
+    color: #965216;
+    font-size: .85rem;
 }
 
-.hcs-role-permissions-card .hcs-permission-layout {
-    min-height: 0;
-}
-
-.hcs-role-permissions-card .hcs-permission-items {
-    min-width: 0;
-}
-
-.hcs-role-permissions-card .hcs-permission-row small {
-    overflow-wrap: anywhere;
-}
-
-.hcs-role-create-modal ::deep .modal-content {
-    border: 0;
-    border-radius: 5px;
-    box-shadow: 0 24px 70px rgb(21 57 84 / 25%);
-}
-
-.hcs-role-create-modal ::deep .modal-header,
-.hcs-role-create-modal ::deep .modal-body,
-.hcs-role-create-modal ::deep .modal-footer {
-    padding-inline: 1.85rem;
-}
-
-.hcs-role-create-modal ::deep .modal-header {
-    padding-top: 1.55rem;
-    border-bottom: 0;
-}
-
-.hcs-role-create-modal ::deep .modal-body {
-    padding-top: .35rem;
-}
-
-.hcs-role-create-modal ::deep .modal-footer {
-    gap: .7rem;
-    padding-bottom: 1.55rem;
-    border-top: 0;
-}
-
-.hcs-role-create-modal ::deep .form-control {
-    min-height: 3rem;
-    border-radius: 5px;
-    background: #f0f5f9;
-    border-color: #dfe8ef;
-    box-shadow: none;
-}
-
-.hcs-role-create-flags {
+.admin-role-create-flags {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem 1.5rem;
@@ -413,52 +321,17 @@
 }
 
 @media (max-width: 900px) {
-    .hcs-roles-heading {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .hcs-roles-heading__actions {
-        width: 100%;
-    }
-
-    .hcs-roles-heading__actions ::deep .btn {
-        flex: 1 1 0;
-    }
-
-    .hcs-roles-refresh,
-    .hcs-role-create {
-        width: 100%;
-    }
-
-    .hcs-roles-layout {
+    .admin-roles-layout,
+    .admin-permission-toolbar,
+    .admin-permission-layout {
         grid-template-columns: 1fr;
     }
 
-    .hcs-roles-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .admin-roles-perms {
+        max-height: none;
     }
 
-    .hcs-role-permissions-card .hcs-permission-toolbar,
-    .hcs-permission-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .hcs-permission-groups {
+    .admin-permission-groups {
         max-height: 14rem;
-        overflow-y: auto;
-    }
-}
-
-@media (max-width: 540px) {
-    .hcs-roles-list {
-        grid-template-columns: 1fr;
-    }
-
-    .hcs-role-create-modal ::deep .modal-header,
-    .hcs-role-create-modal ::deep .modal-body,
-    .hcs-role-create-modal ::deep .modal-footer {
-        padding-inline: 1.1rem;
     }
 }

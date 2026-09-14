@@ -5,6 +5,8 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using HCS.Blazor.Client.Services;
@@ -14,6 +16,11 @@ namespace HCS.Blazor.Client.Pages;
 
 internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
     public Task<IdentityAdminPagedResult<IdentityAdminUserDto>> GetUsersAsync(
         string? filter,
         int skipCount,
@@ -46,41 +53,30 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
     {
         var result = await GetAsync<ListResult<IdentityAdminRoleDto>>(
             "api/identity/users/assignable-roles", cancellationToken);
-        return result.Items;
+        return result.Items ?? [];
     }
 
-    public Task<IdentityAdminUserDto> CreateUserAsync(IdentityAdminUserForm form, CancellationToken cancellationToken = default) =>
-        SendAsync<IdentityAdminUserDto>(HttpMethod.Post, "api/identity/users", new
-        {
-            userName = form.UserName.Trim(),
-            password = form.Password,
-            surname = form.Surname.Trim(),
-            name = form.Name.Trim(),
-            email = form.Email.Trim(),
-            phoneNumber = NullIfWhiteSpace(form.PhoneNumber),
-            isActive = form.IsActive,
-            lockoutEnabled = form.LockoutEnabled,
-            roleNames = form.RoleNames.ToArray()
-        }, cancellationToken);
+    public Task<IdentityAdminUserDto> GetUserAsync(Guid id, CancellationToken cancellationToken = default) =>
+        GetAsync<IdentityAdminUserDto>($"api/identity/users/{id:D}", cancellationToken);
 
-    public Task<IdentityAdminUserDto> UpdateUserAsync(
+    public Task<IdentityAdminUserDto> CreateUserAsync(IdentityAdminUserForm form, CancellationToken cancellationToken = default) =>
+        SendAsync<IdentityAdminUserDto>(HttpMethod.Post, "api/identity/users", UserPayload(form, null, includeRoleNames: true), cancellationToken);
+
+    public async Task<IdentityAdminUserDto> UpdateUserAsync(
         Guid id,
         IdentityAdminUserForm form,
         string concurrencyStamp,
-        CancellationToken cancellationToken = default) =>
-        SendAsync<IdentityAdminUserDto>(HttpMethod.Put, $"api/identity/users/{id:D}", new
+        CancellationToken cancellationToken = default)
+    {
+        var updated = await SendAsync<IdentityAdminUserDto>(
+            HttpMethod.Put, $"api/identity/users/{id:D}", UserPayload(form, concurrencyStamp, includeRoleNames: false), cancellationToken);
+        if (updated is null || updated.Id == Guid.Empty)
         {
-            userName = form.UserName.Trim(),
-            password = NullIfWhiteSpace(form.Password),
-            surname = form.Surname.Trim(),
-            name = form.Name.Trim(),
-            email = form.Email.Trim(),
-            phoneNumber = NullIfWhiteSpace(form.PhoneNumber),
-            isActive = form.IsActive,
-            lockoutEnabled = form.LockoutEnabled,
-            concurrencyStamp,
-            roleNames = form.RoleNames.ToArray()
-        }, cancellationToken);
+            return await GetUserAsync(id, cancellationToken);
+        }
+
+        return updated;
+    }
 
     public Task DeleteUserAsync(Guid id, CancellationToken cancellationToken = default) =>
         DeleteAsync($"api/identity/users/{id:D}", cancellationToken);
@@ -92,7 +88,7 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
     {
         var result = await GetAsync<ListResult<IdentityAdminRoleDto>>(
             $"api/identity/users/{userId:D}/roles", cancellationToken);
-        return result.Items;
+        return result.Items ?? [];
     }
 
     public Task UpdateUserRolesAsync(Guid userId, IEnumerable<string> roleNames, CancellationToken cancellationToken = default) =>
@@ -122,9 +118,9 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
 
     public async Task<List<IdentityAdminUserMappingDto>> GetUserMappingsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var result = await GetAsync<ListResult<IdentityAdminUserMappingDto>>(
+        var result = await GetAsync<IdentityAdminPagedResult<IdentityAdminUserMappingDto>>(
             $"api/organization/user-mappings?userId={userId:D}&skipCount=0&maxResultCount=100", cancellationToken);
-        return result.Items;
+        return result.Items ?? [];
     }
 
     public Task<IdentityAdminUserMappingDto> CreateUserMappingAsync(
@@ -146,12 +142,13 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         Guid userId,
         Guid departmentId,
         Guid? positionId,
+        Guid? unitId = null,
         CancellationToken cancellationToken = default) =>
         SendAsync<IdentityAdminUserMappingDto>(HttpMethod.Put, $"api/organization/user-mappings/{mappingId:D}", new
         {
             userId,
             departmentId,
-            unitId = (Guid?)null,
+            unitId,
             positionId,
             isPrimary = true
         }, cancellationToken);
@@ -163,22 +160,21 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
     {
         using var response = await CreateClient().GetAsync(uri, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
-        return await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancellationToken)
+        return await ReadBodyAsync<T>(response, cancellationToken)
             ?? throw new IdentityAdminApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
     }
 
     private async Task<T> SendAsync<T>(HttpMethod method, string uri, object payload, CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(method, uri) { Content = JsonContent.Create(payload) };
+        using var request = new HttpRequestMessage(method, uri) { Content = JsonContent.Create(payload, options: JsonOptions) };
         using var response = await CreateClient().SendAsync(request, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
-        return await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancellationToken)
-            ?? throw new IdentityAdminApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+        return (await ReadBodyAsync<T>(response, cancellationToken))!;
     }
 
     private async Task SendAsync(HttpMethod method, string uri, object payload, CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(method, uri) { Content = JsonContent.Create(payload) };
+        using var request = new HttpRequestMessage(method, uri) { Content = JsonContent.Create(payload, options: JsonOptions) };
         using var response = await CreateClient().SendAsync(request, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
     }
@@ -214,6 +210,45 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
             .Append("&maxResultCount=").Append(Math.Clamp(maxResultCount, 1, 100));
         return query.ToString();
     }
+
+    private static async Task<T?> ReadBodyAsync<T>(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        if (response.StatusCode == HttpStatusCode.NoContent)
+        {
+            return default;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return default;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(body, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            // Identity sometimes returns 200 with a body the list DTO cannot bind
+            // (extra properties, date formats). Treat as empty so callers can GET.
+            return default;
+        }
+    }
+
+    private static object UserPayload(IdentityAdminUserForm form, string? concurrencyStamp, bool includeRoleNames) => new
+    {
+        userName = form.UserName.Trim(),
+        password = NullIfWhiteSpace(form.Password),
+        surname = form.Surname.Trim(),
+        name = form.Name.Trim(),
+        email = form.Email.Trim(),
+        phoneNumber = NullIfWhiteSpace(form.PhoneNumber),
+        isActive = form.IsActive,
+        lockoutEnabled = form.LockoutEnabled,
+        concurrencyStamp = string.IsNullOrWhiteSpace(concurrencyStamp) ? null : concurrencyStamp,
+        roleNames = includeRoleNames ? form.RoleNames.ToArray() : null
+    };
 
     private static string? NullIfWhiteSpace(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 

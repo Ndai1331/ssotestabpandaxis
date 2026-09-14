@@ -7,7 +7,7 @@ namespace HCS.DocumentService.Controllers;
 [ApiController, Authorize, Route("api/signing")]
 public sealed class SigningController(ISigningAppService signing, ISigningKpiReportService signingKpi) : ControllerBase
 {
-    [HttpGet("queue"), Authorize(Policy = Documents.DocumentPermissions.SigningExecute)]
+    [HttpGet("queue")]
     public Task<IReadOnlyList<SigningQueueItemDto>> GetQueue(CancellationToken cancellationToken) =>
         signing.GetQueueAsync(cancellationToken);
 
@@ -36,9 +36,9 @@ public sealed class SigningController(ISigningAppService signing, ISigningKpiRep
             layoutImageBase64, apiTimeoutSeconds, signWidth, signHeight, allowElectronicSign, allowDigitalSign, requireOtp, credentialId);
         return await signing.ConfigureCredentialAsync(input, userId, cancellationToken);
     }
-    [HttpPost("attempts"), Authorize(Policy = Documents.DocumentPermissions.SigningExecute)]
+    [HttpPost("attempts")]
     public Task<SigningAttemptDto> Sign(SignDocumentRequest input, CancellationToken cancellationToken) => signing.SignAsync(input, cancellationToken);
-    [HttpGet("reports/documents/{documentId:guid}"), Authorize(Policy = Documents.DocumentPermissions.SigningReport)]
+    [HttpGet("reports/documents/{documentId:guid}")]
     public Task<SigningReportDto> Report(Guid documentId, CancellationToken cancellationToken) => signing.GetReportAsync(documentId, cancellationToken);
     [HttpGet("kpi"), Authorize(Policy = Documents.DocumentPermissions.SigningReport)]
     public Task<SigningKpiReportDto> GetKpi([FromQuery] GetSigningKpiInput input, CancellationToken cancellationToken) =>

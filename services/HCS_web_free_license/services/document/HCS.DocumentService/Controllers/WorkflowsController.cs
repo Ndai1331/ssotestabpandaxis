@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HCS.DocumentService.Controllers;
 
-[ApiController, Authorize(Policy = Documents.DocumentPermissions.WorkflowView), Route("api/workflows")]
+[ApiController, Authorize, Route("api/workflows")]
 public sealed class WorkflowsController(IWorkflowAppService workflows) : ControllerBase
 {
     [HttpGet("kinds")]
@@ -90,9 +90,9 @@ public sealed class WorkflowsController(IWorkflowAppService workflows) : Control
     [HttpGet("definitions/{id:guid}/assignee-candidates"), Authorize(Policy = Documents.DocumentPermissions.WorkflowStart)]
     public Task<IReadOnlyList<WorkflowStepCandidateGroupDto>> GetAssigneeCandidates(Guid id, CancellationToken cancellationToken) =>
         workflows.GetAssigneeCandidatesAsync(id, cancellationToken);
-    [HttpPost("tasks/{taskId:guid}/decision"), Authorize(Policy = Documents.DocumentPermissions.WorkflowDecide)]
+    [HttpPost("tasks/{taskId:guid}/decision")]
     public Task<WorkflowInstanceDto> Decide(Guid taskId, DecideApprovalTaskRequest input, CancellationToken cancellationToken) => workflows.DecideAsync(taskId, input, cancellationToken);
-    [HttpPost("tasks/{taskId:guid}/extend"), Authorize(Policy = Documents.DocumentPermissions.WorkflowDecide)]
+    [HttpPost("tasks/{taskId:guid}/extend")]
     public Task<WorkflowInstanceDto> ExtendDueDate(Guid taskId, ExtendWorkflowDueDateRequest input, CancellationToken cancellationToken) => workflows.ExtendDueDateAsync(taskId, input, cancellationToken);
     [HttpPost("instances/{id:guid}/resubmit"), Authorize(Policy = Documents.DocumentPermissions.WorkflowStart)]
     public Task<WorkflowInstanceDto> Resubmit(Guid id, [FromBody] string idempotencyKey, CancellationToken cancellationToken) =>

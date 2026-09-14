@@ -1,0 +1,38 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Localization
+@inject NavigationManager Navigation
+@inject IStringLocalizer<HCSResource> L
+
+<nav class="hcs-rating-subnav" aria-label="@L["Feature:EmployeeRatings"]">
+    <AuthorizeView Policy="WorkManagement.EmployeeRatings">
+        <Authorized>
+            <a class="hcs-rating-subnav__link @(IsRate ? "is-active" : null)" href="/employee-ratings" aria-current="@(IsRate ? "page" : null)">
+                <i class="fa fa-star-half-stroke" aria-hidden="true"></i>@L["EmployeeRatings:NavRate"]
+            </a>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="WorkManagement.EmployeeRatings.Management">
+        <Authorized>
+            <a class="hcs-rating-subnav__link @(IsList ? "is-active" : null)" href="/administration/employee-ratings" aria-current="@(IsList ? "page" : null)">
+                <i class="fa fa-star" aria-hidden="true"></i>@L["EmployeeRatings:NavList"]
+            </a>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Policy="WorkManagement.EmployeeRatings.Dashboard">
+        <Authorized>
+            <a class="hcs-rating-subnav__link @(IsDashboard ? "is-active" : null)" href="/administration/employee-ratings-dashboard" aria-current="@(IsDashboard ? "page" : null)">
+                <i class="fa fa-chart-pie" aria-hidden="true"></i>@L["EmployeeRatings:NavDashboard"]
+            </a>
+        </Authorized>
+    </AuthorizeView>
+</nav>
+
+@code {
+    private string Path => "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('#', '?')[0].Trim('/');
+
+    private bool IsRate => string.Equals(Path, "/employee-ratings", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsDashboard => Path.StartsWith("/administration/employee-ratings-dashboard", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsList => Path.StartsWith("/administration/employee-ratings", StringComparison.OrdinalIgnoreCase) && !IsDashboard;
+}

@@ -16,21 +16,20 @@
 
 <AuthorizeView Roles="admin">
     <Authorized>
-        <main class="hcs-admin-page hcs-roles-page">
-            <header class="hcs-admin-heading hcs-roles-heading">
-                <div>
-                    <h1>@L["Roles:Title"]</h1>
-                    <p>@L["Roles:Description"]</p>
+        <section class="page page-wf page-admin-roles" aria-labelledby="roles-title">
+            <div class="page-head">
+                <h1 id="roles-title">@L["Roles:Title"]</h1>
+                <div class="page-actions">
+                    <button class="btn btn-outline" type="button" @onclick="LoadRolesAsync" disabled="@isLoading">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+                        @L["Catalog:Refresh"]
+                    </button>
+                    <button class="btn btn-primary" type="button" @onclick="OpenCreateRoleAsync" disabled="@isCreatingRole">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        @L["Roles:Create"]
+                    </button>
                 </div>
-                <div class="hcs-roles-heading__actions">
-                    <Button Color="Color.Primary" Class="hcs-role-create" Clicked="OpenCreateRoleAsync" Disabled="@isCreatingRole">
-                        <i class="fa fa-plus" aria-hidden="true"></i> @L["Roles:Create"]
-                    </Button>
-                    <Button Color="Color.Light" Class="hcs-roles-refresh" Clicked="LoadRolesAsync" Disabled="@isLoading">
-                        <i class="fa fa-rotate" aria-hidden="true"></i> @L["Roles:Refresh"]
-                    </Button>
-                </div>
-            </header>
+            </div>
 
             @if (!string.IsNullOrWhiteSpace(errorMessage))
             {
@@ -38,77 +37,63 @@
                     <span>@errorMessage</span>
                     @if (sessionExpired)
                     {
-                        <Button Color="Color.Primary" Size="Size.Small" Clicked="NavigateToLogin">@L["Roles:LoginAgain"]</Button>
+                        <button class="btn btn-primary" type="button" @onclick="NavigateToLogin">@L["Roles:LoginAgain"]</button>
                     }
                     else
                     {
-                        <Button Color="Color.Light" Size="Size.Small" Clicked="LoadRolesAsync">@L["Roles:Retry"]</Button>
+                        <button class="btn btn-outline" type="button" @onclick="LoadRolesAsync">@L["Roles:Retry"]</button>
                     }
                 </div>
             }
 
             @if (isLoading && roles.Count == 0)
             {
-                <section class="hcs-roles-state hcs-loading" aria-live="polite">
-                    <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
-                    <p>@L["Roles:LoadingRoles"]</p>
-                </section>
+                <DocsEmpty Loading="true" Title="@L["Roles:LoadingRoles"]" />
             }
             else if (roles.Count == 0)
             {
-                <section class="hcs-roles-state hcs-empty">
-                    <i class="fa fa-shield-halved" aria-hidden="true"></i>
-                    <h2>@L["Roles:EmptyTitle"]</h2>
-                    <p>@L["Roles:EmptyDescription"]</p>
-                </section>
+                <DocsEmpty Title="@L["Roles:EmptyTitle"]" Hint="@L["Roles:EmptyDescription"]" />
             }
             else
             {
-                <div class="hcs-roles-layout">
-                    <Card Class="hcs-roles-list-card">
-                        <CardHeader>
-                            <CardTitle>@L["Roles:ListTitle"]</CardTitle>
-                        </CardHeader>
-                        <CardBody>
-                            <div class="hcs-roles-list" aria-label='@L["Roles:ListTitle"]'>
-                                @foreach (var role in roles)
-                                {
-                                    <button type="button" class="hcs-role-option @(selectedRoleName == role.Name ? "is-active" : null)" @onclick="@(() => LoadPermissionsAsync(role.Name))">
-                                        <span class="hcs-role-option__name">@role.Name</span>
-                                        <span class="hcs-role-option__tags">
-                                            @if (role.IsStatic)
-                                            {
-                                                <small>@L["Roles:Static"]</small>
-                                            }
-                                            @if (role.IsDefault)
-                                            {
-                                                <small>@L["Roles:Default"]</small>
-                                            }
-                                            @if (role.IsPublic)
-                                            {
-                                                <small>@L["Roles:Public"]</small>
-                                            }
-                                        </span>
-                                    </button>
-                                }
-                            </div>
-                        </CardBody>
-                    </Card>
+                <div class="admin-roles-layout">
+                    <aside class="admin-roles-pane" aria-label='@L["Roles:ListTitle"]'>
+                        <h2>@L["Roles:ListTitle"]</h2>
+                        <div class="admin-roles-list">
+                            @foreach (var role in roles)
+                            {
+                                <button type="button" class="admin-role-option @(selectedRoleName == role.Name ? "is-active" : null)" @onclick="@(() => LoadPermissionsAsync(role.Name))">
+                                    <span class="admin-role-option__name">@role.Name</span>
+                                    <span class="admin-role-option__tags">
+                                        @if (role.IsStatic)
+                                        {
+                                            <span class="badge">@L["Roles:Static"]</span>
+                                        }
+                                        @if (role.IsDefault)
+                                        {
+                                            <span class="badge badge-info">@L["Roles:Default"]</span>
+                                        }
+                                        @if (role.IsPublic)
+                                        {
+                                            <span class="badge badge-muted">@L["Roles:Public"]</span>
+                                        }
+                                    </span>
+                                </button>
+                            }
+                        </div>
+                    </aside>
 
-                    <Card Class="hcs-role-permissions-card">
-                        <CardHeader>
+                    <section class="admin-roles-pane admin-roles-perms">
+                        <header class="admin-roles-perms__head">
                             <div>
-                                <CardTitle>@L["Roles:PermissionsTitle"]</CardTitle>
-                                <p class="hcs-role-permissions-card__subtitle">@selectedRoleName</p>
+                                <h2>@L["Roles:PermissionsTitle"]</h2>
+                                <p>@selectedRoleName</p>
                             </div>
-                        </CardHeader>
-                        <CardBody>
+                        </header>
+                        <div class="admin-roles-perms__body">
                             @if (isLoadingPermissions)
                             {
-                                <section class="hcs-roles-state hcs-loading" aria-live="polite">
-                                    <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
-                                    <p>@L["Roles:LoadingPermissions"]</p>
-                                </section>
+                                <DocsEmpty Loading="true" Compact="true" Title="@L["Roles:LoadingPermissions"]" />
                             }
                             else if (!string.IsNullOrWhiteSpace(permissionErrorMessage) && permissionGroups.Count == 0)
                             {
@@ -116,11 +101,11 @@
                                     <span>@permissionErrorMessage</span>
                                     @if (permissionSessionExpired)
                                     {
-                                        <Button Color="Color.Primary" Size="Size.Small" Clicked="NavigateToLogin">@L["Roles:LoginAgain"]</Button>
+                                        <button class="btn btn-primary" type="button" @onclick="NavigateToLogin">@L["Roles:LoginAgain"]</button>
                                     }
                                     else
                                     {
-                                        <Button Color="Color.Light" Size="Size.Small" Clicked="@(() => LoadPermissionsAsync(selectedRoleName!))">@L["Roles:Retry"]</Button>
+                                        <button class="btn btn-outline" type="button" @onclick="@(() => LoadPermissionsAsync(selectedRoleName!))">@L["Roles:Retry"]</button>
                                     }
                                 </div>
                             }
@@ -132,15 +117,17 @@
                                         <span>@permissionErrorMessage</span>
                                     </div>
                                 }
-                                <div class="hcs-permission-toolbar">
-                                    <TextInput @bind-Value="permissionFilter" Placeholder='@L["Roles:SearchPermissions"]' Autocomplete="off" name="hcsRolePermissionFilter" />
+                                <div class="admin-permission-toolbar">
+                                    <label class="sr-only" for="roles-permission-filter">@L["Roles:SearchPermissions"]</label>
+                                    <input class="input" id="roles-permission-filter" type="search" autocomplete="off"
+                                           placeholder="@L["Roles:SearchPermissions"]" @bind="permissionFilter" @bind:event="oninput" />
                                     <label class="form-check">
                                         <input class="form-check-input" type="checkbox" checked="@AllPermissionsGranted" disabled="@(!HasAnyEditablePermissions || IsAdminRole)" @onchange="OnToggleAllPermissions" />
                                         <span class="form-check-label">@L["Roles:GrantAll"]</span>
                                     </label>
                                 </div>
-                                <div class="hcs-permission-layout">
-                                    <fieldset class="hcs-permission-groups">
+                                <div class="admin-permission-layout">
+                                    <fieldset class="admin-permission-groups">
                                         <legend>@L["Roles:PermissionGroups"]</legend>
                                         @foreach (var group in permissionGroups)
                                         {
@@ -150,65 +137,152 @@
                                             </button>
                                         }
                                     </fieldset>
-                                    <section class="hcs-permission-items" aria-label='@L["Roles:PermissionList"]'>
+                                    <div class="admin-permission-items" aria-label='@L["Roles:PermissionList"]'>
                                         @if (SelectedPermissionGroup is null)
                                         {
-                                        <p class="hcs-empty-state">@L["Roles:SelectGroup"]</p>
+                                            <p class="admin-permission-empty">@L["Roles:SelectGroup"]</p>
                                         }
                                         else
                                         {
-                                            <label class="form-check">
+                                            <label class="form-check admin-permission-select-all">
                                                 <input class="form-check-input" type="checkbox" checked="@SelectedGroupAllGranted" disabled="@(!HasEditablePermissions(SelectedPermissionGroup) || IsAdminRole)" @onchange="OnToggleSelectedGroup" />
                                                 <span class="form-check-label">@L["Roles:SelectAll"]</span>
                                             </label>
-                                            <hr />
-                                            @foreach (var permission in VisiblePermissions)
+                                            @if (VisibleFeatures.Count == 0)
                                             {
-                                                <div class="hcs-permission-row" @key="permission.Name">
-                                                    <label class="form-check">
-                                                        <input class="form-check-input" type="checkbox" checked="@permission.IsGranted" disabled="@(!permission.IsEditable || IsAdminRole)" @onchange="@(e => OnPermissionChanged(permission, e))" />
-                                                        <span class="form-check-label">@PermissionLabel(permission.Name, permission.DisplayName)</span>
-                                                    </label>
-                                                    <small>@permission.Name</small>
-                                                </div>
+                                                <p class="admin-permission-empty">@L["Roles:NoMatchingPermissions"]</p>
+                                            }
+                                            else
+                                            {
+                                            <div class="admin-permission-table-wrap">
+                                            <table class="admin-permission-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">@L["Roles:Feature"]</th>
+                                                        <th class="col-action" scope="col">@L["Roles:FeatureAccess"]</th>
+                                                        @if (ShowCrudColumns)
+                                                        {
+                                                            <th class="col-action" scope="col">@L["Roles:ActionCreate"]</th>
+                                                            <th class="col-action" scope="col">@L["Roles:ActionUpdate"]</th>
+                                                            <th class="col-action" scope="col">@L["Roles:ActionDelete"]</th>
+                                                        }
+                                                        @if (ShowExtraColumn)
+                                                        {
+                                                            <th scope="col">@L["Roles:OtherActions"]</th>
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                @foreach (var feature in VisibleFeatures)
+                                                {
+                                                    <tr @key="feature.Key">
+                                                        <td>
+                                                            <div class="admin-permission-feature">@feature.DisplayName</div>
+                                                            <span class="admin-permission-code">@feature.Name</span>
+                                                        </td>
+                                                        <td class="col-action">
+                                                            @if (feature.Access is null)
+                                                            {
+                                                                <span class="admin-permission-none">—</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <input class="form-check-input" type="checkbox" checked="@feature.Access.IsGranted" disabled="@(!CanEdit(feature.Access) || IsAdminRole)" title="@L["Roles:FeatureAccess"]" aria-label="@($"{feature.DisplayName} · {L["Roles:FeatureAccess"]}")" @onchange="@(e => OnFeatureAccessChanged(feature, e))" />
+                                                            }
+                                                        </td>
+                                                        @if (ShowCrudColumns)
+                                                        {
+                                                            <td class="col-action">
+                                                                @if (feature.Create is null)
+                                                                {
+                                                                    <span class="admin-permission-none">—</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Create.IsGranted" disabled="@(!CanEdit(feature.Create) || IsAdminRole)" title="@L["Roles:ActionCreate"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionCreate"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Create, e))" />
+                                                                }
+                                                            </td>
+                                                            <td class="col-action">
+                                                                @if (feature.Update is null)
+                                                                {
+                                                                    <span class="admin-permission-none">—</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Update.IsGranted" disabled="@(!CanEdit(feature.Update) || IsAdminRole)" title="@L["Roles:ActionUpdate"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionUpdate"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Update, e))" />
+                                                                }
+                                                            </td>
+                                                            <td class="col-action">
+                                                                @if (feature.Delete is null)
+                                                                {
+                                                                    <span class="admin-permission-none">—</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Delete.IsGranted" disabled="@(!CanEdit(feature.Delete) || IsAdminRole)" title="@L["Roles:ActionDelete"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionDelete"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Delete, e))" />
+                                                                }
+                                                            </td>
+                                                        }
+                                                        @if (ShowExtraColumn)
+                                                        {
+                                                            <td>
+                                                                @if (feature.Extra.Count == 0)
+                                                                {
+                                                                    <span class="admin-permission-none">—</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <div class="admin-permission-extras">
+                                                                        @foreach (var extra in feature.Extra)
+                                                                        {
+                                                                            <label class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" checked="@extra.Permission.IsGranted" disabled="@(!CanEdit(extra.Permission) || IsAdminRole)" @onchange="@(e => OnFeatureActionChanged(feature, extra.Permission, e))" />
+                                                                                <span class="form-check-label">@extra.Label</span>
+                                                                            </label>
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                            </td>
+                                                        }
+                                                    </tr>
+                                                }
+                                                </tbody>
+                                            </table>
+                                            </div>
                                             }
                                         }
-                                    </section>
+                                    </div>
                                 </div>
                             }
-                        </CardBody>
-                        <CardFooter>
+                        </div>
+                        <footer class="admin-roles-perms__footer">
                             @if (IsAdminRole)
                             {
-                                <p class="hcs-role-permissions-hint">@L["Roles:AdminImmutable"]</p>
+                                <p class="admin-roles-hint">@L["Roles:AdminImmutable"]</p>
                             }
                             @if (CanDeleteSelectedRole)
                             {
-                                <Button Color="Color.Danger" Class="hcs-role-delete me-2" Clicked="DeleteSelectedRoleAsync" Loading="@isDeleting" Disabled="@(isDeleting || isSaving || isLoadingPermissions)">
-                                    <i class="fa fa-trash" aria-hidden="true"></i> @L["Roles:Delete"]
-                                </Button>
+                                <button class="btn btn-danger" type="button" @onclick="DeleteSelectedRoleAsync" disabled="@(isDeleting || isSaving || isLoadingPermissions)">@L["Roles:Delete"]</button>
                             }
-                            <Button Color="Color.Primary" Class="hcs-role-permissions-save" Clicked="SavePermissionsAsync" Loading="@isSaving" Disabled="@(isSaving || isDeleting || isLoadingPermissions || string.IsNullOrWhiteSpace(selectedRoleName) || IsAdminRole)">
-                                <i class="fa fa-floppy-disk" aria-hidden="true"></i> @L["Roles:SavePermissions"]
-                            </Button>
-                        </CardFooter>
-                    </Card>
+                            <button class="btn btn-primary" type="button" @onclick="SavePermissionsAsync" disabled="@(isSaving || isDeleting || isLoadingPermissions || string.IsNullOrWhiteSpace(selectedRoleName) || IsAdminRole)">@L["Roles:SavePermissions"]</button>
+                        </footer>
+                    </section>
                 </div>
             }
-        </main>
+        </section>
     </Authorized>
     <NotAuthorized>
-        <main class="hcs-admin-page"><div class="hcs-admin-alert" role="alert">@L["Roles:NoAdminPermission"]</div></main>
+        <section class="page page-wf"><div class="hcs-admin-alert" role="alert">@L["Roles:NoAdminPermission"]</div></section>
     </NotAuthorized>
 </AuthorizeView>
 
 <Modal @ref="createRoleModal">
-    <ModalContent Centered="true" Class="hcs-role-create-modal">
-        <ModalHeader>
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
             <ModalTitle>@L["Roles:CreateTitle"]</ModalTitle>
             <CloseButton Clicked="CloseCreateRoleAsync" />
         </ModalHeader>
-        <ModalBody>
+        <ModalBody Class="hcs-catalog-modal__body">
             @if (!string.IsNullOrWhiteSpace(createRoleErrorMessage))
             {
                 <div class="hcs-admin-alert" role="alert">@createRoleErrorMessage</div>
@@ -217,14 +291,14 @@
                 <FieldLabel>@L["Roles:Name"] *</FieldLabel>
                 <HcsIsolatedTextInput @bind-Value="roleForm.Name" Name="hcsRoleName" Autofocus="true" Placeholder='@L["Roles:NamePlaceholder"].Value' />
             </Field>
-            <div class="hcs-role-create-flags">
+            <div class="admin-role-create-flags">
                 <Check TValue="bool" @bind-Value="roleForm.IsDefault">@L["Roles:Default"]</Check>
                 <Check TValue="bool" @bind-Value="roleForm.IsPublic">@L["Roles:Public"]</Check>
             </div>
         </ModalBody>
-        <ModalFooter>
-            <Button Color="Color.Secondary" Class="hcs-modal-cancel" Clicked="CloseCreateRoleAsync">@L["Roles:Cancel"]</Button>
-            <Button Color="Color.Primary" Class="hcs-modal-save" Clicked="CreateRoleAsync" Loading="@isCreatingRole" Disabled="@isCreatingRole">@L["Roles:CreateSubmit"]</Button>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <button class="btn btn-outline" type="button" @onclick="CloseCreateRoleAsync">@L["Roles:Cancel"]</button>
+            <button class="btn btn-primary" type="button" @onclick="CreateRoleAsync" disabled="@isCreatingRole">@L["Roles:CreateSubmit"]</button>
         </ModalFooter>
     </ModalContent>
 </Modal>
@@ -253,14 +327,16 @@
 
     private bool CanDeleteSelectedRole => SelectedRole is { } role && CanDelete(role);
 
+    private IReadOnlyList<PermissionFeatureRow> VisibleFeatures => GetVisibleFeatures();
+
+    private bool ShowCrudColumns =>
+        VisibleFeatures.Any(feature => feature.Create is not null || feature.Update is not null || feature.Delete is not null);
+
+    private bool ShowExtraColumn =>
+        VisibleFeatures.Any(feature => feature.Extra.Count > 0);
+
     private IdentityAdminPermissionGroup? SelectedPermissionGroup =>
         permissionGroups.FirstOrDefault(group => group.Name == selectedPermissionGroup);
-
-    private IEnumerable<IdentityAdminPermission> VisiblePermissions =>
-        (SelectedPermissionGroup?.Permissions ?? []).Where(permission =>
-            string.IsNullOrWhiteSpace(permissionFilter) ||
-            permission.DisplayName.Contains(permissionFilter, StringComparison.OrdinalIgnoreCase) ||
-            permission.Name.Contains(permissionFilter, StringComparison.OrdinalIgnoreCase));
 
     private bool IsAdminRole =>
         string.Equals(selectedRoleName, "admin", StringComparison.OrdinalIgnoreCase);
@@ -340,7 +416,7 @@
         try
         {
             var result = await IdentityClient.GetRolePermissionsAsync(roleName);
-            permissionGroups.AddRange(result.Groups);
+            permissionGroups.AddRange(PermissionMenuAligner.Align(result.Groups, key => L[key].Value));
             selectedPermissionGroup = permissionGroups.FirstOrDefault(group => group.Name == previousGroup)?.Name
                 ?? permissionGroups.FirstOrDefault()?.Name;
         }
@@ -379,11 +455,74 @@
         return InvokeAsync(StateHasChanged);
     }
 
-    private Task OnPermissionChanged(IdentityAdminPermission permission, ChangeEventArgs args)
+    private IReadOnlyList<PermissionFeatureRow> GetVisibleFeatures()
     {
-        if (permission.IsEditable && !IsAdminRole)
+        var features = PermissionFeatureGrouper.Group(
+            SelectedPermissionGroup?.Permissions ?? [],
+            PermissionLabel);
+
+        if (string.IsNullOrWhiteSpace(permissionFilter))
         {
-            permission.IsGranted = CheckboxValue(args);
+            return features;
+        }
+
+        return features.Where(FeatureMatchesFilter).ToList();
+    }
+
+    private bool FeatureMatchesFilter(PermissionFeatureRow feature) =>
+        MatchesFilter(feature.DisplayName) ||
+        MatchesFilter(feature.Name) ||
+        MatchesPermission(feature.Access) ||
+        MatchesPermission(feature.Create) ||
+        MatchesPermission(feature.Update) ||
+        MatchesPermission(feature.Delete) ||
+        feature.Extra.Any(extra => MatchesFilter(extra.Label) || MatchesPermission(extra.Permission));
+
+    private bool MatchesPermission(IdentityAdminPermission? permission) =>
+        permission is not null &&
+        (MatchesFilter(permission.DisplayName) || MatchesFilter(permission.Name));
+
+    private bool MatchesFilter(string? value) =>
+        !string.IsNullOrWhiteSpace(value) &&
+        !string.IsNullOrWhiteSpace(permissionFilter) &&
+        value.Contains(permissionFilter, StringComparison.OrdinalIgnoreCase);
+
+    private static bool CanEdit(IdentityAdminPermission permission) => permission.IsEditable;
+
+    private Task OnFeatureAccessChanged(PermissionFeatureRow feature, ChangeEventArgs args)
+    {
+        if (feature.Access is null || !CanEdit(feature.Access) || IsAdminRole)
+        {
+            return InvokeAsync(StateHasChanged);
+        }
+
+        var isGranted = CheckboxValue(args);
+        feature.Access.IsGranted = isGranted;
+        if (!isGranted)
+        {
+            foreach (var permission in feature.AllPermissions())
+            {
+                if (CanEdit(permission))
+                {
+                    permission.IsGranted = false;
+                }
+            }
+        }
+
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnFeatureActionChanged(PermissionFeatureRow feature, IdentityAdminPermission permission, ChangeEventArgs args)
+    {
+        if (!CanEdit(permission) || IsAdminRole)
+        {
+            return InvokeAsync(StateHasChanged);
+        }
+
+        permission.IsGranted = CheckboxValue(args);
+        if (permission.IsGranted && feature.Access is { } access && CanEdit(access))
+        {
+            access.IsGranted = true;
         }
 
         return InvokeAsync(StateHasChanged);

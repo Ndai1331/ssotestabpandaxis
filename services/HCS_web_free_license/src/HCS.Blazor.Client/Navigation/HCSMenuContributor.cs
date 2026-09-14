@@ -30,22 +30,34 @@ public sealed class HCSMenuContributor : IMenuContributor
                 .RequireAuthenticated());
 
         var social = Item("HCS.Social", "Mạng xã hội", icon: "fa fa-users", order: 90)
-            .RequirePermissions(false, HCSPermissions.Collaboration.Social, HCSPermissions.Collaboration.Chat);
+            .RequirePermissions(
+                false,
+                HCSPermissions.Collaboration.Social,
+                HCSPermissions.Collaboration.Chat,
+                HCSPermissions.WorkManagement.EmployeeRatings,
+                HCSPermissions.WorkManagement.EmployeeRatingsManagement,
+                HCSPermissions.WorkManagement.EmployeeRatingsDashboard);
         social.AddItem(Item("HCS.Social.Posts", "Các bài đăng", "/social", "fa fa-newspaper", 10)
             .RequirePermissions(HCSPermissions.Collaboration.Social));
         social.AddItem(Item("HCS.Social.Chat", "Chat", "/chat", "fa fa-comments", 20)
             .RequirePermissions(HCSPermissions.Collaboration.Chat));
+        social.AddItem(Item("HCS.Social.EmployeeRatings", "Tín nhiệm nhân viên", "/employee-ratings", "fa fa-star-half-stroke", 30)
+            .RequirePermissions(HCSPermissions.WorkManagement.EmployeeRatings));
+        social.AddItem(Item("HCS.Social.EmployeeRatingManagement", "Danh sách tín nhiệm nhân viên", "/administration/employee-ratings", "fa fa-star", 40)
+            .RequirePermissions(HCSPermissions.WorkManagement.EmployeeRatingsManagement));
+        social.AddItem(Item("HCS.Social.EmployeeRatingDashboard", "Dashboard tín nhiệm nhân viên", "/administration/employee-ratings-dashboard", "fa fa-chart-pie", 50)
+            .RequirePermissions(HCSPermissions.WorkManagement.EmployeeRatingsDashboard));
         context.Menu.AddItem(social);
 
         var documents = Item("HCS.Documents", "Văn bản", icon: "fa fa-file-lines", order: 120);
         documents.AddItem(Item("HCS.Documents.Archive", "Quản lý tài liệu", "/manage-documents?sourceType=0", "fa fa-folder-open", 10)
             .RequirePermissions(HCSPermissions.Documents.Create));
         documents.AddItem(Item("HCS.Documents.Personal", "Văn bản tôi tạo", "/manage-documents?sourceType=1", "fa fa-pen", 20)
-            .RequirePermissions(HCSPermissions.Documents.Create));
+            .RequirePermissions(HCSPermissions.Documents.View));
         documents.AddItem(Item("HCS.Documents.SentToMe", "Văn bản của tôi", "/manage-documents?sourceType=2", "fa fa-inbox", 30)
             .RequirePermissions(HCSPermissions.Documents.View));
         documents.AddItem(Item("HCS.Documents.Signing", "Ký duyệt", "/document-signing", "fa fa-signature", 40)
-            .RequirePermissions(HCSPermissions.Documents.SigningExecute));
+            .RequirePermissions(false, HCSPermissions.Documents.View, HCSPermissions.Documents.SigningExecute));
         documents.AddItem(Item("HCS.Documents.SigningKpi", "KPI ký số", "/signing-kpi-report", "fa fa-chart-column", 50)
             .RequirePermissions(HCSPermissions.Documents.SigningReport));
         context.Menu.AddItem(documents);

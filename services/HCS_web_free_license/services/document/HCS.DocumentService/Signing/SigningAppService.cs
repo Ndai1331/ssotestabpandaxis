@@ -52,7 +52,6 @@ public sealed class SigningAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningExecute);
 
         var query = db.WorkflowInstances.AsNoTracking().Include(x => x.Tasks)
             .Where(x => db.Documents.Any(document => document.Id == x.DocumentId
@@ -216,7 +215,6 @@ public sealed class SigningAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningExecute);
         if (!Enum.IsDefined(input.Kind)) throw new ArgumentOutOfRangeException(nameof(input.Kind));
         var key = input.IdempotencyKey?.Trim();
         if (string.IsNullOrWhiteSpace(key) || key.Length > 128)
@@ -237,9 +235,9 @@ public sealed class SigningAppService(
                 && step.Type == WorkflowStepTypes.Sign
             select new { task.AssigneeUserId })
             .FirstOrDefaultAsync(cancellationToken);
-        if (activeSignTask?.AssigneeUserId is { } assignee
-            && assignee != userId
-            && !DocumentAccess.IsElevated(principal))
+        if (activeSignTask is not null)
+            DocumentAccess.EnsureCanActOnWorkflowTask(principal, userId, activeSignTask.AssigneeUserId);
+        else if (!DocumentAccess.HasPermission(principal, DocumentPermissions.SigningExecute))
             throw new UnauthorizedAccessException("Only the assigned user can sign this document.");
         var existing = await FindAttemptAsync(userId, input, key, cancellationToken);
         if (existing is not null) return Map(existing);
@@ -457,7 +455,6 @@ public sealed class SigningAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.SigningReport);
         var document = await db.Documents.AsNoTracking().Include(x => x.Assignments).Include(x => x.History)
             .SingleOrDefaultAsync(x => x.Id == documentId, cancellationToken)
             ?? throw new KeyNotFoundException("Document not found.");

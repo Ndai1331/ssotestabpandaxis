@@ -47,7 +47,7 @@ public sealed class IdentityAdminClientTests
     }
 
     [Fact]
-    public async Task Sends_update_user_with_role_names()
+    public async Task Sends_update_user_without_password_or_role_names()
     {
         var userId = Guid.NewGuid();
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
@@ -66,10 +66,37 @@ public sealed class IdentityAdminClientTests
         await client.UpdateUserAsync(userId, form, "stamp");
 
         using var json = JsonDocument.Parse(handler.RequestBody!);
-        var roleNames = json.RootElement.GetProperty("roleNames").EnumerateArray().Select(item => item.GetString()).ToArray();
-        Assert.Contains("admin", roleNames);
-        Assert.Contains("bacsi", roleNames);
+        Assert.False(json.RootElement.TryGetProperty("password", out _));
+        Assert.False(json.RootElement.TryGetProperty("roleNames", out _));
+        Assert.False(json.RootElement.TryGetProperty("extraProperties", out _));
         Assert.Equal("stamp", json.RootElement.GetProperty("concurrencyStamp").GetString());
+        Assert.Equal($"/api/identity/users/{userId:D}", handler.Request!.RequestUri!.PathAndQuery);
+        Assert.Equal(HttpMethod.Put, handler.Request.Method);
+    }
+
+    [Fact]
+    public async Task Reloads_user_when_update_response_body_is_empty()
+    {
+        var userId = Guid.NewGuid();
+        var handler = new RecordingHandler(request =>
+        {
+            if (request.Method == HttpMethod.Put)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK);
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new { id = userId, userName = "existing", email = "existing@example.com" })
+            };
+        });
+        var client = CreateClient(handler);
+        var form = new IdentityAdminUserForm { UserName = "existing", Email = "existing@example.com" };
+
+        var updated = await client.UpdateUserAsync(userId, form, "stamp");
+
+        Assert.Equal(userId, updated.Id);
+        Assert.Equal("existing", updated.UserName);
     }
 
     [Fact]

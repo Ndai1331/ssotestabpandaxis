@@ -9,18 +9,21 @@
 <section class="hcs-rating-page" aria-labelledby="employee-rating-detail-title">
     <header class="hcs-rating-page__header">
         <div>
+            <p class="hcs-rating-page__kicker">@L["Menu:Social"]</p>
             <a class="hcs-rating-backlink" href="/administration/employee-ratings"><i class="fa fa-arrow-left me-1" aria-hidden="true"></i>@L["EmployeeRatings:BackToList"]</a>
             <h1 id="employee-rating-detail-title">@person?.User.DisplayName</h1>
-            <p class="text-muted mb-0">@person?.DepartmentName</p>
+            <p class="hcs-rating-page__lede">@(person?.HasDepartment == true ? person.DepartmentName : L["EmployeeRatings:NoDepartment"])</p>
         </div>
         <div>
-            <label class="visually-hidden" for="rating-detail-period">@L["EmployeeRatings:TrendPeriod"]</label>
+            <label class="visually-hidden" for="rating-detail-period">@L["EmployeeRatings:Period"]</label>
             <select id="rating-detail-period" class="form-select" @bind="period" @bind:after="LoadAsync">
                 <option value="month">@L["EmployeeRatings:Month"]</option>
                 <option value="quarter">@L["EmployeeRatings:Quarter"]</option>
             </select>
         </div>
     </header>
+
+    <EmployeeRatingNav />
 
     @if (isLoading)
     {

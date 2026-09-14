@@ -58,17 +58,13 @@
                                 }
                             </Authorized>
                         </AuthorizeView>
-                        <AuthorizeView Policy="Documents.Update">
-                            <Authorized>
-                                @if (document is not null && SourceType is 0 or 1)
-                                {
-                                    <button class="btn btn-ghost" type="button" @onclick="DeleteAsync" disabled="@isMutating">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
-                                        @L["Catalog:Delete"]
-                                    </button>
-                                }
-                            </Authorized>
-                        </AuthorizeView>
+                        @if (document is not null && SourceType is 0 or 1 && (IsPersonal || canUpdateDocument))
+                        {
+                            <button class="btn btn-ghost" type="button" @onclick="DeleteAsync" disabled="@isMutating">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                @L["Catalog:Delete"]
+                            </button>
+                        }
                         <AuthorizeView Policy="Documents.Workflow.Start">
                             <Authorized>
                                 <button class="btn btn-ghost" type="button" @onclick="OpenSubmitWorkflow">
@@ -84,28 +80,20 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                         @L["Catalog:Cancel"]
                     </button>
-                    <AuthorizeView Policy="Documents.Create">
-                        <Authorized>
-                            @if (IsCreate)
-                            {
-                                <button class="btn btn-primary" type="submit" disabled="@isSaving">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
-                                    @L["Catalog:Create"]
-                                </button>
-                            }
-                        </Authorized>
-                    </AuthorizeView>
-                    <AuthorizeView Policy="Documents.Update">
-                        <Authorized>
-                            @if (!IsCreate)
-                            {
-                                <button class="btn btn-primary" type="submit" disabled="@isSaving">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
-                                    @L["Catalog:SaveChanges"]
-                                </button>
-                            }
-                        </Authorized>
-                    </AuthorizeView>
+                    @if (IsCreate && (IsPersonal || canCreateArchive))
+                    {
+                        <button class="btn btn-primary" type="submit" disabled="@isSaving">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+                            @L["Catalog:Create"]
+                        </button>
+                    }
+                    @if (!IsCreate && (IsPersonal || canUpdateDocument))
+                    {
+                        <button class="btn btn-primary" type="submit" disabled="@isSaving">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+                            @L["Catalog:SaveChanges"]
+                        </button>
+                    }
                 </div>
             </div>
         </header>
@@ -385,10 +373,13 @@
     private DocumentFileDto? previewFile;
     private bool isSaving;
     private bool isMutating;
+    private bool canCreateArchive;
+    private bool canUpdateDocument;
     private IBrowserFile? pendingFile;
     private string activeTab = "info";
     private bool IsCreate => DocumentId == Guid.Empty;
     private int SourceType => SourceTypeQuery is >= 0 and <= 2 ? SourceTypeQuery.Value : 0;
+    private bool IsPersonal => SourceType == 1;
     private string BackHref => $"/manage-documents?sourceType={SourceType}";
     private string DocumentTitle => string.IsNullOrWhiteSpace(form.Title) ? L["Feature:DocumentTitle"] : form.Title;
     private string? DescriptionOrNull => string.IsNullOrWhiteSpace(form.Description) ? null : form.Description;
@@ -403,6 +394,8 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        canCreateArchive = await AuthorizationService.IsGrantedAsync("Documents.Create");
+        canUpdateDocument = await AuthorizationService.IsGrantedAsync("Documents.Update");
         if (!IsCreate && SourceType == 2)
         {
             Navigation.NavigateTo($"/manage-documents?sourceType=2&preview={DocumentId:D}", replace: true);
@@ -478,6 +471,11 @@
         {
             if (IsCreate)
             {
+                if (!IsPersonal && !canCreateArchive)
+                {
+                    await NotifyErrorAsync(L["Users:Forbidden"]);
+                    return;
+                }
                 if (pendingFile is null)
                 {
                     await NotifyErrorAsync(L["Feature:FileRequired"]);
@@ -502,6 +500,11 @@
                 }
                 await NotifySuccessAsync(L["Catalog:Created"]);
                 Navigation.NavigateTo(BackHref);
+                return;
+            }
+            if (!IsPersonal && !canUpdateDocument)
+            {
+                await NotifyErrorAsync(L["Users:Forbidden"]);
                 return;
             }
             document = await Documents.UpdateDocumentAsync(DocumentId, new UpdateDocumentRequest(

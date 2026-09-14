@@ -202,13 +202,22 @@
                                                     </button>
                                                 </Authorized>
                                             </AuthorizeView>
-                                            <AuthorizeView Policy="Documents.Update">
-                                                <Authorized>
-                                                    <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)" disabled="@IsMutating(item.Id)">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
-                                                    </button>
-                                                </Authorized>
-                                            </AuthorizeView>
+                                            @if (IsPersonal)
+                                            {
+                                                <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)" disabled="@IsMutating(item.Id)">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <AuthorizeView Policy="Documents.Update">
+                                                    <Authorized>
+                                                        <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)" disabled="@IsMutating(item.Id)">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                                        </button>
+                                                    </Authorized>
+                                                </AuthorizeView>
+                                            }
                                         }
                                     </div>
                                 </td>
@@ -302,8 +311,9 @@
         }
     }
     private bool canManageArchive;
-    private bool CanCreate => canManageArchive && SourceType is 0 or 1;
-    private bool CanManage => canManageArchive && SourceType is 0 or 1;
+    private bool IsPersonal => SourceType == 1;
+    private bool CanCreate => IsPersonal || (canManageArchive && SourceType == 0);
+    private bool CanManage => IsPersonal || (canManageArchive && SourceType == 0);
     private bool IsInbox => SourceType == 2;
     private string PageTitle => SourceType switch
     {
@@ -341,7 +351,7 @@
     private async Task ReloadIfSourceChangedAsync(bool resetFilter)
     {
         var source = SourceType;
-        if (source is 0 or 1 && !canManageArchive)
+        if (source == 0 && !canManageArchive)
         {
             Navigation.NavigateTo("/manage-documents?sourceType=2", replace: true);
             return;

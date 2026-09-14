@@ -8,25 +8,38 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
 {
     public override void Define(IPermissionDefinitionContext context)
     {
-        var group = context.AddGroup(HCSPermissions.GroupName, L("Permission:HCS"));
-        var languages = group.AddPermission(HCSPermissions.Languages.Default, L("Permission:Languages"));
-        languages.AddChild(HCSPermissions.Languages.Create, L("Permission:Languages.Create"));
-        languages.AddChild(HCSPermissions.Languages.Update, L("Permission:Languages.Update"));
-        languages.AddChild(HCSPermissions.Languages.Delete, L("Permission:Languages.Delete"));
-        languages.AddChild(HCSPermissions.Languages.ManageTexts, L("Permission:Languages.ManageTexts"));
-        group.AddPermission(HCSPermissions.AuditViewer.Default, L("Permission:AuditViewer"));
+        var workspace = context.AddGroup(HCSPermissions.MenuGroups.Workspace, L("Menu:Workspace"));
+        workspace.AddPermission(HCSPermissions.WorkManagement.Dashboard, L("Permission:WorkManagement.Dashboard"));
 
-        var systemBranding = context.AddGroup(HCSPermissions.SystemBranding.Default, L("Permission:SystemBranding"));
-        systemBranding.AddPermission(HCSPermissions.SystemBranding.Update, L("Permission:SystemBranding.Update"));
+        var documents = context.AddGroup(HCSPermissions.MenuGroups.Documents, L("Menu:Documents"));
+        documents.AddPermission(HCSPermissions.Documents.View, L("Permission:Documents.View"));
+        documents.AddPermission(HCSPermissions.Documents.Create, L("Permission:Documents.Create"));
+        documents.AddPermission(HCSPermissions.Documents.Update, L("Permission:Documents.Update"));
+        documents.AddPermission(HCSPermissions.Documents.Assign, L("Permission:Documents.Assign"));
+        documents.AddPermission(HCSPermissions.Documents.ManageFiles, L("Permission:Documents.ManageFiles"));
+        documents.AddPermission(HCSPermissions.Documents.SigningExecute, L("Permission:Documents.Signing.Execute"));
+        documents.AddPermission(HCSPermissions.Documents.SigningReport, L("Permission:Documents.Signing.Report"));
 
-        var organization = context.AddGroup(HCSPermissions.Organization.Default, L("Permission:Organization"));
-        AddCrud(organization.AddPermission(HCSPermissions.Organization.Departments, L("Permission:Organization.Departments")));
-        AddCrud(organization.AddPermission(HCSPermissions.Organization.Units, L("Permission:Organization.Units")));
-        AddCrud(organization.AddPermission(HCSPermissions.Organization.Positions, L("Permission:Organization.Positions")));
-        organization.AddPermission(HCSPermissions.Organization.MasterData, L("Permission:Organization.MasterData"));
-        organization.AddPermission(HCSPermissions.Organization.UserMappings, L("Permission:Organization.UserMappings"));
+        var workflows = context.AddGroup(HCSPermissions.MenuGroups.Workflows, L("Menu:Workflows"));
+        workflows.AddPermission(HCSPermissions.Documents.WorkflowView, L("Permission:Documents.Workflow.View"));
+        workflows.AddPermission(HCSPermissions.Documents.WorkflowManage, L("Permission:Documents.Workflow.Manage"));
+        workflows.AddPermission(HCSPermissions.Documents.WorkflowStart, L("Permission:Documents.Workflow.Start"));
+        workflows.AddPermission(HCSPermissions.Documents.WorkflowDecide, L("Permission:Documents.Workflow.Decide"));
 
-        var catalogs = context.AddGroup(HCSPermissions.Catalogs.Default, L("Permission:Catalogs"));
+        var projects = context.AddGroup(HCSPermissions.MenuGroups.ProjectsAndTasks, L("Menu:ProjectsAndTasks"));
+        projects.AddPermission(HCSPermissions.WorkManagement.Projects, L("Permission:WorkManagement.Projects"));
+        projects.AddPermission(HCSPermissions.WorkManagement.Tasks, L("Permission:WorkManagement.ProjectTasks"));
+
+        var calendar = context.AddGroup(HCSPermissions.MenuGroups.Calendar, L("Menu:CalendarEvents"));
+        calendar.AddPermission(HCSPermissions.WorkManagement.Calendar, L("Permission:WorkManagement.Calendar"));
+
+        var events = context.AddGroup(HCSPermissions.MenuGroups.Events, L("Menu:EventManagement"));
+        events.AddPermission(HCSPermissions.WorkManagement.Events, L("Permission:WorkManagement.Events"));
+
+        var surveys = context.AddGroup(HCSPermissions.MenuGroups.Surveys, L("Menu:Surveys"));
+        surveys.AddPermission(HCSPermissions.WorkManagement.Surveys, L("Permission:WorkManagement.Surveys"));
+
+        var catalogs = context.AddGroup(HCSPermissions.MenuGroups.Catalogs, L("Menu:Catalogs"));
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.MasterData, L("Permission:Catalogs.MasterData")));
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.DocumentTypes, L("Permission:Catalogs.DocumentTypes")));
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Sectors, L("Permission:Catalogs.Sectors")));
@@ -43,39 +56,32 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Countries, L("Permission:Catalogs.Countries")));
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Provinces, L("Permission:Catalogs.Provinces")));
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.Communes, L("Permission:Catalogs.Communes")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Organization.Departments, L("Permission:Organization.Departments")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Organization.Units, L("Permission:Organization.Units")));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Organization.Positions, L("Permission:Organization.Positions")));
+        catalogs.AddPermission(HCSPermissions.Organization.MasterData, L("Permission:Organization.MasterData"));
+        catalogs.AddPermission(HCSPermissions.WorkManagement.SurveyManagement, L("Permission:WorkManagement.SurveyManagement"));
+        catalogs.AddPermission(HCSPermissions.WorkManagement.Reports, L("Permission:WorkManagement.Reports"));
+        catalogs.AddPermission(HCSPermissions.Documents.SigningConfigure, L("Permission:Documents.Signing.Configure"));
 
-        var workManagement = context.AddGroup(HCSPermissions.WorkManagement.Default, L("Permission:WorkManagement"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.Projects, L("Permission:WorkManagement.Projects"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.Tasks, L("Permission:WorkManagement.ProjectTasks"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.Calendar, L("Permission:WorkManagement.Calendar"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.Events, L("Permission:WorkManagement.Events"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.Surveys, L("Permission:WorkManagement.Surveys"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.SurveyManagement, L("Permission:WorkManagement.SurveyManagement"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.Reports, L("Permission:WorkManagement.Reports"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.Dashboard, L("Permission:WorkManagement.Dashboard"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.EmployeeRatings, L("Permission:WorkManagement.EmployeeRatings"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.EmployeeRatingsManagement, L("Permission:WorkManagement.EmployeeRatings.Management"));
-        workManagement.AddPermission(HCSPermissions.WorkManagement.EmployeeRatingsDashboard, L("Permission:WorkManagement.EmployeeRatings.Dashboard"));
+        var social = context.AddGroup(HCSPermissions.MenuGroups.Social, L("Menu:Social"));
+        social.AddPermission(HCSPermissions.Collaboration.Chat, L("Permission:Collaboration.Chat"));
+        social.AddPermission(HCSPermissions.Collaboration.Social, L("Permission:Collaboration.Social"));
+        social.AddPermission(HCSPermissions.Collaboration.Notifications, L("Permission:Collaboration.Notifications"));
+        social.AddPermission(HCSPermissions.WorkManagement.EmployeeRatings, L("Permission:WorkManagement.EmployeeRatings"));
+        social.AddPermission(HCSPermissions.WorkManagement.EmployeeRatingsManagement, L("Permission:WorkManagement.EmployeeRatings.Management"));
+        social.AddPermission(HCSPermissions.WorkManagement.EmployeeRatingsDashboard, L("Permission:WorkManagement.EmployeeRatings.Dashboard"));
 
-        var documents = context.AddGroup(HCSPermissions.Documents.Default, L("Permission:Documents"));
-        documents.AddPermission(HCSPermissions.Documents.View, L("Permission:Documents.View"));
-        documents.AddPermission(HCSPermissions.Documents.Create, L("Permission:Documents.Create"));
-        documents.AddPermission(HCSPermissions.Documents.Update, L("Permission:Documents.Update"));
-        documents.AddPermission(HCSPermissions.Documents.Assign, L("Permission:Documents.Assign"));
-        documents.AddPermission(HCSPermissions.Documents.ManageFiles, L("Permission:Documents.ManageFiles"));
-        documents.AddPermission(HCSPermissions.Documents.WorkflowView, L("Permission:Documents.Workflow.View"));
-        documents.AddPermission(HCSPermissions.Documents.WorkflowManage, L("Permission:Documents.Workflow.Manage"));
-        documents.AddPermission(HCSPermissions.Documents.WorkflowStart, L("Permission:Documents.Workflow.Start"));
-        documents.AddPermission(HCSPermissions.Documents.WorkflowDecide, L("Permission:Documents.Workflow.Decide"));
-        documents.AddPermission(HCSPermissions.Documents.SigningConfigure, L("Permission:Documents.Signing.Configure"));
-        documents.AddPermission(HCSPermissions.Documents.SigningExecute, L("Permission:Documents.Signing.Execute"));
-        documents.AddPermission(HCSPermissions.Documents.SigningReport, L("Permission:Documents.Signing.Report"));
-
-        var collaboration = context.AddGroup(HCSPermissions.Collaboration.Default, L("Permission:Collaboration"));
-        collaboration.AddPermission(HCSPermissions.Collaboration.Chat, L("Permission:Collaboration.Chat"));
-        collaboration.AddPermission(HCSPermissions.Collaboration.Social, L("Permission:Collaboration.Social"));
-        collaboration.AddPermission(HCSPermissions.Collaboration.Notifications, L("Permission:Collaboration.Notifications"));
-        collaboration.AddPermission(HCSPermissions.Collaboration.Administration, L("Permission:Collaboration.Administration"));
+        var administration = context.AddGroup(HCSPermissions.MenuGroups.Administration, L("Menu:Administration"));
+        var languages = administration.AddPermission(HCSPermissions.Languages.Default, L("Permission:Languages"));
+        languages.AddChild(HCSPermissions.Languages.Create, L("Permission:Languages.Create"));
+        languages.AddChild(HCSPermissions.Languages.Update, L("Permission:Languages.Update"));
+        languages.AddChild(HCSPermissions.Languages.Delete, L("Permission:Languages.Delete"));
+        languages.AddChild(HCSPermissions.Languages.ManageTexts, L("Permission:Languages.ManageTexts"));
+        administration.AddPermission(HCSPermissions.AuditViewer.Default, L("Permission:AuditViewer"));
+        administration.AddPermission(HCSPermissions.SystemBranding.Update, L("Permission:SystemBranding.Update"));
+        administration.AddPermission(HCSPermissions.Organization.UserMappings, L("Permission:Organization.UserMappings"));
+        administration.AddPermission(HCSPermissions.Collaboration.Administration, L("Permission:Collaboration.Administration"));
     }
 
     private static void AddCrud(PermissionDefinition permission)

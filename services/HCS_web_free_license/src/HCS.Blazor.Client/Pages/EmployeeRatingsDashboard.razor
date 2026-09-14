@@ -10,9 +10,9 @@
 <section class="hcs-rating-page" aria-labelledby="employee-rating-dashboard-title">
     <header class="hcs-rating-page__header">
         <div>
-            <p class="hcs-document-page__eyebrow">@L["Menu:Administration"]</p>
+            <p class="hcs-rating-page__kicker">@L["Menu:Social"]</p>
             <h1 id="employee-rating-dashboard-title">@L["Feature:EmployeeRatingDashboard"]</h1>
-            <p class="text-muted mb-0">@L["EmployeeRatings:DashboardSubtitle"]</p>
+            <p class="hcs-rating-page__lede">@L["EmployeeRatings:DashboardSubtitle"]</p>
         </div>
         <div>
             <label class="visually-hidden" for="rating-dashboard-period">@L["EmployeeRatings:Period"]</label>
@@ -22,6 +22,8 @@
             </select>
         </div>
     </header>
+
+    <EmployeeRatingNav />
 
     @if (isLoading)
     {

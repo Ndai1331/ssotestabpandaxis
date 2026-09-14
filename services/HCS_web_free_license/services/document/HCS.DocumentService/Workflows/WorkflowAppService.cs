@@ -97,7 +97,6 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowView);
         var query = Query().AsNoTracking();
         if (!DocumentAccess.IsElevated(principal))
         {
@@ -117,7 +116,6 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowView);
         var instance = await Query().AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (instance is null) return null;
         var document = await LoadDocumentAsync(instance.DocumentId, cancellationToken);
@@ -389,7 +387,6 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         var principal = Principal;
         var actor = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowDecide);
         var instance = await Query().SingleOrDefaultAsync(x => x.Tasks.Any(t => t.Id == taskId), cancellationToken)
             ?? throw new KeyNotFoundException("Workflow task not found.");
         var definition = await db.WorkflowDefinitions.Include(x => x.Steps).SingleAsync(x => x.Id == instance.DefinitionId, cancellationToken);
@@ -398,9 +395,13 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var task = instance.Tasks.Single(x => x.Id == taskId);
         var step = definition.Steps.SingleOrDefault(x => x.Code == task.StepCode)
             ?? throw new InvalidOperationException("Workflow step configuration is missing.");
-        DocumentAccess.RequirePermission(principal, step.RequiredPermission);
-        if (task.AssigneeUserId is { } assignee && assignee != actor && !DocumentAccess.IsElevated(principal))
-            throw new UnauthorizedAccessException("Only the assigned user can decide this step.");
+        var isAssignee = task.AssigneeUserId is { } assigned && assigned == actor;
+        if (!isAssignee)
+        {
+            if (task.AssigneeUserId is { } && !DocumentAccess.IsElevated(principal))
+                throw new UnauthorizedAccessException("Only the assigned user can decide this step.");
+            DocumentAccess.RequirePermission(principal, step.RequiredPermission);
+        }
         if (input.Approve && !input.Return && step.Type == WorkflowStepTypes.Sign
             && (input.SigningAttemptId is not { } signingAttemptId
                 || input.SigningFileId is not { } signingFileId
@@ -463,15 +464,13 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         var principal = Principal;
         var actor = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowDecide);
         if (input.AdditionalDays is < 1 or > 365) throw new ArgumentOutOfRangeException(nameof(input.AdditionalDays));
         var instance = await Query().SingleOrDefaultAsync(x => x.Tasks.Any(t => t.Id == taskId), cancellationToken)
             ?? throw new KeyNotFoundException("Workflow task not found.");
         var document = await LoadDocumentAsync(instance.DocumentId, cancellationToken);
         DocumentAccess.EnsureCanView(document, actor, principal);
         var task = instance.Tasks.Single(x => x.Id == taskId);
-        if (task.AssigneeUserId is { } assignee && assignee != actor && !DocumentAccess.IsElevated(principal))
-            throw new UnauthorizedAccessException("Only the assigned user can extend this step.");
+        DocumentAccess.EnsureCanActOnWorkflowTask(principal, actor, task.AssigneeUserId);
         task.ExtendDueDate(input.AdditionalDays, DateTime.UtcNow, input.Reason);
         AddChangeEvent(instance, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
