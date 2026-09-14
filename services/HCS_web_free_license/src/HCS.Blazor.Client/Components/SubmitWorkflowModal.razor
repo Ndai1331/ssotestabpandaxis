@@ -11,6 +11,12 @@
         </ModalHeader>
         <ModalBody Class="hcs-catalog-modal__body">
             <div class="hcs-catalog-form">
+                @if (!string.IsNullOrWhiteSpace(submitError))
+                {
+                    <Alert Color="Color.Danger" Visible="true" Class="mb-3">
+                        <AlertDescription>@submitError</AlertDescription>
+                    </Alert>
+                }
                 @if (!allowDocumentPicker && documentId is not null)
                 {
                     <Alert Color="Color.Info" Visible="true" Class="mb-3">
@@ -150,6 +156,7 @@
     private bool allowDocumentPicker;
     private bool isSaving;
     private string signingContent = string.Empty;
+    private string? submitError;
     private int definitionRequestVersion;
 
     public async Task ShowAsync(Guid? preSelectedDocument = null)
@@ -165,6 +172,7 @@
         attachedNames.Clear();
         pendingFiles.Clear();
         signingContent = string.Empty;
+        submitError = null;
         useWorkflowTemplateFile = false;
         if (definitions.Count == 0) definitions.AddRange(await Documents.GetDefinitionsAsync());
         if (templates.Count == 0)
@@ -216,7 +224,8 @@
             useWorkflowTemplateFile = false;
             signers.Clear();
             candidatesByStep.Clear();
-            await NotifyErrorAsync(L["Work:WorkflowNotReady"]);
+            submitError = L["Work:WorkflowNotReady"];
+            await NotifyErrorAsync(submitError);
             return;
         }
         selectedTemplate = templates.Where(x => x.DefinitionId == value && x.IsActive)
@@ -282,20 +291,24 @@
     {
         if (definitionId is not { } defId)
         {
-            await NotifyErrorAsync(L["Work:SelectWorkflow"]);
+            submitError = L["Work:SelectWorkflow"];
+            await NotifyErrorAsync(submitError);
             return;
         }
         if (selected is null || !IsStartableDefinition(selected))
         {
-            await NotifyErrorAsync(L["Work:WorkflowNotReady"]);
+            submitError = L["Work:WorkflowNotReady"];
+            await NotifyErrorAsync(submitError);
             return;
         }
         if (!useWorkflowTemplateFile && documentId is not { })
         {
-            await NotifyErrorAsync(L["Feature:ChooseDocument"]);
+            submitError = L["Feature:ChooseDocument"];
+            await NotifyErrorAsync(submitError);
             return;
         }
         isSaving = true;
+        submitError = null;
         try
         {
             var documentIdForSubmit = useWorkflowTemplateFile ? null : documentId;
@@ -313,7 +326,11 @@
             await HideAsync();
             await OnSubmitted.InvokeAsync();
         }
-        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        catch (Exception ex)
+        {
+            submitError = MapBffError(ex, BffErrorKind.Save);
+            await NotifyErrorAsync(submitError);
+        }
         finally { isSaving = false; }
     }
 

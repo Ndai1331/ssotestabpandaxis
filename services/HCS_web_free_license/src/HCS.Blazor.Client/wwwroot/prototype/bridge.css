@@ -402,8 +402,14 @@
 
 /* ——— Main content rhythm ——— */
 .hcs-app-shell .hcs-main-content {
+  background-attachment: fixed;
   background-color: var(--color-background);
-  background-image: var(--hcs-branding-background-image, none);
+  background-image:
+    linear-gradient(
+      var(--hcs-branding-background-scrim, color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent)),
+      var(--hcs-branding-background-scrim, color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent))
+    ),
+    var(--hcs-branding-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;

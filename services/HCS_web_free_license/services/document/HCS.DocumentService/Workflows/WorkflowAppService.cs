@@ -6,6 +6,7 @@ using HCS.IntegrationEvents.Documents;
 using HCS.DocumentService.Integration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Volo.Abp;
 using Volo.Abp.BlobStoring;
 
 namespace HCS.DocumentService.Workflows;
@@ -271,9 +272,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var userId = DocumentAccess.RequireUser(principal);
         DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowStart);
         if (!WorkflowStartRequestRules.HasExactlyOneSource(input))
-            throw new InvalidOperationException("Exactly one workflow source document or workflow template file is required.");
+            throw new BusinessException("Document:WorkflowSourceRequired");
         if (input.UseWorkflowTemplateFile && input.UseTemplateFile)
-            throw new InvalidOperationException("A workflow template file cannot be combined with a source document template file.");
+            throw new BusinessException("Document:WorkflowTemplateConflict");
 
         DocumentAggregate? source = null;
         if (!input.UseWorkflowTemplateFile)
@@ -598,18 +599,18 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
                 continue;
             var candidates = candidatesByRole.GetValueOrDefault(roleId) ?? [];
             if (candidates.Count == 0)
-                throw new InvalidOperationException($"No assignee candidates for step '{step.Code}'.");
+                throw new BusinessException("Document:NoAssigneeCandidates");
             var allowed = candidates.Select(x => x.UserId).ToHashSet();
             if (overrides.TryGetValue(step.Code, out var chosen))
             {
                 if (!allowed.Contains(chosen))
-                    throw new InvalidOperationException($"Chosen signer is not in the submitter OU role for step '{step.Code}'.");
+                    throw new BusinessException("Document:SignerNotInRole");
                 continue;
             }
             if (candidates.Count == 1)
                 overrides[step.Code] = candidates[0].UserId;
             else
-                throw new InvalidOperationException($"Choose a signer for step '{step.Code}'.");
+                throw new BusinessException("Document:ChooseSigner");
         }
     }
 

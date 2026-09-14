@@ -11,7 +11,6 @@ namespace HCS.PlatformService.Controllers;
 
 [ApiController, Authorize(Policy = HCSPermissions.Collaboration.Chat), Route("api/chat/contacts")]
 public sealed class ChatContactsController(
-    IIdentityUserRepository identityUsers,
     ICurrentUser currentUser,
     HCSDbContext db) : ControllerBase
 {
@@ -21,38 +20,8 @@ public sealed class ChatContactsController(
         [FromQuery] int take = 30,
         CancellationToken cancellationToken = default)
     {
-        var normalizedSearch = NormalizeSearch(search);
-        var users = await identityUsers.GetListAsync(
-            sorting: "UserName",
-            maxResultCount: Math.Clamp(take, 1, 50),
-            filter: normalizedSearch,
-            notActive: false,
-            cancellationToken: cancellationToken);
-        var currentUserId = currentUser.Id;
-
-        var activeUsers = users
-            .Where(user => user.IsActive && (!currentUserId.HasValue || user.Id != currentUserId.Value))
-            .ToArray();
-        var activeUserIds = activeUsers.Select(user => user.Id).ToArray();
-        var avatarUserIds = await db.UserAvatars
-            .AsNoTracking()
-            .Where(avatar => activeUserIds.Contains(avatar.UserId))
-            .Select(avatar => avatar.UserId)
-            .ToHashSetAsync(cancellationToken);
-
-        return activeUsers
-            .Select(user => new ChatContactDto(
-                user.Id,
-                user.UserName,
-                UserDisplayNames.FromPerson(user.Surname, user.Name, user.UserName),
-                user.IsActive,
-                user.Surname,
-                user.Name,
-                user.PhoneNumber,
-                avatarUserIds.Contains(user.Id)
-                    ? $"/api/identity/users/{user.Id:D}/avatar"
-                    : null))
-            .ToArray();
+        var page = await GetPageAsync(search, skip: 0, take, cancellationToken);
+        return page.Items;
     }
 
     [HttpGet("page")]
@@ -62,21 +31,20 @@ public sealed class ChatContactsController(
         [FromQuery] int take = 30,
         CancellationToken cancellationToken = default)
     {
-        var normalizedSearch = NormalizeSearch(search);
+        var searchTerm = NormalizeSearch(search);
         var currentUserId = currentUser.Id;
         var query = db.Users
             .AsNoTracking()
             .Where(user => user.IsActive && (!currentUserId.HasValue || user.Id != currentUserId.Value));
 
-        if (normalizedSearch is not null)
+        if (searchTerm is not null)
         {
-            var searchTerm = normalizedSearch.ToLowerInvariant();
             query = query.Where(user =>
-                user.UserName.ToLower().Contains(searchTerm) ||
-                (user.Name != null && user.Name.ToLower().Contains(searchTerm)) ||
-                (user.Surname != null && user.Surname.ToLower().Contains(searchTerm)) ||
                 ((user.Surname ?? string.Empty) + " " + (user.Name ?? string.Empty))
-                    .ToLower().Contains(searchTerm));
+                    .ToLower().Contains(searchTerm) ||
+                (user.PhoneNumber != null && user.PhoneNumber.ToLower().Contains(searchTerm)) ||
+                (user.Email != null && user.Email.ToLower().Contains(searchTerm)) ||
+                user.UserName.ToLower().Contains(searchTerm));
         }
 
         var totalCount = await query.LongCountAsync(cancellationToken);

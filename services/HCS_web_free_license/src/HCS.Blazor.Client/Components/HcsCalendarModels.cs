@@ -22,16 +22,19 @@ public sealed class HcsCalendarJsEvent
 
 public static class CalendarEventDisplay
 {
-    public const string ProjectAccent = "#d97706";
-    public const string ProjectBackground = "#fff4d6";
-    public const string TaskAccent = "#0f9d8e";
-    public const string TaskBackground = "#d9f6f3";
-    public const string EventAccent = "#3d5cff";
-    public const string EventBackground = "#e8f0ff";
+    public const string ProjectAccent = "#F59E0B";
+    public const string ProjectBackground = "#FEF3C7";
+    public const string ProjectText = "#92400E";
+    public const string TaskAccent = "#38BDF8";
+    public const string TaskBackground = "#E0F2FE";
+    public const string TaskText = "#075985";
+    public const string EventAccent = "#00B4A9";
+    public const string EventBackground = "#CCFBF1";
+    public const string EventText = "#0F766E";
 
     public static HcsCalendarJsEvent ToJs(CalendarEventDto item)
     {
-        var (kind, accent, background) = Style(item);
+        var (kind, accent, background, text) = Style(item);
         var startLocal = item.StartTime.ToLocalTime();
         var endLocal = item.EndTime.ToLocalTime();
         string start;
@@ -57,7 +60,7 @@ public static class CalendarEventDisplay
             AllDay = item.AllDay,
             BackgroundColor = background,
             BorderColor = accent,
-            TextColor = accent,
+            TextColor = text,
             ClassNames = ["hcs-cal-event", "hcs-cal-event--" + kind]
         };
     }
@@ -65,13 +68,39 @@ public static class CalendarEventDisplay
     public static IReadOnlyList<HcsCalendarJsEvent> ToJs(IEnumerable<CalendarEventDto> items) =>
         items.Select(ToJs).ToList();
 
-    private static (string Kind, string Accent, string Background) Style(CalendarEventDto item)
+    public static string Kind(CalendarEventDto item) => Style(item).Kind;
+
+    private static (string Kind, string Accent, string Background, string Text) Style(CalendarEventDto item)
     {
-        if (Is(item.EventType, "PROJECT") || Is(item.RelatedType, "PROJECT")) return ("project", ProjectAccent, ProjectBackground);
-        if (Is(item.EventType, "TASK") || Is(item.RelatedType, "TASK")) return ("task", TaskAccent, TaskBackground);
-        return ("event", EventAccent, EventBackground);
+        if (Is(item.EventType, "PROJECT") || Is(item.RelatedType, "PROJECT"))
+            return ("project", ProjectAccent, ProjectBackground, ProjectText);
+        if (Is(item.EventType, "TASK") || Is(item.RelatedType, "TASK"))
+            return ("task", TaskAccent, TaskBackground, TaskText);
+        return ("event", EventAccent, EventBackground, EventText);
     }
 
     private static bool Is(string? value, string expected) =>
         string.Equals(value, expected, StringComparison.OrdinalIgnoreCase);
+}
+
+public static class CalendarUi
+{
+    public static string VisibilityKey(string? value) => value?.ToUpperInvariant() switch
+    {
+        "PUBLIC" => "Calendar:VisibilityPublic",
+        "PARTICIPANTS" => "Calendar:VisibilityParticipants",
+        _ => "Calendar:VisibilityPrivate"
+    };
+
+    public static string RelatedTypeKey(string? value) => value?.ToUpperInvariant() switch
+    {
+        "PROJECT" => "Calendar:RelatedProject",
+        "TASK" => "Calendar:RelatedTask",
+        _ => "Calendar:RelatedNone"
+    };
+
+    public static string EventTypeKey(string? value) =>
+        string.Equals(value, "Meeting", StringComparison.OrdinalIgnoreCase)
+            ? "Calendar:Meeting"
+            : string.Empty;
 }

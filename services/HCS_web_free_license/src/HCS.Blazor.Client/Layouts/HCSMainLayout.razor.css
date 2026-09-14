@@ -11,8 +11,9 @@
     --hcs-primary: var(--hcs-color-primary, var(--color-primary, #00B4A9));
     --hcs-primary-soft: var(--hcs-color-primary-soft, var(--color-primary-light, #E0F7F5));
     --hcs-ease: var(--hcs-motion-ease, cubic-bezier(.22, 1, .36, 1));
+    --hcs-branding-background-scrim: color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent);
     background:
-        linear-gradient(rgba(245, 248, 252, .91), rgba(245, 248, 252, .91)),
+        linear-gradient(var(--hcs-branding-background-scrim), var(--hcs-branding-background-scrim)),
         var(--hcs-branding-background-image, none),
         var(--hcs-bg);
     background-attachment: fixed;

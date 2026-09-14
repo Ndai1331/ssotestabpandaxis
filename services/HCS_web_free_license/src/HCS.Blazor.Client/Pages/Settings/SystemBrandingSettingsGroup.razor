@@ -152,7 +152,7 @@
     private string LogoPreviewOrCurrent => logoPreviewUrl ?? logoUrl;
     private string BackgroundPreviewStyle => string.IsNullOrWhiteSpace(backgroundPreviewUrl ?? backgroundUrl)
         ? string.Empty
-        : $"background-image: linear-gradient(180deg, rgba(245, 248, 252, .72), rgba(245, 248, 252, .72)), url('{backgroundPreviewUrl ?? backgroundUrl}'); background-position: center; background-size: cover;";
+        : $"background-image: linear-gradient(color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent), color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent)), url('{backgroundPreviewUrl ?? backgroundUrl}'); background-position: center; background-size: cover;";
 
     private void MarkDirty()
     {

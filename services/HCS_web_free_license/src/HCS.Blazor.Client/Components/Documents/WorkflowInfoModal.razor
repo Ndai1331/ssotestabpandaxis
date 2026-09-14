@@ -15,91 +15,162 @@
             }
             else
             {
-                <div class="hcs-workflow-summary mb-3">
-                    <div><strong>@document.Title</strong><span class="hcs-catalog-code">#@document.Number</span></div>
-                    <div class="hcs-workflow-summary__meta">
-                        <span class="hcs-status-badge hcs-status-badge--info">@InstanceStatusText(instance.Status)</span>
-                        <span>@L["Work:CurrentStep"]: @CurrentStepLabel()</span>
+                var workflowHistory = BuildWorkflowHistory();
+                var showWorkflowName = !string.Equals(definition.Name.Trim(), document.Title.Trim(), StringComparison.OrdinalIgnoreCase);
+                <div class="hcs-workflow-summary">
+                    <div class="hcs-workflow-summary__main">
+                        <h2 class="hcs-workflow-summary__title">@document.Title</h2>
+                        <span class="hcs-workflow-summary__code">#@document.Number</span>
+                        @if (showWorkflowName)
+                        {
+                            <span class="hcs-workflow-summary__flow">@L["Menu:Workflows"]: @definition.Name</span>
+                        }
+                    </div>
+                    <div class="hcs-workflow-summary__aside">
+                        <span class="hcs-status-badge @InstanceBadgeClass(instance.Status)">@InstanceStatusText(instance.Status)</span>
+                        <div class="hcs-workflow-summary__step">
+                            <span>@L["Work:CurrentStep"]</span>
+                            <strong>@CurrentStepLabel()</strong>
+                        </div>
                     </div>
                 </div>
                 <div class="hcs-workflow-info">
-                    <aside class="hcs-workflow-info__timeline" aria-label="@L["Work:CurrentStep"]">
-                        <h3 class="h6 mb-3">@definition.Name</h3>
-                        <ol class="list-unstyled mb-0">
+                    <aside class="hcs-workflow-info__timeline" aria-label="@L["Work:StepsAndAssignees"]">
+                        <h3 class="hcs-workflow-info__heading">@L["Work:StepsAndAssignees"]</h3>
+                        <ol class="hcs-timeline">
                             @foreach (var step in definition.Steps.OrderBy(x => x.Order))
                             {
                                 var task = instance.Tasks.FirstOrDefault(x => string.Equals(x.StepCode, step.Code, StringComparison.OrdinalIgnoreCase));
                                 var isCurrent = task is not null && string.Equals(task.StepCode, CurrentStepCode(), StringComparison.OrdinalIgnoreCase);
                                 <li class="hcs-timeline-step @TimelineClass(task)" aria-current="@(isCurrent ? "step" : null)">
                                     <span class="hcs-timeline-step__marker" aria-hidden="true">@TimelineIcon(task)</span>
-                                    <div class="min-w-0">
-                                        <div class="d-flex flex-wrap gap-2 align-items-center"><strong>@step.Name</strong><span class="hcs-status-badge hcs-status-badge--info">@L[$"Work:StepType.{step.Type}"]</span></div>
-                                        <span class="hcs-catalog-desc">@StatusText(task) @if (step.SlaDays is { } sla) { <span> · @sla @L["Work:Days"]</span> }</span>
+                                    <div class="hcs-timeline-step__body">
+                                        <div class="hcs-timeline-step__title">
+                                            <strong>@step.Name</strong>
+                                            <span class="hcs-timeline-step__kind">@L[$"Work:StepType.{step.Type}"]</span>
+                                        </div>
+                                        <p class="hcs-timeline-step__meta">
+                                            <span>@StatusText(task)</span>
+                                            @if (step.SlaDays is { } sla)
+                                            {
+                                                <span>· @L["Work:SlaDays"]: @sla</span>
+                                            }
+                                            @if (task?.DueAt is { } due)
+                                            {
+                                                <span>· @L["Feature:DueDate"]: @due.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                            }
+                                        </p>
                                         @if (task?.DecidedBy is { } actor)
                                         {
-                                            <div class="hcs-catalog-desc"><i class="fa fa-user-check me-1" aria-hidden="true"></i>@ActorName(actor)</div>
+                                            <p class="hcs-timeline-step__actor"><i class="fa fa-user-check" aria-hidden="true"></i>@ActorName(actor)</p>
                                         }
                                         else if (task?.AssigneeUserId is { } assignee)
                                         {
-                                            <div class="hcs-catalog-desc"><i class="fa fa-user me-1" aria-hidden="true"></i>@L["Work:Assignee"]: @ActorName(assignee)</div>
+                                            <p class="hcs-timeline-step__actor"><i class="fa fa-user" aria-hidden="true"></i>@L["Work:Assignee"]: @ActorName(assignee)</p>
                                         }
                                         @if (!string.IsNullOrWhiteSpace(task?.Comment))
                                         {
                                             <div class="hcs-workflow-step-comment"><strong>@L["Feature:Comment"]:</strong> @task.Comment</div>
                                         }
-                                        @if (IsOverdue(task)) { <span class="hcs-status-badge hcs-status-badge--danger">@L["Work:Overdue"]</span> }
+                                        @if (IsOverdue(task))
+                                        {
+                                            <span class="hcs-status-badge hcs-status-badge--danger">@L["Work:Overdue"]</span>
+                                        }
                                     </div>
                                 </li>
                             }
                         </ol>
                     </aside>
-                    <div class="min-w-0">
-                        <Tabs SelectedTab="@tab" SelectedTabChanged="OnTabChanged">
-                            <Items>
-                                <Tab Name="general"><i class="fa fa-clock-rotate-left me-1" aria-hidden="true"></i>@L["Feature:WorkflowHistory"]</Tab>
-                                <Tab Name="files"><i class="fa fa-paperclip me-1" aria-hidden="true"></i>@L["Feature:Attachments"]</Tab>
-                            </Items>
-                            <Content>
-                                <TabPanel Name="general">
-                                    @{ var workflowHistory = BuildWorkflowHistory(); }
-                                    <div class="hcs-workflow-panel-heading"><strong>@L["Feature:WorkflowHistory"]</strong><span class="hcs-catalog-desc">@workflowHistory.Count</span></div>
-                                    @if (workflowHistory.Count == 0)
-                                    {
-                                        <DocsEmpty Compact="true" />
-                                    }
-                                    else
-                                    {
-                                        <ol class="hcs-workflow-history list-unstyled mb-0">
-                                            @foreach (var entry in workflowHistory)
-                                            {
-                                                <li><span class="hcs-workflow-history__dot" aria-hidden="true"></span><div><strong>@WorkflowHistoryLabel(entry)</strong>@if (!string.IsNullOrWhiteSpace(entry.StepName)) { <span class="hcs-catalog-desc"> · @entry.StepName</span> }<div class="hcs-catalog-desc">@WorkflowActorLabel(entry) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>@if (!string.IsNullOrWhiteSpace(entry.Detail)) { <div class="small">@L["Feature:Comment"]: @entry.Detail</div> }</div></li>
-                                            }
-                                        </ol>
-                                    }
-                                </TabPanel>
-                                <TabPanel Name="files">
-                                    <div class="hcs-workflow-panel-heading"><strong>@L["Feature:Attachments"]</strong><span class="hcs-catalog-desc">@document.Files.Count</span></div>
-                                    @if (document.Files.Count == 0)
-                                    {
-                                        <DocsEmpty Compact="true" />
-                                    }
-                                    else
-                                    {
-                                        <div class="hcs-workflow-files">
-                                            @foreach (var file in document.Files)
-                                            {
-                                                <div class="hcs-workflow-file"><div class="min-w-0"><strong class="d-block text-truncate">@file.FileName</strong><span class="hcs-catalog-desc">@file.ContentType · @FormatSize(file.Size)</span></div><div class="hcs-row-actions"><Button Size="Size.Small" Color="Color.Primary" Outline="true" Class="hcs-action-button hcs-action-button--preview" Title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" Clicked="() => PreviewFileAsync(file)"><i class="fa fa-eye" aria-hidden="true"></i></Button><Button Size="Size.Small" Color="Color.Light" Outline="true" Title="@L["Chat:DownloadFile"]" aria-label="@L["Chat:DownloadFile"]" Clicked="() => DownloadAsync(file)"><i class="fa fa-download" aria-hidden="true"></i></Button></div></div>
-                                            }
-                                        </div>
-                                    }
-                                </TabPanel>
-                            </Content>
-                        </Tabs>
-                    </div>
+                    <section class="hcs-workflow-info__panel" aria-label="@L["Feature:WorkflowHistory"]">
+                        <div class="process-side-tabs" role="tablist" aria-label="@L["Feature:WorkflowHistory"]">
+                            <button class="process-side-tab @(rightTab == "history" ? "is-active" : null)" type="button" role="tab"
+                                    aria-selected="@(rightTab == "history")" aria-controls="wf-info-pane-history" id="wf-info-tab-history"
+                                    @onclick="@(() => SetRightTab("history"))">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                                @L["Feature:WorkflowHistory"]
+                                <span class="hcs-workflow-info-tabcount">@workflowHistory.Count</span>
+                            </button>
+                            <button class="process-side-tab @(rightTab == "files" ? "is-active" : null)" type="button" role="tab"
+                                    aria-selected="@(rightTab == "files")" aria-controls="wf-info-pane-files" id="wf-info-tab-files"
+                                    @onclick="@(() => SetRightTab("files"))">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 11.6 12.8 20a5 5 0 0 1-7.1-7.1l9.2-9.2a3.2 3.2 0 0 1 4.5 4.5L10.2 17.4a1.4 1.4 0 1 1-2-2l8.2-8.2"/></svg>
+                                @L["Feature:Attachments"]
+                                <span class="hcs-workflow-info-tabcount">@document.Files.Count</span>
+                            </button>
+                        </div>
+                        @if (rightTab == "history")
+                        {
+                            <div class="process-pane" id="wf-info-pane-history" role="tabpanel" aria-labelledby="wf-info-tab-history">
+                                @if (workflowHistory.Count == 0)
+                                {
+                                    <DocsEmpty Compact="true" />
+                                }
+                                else
+                                {
+                                    <ol class="history-list">
+                                        @foreach (var entry in workflowHistory)
+                                        {
+                                            <li>
+                                                <span class="history-dot" aria-hidden="true"></span>
+                                                <div>
+                                                    <strong>@WorkflowHistoryLabel(entry)</strong>
+                                                    @if (!string.IsNullOrWhiteSpace(entry.StepName))
+                                                    {
+                                                        <span class="hcs-catalog-desc"> · @entry.StepName</span>
+                                                    }
+                                                    <p>@WorkflowActorLabel(entry) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                                                    @if (!string.IsNullOrWhiteSpace(entry.Detail))
+                                                    {
+                                                        <p>@L["Feature:Comment"]: @entry.Detail</p>
+                                                    }
+                                                </div>
+                                            </li>
+                                        }
+                                    </ol>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="process-pane" id="wf-info-pane-files" role="tabpanel" aria-labelledby="wf-info-tab-files">
+                                @if (document.Files.Count == 0)
+                                {
+                                    <DocsEmpty Compact="true" />
+                                }
+                                else
+                                {
+                                    <div class="hcs-workflow-files">
+                                        @foreach (var file in document.Files)
+                                        {
+                                            <div class="hcs-workflow-file">
+                                                <span class="hcs-workflow-file__icon" aria-hidden="true">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <strong class="d-block text-truncate">@file.FileName</strong>
+                                                    <span class="hcs-catalog-desc">@file.ContentType · @FormatSize(file.Size)</span>
+                                                </div>
+                                                <div class="hcs-row-actions">
+                                                    <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewFileAsync(file)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                    </button>
+                                                    <button class="doc-action" type="button" title="@L["Chat:DownloadFile"]" aria-label="@L["Chat:DownloadFile"]" @onclick="() => DownloadAsync(file)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </section>
                 </div>
             }
         </ModalBody>
-        <ModalFooter Class="hcs-catalog-modal__footer"><Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="HideAsync">@L["Catalog:Cancel"]</Button></ModalFooter>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <button type="button" class="btn hcs-catalog-close" @onclick="HideAsync">@L["Catalog:Close"]</button>
+        </ModalFooter>
     </ModalContent>
 </Modal>
 @code {
@@ -109,7 +180,7 @@
     private DocumentDto? document;
     private WorkflowInstanceDto? instance;
     private WorkflowDefinitionDto? definition;
-    private string tab = "general";
+    private string rightTab = "history";
     private readonly Dictionary<Guid, string> userNames = [];
 
     public async Task ShowAsync(DocumentDto document, WorkflowInstanceDto instance, WorkflowDefinitionDto definition)
@@ -117,14 +188,14 @@
         this.document = document;
         this.instance = instance;
         this.definition = definition;
-        tab = "general";
+        rightTab = "history";
         userNames.Clear();
         await LoadUserNamesAsync();
         if (modal is not null) await modal.Show();
     }
 
     public Task HideAsync() => modal?.Hide() ?? Task.CompletedTask;
-    private Task OnTabChanged(string value) { tab = value; return Task.CompletedTask; }
+    private void SetRightTab(string value) => rightTab = value;
 
     private async Task LoadUserNamesAsync()
     {
@@ -147,6 +218,14 @@
     private static bool IsOverdue(ApprovalTaskDto? task) => task is { Status: ApprovalTaskStatus.Pending, DueAt: { } due } && due < DateTime.UtcNow;
     private string StatusText(ApprovalTaskDto? task) => task is null ? L["Work:Status.Waiting"].Value : L[$"Work:ApprovalStatus.{task.Status}"].Value;
     private string InstanceStatusText(WorkflowInstanceStatus status) => L[$"Work:WorkflowStatus.{status}"].Value;
+
+    private static string InstanceBadgeClass(WorkflowInstanceStatus status) => status switch
+    {
+        WorkflowInstanceStatus.Running => "hcs-status-badge--running",
+        WorkflowInstanceStatus.Completed => "hcs-status-badge--success",
+        WorkflowInstanceStatus.Returned => "hcs-status-badge--warning",
+        _ => "hcs-status-badge--danger"
+    };
 
     private IReadOnlyList<WorkflowHistoryEntry> BuildWorkflowHistory()
     {
@@ -194,9 +273,9 @@
 
     private static MarkupString TimelineIcon(ApprovalTaskDto? task) => task?.Status switch
     {
-        ApprovalTaskStatus.Approved => new MarkupString("<i class=\"fa fa-check\"></i>"),
-        ApprovalTaskStatus.Returned or ApprovalTaskStatus.Rejected => new MarkupString("<i class=\"fa fa-times\"></i>"),
-        _ => new MarkupString("<i class=\"fa fa-circle\"></i>")
+        ApprovalTaskStatus.Approved => new MarkupString("<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" aria-hidden=\"true\"><path d=\"m5 12 5 5L19 7\"/></svg>"),
+        ApprovalTaskStatus.Returned or ApprovalTaskStatus.Rejected => new MarkupString("<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6 6 18\"/></svg>"),
+        _ => new MarkupString("<svg width=\"8\" height=\"8\" viewBox=\"0 0 8 8\" aria-hidden=\"true\"><circle cx=\"4\" cy=\"4\" r=\"4\" fill=\"currentColor\"/></svg>")
     };
 
     private Task PreviewFileAsync(DocumentFileDto file) => OnPreviewFile.InvokeAsync(file);

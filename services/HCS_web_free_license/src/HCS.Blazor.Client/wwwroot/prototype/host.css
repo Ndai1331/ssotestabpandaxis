@@ -859,8 +859,15 @@ body:has(.page-chat) {
 /* ——— Calendar / event dash (lich.html, su-kien.html) ——— */
 .hcs-app-shell .page-cal .cal-nav .btn-sm,
 .hcs-app-shell .page-cal .cal-view-btn {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
   height: 36px;
   min-height: 36px !important;
+}
+
+.hcs-app-shell .page-cal .cal-view-btn svg {
+  flex-shrink: 0;
 }
 
 .hcs-app-shell .page-cal .cal-board {
@@ -1866,6 +1873,20 @@ body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__opt
   padding: 0 16px !important;
 }
 
+body:has(.hcs-app-shell) .modal .modal-footer .btn.hcs-decision-secondary,
+body:has(.hcs-app-shell) .signing-action-modal .btn.hcs-decision-secondary {
+  background: var(--color-white, #fff) !important;
+  border: 1px solid var(--color-border, #e5e7eb) !important;
+  color: var(--color-gray-700, #334155) !important;
+}
+
+body:has(.hcs-app-shell) .modal .modal-footer .btn.hcs-decision-secondary:hover:not(:disabled),
+body:has(.hcs-app-shell) .signing-action-modal .btn.hcs-decision-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary, #00B4A9) 8%, #fff) !important;
+  border-color: var(--color-primary, #00B4A9) !important;
+  color: var(--color-primary, #007F7C) !important;
+}
+
 .hcs-app-shell .process-side-tab,
 body:has(.hcs-app-shell) .process-side-tab {
   background: transparent !important;
@@ -2582,7 +2603,7 @@ body:has(.hcs-app-shell) .send-doc-modal .send-dept-toggle.is-leaf {
 
 .signing-action-modal .process-split {
   align-items: start;
-  grid-template-columns: minmax(18rem, 1fr) minmax(22rem, 1.2fr);
+  grid-template-columns: minmax(22rem, 1fr) minmax(22rem, 1.1fr);
 }
 
 .signing-action-modal .hcs-signing-side-pane,

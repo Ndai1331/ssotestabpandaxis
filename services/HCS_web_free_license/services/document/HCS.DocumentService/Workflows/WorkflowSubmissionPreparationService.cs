@@ -4,6 +4,7 @@ using HCS.DocumentService.Documents;
 using HCS.DocumentService.Signing;
 using HCS.DocumentService.Storage;
 using Microsoft.EntityFrameworkCore;
+using Volo.Abp;
 using Volo.Abp.BlobStoring;
 
 namespace HCS.DocumentService.Workflows;
@@ -54,29 +55,24 @@ public sealed class WorkflowSubmissionPreparationService(
             .ThenByDescending(x => x.CreationTime)
             .FirstOrDefault();
         if (file is null)
-            throw new InvalidOperationException("A document file is required before presenting the document for signing.");
+            throw new BusinessException("Document:SigningFileRequired");
 
         var signature = await db.UserSignatures.AsNoTracking()
             .Where(x => x.UserId == actorUserId && x.Type == UserSignatureType.Electronic && x.IsActive)
             .OrderByDescending(x => x.IsDefault)
             .ThenByDescending(x => x.CreationTime)
             .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new InvalidOperationException("The submitter must configure an active electronic signature before presenting the document for signing.");
+            ?? throw new BusinessException("Document:ElectronicSignatureRequired");
 
         var now = DateTime.UtcNow;
         if (signature.ValidFrom.HasValue && signature.ValidFrom.Value > now)
-            throw new InvalidOperationException("The submitter's electronic signature is not yet valid.");
+            throw new BusinessException("Document:ElectronicSignatureNotYetValid");
         if (signature.ValidTo.HasValue && signature.ValidTo.Value < now)
-            throw new InvalidOperationException("The submitter's electronic signature has expired.");
+            throw new BusinessException("Document:ElectronicSignatureExpired");
 
         var profile = await profileResolver.ResolveAsync(actorUserId, cancellationToken);
         var fullName = string.IsNullOrWhiteSpace(profile.FullName) ? actorUserId.ToString("N") : profile.FullName;
-        await using var signatureStream = await signingBlobs.GetAsync(signature.BlobName, cancellationToken);
-        await using var signatureBuffer = new MemoryStream();
-        await signatureStream.CopyToAsync(signatureBuffer, cancellationToken);
-        var signatureBytes = signatureBuffer.ToArray();
-        if (signatureBytes.Length == 0)
-            throw new InvalidOperationException("The submitter's electronic signature image is empty.");
+        var signatureBytes = await ReadSignatureImageAsync(signature.BlobName, cancellationToken);
         var renderedSignatureBytes = ElectronicSignatureLayoutComposer.Compose(signatureBytes);
 
         await using var fileStream = await documentBlobs.GetAsync(file.BlobName, cancellationToken);
@@ -87,7 +83,7 @@ public sealed class WorkflowSubmissionPreparationService(
         if (IsWord(file))
         {
             if (string.IsNullOrWhiteSpace(signingContent))
-                throw new InvalidOperationException("Signing content is required for a Word signing document.");
+                throw new BusinessException("Document:SigningContentRequired");
             await PrepareWordAsync(document, actorUserId, file, sourceBytes, renderedSignatureBytes, fullName,
                 profile, signingContent, now, createdBlobNames, cancellationToken);
         }
@@ -116,11 +112,11 @@ public sealed class WorkflowSubmissionPreparationService(
         var replacedWord = WordPlaceholderReplacer.ReplacePrepared(sourceBytes, signatureBytes, fullName,
             profile.PositionName, profile.DepartmentName, signingContent, now);
         if (!converter.IsAvailable)
-            throw new InvalidOperationException("LibreOffice is required to prepare a Word signing document.");
+            throw new BusinessException("Document:LibreOfficeRequired");
         var pdfBytes = await converter.ConvertAsync(replacedWord, cancellationToken)
-            ?? throw new InvalidOperationException("The Word signing document could not be converted to PDF.");
+            ?? throw new BusinessException("Document:WordToPdfFailed");
         if (pdfBytes.Length == 0)
-            throw new InvalidOperationException("The Word signing document could not be converted to PDF.");
+            throw new BusinessException("Document:WordToPdfFailed");
 
         // Keep the uploaded/template Word and its original PDF immutable. The
         // rendered submission is a new pair and becomes the next signing input.
@@ -159,6 +155,31 @@ public sealed class WorkflowSubmissionPreparationService(
         await documentBlobs.SaveAsync(blobName, stream, overrideExisting: false, cancellationToken: cancellationToken);
         createdBlobNames.Add(blobName);
         return blobName;
+    }
+
+    private async Task<byte[]> ReadSignatureImageAsync(string blobName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(blobName) || !await signingBlobs.ExistsAsync(blobName, cancellationToken))
+            throw new BusinessException("Document:SignatureImageMissing");
+
+        try
+        {
+            await using var signatureStream = await signingBlobs.GetAsync(blobName, cancellationToken);
+            await using var signatureBuffer = new MemoryStream();
+            await signatureStream.CopyToAsync(signatureBuffer, cancellationToken);
+            var signatureBytes = signatureBuffer.ToArray();
+            if (signatureBytes.Length == 0)
+                throw new BusinessException("Document:SignatureImageMissing");
+            return signatureBytes;
+        }
+        catch (BusinessException)
+        {
+            throw;
+        }
+        catch (AbpException)
+        {
+            throw new BusinessException("Document:SignatureImageMissing");
+        }
     }
 
     private static bool IsWord(DocumentFile file) =>

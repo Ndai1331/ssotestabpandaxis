@@ -172,6 +172,7 @@ body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-secondary,
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-light,
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-primary,
 body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel,
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-close,
 body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel,
 body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-light,
 body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary,
@@ -184,6 +185,20 @@ body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary,
   color: var(--color-danger) !important;
 }
 
+body:has(.hcs-app-shell) .modal .modal-footer .btn.hcs-decision-secondary,
+body:has(.hcs-app-shell) .modal .btn.hcs-decision-secondary {
+  background: var(--color-white, #fff) !important;
+  border: 1px solid var(--color-border, #e5e7eb) !important;
+  color: var(--color-gray-700, #334155) !important;
+}
+
+body:has(.hcs-app-shell) .modal .modal-footer .btn.hcs-decision-secondary:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-decision-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary, #00B4A9) 8%, #fff) !important;
+  border-color: var(--color-primary, #00B4A9) !important;
+  color: var(--color-primary, #007F7C) !important;
+}
+
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-secondary:hover:not(:disabled),
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-light:hover:not(:disabled),
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline:hover:not(:disabled),
@@ -191,6 +206,7 @@ body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-secondary:hover:n
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-light:hover:not(:disabled),
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-primary:hover:not(:disabled),
 body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel:hover:not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-close:hover:not(:disabled),
 body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel:hover:not(:disabled),
 body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-light:hover:not(:disabled),
 body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary:hover:not(:disabled),

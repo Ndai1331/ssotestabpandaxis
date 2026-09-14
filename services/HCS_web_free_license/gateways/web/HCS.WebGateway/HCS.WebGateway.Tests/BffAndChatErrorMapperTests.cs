@@ -46,6 +46,15 @@ public sealed class BffAndChatErrorMapperTests
     }
 
     [Fact]
+    public void Save_signature_blob_missing_is_localized_instead_of_generic_internal_error()
+    {
+        var exception = new BffApiException(HttpStatusCode.Forbidden,
+            """{"error":{"code":"Document:SignatureImageMissing","message":"An internal error occurred during your request!"}}""");
+        Assert.Equal("Document:SignatureImageMissing",
+            BffErrorMapper.From(localizer, exception, BffErrorKind.Save));
+    }
+
+    [Fact]
     public void Chat_unauthorized_is_a_session_message_not_a_missing_grant()
     {
         var exception = new CollaborationApiException(HttpStatusCode.Unauthorized, null);

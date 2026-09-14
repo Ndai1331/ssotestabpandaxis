@@ -95,6 +95,26 @@ public sealed class DomainBehaviorTests
     }
 
     [Fact]
+    public void Contact_search_matches_lowercase_full_name_phone_or_email()
+    {
+        const string term = "hạnh";
+        ChatContactSearch.Matches("Hoàng Thị", "Hạnh", "0326054106", "hanh@bv.com", term)
+            .ShouldBeTrue();
+        ChatContactSearch.Matches("Trần Thị Ngọc", "Thạnh", null, null, term)
+            .ShouldBeTrue();
+        ChatContactSearch.Matches("Hoàng Thị", "Hạnh", null, null, "0326054106")
+            .ShouldBeFalse();
+        ChatContactSearch.Matches("Nguyễn", "Văn A", "0326054106", null, "032605")
+            .ShouldBeTrue();
+        ChatContactSearch.Matches("Nguyễn", "Văn A", null, "hanh@bv.com", "hanh@")
+            .ShouldBeTrue();
+        ChatContactSearch.Matches("Nguyễn", "Văn A", null, null, "hanh", "hanh.ht")
+            .ShouldBeTrue();
+        ChatContactSearch.Matches("Nguyễn", "Văn A", "0901111111", "a@bv.com", term)
+            .ShouldBeFalse();
+    }
+
+    [Fact]
     public void Display_name_prefers_vietnamese_full_name_over_generic_user_fallback()
     {
         UserDisplayNames.FromPerson("Nguyễn", "Văn A", "doctor").ShouldBe("Nguyễn Văn A");

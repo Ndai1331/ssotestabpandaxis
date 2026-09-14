@@ -7,13 +7,19 @@
 @inject CollaborationClient Chat
 
 <PageTitle>@L["Menu:CalendarEvents"] · HCS</PageTitle>
-<section class="page page-wf page-cal">
-    <div class="page-head">
-        <h1>@L["Feature:CalendarTitle"]</h1>
+<section class="page page-wf page-cal" aria-labelledby="calendar-title">
+    <div class="page-head page-head-block">
+        <h1 id="calendar-title">@L["Feature:CalendarTitle"]</h1>
         <div class="page-actions">
             <button class="btn btn-primary" type="button" @onclick="OpenCreate">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                @L["Catalog:New"]
+                @L["Feature:EventCreate"]
+            </button>
+            <button class="btn btn-outline @(showSearch ? "is-open" : null) @(IsSearchFiltered ? "is-filtered" : null)"
+                    type="button" aria-expanded="@showSearch.ToString().ToLowerInvariant()"
+                    aria-controls="cal-search-form" @onclick="ToggleSearch">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                @L["Catalog:Search"]
             </button>
         </div>
     </div>
@@ -34,26 +40,47 @@
         </div>
         <h2 class="cal-month-title">@viewTitle</h2>
         <div class="cal-nav-right" role="tablist" aria-label="@L["Feature:CalendarTitle"]">
-            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(MonthView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(MonthView)" @onclick="() => SetViewAsync(MonthView)">@L["Feature:MonthView"]</button>
-            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(WeekView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(WeekView)" @onclick="() => SetViewAsync(WeekView)">@L["Feature:WeekView"]</button>
-            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(DayView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(DayView)" @onclick="() => SetViewAsync(DayView)">@L["Feature:DayView"]</button>
-            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(ListView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(ListView)" @onclick="() => SetViewAsync(ListView)">@L["Feature:ListView"]</button>
+            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(MonthView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(MonthView)" @onclick="() => SetViewAsync(MonthView)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                @L["Feature:MonthView"]
+            </button>
+            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(WeekView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(WeekView)" @onclick="() => SetViewAsync(WeekView)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M10 14h4"/></svg>
+                @L["Feature:WeekView"]
+            </button>
+            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(DayView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(DayView)" @onclick="() => SetViewAsync(DayView)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><rect x="10" y="13" width="4" height="4" rx="0.6"/></svg>
+                @L["Feature:DayView"]
+            </button>
+            <button class="btn btn-outline btn-sm cal-view-btn @(IsView(ListView) ? "is-active" : null)" type="button" role="tab" aria-selected="@IsView(ListView)" @onclick="() => SetViewAsync(ListView)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7h12M8 12h12M8 17h12"/><path d="M4 7h.01M4 12h.01M4 17h.01"/></svg>
+                @L["Feature:ListView"]
+            </button>
         </div>
     </div>
-    <form class="docs-toolbar list-search" @onsubmit="ApplySearch" @onsubmit:preventDefault>
+    <form class="docs-toolbar list-search" id="cal-search-form" hidden="@(!showSearch)" @onsubmit="ApplySearch" @onsubmit:preventDefault>
         <label class="sr-only" for="cal-q">@L["Catalog:SearchPlaceholder"]</label>
         <input class="input docs-search" id="cal-q" type="search" @bind="filter" @bind:event="oninput" placeholder="@L["Catalog:SearchPlaceholder"]" autocomplete="off" />
         <button class="btn btn-primary" type="submit">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
             @L["Catalog:SearchButton"]
         </button>
-        <button class="btn btn-outline" type="button" @onclick="ResetSearch">@L["Catalog:Reset"]</button>
+        <button class="btn btn-outline" type="button" @onclick="ResetSearch">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+            @L["Catalog:Reset"]
+        </button>
     </form>
     <div class="cal-toolbar">
-        <div class="cal-legend" aria-label="@L["Feature:CalendarTitle"]">
-            <span class="cal-type is-active"><span class="cal-type-dot is-project" aria-hidden="true"></span>@L["Feature:CalendarLegendProject"]</span>
-            <span class="cal-type is-active"><span class="cal-type-dot is-task" aria-hidden="true"></span>@L["Feature:CalendarLegendTask"]</span>
-            <span class="cal-type is-active"><span class="cal-type-dot is-event" aria-hidden="true"></span>@L["Feature:CalendarLegendEvent"]</span>
+        <div class="cal-legend" role="group" aria-label="@L["Feature:CalendarTitle"]">
+            <button class="cal-type @(KindOn("project") ? "is-active" : null)" type="button" aria-pressed="@KindOn("project").ToString().ToLowerInvariant()" @onclick='() => ToggleKind("project")'>
+                <span class="cal-type-dot is-project" aria-hidden="true"></span>@L["Feature:CalendarLegendProject"]
+            </button>
+            <button class="cal-type @(KindOn("task") ? "is-active" : null)" type="button" aria-pressed="@KindOn("task").ToString().ToLowerInvariant()" @onclick='() => ToggleKind("task")'>
+                <span class="cal-type-dot is-task" aria-hidden="true"></span>@L["Feature:CalendarLegendTask"]
+            </button>
+            <button class="cal-type @(KindOn("event") ? "is-active" : null)" type="button" aria-pressed="@KindOn("event").ToString().ToLowerInvariant()" @onclick='() => ToggleKind("event")'>
+                <span class="cal-type-dot is-event" aria-hidden="true"></span>@L["Feature:CalendarLegendEvent"]
+            </button>
         </div>
     </div>
     @if (isLoading && events.Count == 0)
@@ -71,8 +98,8 @@
     <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["Feature:EventCreate"]</ModalTitle><CloseButton /></ModalHeader>
     <ModalBody Class="hcs-catalog-modal__body">
         <div class="hcs-catalog-form">
-        <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventTitle" /></Field>
-        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="2" @bind="form.Description" autocomplete="off"></textarea></Field>
+        <Field><FieldLabel>@L["Event:Name"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventTitle" /></Field>
+        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
         <div class="hcs-form-row hcs-form-row--equal">
             <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="form.Start" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
             <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="form.End" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton /></Field>
@@ -80,23 +107,27 @@
         <div class="hcs-form-row hcs-form-row--equal">
             <Field><FieldLabel>@L["Catalog:EventTypeTitle"]</FieldLabel>
                 <Select TValue="string" @bind-Value="form.EventType">
-                    <SelectItem Value="@("Meeting")">Meeting</SelectItem>
-                    @foreach (var type in eventTypes) { <SelectItem Value="@type.Name">@type.Name</SelectItem> }
+                    <SelectItem Value="@("Meeting")">@L["Calendar:Meeting"]</SelectItem>
+                    @foreach (var type in eventTypes.Where(x => !string.Equals(x.Name, "Meeting", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <SelectItem Value="@type.Name">@type.Name</SelectItem>
+                    }
                 </Select>
             </Field>
             <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
                 <Select TValue="string" @bind-Value="form.Visibility">
-                    <SelectItem Value="@("Private")">Private</SelectItem>
-                    <SelectItem Value="@("Participants")">Participants</SelectItem>
-                    <SelectItem Value="@("Public")">Public</SelectItem>
+                    <SelectItem Value="@("Private")">@L["Calendar:VisibilityPrivate"]</SelectItem>
+                    <SelectItem Value="@("Participants")">@L["Calendar:VisibilityParticipants"]</SelectItem>
+                    <SelectItem Value="@("Public")">@L["Calendar:VisibilityPublic"]</SelectItem>
                 </Select>
             </Field>
         </div>
+        <Field><FieldLabel>@L["Event:Location"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Location" Name="hcsEventLocation" /></Field>
         <Field><FieldLabel>@L["Feature:RelatedType"]</FieldLabel>
             <Select TValue="string" Value="form.RelatedType" ValueChanged="OnRelatedTypeChanged">
-                <SelectItem Value="@("NONE")">NONE</SelectItem>
-                <SelectItem Value="@("PROJECT")">PROJECT</SelectItem>
-                <SelectItem Value="@("TASK")">TASK</SelectItem>
+                <SelectItem Value="@("NONE")">@L["Calendar:RelatedNone"]</SelectItem>
+                <SelectItem Value="@("PROJECT")">@L["Calendar:RelatedProject"]</SelectItem>
+                <SelectItem Value="@("TASK")">@L["Calendar:RelatedTask"]</SelectItem>
             </Select>
         </Field>
         @if (form.RelatedType is "PROJECT" or "TASK")
@@ -108,10 +139,20 @@
                                 Search="SearchRelatedAsync" />
             </Field>
         }
-        <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
-            @foreach (var contact in contacts)
+        <Field>
+            <FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
+            @if (contacts.Count == 0)
             {
-                <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
+                <p class="hcs-form-note mb-0">@L["Catalog:EmptyTitle"]</p>
+            }
+            else
+            {
+                <div class="hcs-cal-people">
+                    @foreach (var contact in contacts)
+                    {
+                        <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
+                    }
+                </div>
             }
         </Field>
         </div>
@@ -137,20 +178,31 @@
     private ProjectTaskViewModal? taskModal;
     private CalendarEventViewModal? eventViewModal;
     private bool isLoading;
+    private bool showSearch;
     private string filter = "", search = "";
     private string viewType = MonthView;
     private string viewTitle = "";
     private string lastRangeKey = "";
     private DateTime rangeFrom = DateTime.Today.AddDays(-7);
     private DateTime rangeTo = DateTime.Today.AddMonths(1).AddDays(7);
+    private readonly HashSet<string> visibleKinds = new(StringComparer.Ordinal) { "project", "task", "event" };
 
     private IReadOnlyList<HcsCalendarJsEvent> MappedEvents => CalendarEventDisplay.ToJs(VisibleEvents);
-    private List<CalendarEventDto> VisibleEvents => string.IsNullOrWhiteSpace(search)
-        ? events
-        : events.Where(x => x.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
-            || x.EventType.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+    private List<CalendarEventDto> VisibleEvents => events
+        .Where(x => visibleKinds.Contains(CalendarEventDisplay.Kind(x)))
+        .Where(x => string.IsNullOrWhiteSpace(search)
+            || x.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || x.EventType.Contains(search, StringComparison.OrdinalIgnoreCase))
+        .ToList();
 
     private bool IsView(string view) => viewType == view;
+    private bool IsSearchFiltered => !string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(filter);
+    private bool KindOn(string kind) => visibleKinds.Contains(kind);
+    private void ToggleSearch() => showSearch = !showSearch;
+    private void ToggleKind(string kind)
+    {
+        if (!visibleKinds.Remove(kind)) visibleKinds.Add(kind);
+    }
     private void ApplySearch() => search = SearchText.Normalize(filter);
     private void ResetSearch() { filter = search = ""; }
 
@@ -228,7 +280,7 @@
     {
         try
         {
-            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, null, form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
+            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, string.IsNullOrWhiteSpace(form.Location) ? null : form.Location.Trim(), form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
             if (modal is not null) await modal.Hide();
             await LoadEventsAsync();
         }
@@ -281,6 +333,7 @@
         public DateTime End { get; set; } = DateTime.Now.AddHours(1);
         public string EventType { get; set; } = "Meeting";
         public string Visibility { get; set; } = "Private";
+        public string Location { get; set; } = "";
         public string RelatedType { get; set; } = "NONE";
         public Guid? RelatedId { get; set; }
         public HashSet<Guid> Participants { get; } = [];

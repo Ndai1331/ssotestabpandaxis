@@ -158,107 +158,133 @@
 <Modal @ref="modal" Size="ModalSize.ExtraLarge" Closing="OnSignModalClosing">
     <ModalContent Centered Class="hcs-catalog-modal signing-action-modal">
         <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@ActionModalTitle(selected)</ModalTitle><CloseButton Clicked="CloseSignAsync" /></ModalHeader>
-        <ModalBody Class="hcs-catalog-modal__body">
+        <ModalBody Class="hcs-catalog-modal__body border-none">
             @if (selected is not null)
             {
-                <div class="process-hero">
-                    <div>
-                        <p class="process-hero-title" title="@selected.Document.Title">@selected.Document.Title</p>
-                        <p class="process-hero-code">#@selected.Document.Number</p>
+                var workflowHistory = BuildWorkflowHistory(selected);
+                var showWorkflowName = !string.Equals(selected.Definition.Name.Trim(), selected.Document.Title.Trim(), StringComparison.OrdinalIgnoreCase);
+                <div class="hcs-workflow-summary">
+                    <div class="hcs-workflow-summary__main">
+                        <h2 class="hcs-workflow-summary__title" title="@selected.Document.Title">@selected.Document.Title</h2>
+                        <span class="hcs-workflow-summary__code">#@selected.Document.Number</span>
+                        @if (showWorkflowName)
+                        {
+                            <span class="hcs-workflow-summary__flow">@L["Menu:Workflows"]: @selected.Definition.Name</span>
+                        }
                     </div>
-                    <div class="process-hero-meta">
-                        <span class="badge badge-info">@ApprovalStatusText(selected.Task.Status)</span>
-                        <span>@L["Work:Assignee"]: @SignerName(selected.Task.AssigneeUserId)</span>
+                    <div class="hcs-workflow-summary__aside">
+                        <span class="hcs-status-badge @TaskBadgeClass(selected.Task.Status)">@ApprovalStatusText(selected.Task.Status)</span>
+                        <div class="hcs-workflow-summary__step">
+                            <span>@L["Work:CurrentStep"]</span>
+                            <strong>@(CurrentStep(selected)?.Name ?? L["Catalog:EmptyTitle"].Value)</strong>
+                        </div>
                     </div>
                 </div>
                 <div class="process-split">
                     <div class="process-flow">
-                        <h3>@selected.Definition.Name</h3>
-                        <ol class="flow-steps">
+                        <h3 class="hcs-workflow-info__heading">@L["Work:StepsAndAssignees"]</h3>
+                        <ol class="hcs-timeline">
                             @foreach (var step in selected.Definition.Steps.OrderBy(x => x.Order))
                             {
                                 var isCurrent = string.Equals(step.Code, selected.Task.StepCode, StringComparison.OrdinalIgnoreCase);
                                 var stepTask = selected.Instance.Tasks.FirstOrDefault(x => string.Equals(x.StepCode, step.Code, StringComparison.OrdinalIgnoreCase));
-                                <li class="flow-step @(isCurrent ? "is-current" : null)">
-                                    <span class="flow-dot" aria-hidden="true"></span>
-                                    <div class="flow-body">
-                                        <div class="flow-title-row">
+                                <li class="hcs-timeline-step @TimelineClass(stepTask, isCurrent)" aria-current="@(isCurrent ? "step" : null)">
+                                    <span class="hcs-timeline-step__marker" aria-hidden="true">@TimelineIcon(stepTask)</span>
+                                    <div class="hcs-timeline-step__body">
+                                        <div class="hcs-timeline-step__title">
                                             <strong>@step.Name</strong>
-                                            <span class="badge badge-info">@L[$"Work:StepType.{step.Type}"]</span>
+                                            <span class="hcs-timeline-step__kind">@L[$"Work:StepType.{step.Type}"]</span>
                                         </div>
-                                        @if (stepTask is not null)
+                                        <p class="hcs-timeline-step__meta">
+                                            <span>@(stepTask is null ? L["Work:Status.Waiting"].Value : ApprovalStatusText(stepTask.Status))</span>
+                                            @if (step.SlaDays is { } sla)
+                                            {
+                                                <span>· @L["Work:SlaDays"]: @sla</span>
+                                            }
+                                            @if (stepTask?.DueAt is { } due)
+                                            {
+                                                <span>· @L["Feature:DueDate"]: @due.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                            }
+                                        </p>
+                                        @if (stepTask?.DecidedBy is { } actor)
                                         {
-                                            <p class="flow-wait">
-                                                @ApprovalStatusText(stepTask.Status)
-                                                @if (step.SlaDays is { } sla) { <span> · @sla @L["Work:Days"]</span> }
+                                            <p class="hcs-timeline-step__actor">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                                                @SignerName(actor)
                                             </p>
                                         }
-                                        @if (isCurrent)
+                                        else if (isCurrent || stepTask?.AssigneeUserId is not null)
                                         {
-                                            <p class="flow-actor">
+                                            <p class="hcs-timeline-step__actor">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
-                                                @L["Work:Assignee"]: @SignerName(selected.Task.AssigneeUserId)
+                                                @L["Work:Assignee"]: @SignerName(stepTask?.AssigneeUserId ?? selected.Task.AssigneeUserId)
                                             </p>
                                         }
                                         @if (!string.IsNullOrWhiteSpace(stepTask?.Comment))
                                         {
                                             <div class="hcs-workflow-step-comment"><strong>@L["Feature:Comment"]:</strong> @stepTask.Comment</div>
                                         }
+                                        @if (stepTask is { Status: ApprovalTaskStatus.Pending, DueAt: { } overdue } && overdue < DateTime.UtcNow)
+                                        {
+                                            <span class="hcs-status-badge hcs-status-badge--danger">@L["Work:Overdue"]</span>
+                                        }
                                     </div>
                                 </li>
                             }
                         </ol>
-                        <div class="field">
-                            <label class="field-label" for="sign-comment">@L["Feature:Comment"]</label>
-                            <textarea class="input" id="sign-comment" rows="3" @bind="form.Comment"></textarea>
+                        <div class="hcs-signing-decision">
+                            <div class="field">
+                                <label class="field-label" for="sign-comment">@L["Feature:Comment"]</label>
+                                <textarea class="input" id="sign-comment" rows="4" @bind="form.Comment"></textarea>
+                            </div>
+                            @if (IsSignStep(selected))
+                            {
+                                <div class="field">
+                                    <label class="field-label" for="sign-kind">@L["Feature:Kind"]</label>
+                                    <select class="select" id="sign-kind" value="@form.Kind" @onchange="OnSigningKindSelectChanged">
+                                        <option value="0">@L["Feature:Electronic"]</option>
+                                        <option value="1">@L["Feature:RemoteCa"]</option>
+                                        <option value="2">@L["Feature:Hsm"]</option>
+                                        <option value="3">@L["Feature:UsbToken"]</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label" for="sign-signature">@L["Feature:UserSignatures"]</label>
+                                    <select class="select" id="sign-signature" @bind="form.SignatureId">
+                                        <option value="">—</option>
+                                        @foreach (var signature in SignaturesForSelectedKind)
+                                        {
+                                            <option value="@signature.Id.ToString()">@signature.FileName · @SignatureTypeLabel(signature.Type) @(signature.IsDefault ? $"({L["Feature:DefaultSignature"]})" : "")</option>
+                                        }
+                                    </select>
+                                    @if (SigningOptionsLoadFailed)
+                                    {
+                                        <p class="hcs-catalog-desc" role="alert">
+                                            @L["Feature:SigningOptionsLoadFailed"]
+                                            <button type="button" class="btn btn-outline" @onclick="LoadSigningOptionsAsync" disabled="@isLoadingSigningOptions">@L["Catalog:Retry"]</button>
+                                        </p>
+                                    }
+                                    else if (SignaturesForSelectedKind.Count == 0)
+                                    {
+                                        <p class="hcs-catalog-desc">@L["Feature:NoMatchingSignature"]</p>
+                                    }
+                                </div>
+                                <div class="field">
+                                    <label class="field-label" for="sign-file">@L["Feature:Files"]</label>
+                                    <select class="select" id="sign-file" @bind="form.FileId">
+                                        <option value="">@L["Catalog:ChooseType"]</option>
+                                        @foreach (var file in selected.Document.Files.Where(DocumentFilePick.IsPdf))
+                                        {
+                                            <option value="@file.Id.ToString()">@file.FileName</option>
+                                        }
+                                    </select>
+                                </div>
+                            }
+                            @if (report is not null && (report.Completed > 0 || report.Failed > 0))
+                            {
+                                <p class="hcs-signing-decision__report">@L["Feature:Completed"]: @report.Completed · @L["Feature:Failed"]: @report.Failed</p>
+                            }
                         </div>
-                        @if (IsSignStep(selected))
-                        {
-                            <div class="field">
-                                <label class="field-label" for="sign-kind">@L["Feature:Kind"]</label>
-                                <select class="select" id="sign-kind" value="@form.Kind" @onchange="OnSigningKindSelectChanged">
-                                    <option value="0">@L["Feature:Electronic"]</option>
-                                    <option value="1">@L["Feature:RemoteCa"]</option>
-                                    <option value="2">@L["Feature:Hsm"]</option>
-                                    <option value="3">@L["Feature:UsbToken"]</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label" for="sign-signature">@L["Feature:UserSignatures"]</label>
-                                <select class="select" id="sign-signature" @bind="form.SignatureId">
-                                    <option value="">—</option>
-                                    @foreach (var signature in SignaturesForSelectedKind)
-                                    {
-                                        <option value="@signature.Id.ToString()">@signature.FileName · @SignatureTypeLabel(signature.Type) @(signature.IsDefault ? $"({L["Feature:DefaultSignature"]})" : "")</option>
-                                    }
-                                </select>
-                                @if (SigningOptionsLoadFailed)
-                                {
-                                    <p class="hcs-catalog-desc" role="alert">
-                                        @L["Feature:SigningOptionsLoadFailed"]
-                                        <button type="button" class="btn btn-outline" @onclick="LoadSigningOptionsAsync" disabled="@isLoadingSigningOptions">@L["Catalog:Retry"]</button>
-                                    </p>
-                                }
-                                else if (SignaturesForSelectedKind.Count == 0)
-                                {
-                                    <p class="hcs-catalog-desc">@L["Feature:NoMatchingSignature"]</p>
-                                }
-                            </div>
-                            <div class="field">
-                                <label class="field-label" for="sign-file">@L["Feature:Files"]</label>
-                                <select class="select" id="sign-file" @bind="form.FileId">
-                                    <option value="">@L["Catalog:ChooseType"]</option>
-                                    @foreach (var file in selected.Document.Files.Where(DocumentFilePick.IsPdf))
-                                    {
-                                        <option value="@file.Id.ToString()">@file.FileName</option>
-                                    }
-                                </select>
-                            </div>
-                        }
-                        @if (report is not null)
-                        {
-                            <p class="hcs-catalog-desc">@L["Feature:Completed"]: @report.Completed · @L["Feature:Failed"]: @report.Failed</p>
-                        }
                     </div>
                     <section class="process-side hcs-signing-side-pane" aria-label="@L["Feature:WorkflowHistory"]">
                         <div class="process-side-tabs" role="tablist" aria-label="@L["Feature:WorkflowHistory"]">
@@ -267,93 +293,95 @@
                                     @onclick="@(() => SetApprovalSideTab("history"))">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                                 @L["Feature:WorkflowHistory"]
+                                <span class="hcs-workflow-info-tabcount">@workflowHistory.Count</span>
                             </button>
                             <button class="process-side-tab @(approvalSideTab == "files" ? "is-active" : null)" type="button" role="tab"
                                     aria-selected="@(approvalSideTab == "files")" aria-controls="sign-pane-files" id="sign-tab-files"
                                     @onclick="@(() => SetApprovalSideTab("files"))">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 11.6 12.8 20a5 5 0 0 1-7.1-7.1l9.2-9.2a3.2 3.2 0 0 1 4.5 4.5L10.2 17.4a1.4 1.4 0 1 1-2-2l8.2-8.2"/></svg>
                                 @L["Feature:Attachments"]
+                                <span class="hcs-workflow-info-tabcount">@selected.Document.Files.Count</span>
                             </button>
                         </div>
-                        <div class="process-pane" id="sign-pane-history" role="tabpanel" aria-labelledby="sign-tab-history" hidden="@(approvalSideTab != "history")">
-                            @{ var workflowHistory = BuildWorkflowHistory(selected); }
-                            <div class="process-pane-head">
-                                <h3>@L["Feature:WorkflowHistory"]</h3>
-                                <span class="process-pane-count">@workflowHistory.Count</span>
+                        @if (approvalSideTab == "history")
+                        {
+                            <div class="process-pane" id="sign-pane-history" role="tabpanel" aria-labelledby="sign-tab-history">
+                                @if (workflowHistory.Count == 0)
+                                {
+                                    <DocsEmpty Compact="true" />
+                                }
+                                else
+                                {
+                                    <ol class="history-list">
+                                        @foreach (var entry in workflowHistory)
+                                        {
+                                            <li>
+                                                <span class="history-dot" aria-hidden="true"></span>
+                                                <div>
+                                                    <strong>@WorkflowHistoryLabel(entry)</strong>
+                                                    @if (!string.IsNullOrWhiteSpace(entry.StepName))
+                                                    {
+                                                        <span class="hcs-catalog-desc"> · @entry.StepName</span>
+                                                    }
+                                                    <p>@WorkflowActorLabel(entry) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                                                    @if (!string.IsNullOrWhiteSpace(entry.Detail))
+                                                    {
+                                                        <p>@L["Feature:Comment"]: @entry.Detail</p>
+                                                    }
+                                                </div>
+                                            </li>
+                                        }
+                                    </ol>
+                                }
                             </div>
-                            @if (workflowHistory.Count == 0)
-                            {
-                                <p class="process-empty">@L["Catalog:EmptyDescription"]</p>
-                            }
-                            else
-                            {
-                                <ol class="history-list">
-                                    @foreach (var entry in workflowHistory)
-                                    {
-                                        <li>
-                                            <span class="history-dot" aria-hidden="true"></span>
-                                            <div>
-                                                <strong>@WorkflowHistoryLabel(entry)</strong>
-                                                @if (!string.IsNullOrWhiteSpace(entry.StepName))
-                                                {
-                                                    <span class="hcs-catalog-desc"> · @entry.StepName</span>
-                                                }
-                                                <p>@WorkflowActorLabel(entry) · @entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
-                                                @if (!string.IsNullOrWhiteSpace(entry.Detail))
-                                                {
-                                                    <p>@L["Feature:Comment"]: @entry.Detail</p>
-                                                }
+                        }
+                        else
+                        {
+                            <div class="process-pane" id="sign-pane-files" role="tabpanel" aria-labelledby="sign-tab-files">
+                                @if (selected.Document.Files.Count == 0)
+                                {
+                                    <DocsEmpty Compact="true" />
+                                }
+                                else
+                                {
+                                    <div class="hcs-workflow-files">
+                                        @foreach (var file in selected.Document.Files)
+                                        {
+                                            <div class="hcs-workflow-file @(signPreviewFile?.Id == file.Id ? "hcs-workflow-file--active" : null)">
+                                                <span class="hcs-workflow-file__icon" aria-hidden="true">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <strong class="d-block text-truncate">@file.FileName</strong>
+                                                    <span class="hcs-catalog-desc">@file.ContentType · @FormatSize(file.Size)</span>
+                                                </div>
+                                                <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewSigningFileAsync(file)">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                </button>
                                             </div>
-                                        </li>
+                                        }
+                                    </div>
+                                    @if (signPreviewFile is not null && !string.IsNullOrWhiteSpace(signPdfUrl))
+                                    {
+                                        <div class="hcs-signing-preview"><HcsPdfFrame Source="@signPdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(28)" FileName="@SignPdfDownloadName" /></div>
                                     }
-                                </ol>
-                            }
-                        </div>
-                        <div class="process-pane" id="sign-pane-files" role="tabpanel" aria-labelledby="sign-tab-files" hidden="@(approvalSideTab != "files")">
-                            <div class="process-pane-head">
-                                <h3>@L["Feature:Attachments"]</h3>
-                                <span class="process-pane-count">@selected.Document.Files.Count</span>
+                                    else if (!string.IsNullOrWhiteSpace(signPdfError))
+                                    {
+                                        <p class="hcs-catalog-desc" role="alert">@signPdfError</p>
+                                    }
+                                    else if (signPreviewFile is not null)
+                                    {
+                                        <div class="hcs-file-preview-card"><i class="fa fa-file-lines" aria-hidden="true"></i><div class="min-w-0"><strong class="d-block text-truncate">@signPreviewFile.FileName</strong><span class="hcs-catalog-desc">@L["Work:PreviewPdfOnly"]</span></div></div>
+                                    }
+                                }
                             </div>
-                            @if (selected.Document.Files.Count == 0)
-                            {
-                                <p class="process-empty">@L["Work:NoFileChosen"]</p>
-                            }
-                            else
-                            {
-                                <div class="hcs-workflow-files">
-                                    @foreach (var file in selected.Document.Files)
-                                    {
-                                        <div class="hcs-workflow-file @(signPreviewFile?.Id == file.Id ? "hcs-workflow-file--active" : null)">
-                                            <div class="min-w-0">
-                                                <strong class="d-block text-truncate">@file.FileName</strong>
-                                                <span class="hcs-catalog-desc">@file.ContentType · @FormatSize(file.Size)</span>
-                                            </div>
-                                            <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewSigningFileAsync(file)">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                                            </button>
-                                        </div>
-                                    }
-                                </div>
-                                @if (signPreviewFile is not null && !string.IsNullOrWhiteSpace(signPdfUrl))
-                                {
-                                    <div class="hcs-signing-preview"><HcsPdfFrame Source="@signPdfUrl" Title="@L["Work:PdfPreview"]" ViewerHeight="Height.Rem(28)" FileName="@SignPdfDownloadName" /></div>
-                                }
-                                else if (!string.IsNullOrWhiteSpace(signPdfError))
-                                {
-                                    <p class="hcs-catalog-desc" role="alert">@signPdfError</p>
-                                }
-                                else if (signPreviewFile is not null)
-                                {
-                                    <div class="hcs-file-preview-card"><i class="fa fa-file-lines" aria-hidden="true"></i><div class="min-w-0"><strong class="d-block text-truncate">@signPreviewFile.FileName</strong><span class="hcs-catalog-desc">@L["Work:PreviewPdfOnly"]</span></div></div>
-                                }
-                            }
-                        </div>
+                        }
                     </section>
                 </div>
             }
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
-            <button class="btn btn-outline" type="button" @onclick="CloseSignAsync">@L["Catalog:Cancel"]</button>
+            <button class="btn hcs-catalog-close" type="button" @onclick="CloseSignAsync">@L["Catalog:Cancel"]</button>
             @if (selected is { } selectedItem)
             {
                 <SigningDecisionButtons Show="CanActOn(selectedItem)"
@@ -875,6 +903,26 @@
     private string StatusClass(SigningQueueItem item) => StatusOf(item).Css;
     private string StatusText(SigningQueueItem item) => StatusOf(item).Text;
     private string ApprovalStatusText(ApprovalTaskStatus status) => L[$"Work:ApprovalStatus.{status}"].Value;
+    private static string TaskBadgeClass(ApprovalTaskStatus status) => status switch
+    {
+        ApprovalTaskStatus.Pending => "hcs-status-badge--running",
+        ApprovalTaskStatus.Approved => "hcs-status-badge--success",
+        ApprovalTaskStatus.Returned => "hcs-status-badge--warning",
+        _ => "hcs-status-badge--danger"
+    };
+    private static string TimelineClass(ApprovalTaskDto? task, bool isCurrent) => task?.Status switch
+    {
+        ApprovalTaskStatus.Approved => "hcs-timeline-step--signed",
+        ApprovalTaskStatus.Returned or ApprovalTaskStatus.Rejected or ApprovalTaskStatus.Cancelled => "hcs-timeline-step--return",
+        ApprovalTaskStatus.Pending when isCurrent => "hcs-timeline-step--active",
+        _ => "hcs-timeline-step--pending"
+    };
+    private static MarkupString TimelineIcon(ApprovalTaskDto? task) => task?.Status switch
+    {
+        ApprovalTaskStatus.Approved => new MarkupString("<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" aria-hidden=\"true\"><path d=\"m5 12 5 5L19 7\"/></svg>"),
+        ApprovalTaskStatus.Returned or ApprovalTaskStatus.Rejected => new MarkupString("<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6 6 18\"/></svg>"),
+        _ => new MarkupString("<svg width=\"8\" height=\"8\" viewBox=\"0 0 8 8\" aria-hidden=\"true\"><circle cx=\"4\" cy=\"4\" r=\"4\" fill=\"currentColor\"/></svg>")
+    };
     private string SignerName(Guid? id)
     {
         if (id is not { } userId) return L["Work:Assignee"].Value;

@@ -25,11 +25,11 @@
                     <div class="hcs-form-row hcs-form-row--equal">
                         <div>
                             <div class="hcs-catalog-desc">@L["Catalog:EventTypeTitle"]</div>
-                            <strong>@item.EventType</strong>
+                            <strong>@EventTypeLabel()</strong>
                         </div>
                         <div>
                             <div class="hcs-catalog-desc">@L["Feature:Visibility"]</div>
-                            <strong>@item.Visibility</strong>
+                            <strong>@L[CalendarUi.VisibilityKey(item.Visibility)]</strong>
                         </div>
                     </div>
                     <div>
@@ -48,7 +48,7 @@
                     {
                         <div>
                             <div class="hcs-catalog-desc">@L["Feature:RelatedType"]</div>
-                            <strong>@RelatedTypeLabel()</strong>
+                            <strong>@L[CalendarUi.RelatedTypeKey(item.RelatedType)]</strong>
                         </div>
                     }
                 </div>
@@ -56,6 +56,10 @@
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
             <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="HideAsync">@L["Catalog:Close"]</Button>
+            @if (item is { CanManage: true })
+            {
+                <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="EditAsync">@L["Catalog:Edit"]</Button>
+            }
             @if (HasRelated)
             {
                 <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="OpenRelatedAsync">@L["Work:OpenRelated"]</Button>
@@ -102,6 +106,13 @@
         Navigation.NavigateTo(WorkUi.EventHref(item.RelatedType, item.RelatedId, item.Id));
     }
 
+    private async Task EditAsync()
+    {
+        if (item is null) return;
+        await HideAsync();
+        Navigation.NavigateTo($"/calendar-event-detail/{item.Id:D}");
+    }
+
     private bool IsProject => string.Equals(item?.RelatedType, "PROJECT", StringComparison.OrdinalIgnoreCase);
     private bool IsTask => string.Equals(item?.RelatedType, "TASK", StringComparison.OrdinalIgnoreCase);
 
@@ -111,10 +122,9 @@
         return item is not null && Guid.TryParse(item.RelatedId, out relatedId) && (IsProject || IsTask);
     }
 
-    private string RelatedTypeLabel()
+    private string EventTypeLabel()
     {
-        if (IsProject) return L["Menu:Projects"];
-        if (IsTask) return L["Menu:Tasks"];
-        return item?.RelatedType ?? "";
+        var key = CalendarUi.EventTypeKey(item?.EventType);
+        return string.IsNullOrEmpty(key) ? item?.EventType ?? "" : L[key];
     }
 }

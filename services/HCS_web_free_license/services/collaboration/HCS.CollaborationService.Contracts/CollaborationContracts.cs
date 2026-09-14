@@ -105,6 +105,28 @@ public static class ChatNotificationRules
             || link.StartsWith("/chat1/", StringComparison.OrdinalIgnoreCase));
 }
 
+public static class ChatContactSearch
+{
+    public static bool Matches(
+        string? surname,
+        string? givenName,
+        string? phoneNumber,
+        string? email,
+        string searchTerm,
+        string? userName = null)
+    {
+        var fullName = ((surname ?? string.Empty) + " " + (givenName ?? string.Empty)).ToLowerInvariant();
+        return fullName.Contains(searchTerm, StringComparison.Ordinal)
+            || ContainsInsensitive(phoneNumber, searchTerm)
+            || ContainsInsensitive(email, searchTerm)
+            || ContainsInsensitive(userName, searchTerm);
+    }
+
+    private static bool ContainsInsensitive(string? value, string searchTerm) =>
+        !string.IsNullOrEmpty(value)
+        && value.ToLowerInvariant().Contains(searchTerm, StringComparison.Ordinal);
+}
+
 public static class UserDisplayNames
 {
     public static string FromPerson(string? surname, string? givenName, string? userName, string? jwtFullName = null)
