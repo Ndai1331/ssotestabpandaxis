@@ -29,7 +29,7 @@ public sealed class SystemBrandingState(
         ? SystemBrandingDefaults.Description
         : Current.Description;
 
-    public bool ShowTopbar => Current.ShowTopbar;
+    public bool ShowBrandingText => Current.ShowBrandingText;
 
     public string LogoUrl => ResolveAssetUrl(Current.Logo?.Url) ?? "/images/logo/logo.png";
     public string FaviconUrl => ResolveAssetUrl(Current.Favicon?.Url) ?? "/favicon.ico";
@@ -138,7 +138,7 @@ public sealed class SystemBrandingState(
 
     private static bool IsSame(SystemBrandingDto left, SystemBrandingDto right) =>
         left.Revision == right.Revision &&
-        left.ShowTopbar == right.ShowTopbar &&
+        left.ShowBrandingText == right.ShowBrandingText &&
         string.Equals(left.Title, right.Title, StringComparison.Ordinal) &&
         string.Equals(left.Description, right.Description, StringComparison.Ordinal) &&
         string.Equals(left.Logo?.Url, right.Logo?.Url, StringComparison.Ordinal) &&

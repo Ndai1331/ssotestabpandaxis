@@ -7,7 +7,7 @@ public sealed class SystemBrandingDto
 {
     public string Title { get; set; } = SystemBrandingDefaults.Title;
     public string Description { get; set; } = SystemBrandingDefaults.Description;
-    public bool ShowTopbar { get; set; }
+    public bool ShowBrandingText { get; set; }
     public long Revision { get; set; }
     public SystemBrandingAssetDto? Logo { get; set; }
     public SystemBrandingAssetDto? Favicon { get; set; }

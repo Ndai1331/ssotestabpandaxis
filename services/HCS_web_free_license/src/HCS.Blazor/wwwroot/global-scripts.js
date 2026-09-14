@@ -53,7 +53,9 @@ window.hcsDownloadTextFile = (fileName, content, mimeType) => {
 
 window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgroundUrl) => {
     const nextTitle = typeof title === "string" && title.trim() ? title.trim() : "HCS";
-    const nextDescription = typeof description === "string" ? description.trim() : "";
+    const nextDescription = typeof description === "string" && description.trim()
+        ? description.trim()
+        : "Hệ thống hành chính số";
     const nextLogoUrl = typeof logoUrl === "string" && logoUrl ? logoUrl : "/images/logo/logo.png";
     const nextFaviconUrl = typeof faviconUrl === "string" && faviconUrl ? faviconUrl : "/favicon.ico";
     const nextBackgroundImage = typeof backgroundUrl === "string" && backgroundUrl
@@ -109,6 +111,47 @@ window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgr
         element.style.setProperty("--hcs-branding-background-image", nextBackgroundImage);
     });
 };
+
+// Load public branding before Blazor becomes interactive so the boot screen
+// uses the configured API asset URL instead of briefly showing the fallback.
+window.hcsLoadSystemBranding = async () => {
+    const configuredOrigin = document.documentElement.dataset.hcsBrandingApiOrigin;
+    const origin = (configuredOrigin || window.location.origin).replace(/\/+$/, "");
+
+    try {
+        const response = await fetch(`${origin}/api/hcs/system-branding/public`, {
+            credentials: "omit",
+            headers: { Accept: "application/json" }
+        });
+        if (!response.ok) {
+            return;
+        }
+
+        const branding = await response.json();
+        const absoluteAssetUrl = (asset) => {
+            if (!asset || typeof asset.url !== "string" || !asset.url.trim()) {
+                return null;
+            }
+
+            try {
+                return new URL(asset.url, origin).href;
+            } catch {
+                return null;
+            }
+        };
+
+        window.hcsApplySystemBranding(
+            branding.title,
+            branding.description,
+            absoluteAssetUrl(branding.logo),
+            absoluteAssetUrl(branding.favicon),
+            absoluteAssetUrl(branding.background));
+    } catch {
+        // The interactive branding state retries after Blazor starts.
+    }
+};
+
+window.hcsLoadSystemBranding();
 
 const hcsNormalizeCulture = (value) => {
     if (typeof value !== "string") {

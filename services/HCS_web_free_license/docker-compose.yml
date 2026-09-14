@@ -32,6 +32,7 @@ x-hcs-image: &hcs-image
     Minio__EndPoint: minio:9000
     Minio__AccessKey: ${HCS_MINIO_ROOT_USER}
     Minio__SecretKey: ${HCS_MINIO_ROOT_PASSWORD}
+    Minio__BucketName: ${HCS_MINIO_ROOT_PASSWORD:-hcsbucket}
     Minio__WithSSL: "false"
     Minio__CreateBucketIfNotExists: "true"
   depends_on:

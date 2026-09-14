@@ -99,7 +99,7 @@ public sealed class SystemBrandingAppService(
             await settingManager.SetGlobalAsync(HCSSettings.BrandingTitle, title);
             await settingManager.SetGlobalAsync(HCSSettings.BrandingDescription, description);
             await settingManager.SetGlobalAsync(
-                HCSSettings.BrandingShowTopbar,
+                HCSSettings.BrandingShowText,
                 (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(description))
                     ? "true"
                     : "false");
@@ -161,15 +161,15 @@ public sealed class SystemBrandingAppService(
     {
         var configuredTitle = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingTitle);
         var configuredDescription = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingDescription);
-        var configuredShowTopbar = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingShowTopbar);
+        var configuredShowText = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingShowText);
         var title = string.IsNullOrWhiteSpace(configuredTitle)
             ? SystemBrandingDefaults.Title
             : configuredTitle.Trim();
         var description = string.IsNullOrWhiteSpace(configuredDescription)
             ? SystemBrandingDefaults.Description
             : configuredDescription.Trim();
-        var showTopbar = bool.TryParse(configuredShowTopbar, out var parsedShowTopbar)
-            ? parsedShowTopbar
+        var showBrandingText = bool.TryParse(configuredShowText, out var parsedShowText)
+            ? parsedShowText
             : IsCustomized(configuredTitle, SystemBrandingDefaults.Title) ||
               IsCustomized(configuredDescription, SystemBrandingDefaults.Description);
         var revision = await ReadRevisionAsync(cancellationToken);
@@ -180,7 +180,7 @@ public sealed class SystemBrandingAppService(
         {
             Title = string.IsNullOrWhiteSpace(title) ? SystemBrandingDefaults.Title : title,
             Description = string.IsNullOrWhiteSpace(description) ? SystemBrandingDefaults.Description : description,
-            ShowTopbar = showTopbar,
+            ShowBrandingText = showBrandingText,
             Revision = revision,
             Logo = MapAsset(assets, SystemBrandingDefaults.LogoSlot),
             Favicon = MapAsset(assets, SystemBrandingDefaults.FaviconSlot),
