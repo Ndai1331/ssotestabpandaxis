@@ -263,4 +263,9 @@ internal sealed class OrganizationCatalogApiException(HttpStatusCode statusCode,
     public string? ResponseBody { get; } = responseBody;
 }
 
-public sealed record UserDepartmentLookupDto(Guid UserId, Guid? DepartmentId, string? DepartmentName = null);
+public sealed record UserDepartmentLookupDto(
+    Guid UserId,
+    Guid? DepartmentId,
+    string? DepartmentName = null,
+    Guid? PositionId = null,
+    string? PositionName = null);

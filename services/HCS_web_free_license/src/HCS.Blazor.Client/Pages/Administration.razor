@@ -322,8 +322,9 @@
             users.AddRange(loadedUsers);
             totalUsers = Math.Min(int.MaxValue, (int)result.TotalCount);
             currentPage = Math.Clamp(currentPage, 1, PageCount);
-            await LoadUserRoleSummariesAsync(users, CancellationToken.None);
-            await LoadUserOrganizationSummariesAsync(users, CancellationToken.None);
+            await Task.WhenAll(
+                LoadUserRoleSummariesAsync(users, CancellationToken.None),
+                LoadUserOrganizationSummariesAsync(users, CancellationToken.None));
         }
         catch (IdentityAdminApiException exception)
         {
@@ -383,36 +384,49 @@
 
     private async Task LoadUserOrganizationSummariesAsync(IEnumerable<IdentityAdminUserDto> loadedUsers, CancellationToken cancellationToken)
     {
-        foreach (var user in loadedUsers)
+        var userIds = loadedUsers.Select(user => user.Id).ToArray();
+        if (userIds.Length == 0) return;
+
+        try
         {
-            try
+            var departmentsByUser = (await OrganizationClient.GetUserDepartmentsAsync(userIds, cancellationToken))
+                .ToDictionary(item => item.UserId);
+            foreach (var user in loadedUsers)
             {
-                var mappings = await IdentityClient.GetUserMappingsAsync(user.Id, cancellationToken);
-                var mapping = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
-                userDepartmentNames[user.Id] = mapping is null ? "—" : DepartmentName(mapping.DepartmentId);
+                departmentsByUser.TryGetValue(user.Id, out var mapping);
+                userDepartmentNames[user.Id] = mapping?.DepartmentId is { } departmentId ? DepartmentName(departmentId) : "—";
                 userPositionNames[user.Id] = mapping?.PositionId is { } positionId ? PositionName(positionId) : "—";
             }
-            catch (IdentityAdminApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+        }
+        catch (OrganizationCatalogApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+        {
+            foreach (var userId in userIds)
             {
-                userDepartmentNames[user.Id] = "—";
-                userPositionNames[user.Id] = "—";
+                userDepartmentNames[userId] = "—";
+                userPositionNames[userId] = "—";
             }
         }
     }
 
     private async Task LoadUserRoleSummariesAsync(IEnumerable<IdentityAdminUserDto> loadedUsers, CancellationToken cancellationToken)
     {
-        foreach (var user in loadedUsers)
+        var userIds = loadedUsers.Select(user => user.Id).ToArray();
+        if (userIds.Length == 0) return;
+
+        try
         {
-            try
+            var rolesByUser = (await IdentityClient.GetUserRolesAsync(userIds, cancellationToken))
+                .ToDictionary(item => item.UserId, item => item.RoleNames);
+            foreach (var user in loadedUsers)
             {
-                var userRoles = await IdentityClient.GetUserRolesAsync(user.Id, cancellationToken);
-                userRoleNames[user.Id] = string.Join(", ", userRoles.Select(role => role.Name));
+                userRoleNames[user.Id] = rolesByUser.TryGetValue(user.Id, out var roleNames)
+                    ? string.Join(", ", roleNames)
+                    : "—";
             }
-            catch (IdentityAdminApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
-            {
-                userRoleNames[user.Id] = "—";
-            }
+        }
+        catch (IdentityAdminApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+        {
+            foreach (var userId in userIds) userRoleNames[userId] = "—";
         }
     }
 

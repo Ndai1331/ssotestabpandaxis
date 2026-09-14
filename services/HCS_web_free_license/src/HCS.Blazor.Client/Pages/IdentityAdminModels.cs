@@ -38,6 +38,12 @@ internal sealed class IdentityAdminRoleDto
     public bool IsPublic { get; set; }
 }
 
+internal sealed class IdentityAdminUserRoleLookupDto
+{
+    public Guid UserId { get; set; }
+    public List<string> RoleNames { get; set; } = [];
+}
+
 internal sealed class IdentityAdminRoleCreateForm
 {
     public string Name { get; set; } = string.Empty;

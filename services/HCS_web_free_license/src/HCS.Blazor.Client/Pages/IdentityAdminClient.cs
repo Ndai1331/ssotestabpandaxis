@@ -91,6 +91,17 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         return result.Items ?? [];
     }
 
+    public async Task<IReadOnlyList<IdentityAdminUserRoleLookupDto>> GetUserRolesAsync(
+        IEnumerable<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Where(id => id != Guid.Empty).Distinct().Take(200).ToArray();
+        if (ids.Length == 0) return [];
+
+        var query = string.Join("&", ids.Select(id => $"userIds={id:D}"));
+        return await GetAsync<List<IdentityAdminUserRoleLookupDto>>(
+            $"api/identity/user-roles?{query}", cancellationToken);
+    }
+
     public Task UpdateUserRolesAsync(Guid userId, IEnumerable<string> roleNames, CancellationToken cancellationToken = default) =>
         SendAsync(HttpMethod.Put, $"api/identity/users/{userId:D}/roles", new { roleNames = roleNames.ToArray() }, cancellationToken);
 
