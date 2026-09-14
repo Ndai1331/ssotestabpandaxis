@@ -402,7 +402,11 @@
 
 /* ——— Main content rhythm ——— */
 .hcs-app-shell .hcs-main-content {
-  background: var(--color-background);
+  background-color: var(--color-background);
+  background-image: var(--hcs-branding-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
   color: var(--color-foreground);
   font-family: var(--font-sans);
 }
