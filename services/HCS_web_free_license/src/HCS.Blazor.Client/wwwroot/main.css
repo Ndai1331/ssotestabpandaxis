@@ -48,11 +48,14 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 }
 
 .hcs-boot-screen__logo {
+    aspect-ratio: 88 / 62;
     display: block;
-    height: auto;
+    height: 3.875rem;
     margin: 0 auto .35rem;
-    max-width: 5.5rem;
+    max-height: 3.875rem;
+    max-width: min(5.5rem, calc(100vw - 2rem));
     object-fit: contain;
+    width: min(5.5rem, calc(100vw - 2rem));
 }
 
 .hcs-boot-screen__spinner {

@@ -1,0 +1,12 @@
+@page "/administration/system-branding"
+@attribute [Authorize(Policy = HCSPermissions.SystemBranding.Update)]
+@using HCS.Blazor.Client.Pages.Settings
+@using HCS.Permissions
+@using Microsoft.AspNetCore.Authorization
+@inherits HCSComponentBase
+
+<PageTitle>@L["Settings:BrandingGroup"] · HCS</PageTitle>
+
+<main class="hcs-admin-page hcs-system-branding-page" aria-labelledby="system-branding-title">
+    <SystemBrandingSettingsGroup />
+</main>

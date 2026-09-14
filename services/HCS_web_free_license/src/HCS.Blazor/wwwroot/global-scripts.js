@@ -91,7 +91,10 @@ window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgr
     document.querySelectorAll("[data-hcs-system-branding-favicon]").forEach((element) => {
         element.setAttribute("href", nextFaviconUrl);
     });
-    document.querySelectorAll("[data-hcs-branding-logo]").forEach((element) => {
+    // The boot screen is rendered before the interactive Blazor app starts. Keep
+    // its logo in the same branding update path as the app-shell logo so a
+    // configured logo is visible while the application is loading as well.
+    document.querySelectorAll("[data-hcs-branding-logo], .hcs-boot-screen__logo").forEach((element) => {
         element.setAttribute("src", nextLogoUrl);
         element.setAttribute("alt", nextTitle);
     });

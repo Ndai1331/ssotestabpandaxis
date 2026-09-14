@@ -91,9 +91,12 @@ public sealed class HCSMenuContributor : IMenuContributor
         catalogs.AddItem(documentCatalogs);
         context.Menu.AddItem(catalogs);
 
-        context.Menu.AddItem(
-            Item("HCS.SystemBranding", "Quản trị cấu hình hệ thống", "/setting-management", "fa fa-sliders", 350)
+        var administration = Item("HCS.Administration", "Quản trị", icon: "fa fa-shield-halved", order: 350)
+            .RequireAuthenticated();
+        administration.AddItem(
+            Item("HCS.Administration.SystemBranding", "Cấu hình hệ thống", "/administration/system-branding", "fa fa-palette", 10)
                 .RequirePermissions(HCSPermissions.SystemBranding.Update));
+        context.Menu.AddItem(administration);
     }
 
     private void ConfigureUserMenu(MenuConfigurationContext context)
