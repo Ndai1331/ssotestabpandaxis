@@ -1,16 +1,13 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using HCS.Blazor.Client.Navigation;
 using HCS.Branding;
 using Microsoft.JSInterop;
-using Microsoft.Extensions.Configuration;
 
 namespace HCS.Blazor.Client.Branding;
 
 public sealed class SystemBrandingState(
     SystemBrandingClient client,
-    IConfiguration configuration,
     IJSRuntime js) : IAsyncDisposable
 {
     private readonly CancellationTokenSource lifetime = new();
@@ -111,7 +108,7 @@ public sealed class SystemBrandingState(
 
         return Uri.TryCreate(resourceUrl, UriKind.Absolute, out _)
             ? resourceUrl
-            : GatewayResourceUrlBuilder.Build(configuration, resourceUrl);
+            : client.BuildResourceUrl(resourceUrl);
     }
 
     private async Task ApplyBrowserBrandingAsync()

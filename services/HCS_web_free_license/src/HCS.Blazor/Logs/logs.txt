@@ -446,8 +446,8 @@ Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesA
    at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
    at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
    at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
-2026-09-14 09:52:50.688 +07:00 [INF] Starting web host.
-2026-09-14 09:52:51.180 +07:00 [FTL] Host terminated unexpectedly!
+2026-09-14 10:43:48.450 +07:00 [INF] Starting web host.
+2026-09-14 10:43:51.891 +07:00 [FTL] Host terminated unexpectedly!
 Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
  ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
    at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723
@@ -462,8 +462,8 @@ Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesA
    at Microsoft.Extensions.DependencyInjection.ServiceCollectionApplicationExtensions.AddApplicationAsync[TStartupModule](IServiceCollection services, Action`1 optionsAction)
    at Microsoft.Extensions.DependencyInjection.WebApplicationBuilderExtensions.AddApplicationAsync[TStartupModule](WebApplicationBuilder builder, Action`1 optionsAction)
    at HCS.Blazor.Program.Main(String[] args) in /Users/nguyenlong/Documents/Projects/bd-workspace/services/HCS_web_free_license/src/HCS.Blazor/Program.cs:line 41
-2026-09-14 10:06:02.282 +07:00 [INF] Starting web host.
-2026-09-14 10:06:02.709 +07:00 [FTL] Host terminated unexpectedly!
+2026-09-14 10:46:58.929 +07:00 [INF] Starting web host.
+2026-09-14 10:46:59.791 +07:00 [FTL] Host terminated unexpectedly!
 Volo.Abp.AbpInitializationException: An error occurred during ConfigureServicesAsync phase of the module HCS.Blazor.HCSBlazorModule, HCS.Blazor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null. See the inner exception for details.
  ---> StackExchange.Redis.RedisConnectionException: It was not possible to connect to the redis server(s). Error connecting right now. To allow this multiplexer to continue retrying until it's able to connect, use abortConnect=false in your connection string or AbortOnConnectFail=false; in your code.
    at StackExchange.Redis.ConnectionMultiplexer.ConnectImpl(ConfigurationOptions configuration, TextWriter writer, Nullable`1 serverType, EndPointCollection endpoints) in /_/src/StackExchange.Redis/ConnectionMultiplexer.cs:line 723

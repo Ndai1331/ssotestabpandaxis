@@ -1,3 +1,4 @@
+using HCS.Blazor.Client.Branding;
 using HCS.Blazor.Client.Collaboration;
 using HCS.Blazor.Client.Work;
 using Microsoft.Extensions.Configuration;
@@ -45,5 +46,15 @@ public sealed class AttachmentResourceUrlTests
         Assert.Equal(
             "https://api-hcs.htltech.vn/api/events/attachments/11111111-2222-3333-4444-555555555555",
             client.BuildEventAttachmentUrl(id));
+    }
+
+    [Fact]
+    public void Builds_system_branding_asset_url_on_the_gateway_origin()
+    {
+        var client = new SystemBrandingClient(null!, Configuration());
+
+        Assert.Equal(
+            "https://api-hcs.htltech.vn/api/hcs/system-branding/assets/logo?v=1",
+            client.BuildResourceUrl("/api/hcs/system-branding/assets/logo?v=1"));
     }
 }

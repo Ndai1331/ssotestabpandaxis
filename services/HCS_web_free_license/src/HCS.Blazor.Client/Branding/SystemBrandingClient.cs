@@ -6,14 +6,18 @@ using System.Net.Http.Json;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using HCS.Blazor.Client.Navigation;
 using HCS.Blazor.Client.Services;
 using HCS.Branding;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HCS.Blazor.Client.Branding;
 
-public sealed class SystemBrandingClient(IHttpClientFactory httpClientFactory)
+public sealed class SystemBrandingClient(
+    IHttpClientFactory httpClientFactory,
+    IConfiguration configuration)
 {
     private const string Endpoint = "api/hcs/system-branding";
 
@@ -21,14 +25,14 @@ public sealed class SystemBrandingClient(IHttpClientFactory httpClientFactory)
     {
         using var response = await CreateClient().GetAsync(Endpoint, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
-        return await ReadAsync(response, cancellationToken);
+        return NormalizeAssetUrls(await ReadAsync(response, cancellationToken));
     }
 
     public async Task<SystemBrandingDto> GetPublicAsync(CancellationToken cancellationToken = default)
     {
         using var response = await CreateClient().GetAsync($"{Endpoint}/public", cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
-        return await ReadAsync(response, cancellationToken);
+        return NormalizeAssetUrls(await ReadAsync(response, cancellationToken));
     }
 
     public async Task<SystemBrandingDto> UpdateAsync(
@@ -55,8 +59,11 @@ public sealed class SystemBrandingClient(IHttpClientFactory httpClientFactory)
 
         using var response = await CreateClient().PutAsync(Endpoint, content, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
-        return await ReadAsync(response, cancellationToken);
+        return NormalizeAssetUrls(await ReadAsync(response, cancellationToken));
     }
+
+    public string BuildResourceUrl(string resourceUrl) =>
+        GatewayResourceUrlBuilder.Build(configuration, resourceUrl);
 
     private static void AddFile(
         MultipartFormDataContent content,
@@ -96,6 +103,26 @@ public sealed class SystemBrandingClient(IHttpClientFactory httpClientFactory)
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         throw new BffApiException(response.StatusCode, body);
+    }
+
+    private SystemBrandingDto NormalizeAssetUrls(SystemBrandingDto branding)
+    {
+        branding.Logo = NormalizeAssetUrl(branding.Logo);
+        branding.Favicon = NormalizeAssetUrl(branding.Favicon);
+        branding.Background = NormalizeAssetUrl(branding.Background);
+        return branding;
+    }
+
+    private SystemBrandingAssetDto? NormalizeAssetUrl(SystemBrandingAssetDto? asset)
+    {
+        if (asset is null || string.IsNullOrWhiteSpace(asset.Url) ||
+            Uri.TryCreate(asset.Url, UriKind.Absolute, out _))
+        {
+            return asset;
+        }
+
+        asset.Url = BuildResourceUrl(asset.Url);
+        return asset;
     }
 
     private HttpClient CreateClient() => httpClientFactory.CreateClient("HCS.Bff");
