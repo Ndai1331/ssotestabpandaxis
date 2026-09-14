@@ -7,6 +7,7 @@ public static class HCSSettings
     public const string ShowSsoLoginButton = Prefix + ".Authentication.ShowSsoLoginButton";
     public const string BrandingTitle = Prefix + ".Branding.Title";
     public const string BrandingDescription = Prefix + ".Branding.Description";
+    public const string BrandingShowTopbar = Prefix + ".Branding.ShowTopbar";
     public const string BrandingRevision = Prefix + ".Branding.Revision";
     public const string BrandingLogoRevision = Prefix + ".Branding.LogoRevision";
     public const string BrandingFaviconRevision = Prefix + ".Branding.FaviconRevision";

@@ -148,6 +148,24 @@ public sealed class BffSecurityTests
         Assert.False(BffRequestPolicy.RequiresAntiforgery(context.Request));
     }
 
+    [Theory]
+    [InlineData("/api/hcs/system-branding/public")]
+    [InlineData("/api/hcs/system-branding/assets/logo?v=2")]
+    public async Task Proxy_authorization_handler_allows_public_branding_without_login(string path)
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Path = path;
+        var handler = new BffProxyAuthorizationHandler(new HttpContextAccessor { HttpContext = httpContext });
+        var authorizationContext = new AuthorizationHandlerContext(
+            [new BffProxyAuthorizationRequirement()],
+            new ClaimsPrincipal(),
+            resource: null);
+
+        await handler.HandleAsync(authorizationContext);
+
+        Assert.True(authorizationContext.HasSucceeded);
+    }
+
     [Fact]
     public void Login_return_url_rejects_open_redirects()
     {

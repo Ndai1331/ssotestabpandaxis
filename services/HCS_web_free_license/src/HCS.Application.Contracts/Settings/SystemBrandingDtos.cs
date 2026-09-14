@@ -7,6 +7,7 @@ public sealed class SystemBrandingDto
 {
     public string Title { get; set; } = SystemBrandingDefaults.Title;
     public string Description { get; set; } = SystemBrandingDefaults.Description;
+    public bool ShowTopbar { get; set; }
     public long Revision { get; set; }
     public SystemBrandingAssetDto? Logo { get; set; }
     public SystemBrandingAssetDto? Favicon { get; set; }
@@ -25,7 +26,7 @@ public sealed class SystemBrandingAssetDto
 
 public sealed class UpdateSystemBrandingDto
 {
-    [Required, StringLength(120)]
+    [StringLength(120)]
     public string Title { get; set; } = string.Empty;
 
     [StringLength(500)]

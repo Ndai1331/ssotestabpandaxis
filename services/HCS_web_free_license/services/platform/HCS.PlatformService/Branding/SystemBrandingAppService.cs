@@ -30,11 +30,7 @@ public sealed class SystemBrandingAppService(
         SystemBrandingUpdateRequest input,
         CancellationToken cancellationToken = default)
     {
-        var title = input.Title?.Trim();
-        if (string.IsNullOrWhiteSpace(title))
-        {
-            throw new BusinessException("HCS:BrandingTitleRequired", "Branding title is required.");
-        }
+        var title = input.Title?.Trim() ?? string.Empty;
 
         if (title.Length > 120)
         {
@@ -102,6 +98,11 @@ public sealed class SystemBrandingAppService(
 
             await settingManager.SetGlobalAsync(HCSSettings.BrandingTitle, title);
             await settingManager.SetGlobalAsync(HCSSettings.BrandingDescription, description);
+            await settingManager.SetGlobalAsync(
+                HCSSettings.BrandingShowTopbar,
+                (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(description))
+                    ? "true"
+                    : "false");
             await settingManager.SetGlobalAsync(HCSSettings.BrandingRevision, nextRevision.ToString(System.Globalization.CultureInfo.InvariantCulture));
             await SetAssetRevisionAsync(HCSSettings.BrandingLogoRevision, SystemBrandingDefaults.LogoSlot, prepared, input.RemoveLogo, nextRevision, cancellationToken);
             await SetAssetRevisionAsync(HCSSettings.BrandingFaviconRevision, SystemBrandingDefaults.FaviconSlot, prepared, input.RemoveFavicon, nextRevision, cancellationToken);
@@ -158,10 +159,19 @@ public sealed class SystemBrandingAppService(
 
     private async Task<SystemBrandingDto> GetSnapshotAsync(CancellationToken cancellationToken = default)
     {
-        var title = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingTitle)
-            ?? SystemBrandingDefaults.Title;
-        var description = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingDescription)
-            ?? SystemBrandingDefaults.Description;
+        var configuredTitle = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingTitle);
+        var configuredDescription = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingDescription);
+        var configuredShowTopbar = await settingManager.GetOrNullGlobalAsync(HCSSettings.BrandingShowTopbar);
+        var title = string.IsNullOrWhiteSpace(configuredTitle)
+            ? SystemBrandingDefaults.Title
+            : configuredTitle.Trim();
+        var description = string.IsNullOrWhiteSpace(configuredDescription)
+            ? SystemBrandingDefaults.Description
+            : configuredDescription.Trim();
+        var showTopbar = bool.TryParse(configuredShowTopbar, out var parsedShowTopbar)
+            ? parsedShowTopbar
+            : IsCustomized(configuredTitle, SystemBrandingDefaults.Title) ||
+              IsCustomized(configuredDescription, SystemBrandingDefaults.Description);
         var revision = await ReadRevisionAsync(cancellationToken);
         var assets = await db.SystemBrandingAssets.AsNoTracking()
             .ToDictionaryAsync(x => x.Slot, StringComparer.Ordinal, cancellationToken);
@@ -170,6 +180,7 @@ public sealed class SystemBrandingAppService(
         {
             Title = string.IsNullOrWhiteSpace(title) ? SystemBrandingDefaults.Title : title,
             Description = string.IsNullOrWhiteSpace(description) ? SystemBrandingDefaults.Description : description,
+            ShowTopbar = showTopbar,
             Revision = revision,
             Logo = MapAsset(assets, SystemBrandingDefaults.LogoSlot),
             Favicon = MapAsset(assets, SystemBrandingDefaults.FaviconSlot),
@@ -200,6 +211,10 @@ public sealed class SystemBrandingAppService(
             await settingManager.SetGlobalAsync(settingName, "0");
         }
     }
+
+    private static bool IsCustomized(string? value, string defaultValue) =>
+        !string.IsNullOrWhiteSpace(value) &&
+        !string.Equals(value.Trim(), defaultValue, StringComparison.Ordinal);
 
     private static SystemBrandingAssetDto? MapAsset(
         IReadOnlyDictionary<string, SystemBrandingAsset> assets,

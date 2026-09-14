@@ -100,6 +100,7 @@ services:
       <<: *common-env
       App__SelfUrl: https://auth.hcs.localhost
       App__ClientUrl: https://hcs.localhost
+      App__GatewayUrl: https://hcs.localhost
       App__RedirectAllowedUrls: https://hcs.localhost,https://auth.hcs.localhost
       AuthServer__Authority: https://auth.hcs.localhost
       # Token refresh is sent by WebGateway over the private Docker network.

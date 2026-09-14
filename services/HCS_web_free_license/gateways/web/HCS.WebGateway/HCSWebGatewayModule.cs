@@ -42,6 +42,7 @@ public sealed class HCSWebGatewayModule : AbpModule
 
         BffDeploymentPolicy.ValidateBrowserOrigins(configuration, environment.IsDevelopment());
         context.Services.AddSingleton(TimeProvider.System);
+        context.Services.AddHttpContextAccessor();
         ConfigureDataProtection(context.Services, configuration, environment);
         ConfigureAuthentication(context.Services, configuration);
         context.Services.AddSingleton<BffTokenRefreshService>();
@@ -50,19 +51,10 @@ public sealed class HCSWebGatewayModule : AbpModule
                 configuration.GetValue("Authentication:RefreshTimeoutSeconds", 10), 2, 30)));
         context.Services.AddAuthorization(options =>
         {
-            options.AddPolicy("HCS.Proxy", policy => policy.RequireAssertion(authorizationContext =>
-            {
-                if (authorizationContext.Resource is HttpContext httpContext &&
-                    (BffRequestPolicy.IsAnonymousBootstrapPath(httpContext.Request.Path) ||
-                     BffRequestPolicy.IsAnonymousSurveyPath(httpContext.Request.Path) ||
-                     BffRequestPolicy.IsAnonymousEventPath(httpContext.Request.Path)))
-                {
-                    return true;
-                }
-
-                return authorizationContext.User.Identity?.IsAuthenticated == true;
-            }));
+            options.AddPolicy("HCS.Proxy", policy =>
+                policy.AddRequirements(new BffProxyAuthorizationRequirement()));
         });
+        context.Services.AddSingleton<IAuthorizationHandler, BffProxyAuthorizationHandler>();
         context.Services.AddAntiforgery(options =>
         {
             options.Cookie.Name = ".HCS.Bff.Antiforgery";

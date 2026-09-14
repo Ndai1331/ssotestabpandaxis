@@ -78,10 +78,15 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
 
     private async Task LoadBrandingAsync()
     {
-        BrandingTitle = await _settingProvider.GetOrNullAsync(HCSSettings.BrandingTitle)
-            ?? SystemBrandingDefaults.Title;
-        BrandingDescription = await _settingProvider.GetOrNullAsync(HCSSettings.BrandingDescription)
-            ?? SystemBrandingDefaults.Description;
+        var configuredTitle = await _settingProvider.GetOrNullAsync(HCSSettings.BrandingTitle);
+        var configuredDescription = await _settingProvider.GetOrNullAsync(HCSSettings.BrandingDescription);
+
+        BrandingTitle = string.IsNullOrWhiteSpace(configuredTitle)
+            ? SystemBrandingDefaults.Title
+            : configuredTitle.Trim();
+        BrandingDescription = string.IsNullOrWhiteSpace(configuredDescription)
+            ? SystemBrandingDefaults.Description
+            : configuredDescription.Trim();
         BrandingRevision = await ReadSettingRevisionAsync(HCSSettings.BrandingRevision);
         BrandingLogoRevision = await ReadSettingRevisionAsync(HCSSettings.BrandingLogoRevision);
         BrandingFaviconRevision = await ReadSettingRevisionAsync(HCSSettings.BrandingFaviconRevision);

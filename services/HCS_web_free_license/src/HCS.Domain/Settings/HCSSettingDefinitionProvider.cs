@@ -26,6 +26,7 @@ public class HCSSettingDefinitionProvider : SettingDefinitionProvider
                 defaultValue: HCS.Branding.SystemBrandingDefaults.Description,
                 displayName: L("Settings:BrandingDescription"),
                 description: L("Settings:BrandingDescriptionDescription")));
+        context.Add(new SettingDefinition(HCSSettings.BrandingShowTopbar));
         context.Add(
             new SettingDefinition(
                 HCSSettings.BrandingRevision,
