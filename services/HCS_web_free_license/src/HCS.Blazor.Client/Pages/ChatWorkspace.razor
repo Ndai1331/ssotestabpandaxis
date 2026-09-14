@@ -5,6 +5,7 @@
 @attribute [Authorize(Policy = CollaborationPermissions.Chat)]
 @using System.Globalization
 @using System.Net
+@using System.Threading
 @using HCS.CollaborationService.Contracts
 @using HCS.Localization
 @using Microsoft.AspNetCore.SignalR.Client
@@ -71,7 +72,7 @@
                     }
                     <div class="chat-search chat-contact-search">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
-                        <input class="hcs-chat__contact-filter" @bind="contactSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:Search")" autocomplete="off" />
+                        <input class="hcs-chat__contact-filter" value="@contactSearch" @oninput="OnContactSearchChangedAsync" type="search" placeholder="@T("Chat:Search")" autocomplete="off" />
                     </div>
                     @if (contactsLoading)
                     {
@@ -79,7 +80,7 @@
                     }
                     else if (contactsError is not null)
                     {
-                        <div class="hcs-chat__inline-error" role="alert"><span>@contactsError</span><button type="button" @onclick="LoadContactsAsync">@T("Chat:Retry")</button></div>
+                        <div class="hcs-chat__inline-error" role="alert"><span>@contactsError</span><button type="button" @onclick="() => LoadContactsAsync(contactSearch)">@T("Chat:Retry")</button></div>
                     }
                     else if (!FilteredContacts.Any())
                     {
@@ -706,7 +707,7 @@
                 </div>
                 <div class="chat-dialog-view">
                     <label class="sr-only" for="chat-add-member-search">@T("Chat:SearchPeople")</label>
-                    <input class="input" id="chat-add-member-search" @bind="addMemberSearch" @bind:event="oninput" type="search" placeholder="@T("Chat:SearchPeople")" autocomplete="off" />
+                    <input class="input" id="chat-add-member-search" value="@addMemberSearch" @oninput="OnAddMemberSearchChangedAsync" type="search" placeholder="@T("Chat:SearchPeople")" autocomplete="off" />
                     <div class="forward-list" role="listbox" aria-multiselectable="true" aria-label="@T("Chat:SelectMembers")">
                         @if (!FilteredAddMemberContacts.Any())
                         {
@@ -785,6 +786,7 @@
     [Parameter] public Guid? RedirectToConversationId { get; set; }
 
     private readonly HashSet<Guid> onlineUserIds = [];
+    private const int ContactPageSize = 30;
     private readonly HashSet<Guid> selectedContactIds = [];
     private readonly HashSet<Guid> selectedMemberIds = [];
     private readonly HashSet<string> avatarLoadFailures = new(StringComparer.Ordinal);
@@ -792,6 +794,9 @@
     private readonly List<ChatMessageDto> messages = [];
     private IReadOnlyList<ConversationDto> conversations = [];
     private IReadOnlyList<ChatContactDto> contacts = [];
+    private IReadOnlyList<ChatContactDto> memberContacts = [];
+    private CancellationTokenSource? contactSearchCts;
+    private CancellationTokenSource? memberSearchCts;
     private ConversationDto? selected;
     private ConversationPermissionDto? permissions;
     private Guid? currentUserId;
@@ -865,10 +870,7 @@
         .OrderByDescending(conversation => conversation.IsPinned)
         .ThenByDescending(conversation => conversation.LastMessageAt ?? DateTime.MinValue);
 
-    private IEnumerable<ChatContactDto> FilteredContacts => contacts.Where(contact =>
-        string.IsNullOrWhiteSpace(contactSearch) ||
-        contact.DisplayName.Contains(contactSearch.Trim(), StringComparison.CurrentCultureIgnoreCase) ||
-        contact.UserName.Contains(contactSearch.Trim(), StringComparison.CurrentCultureIgnoreCase));
+    private IEnumerable<ChatContactDto> FilteredContacts => contacts;
 
     private bool CanManageGroupMembers =>
         selected is not null &&
@@ -877,12 +879,9 @@
 
     private IEnumerable<ChatContactDto> AvailableMemberContacts => selected is null
         ? []
-        : contacts.Where(contact => !selected.Members.Any(member => member.UserId == contact.Id));
+        : memberContacts.Where(contact => !selected.Members.Any(member => member.UserId == contact.Id));
 
-    private IEnumerable<ChatContactDto> FilteredAddMemberContacts => AvailableMemberContacts.Where(contact =>
-        string.IsNullOrWhiteSpace(addMemberSearch) ||
-        contact.DisplayName.Contains(addMemberSearch.Trim(), StringComparison.CurrentCultureIgnoreCase) ||
-        contact.UserName.Contains(addMemberSearch.Trim(), StringComparison.CurrentCultureIgnoreCase));
+    private IEnumerable<ChatContactDto> FilteredAddMemberContacts => AvailableMemberContacts;
 
     private IEnumerable<ConversationDto> ForwardTargets => conversations.Where(conversation =>
         selected is not null &&
@@ -962,13 +961,66 @@
         }
     }
 
-    private async Task LoadContactsAsync()
+    private Task OnContactSearchChangedAsync(ChangeEventArgs args)
     {
-        contactsLoading = true;
+        contactSearch = args.Value?.ToString() ?? string.Empty;
+        return QueueContactSearchAsync();
+    }
+
+    private async Task QueueContactSearchAsync()
+    {
+        contactSearchCts?.Cancel();
+        contactSearchCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        contactSearchCts = cts;
+        try
+        {
+            await Task.Delay(300, cts.Token);
+            await LoadContactsAsync(contactSearch, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private Task OnAddMemberSearchChangedAsync(ChangeEventArgs args)
+    {
+        addMemberSearch = args.Value?.ToString() ?? string.Empty;
+        return QueueMemberSearchAsync();
+    }
+
+    private async Task QueueMemberSearchAsync()
+    {
+        memberSearchCts?.Cancel();
+        memberSearchCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        memberSearchCts = cts;
+        try
+        {
+            await Task.Delay(300, cts.Token);
+            await LoadMemberContactsAsync(addMemberSearch, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task LoadContactsAsync(string? search = null, CancellationToken cancellationToken = default)
+    {
+        var showLoading = contacts.Count == 0;
+        if (showLoading)
+        {
+            contactsLoading = true;
+        }
+
         contactsError = null;
         try
         {
-            contacts = await Client.GetContactsAsync(string.Empty);
+            contacts = await Client.GetContactsAsync(search, ContactPageSize, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
         }
         catch (Exception exception)
         {
@@ -977,6 +1029,21 @@
         finally
         {
             contactsLoading = false;
+        }
+    }
+
+    private async Task LoadMemberContactsAsync(string? search = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            memberContacts = await Client.GetContactsAsync(search, ContactPageSize, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            messageError = MapChatError(exception, "Chat:ContactsError");
         }
     }
 
@@ -1367,10 +1434,7 @@
         selectedMemberIds.Clear();
         addMemberSearch = string.Empty;
         showAddMembers = true;
-        if (contacts.Count == 0)
-        {
-            await LoadContactsAsync();
-        }
+        await LoadMemberContactsAsync(string.Empty);
     }
 
     private void CloseAddMembers()
@@ -1798,6 +1862,10 @@
 
     public ValueTask DisposeAsync()
     {
+        contactSearchCts?.Cancel();
+        contactSearchCts?.Dispose();
+        memberSearchCts?.Cancel();
+        memberSearchCts?.Dispose();
         Realtime.Changed -= HandleRealtimeChangeAsync;
         Realtime.MessageReceived -= HandleMessageReceivedAsync;
         Realtime.MessageDeleted -= HandleMessageDeletedAsync;

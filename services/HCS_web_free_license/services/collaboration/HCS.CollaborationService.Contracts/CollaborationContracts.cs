@@ -107,6 +107,18 @@ public static class ChatNotificationRules
 
 public static class ChatContactSearch
 {
+    public static bool Matches(ChatContactDto contact, string? filter)
+    {
+        var term = filter?.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(term))
+        {
+            return true;
+        }
+
+        return Matches(contact.Surname, contact.Name, contact.PhoneNumber, email: null, term, contact.UserName)
+            || ContainsInsensitive(contact.DisplayName, term);
+    }
+
     public static bool Matches(
         string? surname,
         string? givenName,

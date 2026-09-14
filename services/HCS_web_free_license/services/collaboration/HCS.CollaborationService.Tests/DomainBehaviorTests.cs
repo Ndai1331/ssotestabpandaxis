@@ -112,6 +112,11 @@ public sealed class DomainBehaviorTests
             .ShouldBeTrue();
         ChatContactSearch.Matches("Nguyễn", "Văn A", "0901111111", "a@bv.com", term)
             .ShouldBeFalse();
+        var contact = new ChatContactDto(Guid.NewGuid(), "hanh.ht", "Hoàng Thị Hạnh", true, "Hoàng Thị", "Hạnh", "0326054106");
+        ChatContactSearch.Matches(contact, "hạnh").ShouldBeTrue();
+        ChatContactSearch.Matches(contact, "032605").ShouldBeTrue();
+        ChatContactSearch.Matches(contact, "hanh.ht").ShouldBeTrue();
+        ChatContactSearch.Matches(contact, "không-có").ShouldBeFalse();
     }
 
     [Fact]
