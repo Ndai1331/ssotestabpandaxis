@@ -18,14 +18,18 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task<IReadOnlyList<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowView);
-        var kinds = await db.WorkflowKinds.AsNoTracking().OrderBy(x => x.Name).ToListAsync(cancellationToken);
+        var kinds = await db.WorkflowKinds.AsNoTracking()
+            .WhereActiveWorkflowKinds()
+            .OrderBy(x => x.Name).ToListAsync(cancellationToken);
         return kinds.Select(MapKind).ToList();
     }
 
     public async Task<WorkflowKindDto?> GetKindAsync(Guid id, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowView);
-        var kind = await db.WorkflowKinds.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var kind = await db.WorkflowKinds.AsNoTracking()
+            .WhereActiveWorkflowKinds()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         return kind is null ? null : MapKind(kind);
     }
 
@@ -63,7 +67,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task<IReadOnlyList<WorkflowDefinitionDto>> GetDefinitionsAsync(CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowView);
-        var definitions = await db.WorkflowDefinitions.AsNoTracking().Include(x => x.Steps)
+        var definitions = await db.WorkflowDefinitions.AsNoTracking()
+            .WhereActiveWorkflowDefinitions()
+            .Include(x => x.Steps)
             .OrderBy(x => x.Name).ToListAsync(cancellationToken);
         return definitions.Select(MapDefinition).ToList();
     }
@@ -71,7 +77,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task<WorkflowDefinitionDto?> GetDefinitionAsync(Guid id, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowView);
-        var definition = await db.WorkflowDefinitions.AsNoTracking().Include(x => x.Steps)
+        var definition = await db.WorkflowDefinitions.AsNoTracking()
+            .WhereActiveWorkflowDefinitions()
+            .Include(x => x.Steps)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         return definition is null ? null : MapDefinition(definition);
     }
@@ -79,7 +87,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task<IReadOnlyList<WorkflowTemplateDto>> GetTemplatesAsync(CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowView);
-        var templates = await db.WorkflowTemplates.AsNoTracking().OrderBy(x => x.Name)
+        var templates = await db.WorkflowTemplates.AsNoTracking()
+            .WhereActiveWorkflowTemplates()
+            .OrderBy(x => x.Name)
             .ThenByDescending(x => x.Version).ToListAsync(cancellationToken);
         return templates.Select(MapTemplate).ToList();
     }
@@ -88,6 +98,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         Require(DocumentPermissions.WorkflowView);
         var template = await db.WorkflowTemplates.AsNoTracking()
+            .WhereActiveWorkflowTemplates()
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         return template is null ? null : MapTemplate(template);
     }
@@ -271,7 +282,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
 
         var existing = await Query().SingleOrDefaultAsync(x => x.IdempotencyKey == input.IdempotencyKey, cancellationToken);
         if (existing is not null) return Map(existing);
-        var definition = await db.WorkflowDefinitions.Include(x => x.Steps).SingleOrDefaultAsync(x => x.Id == input.DefinitionId, cancellationToken)
+        var definition = await db.WorkflowDefinitions.Include(x => x.Steps)
+            .WhereActiveWorkflowDefinitions()
+            .SingleOrDefaultAsync(x => x.Id == input.DefinitionId, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
         definition.EnsureStartable();
         var now = DateTime.UtcNow;
@@ -346,6 +359,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var userId = DocumentAccess.RequireUser(principal);
         DocumentAccess.RequirePermission(principal, DocumentPermissions.WorkflowStart);
         var definition = await db.WorkflowDefinitions.AsNoTracking().Include(x => x.Steps)
+            .WhereActiveWorkflowDefinitions()
             .SingleOrDefaultAsync(x => x.Id == definitionId, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
         var orderedSteps = definition.Steps.OrderBy(x => x.Order).ToList();
@@ -371,10 +385,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             }
 
             var preset = Array.Empty<WorkflowAssigneeCandidateDto>();
-            if (step.AssigneeUserId is { } assignee)
+            if (step.AssigneeUserId is { } assignee
+                && candidatesByUser.GetValueOrDefault(assignee) is { } candidate)
             {
-                var candidate = candidatesByUser.GetValueOrDefault(assignee)
-                    ?? new WorkflowAssigneeCandidateDto(assignee, string.Empty);
                 preset = [candidate];
             }
             groups.Add(new WorkflowStepCandidateGroupDto(step.Code, step.Name, step.AssigneeType, step.RoleId, preset));

@@ -148,6 +148,7 @@ public sealed class SigningAppService(
         // SigningCredentials is a shared catalog. userId is retained on the contract
         // for backward compatibility with older clients, but is intentionally ignored.
         var credentials = await db.SigningCredentials.AsNoTracking()
+            .WhereVisibleSigningCredentials()
             .OrderBy(x => x.Kind)
             .ThenBy(x => x.ProviderCode)
             .ThenBy(x => x.IsDeleted)
@@ -468,7 +469,9 @@ public sealed class SigningAppService(
     public async Task<IReadOnlyList<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
-        var items = await db.UserSignatures.AsNoTracking().Where(x => x.UserId == targetUserId)
+        var items = await db.UserSignatures.AsNoTracking()
+            .WhereActiveUserSignatures()
+            .Where(x => x.UserId == targetUserId)
             .OrderByDescending(x => x.IsDefault).ThenByDescending(x => x.CreationTime).ToListAsync(cancellationToken);
         return items.Select(MapSignature).ToList();
     }
@@ -600,6 +603,7 @@ public sealed class SigningAppService(
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         var signature = await db.UserSignatures.AsNoTracking()
+            .WhereActiveUserSignatures()
             .SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Signature not found.");
         var stream = await signingBlobs.GetAsync(signature.BlobName, cancellationToken);
