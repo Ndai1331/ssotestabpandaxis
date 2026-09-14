@@ -86,8 +86,8 @@ public sealed class SystemBrandingResourceUrlTests
         await using var state = new SystemBrandingState(new SystemBrandingClient(null!, Configuration()),
             new RecordingJsRuntime());
 
-        Assert.Equal("/images/logo/logo.png", state.LogoUrl);
-        Assert.Equal("/favicon.ico", state.FaviconUrl);
+        Assert.Equal(SystemBrandingDefaults.DefaultLogoUrl, state.LogoUrl);
+        Assert.Equal(SystemBrandingDefaults.DefaultFaviconUrl, state.FaviconUrl);
         Assert.Null(state.BackgroundUrl);
         Assert.Empty(state.BackgroundStyle);
     }

@@ -56,7 +56,7 @@
         </form>
 
         <div class="docs-table-wrap">
-            @if (isLoading && items.Count == 0)
+            @if (isLoading)
             {
                 <DocsEmpty Loading="true" />
             }
@@ -115,19 +115,10 @@
                     </tbody>
                 </table>
             }
-            <div class="pager" aria-label="@L["Catalog:PageSize"]">
-                <button type="button" disabled="@(!CanPrev || isLoading)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
-                <button type="button" disabled="@(!CanPrev || isLoading)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
-                <button type="button" disabled="@(!CanNext || isLoading)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
-                <button type="button" disabled="@(!CanNext || isLoading)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
-                <label class="sr-only" for="ev-page-size">@L["Catalog:PageSize"]</label>
-                <select id="ev-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
-                    @foreach (var size in pageSizes)
-                    {
-                        <option value="@size">@size</option>
-                    }
-                </select>
-            </div>
+            <HcsPager TotalCount="totalCount" PageSize="pageSize" PageSizeId="ev-page-size"
+                      CanPrev="CanPrev" CanNext="CanNext" Disabled="@isLoading"
+                      FirstClicked="GoFirst" PrevClicked="GoPrev" NextClicked="GoNext" LastClicked="GoLast"
+                      PageSizeChanged="OnPageSizeChanged" />
         </div>
     </section>
 </section>

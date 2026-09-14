@@ -6,10 +6,10 @@ using Microsoft.Extensions.Logging;
 namespace HCS.AuthServer;
 
 /// <summary>
-/// Synchronizes built-in role permissions when Auth Server starts. This covers
-/// local development setups that launch services directly and do not execute the
-/// standalone DbMigrator process. The employee role (<c>nhanvien</c>) is reset
-/// to the product allowlist on each run.
+/// Grants the default <c>admin</c> role every enabled permission when Auth Server
+/// starts. This covers local development setups that launch services directly and
+/// do not execute the standalone DbMigrator process. Extra product roles are not
+/// created or reset here.
 /// </summary>
 public sealed class RolePermissionSyncHostedService(
     IServiceScopeFactory scopeFactory,

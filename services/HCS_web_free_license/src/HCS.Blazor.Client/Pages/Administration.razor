@@ -125,19 +125,10 @@
                         </tbody>
                     </table>
                 }
-                <div class="pager" aria-label="@L["Catalog:PageSize"]">
-                    <button type="button" disabled="@(!CanPrevPage || isLoadingUsers)" @onclick="GoFirstPage">@L["Catalog:PagerFirst"]</button>
-                    <button type="button" disabled="@(!CanPrevPage || isLoadingUsers)" @onclick="GoPrevPage">@L["Catalog:PagerPrev"]</button>
-                    <button type="button" disabled="@(!CanNextPage || isLoadingUsers)" @onclick="GoNextPage">@L["Catalog:PagerNext"]</button>
-                    <button type="button" disabled="@(!CanNextPage || isLoadingUsers)" @onclick="GoLastPage">@L["Catalog:PagerLast"]</button>
-                    <label class="sr-only" for="users-page-size">@L["Catalog:PageSize"]</label>
-                    <select id="users-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
-                        @foreach (var size in PageSizeOptions)
-                        {
-                            <option value="@size">@size</option>
-                        }
-                    </select>
-                </div>
+                <HcsPager TotalCount="totalUsers" PageSize="pageSize" PageSizeId="users-page-size" PageSizes="PageSizeOptions"
+                          CanPrev="CanPrevPage" CanNext="CanNextPage" Disabled="@isLoadingUsers"
+                          FirstClicked="GoFirstPage" PrevClicked="GoPrevPage" NextClicked="GoNextPage" LastClicked="GoLastPage"
+                          PageSizeChanged="OnPageSizeChanged" />
             </div>
         </section>
 

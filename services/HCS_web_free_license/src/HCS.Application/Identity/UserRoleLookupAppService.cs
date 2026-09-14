@@ -9,10 +9,10 @@ using Volo.Abp.Identity;
 namespace HCS.Identity;
 
 [Authorize(IdentityPermissions.Users.Default)]
-public sealed class UserRoleLookupAppService(IIdentityUserRepository userRepository)
+public class UserRoleLookupAppService(IIdentityUserRepository userRepository)
     : HCSAppService, IUserRoleLookupAppService
 {
-    public async Task<IReadOnlyList<UserRoleLookupDto>> GetUserRolesAsync(
+    public virtual async Task<IReadOnlyList<UserRoleLookupDto>> GetUserRolesAsync(
         IReadOnlyCollection<Guid> userIds,
         CancellationToken cancellationToken = default)
     {

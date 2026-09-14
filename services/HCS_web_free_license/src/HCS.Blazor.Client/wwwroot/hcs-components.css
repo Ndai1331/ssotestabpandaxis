@@ -130,8 +130,8 @@
 
 .hcs-app-shell .hcs-touch-target,
 .hcs-app-shell .btn,
-.hcs-app-shell button:not(.week-cell):not(.hcs-ws-dn):not(.tree-toggle):not(.icon-btn):not(.cal-type):not(.cal-event):not(.queue-tab):not(.doc-action):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear),
-.hcs-app-shell [role="button"]:not(.week-cell):not(.hcs-ws-dn):not(.icon-btn):not(.queue-tab):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear) {
+.hcs-app-shell button:not(.week-cell):not(.hcs-ws-dn):not(.tree-toggle):not(.icon-btn):not(.cal-type):not(.cal-event):not(.queue-tab):not(.doc-action):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear):not(.doc-title-open):not(.post-actions-meta-btn),
+.hcs-app-shell [role="button"]:not(.week-cell):not(.hcs-ws-dn):not(.icon-btn):not(.queue-tab):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear):not(.doc-title-open):not(.post-actions-meta-btn) {
     min-height: var(--hcs-touch-target);
 }
 
@@ -1184,7 +1184,13 @@ body:has(.hcs-app-shell) .datepicker .datepicker-header .datepicker-next {
     min-height: var(--input-height);
 }
 
-.hcs-app-shell .pager select {
+.hcs-app-shell .pager-total {
+    color: var(--hcs-color-muted, #64748b);
+    font-size: .8125rem;
+    font-weight: 600;
+    margin-right: auto;
+    white-space: nowrap;
+}
     min-height: 32px;
     height: 32px;
     border-radius: var(--radius-xl);

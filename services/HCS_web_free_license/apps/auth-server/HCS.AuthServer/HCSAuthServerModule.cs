@@ -228,8 +228,8 @@ public sealed class AuthServerFaviconViewComponent(
         }
         else
         {
-            link.Attributes["href"] = "/favicon.ico";
-            link.Attributes["type"] = "image/x-icon";
+            link.Attributes["href"] = SystemBrandingDefaults.DefaultFaviconUrl;
+            link.Attributes["type"] = "image/png";
         }
 
         return new HtmlContentViewComponentResult(link);

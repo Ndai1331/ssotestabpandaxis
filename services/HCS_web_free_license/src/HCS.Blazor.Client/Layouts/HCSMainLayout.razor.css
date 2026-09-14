@@ -72,7 +72,7 @@
     text-decoration: none;
 }
 
-.hcs-brand__mark { align-items: center; display: inline-flex; height: 2.9rem; justify-content: center; overflow: hidden; width: 4rem; }
+.hcs-brand__mark { align-items: center; display: inline-flex; height: 2.9rem; justify-content: center; overflow: hidden; width: 2.9rem; }
 .hcs-brand__mark img { display: block; height: 100%; object-fit: contain; width: 100%; }
 .hcs-brand__text strong { display: block; font-size: 1.1rem; letter-spacing: .04em; line-height: 1; }
 .hcs-brand__text small { color: var(--hcs-muted); display: block; font-size: .62rem; font-weight: 700; letter-spacing: .04em; margin-top: .28rem; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
@@ -573,7 +573,7 @@
 
 @media (max-width: 480px) {
     .hcs-brand__text small { display: none; }
-    .hcs-brand__mark { height: 2.35rem; width: 3.35rem; }
+    .hcs-brand__mark { height: 2.35rem; width: 2.35rem; }
     .hcs-header__actions { border-left: 0; margin-left: auto; padding-left: 0; }
     .hcs-bottom-nav__item { font-size: 10px; }
 }

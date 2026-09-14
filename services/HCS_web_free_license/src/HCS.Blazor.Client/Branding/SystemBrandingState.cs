@@ -28,8 +28,8 @@ public sealed class SystemBrandingState(
 
     public bool ShowBrandingText => Current.ShowBrandingText;
 
-    public string LogoUrl => ResolveAssetUrl(Current.Logo?.Url) ?? "/images/logo/logo.png";
-    public string FaviconUrl => ResolveAssetUrl(Current.Favicon?.Url) ?? "/favicon.ico";
+    public string LogoUrl => ResolveAssetUrl(Current.Logo?.Url) ?? SystemBrandingDefaults.DefaultLogoUrl;
+    public string FaviconUrl => ResolveAssetUrl(Current.Favicon?.Url) ?? SystemBrandingDefaults.DefaultFaviconUrl;
     public string? BackgroundUrl => ResolveAssetUrl(Current.Background?.Url);
 
     public string BackgroundStyle => BackgroundUrl is null

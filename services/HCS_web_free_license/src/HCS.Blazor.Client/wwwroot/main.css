@@ -48,14 +48,14 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 }
 
 .hcs-boot-screen__logo {
-    aspect-ratio: 88 / 62;
+    aspect-ratio: 1;
     display: block;
     height: 3.875rem;
     margin: 0 auto .35rem;
     max-height: 3.875rem;
-    max-width: min(5.5rem, calc(100vw - 2rem));
+    max-width: min(3.875rem, calc(100vw - 2rem));
     object-fit: contain;
-    width: min(5.5rem, calc(100vw - 2rem));
+    width: min(3.875rem, calc(100vw - 2rem));
 }
 
 .hcs-boot-screen__spinner {
@@ -3032,9 +3032,39 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     white-space: nowrap;
 }
 
-.hcs-workspace .hcs-ws-doc,
-.hcs-workspace .hcs-ws-proj,
-.hcs-workspace .hcs-ws-task { display: flex; flex-direction: column; gap: .45rem; max-height: 16rem; overflow: auto; }
+.hcs-workspace .hcs-ws-doc-group + .hcs-ws-doc-group {
+    border-top: 1px solid var(--color-gray-100, #F1F5F9);
+    padding-top: .65rem;
+}
+    display: flex;
+    flex-direction: column;
+    gap: .85rem;
+    max-height: 18rem;
+    overflow: auto;
+}
+.hcs-workspace .hcs-ws-doc-group-title {
+    align-items: baseline;
+    color: var(--ws-muted, #64748b);
+    display: flex;
+    font-size: .78rem;
+    font-weight: 700;
+    gap: .35rem;
+    letter-spacing: .01em;
+    margin-bottom: .4rem;
+    text-transform: none;
+}
+.hcs-workspace .hcs-ws-doc-group-title span {
+    color: var(--hcs-color-ink, #0f172a);
+    font-weight: 800;
+}
+.hcs-workspace .hcs-ws-empty--compact {
+    min-height: 2.4rem;
+    padding: .35rem 0;
+}
+.hcs-workspace .hcs-ws-doc-groups .hcs-ws-doc {
+    max-height: none;
+    overflow: visible;
+}
 
 .hcs-workspace .hcs-ws-doc-row,
 .hcs-workspace .hcs-ws-task-row {
@@ -3099,6 +3129,11 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     border-radius: inherit;
     display: block;
     height: 100%;
+}
+
+@media (max-width: 1100px) {
+    .hcs-workspace .hcs-ws-grid-73 { grid-template-columns: 1fr; }
+    .hcs-workspace .hcs-ws-card--notifications { display: none; }
 }
 
 @media (max-width: 992px) {

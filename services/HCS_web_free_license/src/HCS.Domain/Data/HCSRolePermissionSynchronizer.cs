@@ -10,18 +10,14 @@ using Volo.Abp.PermissionManagement;
 namespace HCS.Data;
 
 /// <summary>
-/// Keeps the permissions introduced by the application available to the built-in
-/// roles. Admin remains fully granted. <c>bacsi</c> and <c>lanhdao</c> keep the
-/// additive operational set. <c>nhanvien</c> is the default employee role and is
-/// locked to the workspace / inbox / signing / calendar / social allowlist;
-/// extras in those catalogs are revoked on each sync so a local Auth Server
-/// restart reapplies the product default.
+/// Grants every enabled permission to the default <c>admin</c> role when it exists.
+/// Other roles are created and granted only by administrators; this synchronizer
+/// never inserts product roles such as <c>bacsi</c>, <c>lanhdao</c>, or <c>nhanvien</c>.
 /// </summary>
 public sealed class HCSRolePermissionSynchronizer(
     IIdentityRoleRepository roleRepository,
     IPermissionDataSeeder permissionDataSeeder,
-    IPermissionDefinitionManager permissionDefinitionManager,
-    IPermissionManager permissionManager) : ITransientDependency
+    IPermissionDefinitionManager permissionDefinitionManager) : ITransientDependency
 {
     public static readonly string[] EmployeeDefaultPermissions =
     [
@@ -45,46 +41,15 @@ public sealed class HCSRolePermissionSynchronizer(
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 
-        if (await RoleExistsAsync("admin"))
-        {
-            await permissionDataSeeder.SeedAsync(
-                RolePermissionValueProvider.ProviderName,
-                "admin",
-                permissions);
-        }
-
-        var operationalPermissions = PermissionsToGrant("lanhdao", permissions);
-        foreach (var roleName in new[] { "bacsi", "lanhdao" })
-        {
-            if (!await RoleExistsAsync(roleName))
-            {
-                continue;
-            }
-
-            await permissionDataSeeder.SeedAsync(
-                RolePermissionValueProvider.ProviderName,
-                roleName,
-                operationalPermissions);
-        }
-
-        if (!await RoleExistsAsync("nhanvien"))
+        if (!await RoleExistsAsync("admin"))
         {
             return;
         }
 
         await permissionDataSeeder.SeedAsync(
             RolePermissionValueProvider.ProviderName,
-            "nhanvien",
-            PermissionsToGrant("nhanvien", permissions));
-
-        foreach (var permission in PermissionsToRevoke("nhanvien", permissions))
-        {
-            await permissionManager.SetAsync(
-                permission,
-                RolePermissionValueProvider.ProviderName,
-                "nhanvien",
-                false);
-        }
+            "admin",
+            permissions);
     }
 
     public static string[] PermissionsToGrant(string roleName, IReadOnlyCollection<string> enabledPermissions)

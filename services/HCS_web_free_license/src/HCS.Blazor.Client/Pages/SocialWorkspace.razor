@@ -518,7 +518,7 @@
                                         <span>@post.Reactions.TotalCount</span>
                                     </span>
                                 }
-                                <button type="button" data-comment-toggle @onclick="() => OpenCommentsAsync(post)"
+                                <button type="button" class="post-actions-meta-btn" data-comment-toggle @onclick="() => OpenCommentsAsync(post)"
                                         aria-expanded="@expandedPostIds.Contains(post.Id)">
                                     @post.CommentCount @L["Social:Comments"]
                                     @if (post.ShareCount > 0)

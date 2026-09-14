@@ -56,8 +56,8 @@ window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgr
     const nextDescription = typeof description === "string" && description.trim()
         ? description.trim()
         : "Hệ thống hành chính số";
-    const nextLogoUrl = typeof logoUrl === "string" && logoUrl ? logoUrl : "/images/logo/logo.png";
-    const nextFaviconUrl = typeof faviconUrl === "string" && faviconUrl ? faviconUrl : "/favicon.ico";
+    const nextLogoUrl = typeof logoUrl === "string" && logoUrl ? logoUrl : "/images/logo/hcs-icon.png";
+    const nextFaviconUrl = typeof faviconUrl === "string" && faviconUrl ? faviconUrl : "/images/logo/hcs-icon.png";
     const nextBackgroundImage = typeof backgroundUrl === "string" && backgroundUrl
         ? `url("${backgroundUrl}")`
         : "none";

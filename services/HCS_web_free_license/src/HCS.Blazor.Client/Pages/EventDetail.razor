@@ -227,7 +227,7 @@ else if (detail is not null)
                     </div>
                 </div>
                 <div class="docs-table-wrap">
-                    @if (isLoading && attendees.Count == 0 && attendeeTotal == 0)
+                    @if (isLoading)
                     {
                         <DocsEmpty Loading="true" />
                     }
@@ -333,19 +333,10 @@ else if (detail is not null)
                             </tbody>
                         </table>
                     }
-                    <div class="pager" aria-label="@L["Catalog:PageSize"]">
-                        <button type="button" disabled="@(!CanPrevAttendee || isLoading)" @onclick="GoFirstAttendee">@L["Catalog:PagerFirst"]</button>
-                        <button type="button" disabled="@(!CanPrevAttendee || isLoading)" @onclick="GoPrevAttendee">@L["Catalog:PagerPrev"]</button>
-                        <button type="button" disabled="@(!CanNextAttendee || isLoading)" @onclick="GoNextAttendee">@L["Catalog:PagerNext"]</button>
-                        <button type="button" disabled="@(!CanNextAttendee || isLoading)" @onclick="GoLastAttendee">@L["Catalog:PagerLast"]</button>
-                        <label class="sr-only" for="event-attendee-page-size">@L["Catalog:PageSize"]</label>
-                        <select id="event-attendee-page-size" aria-label="@L["Catalog:PageSize"]" value="@attendeePageSize" @onchange="OnAttendeePageSizeChanged">
-                            @foreach (var size in attendeePageSizes)
-                            {
-                                <option value="@size">@size</option>
-                            }
-                        </select>
-                    </div>
+                    <HcsPager TotalCount="attendeeTotal" PageSize="attendeePageSize" PageSizeId="event-attendee-page-size" PageSizes="attendeePageSizes"
+                              CanPrev="CanPrevAttendee" CanNext="CanNextAttendee" Disabled="@isLoading"
+                              FirstClicked="GoFirstAttendee" PrevClicked="GoPrevAttendee" NextClicked="GoNextAttendee" LastClicked="GoLastAttendee"
+                              PageSizeChanged="OnAttendeePageSizeChanged" />
                 </div>
             </div>
         </div>

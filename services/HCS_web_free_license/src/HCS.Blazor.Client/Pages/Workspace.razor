@@ -100,7 +100,7 @@
                 }
             </div>
         </article>
-        <article class="hcs-ws-card">
+        <article class="hcs-ws-card hcs-ws-card--notifications">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
                     <div class="hcs-ws-card-icon teal" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></div>
@@ -144,7 +144,8 @@
                 </div>
             </header>
             <div class="hcs-ws-card-body">
-                @if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
+                @if (isLoading) { <div class="hcs-loading py-4" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div> }
+                else if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
                 else { @StatusDonut(workflows.Count, L["Menu:Documents"], workflowGroups) }
             </div>
         </article>
@@ -154,26 +155,30 @@
                     <div class="hcs-ws-card-icon red" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></div>
                     <div>
                         <div class="hcs-ws-card-title">@L["Menu:MyDocuments"]</div>
-                        <div class="hcs-ws-card-sub">@myDocumentCount @L["Menu:Documents"]</div>
+                        <div class="hcs-ws-card-sub">@workflows.Count @L["Menu:Documents"]</div>
                     </div>
                 </div>
             </header>
             <div class="hcs-ws-card-body">
-                @if (myDocuments.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
+                @if (isLoading) { <div class="hcs-loading py-4" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div> }
+                else if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
                 else
                 {
-                    <div class="hcs-ws-doc">
-                        @foreach (var item in myDocuments.Take(6))
+                    <div class="hcs-ws-doc-groups">
+                        <section class="hcs-ws-doc-group" aria-label="@L["Work:CreatedByMe"]">
+                            <div class="hcs-ws-doc-group-title">@L["Work:CreatedByMe"] <span>@createdWorkflows.Count</span></div>
+                            @WorkflowDocRows(createdWorkflows)
+                        </section>
+                        <section class="hcs-ws-doc-group" aria-label="@L["Work:ReceivedByMe"]">
+                            <div class="hcs-ws-doc-group-title">@L["Work:ReceivedByMe"] <span>@receivedWorkflows.Count</span></div>
+                            @WorkflowDocRows(receivedWorkflows)
+                        </section>
+                        @if (otherWorkflows.Count > 0)
                         {
-                            <div class="hcs-ws-doc-row">
-                                <svg class="hcs-ws-file-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
-                                <button type="button" class="hcs-ws-doc-name" @onclick="() => PreviewMyDocumentAsync(item)">@item.Title</button>
-                                <span class="hcs-ws-doc-kind">@(item.IsSigning ? L["Menu:DocumentSigning"] : L["Menu:Documents"])</span>
-                                <span class="hcs-status-badge @DocumentStatusUi.BadgeClass(item.Status)">@L[DocumentStatusUi.TextKey(item.Status)]</span>
-                                <button type="button" class="icon-btn eye" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewMyDocumentAsync(item)">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
-                            </div>
+                            <section class="hcs-ws-doc-group" aria-label="@L["All"]">
+                                <div class="hcs-ws-doc-group-title">@L["All"] <span>@otherWorkflows.Count</span></div>
+                                @WorkflowDocRows(otherWorkflows)
+                            </section>
                         }
                     </div>
                 }
@@ -447,6 +452,7 @@
     private readonly List<ProjectTaskDto> tasks = [];
     private readonly List<MyDocumentRow> myDocuments = [];
     private readonly List<WorkflowInstanceDto> workflows = [];
+    private readonly Dictionary<Guid, DocumentDto> workflowDocuments = [];
     private readonly List<NotificationDto> notifications = [];
     private readonly List<DepartmentCatalogDto> departments = [];
     private readonly Dictionary<Guid, string> memberNames = [];
@@ -489,6 +495,9 @@
         .OrderBy(x => x.StartTime)
         .ToList();
     private List<ProjectTaskDto> myTasks => tasks.Where(x => x.Status is not "Completed" and not "Cancelled").ToList();
+    private List<WorkflowInstanceDto> createdWorkflows => workflows.Where(IsCreatedByMe).ToList();
+    private List<WorkflowInstanceDto> receivedWorkflows => workflows.Where(IsReceivedByMe).ToList();
+    private List<WorkflowInstanceDto> otherWorkflows => workflows.Where(item => !IsCreatedByMe(item) && !IsReceivedByMe(item)).ToList();
     private IReadOnlyList<(string Label, int Count, int Percent, string Color)> workflowGroups => StatusGroups(workflows,
         (L["Work:Status.Doing"], "#355dff", x => x.Status == WorkflowInstanceStatus.Running),
         (L["Work:Status.Done"], "#1d9e75", x => x.Status == WorkflowInstanceStatus.Completed),
@@ -669,17 +678,17 @@
 
     private Task OpenTaskFromCalendarEventAsync(Guid taskId) => OpenTaskDetailModalAsync(taskId);
 
-    private Task PreviewMyDocumentAsync(MyDocumentRow item)
-    {
-        previewingMyDocument = item;
-        return PreviewDocumentAsync(item.Id);
-    }
-
     private async Task PreviewDocumentAsync(Guid documentId)
     {
         try
         {
             var document = await Documents.GetDocumentAsync(documentId);
+            previewingMyDocument = new MyDocumentRow(
+                document.Id,
+                document.Title,
+                document.Status,
+                document.CreationTime,
+                workflows.Any(item => item.DocumentId == document.Id));
             if (documentPreviewModal is not null)
                 await documentPreviewModal.ShowAsync(document.Id, document.Files, document.Title, showHistory: true);
         }
@@ -771,7 +780,20 @@
                 myDocumentCount = myDocuments.Count;
             }
             catch { myDocuments.Clear(); myDocumentCount = 0; }
-            try { workflows.Clear(); workflows.AddRange(await Documents.GetInstancesAsync()); } catch { workflows.Clear(); }
+            try
+            {
+                workflowDocuments.Clear();
+                var workflowPage = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 3));
+                foreach (var document in workflowPage.Items)
+                    workflowDocuments[document.Id] = document;
+            }
+            catch { workflowDocuments.Clear(); }
+            try
+            {
+                workflows.Clear();
+                workflows.AddRange((await Documents.GetInstancesAsync()).Where(x => InRange(x.CreationTime, from, to)));
+            }
+            catch { workflows.Clear(); }
             try
             {
                 notifications.Clear();
@@ -814,6 +836,44 @@
         }
         return string.Concat(char.ToUpperInvariant(parts[0][0]), char.ToUpperInvariant(parts[^1][0]));
     }
+
+    private bool IsCreatedByMe(WorkflowInstanceDto instance) =>
+        CurrentUser.Id is { } userId &&
+        workflowDocuments.TryGetValue(instance.DocumentId, out var document) &&
+        document.FromUserId == userId;
+
+    private bool IsReceivedByMe(WorkflowInstanceDto instance) =>
+        CurrentUser.Id is { } userId &&
+        instance.Tasks.Any(task => task.AssigneeUserId == userId);
+
+    private string WorkflowDocTitle(WorkflowInstanceDto instance) =>
+        workflowDocuments.TryGetValue(instance.DocumentId, out var document) && !string.IsNullOrWhiteSpace(document.Title)
+            ? document.Title
+            : instance.DocumentId.ToString("N")[..8];
+
+    private static string WorkflowBadgeClass(WorkflowInstanceStatus status) => status switch
+    {
+        WorkflowInstanceStatus.Running => "hcs-status-badge--warning",
+        WorkflowInstanceStatus.Completed => "hcs-status-badge--success",
+        WorkflowInstanceStatus.Returned => "hcs-status-badge--warning",
+        _ => "hcs-status-badge--danger"
+    };
+
+    private RenderFragment WorkflowDocRows(IReadOnlyList<WorkflowInstanceDto> items) => items.Count == 0
+        ? @<text></text>
+        : @<div class="hcs-ws-doc">
+            @foreach (var item in items.Take(6))
+            {
+                <div class="hcs-ws-doc-row">
+                    <svg class="hcs-ws-file-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                    <button type="button" class="hcs-ws-doc-name" @onclick="() => PreviewDocumentAsync(item.DocumentId)">@WorkflowDocTitle(item)</button>
+                    <span class="hcs-status-badge @WorkflowBadgeClass(item.Status)">@L[$"Work:WorkflowStatus.{item.Status}"]</span>
+                    <button type="button" class="icon-btn eye" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewDocumentAsync(item.DocumentId)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+            }
+        </div>;
 
     private sealed record MyDocumentRow(Guid Id, string Title, DocumentStatus Status, DateTime When, bool IsSigning);
 

@@ -48,7 +48,7 @@
             </HcsDismissible>
         </form>
         <div class="docs-table-wrap">
-            @if (isLoading && !loaded)
+            @if (isLoading)
             {
                 <DocsEmpty Loading="true" />
             }
@@ -106,19 +106,10 @@
                     </tbody>
                 </table>
             }
-            <div class="pager" aria-label="@L["Catalog:PageSize"]">
-                <button type="button" disabled="@(!CanPrev)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
-                <button type="button" disabled="@(!CanPrev)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
-                <button type="button" disabled="@(!CanNext)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
-                <button type="button" disabled="@(!CanNext)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
-                <label class="sr-only" for="ss-page-size">@L["Catalog:PageSize"]</label>
-                <select id="ss-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
-                    @foreach (var size in pageSizes)
-                    {
-                        <option value="@size">@size</option>
-                    }
-                </select>
-            </div>
+            <HcsPager TotalCount="totalCount" PageSize="pageSize" PageSizeId="ss-page-size"
+                      CanPrev="CanPrev" CanNext="CanNext" Disabled="@isLoading"
+                      FirstClicked="GoFirst" PrevClicked="GoPrev" NextClicked="GoNext" LastClicked="GoLast"
+                      PageSizeChanged="OnPageSizeChanged" />
         </div>
     </section>
 </section>
@@ -157,7 +148,7 @@
     private Modal? modal;
     private Guid? editingId;
     private string filter = "", statusFilter = "";
-    private bool isLoading, showFilters, loaded, canManage;
+    private bool isLoading, showFilters, canManage;
     private int totalCount, pageSize = 20, currentPage = 1;
     private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
     private bool CanPrev => currentPage > 1;
@@ -226,7 +217,6 @@
         {
             sessions.Clear(); sessions.AddRange(await Work.GetSessionsAsync());
             locations.Clear(); locations.AddRange(await Work.GetLocationsAsync());
-            loaded = true;
             ApplyPage();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }

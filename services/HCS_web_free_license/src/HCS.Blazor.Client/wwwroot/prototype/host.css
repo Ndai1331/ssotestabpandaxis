@@ -676,6 +676,26 @@ body:has(.page-chat) {
   background: var(--color-primary-soft);
 }
 
+.hcs-app-shell .page-social .post-actions-meta button,
+.hcs-app-shell .page-social .post-actions-meta-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--color-muted, #64748B);
+  font: inherit;
+  font-size: 12px;
+  min-height: 32px;
+  padding: 0;
+}
+
+.hcs-app-shell .page-social .post-actions-meta button:hover,
+.hcs-app-shell .page-social .post-actions-meta-btn:hover {
+  background: transparent;
+  color: var(--color-primary, #00B4A9);
+}
+
 .hcs-app-shell .page-social .react-choice {
   background: transparent !important;
   display: inline-flex;
@@ -1533,6 +1553,26 @@ body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__opt
   min-width: 0;
 }
 
+.hcs-app-shell button.doc-title-open {
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: var(--color-primary, #00B4A9);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  min-height: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.hcs-app-shell button.doc-title-open:hover {
+  color: var(--color-primary, #00B4A9);
+  text-decoration: underline;
+}
+
 .hcs-app-shell :is(.page-vb, .page-sign) .doc-title a,
 .hcs-app-shell :is(.page-vb, .page-sign) .doc-title button.doc-title-open,
 .hcs-app-shell :is(.page-vb, .page-sign) .doc-title strong {
@@ -2171,6 +2211,9 @@ body:has(.hcs-app-shell) .select2-dropdown {
   .hcs-app-shell {
     --hcs-bottom-nav-height: calc(3.5rem + env(safe-area-inset-bottom, 0px));
   }
+
+  .hcs-app-shell .hcs-workspace .hcs-ws-grid-73 { grid-template-columns: 1fr; }
+  .hcs-app-shell .hcs-workspace .hcs-ws-card--notifications { display: none; }
 
   html:has(.hcs-app-shell):not(:has(.hcs-chat-page)):not(:has(.page-chat)) {
     height: auto !important;

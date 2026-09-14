@@ -1162,6 +1162,25 @@ a.doc-action[aria-disabled="true"] {
   min-width: 0;
 }
 
+button.doc-title-open {
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  min-height: 0;
+  padding: 0;
+  text-align: left;
+}
+
+button.doc-title-open:hover {
+  text-decoration: underline;
+}
+
 .doc-title a,
 .doc-title button.doc-title-open,
 .doc-title strong {
@@ -1881,6 +1900,13 @@ body.modal-open {
   gap: 16px;
   padding: 10px 16px 8px;
   font-size: var(--font-size-sm);
+}
+
+.pager-total {
+  color: var(--color-muted, #64748b);
+  font-weight: var(--font-weight-medium, 500);
+  margin-right: auto;
+  white-space: nowrap;
 }
 
 .pager button {

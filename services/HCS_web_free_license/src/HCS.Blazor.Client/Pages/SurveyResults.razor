@@ -90,9 +90,9 @@
                         </tbody>
                     </table>
                     <div class="pager">
-                        <span>@($"{summaries.TotalCount} {L["SurveyResults:Records"]}")</span>
-                        <button type="button" disabled="@(page == 0)" @onclick="PreviousPageAsync">@L["Previous"]</button>
-                        <button type="button" disabled="@(!HasNextPage)" @onclick="NextPageAsync">@L["Next"]</button>
+                        <span class="pager-total">@L["Catalog:PagerTotal", summaries.TotalCount]</span>
+                        <button type="button" disabled="@(page == 0 || isLoading)" @onclick="PreviousPageAsync">@L["Previous"]</button>
+                        <button type="button" disabled="@(!HasNextPage || isLoading)" @onclick="NextPageAsync">@L["Next"]</button>
                     </div>
                 </div>
             }

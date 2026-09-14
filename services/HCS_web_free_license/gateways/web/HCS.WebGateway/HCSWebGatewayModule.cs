@@ -184,6 +184,7 @@ public sealed class HCSWebGatewayModule : AbpModule
         var cookieDomain = BffDeploymentPolicy.ValidateAndGetCookieDomain(configuration);
 
         services.AddSingleton<ITicketStore, BffAuthTicketStore>();
+        services.AddTransient<IClaimsTransformation, BffRoleClaimsTransformation>();
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = GatewayScheme;
@@ -274,6 +275,8 @@ public sealed class HCSWebGatewayModule : AbpModule
                 options.SaveTokens = true;
                 options.GetClaimsFromUserInfoEndpoint = true;
                 options.MapInboundClaims = false;
+                options.TokenValidationParameters.NameClaimType = "name";
+                options.TokenValidationParameters.RoleClaimType = BffRoleClaims.JwtRole;
                 options.CallbackPath = "/signin-oidc";
                 options.SignedOutCallbackPath = "/signout-callback-oidc";
                 options.NonceCookie.SecurePolicy = CookieSecurePolicy.Always;
@@ -310,14 +313,7 @@ public sealed class HCSWebGatewayModule : AbpModule
                     }
 
                     var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().ReadJwtToken(accessToken);
-                    foreach (var permission in token.Claims.Where(claim => claim.Type == "permission"))
-                    {
-                        if (!identity.HasClaim("permission", permission.Value))
-                        {
-                            identity.AddClaim(new System.Security.Claims.Claim("permission", permission.Value));
-                        }
-                    }
-
+                    BffRoleClaims.MergeAccessTokenClaims(identity, token.Claims);
                     return Task.CompletedTask;
                 };
                 options.Events.OnRemoteFailure = failureContext =>

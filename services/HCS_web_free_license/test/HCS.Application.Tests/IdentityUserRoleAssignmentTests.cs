@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Shouldly;
+using Volo.Abp.Guids;
 using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
 using Xunit;
@@ -12,15 +13,22 @@ public abstract class IdentityUserRoleAssignmentTests<TStartupModule> : HCSAppli
     where TStartupModule : IAbpModule
 {
     private readonly IIdentityUserAppService _userAppService;
+    private readonly IIdentityRoleRepository _roleRepository;
+    private readonly IGuidGenerator _guidGenerator;
 
     protected IdentityUserRoleAssignmentTests()
     {
         _userAppService = GetRequiredService<IIdentityUserAppService>();
+        _roleRepository = GetRequiredService<IIdentityRoleRepository>();
+        _guidGenerator = GetRequiredService<IGuidGenerator>();
     }
 
     [Fact]
     public async Task UpdateRoles_Persists_Operational_Role_Without_Admin_Claim()
     {
+        var roleName = "op" + Guid.NewGuid().ToString("N")[..8];
+        await _roleRepository.InsertAsync(new IdentityRole(_guidGenerator.Create(), roleName), autoSave: true);
+
         var created = await _userAppService.CreateAsync(new IdentityUserCreateDto
         {
             UserName = "u" + Guid.NewGuid().ToString("N")[..16],
@@ -31,10 +39,10 @@ public abstract class IdentityUserRoleAssignmentTests<TStartupModule> : HCSAppli
 
         await _userAppService.UpdateRolesAsync(created.Id, new IdentityUserUpdateRolesDto
         {
-            RoleNames = ["bacsi"]
+            RoleNames = [roleName]
         });
 
         var roles = await _userAppService.GetRolesAsync(created.Id);
-        roles.Items.ShouldContain(role => role.Name == "bacsi");
+        roles.Items.ShouldContain(role => role.Name == roleName);
     }
 }

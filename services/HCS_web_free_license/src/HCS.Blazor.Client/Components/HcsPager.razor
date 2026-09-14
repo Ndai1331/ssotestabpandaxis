@@ -1,0 +1,36 @@
+@namespace HCS.Blazor.Client.Components
+@inherits HCSComponentBase
+
+<div class="pager" aria-label="@L["Catalog:PageSize"]">
+    <span class="pager-total">@L["Catalog:PagerTotal", TotalCount]</span>
+    <button type="button" disabled="@(!CanPrev || Disabled)" @onclick="FirstClicked">@L["Catalog:PagerFirst"]</button>
+    <button type="button" disabled="@(!CanPrev || Disabled)" @onclick="PrevClicked">@L["Catalog:PagerPrev"]</button>
+    <button type="button" disabled="@(!CanNext || Disabled)" @onclick="NextClicked">@L["Catalog:PagerNext"]</button>
+    <button type="button" disabled="@(!CanNext || Disabled)" @onclick="LastClicked">@L["Catalog:PagerLast"]</button>
+    <label class="sr-only" for="@PageSizeId">@L["Catalog:PageSize"]</label>
+    <select id="@PageSizeId" aria-label="@L["Catalog:PageSize"]" value="@PageSize" disabled="@Disabled" @onchange="PageSizeChanged">
+        @foreach (var size in Sizes)
+        {
+            <option value="@size">@size</option>
+        }
+    </select>
+</div>
+
+@code {
+    private static readonly int[] DefaultSizes = [10, 20, 50, 100];
+
+    [Parameter] public long TotalCount { get; set; }
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public string PageSizeId { get; set; } = "hcs-page-size";
+    [Parameter] public IReadOnlyList<int>? PageSizes { get; set; }
+    [Parameter] public bool CanPrev { get; set; }
+    [Parameter] public bool CanNext { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback FirstClicked { get; set; }
+    [Parameter] public EventCallback PrevClicked { get; set; }
+    [Parameter] public EventCallback NextClicked { get; set; }
+    [Parameter] public EventCallback LastClicked { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> PageSizeChanged { get; set; }
+
+    private IReadOnlyList<int> Sizes => PageSizes is { Count: > 0 } sizes ? sizes : DefaultSizes;
+}

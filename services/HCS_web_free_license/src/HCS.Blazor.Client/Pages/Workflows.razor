@@ -56,7 +56,7 @@
         </form>
 
         <div class="docs-table-wrap">
-            @if (isLoading && !loaded)
+            @if (isLoading)
             {
                 <DocsEmpty Loading="true" />
             }
@@ -109,19 +109,10 @@
                     </tbody>
                 </table>
             }
-            <div class="pager" aria-label="@L["Catalog:PageSize"]">
-                <button type="button" disabled="@(!CanPrev)" @onclick="GoFirst">@L["Catalog:PagerFirst"]</button>
-                <button type="button" disabled="@(!CanPrev)" @onclick="GoPrev">@L["Catalog:PagerPrev"]</button>
-                <button type="button" disabled="@(!CanNext)" @onclick="GoNext">@L["Catalog:PagerNext"]</button>
-                <button type="button" disabled="@(!CanNext)" @onclick="GoLast">@L["Catalog:PagerLast"]</button>
-                <label class="sr-only" for="wf-page-size">@L["Catalog:PageSize"]</label>
-                <select id="wf-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
-                    @foreach (var size in pageSizes)
-                    {
-                        <option value="@size">@size</option>
-                    }
-                </select>
-            </div>
+            <HcsPager TotalCount="totalCount" PageSize="pageSize" PageSizeId="wf-page-size"
+                      CanPrev="CanPrev" CanNext="CanNext" Disabled="@isLoading"
+                      FirstClicked="GoFirst" PrevClicked="GoPrev" NextClicked="GoNext" LastClicked="GoLast"
+                      PageSizeChanged="OnPageSizeChanged" />
         </div>
     </section>
 </section>
@@ -165,7 +156,7 @@
     private readonly WorkflowCreateForm form = new();
     private Modal? modal;
     private string filter = "", search = "", activeFilter = "";
-    private bool isLoading, isSaving, showFilters, showSearch, loaded;
+    private bool isLoading, isSaving, showFilters, showSearch;
     private int totalCount, pageSize = 20, currentPage = 1;
 
     private bool IsSearchFiltered => !string.IsNullOrWhiteSpace(search);
@@ -236,7 +227,6 @@
             definitions.Clear(); definitions.AddRange(await Documents.GetDefinitionsAsync());
             templates.Clear(); templates.AddRange(await Documents.GetTemplatesAsync());
             kinds.Clear(); kinds.AddRange(await Documents.GetKindsAsync());
-            loaded = true;
             ApplyPage();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }

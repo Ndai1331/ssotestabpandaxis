@@ -96,7 +96,7 @@
 .hcs-branding-preview__fake-input { background: #f8fafc; border: 1px solid #e1e8eb; border-radius: 4px; height: 1.15rem; margin-top: .35rem; }
 .hcs-branding-preview__fake-button { background: var(--hcs-color-primary, #00b4a9); border-radius: 4px; height: 1.2rem; margin-top: .3rem; }
 .hcs-branding-preview__shell-header { align-items: center; display: flex; gap: .5rem; padding: .75rem 1rem; }
-.hcs-branding-preview__shell-logo { height: 1.7rem; object-fit: contain; width: 2.3rem; }
+.hcs-branding-preview__shell-logo { height: 1.7rem; object-fit: contain; width: 1.7rem; }
 .hcs-branding-preview__shell-header span { flex: 1; font-size: .78rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hcs-branding-preview__shell-header i { color: #64748b; font-size: .75rem; }
 .hcs-branding-preview__shell-nav { background: var(--hcs-color-sidebar, #007f7c); height: 1.65rem; }

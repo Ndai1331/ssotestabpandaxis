@@ -113,6 +113,7 @@ public sealed class HCSBlazorModule : AbpModule
         var cookieDomain = ValidateAndGetCookieDomain(configuration);
         context.Services.AddSingleton(TimeProvider.System);
         context.Services.AddSingleton<ITicketStore, BffAuthTicketStore>();
+        context.Services.AddTransient<IClaimsTransformation, BffRoleClaimsTransformation>();
         context.Services
             .AddAuthentication(options =>
             {
@@ -135,6 +136,14 @@ public sealed class HCSBlazorModule : AbpModule
                     var gatewayUrl = GetRequiredHttpsOrigin(configuration, "Bff:PublicOrigin");
                     var returnUrl = Uri.EscapeDataString(cookieContext.Request.GetEncodedUrl());
                     cookieContext.Response.Redirect($"{gatewayUrl}/bff/login?returnUrl={returnUrl}");
+                    return Task.CompletedTask;
+                };
+                // Default AccessDeniedPath is /Account/AccessDenied. Caddy forwards
+                // /Account/* to AuthServer, so an SSR [Authorize(Roles)] failure on
+                // F5 stranded the user on auth.hcs.localhost instead of the UI.
+                options.Events.OnRedirectToAccessDenied = cookieContext =>
+                {
+                    cookieContext.Response.Redirect("/workspace");
                     return Task.CompletedTask;
                 };
             });

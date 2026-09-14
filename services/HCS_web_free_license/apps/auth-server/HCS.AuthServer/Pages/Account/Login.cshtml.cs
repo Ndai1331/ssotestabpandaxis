@@ -20,8 +20,8 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
     public string BrandingTitle { get; private set; } = SystemBrandingDefaults.Title;
     public string BrandingDescription { get; private set; } = SystemBrandingDefaults.Description;
     public long BrandingRevision { get; private set; }
-    public string BrandingLogoUrl => BuildBrandingAssetUrl(SystemBrandingDefaults.LogoSlot, "/images/logo/logo-hcs.svg", BrandingLogoRevision);
-    public string BrandingFaviconUrl => BuildBrandingAssetUrl(SystemBrandingDefaults.FaviconSlot, "/favicon.ico", BrandingFaviconRevision);
+    public string BrandingLogoUrl => BuildBrandingAssetUrl(SystemBrandingDefaults.LogoSlot, SystemBrandingDefaults.DefaultLogoUrl, BrandingLogoRevision);
+    public string BrandingFaviconUrl => BuildBrandingAssetUrl(SystemBrandingDefaults.FaviconSlot, SystemBrandingDefaults.DefaultFaviconUrl, BrandingFaviconRevision);
     public string BrandingBackgroundUrl => BuildBrandingAssetUrl(SystemBrandingDefaults.BackgroundSlot, "/background-login.png", BrandingBackgroundRevision);
     private long BrandingLogoRevision { get; set; }
     private long BrandingFaviconRevision { get; set; }

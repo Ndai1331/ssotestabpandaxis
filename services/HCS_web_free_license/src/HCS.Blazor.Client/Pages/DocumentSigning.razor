@@ -148,19 +148,10 @@
                     </tbody>
                 </table>
             }
-            <div class="pager" aria-label="@L["Catalog:PageSize"]">
-                <button type="button" disabled="@(!CanPrevPage || isLoading)" @onclick="GoFirstPage">@L["Catalog:PagerFirst"]</button>
-                <button type="button" disabled="@(!CanPrevPage || isLoading)" @onclick="GoPrevPage">@L["Catalog:PagerPrev"]</button>
-                <button type="button" disabled="@(!CanNextPage || isLoading)" @onclick="GoNextPage">@L["Catalog:PagerNext"]</button>
-                <button type="button" disabled="@(!CanNextPage || isLoading)" @onclick="GoLastPage">@L["Catalog:PagerLast"]</button>
-                <label class="sr-only" for="sign-page-size">@L["Catalog:PageSize"]</label>
-                <select id="sign-page-size" aria-label="@L["Catalog:PageSize"]" value="@pageSize" @onchange="OnPageSizeChanged">
-                    @foreach (var size in pageSizes)
-                    {
-                        <option value="@size">@size</option>
-                    }
-                </select>
-            </div>
+            <HcsPager TotalCount="VisibleQueue.Count" PageSize="pageSize" PageSizeId="sign-page-size"
+                      CanPrev="CanPrevPage" CanNext="CanNextPage" Disabled="@isLoading"
+                      FirstClicked="GoFirstPage" PrevClicked="GoPrevPage" NextClicked="GoNextPage" LastClicked="GoLastPage"
+                      PageSizeChanged="OnPageSizeChanged" />
         </div>
 </section>
 
