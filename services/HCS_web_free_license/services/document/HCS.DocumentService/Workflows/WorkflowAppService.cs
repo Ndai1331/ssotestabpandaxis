@@ -88,7 +88,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         Require(DocumentPermissions.WorkflowView);
         var templates = await db.WorkflowTemplates.AsNoTracking()
-            .WhereActiveWorkflowTemplates()
+            .WhereVisibleWorkflowTemplates(db.WorkflowDefinitions)
             .OrderBy(x => x.Name)
             .ThenByDescending(x => x.Version).ToListAsync(cancellationToken);
         return templates.Select(MapTemplate).ToList();
@@ -98,7 +98,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         Require(DocumentPermissions.WorkflowView);
         var template = await db.WorkflowTemplates.AsNoTracking()
-            .WhereActiveWorkflowTemplates()
+            .WhereVisibleWorkflowTemplates(db.WorkflowDefinitions)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         return template is null ? null : MapTemplate(template);
     }
@@ -243,7 +243,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowView);
-        var template = await db.WorkflowTemplates.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+        var template = await db.WorkflowTemplates.AsNoTracking()
+            .WhereVisibleWorkflowTemplates(db.WorkflowDefinitions)
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow template not found.");
         var normalizedKind = kind?.Trim().ToLowerInvariant();
         string? blobName;

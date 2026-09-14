@@ -24,12 +24,12 @@ public sealed class SoftDeletedCatalogVisibilityTests
             activeDefinition.Id, 1, "{}", Now);
         var inactiveTemplate = new WorkflowTemplate(Guid.NewGuid(), "inactive-template", "Inactive template",
             inactiveDefinition.Id, 1, "{}", Now);
-        inactiveTemplate.SetActive(false);
         var activeCredential = new SigningCredential(Guid.NewGuid(), null, SigningKind.Electronic,
             "https://sign.local", "", Now);
         var deletedCredential = new SigningCredential(Guid.NewGuid(), null, SigningKind.Electronic,
             "https://deleted-sign.local", "", Now);
-        deletedCredential.SetCatalogMetadata(null, null, null, null, null, null, isDeleted: true, legacyLayoutImagePath: null);
+        deletedCredential.SetCatalogMetadata(null, null, null, null, null, null, isActive: true,
+            isDeleted: true, legacyLayoutImagePath: null);
         var activeSignature = new UserSignature(Guid.NewGuid(), Guid.NewGuid(), "active.png", "image/png",
             "signatures/active", 10, Now);
         var inactiveSignature = new UserSignature(Guid.NewGuid(), activeSignature.UserId, "inactive.png", "image/png",
@@ -42,7 +42,8 @@ public sealed class SoftDeletedCatalogVisibilityTests
 
         var visibleDefinitions = await db.WorkflowDefinitions
             .WhereActiveWorkflowDefinitions().Include(x => x.Steps).ToListAsync();
-        var visibleTemplates = await db.WorkflowTemplates.WhereActiveWorkflowTemplates().ToListAsync();
+        var visibleTemplates = await db.WorkflowTemplates
+            .WhereVisibleWorkflowTemplates(db.WorkflowDefinitions).ToListAsync();
         var visibleCredentials = await db.SigningCredentials.WhereVisibleSigningCredentials().ToListAsync();
         var visibleSignatures = await db.UserSignatures.WhereActiveUserSignatures().ToListAsync();
 
