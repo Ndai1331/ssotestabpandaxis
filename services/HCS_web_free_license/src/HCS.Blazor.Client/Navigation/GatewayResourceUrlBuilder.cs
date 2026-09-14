@@ -10,7 +10,10 @@ internal static class GatewayResourceUrlBuilder
         if (string.IsNullOrWhiteSpace(resourceUrl))
             throw new ArgumentException("A resource URL is required.", nameof(resourceUrl));
 
-        if (Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
+        // System.Uri accepts /api/... as an absolute file URI, but web-root paths
+        // must still be resolved against the configured public gateway origin.
+        if (!resourceUrl.StartsWith("/", StringComparison.Ordinal) &&
+            Uri.TryCreate(resourceUrl, UriKind.Absolute, out _))
             return resourceUrl;
 
         var configuredOrigin = configuration["Bff:PublicOrigin"] ?? configuration["RemoteServices:Default:BaseUrl"];

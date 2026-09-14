@@ -115,8 +115,7 @@ public sealed class SystemBrandingClient(
 
     private SystemBrandingAssetDto? NormalizeAssetUrl(SystemBrandingAssetDto? asset)
     {
-        if (asset is null || string.IsNullOrWhiteSpace(asset.Url) ||
-            Uri.TryCreate(asset.Url, UriKind.Absolute, out _))
+        if (asset is null || string.IsNullOrWhiteSpace(asset.Url))
         {
             return asset;
         }

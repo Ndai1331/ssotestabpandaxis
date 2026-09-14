@@ -106,9 +106,7 @@ public sealed class SystemBrandingState(
             return null;
         }
 
-        return Uri.TryCreate(resourceUrl, UriKind.Absolute, out _)
-            ? resourceUrl
-            : client.BuildResourceUrl(resourceUrl);
+        return client.BuildResourceUrl(resourceUrl);
     }
 
     private async Task ApplyBrowserBrandingAsync()
