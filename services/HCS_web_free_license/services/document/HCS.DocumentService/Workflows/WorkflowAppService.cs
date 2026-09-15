@@ -425,7 +425,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
                     && x.DocumentId == instance.DocumentId && x.FileId == signingFileId
                     && x.UserId == actor && x.Status == HCS.DocumentService.Signing.SigningStatus.Completed
                     && x.CompletedAt >= task.CreationTime, cancellationToken)))
-            throw new InvalidOperationException("Complete the document signing operation before approving this step.");
+            throw new BusinessException("Signing:AttemptIncomplete");
         var existingDocumentHistoryIds = documentForAccess.History.Select(x => x.Id).ToHashSet();
         var existingDocumentAssignmentIds = documentForAccess.Assignments.Select(x => x.Id).ToHashSet();
         var existingTaskIds = instance.Tasks.Select(x => x.Id).ToHashSet();

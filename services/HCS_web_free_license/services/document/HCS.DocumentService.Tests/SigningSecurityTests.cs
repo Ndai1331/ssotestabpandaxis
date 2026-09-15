@@ -1,5 +1,7 @@
+using System.Text;
 using System.Text.Json;
 using HCS.DocumentService.Signing;
+using HC.RemoteSigns;
 using Microsoft.AspNetCore.DataProtection;
 using Volo.Abp;
 
@@ -96,6 +98,15 @@ public sealed class SigningSecurityTests
     {
         var adapter = new UnavailableExternalSigningAdapter(kind);
         await Assert.ThrowsAsync<NotSupportedException>(() => adapter.SignAsync(new SigningAdapterRequest([], new string('a', 64), "https://ca.local", "secret"), default));
+    }
+
+    [Fact]
+    public void Remote_ca_hmac_secret_accepts_plaintext_legacy_values()
+    {
+        var plaintext = "not-base64!";
+        Assert.Equal(Encoding.UTF8.GetBytes(plaintext), SignTextV2.DecodeHmacSecret(plaintext));
+        var encoded = Convert.ToBase64String("tag-hmac-key"u8.ToArray());
+        Assert.Equal(Convert.FromBase64String(encoded), SignTextV2.DecodeHmacSecret(encoded));
     }
 
     [Fact]

@@ -1205,6 +1205,7 @@
     "Signing:PdfRequired": "Only the prepared PDF file can be signed.",
     "Signing:LayoutImageRequired": "This signing provider requires a layout image. Ask an administrator to complete signing configuration.",
     "Signing:PrepareFailed": "The document could not be prepared for signing. Check Signature settings and try again.",
+    "Signing:AttemptIncomplete": "Digital signing did not complete. Check the signing secret in Signature settings and try again.",
     "Feature:SigningSecret": "Secret",
     "Feature:SigningKpi": "Signing KPI",
     "Feature:Completed": "Completed",

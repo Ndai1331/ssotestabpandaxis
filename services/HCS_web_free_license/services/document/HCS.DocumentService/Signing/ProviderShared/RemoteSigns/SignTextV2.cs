@@ -67,16 +67,7 @@ public sealed class SignTextV2
         var timestamp = now.ToUnixTimeSeconds().ToString();
         var nonce = Guid.NewGuid().ToString("N");
 
-        byte[] secretKeyByteArray;
-        try
-        {
-            secretKeyByteArray = Convert.FromBase64String(_secret);
-        }
-        catch (FormatException ex)
-        {
-            _logger?.LogError(ex, "[SIGN_V2] Secret must be Base64-encoded for REMOTE_CA HMAC.");
-            throw;
-        }
+        var secretKeyByteArray = DecodeHmacSecret(_secret);
 
         var uriObj = new Uri(url);
         const string method = "POST";
@@ -245,5 +236,22 @@ public sealed class SignTextV2
         }
 
         return withScheme.TrimEnd('/');
+    }
+
+    /// <summary>
+    /// TAG HMAC keys are Base64 in the provider contract. AxisHCS stored most user
+    /// secrets as short plaintext, so non-Base64 values are used as UTF-8 key bytes.
+    /// </summary>
+    internal static byte[] DecodeHmacSecret(string secret)
+    {
+        var value = secret.Trim();
+        try
+        {
+            return Convert.FromBase64String(value);
+        }
+        catch (FormatException)
+        {
+            return Encoding.UTF8.GetBytes(value);
+        }
     }
 }

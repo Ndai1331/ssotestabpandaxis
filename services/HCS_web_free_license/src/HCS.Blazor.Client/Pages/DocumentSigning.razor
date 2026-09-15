@@ -828,6 +828,13 @@
                 Guid? signatureId = parsedSignatureId;
                 signingAttempt = await Documents.SignAsync(new SignDocumentRequest(selected.Document.Id, parsedFileId, form.Kind,
                     form.SignIdempotencyKey, signatureId, null, null, CommentOrNull()));
+                if (signingAttempt.Status != SigningStatus.Completed)
+                {
+                    await NotifyErrorAsync(string.IsNullOrWhiteSpace(signingAttempt.Error)
+                        ? L["Signing:AttemptIncomplete"]
+                        : signingAttempt.Error);
+                    return;
+                }
             }
             await Documents.DecideAsync(selected.Task.Id,
                 new DecideApprovalTaskRequest(true, CommentOrNull(), form.DecisionIdempotencyKey,

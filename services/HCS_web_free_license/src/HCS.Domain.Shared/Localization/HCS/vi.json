@@ -1205,6 +1205,7 @@
     "Signing:PdfRequired": "Chỉ ký được tệp PDF đã chuẩn bị.",
     "Signing:LayoutImageRequired": "Nhà cung cấp này cần ảnh khung chữ ký. Liên hệ quản trị để hoàn tất cấu hình ký số.",
     "Signing:PrepareFailed": "Không chuẩn bị được văn bản để ký. Kiểm tra Cấu hình ký số rồi thử lại.",
+    "Signing:AttemptIncomplete": "Ký số chưa thành công. Kiểm tra khóa bí mật trong Cấu hình ký số rồi thử lại.",
     "Feature:SigningSecret": "Khóa bí mật",
     "Feature:SigningKpi": "KPI ký số",
     "Feature:Completed": "Thành công",
