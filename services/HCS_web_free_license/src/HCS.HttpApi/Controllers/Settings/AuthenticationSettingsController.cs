@@ -1,11 +1,12 @@
 using System.Threading.Tasks;
+using HCS.Permissions;
 using HCS.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HCS.Controllers.Settings;
 
-[Authorize(Roles = "admin")]
+[Authorize(HCSPermissions.SystemBranding.Update)]
 [Route("api/hcs/authentication-settings")]
 public sealed class AuthenticationSettingsController : HCSController, IAuthenticationSettingsAppService
 {

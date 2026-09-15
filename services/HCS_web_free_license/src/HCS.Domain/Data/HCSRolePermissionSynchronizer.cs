@@ -4,13 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.Data;
 using Volo.Abp.Identity;
 using Volo.Abp.PermissionManagement;
 
 namespace HCS.Data;
 
 /// <summary>
-/// Grants every enabled permission to the default <c>admin</c> role when it exists.
+/// Grants every enabled permission to the default <c>admin</c> role until customized.
 /// Other roles are created and granted only by administrators; this synchronizer
 /// never inserts product roles such as <c>bacsi</c>, <c>lanhdao</c>, or <c>nhanvien</c>.
 /// </summary>
@@ -19,6 +20,8 @@ public sealed class HCSRolePermissionSynchronizer(
     IPermissionDataSeeder permissionDataSeeder,
     IPermissionDefinitionManager permissionDefinitionManager) : ITransientDependency
 {
+    public const string CustomPermissionsProperty = "HCS.CustomRolePermissions";
+
     public static readonly string[] EmployeeDefaultPermissions =
     [
         "WorkManagement.Dashboard",
@@ -35,16 +38,17 @@ public sealed class HCSRolePermissionSynchronizer(
 
     public async Task SynchronizeExistingRolesAsync()
     {
+        var adminRole = await roleRepository.FindByNormalizedNameAsync("ADMIN");
+        if (adminRole is null || adminRole.GetProperty<bool>(CustomPermissionsProperty))
+        {
+            return;
+        }
+
         var permissions = (await permissionDefinitionManager.GetPermissionsAsync())
             .Where(permission => permission.IsEnabled)
             .Select(permission => permission.Name)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
-
-        if (!await RoleExistsAsync("admin"))
-        {
-            return;
-        }
 
         await permissionDataSeeder.SeedAsync(
             RolePermissionValueProvider.ProviderName,
@@ -103,6 +107,4 @@ public sealed class HCSRolePermissionSynchronizer(
         permission.StartsWith("Documents.", StringComparison.Ordinal) ||
         permission.StartsWith("Collaboration.", StringComparison.Ordinal);
 
-    private async Task<bool> RoleExistsAsync(string roleName) =>
-        await roleRepository.FindByNormalizedNameAsync(roleName.ToUpperInvariant()) is not null;
 }

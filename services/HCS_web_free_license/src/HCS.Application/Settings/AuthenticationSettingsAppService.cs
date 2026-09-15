@@ -1,11 +1,12 @@
 using System;
 using System.Threading.Tasks;
+using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp.SettingManagement;
 
 namespace HCS.Settings;
 
-[Authorize(Roles = "admin")]
+[Authorize(HCSPermissions.SystemBranding.Update)]
 public class AuthenticationSettingsAppService(
     ISettingManager settingManager) : HCSAppService, IAuthenticationSettingsAppService
 {

@@ -122,7 +122,7 @@
                                     <input class="input" id="roles-permission-filter" type="search" autocomplete="off"
                                            placeholder="@L["Roles:SearchPermissions"]" @bind="permissionFilter" @bind:event="oninput" />
                                     <label class="form-check">
-                                        <input class="form-check-input" type="checkbox" checked="@AllPermissionsGranted" disabled="@(!HasAnyEditablePermissions || IsAdminRole)" @onchange="OnToggleAllPermissions" />
+                                        <input class="form-check-input" type="checkbox" checked="@AllPermissionsGranted" disabled="@(!HasAnyEditablePermissions)" @onchange="OnToggleAllPermissions" />
                                         <span class="form-check-label">@L["Roles:GrantAll"]</span>
                                     </label>
                                 </div>
@@ -145,7 +145,7 @@
                                         else
                                         {
                                             <label class="form-check admin-permission-select-all">
-                                                <input class="form-check-input" type="checkbox" checked="@SelectedGroupAllGranted" disabled="@(!HasEditablePermissions(SelectedPermissionGroup) || IsAdminRole)" @onchange="OnToggleSelectedGroup" />
+                                                <input class="form-check-input" type="checkbox" checked="@SelectedGroupAllGranted" disabled="@(!HasEditablePermissions(SelectedPermissionGroup))" @onchange="OnToggleSelectedGroup" />
                                                 <span class="form-check-label">@L["Roles:SelectAll"]</span>
                                             </label>
                                             @if (VisibleFeatures.Count == 0)
@@ -187,7 +187,7 @@
                                                             }
                                                             else
                                                             {
-                                                                <input class="form-check-input" type="checkbox" checked="@feature.Access.IsGranted" disabled="@(!CanEdit(feature.Access) || IsAdminRole)" title="@L["Roles:FeatureAccess"]" aria-label="@($"{feature.DisplayName} · {L["Roles:FeatureAccess"]}")" @onchange="@(e => OnFeatureAccessChanged(feature, e))" />
+                                                                <input class="form-check-input" type="checkbox" checked="@feature.Access.IsGranted" disabled="@(!CanEdit(feature.Access))" title="@L["Roles:FeatureAccess"]" aria-label="@($"{feature.DisplayName} · {L["Roles:FeatureAccess"]}")" @onchange="@(e => OnFeatureAccessChanged(feature, e))" />
                                                             }
                                                         </td>
                                                         @if (ShowCrudColumns)
@@ -199,7 +199,7 @@
                                                                 }
                                                                 else
                                                                 {
-                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Create.IsGranted" disabled="@(!CanEdit(feature.Create) || IsAdminRole)" title="@L["Roles:ActionCreate"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionCreate"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Create, e))" />
+                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Create.IsGranted" disabled="@(!CanEdit(feature.Create))" title="@L["Roles:ActionCreate"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionCreate"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Create, e))" />
                                                                 }
                                                             </td>
                                                             <td class="col-action">
@@ -209,7 +209,7 @@
                                                                 }
                                                                 else
                                                                 {
-                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Update.IsGranted" disabled="@(!CanEdit(feature.Update) || IsAdminRole)" title="@L["Roles:ActionUpdate"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionUpdate"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Update, e))" />
+                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Update.IsGranted" disabled="@(!CanEdit(feature.Update))" title="@L["Roles:ActionUpdate"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionUpdate"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Update, e))" />
                                                                 }
                                                             </td>
                                                             <td class="col-action">
@@ -219,7 +219,7 @@
                                                                 }
                                                                 else
                                                                 {
-                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Delete.IsGranted" disabled="@(!CanEdit(feature.Delete) || IsAdminRole)" title="@L["Roles:ActionDelete"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionDelete"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Delete, e))" />
+                                                                    <input class="form-check-input" type="checkbox" checked="@feature.Delete.IsGranted" disabled="@(!CanEdit(feature.Delete))" title="@L["Roles:ActionDelete"]" aria-label="@($"{feature.DisplayName} · {L["Roles:ActionDelete"]}")" @onchange="@(e => OnFeatureActionChanged(feature, feature.Delete, e))" />
                                                                 }
                                                             </td>
                                                         }
@@ -236,7 +236,7 @@
                                                                         @foreach (var extra in feature.Extra)
                                                                         {
                                                                             <label class="form-check">
-                                                                                <input class="form-check-input" type="checkbox" checked="@extra.Permission.IsGranted" disabled="@(!CanEdit(extra.Permission) || IsAdminRole)" @onchange="@(e => OnFeatureActionChanged(feature, extra.Permission, e))" />
+                                                                                <input class="form-check-input" type="checkbox" checked="@extra.Permission.IsGranted" disabled="@(!CanEdit(extra.Permission))" @onchange="@(e => OnFeatureActionChanged(feature, extra.Permission, e))" />
                                                                                 <span class="form-check-label">@extra.Label</span>
                                                                             </label>
                                                                         }
@@ -256,15 +256,11 @@
                             }
                         </div>
                         <footer class="admin-roles-perms__footer">
-                            @if (IsAdminRole)
-                            {
-                                <p class="admin-roles-hint">@L["Roles:AdminImmutable"]</p>
-                            }
                             @if (CanDeleteSelectedRole)
                             {
                                 <button class="btn btn-danger" type="button" @onclick="DeleteSelectedRoleAsync" disabled="@(isDeleting || isSaving || isLoadingPermissions)">@L["Roles:Delete"]</button>
                             }
-                            <button class="btn btn-primary" type="button" @onclick="SavePermissionsAsync" disabled="@(isSaving || isDeleting || isLoadingPermissions || string.IsNullOrWhiteSpace(selectedRoleName) || IsAdminRole)">@L["Roles:SavePermissions"]</button>
+                            <button class="btn btn-primary" type="button" @onclick="SavePermissionsAsync" disabled="@(isSaving || isDeleting || isLoadingPermissions || string.IsNullOrWhiteSpace(selectedRoleName))">@L["Roles:SavePermissions"]</button>
                         </footer>
                     </section>
                 </div>
@@ -337,9 +333,6 @@
 
     private IdentityAdminPermissionGroup? SelectedPermissionGroup =>
         permissionGroups.FirstOrDefault(group => group.Name == selectedPermissionGroup);
-
-    private bool IsAdminRole =>
-        string.Equals(selectedRoleName, "admin", StringComparison.OrdinalIgnoreCase);
 
     private static bool CanDelete(IdentityAdminRoleDto role) =>
         !role.IsStatic && !string.Equals(role.Name, "admin", StringComparison.OrdinalIgnoreCase);
@@ -437,20 +430,14 @@
 
     private Task OnToggleAllPermissions(ChangeEventArgs args)
     {
-        if (!IsAdminRole)
-        {
-            SetGranted(EditablePermissions(), CheckboxValue(args));
-        }
+        SetGranted(EditablePermissions(), CheckboxValue(args));
 
         return InvokeAsync(StateHasChanged);
     }
 
     private Task OnToggleSelectedGroup(ChangeEventArgs args)
     {
-        if (!IsAdminRole)
-        {
-            SetGranted(EditablePermissions(SelectedPermissionGroup), CheckboxValue(args));
-        }
+        SetGranted(EditablePermissions(SelectedPermissionGroup), CheckboxValue(args));
 
         return InvokeAsync(StateHasChanged);
     }
@@ -491,7 +478,7 @@
 
     private Task OnFeatureAccessChanged(PermissionFeatureRow feature, ChangeEventArgs args)
     {
-        if (feature.Access is null || !CanEdit(feature.Access) || IsAdminRole)
+        if (feature.Access is null || !CanEdit(feature.Access))
         {
             return InvokeAsync(StateHasChanged);
         }
@@ -514,7 +501,7 @@
 
     private Task OnFeatureActionChanged(PermissionFeatureRow feature, IdentityAdminPermission permission, ChangeEventArgs args)
     {
-        if (!CanEdit(permission) || IsAdminRole)
+        if (!CanEdit(permission))
         {
             return InvokeAsync(StateHasChanged);
         }
@@ -550,13 +537,8 @@
 
     private async Task SavePermissionsAsync()
     {
-        if (isSaving || string.IsNullOrWhiteSpace(selectedRoleName) || IsAdminRole)
+        if (isSaving || string.IsNullOrWhiteSpace(selectedRoleName))
         {
-            if (IsAdminRole)
-            {
-                permissionErrorMessage = L["Roles:AdminImmutable"].Value;
-            }
-
             return;
         }
 
@@ -752,9 +734,7 @@
         HttpStatusCode.Unauthorized => L["Roles:SessionExpired"].Value,
         HttpStatusCode.Forbidden => L["Roles:Forbidden"].Value,
         HttpStatusCode.NotFound => L["Roles:NotFound"].Value,
-        HttpStatusCode.BadRequest => exception.ResponseBody?.Contains("admin role", StringComparison.OrdinalIgnoreCase) == true
-            ? L["Roles:AdminImmutable"].Value
-            : L["Roles:BadRequest"].Value,
+        HttpStatusCode.BadRequest => L["Roles:BadRequest"].Value,
         HttpStatusCode.Conflict => L[conflictKey ?? "Roles:Conflict"].Value,
         _ => L[fallbackKey].Value
     };

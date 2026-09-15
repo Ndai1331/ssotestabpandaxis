@@ -5,8 +5,26 @@
 @using Microsoft.AspNetCore.Authorization
 @inherits HCSComponentBase
 
-<PageTitle>@L["Settings:BrandingGroup"] · HCS</PageTitle>
+<PageTitle>@L["Settings:SystemConfigTitle"] · HCS</PageTitle>
 
 <main class="hcs-admin-page hcs-system-branding-page" aria-labelledby="system-branding-title">
-    <SystemBrandingSettingsGroup />
+    <header class="hcs-admin-heading hcs-system-branding-heading">
+        <div>
+            <p class="hcs-page-eyebrow">@L["Settings:SystemConfigEyebrow"]</p>
+            <h1 id="system-branding-title">@L["Settings:SystemConfigTitle"]</h1>
+            <p>@L["Settings:SystemConfigDescription"]</p>
+        </div>
+    </header>
+
+    <Card Class="hcs-system-branding-page__card">
+        <CardBody>
+            <AuthenticationSettingsGroup />
+        </CardBody>
+    </Card>
+
+    <Card Class="hcs-system-branding-page__card">
+        <CardBody>
+            <SystemBrandingSettingsGroup />
+        </CardBody>
+    </Card>
 </main>

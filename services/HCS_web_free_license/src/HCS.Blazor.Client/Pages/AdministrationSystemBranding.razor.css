@@ -1,0 +1,37 @@
+.hcs-system-branding-page {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.hcs-system-branding-heading h1 {
+    margin: 0;
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: var(--hcs-font-size-title, clamp(1.25rem, 1.6vw, 1.6rem));
+    font-weight: 750;
+}
+
+.hcs-system-branding-heading p:not(.hcs-page-eyebrow) {
+    margin: .35rem 0 0;
+    color: var(--hcs-color-muted, #70899a);
+}
+
+.hcs-page-eyebrow {
+    margin: 0 0 .3rem;
+    color: var(--hcs-color-accent, #0e8f8d);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+
+.hcs-system-branding-page__card {
+    border: 0;
+    border-radius: var(--card-radius, 16px);
+    box-shadow: 0 9px 28px rgb(21 59 85 / 7%);
+}
+
+.hcs-system-branding-page__card ::deep .hcs-auth-settings__header,
+.hcs-system-branding-page__card ::deep .hcs-branding-settings__header {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+}

@@ -1,3 +1,6 @@
+using HCS.Data;
+using Volo.Abp.Data;
+using Volo.Abp.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
@@ -15,7 +18,8 @@ namespace HCS.PlatformService.Controllers;
 [Authorize]
 public sealed class AdminRolePermissionsController(
     IPermissionManager permissionManager,
-    IPermissionGrantRepository permissionGrants) : ControllerBase
+    IPermissionGrantRepository permissionGrants,
+    IIdentityRoleRepository roleRepository) : ControllerBase
 {
     [HttpPut("{roleName}/permissions")]
     public async Task<IActionResult> UpdateAsync(string roleName, [FromBody] JsonElement request)
@@ -23,13 +27,6 @@ public sealed class AdminRolePermissionsController(
         if (!User.HasClaim("role", "admin") && !User.IsInRole("admin"))
         {
             return Forbid();
-        }
-
-        // The built-in administrator is intentionally immutable in this screen:
-        // data seeding grants it every enabled policy so there is always a recovery role.
-        if (string.Equals(roleName, "admin", StringComparison.OrdinalIgnoreCase))
-        {
-            return BadRequest("The admin role always has all enabled permissions.");
         }
 
         if (string.IsNullOrWhiteSpace(roleName) ||
@@ -76,6 +73,16 @@ public sealed class AdminRolePermissionsController(
                 RolePermissionValueProvider.ProviderName,
                 roleName,
                 change.Value);
+        }
+
+        if (string.Equals(roleName, "admin", StringComparison.OrdinalIgnoreCase))
+        {
+            var role = await roleRepository.FindByNormalizedNameAsync(roleName.ToUpperInvariant());
+            if (role is not null)
+            {
+                role.SetProperty(HCSRolePermissionSynchronizer.CustomPermissionsProperty, true);
+                await roleRepository.UpdateAsync(role);
+            }
         }
 
         return NoContent();

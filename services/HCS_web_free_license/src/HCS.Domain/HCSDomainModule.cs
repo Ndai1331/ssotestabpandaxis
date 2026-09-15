@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using HCS.Localization;
+using Volo.Abp.Data;
+using Volo.Abp.PermissionManagement;
 using System;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
@@ -35,6 +37,13 @@ public class HCSDomainModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // HCS seeds admin permissions until explicitly customized; the default
+        // contributor would restore revoked permissions on every migration.
+        PostConfigure<AbpDataSeedOptions>(options =>
+        {
+            options.Contributors.Remove(typeof(PermissionDataSeedContributor));
+        });
+
         Configure<AbpLocalizationOptions>(options =>
         {
             options.GlobalContributors.Add<HcsLocalizationResourceContributor>();

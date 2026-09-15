@@ -124,7 +124,6 @@ public class HCSBlazorClientModule : AbpModule
     {
         Configure<SettingManagementComponentOptions>(options =>
         {
-            options.Contributors.Add(new AuthenticationSettingsPageContributor());
             options.Contributors.Add(new SystemBrandingSettingsPageContributor());
         });
     }
