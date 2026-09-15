@@ -1012,6 +1012,11 @@ body:has(.page-chat) {
   width: 6.5rem;
 }
 
+.hcs-app-shell .page-wf .docs-table .col-actions:has(.doc-action-label),
+.hcs-app-shell .page-wf .docs-table td:has(.doc-action-label) {
+  width: auto;
+}
+
 .hcs-app-shell .page-wf button.doc-action:disabled {
   cursor: not-allowed;
   opacity: 0.45;
@@ -2130,7 +2135,33 @@ body:has(.hcs-app-shell) .select2-dropdown {
   width: 36px !important;
 }
 
+.hcs-app-shell :is(.docs-table, .queue-table, .b-table, table) :is(button.doc-action-label, a.doc-action-label) {
+  align-items: center;
+  background: var(--color-white, #fff) !important;
+  border: 1px solid color-mix(in srgb, var(--color-primary, #00B4A9) 40%, var(--color-white)) !important;
+  border-radius: var(--radius-md, 8px) !important;
+  box-shadow: none !important;
+  color: var(--color-primary, #00B4A9) !important;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  height: 36px !important;
+  justify-content: center;
+  line-height: 1;
+  min-height: 36px !important;
+  min-width: 36px !important;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0 12px !important;
+  text-decoration: none;
+  white-space: nowrap;
+  width: auto !important;
+}
+
 .hcs-app-shell :is(.docs-table, .queue-table, .b-table, .event-table, .task-tree, table) :is(button.doc-action, a.doc-action):hover:not(:disabled),
+.hcs-app-shell :is(.docs-table, .queue-table, .b-table, table) :is(button.doc-action-label, a.doc-action-label):hover:not(:disabled),
 .hcs-app-shell :is(.docs-table, .queue-table, .b-table, .event-table, table) :is(.hcs-action-button, .hcs-row-actions > .btn):hover:not(:disabled) {
   background: var(--color-primary-soft, #E0F7F5) !important;
   color: var(--color-primary, #00B4A9) !important;

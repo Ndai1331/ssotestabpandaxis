@@ -111,6 +111,21 @@ internal static class WorkUi
 
     public static string FormatDay(DateTime value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 
+    /// <summary>
+    /// Date pickers bind Unspecified wall-clock. Convert to UTC in the browser timezone
+    /// before save so the server does not stamp the clock face as UTC (+7h in Vietnam).
+    /// </summary>
+    public static DateTime FormTimeToUtc(DateTime value, TimeZoneInfo? timeZone = null) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(value, DateTimeKind.Unspecified), timeZone ?? TimeZoneInfo.Local);
+
+    /// <summary>
+    /// Convert a UTC instant back to Unspecified local wall-clock for datetime-local / HcsDatePicker.
+    /// </summary>
+    public static DateTime UtcToFormTime(DateTime value, TimeZoneInfo? timeZone = null) =>
+        DateTime.SpecifyKind(
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(value, DateTimeKind.Utc), timeZone ?? TimeZoneInfo.Local),
+            DateTimeKind.Unspecified);
+
     public static string EventHref(string relatedType, string? relatedId, Guid eventId) =>
         RelatedEntityHref(relatedType, relatedId) ?? $"/calendar-event-detail/{eventId}";
 

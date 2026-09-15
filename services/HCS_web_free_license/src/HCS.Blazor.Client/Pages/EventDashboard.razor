@@ -128,8 +128,8 @@
         isLoading = true;
         try
         {
-            var from = fromDate?.Date;
-            var to = toDate?.Date.AddDays(1).AddTicks(-1);
+            var from = fromDate is { } start ? WorkUi.FormTimeToUtc(start.Date) : (DateTime?)null;
+            var to = toDate is { } end ? WorkUi.FormTimeToUtc(end.Date.AddDays(1).AddTicks(-1)) : (DateTime?)null;
             dashboard = await Work.GetEventDashboardAsync(from, to);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }

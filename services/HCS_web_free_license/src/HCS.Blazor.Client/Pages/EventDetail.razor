@@ -715,8 +715,8 @@ else if (detail is not null)
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string Status { get; set; } = "Preparing";
-        public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = x.StartTime.ToLocalTime(); EndTime = x.EndTime.ToLocalTime(); Status = x.Status; }
-        public UpdateManagedEventRequest ToRequest() => new(Group.Trim(), Name.Trim(), Content, Description, Location, StartTime, EndTime, Status);
+        public void Load(EventDto x) { Group = x.Group; Name = x.Name; Content = x.Content; Description = x.Description; Location = x.Location; StartTime = WorkUi.UtcToFormTime(x.StartTime); EndTime = WorkUi.UtcToFormTime(x.EndTime); Status = x.Status; }
+        public UpdateManagedEventRequest ToRequest() => new(Group.Trim(), Name.Trim(), Content, Description, Location, WorkUi.FormTimeToUtc(StartTime), WorkUi.FormTimeToUtc(EndTime), Status);
     }
     private sealed class PickerUser
     {

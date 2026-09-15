@@ -14,7 +14,7 @@
     </div>
     <form class="docs-toolbar" @onsubmit:preventDefault>
         <span class="filter-label" id="survey-location-label">@L["SurveyLocation"]</span>
-        <ProviderSelect2 Value="selectedLocationId"
+        <ProviderSelect2 Value="@selectedLocationId"
                          ValueChanged="OnLocationChanged"
                          Items="LocationItems"
                          Placeholder="@L["All"]"

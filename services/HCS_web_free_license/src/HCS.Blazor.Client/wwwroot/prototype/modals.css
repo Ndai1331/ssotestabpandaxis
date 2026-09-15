@@ -5,7 +5,8 @@ body:has(.hcs-app-shell) .modal-content,
 body:has(.hcs-app-shell) .hcs-catalog-modal,
 .hcs-app-shell .chat-dialog,
 .hcs-app-shell .process-dialog,
-.hcs-app-shell .chat-preview-dialog {
+.hcs-app-shell .chat-preview-dialog,
+.hcs-app-shell .hcs-public-survey__dialog {
   --hcs-modal-icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E");
   --hcs-modal-icon-close: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
   --hcs-modal-icon-trash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12'/%3E%3C/svg%3E");
@@ -178,7 +179,8 @@ body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-light,
 body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary,
 .hcs-app-shell .chat-dialog-foot .btn.btn-outline,
 .hcs-app-shell .process-dialog-foot .btn.btn-outline,
-.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-light {
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-light,
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-secondary {
   --hcs-modal-btn-icon: var(--hcs-modal-icon-close);
   background: var(--color-white) !important;
   border: 1px solid var(--color-danger) !important;
@@ -212,7 +214,8 @@ body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-light:hover:not(:d
 body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary:hover:not(:disabled),
 .hcs-app-shell .chat-dialog-foot .btn.btn-outline:hover:not(:disabled),
 .hcs-app-shell .process-dialog-foot .btn.btn-outline:hover:not(:disabled),
-.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-light:hover:not(:disabled) {
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-light:hover:not(:disabled),
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-secondary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-danger) 8%, var(--color-white)) !important;
   border-color: var(--color-danger) !important;
   color: var(--color-danger) !important;
