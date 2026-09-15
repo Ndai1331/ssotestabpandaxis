@@ -428,6 +428,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             throw new InvalidOperationException("Complete the document signing operation before approving this step.");
         var existingDocumentHistoryIds = documentForAccess.History.Select(x => x.Id).ToHashSet();
         var existingDocumentAssignmentIds = documentForAccess.Assignments.Select(x => x.Id).ToHashSet();
+        var existingTaskIds = instance.Tasks.Select(x => x.Id).ToHashSet();
         var changed = instance.Decide(taskId, input.Approve, actor, input.Comment, input.IdempotencyKey,
             definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, input.Return);
         if (changed)
@@ -466,12 +467,20 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             // These children are added through the aggregate's private backing
             // fields. Track them explicitly so EF inserts them instead of
             // treating their client-generated Guid keys as existing rows.
+            TrackNewApprovalTasks(db, instance, existingTaskIds);
             db.DocumentHistories.AddRange(documentForAccess.History
                 .Where(x => !existingDocumentHistoryIds.Contains(x.Id)));
             db.DocumentAssignments.AddRange(documentForAccess.Assignments
                 .Where(x => !existingDocumentAssignmentIds.Contains(x.Id)));
             AddChangeEvent(instance, DateTime.UtcNow);
-            await db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new BusinessException("Document:WorkflowDecisionConflict");
+            }
         }
         return Map(instance);
     }
@@ -503,9 +512,11 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var document = await LoadDocumentAsync(instance.DocumentId, cancellationToken);
         DocumentAccess.EnsureCanManage(document, actor, principal);
         var definition = await db.WorkflowDefinitions.Include(x => x.Steps).SingleAsync(x => x.Id == instance.DefinitionId, cancellationToken);
+        var existingTaskIds = instance.Tasks.Select(x => x.Id).ToHashSet();
         instance.Resubmit(definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, idempotencyKey);
         if (document.Status != DocumentStatus.InReview) document.StartReview(actor, DateTime.UtcNow);
         GrantWorkflowAccess(document, instance, null, actor, DateTime.UtcNow);
+        TrackNewApprovalTasks(db, instance, existingTaskIds);
         AddChangeEvent(instance, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
         return Map(instance);
@@ -523,6 +534,11 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         }
     }
     private IQueryable<WorkflowInstance> Query() => db.WorkflowInstances.Include(x => x.Tasks);
+    internal static void TrackNewApprovalTasks(DocumentServiceDbContext db, WorkflowInstance instance,
+        IReadOnlySet<Guid> existingTaskIds)
+    {
+        db.ApprovalTasks.AddRange(instance.Tasks.Where(x => !existingTaskIds.Contains(x.Id)));
+    }
     private ClaimsPrincipal Principal => httpContext.HttpContext?.User ?? new ClaimsPrincipal();
     private void Require(string permission)
     {

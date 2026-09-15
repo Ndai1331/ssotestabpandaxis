@@ -55,6 +55,15 @@ public sealed class BffAndChatErrorMapperTests
     }
 
     [Fact]
+    public void Save_invalid_signing_secret_is_localized_instead_of_generic_internal_error()
+    {
+        var exception = new BffApiException(HttpStatusCode.Forbidden,
+            """{"error":{"code":"Signing:SecretInvalid","message":"An internal error occurred during your request!"}}""");
+        Assert.Equal("Signing:SecretInvalid",
+            BffErrorMapper.From(localizer, exception, BffErrorKind.Save));
+    }
+
+    [Fact]
     public void Chat_unauthorized_is_a_session_message_not_a_missing_grant()
     {
         var exception = new CollaborationApiException(HttpStatusCode.Unauthorized, null);

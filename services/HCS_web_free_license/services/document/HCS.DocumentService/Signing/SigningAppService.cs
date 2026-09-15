@@ -245,7 +245,7 @@ public sealed class SigningAppService(
         var file = await db.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == input.FileId && x.DocumentId == input.DocumentId && !x.IsPendingDeletion, cancellationToken)
             ?? throw new KeyNotFoundException("Document file not found.");
         if (!IsPdf(file))
-            throw new InvalidOperationException("Only the prepared PDF file can be signed.");
+            throw new BusinessException("Signing:PdfRequired");
         var expectedType = input.Kind == SigningKind.Electronic ? UserSignatureType.Electronic : UserSignatureType.Digital;
         var signatureQuery = db.UserSignatures.AsNoTracking()
             .Where(x => x.UserId == userId && x.Type == expectedType && x.IsActive);
@@ -260,7 +260,7 @@ public sealed class SigningAppService(
             signature = await signatureQuery.OrderByDescending(x => x.IsDefault).ThenByDescending(x => x.CreationTime)
                 .FirstOrDefaultAsync(cancellationToken);
         }
-        if (signature is null) throw new InvalidOperationException("A matching user signature is not configured.");
+        if (signature is null) throw new BusinessException("Signing:SignatureNotConfigured");
 
         var credentialQuery = db.SigningCredentials.AsNoTracking()
             .Where(x => x.Kind == input.Kind && x.IsActive && !x.IsDeleted);
@@ -272,19 +272,22 @@ public sealed class SigningAppService(
         var credential = await credentialQuery
             .OrderByDescending(x => x.UpdatedAt)
             .FirstOrDefaultAsync(cancellationToken);
-        if (input.Kind != SigningKind.Electronic && credential is null) throw new InvalidOperationException("Signing provider is not configured in the global catalog.");
+        if (input.Kind != SigningKind.Electronic && credential is null)
+            throw new BusinessException("Signing:ProviderNotConfigured");
         if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(credential!.ProviderCode))
-            throw new InvalidOperationException("The selected signing provider has no provider code.");
+            throw new BusinessException("Signing:ProviderCodeMissing");
         if (input.Kind == SigningKind.Electronic && credential is { AllowElectronicSign: false })
-            throw new InvalidOperationException("Electronic signing is disabled for this provider.");
+            throw new BusinessException("Signing:ElectronicDisabled");
         if (input.Kind != SigningKind.Electronic && credential is { AllowDigitalSign: false })
-            throw new InvalidOperationException("Digital signing is disabled for this provider.");
+            throw new BusinessException("Signing:DigitalDisabled");
         if (credential is not null && !string.IsNullOrWhiteSpace(signature.ProviderCode)
             && !string.Equals(signature.ProviderCode, credential.ProviderCode, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("The selected signature is configured for a different provider.");
+            throw new BusinessException("Signing:ProviderMismatch");
         var now = DateTime.UtcNow;
-        if (signature.ValidFrom.HasValue && signature.ValidFrom > now) throw new InvalidOperationException("The selected signature is not yet valid.");
-        if (signature.ValidTo.HasValue && signature.ValidTo < now) throw new InvalidOperationException("The selected signature has expired.");
+        if (signature.ValidFrom.HasValue && signature.ValidFrom > now)
+            throw new BusinessException("Signing:SignatureNotYetValid");
+        if (signature.ValidTo.HasValue && signature.ValidTo < now)
+            throw new BusinessException("Signing:SignatureExpired");
         var pairedWordFile = file.PairedFileId is { } pairedFileId
             ? await QueryPairedFile(db.DocumentFiles.AsNoTracking(), pairedFileId, input.DocumentId)
                 .SingleOrDefaultAsync(cancellationToken)
@@ -310,13 +313,15 @@ public sealed class SigningAppService(
                 throw new InvalidDataException("Stored file hash does not match its immutable metadata.");
             var providerDefaults = providerFactory.GetDefinition(input.Kind, credential?.ProviderCode);
             if (providerDefaults.RequiresLayoutImage && string.IsNullOrWhiteSpace(credential?.LayoutImageBase64))
-                throw new InvalidOperationException("The selected signing provider requires a layout image.");
+                throw new BusinessException("Signing:LayoutImageRequired");
             adapter = providerFactory.GetAdapter(input.Kind, credential?.ProviderCode);
             var signatureImage = await ReadSigningBlobAsync(signature.BlobName, cancellationToken);
             var layoutImage = DecodeImage(credential?.LayoutImageBase64);
             var protectedSecret = !string.IsNullOrWhiteSpace(signature.ProtectedSecret)
                 ? signature.ProtectedSecret
                 : credential?.ProtectedSecret;
+            if (input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(protectedSecret))
+                throw new BusinessException("Signing:SecretInvalid");
             secret = string.IsNullOrWhiteSpace(protectedSecret)
                 ? string.Empty
                 : secretProtector.Unprotect(protectedSecret);
@@ -342,11 +347,11 @@ public sealed class SigningAppService(
                 preparedWordBytes = WordFirstSigningDocumentBuilder.Replace(sourceWordBytes, input.Kind,
                     electronicImage, stepOrder, signerName, note);
                 if (!converter.IsAvailable)
-                    throw new InvalidOperationException("LibreOffice is required to prepare the Word signing document.");
+                    throw new BusinessException("Document:LibreOfficeRequired");
                 bytes = await converter.ConvertAsync(preparedWordBytes, cancellationToken)
-                    ?? throw new InvalidOperationException("The Word signing document could not be converted to PDF.");
+                    ?? throw new BusinessException("Document:WordToPdfFailed");
                 if (bytes.Length == 0)
-                    throw new InvalidOperationException("The Word signing document could not be converted to PDF.");
+                    throw new BusinessException("Document:WordToPdfFailed");
                 wordPrepared = true;
             }
             else
@@ -372,9 +377,13 @@ public sealed class SigningAppService(
                 credential?.ApiTimeoutSeconds is > 0 and var timeout ? timeout : 30,
                 wordPrepared);
         }
+        catch (BusinessException)
+        {
+            throw;
+        }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw new InvalidOperationException("The document could not be prepared for signing.", exception);
+            throw new BusinessException("Signing:PrepareFailed", innerException: exception);
         }
 
         var attempt = new SigningAttempt(Guid.NewGuid(), input.DocumentId, input.FileId, userId, input.Kind,

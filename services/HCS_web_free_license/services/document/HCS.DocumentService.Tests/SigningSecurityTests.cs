@@ -1,6 +1,7 @@
 using System.Text.Json;
 using HCS.DocumentService.Signing;
 using Microsoft.AspNetCore.DataProtection;
+using Volo.Abp;
 
 namespace HCS.DocumentService.Tests;
 
@@ -47,6 +48,23 @@ public sealed class SigningSecurityTests
         var encrypted = protector.Protect("top-secret");
         Assert.DoesNotContain("top-secret", encrypted);
         Assert.Equal("top-secret", protector.Unprotect(encrypted));
+    }
+
+    [Theory]
+    [InlineData("not-a-protected-payload")]
+    [InlineData("YWI+Y2Q/")]
+    public void Unprotect_legacy_plaintext_secret_is_accepted(string protectedValue)
+    {
+        var protector = new DataProtectionSigningSecretProtector(new EphemeralDataProtectionProvider());
+        Assert.Equal(protectedValue, protector.Unprotect(protectedValue));
+    }
+
+    [Fact]
+    public void Unprotect_corrupt_data_protection_payload_tells_the_user_to_reconfigure()
+    {
+        var protector = new DataProtectionSigningSecretProtector(new EphemeralDataProtectionProvider());
+        var exception = Assert.Throws<BusinessException>(() => protector.Unprotect("CfDJ8-not-a-valid-payload"));
+        Assert.Equal("Signing:SecretInvalid", exception.Code);
     }
 
     [Fact]

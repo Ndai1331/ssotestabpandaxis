@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.DataProtection;
+using Volo.Abp;
 
 namespace HCS.DocumentService.Signing;
 
@@ -17,7 +18,25 @@ public sealed class DataProtectionSigningSecretProtector(IDataProtectionProvider
         if (string.IsNullOrWhiteSpace(plainText)) throw new ArgumentException("Signing secret is required.");
         return _protector.Protect(plainText);
     }
-    public string Unprotect(string protectedValue) => _protector.Unprotect(protectedValue);
+    public string Unprotect(string protectedValue)
+    {
+        try
+        {
+            return _protector.Unprotect(protectedValue);
+        }
+        catch (Exception exception) when (exception is CryptographicException or FormatException)
+        {
+            // Legacy AxisHCS secrets were stored as plaintext/Base64, not Data Protection
+            // payloads. Keep those values usable after import; only reject failed DP blobs.
+            if (IsLegacyPlaintextSecret(protectedValue))
+                return protectedValue;
+            throw new BusinessException("Signing:SecretInvalid", innerException: exception);
+        }
+    }
+
+    private static bool IsLegacyPlaintextSecret(string value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && !value.StartsWith("CfDJ", StringComparison.Ordinal);
 }
 
 public sealed record SigningAdapterRequest(byte[] Content, string InputSha256, string Endpoint, string Secret,

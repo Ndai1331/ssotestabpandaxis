@@ -57,6 +57,8 @@ public class HCSDomainSharedModule : AbpModule
         Configure<AbpExceptionLocalizationOptions>(options =>
         {
             options.MapCodeNamespace("HCS", typeof(HCSResource));
+            options.MapCodeNamespace("Document", typeof(HCSResource));
+            options.MapCodeNamespace("Signing", typeof(HCSResource));
         });
     }
 }
