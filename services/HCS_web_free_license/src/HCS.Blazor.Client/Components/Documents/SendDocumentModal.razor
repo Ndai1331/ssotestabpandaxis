@@ -1,7 +1,7 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
-@inject OrganizationCatalogClient Catalog
+@inject OrganizationUnitCatalogClient OrganizationUnits
 
 <Modal @ref="modal">
     <ModalContent Centered Class="hcs-catalog-modal send-doc-modal">
@@ -146,11 +146,11 @@
             IReadOnlyList<DepartmentCatalogDto> items;
             try
             {
-                items = await Catalog.GetSendableDepartmentsAsync();
+                items = await OrganizationUnits.GetDepartmentCatalogAsync();
             }
             catch
             {
-                items = await Catalog.GetDepartmentLookupAsync();
+                items = [];
             }
 
             items = items
@@ -316,7 +316,7 @@
     {
         try
         {
-            var mapped = await Catalog.GetDepartmentUsersAsync(departmentId);
+            var mapped = await OrganizationUnits.GetMembersLookupAsync(departmentId);
             var ids = mapped.Select(x => x.UserId).Where(x => x != Guid.Empty).Distinct().ToList();
             if (ids.Count == 0) return [];
             try

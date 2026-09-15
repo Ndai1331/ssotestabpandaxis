@@ -141,7 +141,7 @@
                                 </div>
                                 <i class="fa fa-shield-halved" aria-hidden="true"></i>
                             </div>
-                            @if (!profile.HasPassword || profile.IsExternal)
+                            @if (!profile.HasPassword)
                             {
                                 <p class="hcs-account-info-box"><i class="fa fa-circle-info" aria-hidden="true"></i>@L["Account:PasswordExternalWarning"]</p>
                             }

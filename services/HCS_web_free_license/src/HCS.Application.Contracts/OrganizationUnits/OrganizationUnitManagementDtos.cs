@@ -57,3 +57,15 @@ public sealed class AddOrganizationUnitMemberInput
 {
     public Guid UserId { get; set; }
 }
+
+public sealed class UserOrganizationUnitLookupDto
+{
+    public Guid UserId { get; set; }
+    public Guid? OrganizationUnitId { get; set; }
+    public string? DisplayName { get; set; }
+}
+
+public sealed class SetUserOrganizationUnitsInput
+{
+    public Guid[] OrganizationUnitIds { get; set; } = [];
+}

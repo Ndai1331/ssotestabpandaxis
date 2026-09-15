@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -18,6 +19,60 @@ public sealed class OrganizationUnitCatalogClient(IHttpClientFactory httpClientF
 
     public Task<List<OrganizationUnitDto>> GetTreeAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<OrganizationUnitDto>>(Endpoint, cancellationToken);
+
+    public Task<List<OrganizationUnitDto>> GetLookupAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<OrganizationUnitDto>>(LookupEndpoint, cancellationToken);
+
+    public async Task<IReadOnlyList<DepartmentCatalogDto>> GetDepartmentCatalogAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var units = await GetLookupAsync(cancellationToken);
+        return units.Select(OrganizationUnitCatalogMapper.ToDepartment).ToList();
+    }
+
+    public async Task<OrganizationPagedResponse<DepartmentCatalogDto>> SearchDepartmentsAsync(
+        string? filter,
+        int skipCount,
+        int maxResultCount,
+        CancellationToken cancellationToken = default)
+    {
+        var items = await GetDepartmentCatalogAsync(cancellationToken);
+        return OrganizationUnitCatalogMapper.Search(items, filter, skipCount, maxResultCount);
+    }
+
+    public async Task<IReadOnlyList<UserDepartmentLookupDto>> GetUserDepartmentsAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Where(id => id != Guid.Empty).Distinct().Take(200).ToArray();
+        if (ids.Length == 0)
+        {
+            return [];
+        }
+
+        var rows = await GetAsync<List<UserOrganizationUnitLookupDto>>(
+            BuildUserLookupUri(ids), cancellationToken);
+        return rows.Select(OrganizationUnitCatalogMapper.ToUserDepartment).ToList();
+    }
+
+    public async Task<IReadOnlyList<UserDepartmentLookupDto>> GetMembersLookupAsync(
+        Guid organizationUnitId,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await GetAsync<List<UserOrganizationUnitLookupDto>>(
+            BuildMembersLookupUri(organizationUnitId), cancellationToken);
+        return rows.Select(OrganizationUnitCatalogMapper.ToUserDepartment).ToList();
+    }
+
+    public Task SetUserOrganizationUnitsAsync(
+        Guid userId,
+        IEnumerable<Guid> organizationUnitIds,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            HttpMethod.Put,
+            BuildSetUserUri(userId),
+            new { organizationUnitIds = organizationUnitIds.Where(id => id != Guid.Empty).Distinct().ToArray() },
+            cancellationToken);
 
     public Task<PagedResultDto<OrganizationUnitMemberDto>> GetMembersAsync(
         Guid id,
@@ -77,8 +132,18 @@ public sealed class OrganizationUnitCatalogClient(IHttpClientFactory httpClientF
         BuildPagedUri($"{ItemEndpoint(id)}/available-members", filter, skipCount, maxResultCount);
 
     internal const string Endpoint = "/api/identity/organization-units";
+    internal const string LookupEndpoint = "/api/identity/organization-unit-lookup";
 
     internal static string ItemEndpoint(Guid id) => $"{Endpoint}/{id:D}";
+
+    internal static string BuildUserLookupUri(IEnumerable<Guid> userIds) =>
+        $"{LookupEndpoint}/users?{string.Join("&", userIds.Select(id => $"userIds={id:D}"))}";
+
+    internal static string BuildMembersLookupUri(Guid organizationUnitId) =>
+        $"{LookupEndpoint}/{organizationUnitId:D}/members";
+
+    internal static string BuildSetUserUri(Guid userId) =>
+        $"{LookupEndpoint}/users/{userId:D}";
 
     private static string BuildPagedUri(string endpoint, string? filter, int skipCount, int maxResultCount)
     {

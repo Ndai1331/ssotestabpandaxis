@@ -13,6 +13,7 @@
 @using Volo.Abp.AspNetCore.Components.Messages
 @inject IdentityAdminClient IdentityClient
 @inject OrganizationCatalogClient OrganizationClient
+@inject OrganizationUnitCatalogClient OrganizationUnits
 @inject IUiMessageService UiMessageService
 @inject IStringLocalizer<HCSResource> L
 
@@ -226,11 +227,11 @@
                                 <SelectItem Value="@string.Empty">Chọn phòng ban</SelectItem>
                                 @foreach (var department in departments)
                                 {
-                                    <SelectItem Value="@department.Id.ToString()">@department.Code — @department.Name</SelectItem>
+                                    <SelectItem Value="@department.Id.ToString()">@OrganizationUnitCatalogMapper.DisplayText(department)</SelectItem>
                                 }
                             </Select>
                         </Field>
-                        <p class="hcs-form-note">Mỗi người dùng có thể có một phòng ban chính. Lựa chọn này được lưu qua Organization user-mapping.</p>
+                        <p class="hcs-form-note">@L["Users:DepartmentNote"]</p>
                     </div>
                     @if (editingUserId.HasValue)
                     {
@@ -352,9 +353,7 @@
         try
         {
             departments.Clear();
-            var query = new OrganizationCatalogQuery(null, true, 0, 100);
-            var departmentsResult = await OrganizationClient.GetDepartmentsAsync(query);
-            departments.AddRange(departmentsResult.Items);
+            departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync());
         }
         catch (Exception)
         {
@@ -380,13 +379,34 @@
 
         try
         {
-            var departmentsByUser = (await OrganizationClient.GetUserDepartmentsAsync(userIds, cancellationToken))
+            var departmentsByUser = (await OrganizationUnits.GetUserDepartmentsAsync(userIds, cancellationToken))
                 .ToDictionary(item => item.UserId);
+            Dictionary<Guid, UserDepartmentLookupDto> positionsByUser = [];
+            try
+            {
+                positionsByUser = (await OrganizationClient.GetUserDepartmentsAsync(userIds, cancellationToken))
+                    .ToDictionary(item => item.UserId);
+            }
+            catch (OrganizationCatalogApiException)
+            {
+            }
+
             foreach (var user in loadedUsers)
             {
-                departmentsByUser.TryGetValue(user.Id, out var mapping);
-                userDepartmentNames[user.Id] = mapping?.DepartmentId is { } departmentId ? DepartmentName(departmentId) : "—";
+                departmentsByUser.TryGetValue(user.Id, out var membership);
+                userDepartmentNames[user.Id] = membership?.DepartmentId is { } departmentId
+                    ? DepartmentName(departmentId)
+                    : "—";
+                positionsByUser.TryGetValue(user.Id, out var mapping);
                 userPositionNames[user.Id] = mapping?.PositionId is { } positionId ? PositionName(positionId) : "—";
+            }
+        }
+        catch (OrganizationUnitApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+        {
+            foreach (var userId in userIds)
+            {
+                userDepartmentNames[userId] = "—";
+                userPositionNames[userId] = "—";
             }
         }
         catch (OrganizationCatalogApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
@@ -460,17 +480,27 @@
         try
         {
             foreach (var role in await IdentityClient.GetUserRolesAsync(latest.Id)) userForm.RoleNames.Add(role.Name);
+            var memberships = await OrganizationUnits.GetUserDepartmentsAsync([latest.Id]);
+            var membership = memberships.FirstOrDefault(item => item.DepartmentId.HasValue);
+            if (membership?.DepartmentId is { } organizationUnitId)
+            {
+                userForm.DepartmentId = organizationUnitId.ToString();
+            }
+
             var mappings = await IdentityClient.GetUserMappingsAsync(latest.Id);
             var mapping = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
-            if (mapping is not null)
+            if (mapping?.PositionId is { } positionId)
             {
-                userForm.DepartmentId = mapping.DepartmentId.ToString();
-                userForm.PositionId = mapping.PositionId?.ToString() ?? string.Empty;
+                userForm.PositionId = positionId.ToString();
             }
         }
         catch (IdentityAdminApiException exception)
         {
             formErrorMessage = FriendlyApiError(exception, "Users:LoadError");
+        }
+        catch (OrganizationUnitApiException exception)
+        {
+            formErrorMessage = FriendlyOuError(exception, "Users:LoadError");
         }
 
         if (userModal is not null) await userModal.Show();
@@ -521,7 +551,12 @@
 
             try
             {
+                await SyncOrganizationUnitsAsync(savedUser.Id);
                 await SyncOrganizationMappingAsync(savedUser.Id);
+            }
+            catch (OrganizationUnitApiException exception)
+            {
+                secondaryError ??= FriendlyOuError(exception, "Users:SaveError");
             }
             catch (IdentityAdminApiException exception)
             {
@@ -556,33 +591,30 @@
         }
     }
 
+    private async Task SyncOrganizationUnitsAsync(Guid userId)
+    {
+        var organizationUnitIds = Guid.TryParse(userForm.DepartmentId, out var organizationUnitId)
+            ? new[] { organizationUnitId }
+            : [];
+        await OrganizationUnits.SetUserOrganizationUnitsAsync(userId, organizationUnitIds);
+    }
+
     private async Task SyncOrganizationMappingAsync(Guid userId)
     {
         Guid? positionId = Guid.TryParse(userForm.PositionId, out var parsedPositionId) ? parsedPositionId : null;
         var mappings = await IdentityClient.GetUserMappingsAsync(userId);
         var primary = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
-        if (!Guid.TryParse(userForm.DepartmentId, out var departmentId))
-        {
-            if (primary is not null)
-            {
-                await IdentityClient.DeleteUserMappingAsync(primary.Id);
-            }
-
-            return;
-        }
-
         if (primary is null)
         {
-            await IdentityClient.CreateUserMappingAsync(userId, departmentId, positionId);
             return;
         }
 
-        if (primary.DepartmentId == departmentId && primary.PositionId == positionId)
+        if (primary.PositionId == positionId)
         {
             return;
         }
 
-        await IdentityClient.UpdateUserMappingAsync(primary.Id, userId, departmentId, positionId, primary.UnitId);
+        await IdentityClient.UpdateUserMappingAsync(primary.Id, userId, primary.DepartmentId, positionId, primary.UnitId);
     }
 
     private async Task DeleteUserAsync(IdentityAdminUserDto user)
@@ -665,7 +697,7 @@
     private string DepartmentSummary(Guid userId) => userDepartmentNames.TryGetValue(userId, out var name) && !string.IsNullOrWhiteSpace(name) ? name : "—";
     private string PositionSummary(Guid userId) => userPositionNames.TryGetValue(userId, out var name) && !string.IsNullOrWhiteSpace(name) ? name : "—";
     private string DepartmentName(Guid departmentId) => departments.FirstOrDefault(item => item.Id == departmentId) is { } department
-        ? $"{department.Code} — {department.Name}"
+        ? OrganizationUnitCatalogMapper.DisplayText(department)
         : departmentId.ToString("D");
     private string PositionName(Guid positionId) => positions.FirstOrDefault(item => item.Id == positionId) is { } position
         ? $"{position.Code} — {position.Name}"
@@ -684,4 +716,15 @@
         HttpStatusCode.Conflict => L["Users:Conflict"].Value,
         _ => L[fallbackKey].Value
     };
+
+    private string FriendlyOuError(OrganizationUnitApiException exception, string fallbackKey) =>
+        exception.StatusCode switch
+        {
+            HttpStatusCode.BadRequest => L["Users:BadRequest"].Value,
+            HttpStatusCode.Unauthorized => L["Users:SessionExpired"].Value,
+            HttpStatusCode.Forbidden => L["Users:Forbidden"].Value,
+            HttpStatusCode.NotFound => L["Users:NotFound"].Value,
+            HttpStatusCode.Conflict => L["Users:Conflict"].Value,
+            _ => L[fallbackKey].Value
+        };
 }

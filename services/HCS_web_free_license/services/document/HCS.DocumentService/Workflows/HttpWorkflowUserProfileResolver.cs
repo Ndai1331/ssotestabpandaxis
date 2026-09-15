@@ -30,9 +30,51 @@ public sealed class HttpWorkflowUserProfileResolver(
     private async Task<(string? PositionName, string? DepartmentName)> ResolveOrganizationAsync(
         Guid userId, CancellationToken cancellationToken)
     {
-        var baseUrl = configuration["Services:Organization:BaseUrl"];
-        if (string.IsNullOrWhiteSpace(baseUrl) || userId == Guid.Empty)
+        if (userId == Guid.Empty)
             return (null, null);
+
+        var departmentName = await ResolveDepartmentAsync(userId, cancellationToken);
+        var positionName = await ResolvePositionAsync(userId, cancellationToken);
+        return (positionName, departmentName);
+    }
+
+    private async Task<string?> ResolveDepartmentAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(configuration["Services:Platform:BaseUrl"]))
+            return null;
+
+        using var request = new HttpRequestMessage(HttpMethod.Get,
+            $"api/identity/organization-unit-lookup/users?userIds={userId:D}");
+        var token = httpContext.HttpContext?.Request.Headers.Authorization.ToString();
+        if (!string.IsNullOrWhiteSpace(token))
+            request.Headers.TryAddWithoutValidation("Authorization", token);
+
+        try
+        {
+            var client = httpClientFactory.CreateClient("HCS.Platform");
+            using var response = await client.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var payload = await response.Content.ReadFromJsonAsync<List<UserOrganizationUnitLookupDto>>(
+                cancellationToken: cancellationToken);
+            return payload?.FirstOrDefault(x => x.UserId == userId)?.DisplayName;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<string?> ResolvePositionAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var baseUrl = configuration["Services:Organization:BaseUrl"];
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            return null;
 
         using var request = new HttpRequestMessage(HttpMethod.Get,
             $"api/organization/user-departments?userIds={userId:D}");
@@ -45,20 +87,19 @@ public sealed class HttpWorkflowUserProfileResolver(
             var client = httpClientFactory.CreateClient("HCS.Organization");
             using var response = await client.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode)
-                return (null, null);
+                return null;
 
             var payload = await response.Content.ReadFromJsonAsync<List<UserDepartmentLookupDto>>(
                 cancellationToken: cancellationToken);
-            var item = payload?.FirstOrDefault(x => x.UserId == userId);
-            return (item?.PositionName, item?.DepartmentName);
+            return payload?.FirstOrDefault(x => x.UserId == userId)?.PositionName;
         }
         catch (HttpRequestException)
         {
-            return (null, null);
+            return null;
         }
         catch (System.Text.Json.JsonException)
         {
-            return (null, null);
+            return null;
         }
     }
 
@@ -79,6 +120,8 @@ public sealed class HttpWorkflowUserProfileResolver(
             ?? principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? userId.ToString("N");
     }
+
+    private sealed record UserOrganizationUnitLookupDto(Guid UserId, Guid? OrganizationUnitId, string? DisplayName);
 
     private sealed record UserDepartmentLookupDto(Guid UserId, Guid? DepartmentId, string? DepartmentName,
         Guid? PositionId, string? PositionName);

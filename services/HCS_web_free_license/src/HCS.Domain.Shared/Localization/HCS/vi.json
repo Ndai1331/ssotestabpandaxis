@@ -429,6 +429,7 @@
     "Users:SearchPlaceholder": "Tìm theo tên đăng nhập hoặc email",
     "Users:NoAdminPermission": "Tài khoản của bạn không có quyền quản trị người dùng.",
     "Users:CreatedAt": "Ngày tạo",
+    "Users:DepartmentNote": "Mỗi người dùng có một phòng ban chính trên cây phòng ban. Lựa chọn này được lưu vào Organization Units.",
     "Catalog:Section": "Quản trị tổ chức",
     "Catalog:DepartmentTitle": "Phòng ban",
     "Catalog:DepartmentDescription": "Quản lý cơ cấu phòng ban và quan hệ cấp trên.",

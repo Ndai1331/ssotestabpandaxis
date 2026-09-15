@@ -1,6 +1,7 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject OrganizationCatalogClient Catalog
+@inject OrganizationUnitCatalogClient OrganizationUnits
 @inject IJSRuntime Js
 @implements IAsyncDisposable
 
@@ -290,7 +291,7 @@
         if (orgNames.Count > 0) return;
         try
         {
-            foreach (var department in await Catalog.GetDepartmentLookupAsync())
+            foreach (var department in await OrganizationUnits.GetDepartmentCatalogAsync())
                 orgNames[department.Id] = department.Name;
             foreach (var unit in await Catalog.GetUnitLookupAsync())
                 orgNames.TryAdd(unit.Id, unit.Name);

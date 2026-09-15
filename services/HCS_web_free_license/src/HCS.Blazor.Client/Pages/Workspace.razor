@@ -5,7 +5,7 @@
 @inject WorkManagementClient Work
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
-@inject OrganizationCatalogClient Catalog
+@inject OrganizationUnitCatalogClient OrganizationUnits
 
 <PageTitle>@L["Feature:WorkspaceTitle"] · HCS</PageTitle>
 <section class="hcs-workspace">
@@ -590,7 +590,7 @@
         projectForm.Reset();
         if (departments.Count == 0)
         {
-            try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
+            try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
         }
         if (createProjectModal is not null) await createProjectModal.Show();
     }
@@ -724,14 +724,14 @@
         "Member" => L["Work:ProjectRole.Member"],
         _ => role
     };
-    private string DepartmentSelectText(Guid? id) => CatalogSelect2Cache.TextFor(departments, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+    private string DepartmentSelectText(Guid? id) => CatalogSelect2Cache.TextFor(departments, id, x => x.Id, OrganizationUnitCatalogMapper.DisplayText);
 
     private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
     {
         var skip = Math.Max(page - 1, 0) * 20;
-        var result = await Catalog.SearchDepartmentsAsync(term, skip, 20);
+        var result = await OrganizationUnits.SearchDepartmentsAsync(term, skip, 20);
         return CatalogSelect2Cache.Merge(departments, result.Items, x => x.Id,
-            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+            OrganizationUnitCatalogMapper.DisplayText, more: skip + result.Items.Count < result.TotalCount);
     }
 
     private Task OnRangeChanged(IReadOnlyList<DateTime?> dates)

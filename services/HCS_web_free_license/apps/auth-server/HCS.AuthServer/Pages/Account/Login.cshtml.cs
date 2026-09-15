@@ -15,6 +15,7 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
 {
     private readonly IConfiguration _configuration;
     private readonly ISettingProvider _settingProvider;
+    private readonly ISettingStore _settingStore;
 
     public bool ShowSsoLoginButton { get; private set; } = true;
     public string BrandingTitle { get; private set; } = SystemBrandingDefaults.Title;
@@ -36,7 +37,8 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
         IdentityDynamicClaimsPrincipalContributorCache identityDynamicClaimsPrincipalContributorCache,
         IWebHostEnvironment webHostEnvironment,
         IConfiguration configuration,
-        ISettingProvider settingProvider)
+        ISettingProvider settingProvider,
+        ISettingStore settingStore)
         : base(
             schemeProvider,
             accountOptions,
@@ -46,6 +48,7 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
     {
         _configuration = configuration;
         _settingProvider = settingProvider;
+        _settingStore = settingStore;
     }
 
     public override async Task<IActionResult> OnGetAsync()
@@ -72,7 +75,12 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
 
     private async Task LoadAuthenticationSettingsAsync()
     {
-        var configuredValue = await _settingProvider.GetOrNullAsync(HCSSettings.ShowSsoLoginButton);
+        // Read the global row directly so AuthServer does not keep a stale in-memory
+        // setting cache after Platform saves the toggle.
+        var configuredValue = await _settingStore.GetOrNullAsync(
+            HCSSettings.ShowSsoLoginButton,
+            GlobalSettingValueProvider.ProviderName,
+            providerKey: null);
         ShowSsoLoginButton = !string.Equals(configuredValue, "false", StringComparison.OrdinalIgnoreCase);
     }
 

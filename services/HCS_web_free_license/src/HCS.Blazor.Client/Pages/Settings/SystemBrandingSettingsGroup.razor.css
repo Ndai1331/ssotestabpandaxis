@@ -43,6 +43,69 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.hcs-branding-settings__sso {
+    align-items: flex-start;
+    background: #f6fafb;
+    border: 1px solid #dfebef;
+    border-radius: 6px;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.15rem;
+}
+
+.hcs-branding-settings__sso > div:first-child { min-width: 0; }
+
+.hcs-branding-settings__switch {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    color: #526c7c;
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: .6rem;
+    min-height: 2.75rem;
+    padding: .35rem .2rem .35rem .35rem;
+}
+
+.hcs-branding-settings__switch:hover:not(:disabled) { color: var(--hcs-color-heading, #193b57); }
+.hcs-branding-settings__switch:focus-visible { outline: 3px solid rgb(0 180 169 / 30%); outline-offset: 3px; }
+.hcs-branding-settings__switch:disabled { cursor: not-allowed; opacity: .55; }
+
+.hcs-branding-settings__switch-track {
+    background: #b8c8d0;
+    border-radius: 999px;
+    display: inline-flex;
+    height: 1.5rem;
+    padding: 3px;
+    width: 2.75rem;
+}
+
+.hcs-branding-settings__switch-thumb {
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgb(25 59 87 / 25%);
+    height: 1.125rem;
+    width: 1.125rem;
+}
+
+.hcs-branding-settings__switch.is-enabled { color: #007f7c; font-weight: 750; }
+.hcs-branding-settings__switch.is-enabled .hcs-branding-settings__switch-track { background: var(--hcs-color-primary, #00b4a9); }
+.hcs-branding-settings__switch.is-enabled .hcs-branding-settings__switch-thumb { transform: translateX(1.25rem); }
+
+.hcs-branding-preview__fake-sso {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 4px;
+    color: #64748b;
+    font-size: .55rem;
+    font-weight: 700;
+    margin-top: .3rem;
+    padding: .2rem 0;
+}
+
 .hcs-branding-settings__assets {
     display: grid;
     gap: 1rem;
@@ -117,5 +180,6 @@
     .hcs-branding-settings__form-grid,
     .hcs-branding-settings__assets,
     .hcs-branding-settings__preview-grid { grid-template-columns: 1fr; }
+    .hcs-branding-settings__sso,
     .hcs-branding-settings__footer { align-items: flex-start; flex-direction: column; }
 }

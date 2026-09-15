@@ -42,6 +42,20 @@ public sealed class PlatformRouteContractTests
     }
 
     [Fact]
+    public void Organization_unit_lookup_is_an_authenticated_identity_route()
+    {
+        var route = typeof(OrganizationUnitLookupController)
+            .GetCustomAttributes(typeof(RouteAttribute), true)
+            .Cast<RouteAttribute>()
+            .Single()
+            .Template;
+
+        Assert.Equal("api/identity/organization-unit-lookup", route);
+        Assert.NotNull(typeof(OrganizationUnitLookupController)
+            .GetCustomAttribute<AuthorizeAttribute>());
+    }
+
+    [Fact]
     public void Audit_list_input_is_bound_from_query_only()
     {
         var parameter = typeof(AuditViewerController)

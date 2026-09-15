@@ -212,16 +212,61 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory, IConfig
             return people;
 
         var ids = people.Select(person => person.UserId).ToArray();
-        var organization = await GetAsync<IReadOnlyList<SocialPersonOrganizationLookup>>(
-            $"api/organization/user-departments?{string.Join('&', ids.Select(id => $"userIds={id:D}"))}", ct);
-        var byUser = organization.ToDictionary(item => item.UserId);
+        var query = string.Join('&', ids.Select(id => $"userIds={id:D}"));
+        var byUser = new Dictionary<Guid, SocialPersonOrganizationLookup>();
+        try
+        {
+            var departments = await GetAsync<IReadOnlyList<SocialPersonOrganizationLookup>>(
+                $"api/identity/organization-unit-lookup/users?{query}", ct);
+            foreach (var item in departments)
+            {
+                byUser[item.UserId] = item;
+            }
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            var mappings = await GetAsync<IReadOnlyList<SocialPersonOrganizationLookup>>(
+                $"api/organization/user-departments?{query}", ct);
+            foreach (var mapping in mappings)
+            {
+                if (!byUser.TryGetValue(mapping.UserId, out var current))
+                {
+                    byUser[mapping.UserId] = mapping;
+                    continue;
+                }
+
+                byUser[mapping.UserId] = current with
+                {
+                    PositionId = mapping.PositionId,
+                    PositionName = mapping.PositionName
+                };
+            }
+        }
+        catch
+        {
+        }
+
         return people.Select(person => byUser.TryGetValue(person.UserId, out var item)
-            ? person with { PositionName = item.PositionName, DepartmentName = item.DepartmentName }
+            ? person with
+            {
+                PositionName = item.PositionName,
+                DepartmentName = item.DepartmentName ?? item.DisplayName
+            }
             : person).ToArray();
     }
 
     private HttpClient CreateClient() => httpClientFactory.CreateClient("HCS.Bff");
 
-    private sealed record SocialPersonOrganizationLookup(Guid UserId, Guid? DepartmentId,
-        string? DepartmentName, Guid? PositionId, string? PositionName);
+    private sealed record SocialPersonOrganizationLookup(
+        Guid UserId,
+        Guid? DepartmentId = null,
+        string? DepartmentName = null,
+        Guid? PositionId = null,
+        string? PositionName = null,
+        Guid? OrganizationUnitId = null,
+        string? DisplayName = null);
 }

@@ -4,7 +4,7 @@
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
 @inject CollaborationClient Chat
-@inject OrganizationCatalogClient Catalog
+@inject OrganizationUnitCatalogClient OrganizationUnits
 @inject IdentityAdminClient Identity
 @inject IUiMessageService UiMessage
 @inject IJSRuntime JsRuntime
@@ -461,7 +461,7 @@ else if (detail is not null)
         if (ids.Length == 0) return;
         try
         {
-            foreach (var row in await Catalog.GetUserDepartmentsAsync(ids, cancellationToken))
+            foreach (var row in await OrganizationUnits.GetUserDepartmentsAsync(ids, cancellationToken))
             {
                 if (!string.IsNullOrWhiteSpace(row.DepartmentName))
                     departments[row.UserId] = row.DepartmentName;

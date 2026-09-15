@@ -28,7 +28,7 @@ internal static class FeatureCatalog
             "survey-results" or "survey-sessions" or "survey-collections" => F("Khảo sát", "Quản lý đợt khảo sát và tổng hợp kết quả.", "/api/surveys/sessions", "fa fa-square-poll-vertical"),
             "survey-locations" => F("Địa điểm khảo sát", "Danh mục địa điểm thu thập khảo sát.", "/api/surveys/locations", "fa fa-location-dot"),
             "survey-criterias" => F("Tiêu chí khảo sát", "Danh mục tiêu chí chấm điểm khảo sát.", "/api/surveys/criteria", "fa fa-list-ol"),
-            "departments" => F("Phòng ban", "Cơ cấu phòng ban và quan hệ cấp trên.", "/api/organization/departments", "fa fa-sitemap"),
+            "departments" => F("Phòng ban", "Cơ cấu phòng ban và quan hệ cấp trên.", "/api/identity/organization-units", "fa fa-sitemap"),
             "unit-lists" => F("Đơn vị", "Danh mục cơ quan, đơn vị phát hành và tiếp nhận.", "/api/organization/units", "fa fa-building"),
             "positions" => F("Chức vụ", "Danh mục chức danh dùng trong phân công và quy trình.", "/api/organization/positions", "fa fa-id-badge"),
             "master-datas" => F("Danh mục dùng chung", "Quản trị dữ liệu tham chiếu tập trung.", "/api/organization/master-data", "fa fa-layer-group"),

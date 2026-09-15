@@ -19,9 +19,9 @@ public static class DepartmentTreeSelectHelper
     public static List<DepartmentTreeNode> Build(IEnumerable<DepartmentCatalogDto> departments)
     {
         var nodes = departments
-            .OrderBy(x => x.SortOrder)
+            .OrderBy(x => x.Code, StringComparer.Ordinal)
             .ThenBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
-            .Select(x => new DepartmentTreeNode { Id = x.Id, Name = $"{x.Code} — {x.Name}" })
+            .Select(x => new DepartmentTreeNode { Id = x.Id, Name = OrganizationUnitCatalogMapper.DisplayText(x) })
             .ToDictionary(x => x.Id);
         var roots = new List<DepartmentTreeNode>();
         foreach (var department in departments)

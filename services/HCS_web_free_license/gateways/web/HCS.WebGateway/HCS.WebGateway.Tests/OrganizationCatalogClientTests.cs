@@ -85,6 +85,28 @@ public sealed class OrganizationCatalogClientTests
     }
 
     [Fact]
+    public void Builds_organization_unit_user_lookup_url()
+    {
+        var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        var actual = OrganizationUnitCatalogClient.BuildUserLookupUri([userId]);
+
+        Assert.Equal(
+            "/api/identity/organization-unit-lookup/users?userIds=11111111-1111-1111-1111-111111111111",
+            actual);
+    }
+
+    [Fact]
+    public void Builds_organization_unit_set_user_url()
+    {
+        var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+        Assert.Equal(
+            "/api/identity/organization-unit-lookup/users/11111111-1111-1111-1111-111111111111",
+            OrganizationUnitCatalogClient.BuildSetUserUri(userId));
+    }
+
+    [Fact]
     public void Builds_a_tree_from_flat_organization_units_and_preserves_expansion()
     {
         var rootId = Guid.NewGuid();

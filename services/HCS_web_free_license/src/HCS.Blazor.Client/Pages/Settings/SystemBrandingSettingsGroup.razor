@@ -38,6 +38,24 @@
             </div>
         }
 
+        <div class="hcs-branding-settings__sso">
+            <div>
+                <h3>@L["Settings:SsoLoginButton"]</h3>
+                <p id="hcs-sso-login-settings-description">@L["Settings:SsoLoginButtonDescription"]</p>
+            </div>
+            <button type="button"
+                    class="hcs-branding-settings__switch @(showSsoLoginButton ? "is-enabled" : "is-disabled")"
+                    aria-pressed="@(showSsoLoginButton ? "true" : "false")"
+                    aria-describedby="hcs-sso-login-settings-description"
+                    @onclick="ToggleSsoLoginButton"
+                    disabled="@isSaving">
+                <span class="hcs-branding-settings__switch-track" aria-hidden="true">
+                    <span class="hcs-branding-settings__switch-thumb"></span>
+                </span>
+                <span>@(showSsoLoginButton ? L["Settings:SsoLoginButtonEnabled"] : L["Settings:SsoLoginButtonDisabled"])</span>
+            </button>
+        </div>
+
         <div class="hcs-branding-settings__form-grid">
             <Field>
                 <FieldLabel>@L["Settings:BrandingTitle"]</FieldLabel>
@@ -98,6 +116,10 @@
                         <div class="hcs-branding-preview__fake-input"></div>
                         <div class="hcs-branding-preview__fake-input"></div>
                         <div class="hcs-branding-preview__fake-button"></div>
+                        @if (showSsoLoginButton)
+                        {
+                            <div class="hcs-branding-preview__fake-sso">@L["Auth:LoginWithSso"]</div>
+                        }
                     </div>
                 </div>
                 <p class="hcs-branding-preview__caption">@L["Settings:BrandingLoginPreview"]</p>
@@ -133,6 +155,7 @@
     private string title = SystemBrandingDefaults.Title;
     private string description = SystemBrandingDefaults.Description;
     private string? errorMessage;
+    private bool showSsoLoginButton = true;
 
     private IBrowserFile? logoFile;
     private IBrowserFile? faviconFile;
@@ -153,6 +176,15 @@
     private string BackgroundPreviewStyle => string.IsNullOrWhiteSpace(backgroundPreviewUrl ?? backgroundUrl)
         ? string.Empty
         : $"background-image: linear-gradient(color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent), color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent)), url('{backgroundPreviewUrl ?? backgroundUrl}'); background-position: center; background-size: cover;";
+
+    private void ToggleSsoLoginButton()
+    {
+        if (!isSaving)
+        {
+            showSsoLoginButton = !showSsoLoginButton;
+            MarkDirty();
+        }
+    }
 
     private void MarkDirty()
     {
@@ -175,6 +207,7 @@
             await BrandingState.ApplyAsync(settings);
             title = settings.Title;
             description = settings.Description;
+            showSsoLoginButton = settings.ShowSsoLoginButton;
             logoUrl = BrandingState.LogoUrl;
             faviconUrl = BrandingState.FaviconUrl;
             backgroundUrl = BrandingState.BackgroundUrl;
@@ -210,7 +243,8 @@
                 RemoveBackground,
                 logoFile,
                 faviconFile,
-                backgroundFile);
+                backgroundFile,
+                showSsoLoginButton);
             await BrandingState.ApplyAsync(settings);
             logoUrl = BrandingState.LogoUrl;
             faviconUrl = BrandingState.FaviconUrl;

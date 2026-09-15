@@ -429,6 +429,7 @@
     "Users:SearchPlaceholder": "Search by user name or email",
     "Users:NoAdminPermission": "Your account cannot manage users.",
     "Users:CreatedAt": "Created",
+    "Users:DepartmentNote": "Each user can have one primary department from the organization tree. Membership is saved to Identity organization units.",
     "Catalog:Section": "Organization administration",
     "Catalog:DepartmentTitle": "Departments",
     "Catalog:DepartmentDescription": "Manage department structure and parent relationships.",

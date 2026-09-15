@@ -3,7 +3,7 @@
 @attribute [Authorize(Policy = "WorkManagement.Projects")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
-@inject OrganizationCatalogClient Catalog
+@inject OrganizationUnitCatalogClient OrganizationUnits
 @inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
@@ -217,7 +217,7 @@
             if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
             if (departments.Count == 0)
             {
-                try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
+                try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
             }
             if (ProjectId is { } id)
             {
@@ -314,13 +314,13 @@
     private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[..1];
     private string OwnerDepartmentLabel => DepartmentSelectText(projectForm.OwnerDepartmentId);
     private string DepartmentSelectText(Guid? id) =>
-        CatalogSelect2Cache.TextFor(departments, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+        CatalogSelect2Cache.TextFor(departments, id, x => x.Id, OrganizationUnitCatalogMapper.DisplayText);
     private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
     {
         var skip = Math.Max(page - 1, 0) * 20;
-        var result = await Catalog.SearchDepartmentsAsync(term, skip, 20);
+        var result = await OrganizationUnits.SearchDepartmentsAsync(term, skip, 20);
         return CatalogSelect2Cache.Merge(departments, result.Items, x => x.Id,
-            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+            OrganizationUnitCatalogMapper.DisplayText, more: skip + result.Items.Count < result.TotalCount);
     }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {

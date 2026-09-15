@@ -4,7 +4,7 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
-@inject OrganizationCatalogClient Catalog
+@inject OrganizationUnitCatalogClient OrganizationUnits
 @inject IdentityAdminClient Identity
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
@@ -332,7 +332,7 @@
             if (roles.Count == 0) roles.AddRange(await LoadRolesAsync());
             if (departmentTree.Count == 0)
             {
-                var departments = await Catalog.GetDepartmentLookupAsync();
+                var departments = await OrganizationUnits.GetDepartmentCatalogAsync();
                 departmentTree = DepartmentTreeSelectHelper.Build(departments);
             }
             if (Id is { } id)

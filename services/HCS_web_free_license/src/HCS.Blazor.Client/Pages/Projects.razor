@@ -2,7 +2,7 @@
 @attribute [Authorize(Policy = "WorkManagement.Projects")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
-@inject OrganizationCatalogClient Catalog
+@inject OrganizationUnitCatalogClient OrganizationUnits
 @inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
@@ -203,7 +203,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
+        try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
         await LoadAsync();
     }
 
@@ -362,14 +362,14 @@
     }
 
     private string DepartmentSelectText(Guid? id) =>
-        CatalogSelect2Cache.TextFor(departments, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+        CatalogSelect2Cache.TextFor(departments, id, x => x.Id, OrganizationUnitCatalogMapper.DisplayText);
 
     private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
     {
         var skip = Math.Max(page - 1, 0) * 20;
-        var result = await Catalog.SearchDepartmentsAsync(term, skip, 20);
+        var result = await OrganizationUnits.SearchDepartmentsAsync(term, skip, 20);
         return CatalogSelect2Cache.Merge(departments, result.Items, x => x.Id,
-            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+            OrganizationUnitCatalogMapper.DisplayText, more: skip + result.Items.Count < result.TotalCount);
     }
     private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 

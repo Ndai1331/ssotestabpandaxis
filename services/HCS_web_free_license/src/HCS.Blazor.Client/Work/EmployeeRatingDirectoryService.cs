@@ -26,7 +26,7 @@ public sealed class EmployeeRatingPerson
 
 public sealed class EmployeeRatingDirectoryService(
     EmployeeRatingDirectoryClient directoryClient,
-    OrganizationCatalogClient organizationClient)
+    OrganizationUnitCatalogClient organizationUnits)
 {
     public async Task<List<EmployeeRatingPerson>> GetPeopleAsync(CancellationToken cancellationToken = default)
     {
@@ -34,7 +34,7 @@ public sealed class EmployeeRatingDirectoryService(
         var departments = new Dictionary<Guid, UserDepartmentLookupDto>();
         foreach (var chunk in users.Select(x => x.UserId).Chunk(200))
         {
-            foreach (var department in await organizationClient.GetUserDepartmentsAsync(chunk, cancellationToken))
+            foreach (var department in await organizationUnits.GetUserDepartmentsAsync(chunk, cancellationToken))
                 departments[department.UserId] = department;
         }
 

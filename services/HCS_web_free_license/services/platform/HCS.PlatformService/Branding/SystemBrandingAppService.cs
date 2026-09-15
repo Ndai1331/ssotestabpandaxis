@@ -99,6 +99,9 @@ public sealed class SystemBrandingAppService(
             await settingManager.SetGlobalAsync(HCSSettings.BrandingTitle, title);
             await settingManager.SetGlobalAsync(HCSSettings.BrandingDescription, description);
             await settingManager.SetGlobalAsync(
+                HCSSettings.ShowSsoLoginButton,
+                input.ShowSsoLoginButton ? "true" : "false");
+            await settingManager.SetGlobalAsync(
                 HCSSettings.BrandingShowText,
                 (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(description))
                     ? "true"
@@ -172,6 +175,7 @@ public sealed class SystemBrandingAppService(
             ? parsedShowText
             : IsCustomized(configuredTitle, SystemBrandingDefaults.Title) ||
               IsCustomized(configuredDescription, SystemBrandingDefaults.Description);
+        var configuredShowSso = await settingManager.GetOrNullGlobalAsync(HCSSettings.ShowSsoLoginButton);
         var revision = await ReadRevisionAsync(cancellationToken);
         var assets = await db.SystemBrandingAssets.AsNoTracking()
             .ToDictionaryAsync(x => x.Slot, StringComparer.Ordinal, cancellationToken);
@@ -181,6 +185,7 @@ public sealed class SystemBrandingAppService(
             Title = string.IsNullOrWhiteSpace(title) ? SystemBrandingDefaults.Title : title,
             Description = string.IsNullOrWhiteSpace(description) ? SystemBrandingDefaults.Description : description,
             ShowBrandingText = showBrandingText,
+            ShowSsoLoginButton = !string.Equals(configuredShowSso, "false", StringComparison.OrdinalIgnoreCase),
             Revision = revision,
             Logo = MapAsset(assets, SystemBrandingDefaults.LogoSlot),
             Favicon = MapAsset(assets, SystemBrandingDefaults.FaviconSlot),
@@ -330,6 +335,7 @@ public sealed class SystemBrandingUpdateRequest
     public bool RemoveLogo { get; set; }
     public bool RemoveFavicon { get; set; }
     public bool RemoveBackground { get; set; }
+    public bool ShowSsoLoginButton { get; set; } = true;
     public IFormFile? Logo { get; set; }
     public IFormFile? Favicon { get; set; }
     public IFormFile? Background { get; set; }

@@ -4,7 +4,7 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
-@inject OrganizationCatalogClient Catalog
+@inject OrganizationUnitCatalogClient OrganizationUnits
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime Js
 @implements IAsyncDisposable
@@ -550,7 +550,7 @@
 
     private async Task LoadDepartmentsAsync()
     {
-        try { departments.AddRange(await Catalog.GetDepartmentLookupAsync()); } catch { }
+        try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
     }
 
     private async Task LoadSigningOptionsAsync()
@@ -1068,7 +1068,7 @@
             : Documents.GetWorkflowUserLookupAsync(allUserIds);
         Task<IReadOnlyList<UserDepartmentLookupDto>> departmentsTask = submitterIds.Length == 0
             ? Task.FromResult<IReadOnlyList<UserDepartmentLookupDto>>([])
-            : Catalog.GetUserDepartmentsAsync(submitterIds);
+            : OrganizationUnits.GetUserDepartmentsAsync(submitterIds);
 
         try
         {
@@ -1101,8 +1101,10 @@
     }
     private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
     {
-        var found = departments.Where(x => string.IsNullOrWhiteSpace(term) || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
-        return Task.FromResult(CatalogSelect2Cache.Merge(departments, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
+        var found = departments.Where(x => string.IsNullOrWhiteSpace(term)
+            || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
+        return Task.FromResult(CatalogSelect2Cache.Merge(departments, found, x => x.Id, OrganizationUnitCatalogMapper.DisplayText, false));
     }
 
     private sealed record WorkflowHistoryEntry(string Kind, string? StepName, Guid? ActorUserId, DateTime OccurredAt, string? Detail);
