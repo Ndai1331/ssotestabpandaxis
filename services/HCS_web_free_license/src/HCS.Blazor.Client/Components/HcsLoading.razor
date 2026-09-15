@@ -1,0 +1,16 @@
+@namespace HCS.Blazor.Client.Components
+@inherits HCSComponentBase
+
+<div class="hcs-loading @CssClass" role="status" aria-live="polite">
+    <HcsLoadingIcon Size="@Size" />
+    <span>@ResolvedTitle</span>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public int Size { get; set; } = 28;
+
+    private string ResolvedTitle =>
+        string.IsNullOrWhiteSpace(Title) ? L["Catalog:Loading"] : Title;
+}

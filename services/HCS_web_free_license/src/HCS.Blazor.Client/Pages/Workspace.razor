@@ -144,7 +144,7 @@
                 </div>
             </header>
             <div class="hcs-ws-card-body">
-                @if (isLoading) { <div class="hcs-loading py-4" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div> }
+                @if (isLoading) { <HcsLoading CssClass="py-4" /> }
                 else if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
                 else { @StatusDonut(workflows.Count, L["Menu:Documents"], workflowGroups) }
             </div>
@@ -160,7 +160,7 @@
                 </div>
             </header>
             <div class="hcs-ws-card-body">
-                @if (isLoading) { <div class="hcs-loading py-4" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div> }
+                @if (isLoading) { <HcsLoading CssClass="py-4" /> }
                 else if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
                 else
                 {
@@ -363,7 +363,7 @@
         <ModalBody Class="hcs-catalog-modal__body">
             @if (projectDetail is null)
             {
-                <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+                <HcsLoading CssClass="py-5" />
             }
             else
             {

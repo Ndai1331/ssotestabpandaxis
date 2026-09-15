@@ -398,6 +398,7 @@ namespace HC.BnnSoftSigns
 
                     img.Mutate(ctx => ctx.DrawText(nguoiky ?? string.Empty, font, SixLabors.ImageSharp.Color.Black, new PointF(xnguoiky, ynguoiky)));
                     img.Mutate(ctx => ctx.DrawText("Ngày ký:", font, SixLabors.ImageSharp.Color.Black, new PointF(xnguoiky, ynguoiky + linebreak)));
+                    img.Mutate(ctx => ctx.DrawText(ngayky ?? string.Empty, font, SixLabors.ImageSharp.Color.Black, new PointF(xnguoiky + 100, ynguoiky + linebreak)));
 
                     using var ms = new MemoryStream();
                     img.SaveAsPng(ms);

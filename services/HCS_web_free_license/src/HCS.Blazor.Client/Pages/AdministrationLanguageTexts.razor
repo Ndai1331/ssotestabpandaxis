@@ -86,10 +86,7 @@
                             <DocsEmpty Title="@L["LanguageTexts:EmptyTitle"]" Hint="@L["LanguageTexts:EmptyDescription"]" />
                         </EmptyTemplate>
                         <LoadingTemplate>
-                            <div class="hcs-loading py-5" role="status" aria-live="polite">
-                                <i class="fa fa-spinner fa-spin" aria-hidden="true"></i>
-                                <span>@L["LanguageTexts:Loading"]</span>
-                            </div>
+                            <HcsLoading CssClass="py-5" Title="@L["LanguageTexts:Loading"]" />
                         </LoadingTemplate>
                         <DataGridColumns>
                             <DataGridColumn TItem="LanguageTextDto" Field="Name" Caption='@L["LanguageTexts:Key"].Value' />

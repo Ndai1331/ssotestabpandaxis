@@ -24,8 +24,8 @@ else
 
     private bool isChecking = true;
     private bool isAuthenticated;
-    private bool IsPublicSurveyRoute => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0]
-        .StartsWith("survey-collections/", StringComparison.OrdinalIgnoreCase);
+    private bool IsPublicSurveyRoute =>
+        BffAnonymousRoutes.IsAnonymous(Navigation.ToBaseRelativePath(Navigation.Uri));
 
     protected override async Task OnInitializedAsync()
     {

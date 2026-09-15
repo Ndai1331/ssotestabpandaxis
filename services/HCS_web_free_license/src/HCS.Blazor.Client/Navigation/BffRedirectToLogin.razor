@@ -1,4 +1,5 @@
 @using Microsoft.Extensions.Configuration
+@using HCS.Blazor.Client.Components
 @using HCS.Localization
 @using Microsoft.Extensions.Localization
 @inject IConfiguration Configuration
@@ -6,7 +7,7 @@
 @inject IStringLocalizer<HCSResource> Localizer
 
 <div class="hcs-login-redirect" role="status" aria-live="polite">
-    <span class="hcs-login-redirect__spinner" aria-hidden="true"></span>
+    <HcsLoadingIcon />
     <span>@Localizer["Auth:Redirecting"]</span>
 </div>
 

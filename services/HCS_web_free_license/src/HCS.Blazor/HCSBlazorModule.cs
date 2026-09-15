@@ -334,6 +334,7 @@ public sealed class HCSBlazorModule : AbpModule
         app.UseDynamicClaims();
         app.UseAntiforgery();
         app.UseAuthorization();
+        app.UseMiddleware<UnauthenticatedDocumentRedirectMiddleware>();
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
 

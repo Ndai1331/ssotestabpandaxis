@@ -80,7 +80,7 @@
                 <tbody>
                 @if (isLoading)
                 {
-                    <tr><td colspan="9" class="hcs-audit-state" role="status"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i> @L["Catalog:Loading"]</td></tr>
+                    <tr><td colspan="9" class="hcs-audit-state" role="status"><HcsLoadingIcon /> @L["Catalog:Loading"]</td></tr>
                 }
                 else if (rows.Count == 0)
                 {
@@ -127,7 +127,7 @@
             <section @ref="detailModal" class="hcs-audit-modal" role="dialog" aria-modal="true" aria-labelledby="audit-detail-title" tabindex="-1" @onclick:stopPropagation @onkeydown="HandleDialogKeyDown">
             <header class="hcs-audit-modal-header"><div><p class="hcs-audit-eyebrow">@L["Audit:Detail"]</p><h2 id="audit-detail-title">@L["Audit:DetailTitle"]</h2></div><button class="hcs-audit-close" type="button" @onclick="CloseDetail" aria-label="@L["Catalog:Close"]"><i class="fa fa-xmark" aria-hidden="true"></i></button></header>
             @if (isLoadingDetail)
-            { <div class="hcs-audit-state"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i> @L["Catalog:Loading"]</div> }
+            { <div class="hcs-audit-state"><HcsLoadingIcon /> @L["Catalog:Loading"]</div> }
             else if (!string.IsNullOrWhiteSpace(detailError))
             { <div class="hcs-audit-alert" role="alert">@detailError</div> }
             else if (selected is not null)

@@ -107,20 +107,6 @@
     text-align: center;
 }
 
-.hcs-login-redirect__spinner {
-    animation: hcs-login-redirect-spin var(--hcs-motion-duration-spinner, 1200ms) linear infinite;
-    border: .18rem solid #d7e2e8;
-    border-radius: 50%;
-    border-top-color: var(--hcs-color-primary);
-    display: inline-block;
-    height: 1.25rem;
-    width: 1.25rem;
-}
-
-@keyframes hcs-login-redirect-spin {
-    to { transform: rotate(360deg); }
-}
-
 .hcs-app-shell :where(a, button, summary):focus-visible,
 .hcs-app-shell :where(input[type="checkbox"], input[type="radio"]):focus-visible,
 .hcs-auth-login-page :where(a, button, input, select, textarea, summary):focus-visible {
@@ -669,7 +655,7 @@ body:has(.hcs-app-shell) .datepicker-day-outside:not(.datepicker-day-selected) {
         transition-duration: .01ms !important;
     }
 
-    .hcs-login-redirect__spinner {
+    .hcs-loading-icon {
         animation: none;
     }
 }

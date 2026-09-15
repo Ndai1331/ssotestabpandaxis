@@ -89,8 +89,8 @@ public sealed class LicensedRemoteCaSigningAdapter : IDigitalSigningAdapter
             TextLocationIdentifier = providerRequest.Placeholder,
             width = providerRequest.Width,
             height = providerRequest.Height,
-            AppendDateSign = false,
-            DateFormatString = "dd/MM/yyyy HH:mm:ss",
+            AppendDateSign = true,
+            DateFormatString = SigningStampText.DateFormat,
             FontSize = 9f
         }, cancellationToken);
         if (result is not { Length: > 0 }) throw new InvalidDataException("Remote CA returned an empty signed PDF.");
@@ -191,10 +191,18 @@ internal static class PdfSigningDrawing
             imageWidth = imageHeight * aspect;
         }
         graphics.DrawImage(image, x, y + (height - imageHeight) / 2, imageWidth, imageHeight);
+        var font = new XFont(HC.PdfFontEnvironment.DefaultPdfSerifFontFamily, 8);
+        var dateLine = SigningStampText.FormatDateLine();
         if (!string.IsNullOrWhiteSpace(request.SignerName))
         {
-            var font = new XFont(HC.PdfFontEnvironment.DefaultPdfSerifFontFamily, 8);
             graphics.DrawString(request.SignerName, font, XBrushes.Black,
+                new XRect(x, y + height - 24, width, 12), XStringFormats.CenterLeft);
+            graphics.DrawString(dateLine, font, XBrushes.Black,
+                new XRect(x, y + height - 12, width, 12), XStringFormats.CenterLeft);
+        }
+        else
+        {
+            graphics.DrawString(dateLine, font, XBrushes.Black,
                 new XRect(x, y + height - 12, width, 12), XStringFormats.CenterLeft);
         }
         using var output = new MemoryStream();

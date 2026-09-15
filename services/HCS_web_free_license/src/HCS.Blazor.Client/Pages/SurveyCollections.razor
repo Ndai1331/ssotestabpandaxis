@@ -9,7 +9,7 @@
 <section class="hcs-document-page hcs-public-survey">
     @if (isLoading)
     {
-        <div class="hcs-loading py-5" role="status"><i class="fa fa-spinner fa-spin"></i><span>@L["Catalog:Loading"]</span></div>
+        <HcsLoading CssClass="py-5" />
     }
     else if (location is null)
     {

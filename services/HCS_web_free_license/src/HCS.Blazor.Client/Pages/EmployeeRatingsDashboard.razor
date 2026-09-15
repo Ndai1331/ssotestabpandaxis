@@ -27,7 +27,7 @@
 
     @if (isLoading)
     {
-        <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i><span>@L["Catalog:Loading"]</span></div>
+        <HcsLoading CssClass="py-5" />
     }
     else if (hasError || dashboard is null)
     {

@@ -69,7 +69,7 @@
 .hcs-audit-detail-button { padding: .4rem .65rem; font-size: var(--hcs-text-xs); white-space: nowrap; }
 .hcs-audit-sort { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; font-weight: inherit; letter-spacing: inherit; padding: 0; text-align: left; text-transform: inherit; }
 .hcs-audit-state { padding: 4rem 1rem !important; color: var(--hcs-color-muted); text-align: center; }
-.hcs-audit-state i, .hcs-audit-state strong, .hcs-audit-state span { display: block; margin: 0 auto var(--hcs-space-2); }
+.hcs-audit-state i, .hcs-audit-state .hcs-loading-icon, .hcs-audit-state strong, .hcs-audit-state span { display: block; margin: 0 auto var(--hcs-space-2); }
 .hcs-audit-pagination { justify-content: flex-end; padding: var(--hcs-space-3) var(--hcs-space-4); color: var(--hcs-color-muted); font-size: var(--hcs-text-sm); }
 .hcs-audit-page-size { min-height: var(--hcs-touch-target); border: 1px solid var(--hcs-color-border); border-radius: var(--hcs-radius-sm); background: var(--hcs-color-surface); padding: .25rem .4rem; }
 .hcs-audit-page-button { width: var(--hcs-touch-target); background: var(--hcs-color-surface); color: var(--hcs-color-primary-strong); }

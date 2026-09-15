@@ -29,7 +29,7 @@
                 </CardHeader><CardBody Class="hcs-ou-tree-card__body">
                     @if (isLoading && !hasLoaded)
                     {
-                        <div class="hcs-loading" role="status">@L["OrganizationUnit:Loading"]</div>
+                        <HcsLoading Title="@L["OrganizationUnit:Loading"]" />
                     }
                     else
                     {

@@ -41,7 +41,7 @@
 
     @if (loading)
     {
-        <div class="hcs-loading py-5" role="status" aria-live="polite"><i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Đang tải báo cáo…</div>
+        <HcsLoading CssClass="py-5" Title="Đang tải báo cáo…" />
     }
     else if (!string.IsNullOrWhiteSpace(error))
     {

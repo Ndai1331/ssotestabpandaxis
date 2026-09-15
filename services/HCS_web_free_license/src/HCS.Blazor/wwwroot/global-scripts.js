@@ -93,10 +93,7 @@ window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgr
     document.querySelectorAll("[data-hcs-system-branding-favicon]").forEach((element) => {
         element.setAttribute("href", nextFaviconUrl);
     });
-    // The boot screen is rendered before the interactive Blazor app starts. Keep
-    // its logo in the same branding update path as the app-shell logo so a
-    // configured logo is visible while the application is loading as well.
-    document.querySelectorAll("[data-hcs-branding-logo], .hcs-boot-screen__logo").forEach((element) => {
+    document.querySelectorAll("[data-hcs-branding-logo]").forEach((element) => {
         element.setAttribute("src", nextLogoUrl);
         element.setAttribute("alt", nextTitle);
     });
@@ -112,8 +109,8 @@ window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgr
     });
 };
 
-// Load public branding before Blazor becomes interactive so the boot screen
-// uses the configured API asset URL instead of briefly showing the fallback.
+// Load public branding before Blazor becomes interactive so the document
+// title and favicon match the configured assets as soon as possible.
 window.hcsLoadSystemBranding = async () => {
     const configuredOrigin = document.documentElement.dataset.hcsBrandingApiOrigin;
     const origin = (configuredOrigin || window.location.origin).replace(/\/+$/, "");

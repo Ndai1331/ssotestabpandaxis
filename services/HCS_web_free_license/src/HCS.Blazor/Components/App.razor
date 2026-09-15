@@ -46,8 +46,9 @@
 <body class="abp-application-layout @rtl">
     <div id="hcs-boot-screen" class="hcs-boot-screen" role="status" aria-live="polite" aria-busy="true">
         <div class="hcs-boot-screen__card">
-            <img class="hcs-boot-screen__logo" src="/images/logo/hcs-icon.png" data-hcs-branding-logo alt="HCS" width="88" height="88" />
-            <div class="hcs-boot-screen__spinner" aria-hidden="true"></div>
+            <svg class="hcs-loading-icon hcs-boot-screen__icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round" />
+            </svg>
             <p class="hcs-boot-screen__hint" aria-label="@HintText">
                 @for (var i = 0; i < HintText.Length; i++)
                 {

@@ -45,6 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="HCS.Blazor" />
     <InternalsVisibleTo Include="HCS.WebGateway.Tests" />
   </ItemGroup>
 

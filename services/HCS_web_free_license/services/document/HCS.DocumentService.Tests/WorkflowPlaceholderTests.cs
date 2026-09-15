@@ -61,6 +61,7 @@ public sealed class WorkflowPlaceholderTests
         Assert.DoesNotContain("<<FullName02>>", text);
         Assert.DoesNotContain("<<NoteContent02>>", text);
         Assert.Contains("Trần Thị B", text);
+        Assert.Contains(SigningStampText.DateLabel, text);
         Assert.Equal(1, ReadImagePartCount(result));
     }
 
@@ -76,6 +77,7 @@ public sealed class WorkflowPlaceholderTests
         Assert.Contains("<<Sign02>>", text);
         Assert.Contains("Trần Thị B", text);
         Assert.Contains("Đã kiểm tra hồ sơ", text);
+        Assert.DoesNotContain(SigningStampText.DateLabel, text);
         Assert.DoesNotContain("<<FullName02>>", text);
         Assert.DoesNotContain("<<NoteContent02>>", text);
         Assert.Equal(0, ReadImagePartCount(result));

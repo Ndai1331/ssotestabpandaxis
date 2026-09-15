@@ -47,25 +47,19 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
     width: min(22rem, calc(100vw - 2rem));
 }
 
-.hcs-boot-screen__logo {
-    aspect-ratio: 1;
+.hcs-loading-icon {
+    animation: hcs-boot-spin var(--hcs-motion-duration-spinner, 800ms) linear infinite;
+    color: var(--hcs-color-primary, #00B4A9);
     display: block;
-    height: 3.875rem;
-    margin: 0 auto .35rem;
-    max-height: 3.875rem;
-    max-width: min(3.875rem, calc(100vw - 2rem));
-    object-fit: contain;
-    width: min(3.875rem, calc(100vw - 2rem));
+    flex-shrink: 0;
 }
 
-.hcs-boot-screen__spinner {
-    animation: hcs-boot-spin var(--hcs-motion-duration-spinner, 1200ms) linear infinite;
-    border: .22rem solid #d7e2e8;
-    border-radius: 50%;
-    border-top-color: var(--hcs-color-primary, #00B4A9);
-    height: 2.35rem;
-    margin: 1.15rem auto .9rem;
-    width: 2.35rem;
+.hcs-boot-screen__icon {
+    color: var(--hcs-color-primary, #00B4A9);
+    display: block;
+    height: 3rem;
+    margin: 0 auto 1.1rem;
+    width: 3rem;
 }
 
 .hcs-boot-screen__title {
@@ -106,7 +100,7 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 
 @media (prefers-reduced-motion: reduce) {
     .hcs-boot-screen__hint span,
-    .hcs-boot-screen__spinner {
+    .hcs-loading-icon {
         animation: none;
     }
 }
@@ -370,8 +364,7 @@ body:has(.hcs-app-shell) .hcs-boot-screen {
 }
 
 .hcs-app-shell .hcs-avatar,
-.hcs-app-shell .hcs-icon-button,
-.hcs-boot-screen__spinner {
+.hcs-app-shell .hcs-icon-button {
     border-radius: 50% !important;
 }
 
@@ -997,6 +990,11 @@ body:has(.hcs-chat-page) {
     color: var(--catalog-primary);
     display: block;
     font-size: 1.8rem;
+    margin-bottom: .8rem;
+}
+
+.hcs-loading .hcs-loading-icon {
+    color: var(--catalog-primary);
     margin-bottom: .8rem;
 }
 
