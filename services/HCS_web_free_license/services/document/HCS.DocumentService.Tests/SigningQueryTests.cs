@@ -8,6 +8,26 @@ public sealed class SigningQueryTests
 {
     private static readonly DateTime Now = new(2026, 9, 12, 0, 0, 0, DateTimeKind.Utc);
 
+    [Theory]
+    [InlineData(20, 1)]
+    [InlineData(50, 2)]
+    public void Signature_slots_count_only_sign_steps_in_the_current_workflow(int order, int expected)
+    {
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "mixed", "Mixed",
+        [
+            new WorkflowStepInput("process", "Process", 10, "Documents.Approve", "PROCESS"),
+            new WorkflowStepInput("sign1", "Sign first", 20, "Documents.Approve", "SIGN"),
+            new WorkflowStepInput("view", "View", 30, "Documents.Approve", "VIEW"),
+            new WorkflowStepInput("process2", "Process again", 40, "Documents.Approve", "PROCESS"),
+            new WorkflowStepInput("sign2", "Sign second", 50, "Documents.Approve", "SIGN")
+        ], Now);
+        var (_, otherDefinition) = StartSignedWorkflow(Guid.NewGuid());
+        var steps = definition.Steps.Concat(otherDefinition.Steps).Reverse().AsQueryable();
+
+        Assert.Equal(expected,
+            SigningAppService.QuerySigningStepsThrough(steps, definition.Id, order).Count());
+    }
+
     [Fact]
     public void Paired_file_lookup_is_translatable_by_postgresql()
     {

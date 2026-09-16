@@ -380,7 +380,10 @@
     private bool IsCreate => DocumentId == Guid.Empty;
     private int SourceType => SourceTypeQuery is >= 0 and <= 2 ? SourceTypeQuery.Value : 0;
     private bool IsPersonal => SourceType == 1;
-    private string BackHref => $"/manage-documents?sourceType={SourceType}";
+    // The signing queue uses sourceType=3 as navigation context, not a document source type.
+    private string BackHref => SourceTypeQuery == 3
+        ? "/document-signing"
+        : $"/manage-documents?sourceType={SourceType}";
     private string DocumentTitle => string.IsNullOrWhiteSpace(form.Title) ? L["Feature:DocumentTitle"] : form.Title;
     private string? DescriptionOrNull => string.IsNullOrWhiteSpace(form.Description) ? null : form.Description;
     private bool HasChosenFile => pendingFile is not null || previewFile is not null || document?.Files.Count > 0;

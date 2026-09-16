@@ -15,6 +15,34 @@ namespace HCS.DocumentService.Tests;
 public sealed class WorkflowPlaceholderTests
 {
     [Fact]
+    public void Sequential_signers_replace_their_slots_even_when_template_order_is_reversed()
+    {
+        var source = CreateDocx("<<Sign02>>|<<FullName02>>|<<NoteContent02>>|<<Sign01>>|<<FullName01>>|<<NoteContent01>>");
+        var first = WordFirstSigningDocumentBuilder.Replace(source, SigningKind.Electronic,
+            CreatePng(640, 200), 1, "First signer", "First note");
+        var firstText = ReadBodyText(first);
+        Assert.DoesNotContain("<<Sign01>>", firstText);
+        Assert.DoesNotContain("<<FullName01>>", firstText);
+        Assert.DoesNotContain("<<NoteContent01>>", firstText);
+        Assert.Contains("<<Sign02>>", firstText);
+        Assert.Contains("<<FullName02>>", firstText);
+        Assert.Contains("<<NoteContent02>>", firstText);
+        Assert.Equal(1, ReadImagePartCount(first));
+
+        var second = WordFirstSigningDocumentBuilder.Replace(first, SigningKind.Electronic,
+            CreatePng(640, 200), 2, "Second signer", "Second note");
+        var secondText = ReadBodyText(second);
+        Assert.DoesNotContain("<<Sign", secondText);
+        Assert.DoesNotContain("<<FullName", secondText);
+        Assert.DoesNotContain("<<NoteContent", secondText);
+        Assert.Contains("First signer", secondText);
+        Assert.Contains("Second signer", secondText);
+        Assert.Contains("First note", secondText);
+        Assert.Contains("Second note", secondText);
+        Assert.Equal(2, ReadImagePartCount(second));
+    }
+
+    [Fact]
     public void Prepared_aliases_are_replaced_in_docx_runs()
     {
         var source = CreateDocx("<<PreparedFullName>>|<<VitriVieclam>>|<<Position>>|<<PhongBan>>|<<Department>>|<<ContentToBeApproved>>");

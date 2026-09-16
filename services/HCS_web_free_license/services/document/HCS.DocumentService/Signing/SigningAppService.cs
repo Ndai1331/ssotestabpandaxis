@@ -234,7 +234,7 @@ public sealed class SigningAppService(
                 && instance.Status == WorkflowInstanceStatus.Running
                 && task.Status == ApprovalTaskStatus.Pending
                 && step.Type == WorkflowStepTypes.Sign
-            select new { task.AssigneeUserId })
+            select new { task.AssigneeUserId, step.DefinitionId, step.Order })
             .FirstOrDefaultAsync(cancellationToken);
         if (activeSignTask is not null)
             DocumentAccess.EnsureCanActOnWorkflowTask(principal, userId, activeSignTask.AssigneeUserId);
@@ -242,6 +242,9 @@ public sealed class SigningAppService(
             throw new UnauthorizedAccessException("Only the assigned user can sign this document.");
         var existing = await FindAttemptAsync(userId, input, key, cancellationToken);
         if (existing is not null) return Map(existing);
+        // Number only SIGN steps; PROCESS/VIEW steps do not consume signature slots.
+        var workflowPlaceholder = activeSignTask is null ? null :
+            $"<<Sign{await QuerySigningStepsThrough(db.WorkflowSteps.AsNoTracking(), activeSignTask.DefinitionId, activeSignTask.Order).CountAsync(cancellationToken):D2}>>";
         var file = await db.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(x => x.Id == input.FileId && x.DocumentId == input.DocumentId && !x.IsPendingDeletion, cancellationToken)
             ?? throw new KeyNotFoundException("Document file not found.");
         if (!IsPdf(file))
@@ -325,7 +328,9 @@ public sealed class SigningAppService(
             secret = string.IsNullOrWhiteSpace(protectedSecret)
                 ? string.Empty
                 : secretProtector.Unprotect(protectedSecret);
-            placeholder = ResolvePlaceholder(bytes, input.Placeholder);
+            placeholder = ResolvePlaceholder(bytes, workflowPlaceholder ?? input.Placeholder);
+            if (workflowPlaceholder is not null && PdfSigningDrawing.FindPlaceholder(bytes, placeholder) is null)
+                throw new HC.BnnSoftSigns.SignPlaceholderNotFoundException(placeholder, -1);
             var signerName = NormalizeBounded(input.SignerName, 256);
             if (string.IsNullOrWhiteSpace(signerName))
                 signerName = ResolveCurrentUserName(principal, userId);
@@ -683,6 +688,11 @@ public sealed class SigningAppService(
         var normalized = value?.Trim() ?? string.Empty;
         return normalized.Length <= maxLength ? normalized : normalized[..maxLength];
     }
+
+    internal static IQueryable<WorkflowStep> QuerySigningStepsThrough(
+        IQueryable<WorkflowStep> steps, Guid definitionId, int stepOrder) =>
+        steps.Where(x => x.DefinitionId == definitionId
+            && x.Type == WorkflowStepTypes.Sign && x.Order <= stepOrder);
 
     private static int ResolveSigningStepOrder(string placeholder)
     {
