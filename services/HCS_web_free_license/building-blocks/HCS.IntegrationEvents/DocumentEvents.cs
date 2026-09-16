@@ -18,6 +18,7 @@ public static class DocumentIntegrationEventNames
 {
     public const string DocumentAssigned = "hcs.document.assigned.v1";
     public const string WorkflowChanged = "hcs.document.workflow-changed.v1";
+    public const string WorkflowTaskAssigned = "hcs.document.workflow-task-assigned.v1";
     public const string Signed = "hcs.document.signed.v1";
     public const string SentToInbox = "hcs.document.sent-to-inbox.v1";
     public const string InboxCleared = "hcs.document.inbox-cleared.v1";
@@ -31,6 +32,19 @@ public sealed record DocumentWorkflowChangedEto(
     Guid DocumentId,
     Guid WorkflowInstanceId,
     string Status)
+    : IntegrationEvent(EventId, OccurredAtUtc, CorrelationId);
+
+[EventName(DocumentIntegrationEventNames.WorkflowTaskAssigned)]
+public sealed record DocumentWorkflowTaskAssignedEto(
+    Guid EventId,
+    DateTimeOffset OccurredAtUtc,
+    string? CorrelationId,
+    Guid DocumentId,
+    Guid WorkflowInstanceId,
+    Guid SenderUserId,
+    string Title,
+    string Number,
+    Guid[] RecipientUserIds)
     : IntegrationEvent(EventId, OccurredAtUtc, CorrelationId);
 
 [EventName(DocumentIntegrationEventNames.Signed)]

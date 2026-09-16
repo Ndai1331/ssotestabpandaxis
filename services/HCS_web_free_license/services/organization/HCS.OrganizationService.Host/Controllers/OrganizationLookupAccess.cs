@@ -21,6 +21,7 @@ public static class OrganizationLookupAccess
         "Documents.Workflow.Start",
         "Documents.Workflow.View",
         "Collaboration.Social",
+        "WorkManagement.Dashboard",
         "WorkManagement.EmployeeRatings",
         "WorkManagement.EmployeeRatings.Management",
         "WorkManagement.EmployeeRatings.Dashboard",

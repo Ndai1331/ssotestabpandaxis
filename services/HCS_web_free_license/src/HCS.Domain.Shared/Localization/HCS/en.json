@@ -670,6 +670,8 @@
     "Notification:SocialCommentReactionBody": "{0} reacted to your comment",
     "Notification:DocumentSent": "New document sent to you",
     "Notification:DocumentSentBody": "You were sent document {0}",
+    "Notification:SigningAssigned": "New signing request",
+    "Notification:SigningAssignedBody": "You were sent a signing request for {0}",
     "Chat:HeaderShortcut": "Open chat",
     "Chat:Title": "Chat",
     "Chat:Directory": "User directory",

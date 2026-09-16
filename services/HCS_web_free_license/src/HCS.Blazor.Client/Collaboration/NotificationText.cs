@@ -17,10 +17,13 @@ public static class NotificationText
         var link = item.Link ?? "";
         if (TryInboxDocumentPreview(item, link, out var preview))
             return preview;
+        if (link.StartsWith("/document-signing", StringComparison.OrdinalIgnoreCase))
+            return link;
         if (link.Contains("workflow", StringComparison.OrdinalIgnoreCase)
             || link.Contains("signing", StringComparison.OrdinalIgnoreCase)
             || item.Title.Contains("WORKFLOW", StringComparison.OrdinalIgnoreCase)
-            || item.Body.Contains("WORKFLOW", StringComparison.OrdinalIgnoreCase))
+            || item.Body.Contains("WORKFLOW", StringComparison.OrdinalIgnoreCase)
+            || item.Title.Contains("SigningAssigned", StringComparison.OrdinalIgnoreCase))
             return "/document-signing";
         if (link.StartsWith('/')) return link;
         return "/workspace";

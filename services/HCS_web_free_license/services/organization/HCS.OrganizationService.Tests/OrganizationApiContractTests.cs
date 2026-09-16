@@ -78,6 +78,9 @@ public sealed class OrganizationApiContractTests
 
         var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
         OrganizationLookupAccess.CanRead(anonymous).ShouldBeFalse();
+
+        var workspace = Principal(new Claim("permission", "WorkManagement.Dashboard"));
+        OrganizationLookupAccess.CanRead(workspace).ShouldBeTrue();
     }
 
     private static string MutationPolicy(Type controller, Type verbAttribute)

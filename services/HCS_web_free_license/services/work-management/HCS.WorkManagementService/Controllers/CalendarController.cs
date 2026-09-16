@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HCS.WorkManagementService.Controllers;
 
-[ApiController, Authorize(Policy = WorkPermissions.Calendar), Route("api/calendar")]
+[ApiController, Authorize(Policy = WorkPermissions.CalendarRead), Route("api/calendar")]
 public sealed class CalendarController(CalendarAppService service) : ControllerBase
 {
     [HttpGet]
@@ -15,14 +15,14 @@ public sealed class CalendarController(CalendarAppService service) : ControllerB
     [HttpGet("{id:guid}")]
     public Task<CalendarEventDto> Get(Guid id, CancellationToken ct) => service.GetAsync(id, ct);
 
-    [HttpPost]
+    [HttpPost, Authorize(Policy = WorkPermissions.Calendar)]
     public Task<CalendarEventDto> Create(CreateCalendarEventDto input, CancellationToken ct) => service.CreateAsync(input, ct);
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("{id:guid}"), Authorize(Policy = WorkPermissions.Calendar)]
     public Task<CalendarEventDto> Update(Guid id, UpdateCalendarEventDto input, CancellationToken ct) =>
         service.UpdateAsync(id, input, ct);
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id:guid}"), Authorize(Policy = WorkPermissions.Calendar)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         await service.DeleteAsync(id, ct);

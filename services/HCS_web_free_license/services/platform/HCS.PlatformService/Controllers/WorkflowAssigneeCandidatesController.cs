@@ -141,7 +141,8 @@ public sealed class WorkflowAssigneeCandidatesController(
         || User.HasClaim("permission", HCSPermissions.Documents.Assign)
         || User.HasClaim("permission", HCSPermissions.Documents.SigningExecute)
         || User.HasClaim("permission", HCSPermissions.Documents.WorkflowStart)
-        || User.HasClaim("permission", HCSPermissions.Collaboration.Chat);
+        || User.HasClaim("permission", HCSPermissions.Collaboration.Chat)
+        || User.HasClaim("permission", HCSPermissions.WorkManagement.Dashboard);
 }
 
 public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId,

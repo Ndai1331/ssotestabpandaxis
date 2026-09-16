@@ -14,6 +14,14 @@ public static class WorkPermissions
     public const string EmployeeRatingsManagement = "WorkManagement.EmployeeRatings.Management";
     public const string EmployeeRatingsDashboard = "WorkManagement.EmployeeRatings.Dashboard";
     public const string EmployeeRatingsRead = "WorkManagement.EmployeeRatings.Read";
+
+    /// <summary>
+    /// Composite read policies used by workspace widgets. They are not ABP permissions;
+    /// granting <see cref="Dashboard"/> is enough to view the matching GET APIs.
+    /// </summary>
+    public const string ProjectsRead = Projects + ".Read";
+    public const string TasksRead = Tasks + ".Read";
+    public const string CalendarRead = Calendar + ".Read";
 }
 
 public sealed record PagedWorkDto<T>(long TotalCount, IReadOnlyList<T> Items);

@@ -1,3 +1,4 @@
+using HCS.CollaborationService;
 using HCS.CollaborationService.Api;
 using HCS.CollaborationService.Application;
 using HCS.CollaborationService.Contracts;
@@ -82,6 +83,18 @@ public sealed class ApiContractTests
             .ShouldContain(attribute => attribute.Template == "unread-count");
         typeof(NotificationController).GetMethod(nameof(NotificationController.UnreadCount))!.GetCustomAttributes(typeof(HttpGetAttribute), true)
             .Cast<HttpGetAttribute>().ShouldContain(attribute => attribute.Template == "unread-count");
+    }
+
+    [Fact]
+    public void Workspace_dashboard_permission_can_read_notifications()
+    {
+        var workspace = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(
+        [
+            new System.Security.Claims.Claim("permission", CollaborationAccess.WorkspaceDashboard)
+        ], authenticationType: "test"));
+        CollaborationAccess.CanUseRealtime(workspace).ShouldBeTrue();
+        CollaborationAccess.CanUseRealtime(new System.Security.Claims.ClaimsPrincipal(
+            new System.Security.Claims.ClaimsIdentity(authenticationType: "test"))).ShouldBeFalse();
     }
 
     [Fact]

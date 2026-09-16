@@ -29,6 +29,7 @@ public sealed class TypedIntegrationEventTests
 
     [Theory]
     [InlineData("workflow")]
+    [InlineData("workflow-task")]
     [InlineData("signed")]
     [InlineData("sent")]
     [InlineData("cleared")]
@@ -39,6 +40,9 @@ public sealed class TypedIntegrationEventTests
         var eventData = eventKind == "workflow"
             ? (IntegrationEvent)new DocumentWorkflowChangedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, "corr",
                 Guid.NewGuid(), Guid.NewGuid(), "Completed")
+            : eventKind == "workflow-task"
+            ? new DocumentWorkflowTaskAssignedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, "corr", Guid.NewGuid(),
+                Guid.NewGuid(), Guid.NewGuid(), "Công văn", "CV-001", [Guid.NewGuid()])
             : eventKind == "signed"
             ? new DocumentSignedEto(Guid.NewGuid(), DateTimeOffset.UtcNow, "corr", Guid.NewGuid(), Guid.NewGuid(),
                 "in", "out", "remote-ca")
@@ -53,6 +57,7 @@ public sealed class TypedIntegrationEventTests
         Assert.Equal(eventKind switch
         {
             "workflow" => DocumentIntegrationEventNames.WorkflowChanged,
+            "workflow-task" => DocumentIntegrationEventNames.WorkflowTaskAssigned,
             "signed" => DocumentIntegrationEventNames.Signed,
             "sent" => DocumentIntegrationEventNames.SentToInbox,
             _ => DocumentIntegrationEventNames.InboxCleared

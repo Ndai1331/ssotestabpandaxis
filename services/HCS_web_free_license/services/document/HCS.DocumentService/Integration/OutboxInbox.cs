@@ -71,6 +71,7 @@ public static class OutboxFactory
     {
         DocumentAssignedEto => DocumentIntegrationEventNames.DocumentAssigned,
         DocumentWorkflowChangedEto => DocumentIntegrationEventNames.WorkflowChanged,
+        DocumentWorkflowTaskAssignedEto => DocumentIntegrationEventNames.WorkflowTaskAssigned,
         DocumentSignedEto => DocumentIntegrationEventNames.Signed,
         DocumentSentToInboxEto => DocumentIntegrationEventNames.SentToInbox,
         DocumentInboxClearedEto => DocumentIntegrationEventNames.InboxCleared,
@@ -146,6 +147,7 @@ public sealed class AbpOutboxEventPublisher(ITypedDistributedEventPublisher even
         DocumentIntegrationEventNames.DocumentAssigned => PublishTypedAsync<DocumentAssignedEto>(message),
         AuditRecordCapturedEto.EventName => PublishTypedAsync<AuditRecordCapturedEto>(message),
         DocumentIntegrationEventNames.WorkflowChanged => PublishTypedAsync<DocumentWorkflowChangedEto>(message),
+        DocumentIntegrationEventNames.WorkflowTaskAssigned => PublishTypedAsync<DocumentWorkflowTaskAssignedEto>(message),
         DocumentIntegrationEventNames.Signed => PublishTypedAsync<DocumentSignedEto>(message),
         DocumentIntegrationEventNames.SentToInbox => PublishTypedAsync<DocumentSentToInboxEto>(message),
         DocumentIntegrationEventNames.InboxCleared => PublishTypedAsync<DocumentInboxClearedEto>(message),

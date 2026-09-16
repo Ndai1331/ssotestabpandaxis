@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HCS.WorkManagementService.Controllers;
 
-[ApiController, Authorize(Policy = WorkPermissions.Tasks), Route("api/project-tasks")]
+[ApiController, Authorize(Policy = WorkPermissions.TasksRead), Route("api/project-tasks")]
 public sealed class ProjectTasksController(ProjectTaskAppService service) : ControllerBase
 {
     [HttpGet]
@@ -15,35 +15,35 @@ public sealed class ProjectTasksController(ProjectTaskAppService service) : Cont
     [HttpGet("{id:guid}")]
     public Task<ProjectTaskDetailDto> Get(Guid id, CancellationToken ct) => service.GetAsync(id, ct);
 
-    [HttpPost]
+    [HttpPost, Authorize(Policy = WorkPermissions.Tasks)]
     public Task<ProjectTaskDto> Create(CreateProjectTaskDto input, CancellationToken ct) => service.CreateAsync(input, ct);
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("{id:guid}"), Authorize(Policy = WorkPermissions.Tasks)]
     public Task<ProjectTaskDto> Update(Guid id, UpdateProjectTaskDto input, CancellationToken ct) => service.UpdateAsync(id, input, ct);
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id:guid}"), Authorize(Policy = WorkPermissions.Tasks)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         await service.DeleteAsync(id, ct);
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/assignments")]
+    [HttpPost("{id:guid}/assignments"), Authorize(Policy = WorkPermissions.Tasks)]
     public Task<TaskAssignmentDto> AddAssignment(Guid id, AddTaskAssignmentDto input, CancellationToken ct) =>
         service.AddAssignmentAsync(id, input, ct);
 
-    [HttpDelete("{id:guid}/assignments/{assignmentId:guid}")]
+    [HttpDelete("{id:guid}/assignments/{assignmentId:guid}"), Authorize(Policy = WorkPermissions.Tasks)]
     public async Task<IActionResult> RemoveAssignment(Guid id, Guid assignmentId, CancellationToken ct)
     {
         await service.RemoveAssignmentAsync(id, assignmentId, ct);
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/documents")]
+    [HttpPost("{id:guid}/documents"), Authorize(Policy = WorkPermissions.Tasks)]
     public Task<TaskDocumentReferenceDto> AddDocument(Guid id, AddTaskDocumentReferenceDto input, CancellationToken ct) =>
         service.AddDocumentAsync(id, input, ct);
 
-    [HttpDelete("{id:guid}/documents/{referenceId:guid}")]
+    [HttpDelete("{id:guid}/documents/{referenceId:guid}"), Authorize(Policy = WorkPermissions.Tasks)]
     public async Task<IActionResult> RemoveDocument(Guid id, Guid referenceId, CancellationToken ct)
     {
         await service.RemoveDocumentAsync(id, referenceId, ct);

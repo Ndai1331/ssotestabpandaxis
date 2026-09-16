@@ -188,6 +188,8 @@ public static class NotificationLocalization
     public const string SocialCommentReactionBody = "Notification:SocialCommentReactionBody";
     public const string DocumentSentTitle = "Notification:DocumentSent";
     public const string DocumentSentBody = "Notification:DocumentSentBody";
+    public const string SigningAssignedTitle = "Notification:SigningAssigned";
+    public const string SigningAssignedBody = "Notification:SigningAssignedBody";
 
     private const char Separator = '\u001f';
 
@@ -260,6 +262,10 @@ public static class NotificationLocalization
         (DocumentSentTitle, false) => "New document sent to you",
         (DocumentSentBody, true) => "Bạn được gửi văn bản {0}",
         (DocumentSentBody, false) => "You were sent document {0}",
+        (SigningAssignedTitle, true) => "Có trình ký mới",
+        (SigningAssignedTitle, false) => "New signing request",
+        (SigningAssignedBody, true) => "Bạn được gửi trình ký {0}",
+        (SigningAssignedBody, false) => "You were sent a signing request for {0}",
         _ => key
     };
 }

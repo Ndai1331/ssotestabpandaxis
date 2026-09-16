@@ -670,6 +670,8 @@
     "Notification:SocialCommentReactionBody": "{0} đã tương tác với bình luận của bạn",
     "Notification:DocumentSent": "Có văn bản mới",
     "Notification:DocumentSentBody": "Bạn được gửi văn bản {0}",
+    "Notification:SigningAssigned": "Có trình ký mới",
+    "Notification:SigningAssignedBody": "Bạn được gửi trình ký {0}",
     "Chat:HeaderShortcut": "Mở trao đổi",
     "Chat:Title": "Trao đổi",
     "Chat:Directory": "Danh bạ người dùng",

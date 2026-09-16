@@ -128,6 +128,7 @@ public static class HCSPermissions
     {
         public const string Default = "Collaboration";
         public const string Chat = Default + ".Chat";
+        public const string ChatRead = Chat + ".Read";
         public const string Social = Default + ".Social";
         public const string Notifications = Default + ".Notifications";
         public const string Administration = Default + ".Administration";

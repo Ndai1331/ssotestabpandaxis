@@ -1,5 +1,6 @@
 @page "/workspace"
 @using System.Globalization
+@using System.Net
 @attribute [Authorize(Policy = "WorkManagement.Dashboard")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
@@ -754,14 +755,30 @@
         {
             var from = fromDate.Date;
             var to = toDate.Date.AddDays(1).AddTicks(-1);
-            events.Clear(); events.AddRange((await Work.GetCalendarAsync(from, to)).Where(x => x.StartTime.ToLocalTime() >= from && x.StartTime.ToLocalTime() <= to));
-            projects.Clear(); projects.AddRange((await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100))).Items
-                .Where(x => x.EndDate >= from && x.StartDate <= to));
-            tasks.Clear(); tasks.AddRange((await Work.GetTasksAsync(null, new WorkListQuery(null, null, 0, 100))).Items
-                .Where(x => x.DueDate >= from && x.StartDate <= to));
-            try
+            events.Clear();
+            projects.Clear();
+            tasks.Clear();
+            myDocuments.Clear();
+            myDocumentCount = 0;
+            workflowDocuments.Clear();
+            workflows.Clear();
+            notifications.Clear();
+            await LoadWorkspaceWidgetAsync(async () =>
             {
-                myDocuments.Clear();
+                events.AddRange((await Work.GetCalendarAsync(from, to)).Where(x => x.StartTime.ToLocalTime() >= from && x.StartTime.ToLocalTime() <= to));
+            });
+            await LoadWorkspaceWidgetAsync(async () =>
+            {
+                projects.AddRange((await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100))).Items
+                    .Where(x => x.EndDate >= from && x.StartDate <= to));
+            });
+            await LoadWorkspaceWidgetAsync(async () =>
+            {
+                tasks.AddRange((await Work.GetTasksAsync(null, new WorkListQuery(null, null, 0, 100))).Items
+                    .Where(x => x.DueDate >= from && x.StartDate <= to));
+            });
+            await LoadWorkspaceWidgetAsync(async () =>
+            {
                 var inbox = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 2, From: from, To: toDate));
                 var rows = inbox.Items
                     .Select(item => new MyDocumentRow(item.Id, item.Title, item.Status, item.CreationTime, false))
@@ -778,35 +795,38 @@
                 catch { /* signing queue is optional for this card */ }
                 myDocuments.AddRange(rows.OrderByDescending(x => x.When));
                 myDocumentCount = myDocuments.Count;
-            }
-            catch { myDocuments.Clear(); myDocumentCount = 0; }
-            try
+            });
+            await LoadWorkspaceWidgetAsync(async () =>
             {
-                workflowDocuments.Clear();
                 var workflowPage = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 3));
                 foreach (var document in workflowPage.Items)
                     workflowDocuments[document.Id] = document;
-            }
-            catch { workflowDocuments.Clear(); }
-            try
+            });
+            await LoadWorkspaceWidgetAsync(async () =>
             {
-                workflows.Clear();
                 workflows.AddRange((await Documents.GetInstancesAsync()).Where(x => InRange(x.CreationTime, from, to)));
-            }
-            catch { workflows.Clear(); }
-            try
+            });
+            await LoadWorkspaceWidgetAsync(async () =>
             {
-                notifications.Clear();
                 notifications.AddRange((await Chat.GetNotificationsAsync())
                     .OrderByDescending(x => x.CreatedAt)
                     .ThenByDescending(x => x.Id));
-            }
-            catch { notifications.Clear(); }
+            });
             if (!visibleDays.Contains(selectedDay.Date))
                 selectedDay = visibleDays.Contains(DateTime.Today) ? DateTime.Today : fromDate.Date;
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
+    }
+
+    private async Task LoadWorkspaceWidgetAsync(Func<Task> load)
+    {
+        try { await load(); }
+        catch (Exception ex) when (BffErrorMapper.GetStatusCode(ex) == HttpStatusCode.Forbidden)
+        {
+            // Keep other workspace widgets visible when a sibling API is not granted.
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
 
     private string ProjectLabel(CalendarEventDto item)

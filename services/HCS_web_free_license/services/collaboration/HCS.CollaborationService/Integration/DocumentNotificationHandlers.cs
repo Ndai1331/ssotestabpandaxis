@@ -25,6 +25,22 @@ public sealed class DocumentSentToInboxNotificationHandler(CollaborationDbContex
     }
 }
 
+public sealed class DocumentWorkflowTaskAssignedNotificationHandler(CollaborationDbContext db, IGuidGenerator guidGenerator)
+    : IDistributedEventHandler<DocumentWorkflowTaskAssignedEto>, ITransientDependency
+{
+    public Task HandleEventAsync(DocumentWorkflowTaskAssignedEto eventData)
+    {
+        var recipients = eventData.RecipientUserIds
+            .Where(id => id != Guid.Empty && id != eventData.SenderUserId)
+            .Distinct();
+        var label = string.IsNullOrWhiteSpace(eventData.Title) ? eventData.Number : eventData.Title.Trim();
+        return NotificationFanout.UpsertAsync(db, guidGenerator, eventData.EventId, eventData.OccurredAtUtc,
+            nameof(DocumentWorkflowTaskAssignedEto), recipients, NotificationLocalization.SigningAssignedTitle,
+            NotificationLocalization.Encode(NotificationLocalization.SigningAssignedBody, label),
+            DocumentNotificationLinks.Signing(eventData.DocumentId));
+    }
+}
+
 public sealed class DocumentInboxClearedNotificationHandler(CollaborationDbContext db)
     : IDistributedEventHandler<DocumentInboxClearedEto>, ITransientDependency
 {
@@ -64,4 +80,5 @@ public sealed class DocumentInboxClearedNotificationHandler(CollaborationDbConte
 internal static class DocumentNotificationLinks
 {
     public static string Detail(Guid documentId) => $"/manage-documents?sourceType=2&preview={documentId:D}";
+    public static string Signing(Guid documentId) => $"/document-signing/{documentId:D}";
 }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using HCS.WorkManagementService.Contracts;
 using HCS.WorkManagementService.Domain;
 using HCS.WorkManagementService.Controllers;
@@ -94,6 +95,42 @@ public sealed class SecurityContractTests
         Assert.NotNull(method.GetCustomAttributes(typeof(AllowAnonymousAttribute), true).SingleOrDefault());
     }
 
+    [Theory]
+    [InlineData(typeof(CalendarController), nameof(CalendarController.GetList), WorkPermissions.CalendarRead, null)]
+    [InlineData(typeof(CalendarController), nameof(CalendarController.Get), WorkPermissions.CalendarRead, null)]
+    [InlineData(typeof(CalendarController), nameof(CalendarController.Create), WorkPermissions.CalendarRead, WorkPermissions.Calendar)]
+    [InlineData(typeof(ProjectsController), nameof(ProjectsController.GetList), WorkPermissions.ProjectsRead, null)]
+    [InlineData(typeof(ProjectsController), nameof(ProjectsController.Get), WorkPermissions.ProjectsRead, null)]
+    [InlineData(typeof(ProjectsController), nameof(ProjectsController.Create), WorkPermissions.ProjectsRead, WorkPermissions.Projects)]
+    [InlineData(typeof(ProjectTasksController), nameof(ProjectTasksController.GetList), WorkPermissions.TasksRead, null)]
+    [InlineData(typeof(ProjectTasksController), nameof(ProjectTasksController.Get), WorkPermissions.TasksRead, null)]
+    [InlineData(typeof(ProjectTasksController), nameof(ProjectTasksController.Create), WorkPermissions.TasksRead, WorkPermissions.Tasks)]
+    public void Workspace_read_apis_accept_dashboard_and_keep_writes_on_the_feature_permission(
+        Type controller, string action, string classPolicy, string? methodPolicy)
+    {
+        Assert.Contains(controller.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>(),
+            attribute => attribute.Policy == classPolicy);
+        var method = controller.GetMethod(action)!;
+        var methodPolicies = method.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
+            .Select(attribute => attribute.Policy).ToArray();
+        if (methodPolicy is null)
+            Assert.Empty(methodPolicies);
+        else
+            Assert.Contains(methodPolicy, methodPolicies);
+    }
+
+    [Fact]
+    public void Workspace_dashboard_permission_can_read_calendar_projects_and_tasks()
+    {
+        var workspace = Principal(new Claim("permission", WorkPermissions.Dashboard));
+        Assert.True(WorkPermissionAccess.CanReadWorkspaceResource(workspace, WorkPermissions.Calendar));
+        Assert.True(WorkPermissionAccess.CanReadWorkspaceResource(workspace, WorkPermissions.Projects));
+        Assert.True(WorkPermissionAccess.CanReadWorkspaceResource(workspace, WorkPermissions.Tasks));
+        Assert.False(WorkPermissionAccess.HasPermission(workspace, WorkPermissions.Calendar));
+        Assert.False(WorkPermissionAccess.HasPermission(workspace, WorkPermissions.Projects));
+        Assert.False(WorkPermissionAccess.HasPermission(workspace, WorkPermissions.Tasks));
+    }
+
     [Fact]
     public void Bearer_apis_do_not_auto_validate_antiforgery_cookies()
     {
@@ -127,4 +164,7 @@ public sealed class SecurityContractTests
             .GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>(),
             x => x.Policy == WorkPermissions.EmployeeRatingsDashboard);
     }
+
+    private static ClaimsPrincipal Principal(params Claim[] claims) =>
+        new(new ClaimsIdentity(claims, authenticationType: "test"));
 }

@@ -117,6 +117,29 @@ public sealed class WorkflowTests
         Assert.Equal(assignee, step.AssigneeUserId);
         var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-sign", Now);
         Assert.Equal(assignee, instance.Tasks.Single().AssigneeUserId);
+        Assert.Equal([assignee], WorkflowAppService.PendingAssigneeUserIds(instance, Guid.NewGuid()));
+        Assert.Empty(WorkflowAppService.PendingAssigneeUserIds(instance, assignee));
+    }
+
+    [Fact]
+    public void Next_pending_signer_is_notified_after_the_previous_step_approves()
+    {
+        var reviewer = Guid.NewGuid();
+        var signer = Guid.NewGuid();
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "sign", "Sign", new[]
+        {
+            new WorkflowStepInput("review", "Review", 1, "Documents.Review", "PROCESS", reviewer),
+            new WorkflowStepInput("sign", "Sign", 2, "Documents.Approve", "SIGN", signer)
+        }, Now);
+        var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-chain", Now);
+        var firstTaskId = instance.Tasks.Single().Id;
+        Assert.Equal([reviewer], WorkflowAppService.PendingAssigneeUserIds(instance, Guid.NewGuid()));
+
+        Assert.True(instance.Decide(firstTaskId, true, reviewer, null, "decision-1",
+            definition.Steps.OrderBy(x => x.Order).ToList(), Now));
+        var nextTaskId = instance.Tasks.Single(x => x.Id != firstTaskId).Id;
+        Assert.Equal([signer], WorkflowAppService.PendingAssigneeUserIds(instance, reviewer, new HashSet<Guid> { nextTaskId }));
+        Assert.Empty(WorkflowAppService.PendingAssigneeUserIds(instance, signer, new HashSet<Guid> { nextTaskId }));
     }
 
     [Fact]

@@ -9,7 +9,7 @@ using Volo.Abp.Users;
 
 namespace HCS.PlatformService.Controllers;
 
-[ApiController, Authorize(Policy = HCSPermissions.Collaboration.Chat), Route("api/chat/contacts")]
+[ApiController, Authorize(Policy = HCSPermissions.Collaboration.ChatRead), Route("api/chat/contacts")]
 public sealed class ChatContactsController(
     ICurrentUser currentUser,
     HCSDbContext db) : ControllerBase

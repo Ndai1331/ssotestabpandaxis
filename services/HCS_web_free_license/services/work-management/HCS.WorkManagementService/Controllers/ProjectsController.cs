@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HCS.WorkManagementService.Controllers;
 
-[ApiController, Authorize(Policy = WorkPermissions.Projects), Route("api/projects")]
+[ApiController, Authorize(Policy = WorkPermissions.ProjectsRead), Route("api/projects")]
 public sealed class ProjectsController(ProjectAppService service) : ControllerBase
 {
     [HttpGet]
@@ -15,31 +15,31 @@ public sealed class ProjectsController(ProjectAppService service) : ControllerBa
     [HttpGet("{id:guid}")]
     public Task<ProjectDetailDto> Get(Guid id, CancellationToken ct) => service.GetAsync(id, ct);
 
-    [HttpPost]
+    [HttpPost, Authorize(Policy = WorkPermissions.Projects)]
     public Task<ProjectDto> Create(CreateProjectDto input, CancellationToken ct) => service.CreateAsync(input, ct);
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("{id:guid}"), Authorize(Policy = WorkPermissions.Projects)]
     public Task<ProjectDto> Update(Guid id, UpdateProjectDto input, CancellationToken ct) => service.UpdateAsync(id, input, ct);
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id:guid}"), Authorize(Policy = WorkPermissions.Projects)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         await service.DeleteAsync(id, ct);
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/chat-access")]
+    [HttpPost("{id:guid}/chat-access"), Authorize(Policy = WorkPermissions.Projects)]
     public async Task<IActionResult> SyncChatAccess(Guid id, CancellationToken ct)
     {
         await service.SyncChatAccessAsync(id, ct);
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/members")]
+    [HttpPost("{id:guid}/members"), Authorize(Policy = WorkPermissions.Projects)]
     public Task<ProjectMemberDto> AddMember(Guid id, AddProjectMemberDto input, CancellationToken ct) =>
         service.AddMemberAsync(id, input, ct);
 
-    [HttpDelete("{id:guid}/members/{memberId:guid}")]
+    [HttpDelete("{id:guid}/members/{memberId:guid}"), Authorize(Policy = WorkPermissions.Projects)]
     public async Task<IActionResult> RemoveMember(Guid id, Guid memberId, CancellationToken ct)
     {
         await service.RemoveMemberAsync(id, memberId, ct);

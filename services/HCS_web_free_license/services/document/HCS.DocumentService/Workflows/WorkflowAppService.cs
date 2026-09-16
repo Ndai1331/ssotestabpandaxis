@@ -351,6 +351,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         db.WorkflowInstances.Add(instance);
         GrantWorkflowAccess(document, instance, input.ViewScopes, userId, now);
         AddChangeEvent(instance, now);
+        EnqueueWorkflowTaskAssigned(document, instance, userId, now);
         await db.SaveChangesAsync(cancellationToken);
         return Map(instance);
     }
@@ -473,6 +474,8 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             db.DocumentAssignments.AddRange(documentForAccess.Assignments
                 .Where(x => !existingDocumentAssignmentIds.Contains(x.Id)));
             AddChangeEvent(instance, DateTime.UtcNow);
+            var newTaskIds = instance.Tasks.Select(x => x.Id).Where(id => !existingTaskIds.Contains(id)).ToHashSet();
+            EnqueueWorkflowTaskAssigned(documentForAccess, instance, actor, DateTime.UtcNow, newTaskIds);
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
@@ -518,6 +521,8 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         GrantWorkflowAccess(document, instance, null, actor, DateTime.UtcNow);
         TrackNewApprovalTasks(db, instance, existingTaskIds);
         AddChangeEvent(instance, DateTime.UtcNow);
+        var newTaskIds = instance.Tasks.Select(x => x.Id).Where(id => !existingTaskIds.Contains(id)).ToHashSet();
+        EnqueueWorkflowTaskAssigned(document, instance, actor, DateTime.UtcNow, newTaskIds);
         await db.SaveChangesAsync(cancellationToken);
         return Map(instance);
     }
@@ -641,6 +646,29 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             instance.DocumentId, instance.Id, instance.Status.ToString());
         db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, now));
     }
+
+    private void EnqueueWorkflowTaskAssigned(DocumentAggregate document, WorkflowInstance instance, Guid senderUserId,
+        DateTime now, IReadOnlySet<Guid>? newTaskIds = null)
+    {
+        var recipients = PendingAssigneeUserIds(instance, senderUserId, newTaskIds);
+        if (recipients.Length == 0) return;
+        var label = string.IsNullOrWhiteSpace(document.Title) ? document.Number : document.Title.Trim();
+        var integrationEvent = new DocumentWorkflowTaskAssignedEto(Guid.NewGuid(), new DateTimeOffset(now, TimeSpan.Zero),
+            CorrelationId, document.Id, instance.Id, senderUserId, label, document.Number, recipients);
+        db.OutboxMessages.Add(OutboxFactory.CreateCanonical(integrationEvent, CorrelationId, now));
+    }
+
+    internal static Guid[] PendingAssigneeUserIds(WorkflowInstance instance, Guid senderUserId,
+        IReadOnlySet<Guid>? newTaskIds = null) =>
+        instance.Tasks
+            .Where(task => task.Status == ApprovalTaskStatus.Pending
+                           && task.AssigneeUserId is { } assignee
+                           && assignee != Guid.Empty
+                           && assignee != senderUserId
+                           && (newTaskIds is null || newTaskIds.Contains(task.Id)))
+            .Select(task => task.AssigneeUserId!.Value)
+            .Distinct()
+            .ToArray();
     internal static WorkflowInstanceDto Map(WorkflowInstance x) => new(x.Id, x.DocumentId, x.DefinitionId, x.Status, x.CurrentStep,
         x.Tasks.OrderBy(t => t.CreationTime).Select(t => new ApprovalTaskDto(t.Id, t.InstanceId, t.StepCode, t.Status, t.DecidedBy, t.DecidedAt, t.AssigneeUserId, t.DueAt, t.Comment)).ToList(), x.CreationTime);
     internal static WorkflowDefinitionDto MapDefinition(WorkflowDefinition x) => new(x.Id, x.Code, x.Name, x.KindId, x.Description, x.IsActive,

@@ -47,9 +47,7 @@ public sealed class HCSCollaborationServiceModule : AbpModule
             options.AddPolicy(CollaborationPermissions.Notifications, p =>
                 p.RequireClaim("permission", CollaborationPermissions.Notifications));
             options.AddPolicy(CollaborationPermissions.Realtime, p => p.RequireAssertion(context =>
-                HasPermission(context.User, CollaborationPermissions.Notifications)
-                || HasPermission(context.User, CollaborationPermissions.Social)
-                || HasPermission(context.User, CollaborationPermissions.Chat)));
+                CollaborationAccess.CanUseRealtime(context.User)));
             options.AddPolicy(CollaborationPermissions.Administration, p => p.RequireClaim("permission", CollaborationPermissions.Administration));
         });
         context.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
@@ -100,9 +98,6 @@ public sealed class HCSCollaborationServiceModule : AbpModule
             options.CustomSchemaIds(type => type.FullName);
         });
     }
-
-    private static bool HasPermission(System.Security.Claims.ClaimsPrincipal user, string permission) =>
-        user.HasClaim("permission", permission);
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {

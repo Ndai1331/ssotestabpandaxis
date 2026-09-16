@@ -153,5 +153,9 @@ public sealed class DomainBehaviorTests
         NotificationLocalization.Format(
                 NotificationLocalization.Encode(NotificationLocalization.DocumentSentBody, "Công văn 01"), "en")
             .ShouldBe("You were sent document Công văn 01");
+        NotificationLocalization.Format(NotificationLocalization.SigningAssignedTitle, "vi").ShouldBe("Có trình ký mới");
+        NotificationLocalization.Format(
+                NotificationLocalization.Encode(NotificationLocalization.SigningAssignedBody, "Công văn 01"), "en")
+            .ShouldBe("You were sent a signing request for Công văn 01");
     }
 }
