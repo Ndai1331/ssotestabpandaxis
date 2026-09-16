@@ -119,6 +119,62 @@ public sealed class DomainInvariantTests
     }
 
     [Fact]
+    public void Managed_event_becomes_ongoing_at_start_time()
+    {
+        var start = DateTime.UtcNow.AddMinutes(-1);
+        var item = new ManagedEvent(Guid.NewGuid(), "EVT-1", "General", "Event", null, null, null,
+            start, start.AddHours(1), ManagedEventStatuses.Preparing, "token", Guid.NewGuid());
+
+        Assert.True(item.ApplyScheduledStatus(DateTime.UtcNow));
+        Assert.Equal(ManagedEventStatuses.Ongoing, item.Status);
+        Assert.False(item.ApplyScheduledStatus(DateTime.UtcNow));
+    }
+
+    [Fact]
+    public void Managed_event_becomes_completed_at_end_time()
+    {
+        var start = DateTime.UtcNow.AddHours(-2);
+        var item = new ManagedEvent(Guid.NewGuid(), "EVT-1", "General", "Event", null, null, null,
+            start, start.AddHours(1), ManagedEventStatuses.Ongoing, "token", Guid.NewGuid());
+
+        Assert.True(item.ApplyScheduledStatus(DateTime.UtcNow));
+        Assert.Equal(ManagedEventStatuses.Completed, item.Status);
+    }
+
+    [Fact]
+    public void Managed_event_skips_ongoing_when_end_time_has_already_passed()
+    {
+        var start = DateTime.UtcNow.AddHours(-2);
+        var item = new ManagedEvent(Guid.NewGuid(), "EVT-1", "General", "Event", null, null, null,
+            start, start.AddHours(1), ManagedEventStatuses.Preparing, "token", Guid.NewGuid());
+
+        Assert.True(item.ApplyScheduledStatus(DateTime.UtcNow));
+        Assert.Equal(ManagedEventStatuses.Completed, item.Status);
+    }
+
+    [Fact]
+    public void Managed_event_does_not_auto_change_cancelled_status()
+    {
+        var start = DateTime.UtcNow.AddHours(-2);
+        var item = new ManagedEvent(Guid.NewGuid(), "EVT-1", "General", "Event", null, null, null,
+            start, start.AddHours(1), ManagedEventStatuses.Cancelled, "token", Guid.NewGuid());
+
+        Assert.False(item.ApplyScheduledStatus(DateTime.UtcNow));
+        Assert.Equal(ManagedEventStatuses.Cancelled, item.Status);
+    }
+
+    [Fact]
+    public void Managed_event_stays_preparing_before_start_time()
+    {
+        var start = DateTime.UtcNow.AddHours(1);
+        var item = new ManagedEvent(Guid.NewGuid(), "EVT-1", "General", "Event", null, null, null,
+            start, start.AddHours(1), ManagedEventStatuses.Preparing, "token", Guid.NewGuid());
+
+        Assert.False(item.ApplyScheduledStatus(DateTime.UtcNow));
+        Assert.Equal(ManagedEventStatuses.Preparing, item.Status);
+    }
+
+    [Fact]
     public void Attendee_check_in_sets_and_clears_timestamp()
     {
         var attendee = new EventAttendee(Guid.NewGuid(), Guid.NewGuid(), null, null, null, null, "Guest",

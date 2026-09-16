@@ -33,6 +33,9 @@ public sealed class Project : FullAuditedAggregateRoot<Guid>
     public Guid? OwnerDepartmentId { get; private set; }
     public Guid OwnerUserId { get; private set; }
     public void Change(string name, string? description, DateTime startDate, DateTime endDate, string status)
+        => Change(name, description, startDate, endDate, status, OwnerDepartmentId);
+    public void Change(string name, string? description, DateTime startDate, DateTime endDate, string status,
+        Guid? ownerDepartmentId)
     {
         startDate = WorkTimestamps.ToUtc(startDate);
         endDate = WorkTimestamps.ToUtc(endDate);
@@ -42,6 +45,7 @@ public sealed class Project : FullAuditedAggregateRoot<Guid>
         StartDate = startDate;
         EndDate = endDate;
         Status = Check.NotNullOrWhiteSpace(status, nameof(status), WorkConsts.StatusLength);
+        OwnerDepartmentId = ownerDepartmentId;
     }
 }
 
@@ -243,6 +247,33 @@ public sealed class ManagedEvent : FullAuditedAggregateRoot<Guid>
         Content = content; Description = description; Location = location;
         StartTime = startTime; EndTime = endTime;
         Status = status;
+    }
+
+    /// <summary>
+    /// Advances Preparing → Ongoing at start time and Preparing/Ongoing → Completed at end time.
+    /// Cancelled and Completed are terminal and are never changed automatically.
+    /// </summary>
+    public bool ApplyScheduledStatus(DateTime utcNow)
+    {
+        utcNow = WorkTimestamps.ToUtc(utcNow);
+        if (string.Equals(Status, ManagedEventStatuses.Cancelled, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Status, ManagedEventStatuses.Completed, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (utcNow >= EndTime)
+        {
+            Status = ManagedEventStatuses.Completed;
+            return true;
+        }
+
+        if (utcNow >= StartTime
+            && string.Equals(Status, ManagedEventStatuses.Preparing, StringComparison.OrdinalIgnoreCase))
+        {
+            Status = ManagedEventStatuses.Ongoing;
+            return true;
+        }
+
+        return false;
     }
 }
 

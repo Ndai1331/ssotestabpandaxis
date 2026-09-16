@@ -1,3 +1,4 @@
+using HCS.WorkManagementService.Application;
 using HCS.WorkManagementService.Contracts;
 using HCS.WorkManagementService.Data;
 using HCS.WorkManagementService.Integration;
@@ -108,6 +109,7 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
         context.Services.AddScoped<IInboxExecutor, EfInboxExecutor>();
         context.Services.AddScoped<OutboxDispatcher>();
         context.Services.AddHostedService<OutboxWorker>();
+        context.Services.AddHostedService<ManagedEventStatusWorker>();
         context.Services.AddHealthChecks().AddDbContextCheck<WorkManagementDbContext>("hcs_work");
         context.Services.AddAbpSwaggerGen(options =>
         {

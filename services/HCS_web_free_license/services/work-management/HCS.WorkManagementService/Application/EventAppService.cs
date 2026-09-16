@@ -14,11 +14,13 @@ using Volo.Abp.Users;
 namespace HCS.WorkManagementService.Application;
 
 public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthorization access,
-    ILogger<EventAppService> logger, ICurrentUser currentUser) : ITransientDependency
+    ILogger<EventAppService> logger, ICurrentUser currentUser,
+    ManagedEventStatusSynchronizer statuses) : ITransientDependency
 {
     public async Task<PagedWorkDto<EventListItemDto>> GetListAsync(string? filter, string? group, string? status,
         int skip, int take, CancellationToken ct)
     {
+        await statuses.SynchronizeAsync(ct);
         take = Math.Clamp(take, 1, 100); skip = Math.Max(0, skip);
         var query = db.ManagedEvents.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(filter))
@@ -38,6 +40,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
     public async Task<EventDashboardDto> GetDashboardAsync(DateTime? from, DateTime? to, CancellationToken ct)
     {
+        await statuses.SynchronizeAsync(ct);
         var start = from?.ToUniversalTime() ?? DateTime.UtcNow.Date.AddMonths(-1);
         var end = to?.ToUniversalTime() ?? DateTime.UtcNow.Date.AddMonths(3).AddDays(1).AddTicks(-1);
         var events = await db.ManagedEvents.AsNoTracking().Where(x => x.EndTime >= start && x.StartTime <= end)
@@ -54,8 +57,9 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
     public async Task<EventDto> GetAsync(Guid id, CancellationToken ct)
     {
-        var item = await db.ManagedEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct)
+        var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), id);
+        await statuses.EnsureCurrentAsync(item, ct);
         return await MapDetailAsync(item, ct);
     }
 
@@ -64,6 +68,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         var code = await NewCodeAsync(ct);
         var item = new ManagedEvent(Guid.NewGuid(), code, input.Group, input.Name, input.Content, input.Description,
             input.Location, input.StartTime, input.EndTime, input.Status, Convert.ToHexString(Guid.NewGuid().ToByteArray()), access.UserId);
+        item.ApplyScheduledStatus(DateTime.UtcNow);
         db.ManagedEvents.Add(item);
         await db.SaveChangesAsync(ct);
         return await MapDetailAsync(item, ct);
@@ -76,6 +81,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), id);
         item.Change(input.Group, input.Name, input.Content, input.Description, input.Location,
             input.StartTime, input.EndTime, input.Status);
+        item.ApplyScheduledStatus(DateTime.UtcNow);
         await db.SaveChangesAsync(ct);
         return await MapDetailAsync(item, ct);
     }
@@ -193,8 +199,9 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
 
     public async Task<PublicEventDto> GetPublicAsync(string code, string token, CancellationToken ct)
     {
-        var item = await db.ManagedEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
+        var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), code);
+        await statuses.EnsureCurrentAsync(item, ct);
         var attachments = await db.EventAttachments.AsNoTracking()
             .Where(x => x.EventId == item.Id)
             .OrderBy(x => x.FileName)
@@ -237,6 +244,7 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     {
         var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), code);
+        await statuses.EnsureCurrentAsync(item, ct);
         EnsurePublicAttendanceAllowed(item, checkIn);
 
         var authenticatedUserId = AuthenticatedUserId();

@@ -88,7 +88,7 @@ public sealed class EventAppServiceTests
         var cancellationToken = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
         await using var db = CreateDb();
-        var item = CreateEvent(ManagedEventStatuses.Preparing);
+        var item = CreateUpcomingEvent(ManagedEventStatuses.Preparing);
         db.ManagedEvents.Add(item);
         await db.SaveChangesAsync(cancellationToken);
         var service = CreateService(db, AuthenticatedUser(userId));
@@ -109,7 +109,7 @@ public sealed class EventAppServiceTests
         var cancellationToken = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
         await using var db = CreateDb();
-        var item = CreateEvent(ManagedEventStatuses.Preparing);
+        var item = CreateUpcomingEvent(ManagedEventStatuses.Preparing);
         db.ManagedEvents.Add(item);
         await db.SaveChangesAsync(cancellationToken);
         var service = CreateService(db, AuthenticatedUser(userId));
@@ -129,7 +129,7 @@ public sealed class EventAppServiceTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDb();
-        var item = CreateEvent(ManagedEventStatuses.Preparing);
+        var item = CreateUpcomingEvent(ManagedEventStatuses.Preparing);
         db.ManagedEvents.Add(item);
         await db.SaveChangesAsync(cancellationToken);
         var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
@@ -165,7 +165,7 @@ public sealed class EventAppServiceTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDb();
-        var item = CreateEvent(ManagedEventStatuses.Preparing);
+        var item = CreateUpcomingEvent(ManagedEventStatuses.Preparing);
         db.ManagedEvents.Add(item);
         await db.SaveChangesAsync(cancellationToken);
         var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
@@ -177,17 +177,75 @@ public sealed class EventAppServiceTests
         Assert.Empty(await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(cancellationToken));
     }
 
+    [Fact]
+    public async Task Public_check_in_opens_when_start_time_arrives()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent(ManagedEventStatuses.Preparing, DateTime.UtcNow.AddMinutes(-5), DateTime.UtcNow.AddHours(1));
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
+
+        await service.CheckInPublicAsync(item.Code, item.QrToken, new(), cancellationToken);
+
+        Assert.Equal(ManagedEventStatuses.Ongoing, item.Status);
+        Assert.Equal(EventCheckInStatuses.CheckedIn,
+            (await db.EventAttendees.SingleAsync(x => x.EventId == item.Id, cancellationToken)).CheckInStatus);
+    }
+
+    [Fact]
+    public async Task Public_check_in_stays_closed_when_a_cancelled_event_reaches_start_time()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent(ManagedEventStatuses.Cancelled, DateTime.UtcNow.AddMinutes(-5), DateTime.UtcNow.AddHours(1));
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
+
+        var exception = await Assert.ThrowsAsync<BusinessException>(() =>
+            service.CheckInPublicAsync(item.Code, item.QrToken, new(), cancellationToken));
+
+        Assert.Equal("Work:EventCheckInNotOpen", exception.Code);
+        Assert.Equal(ManagedEventStatuses.Cancelled, item.Status);
+        Assert.Empty(await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(cancellationToken));
+    }
+
+    [Fact]
+    public async Task Get_event_completes_status_after_end_time()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent(ManagedEventStatuses.Ongoing, DateTime.UtcNow.AddHours(-2), DateTime.UtcNow.AddMinutes(-1));
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
+
+        var result = await service.GetAsync(item.Id, cancellationToken);
+
+        Assert.Equal(ManagedEventStatuses.Completed, result.Status);
+        Assert.Equal(ManagedEventStatuses.Completed, item.Status);
+    }
+
     private static EventAppService CreateService(WorkManagementDbContext db, ICurrentUser currentUser) =>
         new(db, new WorkRecordAuthorization(db, currentUser),
-            NullLogger<EventAppService>.Instance, currentUser);
+            NullLogger<EventAppService>.Instance, currentUser, new ManagedEventStatusSynchronizer(db));
 
     private static WorkManagementDbContext CreateDb() =>
         new(new DbContextOptionsBuilder<WorkManagementDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
-    private static ManagedEvent CreateEvent(string status = ManagedEventStatuses.Ongoing) =>
-        new(Guid.NewGuid(), "EVT-TEST", "General", "Test event", "Agenda notes", "Bring badge", null,
-            DateTime.UtcNow, DateTime.UtcNow.AddHours(1), status, "qr-token", Guid.NewGuid());
+    private static ManagedEvent CreateUpcomingEvent(string status) =>
+        CreateEvent(status, DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddHours(2));
+
+    private static ManagedEvent CreateEvent(string status = ManagedEventStatuses.Ongoing,
+        DateTime? startTime = null, DateTime? endTime = null)
+    {
+        var start = startTime ?? DateTime.UtcNow;
+        return new(Guid.NewGuid(), "EVT-TEST", "General", "Test event", "Agenda notes", "Bring badge", null,
+            start, endTime ?? start.AddHours(1), status, "qr-token", Guid.NewGuid());
+    }
 
     private static TestCurrentUser AuthenticatedUser(Guid userId) => new()
     {
