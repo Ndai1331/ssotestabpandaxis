@@ -8,4 +8,5 @@ public static class HCSDomainErrorCodes
     public const string DefaultLanguageMustBeEnabled = "HCS:DefaultLanguageMustBeEnabled";
     public const string LanguageNotFound = "HCS:LanguageNotFound";
     public const string LanguageTextAlreadyExists = "HCS:LanguageTextAlreadyExists";
+    public const string RoleAssignedToUsers = "HCS:RoleAssignedToUsers";
 }

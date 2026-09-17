@@ -39,7 +39,14 @@ public sealed class HCSRolePermissionSynchronizer(
     public async Task SynchronizeExistingRolesAsync()
     {
         var adminRole = await roleRepository.FindByNormalizedNameAsync("ADMIN");
-        if (adminRole is null || adminRole.GetProperty<bool>(CustomPermissionsProperty))
+        if (adminRole is null)
+        {
+            return;
+        }
+
+        await NormalizeAdminFlagsAsync(adminRole);
+
+        if (adminRole.GetProperty<bool>(CustomPermissionsProperty))
         {
             return;
         }
@@ -54,6 +61,24 @@ public sealed class HCSRolePermissionSynchronizer(
             RolePermissionValueProvider.ProviderName,
             "admin",
             permissions);
+    }
+
+    public static void ApplyAdminFlags(IdentityRole adminRole)
+    {
+        ArgumentNullException.ThrowIfNull(adminRole);
+        adminRole.IsPublic = false;
+        adminRole.IsDefault = false;
+    }
+
+    private async Task NormalizeAdminFlagsAsync(IdentityRole adminRole)
+    {
+        if (!adminRole.IsPublic && !adminRole.IsDefault)
+        {
+            return;
+        }
+
+        ApplyAdminFlags(adminRole);
+        await roleRepository.UpdateAsync(adminRole, autoSave: true);
     }
 
     public static string[] PermissionsToGrant(string roleName, IReadOnlyCollection<string> enabledPermissions)

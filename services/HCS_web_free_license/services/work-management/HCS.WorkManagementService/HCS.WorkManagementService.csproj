@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../HCS.WorkManagementService.Contracts/HCS.WorkManagementService.Contracts.csproj" />
+    <ProjectReference Include="../../../building-blocks/HCS.Logging/HCS.Logging.csproj" />
     <InternalsVisibleTo Include="HCS.WorkManagementService.Tests" />
   </ItemGroup>
   <ItemGroup>

@@ -1,3 +1,4 @@
+using HCS.Logging;
 using Serilog;
 using Volo.Abp;
 
@@ -21,7 +22,8 @@ public static class Program
                     .ReadFrom.Configuration(context.Configuration)
                     .ReadFrom.Services(services)
                     .Enrich.FromLogContext()
-                    .WriteTo.Console());
+                    .WriteTo.Console()
+                    .WriteToHcsSeq(context.Configuration, HcsServiceLogCatalog.Applications.AuthServer));
 
             await builder.AddApplicationAsync<HCSAuthServerModule>();
 

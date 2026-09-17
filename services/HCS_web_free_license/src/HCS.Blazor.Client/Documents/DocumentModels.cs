@@ -27,7 +27,7 @@ public static class DocumentStatusUi
 
 public sealed record PagedDocumentsResponse(long TotalCount, List<DocumentDto> Items);
 
-public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null);
+public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null, bool IsWorkflowFile = false);
 public sealed record DocumentFileContent(byte[] Bytes, string ContentType, string FileName);
 public sealed record DocumentAssignmentDto(Guid Id, Guid AssigneeUserId, string Responsibility, DateTime AssignedAt,
     bool IsCurrent = true, string? StepCode = null);

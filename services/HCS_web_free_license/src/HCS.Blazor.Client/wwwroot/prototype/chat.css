@@ -1452,7 +1452,7 @@ button.msg-file {
   .vb-pane { padding: 16px 16px 8px; min-height: 0; }
   .vb-bar { padding: 12px 16px 16px; }
   .docs-toolbar { flex-wrap: wrap; }
-  .docs-table-wrap { overflow-x: auto; }
+  .docs-table-wrap { overflow: hidden; }
   .page-actions { flex-wrap: wrap; }
   .queue-filter { padding: 16px; }
   .chat-shell {

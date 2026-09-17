@@ -62,6 +62,7 @@ public sealed class UserOrganizationUnitLookupDto
 {
     public Guid UserId { get; set; }
     public Guid? OrganizationUnitId { get; set; }
+    public Guid[] OrganizationUnitIds { get; set; } = [];
     public string? DisplayName { get; set; }
 }
 

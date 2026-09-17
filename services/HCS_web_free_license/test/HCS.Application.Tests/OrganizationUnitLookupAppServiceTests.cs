@@ -67,4 +67,31 @@ public abstract class OrganizationUnitLookupAppServiceTests<TStartupModule> : HC
         var members = await lookup.GetMembersAsync(unit.Id);
         members.ShouldContain(item => item.UserId == created.Id);
     }
+
+    [Fact]
+    public async Task SetUser_Keeps_Multiple_Organization_Units()
+    {
+        var first = new Ou(guidGenerator.Create(), "Dept " + Guid.NewGuid().ToString("N")[..8]);
+        var second = new Ou(guidGenerator.Create(), "Dept " + Guid.NewGuid().ToString("N")[..8]);
+        await organizationUnitManager.CreateAsync(first);
+        await organizationUnitManager.CreateAsync(second);
+        var created = await users.CreateAsync(new IdentityUserCreateDto
+        {
+            UserName = "u" + Guid.NewGuid().ToString("N")[..16],
+            Email = $"{Guid.NewGuid():N}@example.com",
+            Password = "Test-password-42!",
+            IsActive = true,
+            RoleNames = []
+        });
+
+        await lookup.SetUserAsync(created.Id, new SetUserOrganizationUnitsInput
+        {
+            OrganizationUnitIds = [first.Id, second.Id]
+        });
+
+        var membership = (await lookup.GetUsersAsync([created.Id])).ShouldHaveSingleItem();
+        membership.OrganizationUnitIds.ShouldBe([first.Id, second.Id], ignoreOrder: true);
+        membership.DisplayName.ShouldContain(first.DisplayName);
+        membership.DisplayName.ShouldContain(second.DisplayName);
+    }
 }

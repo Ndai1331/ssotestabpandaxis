@@ -393,7 +393,8 @@ public sealed class DocumentAppService(
     internal static DocumentDto Map(DocumentAggregate x) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
         x.DocumentTypeId, x.SectorId, x.UrgencyId, x.ConfidentialityId,
         x.Files.Where(f => !f.IsPendingDeletion)
-            .Select(f => new DocumentFileDto(f.Id, f.FileName, f.ContentType, f.Size, f.Sha256, f.CreationTime, f.PairedFileId)).ToList(),
+            .Select(f => new DocumentFileDto(f.Id, f.FileName, f.ContentType, f.Size, f.Sha256, f.CreationTime, f.PairedFileId,
+                f.Id == WorkflowFileSelection.Resolve(x))).ToList(),
         x.Assignments.Select(a => new DocumentAssignmentDto(a.Id, a.AssigneeUserId, a.Responsibility, a.AssignedAt, a.IsCurrent, a.StepCode)).ToList(),
         x.History.OrderBy(h => h.OccurredAt).Select(h => new DocumentHistoryDto(h.Id, h.Action, h.ActorUserId, h.Detail, h.OccurredAt)).ToList(),
         x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId,

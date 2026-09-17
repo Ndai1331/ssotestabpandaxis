@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\building-blocks\HCS.Bff\HCS.Bff.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\HCS.Logging\HCS.Logging.csproj" />
   </ItemGroup>
 
   <ItemGroup>

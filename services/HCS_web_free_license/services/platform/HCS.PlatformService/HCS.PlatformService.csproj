@@ -19,6 +19,7 @@
     <PackageReference Include="Volo.Abp.Swashbuckle" Version="10.6.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../../building-blocks/HCS.Logging/HCS.Logging.csproj" />
     <ProjectReference Include="../../../src/HCS.Application/HCS.Application.csproj" />
     <ProjectReference Include="../../../src/HCS.EntityFrameworkCore/HCS.EntityFrameworkCore.csproj" />
     <ProjectReference Include="../../../src/HCS.HttpApi/HCS.HttpApi.csproj" />

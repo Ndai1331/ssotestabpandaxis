@@ -337,6 +337,10 @@
   min-height: calc(100dvh - 220px);
 }
 
+.vb-shell:not(:has(> .vb-aside)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .vb-main {
   min-width: 0;
   display: flex;
@@ -988,8 +992,29 @@ a.btn {
   background: var(--color-white);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
   padding: 4px 8px 10px;
+}
+
+.docs-table-scroll {
+  flex: 1 1 auto;
+  max-width: 100%;
+  min-height: 0;
+  min-width: 0;
   overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-color: #a6b8c4 transparent;
+  scrollbar-width: thin;
+}
+
+.docs-table-wrap > .pager,
+.docs-table-wrap > .hcs-survey-results__list-head {
+  flex-shrink: 0;
 }
 
 .queue-table {
@@ -1437,7 +1462,7 @@ a.wf-name:hover {
 }
 
 .docs-table td .docs-empty,
-.docs-table-wrap > .docs-empty {
+.docs-table-wrap .docs-empty {
   width: 100%;
 }
 

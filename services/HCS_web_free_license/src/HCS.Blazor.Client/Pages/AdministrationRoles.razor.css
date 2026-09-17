@@ -39,23 +39,20 @@
 
 .admin-roles-list {
     display: grid;
-    gap: .55rem;
+    gap: .4rem;
     margin-top: .85rem;
     overflow: auto;
 }
 
 .admin-role-option {
-    display: grid;
-    gap: .4rem;
-    width: 100%;
-    height: auto !important;
-    min-height: 40px;
-    padding: .75rem .85rem !important;
+    align-items: center;
+    background: var(--color-white, #fff);
     border: 1px solid var(--color-gray-100, #e2eaf0);
     border-radius: var(--radius-xl, 16px);
-    background: var(--color-white, #fff);
     color: var(--color-gray-700, #355770);
-    text-align: left;
+    display: flex;
+    gap: .2rem;
+    min-width: 0;
 }
 
 .admin-role-option:hover {
@@ -69,24 +66,81 @@
     color: #fff;
 }
 
+.admin-role-option__select {
+    align-items: center;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: var(--radius-xl, 16px);
+    box-shadow: none !important;
+    color: inherit !important;
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: .3rem .45rem;
+    height: auto !important;
+    min-height: 0 !important;
+    min-width: 0;
+    padding: .4rem .5rem .4rem .75rem !important;
+    text-align: left;
+}
+
 .admin-role-option__name {
     overflow-wrap: anywhere;
     font-weight: 750;
+    line-height: 1.25;
 }
 
 .admin-role-option__tags {
     display: flex;
     flex-wrap: wrap;
-    gap: .35rem;
+    gap: .3rem;
 }
 
-.admin-role-option.is-active .badge {
-    background: rgb(255 255 255 / 22%);
+.admin-role-option__tags .badge {
+    background: #e8eef3;
+    color: #2f4d63;
+}
+
+.admin-role-option__tags .badge-info {
+    background: #e8f1fe;
+    color: #1d4ed8;
+}
+
+.admin-role-option__tags .badge-muted {
+    background: #eef2f5;
+    color: #3d5668;
+}
+
+.admin-role-option.is-active .admin-role-option__tags .badge,
+.admin-role-option.is-active .admin-role-option__tags .badge-info,
+.admin-role-option.is-active .admin-role-option__tags .badge-muted {
+    background: rgb(255 255 255 / 24%);
     color: #fff;
 }
 
 .admin-roles-perms {
     max-height: calc(100dvh - 12.5rem);
+}
+
+.admin-roles-perms__head {
+    align-items: flex-start;
+    display: flex;
+    gap: .75rem;
+    justify-content: space-between;
+}
+
+.admin-roles-perms__actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: flex-end;
+}
+
+.admin-roles-perms__actions .btn {
+    align-items: center;
+    display: inline-flex;
+    gap: .4rem;
 }
 
 .admin-roles-perms__head p {

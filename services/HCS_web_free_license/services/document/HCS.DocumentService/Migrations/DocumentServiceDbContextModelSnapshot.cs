@@ -25,7 +25,9 @@ namespace HCS.DocumentService.Migrations
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("HCS.DocumentService.Documents.DocumentAggregate", b =>
-                {
+            {
+                    b.Property<Guid?>("WorkflowFileId")
+                        .HasColumnType("uuid");
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");

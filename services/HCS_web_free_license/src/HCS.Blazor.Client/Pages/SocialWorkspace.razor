@@ -1921,10 +1921,14 @@
 
     private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
     {
-        var skip = Math.Max(page - 1, 0) * 20;
-        var result = await OrganizationUnits.SearchDepartmentsAsync(term, skip, 20);
-        return CatalogSelect2Cache.Merge(departments, result.Items, x => x.Id,
-            OrganizationUnitCatalogMapper.DisplayText, more: skip + result.Items.Count < result.TotalCount);
+        if (departments.Count == 0)
+        {
+            try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
+        }
+
+        var found = OrganizationUnitCatalogMapper.FilterTree(departments, term);
+        return CatalogSelect2Cache.Merge(departments, found, x => x.Id,
+            OrganizationUnitCatalogMapper.OptionText(departments), more: false);
     }
 
     private async Task<CatalogSelect2SearchResponse> SearchPositionsAsync(string term, int page)

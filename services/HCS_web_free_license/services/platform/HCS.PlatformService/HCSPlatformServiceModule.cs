@@ -2,11 +2,13 @@ using HCS.EntityFrameworkCore;
 using HCS.Permissions;
 using HCS.PlatformService.Filters;
 using HCS.PlatformService.Storage;
+using System.Net;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
+using Volo.Abp.AspNetCore.ExceptionHandling;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Volo.Abp.AspNetCore.Serilog;
@@ -92,6 +94,7 @@ public sealed class HCSPlatformServiceModule : AbpModule
         });
 
         context.Services.AddHealthChecks();
+        context.Services.AddHostedService<RolePermissionSyncHostedService>();
         context.Services.AddAbpSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo { Title = "HCS Platform API", Version = "v1" });
@@ -100,6 +103,9 @@ public sealed class HCSPlatformServiceModule : AbpModule
 
         Configure<AbpAspNetCoreMvcOptions>(options =>
             options.ConventionalControllers.Create(typeof(HCSApplicationModule).Assembly));
+
+        Configure<AbpExceptionHttpStatusCodeOptions>(options =>
+            options.Map(HCSDomainErrorCodes.RoleAssignedToUsers, HttpStatusCode.Conflict));
 
         context.Services.AddHttpContextAccessor();
 

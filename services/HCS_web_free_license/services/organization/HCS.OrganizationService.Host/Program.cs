@@ -1,5 +1,6 @@
 using Serilog;
 using Volo.Abp;
+using HCS.Logging;
 using HCS.OrganizationService.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +16,8 @@ public static class Program
             var builder = WebApplication.CreateBuilder(args);
             builder.Host.UseAutofac().UseSerilog((context, services, logger) => logger
                 .ReadFrom.Configuration(context.Configuration).ReadFrom.Services(services).Enrich.FromLogContext()
-                .WriteTo.Console());
+                .WriteTo.Console()
+                .WriteToHcsSeq(context.Configuration, HcsServiceLogCatalog.Applications.OrganizationService));
             await builder.AddApplicationAsync<HCSOrganizationServiceHostModule>();
             var app = builder.Build();
             await using (var scope = app.Services.CreateAsyncScope())

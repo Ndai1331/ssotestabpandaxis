@@ -9,6 +9,7 @@
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
 @inject IJSRuntime Js
+@inject SystemFeatureState Features
 @using Microsoft.AspNetCore.Components.Forms
 @using System.IO
 @implements IAsyncDisposable
@@ -65,6 +66,8 @@
                                 @L["Catalog:Delete"]
                             </button>
                         }
+                        @if (Features.AllowSigningFromDocuments)
+                        {
                         <AuthorizeView Policy="Documents.Workflow.Start">
                             <Authorized>
                                 <button class="btn btn-ghost" type="button" @onclick="OpenSubmitWorkflow">
@@ -73,6 +76,7 @@
                                 </button>
                             </Authorized>
                         </AuthorizeView>
+                        }
                     </div>
                 }
                 <div class="vb-foot">
@@ -190,6 +194,7 @@
                         @if (!IsCreate && document?.Files.Count > 0)
                         {
                             <div class="docs-table-wrap vb-file-list">
+                                <div class="docs-table-scroll">
                                 <table class="docs-table">
                                     <thead>
                                         <tr>
@@ -219,6 +224,7 @@
                                     }
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
                         }
                     </div>
@@ -397,6 +403,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        await Features.EnsureLoadedAsync();
         canCreateArchive = await AuthorizationService.IsGrantedAsync("Documents.Create");
         canUpdateDocument = await AuthorizationService.IsGrantedAsync("Documents.Update");
         if (!IsCreate && SourceType == 2)

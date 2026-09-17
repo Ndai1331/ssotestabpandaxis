@@ -54,8 +54,72 @@ public static class OrganizationUnitCatalogMapper
     public static string DisplayText(DepartmentCatalogDto department) =>
         string.IsNullOrWhiteSpace(department.Name) ? department.Code : department.Name;
 
+    public static string HierarchicalText(
+        DepartmentCatalogDto department,
+        IReadOnlyDictionary<Guid, DepartmentCatalogDto> byId,
+        Func<DepartmentCatalogDto, string>? textOf = null)
+    {
+        var depth = 0;
+        var current = department.ParentId;
+        while (current is { } parentId && byId.TryGetValue(parentId, out var parent) && depth < 16)
+        {
+            depth++;
+            current = parent.ParentId;
+        }
+
+        var label = (textOf ?? DisplayText)(department);
+        return depth == 0 ? label : string.Concat(Enumerable.Repeat("— ", depth)) + label;
+    }
+
+    public static Func<DepartmentCatalogDto, string> OptionText(IEnumerable<DepartmentCatalogDto> all)
+    {
+        var byId = all.ToDictionary(item => item.Id);
+        return item => HierarchicalText(item, byId);
+    }
+
+    public static List<DepartmentCatalogDto> FilterTree(IEnumerable<DepartmentCatalogDto> source, string? filter)
+    {
+        var ordered = InTreeOrder(source);
+        var term = SearchText.Normalize(filter);
+        return string.IsNullOrWhiteSpace(term)
+            ? ordered
+            : ordered.Where(item =>
+                    item.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    item.Code.Contains(term, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+    }
+
+    public static List<DepartmentCatalogDto> InTreeOrder(IEnumerable<DepartmentCatalogDto> source)
+    {
+        var items = source.ToList();
+        var byId = items.ToDictionary(item => item.Id);
+        var children = items.ToLookup(item => item.ParentId);
+        var result = new List<DepartmentCatalogDto>(items.Count);
+
+        void Walk(DepartmentCatalogDto node)
+        {
+            result.Add(node);
+            foreach (var child in children[node.Id]
+                .OrderBy(item => item.Code, StringComparer.Ordinal)
+                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
+            {
+                Walk(child);
+            }
+        }
+
+        foreach (var root in items
+            .Where(item => item.ParentId is null || !byId.ContainsKey(item.ParentId.Value))
+            .OrderBy(item => item.Code, StringComparer.Ordinal)
+            .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase))
+        {
+            Walk(root);
+        }
+
+        return result;
+    }
+
     public static UserDepartmentLookupDto ToUserDepartment(UserOrganizationUnitLookupDto row) =>
-        new(row.UserId, row.OrganizationUnitId, row.DisplayName);
+        new(row.UserId, row.OrganizationUnitId, row.DisplayName, DepartmentIds: row.OrganizationUnitIds);
 
     public static OrganizationPagedResponse<DepartmentCatalogDto> Search(
         IReadOnlyList<DepartmentCatalogDto> source,
@@ -63,13 +127,7 @@ public static class OrganizationUnitCatalogMapper
         int skipCount,
         int maxResultCount)
     {
-        var term = SearchText.Normalize(filter);
-        IReadOnlyList<DepartmentCatalogDto> filtered = string.IsNullOrWhiteSpace(term)
-            ? source
-            : source.Where(item =>
-                    item.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                    item.Code.Contains(term, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+        var filtered = FilterTree(source, filter);
         var skip = Math.Max(0, skipCount);
         var take = Math.Clamp(maxResultCount, 1, 100);
         return new(filtered.Count, filtered.Skip(skip).Take(take).ToList());

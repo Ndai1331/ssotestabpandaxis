@@ -8,6 +8,7 @@
 @inject DocumentClient Documents
 @inject OrganizationCatalogClient Catalog
 @inject NavigationManager Navigation
+@inject SystemFeatureState Features
 @implements IDisposable
 @using System.Threading
 @using HCS.Permissions
@@ -132,6 +133,7 @@
             </form>
 
             <div class="docs-table-wrap">
+                <div class="docs-table-scroll">
                 @if (isLoading)
                 {
                     <DocsEmpty Loading="true" />
@@ -195,6 +197,8 @@
                                                     }
                                                 </Authorized>
                                             </AuthorizeView>
+                                            @if (Features.AllowSigningFromDocuments)
+                                            {
                                             <AuthorizeView Policy="Documents.Workflow.Start">
                                                 <Authorized>
                                                     <button class="doc-action" type="button" title="@L["Work:SubmitWorkflow"]" aria-label="@L["Work:SubmitWorkflow"]" @onclick="() => OpenSubmit(item)" disabled="@IsMutating(item.Id)">
@@ -202,6 +206,7 @@
                                                     </button>
                                                 </Authorized>
                                             </AuthorizeView>
+                                            }
                                             @if (IsPersonal)
                                             {
                                                 <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)" disabled="@IsMutating(item.Id)">
@@ -253,6 +258,7 @@
                         </tbody>
                     </table>
                 }
+                </div>
                 <HcsPager TotalCount="totalCount" PageSize="pageSize" PageSizeId="docs-page-size"
                           CanPrev="CanPrev" CanNext="CanNext" Disabled="@isLoading"
                           FirstClicked="GoFirst" PrevClicked="GoPrev" NextClicked="GoNext" LastClicked="GoLast"
@@ -327,6 +333,7 @@
     protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
     protected override async Task OnParametersSetAsync()
     {
+        await Features.EnsureLoadedAsync();
         canManageArchive = await AuthorizationService.IsGrantedAsync(HCSPermissions.Documents.Create);
         await ReloadIfSourceChangedAsync(resetFilter: lastLoadedSource != int.MinValue);
     }

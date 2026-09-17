@@ -40,7 +40,9 @@ public partial class OrganizationCatalog
         await LoadDepartmentOptionsAsync();
 
         var normalizedTerm = CatalogSelect2Text.NormalizeSearch(term);
-        var options = (excludeEditingDepartment ? ParentDepartmentOptions : departmentOptions)
+        var byId = departmentOptions.ToDictionary(item => item.Id);
+        var options = OrganizationUnitCatalogMapper.InTreeOrder(
+                excludeEditingDepartment ? ParentDepartmentOptions : departmentOptions)
             .Where(item => normalizedTerm.Length == 0
                 || CatalogSelect2Text.NormalizeSearch(item.Code).Contains(normalizedTerm, StringComparison.Ordinal)
                 || CatalogSelect2Text.NormalizeSearch(item.Name).Contains(normalizedTerm, StringComparison.Ordinal))
@@ -50,7 +52,8 @@ public partial class OrganizationCatalog
             departmentOptions,
             options,
             item => item.Id,
-            item => CatalogSelect2Text.CodeName(item.Code, item.Name),
+            item => OrganizationUnitCatalogMapper.HierarchicalText(
+                item, byId, value => CatalogSelect2Text.CodeName(value.Code, value.Name)),
             more: false);
     }
 

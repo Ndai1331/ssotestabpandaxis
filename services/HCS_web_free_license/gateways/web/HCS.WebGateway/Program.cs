@@ -1,3 +1,4 @@
+using HCS.Logging;
 using Serilog;
 using Volo.Abp;
 
@@ -27,7 +28,8 @@ public static class Program
                 .UseAutofac()
                 .UseSerilog((context, services, configuration) => configuration
                     .ReadFrom.Configuration(context.Configuration)
-                    .ReadFrom.Services(services));
+                    .ReadFrom.Services(services)
+                    .WriteToHcsSeq(context.Configuration, "HCS.WebGateway"));
 
             await builder.AddApplicationAsync<HCSWebGatewayModule>();
 

@@ -36,6 +36,7 @@ internal sealed class IdentityAdminRoleDto
     public bool IsDefault { get; set; }
     public bool IsStatic { get; set; }
     public bool IsPublic { get; set; }
+    public string ConcurrencyStamp { get; set; } = string.Empty;
 }
 
 internal sealed class IdentityAdminUserRoleLookupDto
@@ -60,7 +61,7 @@ internal sealed class IdentityAdminUserForm
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public string PositionId { get; set; } = string.Empty;
-    public string DepartmentId { get; set; } = string.Empty;
+    public HashSet<Guid> DepartmentIds { get; } = [];
     public bool IsActive { get; set; } = true;
     public bool LockoutEnabled { get; set; } = true;
     public bool EmailConfirmed { get; set; }
@@ -108,29 +109,46 @@ internal sealed class IdentityAdminApiException(System.Net.HttpStatusCode status
     public System.Net.HttpStatusCode StatusCode { get; } = statusCode;
     public string? ResponseBody { get; } = responseBody;
 
+    public string? ErrorCode => ReadErrorProperty("code");
+
     public string? UserMessage
     {
         get
         {
-            if (string.IsNullOrWhiteSpace(ResponseBody)) return null;
-            try
+            var text = ReadErrorProperty("message");
+            if (string.IsNullOrWhiteSpace(text))
             {
-                using var document = JsonDocument.Parse(ResponseBody);
-                var root = document.RootElement;
-                if (root.TryGetProperty("error", out var error) &&
-                    error.TryGetProperty("message", out var message) &&
-                    message.GetString() is { Length: > 0 } text)
-                {
-                    return error.TryGetProperty("details", out var details) && details.GetString() is { Length: > 0 } extra
-                        ? $"{text} {extra}"
-                        : text;
-                }
-            }
-            catch (JsonException)
-            {
+                return null;
             }
 
+            return ReadErrorProperty("details") is { Length: > 0 } extra
+                ? $"{text} {extra}"
+                : text;
+        }
+    }
+
+    private string? ReadErrorProperty(string name)
+    {
+        if (string.IsNullOrWhiteSpace(ResponseBody))
+        {
             return null;
         }
+
+        try
+        {
+            using var document = JsonDocument.Parse(ResponseBody);
+            var root = document.RootElement;
+            if (root.TryGetProperty("error", out var error) &&
+                error.TryGetProperty(name, out var value) &&
+                value.GetString() is { Length: > 0 } text)
+            {
+                return text;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return null;
     }
 }

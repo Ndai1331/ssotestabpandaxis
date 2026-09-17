@@ -32,6 +32,8 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
         {
             var existingFileIds = document.Files.Select(x => x.Id).ToHashSet();
             var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
+            if (document.WorkflowFileId is null && WorkflowFileSelection.Resolve(document) is { } workflowFileId)
+                document.SetWorkflowFile(workflowFileId);
             var file = document.AddFile(fileId, fileName, normalizedType, bytes.Length, Sha256Hex(bytes), blobName, userId, DateTime.UtcNow);
             try
             {

@@ -84,6 +84,7 @@
     </div>
 
     <div class="docs-table-wrap">
+            <div class="docs-table-scroll">
             @if (isLoading)
             {
                 <DocsEmpty Loading="true" />
@@ -109,7 +110,7 @@
                     <tbody>
                     @foreach (var item in PageItems)
                     {
-                        <tr @key="item.Task.Id">
+                        <tr @key="item.Instance.Id">
                             <td class="col-actions">
                                 <div class="doc-actions">
                                     <button class="doc-action" type="button" title="@L["Work:WorkflowInfo"]" aria-label="@L["Work:WorkflowInfo"]" @onclick="() => OpenInfo(item)">
@@ -155,6 +156,7 @@
                     </tbody>
                 </table>
             }
+            </div>
             <HcsPager TotalCount="VisibleQueue.Count" PageSize="pageSize" PageSizeId="sign-page-size"
                       CanPrev="CanPrevPage" CanNext="CanNextPage" Disabled="@isLoading"
                       FirstClicked="GoFirstPage" PrevClicked="GoPrevPage" NextClicked="GoNextPage" LastClicked="GoLastPage"
@@ -464,7 +466,12 @@
     private bool signatureOptionsLoadFailed, credentialsLoadFailed, isLoadingSigningOptions;
 
     private int CountAll => queue.Count;
-    private int CountToMe => currentUserId is { } me ? queue.Count(x => x.Task.AssigneeUserId == me) : 0;
+    private int CountToMe => queue.Count(IsSentToMe);
+    private bool IsSentToMe(SigningQueueItem item) => currentUserId is { } me
+        && item.Instance.Tasks.Any(task => (task.AssigneeUserId == me || task.DecidedBy == me)
+            && item.Definition.Steps.Any(step =>
+                string.Equals(step.Code, task.StepCode, StringComparison.OrdinalIgnoreCase)
+                && step.Type is "PROCESS" or "SIGN"));
     private int CountByMe => currentUserId is not null ? queue.Count(IsSentBy) : 0;
 
     private string SignatureTypeLabel(UserSignatureType type) => type switch
@@ -512,7 +519,7 @@
             return false;
         if (departmentId is { } dept && DepartmentId(item) != dept)
             return false;
-        if (inboxFilter == "toMe" && currentUserId is { } me && item.Task.AssigneeUserId != me)
+        if (inboxFilter == "toMe" && !IsSentToMe(item))
             return false;
         return inboxFilter != "byMe" || IsSentBy(item);
     }
@@ -1131,10 +1138,9 @@
     }
     private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
     {
-        var found = departments.Where(x => string.IsNullOrWhiteSpace(term)
-            || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
-            || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
-        return Task.FromResult(CatalogSelect2Cache.Merge(departments, found, x => x.Id, OrganizationUnitCatalogMapper.DisplayText, false));
+        var found = OrganizationUnitCatalogMapper.FilterTree(departments, term);
+        return Task.FromResult(CatalogSelect2Cache.Merge(departments, found, x => x.Id,
+            OrganizationUnitCatalogMapper.OptionText(departments), false));
     }
 
     private sealed record WorkflowHistoryEntry(string Kind, string? StepName, Guid? ActorUserId, DateTime OccurredAt, string? Detail);

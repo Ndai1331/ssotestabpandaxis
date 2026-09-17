@@ -15,9 +15,11 @@ public class LegacySigningReportSettingsAppService(
 {
     public async Task<LegacySigningReportSettingsDto> GetAsync()
     {
+        var enabled = await settingManager.GetOrNullGlobalAsync(HCSSettings.LegacySigningReportEnabled);
         var value = await settingManager.GetOrNullGlobalAsync(HCSSettings.LegacySigningReportSqlServerConnectionString);
         return new LegacySigningReportSettingsDto
         {
+            Enabled = HCSSettings.IsEnabledOrDefault(enabled),
             HasConnectionString = !string.IsNullOrWhiteSpace(value),
             ConnectionString = value
         };
@@ -25,10 +27,21 @@ public class LegacySigningReportSettingsAppService(
 
     public async Task UpdateAsync(UpdateLegacySigningReportSettingsDto input)
     {
-        Check.NotNullOrWhiteSpace(input.ConnectionString, nameof(input.ConnectionString));
         await settingManager.SetGlobalAsync(
-            HCSSettings.LegacySigningReportSqlServerConnectionString,
-            input.ConnectionString.Trim());
+            HCSSettings.LegacySigningReportEnabled,
+            input.Enabled ? "true" : "false");
+
+        if (input.Enabled)
+        {
+            Check.NotNullOrWhiteSpace(input.ConnectionString, nameof(input.ConnectionString));
+        }
+
+        if (!string.IsNullOrWhiteSpace(input.ConnectionString))
+        {
+            await settingManager.SetGlobalAsync(
+                HCSSettings.LegacySigningReportSqlServerConnectionString,
+                input.ConnectionString.Trim());
+        }
     }
 
     public async Task<LegacySigningReportConnectionTestResultDto> TestAsync(UpdateLegacySigningReportSettingsDto input)

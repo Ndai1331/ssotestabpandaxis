@@ -35,6 +35,8 @@ x-hcs-image: &hcs-image
     Minio__BucketName: ${HCS_MINIO_ROOT_PASSWORD:-hcsbucket}
     Minio__WithSSL: "false"
     Minio__CreateBucketIfNotExists: "true"
+    Seq__ServerUrl: http://seq
+    Seq__ApiKey: ${HCS_SEQ_API_KEY:-}
   depends_on:
     postgres: { condition: service_healthy }
     redis: { condition: service_healthy }
@@ -79,6 +81,21 @@ services:
       MINIO_ROOT_PASSWORD: ${HCS_MINIO_ROOT_PASSWORD}
     volumes: ["minio-data:/data"]
     healthcheck: { test: ["CMD", "mc", "ready", "local"], interval: 5s, timeout: 5s, retries: 30 }
+
+  seq:
+    image: datalust/seq:2024.3
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
+      SEQ_API_CANONICALURI: http://seq
+    volumes:
+      - seq-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
   db-migrator:
     <<: *hcs-image
@@ -230,6 +247,7 @@ volumes:
   redis-data:
   rabbitmq-data:
   minio-data:
+  seq-data:
   caddy-data:
   caddy-config:
   document-data-protection:

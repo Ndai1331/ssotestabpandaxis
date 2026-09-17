@@ -152,6 +152,56 @@ public sealed class IdentityAdminClientTests
     }
 
     [Fact]
+    public async Task Sends_update_role_with_name_flags_and_concurrency_stamp()
+    {
+        var roleId = Guid.NewGuid();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new { id = roleId, name = "operator", isDefault = false, isPublic = true, concurrencyStamp = "next" })
+        });
+        var client = CreateClient(handler);
+
+        await client.UpdateRoleAsync(roleId, " operator ", false, true, "stamp");
+
+        Assert.Equal(HttpMethod.Put, handler.Request!.Method);
+        Assert.Equal($"/api/identity/roles/{roleId:D}", handler.Request.RequestUri!.PathAndQuery);
+        using var json = JsonDocument.Parse(handler.RequestBody!);
+        Assert.Equal("operator", json.RootElement.GetProperty("name").GetString());
+        Assert.False(json.RootElement.GetProperty("isDefault").GetBoolean());
+        Assert.True(json.RootElement.GetProperty("isPublic").GetBoolean());
+        Assert.Equal("stamp", json.RootElement.GetProperty("concurrencyStamp").GetString());
+    }
+
+    [Fact]
+    public async Task Reloads_role_stamp_when_update_is_called_without_one()
+    {
+        var roleId = Guid.NewGuid();
+        var handler = new RecordingHandler(request =>
+        {
+            if (request.Method == HttpMethod.Get)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(new { id = roleId, name = "operator", concurrencyStamp = "loaded" })
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new { id = roleId, name = "lead", concurrencyStamp = "next" })
+            };
+        });
+        var client = CreateClient(handler);
+
+        var updated = await client.UpdateRoleAsync(roleId, "lead", false, false, null);
+
+        Assert.Equal("lead", updated.Name);
+        Assert.Equal($"/api/identity/roles/{roleId:D}", handler.Request!.RequestUri!.PathAndQuery);
+        using var json = JsonDocument.Parse(handler.RequestBody!);
+        Assert.Equal("loaded", json.RootElement.GetProperty("concurrencyStamp").GetString());
+    }
+
+    [Fact]
     public async Task Uses_role_provider_and_escapes_role_key_for_permissions()
     {
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
@@ -249,6 +299,17 @@ public sealed class IdentityAdminClientTests
 
         Assert.Equal(HttpStatusCode.Conflict, exception.StatusCode);
         Assert.Equal("role in use", exception.ResponseBody);
+    }
+
+    [Fact]
+    public void Reads_abp_error_code_from_conflict_body()
+    {
+        var exception = new IdentityAdminApiException(
+            HttpStatusCode.Forbidden,
+            """{"error":{"code":"HCS:RoleAssignedToUsers","message":"assigned"}}""");
+
+        Assert.Equal("HCS:RoleAssignedToUsers", exception.ErrorCode);
+        Assert.Equal("assigned", exception.UserMessage);
     }
 
     private static IdentityAdminClient CreateClient(HttpMessageHandler handler)

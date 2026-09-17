@@ -116,7 +116,7 @@
 
 .hcs-app-shell .hcs-touch-target,
 .hcs-app-shell .btn,
-.hcs-app-shell button:not(.week-cell):not(.hcs-ws-dn):not(.tree-toggle):not(.icon-btn):not(.cal-type):not(.cal-event):not(.queue-tab):not(.doc-action):not(.doc-action-label):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear):not(.doc-title-open):not(.post-actions-meta-btn):not(.post-action):not(.comment-meta-btn):not(.comment-react-open):not(.react-choice),
+.hcs-app-shell button:not(.week-cell):not(.hcs-ws-dn):not(.tree-toggle):not(.icon-btn):not(.cal-type):not(.cal-event):not(.queue-tab):not(.doc-action):not(.doc-action-label):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear):not(.doc-title-open):not(.post-actions-meta-btn):not(.post-action):not(.comment-meta-btn):not(.comment-react-open):not(.react-choice):not(.hcs-ws-doc-name):not(.hcs-ws-proj-name):not(.hcs-ws-task-name):not(.hcs-ws-ev-name):not(.hcs-ws-project__task-name):not(.admin-role-option__select):not(.admin-role-option__more-btn),
 .hcs-app-shell [role="button"]:not(.week-cell):not(.hcs-ws-dn):not(.icon-btn):not(.queue-tab):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear):not(.doc-title-open):not(.post-actions-meta-btn):not(.post-action) {
     min-height: var(--hcs-touch-target);
 }
@@ -196,12 +196,21 @@
 .hcs-table-wrap {
     max-width: 100%;
     min-width: 0;
+    overflow: hidden;
+    overscroll-behavior-inline: contain;
+}
+
+.hcs-table-wrap .docs-table-scroll,
+.hcs-table-wrap--scroll {
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
     -webkit-overflow-scrolling: touch;
 }
 
-.hcs-table-wrap--scroll {
+.hcs-table-wrap--scroll,
+.docs-table-scroll {
     scrollbar-color: #9aafbc transparent;
     scrollbar-width: thin;
 }
@@ -448,11 +457,19 @@
     min-height: var(--hcs-touch-target);
 }
 
-.hcs-app-shell :where(.hcs-table-wrap, .table-responsive, .hcs-users-grid-card .card-body) {
+.hcs-app-shell .hcs-table-wrap {
+    overflow: hidden;
+}
+
+.hcs-app-shell :where(.table-responsive, .hcs-users-grid-card .card-body, .hcs-table-wrap .docs-table-scroll, .hcs-table-wrap--scroll) {
     max-width: 100%;
     min-width: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+.hcs-app-shell :where(.card, .hcs-language-grid-card, .hcs-language-text-grid-card, .hcs-ou-members-card, .hcs-data-table):has(.table-responsive) {
+    overflow: hidden;
 }
 
 .hcs-app-shell :where(.hcs-catalog-grid, .hcs-users-grid) {
@@ -714,7 +731,7 @@ body:has(.hcs-app-shell) .datepicker-day-outside:not(.datepicker-day-selected) {
 .hcs-rating-star:disabled:not(.is-active) { opacity: .55; }
 .hcs-rating-toolbar { padding: var(--hcs-space-4); }
 .hcs-rating-toolbar__fields { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--hcs-space-3); }
-.hcs-rating-table-card { overflow: hidden; }
+.hcs-rating-panel, .hcs-rating-table-card { overflow: hidden; }
 .hcs-rating-table-card table { min-width: 760px; }
 .hcs-rating-table-card th { background: var(--hcs-color-surface-muted); color: var(--hcs-color-muted); font-size: var(--hcs-text-xs); text-transform: uppercase; }
 .hcs-rating-backlink { display: inline-flex; align-items: center; margin-bottom: var(--hcs-space-2); color: var(--hcs-color-primary-strong); font-size: var(--hcs-text-sm); font-weight: var(--hcs-font-weight-semibold); text-decoration: none; }
@@ -1097,6 +1114,23 @@ body:has(.hcs-app-shell) .btn.hcs-modal-cancel:focus-visible,
     border-color: var(--hcs-color-primary);
     box-shadow: var(--hcs-focus-ring);
     color: var(--hcs-color-primary-strong);
+}
+
+body:has(.hcs-app-shell) .modal .btn.hcs-calendar-edit {
+    background-color: var(--hcs-color-surface, #fff) !important;
+    border-color: #2563eb !important;
+    color: #1d4ed8 !important;
+    gap: .5rem;
+}
+
+body:has(.hcs-app-shell) .modal .btn.hcs-calendar-edit:hover:not(:disabled) {
+    background-color: #eff6ff !important;
+    border-color: #1d4ed8 !important;
+}
+
+body:has(.hcs-app-shell) .modal .btn.hcs-calendar-edit:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
 }
 
 /* Blazorise 2.3 days are buttons (.datepicker-day). Hover must not use
@@ -1722,6 +1756,151 @@ body:has(.hcs-app-shell) .select2-container--disabled .select2-selection {
 body:has(.hcs-app-shell) :is(.form-control, .form-select):is(.is-invalid, .invalid, [aria-invalid="true"]),
 body:has(.hcs-app-shell) select:is(.is-invalid, .invalid, [aria-invalid="true"]) + .select2-container .select2-selection {
     border-color: var(--hcs-color-danger) !important;
+}
+
+/* Multi-user fields use the same user layout as single-user fields, but grow
+   with their selections instead of letting Select2's floated chips overflow. */
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem;
+    height: auto !important;
+    min-height: 40px !important;
+    padding: 4px 3.5rem 4px 16px !important;
+    box-sizing: border-box;
+    box-shadow: var(--shadow-sm) !important;
+    position: relative;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple::after {
+    content: "";
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    pointer-events: none;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple .select2-selection__placeholder {
+    color: var(--hcs-color-ink);
+    line-height: 30px;
+    padding: 0;
+    margin: 0;
+    float: none;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple .select2-selection__rendered {
+    display: contents;
+    padding: 0 !important;
+    margin: 0;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection__choice {
+    display: inline-flex;
+    align-items: center;
+    float: none;
+    max-width: 100%;
+    margin: 0 !important;
+    padding: 0 .25rem 0 0 !important;
+    min-height: 0 !important;
+    height: 30px;
+    border: 0 !important;
+    border-radius: var(--hcs-radius-sm, 8px);
+    background: transparent !important;
+    color: var(--hcs-color-ink);
+    line-height: 1.5;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection__choice__display {
+    min-width: 0;
+    padding: 0;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection__choice__remove {
+    position: static;
+    order: 1;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 28px;
+    min-height: 0 !important;
+    padding: 0;
+    margin: 0 .25rem 0 0;
+    border: 0;
+    background: transparent;
+    color: var(--hcs-color-muted);
+    font: inherit;
+    line-height: 28px;
+    text-align: center;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-search--inline {
+    flex: 1 1 8rem;
+    float: none;
+    min-width: 0;
+    max-width: 100%;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-search--inline .select2-search__field {
+    width: 100% !important;
+    min-height: 28px !important;
+    height: 28px !important;
+    margin: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    background: transparent !important;
+    font: inherit;
+    line-height: 28px;
+    vertical-align: middle;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple:focus-within {
+    border-color: var(--hcs-input-border-focus) !important;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple .select2-selection__clear {
+    position: absolute;
+    right: 2.25rem;
+    top: 8px;
+    width: 24px !important;
+    height: 24px !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--hcs-color-muted);
+    line-height: 1 !important;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple .hcs-user-option {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple .hcs-user-option__avatar {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+}
+
+body:has(.hcs-app-shell) select.hcs-user-select2 + .select2-container .select2-selection--multiple :is(.hcs-user-option__copy, .hcs-user-option__name) {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .hcs-app-shell select.hcs-user-select2 + .select2-container .hcs-user-option {

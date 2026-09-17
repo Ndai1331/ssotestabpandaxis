@@ -49,6 +49,39 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
             isPublic
         }, cancellationToken);
 
+    public Task<IdentityAdminRoleDto> GetRoleAsync(Guid id, CancellationToken cancellationToken = default) =>
+        GetAsync<IdentityAdminRoleDto>($"api/identity/roles/{id:D}", cancellationToken);
+
+    public async Task<IdentityAdminRoleDto> UpdateRoleAsync(
+        Guid id,
+        string name,
+        bool isDefault,
+        bool isPublic,
+        string? concurrencyStamp,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(concurrencyStamp))
+        {
+            var current = await GetRoleAsync(id, cancellationToken);
+            concurrencyStamp = current.ConcurrencyStamp;
+        }
+
+        var updated = await SendAsync<IdentityAdminRoleDto>(HttpMethod.Put, $"api/identity/roles/{id:D}", new
+        {
+            name = name.Trim(),
+            isDefault,
+            isPublic,
+            concurrencyStamp
+        }, cancellationToken);
+
+        if (updated is null || updated.Id == Guid.Empty)
+        {
+            return await GetRoleAsync(id, cancellationToken);
+        }
+
+        return updated;
+    }
+
     public async Task<List<IdentityAdminRoleDto>> GetAssignableRolesAsync(CancellationToken cancellationToken = default)
     {
         var result = await GetAsync<ListResult<IdentityAdminRoleDto>>(

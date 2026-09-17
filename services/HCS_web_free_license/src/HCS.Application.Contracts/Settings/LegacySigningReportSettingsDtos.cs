@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 
@@ -13,14 +12,15 @@ public interface ILegacySigningReportSettingsAppService : IApplicationService
 
 public sealed class LegacySigningReportSettingsDto
 {
+    public bool Enabled { get; set; } = true;
     public bool HasConnectionString { get; set; }
     public string? ConnectionString { get; set; }
 }
 
 public sealed class UpdateLegacySigningReportSettingsDto
 {
-    [Required]
-    public string ConnectionString { get; set; } = string.Empty;
+    public bool Enabled { get; set; } = true;
+    public string? ConnectionString { get; set; }
 }
 
 public sealed class LegacySigningReportConnectionTestResultDto

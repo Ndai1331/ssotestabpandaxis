@@ -24,7 +24,7 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
                         @L["Catalog:Refresh"]
                     </button>
-                    <button class="btn btn-primary" type="button" @onclick="OpenCreateRoleAsync" disabled="@isCreatingRole">
+                    <button class="btn btn-primary" type="button" @onclick="OpenCreateRoleAsync" disabled="@isSavingRole">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         @L["Roles:Create"]
                     </button>
@@ -62,23 +62,28 @@
                         <div class="admin-roles-list">
                             @foreach (var role in roles)
                             {
-                                <button type="button" class="admin-role-option @(selectedRoleName == role.Name ? "is-active" : null)" @onclick="@(() => LoadPermissionsAsync(role.Name))">
-                                    <span class="admin-role-option__name">@role.Name</span>
-                                    <span class="admin-role-option__tags">
-                                        @if (role.IsStatic)
+                                <div class="admin-role-option @(selectedRoleName == role.Name ? "is-active" : null)">
+                                    <button type="button" class="admin-role-option__select" @onclick="@(() => LoadPermissionsAsync(role.Name))">
+                                        <span class="admin-role-option__name">@role.Name</span>
+                                        @if (role.IsStatic || role.IsDefault || role.IsPublic)
                                         {
-                                            <span class="badge">@L["Roles:Static"]</span>
+                                            <span class="admin-role-option__tags">
+                                                @if (role.IsStatic)
+                                                {
+                                                    <span class="badge">@L["Roles:Static"]</span>
+                                                }
+                                                @if (role.IsDefault)
+                                                {
+                                                    <span class="badge badge-info">@L["Roles:Default"]</span>
+                                                }
+                                                @if (role.IsPublic)
+                                                {
+                                                    <span class="badge badge-muted">@L["Roles:Public"]</span>
+                                                }
+                                            </span>
                                         }
-                                        @if (role.IsDefault)
-                                        {
-                                            <span class="badge badge-info">@L["Roles:Default"]</span>
-                                        }
-                                        @if (role.IsPublic)
-                                        {
-                                            <span class="badge badge-muted">@L["Roles:Public"]</span>
-                                        }
-                                    </span>
-                                </button>
+                                    </button>
+                                </div>
                             }
                         </div>
                     </aside>
@@ -89,6 +94,25 @@
                                 <h2>@L["Roles:PermissionsTitle"]</h2>
                                 <p>@selectedRoleName</p>
                             </div>
+                            @if (SelectedRole is { } selectedRole)
+                            {
+                                <div class="admin-roles-perms__actions">
+                                    @if (CanEdit(selectedRole))
+                                    {
+                                        <button class="btn btn-outline" type="button" @onclick="() => OpenEditRoleAsync(selectedRole)" disabled="@(isSavingRole || isDeleting)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                                            @L["Roles:Edit"]
+                                        </button>
+                                    }
+                                    @if (CanDelete(selectedRole))
+                                    {
+                                        <button class="btn btn-danger" type="button" @onclick="() => DeleteRoleAsync(selectedRole)" disabled="@(isDeleting || isSaving || isLoadingPermissions || isSavingRole)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                            @L["Roles:Delete"]
+                                        </button>
+                                    }
+                                </div>
+                            }
                         </header>
                         <div class="admin-roles-perms__body">
                             @if (isLoadingPermissions)
@@ -256,9 +280,9 @@
                             }
                         </div>
                         <footer class="admin-roles-perms__footer">
-                            @if (CanDeleteSelectedRole)
+                            @if (SelectedRole is { } lockedRole && !CanDelete(lockedRole))
                             {
-                                <button class="btn btn-danger" type="button" @onclick="DeleteSelectedRoleAsync" disabled="@(isDeleting || isSaving || isLoadingPermissions)">@L["Roles:Delete"]</button>
+                                <p class="admin-roles-hint">@L["Roles:StaticLocked"]</p>
                             }
                             <button class="btn btn-primary" type="button" @onclick="SavePermissionsAsync" disabled="@(isSaving || isDeleting || isLoadingPermissions || string.IsNullOrWhiteSpace(selectedRoleName))">@L["Roles:SavePermissions"]</button>
                         </footer>
@@ -272,29 +296,33 @@
     </NotAuthorized>
 </AuthorizeView>
 
-<Modal @ref="createRoleModal">
+<Modal @ref="roleModal">
     <ModalContent Centered Class="hcs-catalog-modal">
         <ModalHeader Class="hcs-catalog-modal__header">
-            <ModalTitle>@L["Roles:CreateTitle"]</ModalTitle>
-            <CloseButton Clicked="CloseCreateRoleAsync" />
+            <ModalTitle>@(editingRole is null ? L["Roles:CreateTitle"] : L["Roles:EditTitle"])</ModalTitle>
+            <CloseButton Clicked="CloseRoleModalAsync" />
         </ModalHeader>
         <ModalBody Class="hcs-catalog-modal__body">
-            @if (!string.IsNullOrWhiteSpace(createRoleErrorMessage))
+            @if (!string.IsNullOrWhiteSpace(roleFormErrorMessage))
             {
-                <div class="hcs-admin-alert" role="alert">@createRoleErrorMessage</div>
+                <div class="hcs-admin-alert" role="alert">@roleFormErrorMessage</div>
             }
             <Field>
                 <FieldLabel>@L["Roles:Name"] *</FieldLabel>
-                <HcsIsolatedTextInput @bind-Value="roleForm.Name" Name="hcsRoleName" Autofocus="true" Placeholder='@L["Roles:NamePlaceholder"].Value' />
+                <HcsIsolatedTextInput @bind-Value="roleForm.Name" Name="hcsRoleName" Autofocus="true" Disabled="@(!CanRenameForm)" Placeholder='@L["Roles:NamePlaceholder"].Value' />
             </Field>
+            @if (!CanRenameForm && editingRole is not null)
+            {
+                <p class="admin-roles-hint">@L["Roles:StaticLocked"]</p>
+            }
             <div class="admin-role-create-flags">
                 <Check TValue="bool" @bind-Value="roleForm.IsDefault">@L["Roles:Default"]</Check>
                 <Check TValue="bool" @bind-Value="roleForm.IsPublic">@L["Roles:Public"]</Check>
             </div>
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
-            <button class="btn btn-outline" type="button" @onclick="CloseCreateRoleAsync">@L["Roles:Cancel"]</button>
-            <button class="btn btn-primary" type="button" @onclick="CreateRoleAsync" disabled="@isCreatingRole">@L["Roles:CreateSubmit"]</button>
+            <button class="btn btn-outline" type="button" @onclick="CloseRoleModalAsync">@L["Roles:Cancel"]</button>
+            <button class="btn btn-primary" type="button" @onclick="SaveRoleAsync" disabled="@isSavingRole">@(editingRole is null ? L["Roles:CreateSubmit"] : L["Roles:Save"])</button>
         </ModalFooter>
     </ModalContent>
 </Modal>
@@ -302,26 +330,27 @@
 @code {
     private readonly List<IdentityAdminRoleDto> roles = [];
     private readonly List<IdentityAdminPermissionGroup> permissionGroups = [];
-    private Modal? createRoleModal;
+    private Modal? roleModal;
     private IdentityAdminRoleCreateForm roleForm = new();
+    private IdentityAdminRoleDto? editingRole;
     private string? selectedRoleName;
     private string? selectedPermissionGroup;
     private string? permissionFilter;
     private string? errorMessage;
     private string? permissionErrorMessage;
-    private string? createRoleErrorMessage;
+    private string? roleFormErrorMessage;
     private bool sessionExpired;
     private bool permissionSessionExpired;
     private bool isLoading;
     private bool isLoadingPermissions;
-    private bool isCreatingRole;
+    private bool isSavingRole;
     private bool isSaving;
     private bool isDeleting;
 
     private IdentityAdminRoleDto? SelectedRole =>
         roles.FirstOrDefault(role => string.Equals(role.Name, selectedRoleName, StringComparison.OrdinalIgnoreCase));
 
-    private bool CanDeleteSelectedRole => SelectedRole is { } role && CanDelete(role);
+    private bool CanRenameForm => editingRole is null || CanRename(editingRole);
 
     private IReadOnlyList<PermissionFeatureRow> VisibleFeatures => GetVisibleFeatures();
 
@@ -334,8 +363,14 @@
     private IdentityAdminPermissionGroup? SelectedPermissionGroup =>
         permissionGroups.FirstOrDefault(group => group.Name == selectedPermissionGroup);
 
-    private static bool CanDelete(IdentityAdminRoleDto role) =>
-        !role.IsStatic && !string.Equals(role.Name, "admin", StringComparison.OrdinalIgnoreCase);
+    private static bool IsProtectedAdmin(IdentityAdminRoleDto role) =>
+        string.Equals(role.Name, "admin", StringComparison.OrdinalIgnoreCase);
+
+    private static bool CanEdit(IdentityAdminRoleDto role) => !IsProtectedAdmin(role);
+
+    private static bool CanRename(IdentityAdminRoleDto role) => CanEdit(role);
+
+    private static bool CanDelete(IdentityAdminRoleDto role) => CanEdit(role) && !role.IsStatic;
 
     private bool AllPermissionsGranted
     {
@@ -571,28 +606,62 @@
 
     private async Task OpenCreateRoleAsync()
     {
+        editingRole = null;
         roleForm = new IdentityAdminRoleCreateForm();
-        createRoleErrorMessage = null;
-        if (createRoleModal is not null)
+        roleFormErrorMessage = null;
+        if (roleModal is not null)
         {
-            await createRoleModal.Show();
+            await roleModal.Show();
         }
     }
 
-    private async Task CloseCreateRoleAsync()
+    private async Task OpenEditRoleAsync(IdentityAdminRoleDto role)
     {
-        if (createRoleModal is not null)
+        if (!CanEdit(role))
         {
-            await createRoleModal.Hide();
+            return;
         }
 
+        editingRole = role;
+        roleForm = new IdentityAdminRoleCreateForm
+        {
+            Name = role.Name,
+            IsDefault = role.IsDefault,
+            IsPublic = role.IsPublic
+        };
+        roleFormErrorMessage = null;
+        if (roleModal is not null)
+        {
+            await roleModal.Show();
+        }
+    }
+
+    private async Task CloseRoleModalAsync()
+    {
+        if (roleModal is not null)
+        {
+            await roleModal.Hide();
+        }
+
+        editingRole = null;
         roleForm = new IdentityAdminRoleCreateForm();
-        createRoleErrorMessage = null;
+        roleFormErrorMessage = null;
+    }
+
+    private async Task SaveRoleAsync()
+    {
+        if (editingRole is null)
+        {
+            await CreateRoleAsync();
+            return;
+        }
+
+        await UpdateRoleAsync(editingRole);
     }
 
     private async Task CreateRoleAsync()
     {
-        if (isCreatingRole)
+        if (isSavingRole)
         {
             return;
         }
@@ -600,16 +669,16 @@
         var roleName = roleForm.Name.Trim();
         if (string.IsNullOrWhiteSpace(roleName))
         {
-            createRoleErrorMessage = L["Roles:NameRequired"].Value;
+            roleFormErrorMessage = L["Roles:NameRequired"].Value;
             return;
         }
 
-        isCreatingRole = true;
-        createRoleErrorMessage = null;
+        isSavingRole = true;
+        roleFormErrorMessage = null;
         try
         {
             var created = await IdentityClient.CreateRoleAsync(roleName, roleForm.IsDefault, roleForm.IsPublic);
-            await CloseCreateRoleAsync();
+            await CloseRoleModalAsync();
             await UiMessageService.Success(L["Roles:Created"].Value);
             await LoadRolesAsync();
             if (roles.FirstOrDefault(role => role.Name == created.Name) is { } createdRole)
@@ -619,24 +688,68 @@
         }
         catch (IdentityAdminApiException exception)
         {
-            createRoleErrorMessage = FriendlyApiError(exception, "Roles:CreateError");
-            await UiMessageService.Error(createRoleErrorMessage);
+            roleFormErrorMessage = FriendlyApiError(exception, "Roles:CreateError");
+            await UiMessageService.Error(roleFormErrorMessage);
         }
         catch (Exception)
         {
-            createRoleErrorMessage = L["Roles:CreateError"].Value;
-            await UiMessageService.Error(createRoleErrorMessage);
+            roleFormErrorMessage = L["Roles:CreateError"].Value;
+            await UiMessageService.Error(roleFormErrorMessage);
         }
         finally
         {
-            isCreatingRole = false;
+            isSavingRole = false;
         }
     }
 
-    private async Task DeleteSelectedRoleAsync()
+    private async Task UpdateRoleAsync(IdentityAdminRoleDto role)
     {
-        var role = SelectedRole;
-        if (role is null || !CanDelete(role) || isDeleting)
+        if (isSavingRole || !CanEdit(role))
+        {
+            return;
+        }
+
+        var roleName = CanRename(role) ? roleForm.Name.Trim() : role.Name;
+        if (string.IsNullOrWhiteSpace(roleName))
+        {
+            roleFormErrorMessage = L["Roles:NameRequired"].Value;
+            return;
+        }
+
+        isSavingRole = true;
+        roleFormErrorMessage = null;
+        try
+        {
+            var updated = await IdentityClient.UpdateRoleAsync(
+                role.Id,
+                roleName,
+                roleForm.IsDefault,
+                roleForm.IsPublic,
+                role.ConcurrencyStamp);
+            await CloseRoleModalAsync();
+            await UiMessageService.Success(L["Roles:Updated"].Value);
+            selectedRoleName = updated.Name;
+            await LoadRolesAsync();
+        }
+        catch (IdentityAdminApiException exception)
+        {
+            roleFormErrorMessage = FriendlyApiError(exception, "Roles:UpdateError");
+            await UiMessageService.Error(roleFormErrorMessage);
+        }
+        catch (Exception)
+        {
+            roleFormErrorMessage = L["Roles:UpdateError"].Value;
+            await UiMessageService.Error(roleFormErrorMessage);
+        }
+        finally
+        {
+            isSavingRole = false;
+        }
+    }
+
+    private async Task DeleteRoleAsync(IdentityAdminRoleDto role)
+    {
+        if (!CanDelete(role) || isDeleting)
         {
             return;
         }
@@ -651,7 +764,11 @@
         try
         {
             await IdentityClient.DeleteRoleAsync(role.Id);
-            selectedRoleName = null;
+            if (string.Equals(selectedRoleName, role.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                selectedRoleName = null;
+            }
+
             await LoadRolesAsync();
             await UiMessageService.Success(L["Roles:Deleted"].Value);
         }
@@ -729,13 +846,21 @@
 
     private void NavigateToLogin() => Navigation.NavigateTo("/login", forceLoad: true);
 
-    private string FriendlyApiError(IdentityAdminApiException exception, string fallbackKey, string? conflictKey = null) => exception.StatusCode switch
+    private string FriendlyApiError(IdentityAdminApiException exception, string fallbackKey, string? conflictKey = null)
     {
-        HttpStatusCode.Unauthorized => L["Roles:SessionExpired"].Value,
-        HttpStatusCode.Forbidden => L["Roles:Forbidden"].Value,
-        HttpStatusCode.NotFound => L["Roles:NotFound"].Value,
-        HttpStatusCode.BadRequest => L["Roles:BadRequest"].Value,
-        HttpStatusCode.Conflict => L[conflictKey ?? "Roles:Conflict"].Value,
-        _ => L[fallbackKey].Value
-    };
+        if (string.Equals(exception.ErrorCode, "HCS:RoleAssignedToUsers", StringComparison.Ordinal))
+        {
+            return L["Roles:DeleteConflict"].Value;
+        }
+
+        return exception.StatusCode switch
+        {
+            HttpStatusCode.Unauthorized => L["Roles:SessionExpired"].Value,
+            HttpStatusCode.Forbidden => L["Roles:Forbidden"].Value,
+            HttpStatusCode.NotFound => L["Roles:NotFound"].Value,
+            HttpStatusCode.BadRequest => L["Roles:BadRequest"].Value,
+            HttpStatusCode.Conflict => L[conflictKey ?? "Roles:Conflict"].Value,
+            _ => L[fallbackKey].Value
+        };
+    }
 }

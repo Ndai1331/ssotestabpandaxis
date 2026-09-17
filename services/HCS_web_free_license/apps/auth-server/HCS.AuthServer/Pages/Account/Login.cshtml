@@ -76,7 +76,8 @@
                          src="@Model.BrandingLogoUrl"
                          alt="@Model.BrandingTitle"
                          width="48"
-                         height="48" />
+                         height="48"
+                         onerror="this.onerror=null;this.src='/images/logo/default-globe.svg'" />
                 </div>
                 <div class="hcs-login-card-brand__copy">
                     <strong>@Model.BrandingTitle</strong>

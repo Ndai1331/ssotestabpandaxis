@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using HCS.Logging;
 using Serilog;
 using Serilog.Events;
 
@@ -36,7 +37,8 @@ public class Program
                 {
                     loggerConfiguration
                         .ReadFrom.Configuration(context.Configuration)
-                        .ReadFrom.Services(services);
+                        .ReadFrom.Services(services)
+                        .WriteToHcsSeq(context.Configuration, HcsServiceLogCatalog.Applications.Blazor);
                 });
             await builder.AddApplicationAsync<HCSBlazorModule>();
             var app = builder.Build();

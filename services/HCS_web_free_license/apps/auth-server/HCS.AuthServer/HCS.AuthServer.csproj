@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\building-blocks\HCS.Logging\HCS.Logging.csproj" />
     <ProjectReference Include="..\..\..\src\HCS.Application.Contracts\HCS.Application.Contracts.csproj" />
     <ProjectReference Include="..\..\..\src\HCS.Domain\HCS.Domain.csproj" />
     <ProjectReference Include="..\..\..\src\HCS.EntityFrameworkCore\HCS.EntityFrameworkCore.csproj" />

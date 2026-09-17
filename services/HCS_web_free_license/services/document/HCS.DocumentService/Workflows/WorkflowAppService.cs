@@ -337,6 +337,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             document.SetWorkflowSubmitter(submitterUserId);
         }
         await submissionPreparation.PrepareAsync(document, userId, definition, input.SigningContent, cancellationToken);
+        var workflowPdf = document.Files.Where(x => !x.IsPendingDeletion && WorkflowFileSelection.IsPdf(x))
+            .OrderByDescending(x => x.CreationTime).ThenByDescending(x => x.Id).FirstOrDefault();
+        if (workflowPdf is not null) document.SetWorkflowFile(workflowPdf.Id);
         if (document.Status == DocumentStatus.Draft) document.Submit(userId, now);
         document.StartReview(userId, now, input.SigningContent);
         var overrides = (input.Signers ?? [])

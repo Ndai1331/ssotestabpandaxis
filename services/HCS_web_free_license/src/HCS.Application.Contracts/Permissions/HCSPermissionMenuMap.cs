@@ -97,6 +97,7 @@ public static class HCSPermissionMenuMap
     private static bool IsAdministration(string permissionName) =>
         IsOrChild(permissionName, HCSPermissions.Languages.Default)
         || IsOrChild(permissionName, HCSPermissions.AuditViewer.Default)
+        || IsOrChild(permissionName, HCSPermissions.ServiceLogs.Default)
         || IsOrChild(permissionName, HCSPermissions.SystemBranding.Default)
         || IsOrChild(permissionName, HCSPermissions.Organization.UserMappings)
         || IsOrChild(permissionName, HCSPermissions.Collaboration.Administration)

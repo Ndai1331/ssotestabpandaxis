@@ -12,6 +12,9 @@ public sealed class SigningKpiReportService(
 {
     private const string HcsSource = "QLDH_PGSQL";
 
+    public Task<bool> IsEnabledAsync(CancellationToken cancellationToken = default) =>
+        legacyReader.IsEnabledAsync(cancellationToken);
+
     public async Task<SigningKpiReportDto> GetAsync(GetSigningKpiInput input,
         CancellationToken cancellationToken = default)
     {

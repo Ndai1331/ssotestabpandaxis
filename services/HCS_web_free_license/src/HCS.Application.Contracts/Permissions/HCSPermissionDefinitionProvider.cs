@@ -79,6 +79,7 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         languages.AddChild(HCSPermissions.Languages.Delete, L("Permission:Languages.Delete"));
         languages.AddChild(HCSPermissions.Languages.ManageTexts, L("Permission:Languages.ManageTexts"));
         administration.AddPermission(HCSPermissions.AuditViewer.Default, L("Permission:AuditViewer"));
+        administration.AddPermission(HCSPermissions.ServiceLogs.Default, L("Permission:ServiceLogs"));
         administration.AddPermission(HCSPermissions.SystemBranding.Update, L("Permission:SystemBranding.Update"));
         administration.AddPermission(HCSPermissions.Organization.UserMappings, L("Permission:Organization.UserMappings"));
         administration.AddPermission(HCSPermissions.Collaboration.Administration, L("Permission:Collaboration.Administration"));

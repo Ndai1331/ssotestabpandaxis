@@ -227,6 +227,7 @@ else if (detail is not null)
                     </div>
                 </div>
                 <div class="docs-table-wrap">
+                    <div class="docs-table-scroll">
                     @if (isLoading)
                     {
                         <DocsEmpty Loading="true" />
@@ -333,6 +334,7 @@ else if (detail is not null)
                             </tbody>
                         </table>
                     }
+                    </div>
                     <HcsPager TotalCount="attendeeTotal" PageSize="attendeePageSize" PageSizeId="event-attendee-page-size" PageSizes="attendeePageSizes"
                               CanPrev="CanPrevAttendee" CanNext="CanNextAttendee" Disabled="@isLoading"
                               FirstClicked="GoFirstAttendee" PrevClicked="GoPrevAttendee" NextClicked="GoNextAttendee" LastClicked="GoLastAttendee"

@@ -14,7 +14,12 @@ public sealed class InternalLegacySqlController(ISettingManager settingManager) 
     [HttpGet("connection-string")]
     public async Task<IActionResult> GetConnectionString(CancellationToken cancellationToken)
     {
+        var enabled = await settingManager.GetOrNullGlobalAsync(HCSSettings.LegacySigningReportEnabled);
         var value = await settingManager.GetOrNullGlobalAsync(HCSSettings.LegacySigningReportSqlServerConnectionString);
-        return Ok(new { connectionString = value });
+        return Ok(new
+        {
+            enabled = HCSSettings.IsEnabledOrDefault(enabled),
+            connectionString = value
+        });
     }
 }

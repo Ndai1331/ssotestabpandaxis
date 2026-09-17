@@ -1,0 +1,55 @@
+.hcs-department-tree {
+    background: var(--color-white, #fff);
+    border: 1px solid var(--color-gray-100, #e2eaf0);
+    border-radius: var(--radius-xl, 16px);
+    max-height: 18rem;
+    overflow: auto;
+    padding: .55rem .7rem;
+}
+
+.hcs-department-tree__expand {
+    background: none;
+    border: 0;
+    color: var(--color-primary);
+    cursor: pointer;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 650;
+    margin: 0 0 .35rem;
+    padding: 0;
+}
+
+.hcs-department-tree__row {
+    align-items: center;
+    display: flex;
+    gap: .45rem;
+    min-height: 1.8rem;
+}
+
+.hcs-department-tree__toggle,
+.hcs-department-tree__spacer {
+    flex: 0 0 1rem;
+    width: 1rem;
+}
+
+.hcs-department-tree__toggle {
+    align-items: center;
+    background: none;
+    border: 0;
+    color: var(--color-muted, #70899a);
+    cursor: pointer;
+    display: inline-flex;
+    height: 1.25rem;
+    justify-content: center;
+    padding: 0;
+}
+
+.hcs-department-tree__label {
+    color: var(--color-gray-700, #355770);
+    font-size: .9rem;
+}
+
+.hcs-department-tree__empty {
+    color: var(--color-muted, #7990a0);
+    font-size: .85rem;
+}

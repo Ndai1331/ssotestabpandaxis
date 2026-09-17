@@ -19,6 +19,10 @@
 
 .page-admin-users .docs-table-wrap {
     max-height: min(70vh, 42rem);
+    overflow: hidden;
+}
+
+.page-admin-users .docs-table-scroll {
     overflow: auto;
 }
 

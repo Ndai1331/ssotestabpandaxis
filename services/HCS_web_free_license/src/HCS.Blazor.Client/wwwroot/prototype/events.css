@@ -201,11 +201,18 @@
 }
 
 .event-table-wrap {
-  overflow: auto;
   background: var(--color-white);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
   padding: 4px 8px 10px;
+}
+
+.event-table-wrap .docs-table-scroll {
+  overflow: auto;
 }
 
 .event-table {
@@ -491,6 +498,11 @@ a.event-name:hover {
 }
 
 .ed-table-wrap {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ed-table-wrap .docs-table-scroll {
   overflow: auto;
 }
 
@@ -933,6 +945,16 @@ a.event-name:hover {
 .page-vb .hcs-cal-people .form-check-label {
   color: var(--color-gray-700, #355770);
   font-size: var(--font-size-sm, .875rem);
+}
+
+.cal-detail .vb-shell {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.cal-detail .hcs-catalog-form {
+  max-width: none;
+  width: 100%;
 }
 
 #cal-view-month[hidden],

@@ -114,6 +114,10 @@
     width: 1%;
 }
 
+.hcs-language-grid-card {
+    overflow: hidden;
+}
+
 .hcs-language-grid ::deep .table-responsive {
     overflow-x: auto;
 }
@@ -189,7 +193,7 @@
     }
 
     .hcs-language-grid-card {
-        overflow-x: auto;
+        overflow: hidden;
     }
 
     .hcs-language-grid {

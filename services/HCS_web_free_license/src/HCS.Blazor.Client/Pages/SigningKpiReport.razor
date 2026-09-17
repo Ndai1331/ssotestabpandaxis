@@ -6,6 +6,7 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject NavigationManager Navigation
+@inject SystemFeatureState Features
 
 <PageTitle>@L["Menu:ProposalStatistics"] · HCS</PageTitle>
 <section class="page page-wf hcs-kpi-page" aria-labelledby="proposal-stats-title">
@@ -244,7 +245,17 @@
     private List<double> PieData => report?.PieSlices.Select(x => (double)x.Value).ToList() ?? [];
     private List<string> PieColors => report?.PieSlices.Select(x => x.Color).ToList() ?? [];
 
-    protected override Task OnInitializedAsync() => LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        await Features.EnsureLoadedAsync();
+        if (!Features.EnableProposalStatistics)
+        {
+            Navigation.NavigateTo("/workspace");
+            return;
+        }
+
+        await LoadAsync();
+    }
 
     private async Task LoadAsync()
     {

@@ -29,6 +29,7 @@ public partial class OrganizationUnitCatalog : IDisposable
     private OrganizationUnitFormModel unitForm = new();
     private OrganizationUnitDialogMode unitDialogMode;
     private Guid? actionUnitId;
+    private Guid? openMenuId;
     private string memberFilter = string.Empty;
     private string availableMemberFilter = string.Empty;
     private string moveTargetValue = string.Empty;

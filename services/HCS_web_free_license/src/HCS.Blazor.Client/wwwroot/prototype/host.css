@@ -917,17 +917,35 @@ body:has(.page-chat) {
   width: 36px !important;
 }
 
+.hcs-app-shell .hcs-workspace :is(.hcs-ws-doc-row, .hcs-ws-task-row, .hcs-ws-proj-row) :is(.badge, .hcs-status-badge, .hcs-priority-badge, .hcs-progress-badge) {
+  font-size: 10px;
+  height: 22px;
+  max-height: 22px;
+  min-height: 22px;
+  padding: 0 7px;
+}
+
+.hcs-app-shell .hcs-workspace :is(button.hcs-ws-doc-name, button.hcs-ws-proj-name, button.hcs-ws-task-name, button.hcs-ws-ev-name),
+.hcs-app-shell .hcs-ws-project-modal button.hcs-ws-project__task-name {
+  height: auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
 .hcs-app-shell .hcs-workspace .hcs-ws-doc-row .icon-btn,
+.hcs-app-shell .hcs-workspace .hcs-ws-task-row .icon-btn,
+.hcs-app-shell .hcs-workspace .hcs-ws-proj-row .icon-btn,
 .hcs-app-shell .hcs-workspace .icon-btn.eye {
   background: var(--color-primary-soft, #E6F3F2) !important;
   border: 0 !important;
   border-radius: var(--radius-full, 9999px) !important;
   color: var(--color-primary, #007F7C) !important;
-  height: 32px !important;
-  min-height: 32px !important;
-  min-width: 32px !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  min-width: 26px !important;
   padding: 0 !important;
-  width: 32px !important;
+  width: 26px !important;
 }
 
 /* ——— Calendar / event dash (lich.html, su-kien.html) ——— */
@@ -1005,6 +1023,7 @@ body:has(.page-chat) {
 
 .hcs-app-shell .page-wf .docs-table-wrap {
   border-radius: var(--radius-xl, 16px) !important;
+  overflow: hidden;
 }
 
 .hcs-app-shell .page-wf .vb-card {

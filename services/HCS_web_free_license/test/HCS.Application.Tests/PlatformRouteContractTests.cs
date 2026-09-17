@@ -1,6 +1,8 @@
 using HCS.Auditing;
+using HCS.Logging;
 using HCS.Controllers.Identity;
 using HCS.Controllers.Auditing;
+using HCS.Controllers.Logging;
 using HCS.Controllers.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +19,7 @@ public sealed class PlatformRouteContractTests
     [InlineData(typeof(LanguagesController), "api/hcs/languages", "api/language-management/languages")]
     [InlineData(typeof(LanguageTextsController), "api/hcs/language-texts", "api/language-management/language-texts")]
     [InlineData(typeof(AuditViewerController), "api/hcs/audit-logs", "api/audit-logs")]
+    [InlineData(typeof(ServiceLogViewerController), "api/hcs/service-logs", "api/service-logs")]
     public void Platform_controllers_preserve_legacy_and_gateway_routes(Type controller,
         string legacyRoute, string gatewayRoute)
     {
@@ -53,6 +56,17 @@ public sealed class PlatformRouteContractTests
         Assert.Equal("api/identity/organization-unit-lookup", route);
         Assert.NotNull(typeof(OrganizationUnitLookupController)
             .GetCustomAttribute<AuthorizeAttribute>());
+    }
+
+    [Fact]
+    public void Service_log_list_input_is_bound_from_query_only()
+    {
+        var parameter = typeof(ServiceLogViewerController)
+            .GetMethod(nameof(ServiceLogViewerController.GetListAsync))!
+            .GetParameters()
+            .Single(parameter => parameter.ParameterType == typeof(GetServiceLogsInput));
+
+        Assert.NotNull(parameter.GetCustomAttribute<FromQueryAttribute>());
     }
 
     [Fact]

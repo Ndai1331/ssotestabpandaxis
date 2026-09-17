@@ -152,7 +152,7 @@
         <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="CreateAsync">@L["Catalog:Create"]</Button>
     </ModalFooter>
 </ModalContent></Modal>
-<ProjectTaskViewModal @ref="taskModal" />
+<ProjectTaskViewModal @ref="taskModal" OnChanged="LoadEventsAsync" />
 <CalendarEventViewModal @ref="eventViewModal" OnOpenTask="OpenRelatedTaskAsync" />
 @code {
     private const string MonthView = "dayGridMonth";

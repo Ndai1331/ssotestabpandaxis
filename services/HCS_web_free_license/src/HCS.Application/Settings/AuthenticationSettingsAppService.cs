@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +15,7 @@ public class AuthenticationSettingsAppService(
         return new AuthenticationSettingsDto
         {
             // Keep the button enabled when no global override has been saved yet.
-            ShowSsoLoginButton = !string.Equals(configuredValue, "false", StringComparison.OrdinalIgnoreCase)
+            ShowSsoLoginButton = HCSSettings.IsEnabledOrDefault(configuredValue)
         };
     }
 

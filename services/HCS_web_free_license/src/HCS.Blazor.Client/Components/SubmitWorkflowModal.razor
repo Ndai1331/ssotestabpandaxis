@@ -1,7 +1,9 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
+@inject SystemFeatureState Features
 @using Microsoft.AspNetCore.Components.Forms
+@using HCS.Blazor.Client.Settings
 
 <Modal @ref="modal" Size="ModalSize.Large">
     <ModalContent Centered Class="hcs-catalog-modal">
@@ -49,6 +51,20 @@
                                    @onchange="OnTemplateToggle" />
                             @L["Work:UseTemplateFile"]
                         </label>
+                        <div class="vb-drop vb-file-chip has-file">
+                            <span class="vb-file-icon" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                            </span>
+                            <span class="vb-file-copy">
+                                <strong>@L["Work:TemplateFile"]</strong>
+                                <span class="vb-file-chosen">@WorkflowTemplateFileName</span>
+                            </span>
+                        </div>
+                    </div>
+                }
+                else if (useWorkflowTemplateFile && HasWorkflowTemplateFile)
+                {
+                    <div class="sign-template">
                         <div class="vb-drop vb-file-chip has-file">
                             <span class="vb-file-icon" aria-hidden="true">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
@@ -162,8 +178,10 @@
     public async Task ShowAsync(Guid? preSelectedDocument = null)
     {
         definitionRequestVersion++;
-        documentId = preSelectedDocument;
-        allowDocumentPicker = preSelectedDocument is null;
+        await Features.EnsureLoadedAsync();
+        var allowFromDocuments = Features.AllowSigningFromDocuments;
+        documentId = allowFromDocuments ? preSelectedDocument : null;
+        allowDocumentPicker = allowFromDocuments && preSelectedDocument is null;
         definitionId = null;
         selected = null;
         selectedTemplate = null;
@@ -229,7 +247,7 @@
         }
         selectedTemplate = templates.Where(x => x.DefinitionId == value && x.IsActive)
             .OrderByDescending(x => x.Version).FirstOrDefault();
-        useWorkflowTemplateFile = allowDocumentPicker && HasWorkflowTemplateFile;
+        useWorkflowTemplateFile = HasWorkflowTemplateFile && documentId is null;
         if (useWorkflowTemplateFile)
             documentId = null;
         signers.Clear();

@@ -19,6 +19,7 @@
         </div>
     </div>
     <div class="docs-table-wrap">
+        <div class="docs-table-scroll">
         @if (loading)
         {
             <DocsEmpty Loading="true" Title="Đang tải báo cáo…" />
@@ -51,6 +52,7 @@
                 </tbody>
             </table>
         }
+        </div>
     </div>
 </section>
 @code {private readonly List<ReportRow> rows=[];private bool loading;protected override Task OnInitializedAsync()=>LoadAsync();private async Task LoadAsync(){loading=true;try{using var c=HttpClientFactory.CreateClient("HCS.Bff");rows.Clear();rows.AddRange(await c.GetFromJsonAsync<List<ReportRow>>("/api/reports")??[]);}catch{await NotifyErrorAsync("Không thể tải báo cáo. Hãy kiểm tra quyền truy cập.");}finally{loading=false;}}private sealed record ReportRow(string Dimension,string Key,string Label,decimal Value,DateTime RefreshedAt);}

@@ -10,6 +10,8 @@ internal static class DocumentFilePick
     public static DocumentFileDto? PreferPdf(IReadOnlyList<DocumentFileDto> files)
     {
         if (files.Count == 0) return null;
+        var workflowFile = files.FirstOrDefault(x => x.IsWorkflowFile && IsPdf(x));
+        if (workflowFile is not null) return workflowFile;
         var ordered = files.OrderByDescending(x => x.CreationTime).ThenByDescending(x => x.Id).ToList();
         var pdf = ordered.FirstOrDefault(IsPdf);
         if (pdf is not null) return pdf;

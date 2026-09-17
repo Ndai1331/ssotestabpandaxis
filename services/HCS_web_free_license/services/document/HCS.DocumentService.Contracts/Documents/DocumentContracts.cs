@@ -31,7 +31,7 @@ public sealed record UpdateDocumentRequest(string Title, string? Description,
     string? DocumentCode = null, Guid? OrganizationUnitId = null);
 public sealed record AddDocumentFileRequest(string FileName, string ContentType, long Size, string Sha256);
 public sealed record AssignDocumentRequest(Guid AssigneeUserId, string Responsibility);
-public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null);
+public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null, bool IsWorkflowFile = false);
 public sealed record DocumentAssignmentDto(Guid Id, Guid AssigneeUserId, string Responsibility, DateTime AssignedAt,
     bool IsCurrent = true, string? StepCode = null);
 public sealed record DocumentHistoryDto(Guid Id, string Action, Guid? ActorUserId, string? Detail, DateTime OccurredAt);

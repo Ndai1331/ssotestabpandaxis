@@ -8,11 +8,13 @@
 @using Microsoft.Extensions.Localization
 @using Volo.Abp.BlazoriseUI.Components
 @using HCS.Blazor.Client.Branding
+@using HCS.Blazor.Client.Settings
 @inject IConfiguration Configuration
 @inject NavigationManager Navigation
 @inject IStringLocalizer<HCSResource> Localizer
 @inject AccountProfileClient Account
 @inject SystemBrandingState Branding
+@inject SystemFeatureState Features
 @inject IJSRuntime Js
 @implements IDisposable
 
@@ -28,7 +30,7 @@
         <HcsBusyBar />
         <div class="hcs-header__top">
             <a class="hcs-brand" href="/workspace" aria-label="@Branding.Title - @Localizer["Menu:Workspace"]" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
-                <span class="hcs-brand__mark" aria-hidden="true"><img src="@Branding.LogoUrl" data-hcs-branding-logo alt="" width="70" height="70" /></span>
+                <span class="hcs-brand__mark" aria-hidden="true"><img src="@Branding.LogoUrl" data-hcs-branding-logo alt="" width="70" height="70" onerror="this.onerror=null;this.src=document.documentElement.dataset.hcsDefaultIcon||'/images/logo/default-globe.svg'" /></span>
                 @if (Branding.ShowBrandingText)
                 {
                     <span class="hcs-brand__text"><strong data-hcs-branding-title>@Branding.Title</strong><small data-hcs-branding-description title="@Branding.Description">@Branding.Description</small></span>
@@ -223,7 +225,7 @@
 
             <AuthorizeView Context="catalogAuth">
                 <Authorized>
-                    @if (CanOpenCatalogNavigation(catalogAuth.User))
+                    @if (CanOpenCatalogNavigation(catalogAuth.User, Features.EnableProposalStatistics))
                     {
             <div class="hcs-nav-menu hcs-nav-menu--catalog @(IsExpanded("catalog") ? "hcs-nav-menu--expanded" : null)"
                  @onpointerenter="@(() => OnMenuPointerEnter("catalog"))">
@@ -303,7 +305,7 @@
                             <NavLink href="/survey-criterias" @onclick="CloseMobileNav"><i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]</NavLink>
                         </Authorized>
                     </AuthorizeView>
-                    @if (HasReportsNavigation(catalogAuth.User))
+                    @if (HasReportsNavigation(catalogAuth.User, Features.EnableProposalStatistics))
                     {
                             <p class="hcs-nav-menu__label">@Localizer["Menu:Reports"]</p>
                             <AuthorizeView Policy="WorkManagement.Reports" Context="reportsNav">
@@ -311,11 +313,14 @@
                                     <NavLink href="/reports" @onclick="CloseMobileNav"><i class="fa fa-chart-column" aria-hidden="true"></i>@Localizer["Menu:Reports"]</NavLink>
                                 </Authorized>
                             </AuthorizeView>
-                            <AuthorizeView Policy="Documents.Signing.Report" Context="proposalStatsNav">
-                                <Authorized>
-                                    <NavLink href="/thong-ke-de-xuat" @onclick="CloseMobileNav"><i class="fa fa-chart-pie" aria-hidden="true"></i>@Localizer["Menu:ProposalStatistics"]</NavLink>
-                                </Authorized>
-                            </AuthorizeView>
+                            @if (Features.EnableProposalStatistics)
+                            {
+                                <AuthorizeView Policy="Documents.Signing.Report" Context="proposalStatsNav">
+                                    <Authorized>
+                                        <NavLink href="/thong-ke-de-xuat" @onclick="CloseMobileNav"><i class="fa fa-chart-pie" aria-hidden="true"></i>@Localizer["Menu:ProposalStatistics"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                            }
                     }
                 </div>
             </div>
@@ -385,6 +390,7 @@
                                     <NavLink href="/administration/roles" @onclick="CloseMobileNav"><i class="fa fa-shield-halved" aria-hidden="true"></i>@Localizer["Menu:Roles"]</NavLink>
                                     <NavLink href="/administration/languages" @onclick="CloseMobileNav"><i class="fa fa-language" aria-hidden="true"></i>@Localizer["Menu:Languages"]</NavLink>
                                     <NavLink href="/administration/audit-logs" @onclick="CloseMobileNav"><i class="fa fa-clipboard-list" aria-hidden="true"></i>@Localizer["Menu:AuditLogs"]</NavLink>
+                                    <NavLink href="/administration/service-logs" @onclick="CloseMobileNav"><i class="fa fa-bars-staggered" aria-hidden="true"></i>@Localizer["Menu:ServiceLogs"]</NavLink>
                                 }
                                 <AuthorizeView Policy="@HCSPermissions.SystemBranding.Update">
                                     <Authorized>
@@ -471,7 +477,7 @@
         HasPermission(user, HCSPermissions.WorkManagement.Projects)
         || HasPermission(user, HCSPermissions.WorkManagement.Tasks);
 
-    private static bool CanOpenCatalogNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+    private static bool CanOpenCatalogNavigation(System.Security.Claims.ClaimsPrincipal user, bool enableProposalStatistics) =>
         HasAnyPermission(user,
             HCSOrganizationPermissions.MasterData,
             HCSOrganizationPermissions.Departments,
@@ -485,8 +491,8 @@
             HCSCatalogPermissions.Provinces,
             HCSCatalogPermissions.Communes,
             HCSPermissions.WorkManagement.SurveyManagement,
-            HCSPermissions.WorkManagement.Reports,
-            HCSPermissions.Documents.SigningReport);
+            HCSPermissions.WorkManagement.Reports)
+        || (enableProposalStatistics && HasPermission(user, HCSPermissions.Documents.SigningReport));
 
     private static bool HasHealthCatalogNavigation(System.Security.Claims.ClaimsPrincipal user) =>
         HasAnyPermission(user,
@@ -501,10 +507,9 @@
             HCSCatalogPermissions.Provinces,
             HCSCatalogPermissions.Communes);
 
-    private static bool HasReportsNavigation(System.Security.Claims.ClaimsPrincipal user) =>
-        HasAnyPermission(user,
-            HCSPermissions.WorkManagement.Reports,
-            HCSPermissions.Documents.SigningReport);
+    private static bool HasReportsNavigation(System.Security.Claims.ClaimsPrincipal user, bool enableProposalStatistics) =>
+        HasPermission(user, HCSPermissions.WorkManagement.Reports)
+        || (enableProposalStatistics && HasPermission(user, HCSPermissions.Documents.SigningReport));
 
     private static bool HasAnyPermission(System.Security.Claims.ClaimsPrincipal user, params string[] permissions) =>
         permissions.Any(permission => HasPermission(user, permission));
@@ -534,11 +539,13 @@
         Navigation.LocationChanged += OnLocationChanged;
         Account.AvatarChanged += OnAvatarChanged;
         Branding.Changed += OnBrandingChanged;
+        Features.Changed += OnFeaturesChanged;
     }
 
     protected override async Task OnInitializedAsync()
     {
         await Branding.EnsureLoadedAsync();
+        await Features.EnsureLoadedAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -590,11 +597,14 @@
         Navigation.LocationChanged -= OnLocationChanged;
         Account.AvatarChanged -= OnAvatarChanged;
         Branding.Changed -= OnBrandingChanged;
+        Features.Changed -= OnFeaturesChanged;
     }
 
     private void OnAvatarChanged(object? sender, EventArgs args) => _ = ReloadAvatarQuietAsync();
 
     private void OnBrandingChanged(object? sender, EventArgs args) => _ = InvokeAsync(StateHasChanged);
+
+    private void OnFeaturesChanged(object? sender, EventArgs args) => _ = InvokeAsync(StateHasChanged);
 
     private void ToggleUserMenu() => userMenuOpen = !userMenuOpen;
 

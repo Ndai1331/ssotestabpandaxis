@@ -33,6 +33,14 @@ public sealed class DocumentAggregate
     public DocumentStatus Status { get; private set; }
     public DocumentSourceType SourceType { get; private set; }
     public Guid? ParentDocumentId { get; private set; }
+    public Guid? WorkflowFileId { get; private set; }
+
+    public void SetWorkflowFile(Guid fileId)
+    {
+        if (SourceType != DocumentSourceType.Workflow || !_files.Any(x => x.Id == fileId && !x.IsPendingDeletion))
+            throw new InvalidOperationException("The workflow file must belong to this submission.");
+        WorkflowFileId = fileId;
+    }
     public Guid? FromUserId { get; private set; }
     public Guid? OrganizationUnitId { get; private set; }
     public Guid? DocumentTypeId { get; private set; }

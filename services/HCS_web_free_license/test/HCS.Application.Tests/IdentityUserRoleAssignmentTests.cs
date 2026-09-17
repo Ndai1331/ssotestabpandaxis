@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Shouldly;
+using Volo.Abp;
 using Volo.Abp.Guids;
 using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
@@ -13,12 +14,14 @@ public abstract class IdentityUserRoleAssignmentTests<TStartupModule> : HCSAppli
     where TStartupModule : IAbpModule
 {
     private readonly IIdentityUserAppService _userAppService;
+    private readonly IIdentityRoleAppService _roleAppService;
     private readonly IIdentityRoleRepository _roleRepository;
     private readonly IGuidGenerator _guidGenerator;
 
     protected IdentityUserRoleAssignmentTests()
     {
         _userAppService = GetRequiredService<IIdentityUserAppService>();
+        _roleAppService = GetRequiredService<IIdentityRoleAppService>();
         _roleRepository = GetRequiredService<IIdentityRoleRepository>();
         _guidGenerator = GetRequiredService<IGuidGenerator>();
     }
@@ -44,5 +47,40 @@ public abstract class IdentityUserRoleAssignmentTests<TStartupModule> : HCSAppli
 
         var roles = await _userAppService.GetRolesAsync(created.Id);
         roles.Items.ShouldContain(role => role.Name == roleName);
+    }
+
+    [Fact]
+    public async Task Delete_Role_Assigned_To_User_Is_Rejected()
+    {
+        var roleName = "inuse" + Guid.NewGuid().ToString("N")[..8];
+        var role = await _roleRepository.InsertAsync(new IdentityRole(_guidGenerator.Create(), roleName), autoSave: true);
+
+        var created = await _userAppService.CreateAsync(new IdentityUserCreateDto
+        {
+            UserName = "u" + Guid.NewGuid().ToString("N")[..16],
+            Email = $"{Guid.NewGuid():N}@example.com",
+            Password = "Test-password-42!",
+            RoleNames = []
+        });
+
+        await _userAppService.UpdateRolesAsync(created.Id, new IdentityUserUpdateRolesDto
+        {
+            RoleNames = [roleName]
+        });
+
+        var exception = await Should.ThrowAsync<BusinessException>(() => _roleAppService.DeleteAsync(role.Id));
+        exception.Code.ShouldBe(HCSDomainErrorCodes.RoleAssignedToUsers);
+        (await _roleRepository.FindAsync(role.Id)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task Delete_Unused_Role_Succeeds()
+    {
+        var roleName = "empty" + Guid.NewGuid().ToString("N")[..8];
+        var role = await _roleRepository.InsertAsync(new IdentityRole(_guidGenerator.Create(), roleName), autoSave: true);
+
+        await _roleAppService.DeleteAsync(role.Id);
+
+        (await _roleRepository.FindAsync(role.Id)).ShouldBeNull();
     }
 }

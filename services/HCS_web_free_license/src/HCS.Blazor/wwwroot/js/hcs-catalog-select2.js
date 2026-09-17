@@ -134,6 +134,21 @@
                 }
             }
         };
+        if (multiple && userTemplateEnabled) {
+            // Keep multi-selection, but put search in the popup like the single
+            // user picker instead of adding a textarea beside selected people.
+            var amd = $.fn.select2.amd;
+            var utils = amd.require("select2/utils");
+            var selection = amd.require("select2/selection/multiple");
+            selection = utils.Decorate(selection, amd.require("select2/selection/placeholder"));
+            selection = utils.Decorate(selection, amd.require("select2/selection/allowClear"));
+            selection = utils.Decorate(selection, amd.require("select2/selection/eventRelay"));
+            select2Options.selectionAdapter = selection;
+            var dropdown = utils.Decorate(amd.require("select2/dropdown"),
+                amd.require("select2/dropdown/search"));
+            select2Options.dropdownAdapter = utils.Decorate(dropdown,
+                amd.require("select2/dropdown/attachBody"));
+        }
         $el.select2(select2Options);
 
         $el.data("hcsCatalogSelect2DotNetRef", dotNetRef);

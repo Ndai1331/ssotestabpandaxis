@@ -863,6 +863,15 @@
           "Serilog": "4.0.0"
         }
       },
+      "Serilog.Sinks.Seq": {
+        "type": "Transitive",
+        "resolved": "9.0.0",
+        "contentHash": "aNU8A0K322q7+voPNmp1/qNPH+9QK8xvM1p72sMmCG0wGlshFzmtDW9QnVSoSYCj0MgQKcMOlgooovtBhRlNHw==",
+        "dependencies": {
+          "Serilog": "4.2.0",
+          "Serilog.Sinks.File": "6.0.0"
+        }
+      },
       "System.CodeDom": {
         "type": "Transitive",
         "resolved": "10.0.9",
@@ -2163,6 +2172,7 @@
           "HCS.Application.Contracts": "[1.0.0, )",
           "HCS.Domain": "[1.0.0, )",
           "HCS.EntityFrameworkCore": "[1.0.0, )",
+          "HCS.Logging": "[1.0.0, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.9, )",
           "Serilog.AspNetCore": "[9.0.0, )",
           "Serilog.Sinks.Console": "[6.0.0, )",
@@ -2228,6 +2238,14 @@
         "type": "Project",
         "dependencies": {
           "Volo.Abp.EventBus": "[10.6.0, )"
+        }
+      },
+      "hcs.logging": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "[10.0.9, )",
+          "Serilog": "[4.3.0, )",
+          "Serilog.Sinks.Seq": "[9.0.0, )"
         }
       }
     }

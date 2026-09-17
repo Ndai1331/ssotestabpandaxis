@@ -310,7 +310,11 @@
         "IdentityAdminClient",
         "LanguageManagementClient",
         "AuditLogClient",
-        "AuthenticationSettingsClient"
+        "AuthenticationSettingsClient",
+        "SystemFeatureSettingsClient",
+        "LegacySigningReportSettingsClient",
+        "SystemFeatureSettingsClient",
+        "LegacySigningReportSettingsClient"
       ],
       "endpoints": [
         { "method": "GET", "path": "/api/identity/users" },
@@ -321,7 +325,9 @@
         { "method": "GET", "path": "/api/identity/users/{id}/roles" },
         { "method": "PUT", "path": "/api/identity/users/{id}/roles" },
         { "method": "GET", "path": "/api/identity/roles" },
+        { "method": "GET", "path": "/api/identity/roles/{id}" },
         { "method": "POST", "path": "/api/identity/roles" },
+        { "method": "PUT", "path": "/api/identity/roles/{id}" },
         { "method": "DELETE", "path": "/api/identity/roles/{id}" },
         { "method": "GET", "path": "/api/permission-management/permissions" },
         { "method": "PUT", "path": "/api/admin/roles/{roleName}/permissions" },
@@ -337,7 +343,11 @@
         { "method": "GET", "path": "/api/audit-logs" },
         { "method": "GET", "path": "/api/audit-logs/{id}" },
         { "method": "GET", "path": "/api/hcs/authentication-settings" },
-        { "method": "PUT", "path": "/api/hcs/authentication-settings" }
+        { "method": "PUT", "path": "/api/hcs/authentication-settings" },
+        { "method": "GET", "path": "/api/hcs/system-features" },
+        { "method": "PUT", "path": "/api/hcs/system-features/general" },
+        { "method": "GET", "path": "/api/hcs/legacy-signing-report" },
+        { "method": "PUT", "path": "/api/hcs/legacy-signing-report" }
       ]
     }
   ]

@@ -41,11 +41,17 @@ public sealed class SigningController(ISigningAppService signing, ISigningKpiRep
     [HttpGet("reports/documents/{documentId:guid}")]
     public Task<SigningReportDto> Report(Guid documentId, CancellationToken cancellationToken) => signing.GetReportAsync(documentId, cancellationToken);
     [HttpGet("kpi"), Authorize(Policy = Documents.DocumentPermissions.SigningReport)]
-    public Task<SigningKpiReportDto> GetKpi([FromQuery] GetSigningKpiInput input, CancellationToken cancellationToken) =>
-        signingKpi.GetAsync(input, cancellationToken);
+    public async Task<ActionResult<SigningKpiReportDto>> GetKpi([FromQuery] GetSigningKpiInput input, CancellationToken cancellationToken)
+    {
+        if (!await signingKpi.IsEnabledAsync(cancellationToken))
+            return Forbid();
+        return Ok(await signingKpi.GetAsync(input, cancellationToken));
+    }
     [HttpGet("kpi/export"), Authorize(Policy = Documents.DocumentPermissions.SigningReport)]
     public async Task<IActionResult> ExportKpi([FromQuery] GetSigningKpiInput input, CancellationToken cancellationToken)
     {
+        if (!await signingKpi.IsEnabledAsync(cancellationToken))
+            return Forbid();
         var rows = await signingKpi.GetDetailsAsync(input, cancellationToken);
         var fileName = $"signing-kpi-{DateTime.UtcNow:yyyyMMddHHmmss}.csv";
         return File(SigningKpiCsvExporter.Build(rows), "text/csv; charset=utf-8", fileName);

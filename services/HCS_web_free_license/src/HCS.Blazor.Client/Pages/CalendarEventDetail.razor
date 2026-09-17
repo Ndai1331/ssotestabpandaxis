@@ -2,73 +2,131 @@
 @attribute [Authorize(Policy = "WorkManagement.Calendar")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
+@inject OrganizationCatalogClient Catalog
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Feature:EventDetail"] · HCS</PageTitle>
-<section class="page page-wf page-vb">
+<section class="page page-wf page-vb cal-detail">
     <form class="vb-card" @onsubmit="SaveAsync" @onsubmit:preventDefault>
         <header class="vb-chrome">
             <div class="vb-chrome-id">
-                <a class="icon-btn" href="/calendar-events" aria-label="@L["Feature:BackToList"]">
+                <button class="icon-btn" type="button" @onclick="GoBack" aria-label="@L["Feature:BackToList"]">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>
-                </a>
+                </button>
                 <div class="vb-editor-head">
                     <h1 title="@(item?.Title ?? L["Feature:EventDetail"].Value)">@(item?.Title ?? L["Feature:EventDetail"])</h1>
                     @if (item is not null)
                     {
                         <p class="vb-editor-sub">
-                            <span>@item.StartTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm") – @item.EndTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                            <span>@WorkUi.FormatRange(item.StartTime, item.EndTime)</span>
                             <span class="badge badge-info">@L[CalendarUi.VisibilityKey(item.Visibility)]</span>
                         </p>
                     }
                 </div>
             </div>
             <div class="vb-chrome-actions">
+                @if (item is not null && (RelatedHref() is not null || item.CanManage))
+                {
+                    <div class="vb-flow">
+                        @if (RelatedHref() is { } relatedHref)
+                        {
+                            <a class="btn btn-ghost" href="@relatedHref">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+                                @L["Work:OpenRelated"]
+                            </a>
+                        }
+                        @if (item.CanManage)
+                        {
+                            <button class="btn btn-ghost" type="button" @onclick="DeleteAsync">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                @L["Catalog:Delete"]
+                            </button>
+                        }
+                    </div>
+                }
                 <div class="vb-foot">
-                    @if (RelatedHref() is { } relatedHref)
+                    <button class="btn btn-outline" type="button" @onclick="GoBack">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        @L["Catalog:Cancel"]
+                    </button>
+                    @if (item is { CanManage: true })
                     {
-                        <a class="btn btn-outline" href="@relatedHref">@L["Work:OpenRelated"]</a>
+                        <button class="btn btn-primary" type="submit">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+                            @L["Catalog:SaveChanges"]
+                        </button>
                     }
-                    <a class="btn btn-outline" href="/calendar-events">@L["Feature:BackToList"]</a>
                 </div>
             </div>
         </header>
         <div class="vb-shell">
             <div class="vb-main">
-                @if (item is null)
-                {
-                    <DocsEmpty Loading="true" />
-                }
-                else
-                {
-                    <div class="hcs-catalog-form">
-                        <Field><FieldLabel>@L["Feature:Event"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventDetailTitle" Disabled="@(!item.CanManage)" /></Field>
-                        <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off" disabled="@(!item.CanManage)"></textarea></Field>
-                        <Field><FieldLabel>@L["Feature:Visibility"]</FieldLabel>
-                            <Select TValue="string" @bind-Value="form.Visibility" Disabled="@(!item.CanManage)">
-                                <SelectItem Value="@("Private")">@L["Calendar:VisibilityPrivate"]</SelectItem>
-                                <SelectItem Value="@("Participants")">@L["Calendar:VisibilityParticipants"]</SelectItem>
-                                <SelectItem Value="@("Public")">@L["Calendar:VisibilityPublic"]</SelectItem>
-                            </Select>
-                        </Field>
-                        @if (form.Visibility == "Participants")
-                        {
+                <div class="vb-pane is-active">
+                    @if (item is null)
+                    {
+                        <DocsEmpty Loading="true" />
+                    }
+                    else
+                    {
+                        <div class="hcs-catalog-form">
                             <Field>
-                                <FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
-                                <CalendarParticipantPicker Selected="form.Participants"
-                                                          Disabled="@(!item.CanManage)" />
+                                <FieldLabel>@L["Feature:Event"]</FieldLabel>
+                                <HcsIsolatedTextInput @bind-Value="form.Title" Name="hcsEventDetailTitle" Disabled="@(!item.CanManage)" />
                             </Field>
-                        }
-                        @if (item.CanManage)
-                        {
-                        <div class="vb-foot">
-                            <button class="btn btn-outline" type="button" @onclick="DeleteAsync">@L["Catalog:Delete"]</button>
-                            <button class="btn btn-primary" type="submit">@L["Catalog:SaveChanges"]</button>
+                            <Field>
+                                <FieldLabel>@L["Feature:Description"]</FieldLabel>
+                                <textarea class="form-control input" rows="4" @bind="form.Description" autocomplete="off" disabled="@(!item.CanManage)"></textarea>
+                            </Field>
+                            <div class="vb-field-row hcs-form-row hcs-form-row--equal">
+                                <Field>
+                                    <FieldLabel>@L["Feature:StartDate"]</FieldLabel>
+                                    <HcsDatePicker TValue="DateTime" @bind-Value="form.Start" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton Disabled="@(!item.CanManage)" />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>@L["Feature:EndDate"]</FieldLabel>
+                                    <HcsDatePicker TValue="DateTime" @bind-Value="form.End" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton Disabled="@(!item.CanManage)" />
+                                </Field>
+                            </div>
+                            <div class="vb-field-row hcs-form-row hcs-form-row--equal">
+                                <Field>
+                                    <FieldLabel>@L["Catalog:EventTypeTitle"]</FieldLabel>
+                                    <Select TValue="string" @bind-Value="form.EventType" Disabled="@(!item.CanManage)">
+                                        <SelectItem Value="@("Meeting")">@L["Calendar:Meeting"]</SelectItem>
+                                        @foreach (var type in ExtraEventTypes)
+                                        {
+                                            <SelectItem Value="@type">@EventTypeOptionLabel(type)</SelectItem>
+                                        }
+                                        @foreach (var type in eventTypes.Where(x => !string.Equals(x.Name, "Meeting", StringComparison.OrdinalIgnoreCase)))
+                                        {
+                                            <SelectItem Value="@type.Name">@type.Name</SelectItem>
+                                        }
+                                    </Select>
+                                </Field>
+                                <Field>
+                                    <FieldLabel>@L["Feature:Visibility"]</FieldLabel>
+                                    <Select TValue="string" @bind-Value="form.Visibility" Disabled="@(!item.CanManage)">
+                                        <SelectItem Value="@("Private")">@L["Calendar:VisibilityPrivate"]</SelectItem>
+                                        <SelectItem Value="@("Participants")">@L["Calendar:VisibilityParticipants"]</SelectItem>
+                                        <SelectItem Value="@("Public")">@L["Calendar:VisibilityPublic"]</SelectItem>
+                                    </Select>
+                                </Field>
+                            </div>
+                            <Field>
+                                <FieldLabel>@L["Event:Location"]</FieldLabel>
+                                <HcsIsolatedTextInput @bind-Value="form.Location" Name="hcsEventDetailLocation" Disabled="@(!item.CanManage)" />
+                            </Field>
+                            @if (form.Visibility == "Participants")
+                            {
+                                <Field>
+                                    <FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
+                                    <CalendarParticipantPicker Selected="form.Participants"
+                                                              Disabled="@(!item.CanManage)" />
+                                </Field>
+                            }
                         </div>
-                        }
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
     </form>
@@ -77,26 +135,74 @@
     [Parameter] public Guid EventId { get; set; }
     private CalendarEventDto? item;
     private readonly EventForm form = new();
+    private readonly List<MasterDataCatalogDto> eventTypes = [];
+
+    private IEnumerable<string> ExtraEventTypes
+    {
+        get
+        {
+            var known = eventTypes.Select(x => x.Name).Append("Meeting");
+            if (!string.IsNullOrWhiteSpace(form.EventType)
+                && !known.Contains(form.EventType, StringComparer.OrdinalIgnoreCase))
+            {
+                yield return form.EventType;
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var page = await Catalog.GetMasterDataAsync("EventType", new OrganizationCatalogQuery(null, true, 0, 100));
+            eventTypes.AddRange(page.Items);
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
         try
         {
             item = await Work.GetCalendarEventAsync(EventId);
-            form.Title = item.Title; form.Description = item.Description ?? ""; form.Visibility = item.Visibility;
-            form.Participants.Clear(); foreach (var id in item.ParticipantUserIds) form.Participants.Add(id);
+            form.Title = item.Title;
+            form.Description = item.Description ?? "";
+            form.Start = item.StartTime;
+            form.End = item.EndTime;
+            form.EventType = item.EventType;
+            form.Location = item.Location ?? "";
+            form.Visibility = item.Visibility;
+            form.Participants.Clear();
+            foreach (var id in item.ParticipantUserIds) form.Participants.Add(id);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
 
+    private void GoBack() => Navigation.NavigateTo("/calendar-events");
     private string? RelatedHref() => item is null ? null : WorkUi.RelatedEntityHref(item.RelatedType, item.RelatedId);
+    private string EventTypeOptionLabel(string value)
+    {
+        var key = CalendarUi.EventTypeKey(value);
+        return string.IsNullOrEmpty(key) ? value : L[key];
+    }
     private async Task SaveAsync()
     {
         if (item is null || !item.CanManage) return;
         try
         {
             var participants = form.Visibility == "Participants" ? form.Participants.ToList() : [];
-            item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, item.StartTime, item.EndTime, item.AllDay, item.EventType, item.Location, item.RelatedType, item.RelatedId, form.Visibility, participants));
+            item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(
+                form.Title.Trim(),
+                string.IsNullOrWhiteSpace(form.Description) ? null : form.Description,
+                form.Start,
+                form.End,
+                item.AllDay,
+                form.EventType,
+                string.IsNullOrWhiteSpace(form.Location) ? null : form.Location.Trim(),
+                item.RelatedType,
+                item.RelatedId,
+                form.Visibility,
+                participants));
             await NotifySuccessAsync(L["Catalog:Updated"]);
             Navigation.NavigateTo("/calendar-events");
         }
@@ -105,7 +211,7 @@
     private async Task DeleteAsync()
     {
         if (item is null || !item.CanManage) return;
-        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], item.Title))) return;
         try { await Work.DeleteCalendarEventAsync(EventId); Navigation.NavigateTo("/calendar-events"); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
@@ -113,6 +219,10 @@
     {
         public string Title { get; set; } = "";
         public string Description { get; set; } = "";
+        public DateTime Start { get; set; } = DateTime.Now;
+        public DateTime End { get; set; } = DateTime.Now.AddHours(1);
+        public string EventType { get; set; } = "Meeting";
+        public string Location { get; set; } = "";
         public string Visibility { get; set; } = "Private";
         public HashSet<Guid> Participants { get; } = [];
     }

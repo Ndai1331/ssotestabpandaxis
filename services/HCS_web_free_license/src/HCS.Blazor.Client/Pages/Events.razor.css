@@ -1,6 +1,7 @@
 .hcs-event-list-filters { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(15rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr) auto; }
 .hcs-event-list-filters .hcs-catalog-search { min-width: 0; width: 100%; }
-.hcs-event-table-wrap { overflow-x: auto; }
+.hcs-event-table-wrap { overflow: hidden; }
+.hcs-event-table-wrap .docs-table-scroll { overflow-x: auto; }
 .hcs-event-table { margin-bottom: 0; min-width: 900px; }
 .hcs-event-table th { color: var(--color-muted, #5C6578); font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
 .hcs-event-table td { color: var(--color-text, #1A1A2E); }

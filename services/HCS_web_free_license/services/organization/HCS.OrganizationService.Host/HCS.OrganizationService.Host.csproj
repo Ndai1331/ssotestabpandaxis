@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\HCS.OrganizationService\HCS.OrganizationService.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\HCS.Logging\HCS.Logging.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">

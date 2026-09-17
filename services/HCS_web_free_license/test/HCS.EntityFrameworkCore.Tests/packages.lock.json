@@ -1199,6 +1199,15 @@
           "Serilog": "4.0.0"
         }
       },
+      "Serilog.Sinks.Seq": {
+        "type": "Transitive",
+        "resolved": "9.0.0",
+        "contentHash": "aNU8A0K322q7+voPNmp1/qNPH+9QK8xvM1p72sMmCG0wGlshFzmtDW9QnVSoSYCj0MgQKcMOlgooovtBhRlNHw==",
+        "dependencies": {
+          "Serilog": "4.2.0",
+          "Serilog.Sinks.File": "6.0.0"
+        }
+      },
       "Shouldly": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -2678,6 +2687,7 @@
           "HCS.Application.Contracts": "[1.0.0, )",
           "HCS.Domain": "[1.0.0, )",
           "Microsoft.Data.SqlClient": "[6.0.2, )",
+          "Microsoft.Extensions.Http": "[10.0.9, )",
           "MiniExcel": "[1.41.4, )",
           "Volo.Abp.Account.Application": "[10.6.0, )",
           "Volo.Abp.FeatureManagement.Application": "[10.6.0, )",
@@ -2789,6 +2799,14 @@
           "Volo.Abp.EventBus": "[10.6.0, )"
         }
       },
+      "hcs.logging": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "[10.0.9, )",
+          "Serilog": "[4.3.0, )",
+          "Serilog.Sinks.Seq": "[9.0.0, )"
+        }
+      },
       "hcs.platformservice": {
         "type": "Project",
         "dependencies": {
@@ -2796,6 +2814,7 @@
           "HCS.CollaborationService.Contracts": "[1.0.0, )",
           "HCS.EntityFrameworkCore": "[1.0.0, )",
           "HCS.HttpApi": "[1.0.0, )",
+          "HCS.Logging": "[1.0.0, )",
           "OpenIddict.Validation.AspNetCore": "[7.5.0, )",
           "OpenIddict.Validation.SystemNetHttp": "[7.5.0, )",
           "Serilog.AspNetCore": "[9.0.0, )",

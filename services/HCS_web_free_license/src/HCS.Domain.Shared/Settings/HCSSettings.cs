@@ -1,10 +1,13 @@
-﻿namespace HCS.Settings;
+﻿using System;
+
+namespace HCS.Settings;
 
 public static class HCSSettings
 {
     private const string Prefix = "HCS";
 
     public const string ShowSsoLoginButton = Prefix + ".Authentication.ShowSsoLoginButton";
+    public const string AllowSigningFromDocuments = Prefix + ".Workflow.AllowSigningFromDocuments";
     public const string BrandingTitle = Prefix + ".Branding.Title";
     public const string BrandingDescription = Prefix + ".Branding.Description";
     public const string BrandingShowText = Prefix + ".Branding.ShowText";
@@ -12,6 +15,10 @@ public static class HCSSettings
     public const string BrandingLogoRevision = Prefix + ".Branding.LogoRevision";
     public const string BrandingFaviconRevision = Prefix + ".Branding.FaviconRevision";
     public const string BrandingBackgroundRevision = Prefix + ".Branding.BackgroundRevision";
+    public const string LegacySigningReportEnabled = Prefix + ".LegacySigningReport.Enabled";
     public const string LegacySigningReportSqlServerConnectionString =
         Prefix + ".LegacySigningReport.SqlServerConnectionString";
+
+    public static bool IsEnabledOrDefault(string? value) =>
+        !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
 }

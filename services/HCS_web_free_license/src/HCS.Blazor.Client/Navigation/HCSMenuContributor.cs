@@ -1,29 +1,31 @@
 using System;
 using System.Threading.Tasks;
+using HCS.Localization;
 using HCS.Permissions;
+using HCS.Settings;
+using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account.Localization;
 using Volo.Abp.Authorization.Permissions;
+using Volo.Abp.Settings;
 using Volo.Abp.UI.Navigation;
 
 namespace HCS.Blazor.Client.Navigation;
 
 public sealed class HCSMenuContributor : IMenuContributor
 {
-    public Task ConfigureMenuAsync(MenuConfigurationContext context)
+    public async Task ConfigureMenuAsync(MenuConfigurationContext context)
     {
         if (context.Menu.Name == StandardMenus.Main)
         {
-            ConfigureMainMenu(context);
+            await ConfigureMainMenuAsync(context);
         }
         else if (context.Menu.Name == StandardMenus.User)
         {
             ConfigureUserMenu(context);
         }
-
-        return Task.CompletedTask;
     }
 
-    private static void ConfigureMainMenu(MenuConfigurationContext context)
+    private static async Task ConfigureMainMenuAsync(MenuConfigurationContext context)
     {
         context.Menu.AddItem(
             Item("HCS.Workspace", "Không gian làm việc", "/workspace", "fa fa-house", 10)
@@ -67,12 +69,13 @@ public sealed class HCSMenuContributor : IMenuContributor
             .RequirePermissions(HCSPermissions.Documents.WorkflowView));
         context.Menu.AddItem(workflows);
 
-        var organization = Item("HCS.Organization", "Tổ chức", icon: "fa fa-sitemap", order: 200);
-        organization.AddItem(Item("HCS.Organization.Departments", "Phòng ban", "/departments", "fa fa-diagram-project", 10)
+        var L = context.GetLocalizer<HCSResource>();
+        var organization = Item("HCS.Organization", L["Menu:Organization"], icon: "fa fa-sitemap", order: 200);
+        organization.AddItem(Item("HCS.Organization.Departments", L["Menu:Departments"], "/departments", "fa fa-diagram-project", 10)
             .RequirePermissions(HCSPermissions.Organization.Departments));
-        organization.AddItem(Item("HCS.Organization.Units", "Đơn vị", "/unit-lists", "fa fa-building", 20)
+        organization.AddItem(Item("HCS.Organization.Units", L["Menu:Units"], "/unit-lists", "fa fa-building", 20)
             .RequirePermissions(HCSPermissions.Organization.Units));
-        organization.AddItem(Item("HCS.Organization.Positions", "Chức vụ", "/positions", "fa fa-id-badge", 30)
+        organization.AddItem(Item("HCS.Organization.Positions", L["Menu:Positions"], "/positions", "fa fa-id-badge", 30)
             .RequirePermissions(HCSPermissions.Organization.Positions));
         context.Menu.AddItem(organization);
 
@@ -107,8 +110,14 @@ public sealed class HCSMenuContributor : IMenuContributor
         documentCatalogs.AddItem(Item("HCS.Catalogs.EventTypes", "Loại sự kiện", "/event-types", order: 80)
             .RequirePermissions(false, HCSPermissions.Catalogs.EventTypes, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
         catalogs.AddItem(documentCatalogs);
-        catalogs.AddItem(Item("HCS.Catalogs.ProposalStatistics", "Thống kê đề xuất", "/thong-ke-de-xuat", "fa fa-chart-pie", 90)
-            .RequirePermissions(HCSPermissions.Documents.SigningReport));
+        var proposalStatsSetting = await context.ServiceProvider
+            .GetRequiredService<ISettingProvider>()
+            .GetOrNullAsync(HCSSettings.LegacySigningReportEnabled);
+        if (HCSSettings.IsEnabledOrDefault(proposalStatsSetting))
+        {
+            catalogs.AddItem(Item("HCS.Catalogs.ProposalStatistics", "Thống kê đề xuất", "/thong-ke-de-xuat", "fa fa-chart-pie", 90)
+                .RequirePermissions(HCSPermissions.Documents.SigningReport));
+        }
         context.Menu.AddItem(catalogs);
 
         var administration = Item("HCS.Administration", "Quản trị", icon: "fa fa-shield-halved", order: 350)

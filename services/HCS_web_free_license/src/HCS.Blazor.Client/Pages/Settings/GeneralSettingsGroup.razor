@@ -1,0 +1,137 @@
+@using HCS.Blazor.Client.Settings
+@using HCS.Settings
+@inherits HCSComponentBase
+@inject SystemFeatureSettingsClient SettingsClient
+@inject SystemFeatureState Features
+
+<section class="hcs-auth-settings" aria-labelledby="hcs-general-settings-title" aria-busy="@(isLoading || isSaving ? "true" : "false")">
+    <header class="hcs-auth-settings__header">
+        <div>
+            <p class="hcs-auth-settings__eyebrow">@L["Settings:GeneralEyebrow"]</p>
+            <h2 id="hcs-general-settings-title">@L["Settings:GeneralGroup"]</h2>
+            <p>@L["Settings:GeneralDescription"]</p>
+        </div>
+        <i class="fa fa-sliders hcs-auth-settings__icon" aria-hidden="true"></i>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="hcs-auth-settings__state" role="status" aria-live="polite">
+            <HcsLoadingIcon />
+            <span>@L["Settings:GeneralLoading"]</span>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="hcs-auth-settings__error" role="alert">
+                <span>@errorMessage</span>
+                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isSaving">
+                    @L["Settings:BrandingRetry"]
+                </Button>
+            </div>
+        }
+
+        <div class="hcs-auth-settings__row">
+            <div>
+                <h3>@L["Settings:AllowSigningFromDocuments"]</h3>
+                <p id="hcs-allow-signing-from-documents-description">@L["Settings:AllowSigningFromDocumentsDescription"]</p>
+            </div>
+            <button type="button"
+                    class="hcs-auth-settings__switch @(allowSigningFromDocuments ? "is-enabled" : "is-disabled")"
+                    aria-pressed="@(allowSigningFromDocuments ? "true" : "false")"
+                    aria-describedby="hcs-allow-signing-from-documents-description"
+                    @onclick="ToggleAllowSigningFromDocuments"
+                    disabled="@isSaving">
+                <span class="hcs-auth-settings__switch-track" aria-hidden="true">
+                    <span class="hcs-auth-settings__switch-thumb"></span>
+                </span>
+                <span>@(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsEnabled"] : L["Settings:AllowSigningFromDocumentsDisabled"])</span>
+            </button>
+        </div>
+
+        <div class="hcs-auth-settings__footer">
+            <span class="hcs-auth-settings__status" role="status" aria-live="polite">
+                @(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsStatusEnabled"] : L["Settings:AllowSigningFromDocumentsStatusDisabled"])
+            </span>
+            <Button Color="Color.Primary"
+                    Clicked="SaveAsync"
+                    Loading="@isSaving"
+                    Disabled="@(isSaving || !isDirty)">
+                <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
+                @L["Settings:GeneralSave"]
+            </Button>
+        </div>
+    }
+</section>
+
+@code {
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool isDirty;
+    private bool allowSigningFromDocuments = true;
+    private string? errorMessage;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var settings = await SettingsClient.GetAsync();
+            allowSigningFromDocuments = settings.AllowSigningFromDocuments;
+            Features.Apply(settings);
+            isDirty = false;
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ToggleAllowSigningFromDocuments()
+    {
+        if (!isSaving)
+        {
+            allowSigningFromDocuments = !allowSigningFromDocuments;
+            isDirty = true;
+            errorMessage = null;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (isSaving || !isDirty)
+        {
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            await SettingsClient.UpdateGeneralAsync(new UpdateGeneralSettingsDto
+            {
+                AllowSigningFromDocuments = allowSigningFromDocuments
+            });
+            await Features.RefreshAsync();
+            isDirty = false;
+            await NotifySuccessAsync(L["Settings:GeneralSaved"]);
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception, BffErrorKind.Save);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

@@ -268,4 +268,5 @@ public sealed record UserDepartmentLookupDto(
     Guid? DepartmentId,
     string? DepartmentName = null,
     Guid? PositionId = null,
-    string? PositionName = null);
+    string? PositionName = null,
+    IReadOnlyList<Guid>? DepartmentIds = null);

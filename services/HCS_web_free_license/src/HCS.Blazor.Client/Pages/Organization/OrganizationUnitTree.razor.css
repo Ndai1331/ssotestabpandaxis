@@ -1,15 +1,150 @@
-.hcs-ou-tree { color: #45677e; }
-.hcs-ou-tree__row { align-items: center; border-radius: .45rem; display: flex; gap: .2rem; min-height: 2.35rem; padding: .1rem .2rem; }
-.hcs-ou-tree__row.is-selected { background: #eef3ff; color: #2f5bf2; }
+.hcs-ou-tree {
+    color: var(--color-gray-700, #355770);
+}
+
+.hcs-ou-tree__empty {
+    color: var(--color-muted, #7990a0);
+    font-size: .88rem;
+    padding: .75rem .2rem;
+}
+
+.hcs-ou-tree__row {
+    align-items: center;
+    background: var(--color-white, #fff);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    display: flex;
+    gap: .1rem;
+    min-height: 2.05rem;
+    padding: .1rem .15rem .1rem .2rem;
+}
+
+.hcs-ou-tree__row:hover {
+    background: var(--color-primary-soft, #e7f8f6);
+    border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-white));
+}
+
+.hcs-ou-tree__row.is-selected {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
 .hcs-ou-tree__expand,
-.hcs-ou-tree__expand-placeholder { align-items: center; background: transparent; border: 0; color: currentColor; display: inline-flex; height: 1.7rem; justify-content: center; width: 1.7rem; }
-.hcs-ou-tree__expand { cursor: pointer; font-size: .72rem; }
-.hcs-ou-tree__node { align-items: center; background: transparent; border: 0; color: inherit; display: flex; flex: 1; gap: .55rem; min-width: 0; padding: .2rem; text-align: left; }
-.hcs-ou-tree__node:hover { color: #2f5bf2; }
-.hcs-ou-tree__folder { color: #476a7e; }
-.hcs-ou-tree__row.is-selected .hcs-ou-tree__folder { color: #2f5bf2; }
-.hcs-ou-tree__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hcs-ou-tree__children { border-left: 1px solid #dce6ec; margin-left: .95rem; padding-left: .55rem; }
-.hcs-ou-tree__actions { flex: 0 0 auto; }
-.hcs-ou-tree__actions-toggle { border: 0; color: #6f8797; padding: .15rem .4rem; }
-.hcs-ou-tree__actions-toggle::after { display: none; }
+.hcs-ou-tree__expand-placeholder {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    display: inline-flex;
+    flex: 0 0 1.4rem;
+    height: 1.4rem;
+    justify-content: center;
+    padding: 0;
+    width: 1.4rem;
+}
+
+.hcs-ou-tree__expand {
+    cursor: pointer;
+    opacity: .8;
+}
+
+.hcs-ou-tree__node {
+    align-items: center;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: .2rem .35rem !important;
+    text-align: left;
+}
+
+.hcs-ou-tree__label {
+    font-size: .9rem;
+    font-weight: 650;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hcs-ou-tree__children {
+    border-left: 1px solid var(--color-gray-100, #dce6ec);
+    margin: .1rem 0 .1rem .85rem;
+    padding-left: .35rem;
+}
+
+.hcs-ou-tree__row.is-selected .hcs-ou-tree__children {
+    border-left-color: rgb(255 255 255 / 35%);
+}
+
+.hcs-ou-tree__actions {
+    flex: 0 0 auto;
+    position: relative;
+}
+
+.hcs-ou-tree__row .msg-more {
+    color: inherit;
+    height: 1.7rem;
+    min-height: 1.7rem;
+    min-width: 1.7rem;
+    opacity: .75;
+    padding: 0;
+    width: 1.7rem;
+}
+
+.hcs-ou-tree__row:hover .msg-more,
+.hcs-ou-tree__actions.is-open .msg-more {
+    opacity: 1;
+}
+
+.hcs-ou-tree__menu {
+    background: var(--color-white, #fff);
+    border: 1px solid var(--color-gray-100, #e2eaf0);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, .12);
+    min-width: 13.5rem;
+    padding: .35rem;
+    position: absolute;
+    right: 0;
+    top: calc(100% + .2rem);
+    z-index: 30;
+}
+
+.hcs-ou-tree__menu button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    color: var(--color-gray-700, #334155);
+    display: flex;
+    font-size: .82rem;
+    font-weight: 600;
+    gap: .55rem;
+    min-height: 2.15rem;
+    padding: 0 .65rem;
+    text-align: left;
+    width: 100%;
+}
+
+.hcs-ou-tree__menu button:hover {
+    background: var(--color-primary-soft, #e7f8f6);
+    color: var(--color-primary);
+}
+
+.hcs-ou-tree__menu button.is-danger {
+    color: var(--color-danger, #dc2626);
+}
+
+.hcs-ou-tree__menu button.is-danger:hover {
+    background: color-mix(in srgb, var(--color-danger, #dc2626) 10%, #fff);
+}
+
+.hcs-ou-tree__menu svg {
+    flex: 0 0 16px;
+    height: 16px;
+    width: 16px;
+}

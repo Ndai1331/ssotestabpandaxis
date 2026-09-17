@@ -28,6 +28,7 @@ public sealed class HCSPermissionMenuMapTests
     [InlineData("WorkManagement.EmployeeRatings.Dashboard", HCSPermissions.MenuGroups.Social)]
     [InlineData("HCS.Languages", HCSPermissions.MenuGroups.Administration)]
     [InlineData("HCS.AuditViewer", HCSPermissions.MenuGroups.Administration)]
+    [InlineData("HCS.ServiceLogs", HCSPermissions.MenuGroups.Administration)]
     [InlineData("HCS.SystemBranding.Update", HCSPermissions.MenuGroups.Administration)]
     [InlineData("HCS.Organization.UserMappings", HCSPermissions.MenuGroups.Administration)]
     [InlineData("Collaboration.Administration", HCSPermissions.MenuGroups.Administration)]

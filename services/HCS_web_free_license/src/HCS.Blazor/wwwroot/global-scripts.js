@@ -51,13 +51,49 @@ window.hcsDownloadTextFile = (fileName, content, mimeType) => {
     URL.revokeObjectURL(url);
 };
 
+window.hcsDefaultBrandingIcon = () =>
+    document.documentElement.dataset.hcsDefaultIcon || "/images/logo/default-globe.svg";
+
+const hcsIconContentType = (url) => {
+    const path = (url || "").split("?")[0].toLowerCase();
+    if (path.endsWith(".svg")) {
+        return "image/svg+xml";
+    }
+    if (path.endsWith(".ico")) {
+        return "image/x-icon";
+    }
+    return "image/png";
+};
+
+const hcsApplyLoadedIcon = (selector, url, attribute, fallback) => {
+    const nodes = document.querySelectorAll(selector);
+    const next = typeof url === "string" && url.trim() ? url.trim() : fallback;
+    const assign = (value) => {
+        nodes.forEach((element) => {
+            element.setAttribute(attribute, value);
+            if (attribute === "href") {
+                element.setAttribute("type", hcsIconContentType(value));
+            }
+        });
+    };
+
+    if (!next || next === fallback) {
+        assign(fallback);
+        return;
+    }
+
+    const probe = new Image();
+    probe.onload = () => assign(next);
+    probe.onerror = () => assign(fallback);
+    probe.src = next;
+};
+
 window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgroundUrl) => {
+    const fallbackIcon = window.hcsDefaultBrandingIcon();
     const nextTitle = typeof title === "string" && title.trim() ? title.trim() : "HCS";
     const nextDescription = typeof description === "string" && description.trim()
         ? description.trim()
         : "Hệ thống hành chính số";
-    const nextLogoUrl = typeof logoUrl === "string" && logoUrl ? logoUrl : "/images/logo/hcs-icon.png";
-    const nextFaviconUrl = typeof faviconUrl === "string" && faviconUrl ? faviconUrl : "/images/logo/hcs-icon.png";
     const nextBackgroundImage = typeof backgroundUrl === "string" && backgroundUrl
         ? `url("${backgroundUrl}")`
         : "none";
@@ -90,11 +126,9 @@ window.hcsApplySystemBranding = (title, description, logoUrl, faviconUrl, backgr
     document.title = pageTitle ? `${pageTitle} · ${nextTitle}` : nextTitle;
     window.__hcsSystemBrandingTitle = nextTitle;
 
-    document.querySelectorAll("[data-hcs-system-branding-favicon]").forEach((element) => {
-        element.setAttribute("href", nextFaviconUrl);
-    });
+    hcsApplyLoadedIcon("[data-hcs-system-branding-favicon]", faviconUrl, "href", fallbackIcon);
+    hcsApplyLoadedIcon("[data-hcs-branding-logo]", logoUrl, "src", fallbackIcon);
     document.querySelectorAll("[data-hcs-branding-logo]").forEach((element) => {
-        element.setAttribute("src", nextLogoUrl);
         element.setAttribute("alt", nextTitle);
     });
     document.querySelectorAll("[data-hcs-branding-title]").forEach((element) => {

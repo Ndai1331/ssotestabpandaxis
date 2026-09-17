@@ -1,4 +1,5 @@
 using HCS.EntityFrameworkCore;
+using HCS.Logging;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Volo.Abp;
@@ -17,7 +18,8 @@ public static class Program
                 .ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services)
                 .Enrich.FromLogContext()
-                .WriteTo.Console());
+                .WriteTo.Console()
+                .WriteToHcsSeq(context.Configuration, HcsServiceLogCatalog.Applications.PlatformService));
 
             await builder.AddApplicationAsync<HCSPlatformServiceModule>();
             var app = builder.Build();

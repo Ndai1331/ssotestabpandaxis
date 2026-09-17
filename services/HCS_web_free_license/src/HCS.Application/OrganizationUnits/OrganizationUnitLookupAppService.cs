@@ -64,6 +64,7 @@ public class OrganizationUnitLookupAppService : HCSAppService, IOrganizationUnit
             {
                 UserId = userId,
                 OrganizationUnitId = primary.Id,
+                OrganizationUnitIds = units.Select(unit => unit.Id).ToArray(),
                 DisplayName = string.Join(", ", units.Select(unit => unit.DisplayName))
             });
         }

@@ -81,4 +81,5 @@ public interface ISigningKpiReportService
     Task<SigningKpiReportDto> GetAsync(GetSigningKpiInput input, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SigningKpiDetailRowDto>> GetDetailsAsync(GetSigningKpiInput input,
         CancellationToken cancellationToken = default);
+    Task<bool> IsEnabledAsync(CancellationToken cancellationToken = default);
 }

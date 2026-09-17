@@ -63,6 +63,7 @@
             </form>
 
             <div class="docs-table-wrap">
+                <div class="docs-table-scroll">
                 @if (isLoading)
                 {
                     <DocsEmpty Loading="true" />
@@ -111,6 +112,7 @@
                         </tbody>
                     </table>
                 }
+                </div>
                 <HcsPager TotalCount="totalCount" PageSize="pageSize" PageSizeId="wf-instance-page-size"
                           CanPrev="CanPrev" CanNext="CanNext" Disabled="@isLoading"
                           FirstClicked="GoFirst" PrevClicked="GoPrev" NextClicked="GoNext" LastClicked="GoLast"

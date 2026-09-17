@@ -76,6 +76,7 @@
             </form>
 
             <div class="docs-table-wrap">
+                <div class="docs-table-scroll">
                 @if (isLoadingUsers)
                 {
                     <DocsEmpty Loading="true" />
@@ -154,6 +155,7 @@
                         </tbody>
                     </table>
                 }
+                </div>
                 <HcsPager TotalCount="totalUsers" PageSize="pageSize" PageSizeId="users-page-size" PageSizes="PageSizeOptions"
                           CanPrev="CanPrevPage" CanNext="CanNextPage" Disabled="@isLoadingUsers"
                           FirstClicked="GoFirstPage" PrevClicked="GoPrevPage" NextClicked="GoNextPage" LastClicked="GoLastPage"
@@ -173,9 +175,9 @@
                         <div class="hcs-admin-alert" role="alert">@formErrorMessage</div>
                     }
                     <div class="process-side-tabs" role="tablist">
-                        <button class="process-side-tab @(activeUserTab == "info" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "info")">Thông tin người dùng</button>
-                        <button class="process-side-tab @(activeUserTab == "roles" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "roles")">Vai trò (@userForm.RoleNames.Count)</button>
-                        <button class="process-side-tab @(activeUserTab == "departments" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "departments")">Cây phòng ban (@(string.IsNullOrWhiteSpace(userForm.DepartmentId) ? 0 : 1))</button>
+                        <button class="process-side-tab @(activeUserTab == "info" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "info")">@L["Users:InfoTab"]</button>
+                        <button class="process-side-tab @(activeUserTab == "roles" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "roles")">@L["Users:RolesTab"] (@userForm.RoleNames.Count)</button>
+                        <button class="process-side-tab @(activeUserTab == "departments" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "departments")">@L["Users:DepartmentTab"] (@userForm.DepartmentIds.Count)</button>
                         @if (editingUserId.HasValue)
                         {
                             <button class="process-side-tab @(activeUserTab == "signatures" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "signatures")">@L["Admin:SignaturesTab"]</button>
@@ -250,14 +252,10 @@
                     </div>
                     <div class="hcs-user-tab-panel" hidden="@(activeUserTab != "departments")" role="tabpanel">
                         <Field>
-                            <FieldLabel>Phòng ban</FieldLabel>
-                            <Select TValue="string" @bind-Value="userForm.DepartmentId">
-                                <SelectItem Value="@string.Empty">Chọn phòng ban</SelectItem>
-                                @foreach (var department in departments)
-                                {
-                                    <SelectItem Value="@department.Id.ToString()">@OrganizationUnitCatalogMapper.DisplayText(department)</SelectItem>
-                                }
-                            </Select>
+                            <FieldLabel>@L["Catalog:Department"]</FieldLabel>
+                            <DepartmentTreeSelect Items="departmentTree" SelectedIds="userForm.DepartmentIds.ToList()"
+                                                  SelectedIdsChanged="OnUserDepartmentsChanged"
+                                                  EmptyMessage="@L["Users:DepartmentEmpty"]" />
                         </Field>
                         <p class="hcs-form-note">@L["Users:DepartmentNote"]</p>
                     </div>
@@ -295,6 +293,7 @@
     private readonly List<IdentityAdminUserDto> users = [];
     private readonly List<IdentityAdminRoleDto> roles = [];
     private readonly List<DepartmentCatalogDto> departments = [];
+    private List<DepartmentTreeNode> departmentTree = [];
     private readonly List<PositionCatalogDto> positions = [];
     private readonly Dictionary<Guid, string> userRoleNames = [];
     private readonly Dictionary<Guid, string> userDepartmentNames = [];
@@ -385,10 +384,12 @@
         {
             departments.Clear();
             departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync());
+            departmentTree = DepartmentTreeSelectHelper.Build(departments);
         }
         catch (Exception)
         {
             departments.Clear();
+            departmentTree = [];
         }
 
         try
@@ -425,9 +426,9 @@
             foreach (var user in loadedUsers)
             {
                 departmentsByUser.TryGetValue(user.Id, out var membership);
-                userDepartmentNames[user.Id] = membership?.DepartmentId is { } departmentId
-                    ? DepartmentName(departmentId)
-                    : "—";
+                userDepartmentNames[user.Id] = string.IsNullOrWhiteSpace(membership?.DepartmentName)
+                    ? "—"
+                    : membership.DepartmentName;
                 positionsByUser.TryGetValue(user.Id, out var mapping);
                 userPositionNames[user.Id] = mapping?.PositionId is { } positionId ? PositionName(positionId) : "—";
             }
@@ -512,10 +513,16 @@
         {
             foreach (var role in await IdentityClient.GetUserRolesAsync(latest.Id)) userForm.RoleNames.Add(role.Name);
             var memberships = await OrganizationUnits.GetUserDepartmentsAsync([latest.Id]);
-            var membership = memberships.FirstOrDefault(item => item.DepartmentId.HasValue);
-            if (membership?.DepartmentId is { } organizationUnitId)
+            var membership = memberships.FirstOrDefault();
+            userForm.DepartmentIds.Clear();
+            foreach (var unitId in membership?.DepartmentIds ?? [])
             {
-                userForm.DepartmentId = organizationUnitId.ToString();
+                userForm.DepartmentIds.Add(unitId);
+            }
+
+            if (userForm.DepartmentIds.Count == 0 && membership?.DepartmentId is { } fallbackId)
+            {
+                userForm.DepartmentIds.Add(fallbackId);
             }
 
             var mappings = await IdentityClient.GetUserMappingsAsync(latest.Id);
@@ -622,12 +629,18 @@
         }
     }
 
-    private async Task SyncOrganizationUnitsAsync(Guid userId)
+    private async Task SyncOrganizationUnitsAsync(Guid userId) =>
+        await OrganizationUnits.SetUserOrganizationUnitsAsync(userId, userForm.DepartmentIds);
+
+    private Task OnUserDepartmentsChanged(IReadOnlyList<Guid> ids)
     {
-        var organizationUnitIds = Guid.TryParse(userForm.DepartmentId, out var organizationUnitId)
-            ? new[] { organizationUnitId }
-            : [];
-        await OrganizationUnits.SetUserOrganizationUnitsAsync(userId, organizationUnitIds);
+        userForm.DepartmentIds.Clear();
+        foreach (var id in ids)
+        {
+            userForm.DepartmentIds.Add(id);
+        }
+
+        return InvokeAsync(StateHasChanged);
     }
 
     private async Task SyncOrganizationMappingAsync(Guid userId)

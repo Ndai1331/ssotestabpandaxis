@@ -9,7 +9,7 @@
 .hcs-empty { min-height: 16rem; display: grid; place-content: center; justify-items: center; padding: 2rem; text-align: center; border: 1px dashed #b8cbc6; border-radius: 1rem; color: #526965; }
 .hcs-empty i { font-size: 2rem; color: #277563; }
 .hcs-empty h2 { margin: .8rem 0 .25rem; font-size: var(--hcs-font-size-section-title, 1.1rem); color: var(--hcs-color-heading, var(--color-primary)); }
-.hcs-data-table { border: 1px solid #d9e5e2; border-radius: 1rem; background: #fff; }
+.hcs-data-table { border: 1px solid #d9e5e2; border-radius: 1rem; background: #fff; overflow: hidden; }
 .hcs-data-table th { color: #395951; background: #f3f7f6; white-space: nowrap; }
 .hcs-data-table td { max-width: 22rem; overflow-wrap: anywhere; }
 .hcs-touch-target { min-height: 44px; }

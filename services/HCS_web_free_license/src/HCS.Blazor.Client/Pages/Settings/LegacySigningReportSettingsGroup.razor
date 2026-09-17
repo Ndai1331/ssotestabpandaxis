@@ -2,6 +2,7 @@
 @using HCS.Settings
 @inherits HCSComponentBase
 @inject LegacySigningReportSettingsClient SettingsClient
+@inject SystemFeatureState Features
 
 <section class="hcs-branding-settings" aria-labelledby="hcs-legacy-sql-settings-title" aria-busy="@(isLoading || isBusy ? "true" : "false")">
     <header class="hcs-branding-settings__header">
@@ -10,7 +11,7 @@
             <h2 id="hcs-legacy-sql-settings-title">@L["Settings:LegacySqlGroup"]</h2>
             <p>@L["Settings:LegacySqlDescription"]</p>
         </div>
-        <i class="fa fa-database hcs-branding-settings__icon" aria-hidden="true"></i>
+        <i class="fa fa-chart-pie hcs-branding-settings__icon" aria-hidden="true"></i>
     </header>
 
     @if (isLoading)
@@ -32,25 +33,56 @@
             </div>
         }
 
-        <div class="hcs-branding-settings__form-grid">
-            <Field>
-                <FieldLabel>@L["Settings:LegacySqlConnectionString"]</FieldLabel>
-                <TextInput @bind-Value="connectionString"
-                           placeholder="@SampleConnection"
-                           autocomplete="off"
-                           spellcheck="false" />
-                <FieldHelp>@L["Settings:LegacySqlConnectionHint"]</FieldHelp>
-            </Field>
+        <div class="hcs-branding-settings__sso">
+            <div>
+                <h3>@L["Settings:ProposalStatistics"]</h3>
+                <p id="hcs-proposal-statistics-description">@L["Settings:ProposalStatisticsDescription"]</p>
+            </div>
+            <button type="button"
+                    class="hcs-branding-settings__switch @(enabled ? "is-enabled" : "is-disabled")"
+                    aria-pressed="@(enabled ? "true" : "false")"
+                    aria-describedby="hcs-proposal-statistics-description"
+                    @onclick="ToggleEnabled"
+                    disabled="@isBusy">
+                <span class="hcs-branding-settings__switch-track" aria-hidden="true">
+                    <span class="hcs-branding-settings__switch-thumb"></span>
+                </span>
+                <span>@(enabled ? L["Settings:ProposalStatisticsEnabled"] : L["Settings:ProposalStatisticsDisabled"])</span>
+            </button>
         </div>
+
+        @if (enabled)
+        {
+            <div class="hcs-branding-settings__form-grid">
+                <Field>
+                    <FieldLabel>@L["Settings:LegacySqlConnectionString"]</FieldLabel>
+                    <TextInput @bind-Value="connectionString"
+                               placeholder="@SampleConnection"
+                               autocomplete="off"
+                               spellcheck="false" />
+                    <FieldHelp>@L["Settings:LegacySqlConnectionHint"]</FieldHelp>
+                </Field>
+            </div>
+        }
 
         <footer class="hcs-branding-settings__footer">
             <span class="hcs-branding-settings__status" role="status" aria-live="polite">
-                @(hasConnectionString ? L["Settings:LegacySqlConfigured"] : L["Settings:LegacySqlNotConfigured"])
+                @if (enabled)
+                {
+                    @(hasConnectionString ? L["Settings:LegacySqlConfigured"] : L["Settings:LegacySqlNotConfigured"])
+                }
+                else
+                {
+                    @L["Settings:ProposalStatisticsStatusDisabled"]
+                }
             </span>
             <div class="hcs-branding-settings__actions">
-                <Button Color="Color.Light" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
-                    @L["Settings:LegacySqlTest"]
-                </Button>
+                @if (enabled)
+                {
+                    <Button Color="Color.Light" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
+                        @L["Settings:LegacySqlTest"]
+                    </Button>
+                }
                 <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isBusy" Disabled="@isBusy">
                     <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
                     @L["Settings:LegacySqlSave"]
@@ -66,6 +98,7 @@
 
     private bool isLoading = true;
     private bool isBusy;
+    private bool enabled = true;
     private bool hasConnectionString;
     private string connectionString = string.Empty;
     private string? errorMessage;
@@ -79,8 +112,14 @@
         try
         {
             var settings = await SettingsClient.GetAsync();
+            enabled = settings.Enabled;
             hasConnectionString = settings.HasConnectionString;
             connectionString = settings.ConnectionString ?? string.Empty;
+            Features.Apply(new SystemFeatureSettingsDto
+            {
+                AllowSigningFromDocuments = Features.AllowSigningFromDocuments,
+                EnableProposalStatistics = enabled
+            });
         }
         catch (Exception exception)
         {
@@ -89,6 +128,15 @@
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private void ToggleEnabled()
+    {
+        if (!isBusy)
+        {
+            enabled = !enabled;
+            errorMessage = null;
         }
     }
 
@@ -101,6 +149,7 @@
         {
             var result = await SettingsClient.TestAsync(new UpdateLegacySigningReportSettingsDto
             {
+                Enabled = enabled,
                 ConnectionString = connectionString
             });
             if (result.Success)
@@ -127,9 +176,15 @@
         {
             await SettingsClient.UpdateAsync(new UpdateLegacySigningReportSettingsDto
             {
+                Enabled = enabled,
                 ConnectionString = connectionString
             });
             hasConnectionString = !string.IsNullOrWhiteSpace(connectionString);
+            Features.Apply(new SystemFeatureSettingsDto
+            {
+                AllowSigningFromDocuments = Features.AllowSigningFromDocuments,
+                EnableProposalStatistics = enabled
+            });
             await NotifySuccessAsync(L["Settings:LegacySqlSaved"]);
         }
         catch (Exception exception)

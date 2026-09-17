@@ -130,24 +130,31 @@ public sealed class SigningAppService(
             .Select(step => step.Code)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var actionTasks = tasks.Where(task => actionCodes.Contains(task.StepCode)).ToList();
-        var selected = actionTasks.Where(task =>
+        var isVisible = submittedByUserId == userId || actionTasks.Any(task =>
             task.Status == ApprovalTaskStatus.Pending
             || task.AssigneeUserId == userId
-            || task.DecidedBy == userId).ToList();
-        if (submittedByUserId == userId && selected.Count == 0 && actionTasks.Count > 0)
-        {
-            selected.Add(actionTasks
-                .OrderByDescending(task => task.DecidedAt ?? task.CreationTime)
-                .First());
-        }
+            || task.DecidedBy == userId);
+        if (!isVisible || actionTasks.Count == 0)
+            return [];
 
-        return selected;
+        // A queue row represents a submission, not each user's task history.
+        // Pick from all steps so previous participants also see its current progress.
+        var stepOrders = steps.ToDictionary(step => step.Code, step => step.Order,
+            StringComparer.OrdinalIgnoreCase);
+        return actionTasks
+            .OrderByDescending(task => task.Status == ApprovalTaskStatus.Pending)
+            .ThenByDescending(task => task.DecidedAt ?? task.CreationTime)
+            .ThenByDescending(task => task.CreationTime)
+            .ThenByDescending(task => stepOrders[task.StepCode])
+            .Take(1)
+            .ToList();
     }
 
     private static SigningQueueDocumentDto MapQueueDocument(DocumentAggregate document) =>
         new(document.Id, document.Number, document.Title, document.Description, document.Status,
             document.Files.Select(file => new DocumentFileDto(file.Id, file.FileName, file.ContentType,
-                file.Size, file.Sha256, file.CreationTime, file.PairedFileId)).ToList(),
+                file.Size, file.Sha256, file.CreationTime, file.PairedFileId,
+                file.Id == WorkflowFileSelection.Resolve(document))).ToList(),
             document.CreationTime, document.SourceType, document.FromUserId, document.DocumentCode);
 
     public async Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default)
@@ -441,12 +448,14 @@ public sealed class SigningAppService(
             {
                 var trackedDocument = await db.Documents.Include(x => x.Files).Include(x => x.History)
                     .SingleAsync(x => x.Id == input.DocumentId, cancellationToken);
+                var isWorkflowFile = WorkflowFileSelection.Resolve(trackedDocument) == input.FileId;
                 var pair = await documentFiles.AddDocxPdfPairAsync(trackedDocument, preparedWordBytes!, signedContent,
                     BuildDerivedFileName(pairedWordFile!.FileName, "-Sign", ResolveSigningStepOrder(placeholder), ".docx"),
                     BuildDerivedFileName(file.FileName, "-Sign", ResolveSigningStepOrder(placeholder), ".pdf"),
                     userId, DateTime.UtcNow, cancellationToken);
                 documentBlobNames.Add(pair.WordBlobName);
                 documentBlobNames.Add(pair.PdfBlobName);
+                if (isWorkflowFile) trackedDocument.SetWorkflowFile(pair.PdfFile.Id);
             }
             else
             {

@@ -55,7 +55,7 @@
             <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="HideAsync">@L["Catalog:Close"]</Button>
             @if (item is { CanManage: true })
             {
-                <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="EditAsync">@L["Catalog:Edit"]</Button>
+                <Button Color="Color.Info" Outline="true" Class="hcs-calendar-edit" Clicked="EditAsync"><i class="fa fa-pencil" aria-hidden="true"></i> @L["Catalog:Edit"]</Button>
             }
             @if (HasRelated)
             {

@@ -18,6 +18,11 @@ public static class HCSPermissions
         public const string Default = GroupName + ".AuditViewer";
     }
 
+    public static class ServiceLogs
+    {
+        public const string Default = GroupName + ".ServiceLogs";
+    }
+
     public static class SystemBranding
     {
         public const string Default = GroupName + ".SystemBranding";

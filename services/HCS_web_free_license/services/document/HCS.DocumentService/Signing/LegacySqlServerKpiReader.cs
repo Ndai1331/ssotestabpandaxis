@@ -16,6 +16,8 @@ public sealed class SigningKpiSourceResult
 
 public interface ILegacySqlServerKpiReader
 {
+    Task<bool> IsEnabledAsync(CancellationToken cancellationToken = default);
+
     Task<SigningKpiSourceResult> GetAsync(GetSigningKpiInput input, CancellationToken cancellationToken = default);
 
     Task<(bool Available, string? Error, List<SigningKpiDetailRowDto> Rows)> GetDetailRowsAsync(
@@ -33,6 +35,12 @@ public sealed class LegacySqlServerKpiReader(
 {
     private const string Source = "QLDH_MSSQL";
     private readonly LegacySigningReportOptions _options = options.Value;
+
+    public async Task<bool> IsEnabledAsync(CancellationToken cancellationToken = default)
+    {
+        var fromPlatform = await TryGetFromPlatformAsync(cancellationToken);
+        return fromPlatform?.Enabled ?? true;
+    }
 
     public async Task<SigningKpiSourceResult> GetAsync(
         GetSigningKpiInput input,
@@ -182,15 +190,15 @@ public sealed class LegacySqlServerKpiReader(
     private async Task<string?> ResolveConnectionStringAsync(CancellationToken cancellationToken)
     {
         var fromSettings = await TryGetFromPlatformAsync(cancellationToken);
-        if (!string.IsNullOrWhiteSpace(fromSettings))
-            return fromSettings;
+        if (!string.IsNullOrWhiteSpace(fromSettings?.ConnectionString))
+            return fromSettings.ConnectionString;
 
         return string.IsNullOrWhiteSpace(_options.SqlServerConnectionString)
             ? null
             : _options.SqlServerConnectionString;
     }
 
-    private async Task<string?> TryGetFromPlatformAsync(CancellationToken cancellationToken)
+    private async Task<PlatformConnectionResponse?> TryGetFromPlatformAsync(CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(configuration["Services:Platform:BaseUrl"]))
             return null;
@@ -207,10 +215,9 @@ public sealed class LegacySqlServerKpiReader(
             if (!response.IsSuccessStatusCode)
                 return null;
 
-            var payload = await response.Content.ReadFromJsonAsync<PlatformConnectionResponse>(
+            return await response.Content.ReadFromJsonAsync<PlatformConnectionResponse>(
                 JsonSerializerOptions,
                 cancellationToken);
-            return string.IsNullOrWhiteSpace(payload?.ConnectionString) ? null : payload.ConnectionString;
         }
         catch (Exception exception) when (exception is HttpRequestException or System.Text.Json.JsonException)
         {
@@ -224,7 +231,7 @@ public sealed class LegacySqlServerKpiReader(
         PropertyNameCaseInsensitive = true
     };
 
-    private sealed record PlatformConnectionResponse(string? ConnectionString);
+    private sealed record PlatformConnectionResponse(bool? Enabled, string? ConnectionString);
 
     private async Task<SigningKpiMetricsDto> QueryOverallAsync(
         SqlConnection conn, GetSigningKpiInput input, CancellationToken cancellationToken)

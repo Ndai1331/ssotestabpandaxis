@@ -41,7 +41,8 @@
     }
     else
     {
-        <div class="table-responsive hcs-data-table">
+        <div class="hcs-data-table">
+            <div class="table-responsive">
             <table class="table align-middle mb-0">
                 <thead><tr>@foreach (var column in columns) { <th scope="col">@Humanize(column)</th> }</tr></thead>
                 <tbody>
@@ -51,6 +52,7 @@
                 }
                 </tbody>
             </table>
+            </div>
         </div>
     }
 </section>

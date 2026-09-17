@@ -16,6 +16,20 @@ public class HCSSettingDefinitionProvider : SettingDefinitionProvider
                 description: L("Settings:SsoLoginButtonDescription")));
         context.Add(
             new SettingDefinition(
+                HCSSettings.AllowSigningFromDocuments,
+                defaultValue: "true",
+                displayName: L("Settings:AllowSigningFromDocuments"),
+                description: L("Settings:AllowSigningFromDocumentsDescription"),
+                isVisibleToClients: true));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.LegacySigningReportEnabled,
+                defaultValue: "true",
+                displayName: L("Settings:ProposalStatistics"),
+                description: L("Settings:ProposalStatisticsDescription"),
+                isVisibleToClients: true));
+        context.Add(
+            new SettingDefinition(
                 HCSSettings.BrandingTitle,
                 defaultValue: HCS.Branding.SystemBrandingDefaults.Title,
                 displayName: L("Settings:BrandingTitle"),

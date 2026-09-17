@@ -25,6 +25,7 @@ public partial class OrganizationUnitCatalog
             selectedNode = previousSelectedId.HasValue
                 ? allNodes.FirstOrDefault(node => node.Id == previousSelectedId.Value)
                 : null;
+            selectedNode ??= rootNodes.FirstOrDefault();
             hasLoaded = true;
 
             if (selectedNode is null)
@@ -52,8 +53,15 @@ public partial class OrganizationUnitCatalog
         }
     }
 
+    private Task OnOpenMenuIdChanged(Guid? id)
+    {
+        openMenuId = id;
+        return Task.CompletedTask;
+    }
+
     private async Task SelectNodeAsync(OrganizationUnitTreeNode node)
     {
+        openMenuId = null;
         selectedNode = node;
         currentMemberPage = 1;
         memberFilter = string.Empty;

@@ -14,6 +14,7 @@ using HCS.Blazor.Client.Navigation;
 using HCS.Blazor.Client.Authentication;
 using HCS.Blazor.Client.Services;
 using HCS.Blazor.Client.Auditing;
+using HCS.Blazor.Client.Logging;
 using HCS.Blazor.Client.Collaboration;
 using HCS.Blazor.Client.Layouts;
 using HCS.Blazor.Client.Pages.Organization;
@@ -86,6 +87,7 @@ public class HCSBlazorClientModule : AbpModule
         context.Services.AddScoped<LanguageCatalogState>();
         context.Services.AddScoped<IdentityAdminClient>();
         context.Services.AddScoped<AuditLogClient>();
+        context.Services.AddScoped<ServiceLogClient>();
         context.Services.AddScoped<CollaborationClient>();
         context.Services.AddScoped<SocialClient>();
         context.Services.AddScoped<SurveyCatalogCache>();
@@ -96,6 +98,8 @@ public class HCSBlazorClientModule : AbpModule
         context.Services.AddScoped<Documents.DocumentClient>();
         context.Services.AddScoped<AuthenticationSettingsClient>();
         context.Services.AddScoped<LegacySigningReportSettingsClient>();
+        context.Services.AddScoped<SystemFeatureSettingsClient>();
+        context.Services.AddScoped<SystemFeatureState>();
         context.Services.AddScoped<SystemBrandingClient>();
         context.Services.AddScoped<SystemBrandingState>();
         ConfigureRouter(context);

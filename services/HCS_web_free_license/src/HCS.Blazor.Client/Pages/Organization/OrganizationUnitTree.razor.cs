@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
@@ -10,7 +11,7 @@ public partial class OrganizationUnitTree
     public IReadOnlyList<OrganizationUnitTreeNode> Nodes { get; set; } = [];
 
     [Parameter]
-    public System.Guid? SelectedId { get; set; }
+    public Guid? SelectedId { get; set; }
 
     [Parameter]
     public bool CanCreate { get; set; }
@@ -20,6 +21,12 @@ public partial class OrganizationUnitTree
 
     [Parameter]
     public bool CanDelete { get; set; }
+
+    [Parameter]
+    public Guid? OpenMenuId { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid?> OpenMenuIdChanged { get; set; }
 
     [Parameter]
     public EventCallback<OrganizationUnitTreeNode> NodeSelected { get; set; }
@@ -33,6 +40,24 @@ public partial class OrganizationUnitTree
         return Task.CompletedTask;
     }
 
-    private Task RequestAsync(OrganizationUnitTreeNode node, OrganizationUnitAction action) =>
-        ActionRequested.InvokeAsync(new OrganizationUnitActionRequest(node, action));
+    private Task ToggleMenuAsync(Guid id) =>
+        OpenMenuIdChanged.InvokeAsync(OpenMenuId == id ? null : id);
+
+    private Task CloseMenuAsync() => OpenMenuIdChanged.InvokeAsync(null);
+
+    private async Task SelectAsync(OrganizationUnitTreeNode node)
+    {
+        if (OpenMenuId is not null)
+        {
+            await CloseMenuAsync();
+        }
+
+        await NodeSelected.InvokeAsync(node);
+    }
+
+    private async Task RequestAsync(OrganizationUnitTreeNode node, OrganizationUnitAction action)
+    {
+        await CloseMenuAsync();
+        await ActionRequested.InvokeAsync(new OrganizationUnitActionRequest(node, action));
+    }
 }

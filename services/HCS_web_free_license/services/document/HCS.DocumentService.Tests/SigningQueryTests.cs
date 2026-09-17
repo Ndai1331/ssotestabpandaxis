@@ -84,6 +84,42 @@ public sealed class SigningQueryTests
         Assert.Equal(ApprovalTaskStatus.Pending, Assert.Single(selected).Status);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Queue_returns_one_current_row_for_a_submission_with_multiple_sign_steps(bool completed)
+    {
+        var firstSigner = Guid.NewGuid();
+        var nextSigner = Guid.NewGuid();
+        var submitter = Guid.NewGuid();
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "multi", "Multi",
+        [
+            new WorkflowStepInput("view", "View", 1, "Documents.Approve", "VIEW", submitter),
+            new WorkflowStepInput("sign1", "Sign first", 2, "Documents.Approve", "SIGN", firstSigner),
+            new WorkflowStepInput("sign2", "Sign second", 3, "Documents.Approve", "SIGN", nextSigner),
+            new WorkflowStepInput("sign3", "Sign third", 4, "Documents.Approve", "SIGN", nextSigner)
+        ], Now);
+        var instance = new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start", Now);
+        var steps = definition.Steps.OrderBy(step => step.Order).ToList();
+        // Equal timestamps must still select the last step consistently.
+        for (var index = 0; index < (completed ? 3 : 1); index++)
+        {
+            var pending = instance.Tasks.Single(task => task.Status == ApprovalTaskStatus.Pending
+                && task.StepCode.StartsWith("sign"));
+            Assert.True(instance.Decide(pending.Id, true, pending.AssigneeUserId!.Value,
+                null, $"decision-{index}", steps, Now));
+        }
+
+        foreach (var viewer in new[] { firstSigner, nextSigner, submitter })
+        {
+            var row = Assert.Single(SigningAppService.SelectQueueTasks(
+                instance.Tasks.Reverse(), definition.Steps, viewer, submitter));
+            Assert.Equal(completed ? "sign3" : "sign2", row.StepCode);
+            Assert.Equal(completed ? ApprovalTaskStatus.Approved : ApprovalTaskStatus.Pending, row.Status);
+        }
+        Assert.Equal(completed ? 3 : 2, instance.Tasks.Count(task => task.StepCode.StartsWith("sign")));
+    }
+
     private static (WorkflowInstance Instance, WorkflowDefinition Definition) StartSignedWorkflow(Guid assignee)
     {
         var definition = new WorkflowDefinition(Guid.NewGuid(), "sign", "Sign",

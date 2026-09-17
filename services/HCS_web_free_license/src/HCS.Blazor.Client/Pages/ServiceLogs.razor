@@ -1,0 +1,167 @@
+@page "/administration/service-logs"
+@attribute [Authorize(Policy = "HCS.ServiceLogs")]
+@inherits HCSComponentBase
+@using HCS.Logging
+@using HCS.Blazor.Client.Logging
+@using HCS.Blazor.Client.Services
+
+<PageTitle>@L["ServiceLogs:Title"] · HCS</PageTitle>
+
+<section class="hcs-logs-page" aria-labelledby="service-logs-title" aria-hidden="@(selected is not null ? "true" : null)" inert="@(selected is not null ? "true" : null)">
+    <header class="hcs-logs-header">
+        <div>
+            <p class="hcs-logs-eyebrow"><i class="fa fa-bars-staggered" aria-hidden="true"></i> @L["ServiceLogs:Eyebrow"]</p>
+            <h1 id="service-logs-title">@L["ServiceLogs:Title"]</h1>
+            <p class="hcs-logs-description">@L["ServiceLogs:Description"]</p>
+        </div>
+        <div class="hcs-logs-header-actions">
+            <span class="hcs-logs-total" aria-live="polite">@rows.Count @L["ServiceLogs:Events"]</span>
+            <label class="hcs-logs-toggle">
+                <input type="checkbox" checked="@autoRefresh" @onchange="OnAutoRefreshChanged" />
+                @L["ServiceLogs:AutoRefresh"]
+            </label>
+            <button class="hcs-logs-button hcs-logs-button--secondary" type="button" @onclick="() => LoadAsync()" disabled="@isLoading">
+                <i class="fa fa-refresh @(isLoading ? "fa-spin" : null)" aria-hidden="true"></i> @L["Catalog:Refresh"]
+            </button>
+        </div>
+    </header>
+
+    <div class="hcs-logs-filter-card">
+        <fieldset class="hcs-logs-services">
+            <legend>@L["ServiceLogs:Services"]</legend>
+            <label class="hcs-logs-chip">
+                <input type="checkbox" checked="@allServices" @onchange="OnAllServicesChanged" />
+                @L["ServiceLogs:AllServices"]
+            </label>
+            @foreach (var application in HcsServiceLogCatalog.Applications.All)
+            {
+                <label class="hcs-logs-chip">
+                    <input type="checkbox" checked="@selectedApplications.Contains(application)" disabled="@allServices" @onchange="args => OnServiceChanged(application, args)" />
+                    @AppLabel(application)
+                </label>
+            }
+        </fieldset>
+        <fieldset class="hcs-logs-levels">
+            <legend>@L["ServiceLogs:Levels"]</legend>
+            @foreach (var level in HcsServiceLogCatalog.Levels.Allowed)
+            {
+                <button type="button" class="hcs-logs-level @(selectedLevels.Contains(level) ? $"hcs-logs-level--{level.ToLowerInvariant()} is-on" : null)" @onclick="() => ToggleLevelAsync(level)">
+                    @LevelLabel(level)
+                </button>
+            }
+        </fieldset>
+        <div class="hcs-logs-filter-primary">
+            <label class="hcs-logs-search-label" for="service-log-filter">@L["ServiceLogs:Keyword"]</label>
+            <div class="hcs-logs-search-wrap">
+                <i class="fa fa-search" aria-hidden="true"></i>
+                <input id="service-log-filter" class="hcs-logs-input hcs-logs-input--search" @bind="filter" @bind:event="oninput" @onkeydown="OnKeywordKeyDown" placeholder="@L["ServiceLogs:KeywordPlaceholder"]" autocomplete="off" />
+            </div>
+            <button class="hcs-logs-button hcs-logs-button--primary" type="button" @onclick="SearchAsync" disabled="@isLoading">
+                <i class="fa fa-search" aria-hidden="true"></i> @L["Catalog:SearchButton"]
+            </button>
+            <button class="hcs-logs-button hcs-logs-button--text" type="button" @onclick="ResetAsync" disabled="@isLoading">@L["Catalog:Reset"]</button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="hcs-logs-alert" role="alert">
+            <i class="fa fa-circle-exclamation" aria-hidden="true"></i>
+            <span>@errorMessage</span>
+            <button class="hcs-logs-button hcs-logs-button--secondary" type="button" @onclick="() => LoadAsync()">@L["Catalog:Retry"]</button>
+        </div>
+    }
+
+    <div class="hcs-logs-table-card">
+        <div class="hcs-logs-table-meta">
+            <span>@(lastUpdated.HasValue ? $"{L["ServiceLogs:UpdatedAt"]}: {lastUpdated.Value:dd/MM/yyyy HH:mm:ss}" : L["ServiceLogs:NotLoaded"])</span>
+            <span>@L["ServiceLogs:SeqNote"]</span>
+        </div>
+        <div class="hcs-logs-table-scroll">
+            <table class="hcs-logs-table">
+                <caption class="visually-hidden">@L["ServiceLogs:TableCaption"]</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["ServiceLogs:Time"]</th>
+                        <th scope="col">@L["ServiceLogs:Level"]</th>
+                        <th scope="col">@L["ServiceLogs:Service"]</th>
+                        <th scope="col">@L["ServiceLogs:Message"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (isLoading && rows.Count == 0)
+                {
+                    <tr><td colspan="4" class="hcs-logs-state" role="status"><HcsLoadingIcon /> @L["Catalog:Loading"]</td></tr>
+                }
+                else if (rows.Count == 0)
+                {
+                    <tr><td colspan="4" class="hcs-logs-state"><i class="fa fa-magnifying-glass" aria-hidden="true"></i><strong>@L["ServiceLogs:EmptyTitle"]</strong><span>@L["ServiceLogs:EmptyDescription"]</span></td></tr>
+                }
+                else
+                {
+                    @foreach (var row in rows)
+                    {
+                        <tr class="@(selected?.Id == row.Id ? "is-selected" : null)" @onclick="() => OpenDetail(row)">
+                            <td><time datetime="@IsoDate(row.Timestamp)">@FormatDate(row.Timestamp)</time></td>
+                            <td><span class="hcs-logs-badge hcs-logs-badge--@row.Level.ToLowerInvariant()">@row.Level</span></td>
+                            <td title="@row.Application">@ShortService(row.Application)</td>
+                            <td class="hcs-logs-message" title="@row.Message">
+                                @FirstValue(row.Message)
+                                @if (!string.IsNullOrWhiteSpace(row.Exception))
+                                {
+                                    <span class="hcs-logs-exception" title="@L["ServiceLogs:HasException"]"><i class="fa fa-triangle-exclamation" aria-hidden="true"></i></span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@if (selected is not null)
+{
+    <div class="hcs-logs-modal-backdrop" @onclick="CloseDetail">
+        <section @ref="detailModal" class="hcs-logs-modal" role="dialog" aria-modal="true" aria-labelledby="service-log-detail-title" tabindex="-1" @onclick:stopPropagation @onkeydown="HandleDialogKeyDown">
+            <header class="hcs-logs-modal-header">
+                <h2 id="service-log-detail-title">@L["ServiceLogs:DetailTitle"]</h2>
+                <button class="hcs-logs-close" type="button" @onclick="CloseDetail" aria-label="@L["Catalog:Close"]"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+            </header>
+            <div class="hcs-logs-modal-body">
+                <dl class="hcs-logs-detail-grid">
+                    <div><dt>@L["ServiceLogs:Time"]</dt><dd>@FormatDate(selected.Timestamp)</dd></div>
+                    <div><dt>@L["ServiceLogs:Level"]</dt><dd><span class="hcs-logs-badge hcs-logs-badge--@selected.Level.ToLowerInvariant()">@selected.Level</span></dd></div>
+                    <div><dt>@L["ServiceLogs:Service"]</dt><dd>@FirstValue(selected.Application)</dd></div>
+                    <div><dt>@L["ServiceLogs:Logger"]</dt><dd class="hcs-logs-break">@FirstValue(selected.SourceContext)</dd></div>
+                    <div class="hcs-logs-detail-grid__wide"><dt>@L["ServiceLogs:CorrelationId"]</dt><dd class="hcs-logs-mono hcs-logs-break">@FirstValue(selected.CorrelationId)</dd></div>
+                    <div class="hcs-logs-detail-grid__wide"><dt>@L["ServiceLogs:Message"]</dt><dd class="hcs-logs-break">@FirstValue(selected.Message)</dd></div>
+                </dl>
+                @if (!string.IsNullOrWhiteSpace(selected.Exception))
+                {
+                    <div class="hcs-logs-detail-block hcs-logs-detail-block--danger">
+                        <h3>@L["ServiceLogs:Exception"]</h3>
+                        <p>@selected.Exception</p>
+                    </div>
+                }
+                <div class="hcs-logs-detail-block">
+                    <h3>@L["ServiceLogs:Properties"]</h3>
+                    @if (selected.Properties.Count == 0)
+                    {
+                        <p class="hcs-logs-muted">@L["ServiceLogs:NoProperties"]</p>
+                    }
+                    else
+                    {
+                        <ul class="hcs-logs-detail-list">
+                            @foreach (var property in selected.Properties)
+                            {
+                                <li><strong>@property.Key</strong><span>@property.Value</span></li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </section>
+    </div>
+}

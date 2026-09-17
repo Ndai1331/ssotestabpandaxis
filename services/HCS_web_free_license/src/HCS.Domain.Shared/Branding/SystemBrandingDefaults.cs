@@ -10,9 +10,10 @@ public static class SystemBrandingDefaults
     public const string BackgroundSlot = "background";
 
     /// <summary>
-    /// Built-in mark used for both logo and favicon until system-branding uploads replace them.
+    /// Neutral globe used for both logo and favicon until system-branding assets load.
     /// </summary>
-    public const string DefaultIconUrl = "/images/logo/hcs-icon.png";
+    public const string DefaultIconUrl = "/images/logo/default-globe.svg";
+    public const string DefaultIconContentType = "image/svg+xml";
     public const string DefaultLogoUrl = DefaultIconUrl;
     public const string DefaultFaviconUrl = DefaultIconUrl;
 
