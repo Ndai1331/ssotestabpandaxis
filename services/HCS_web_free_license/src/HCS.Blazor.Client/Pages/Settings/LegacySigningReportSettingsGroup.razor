@@ -32,23 +32,23 @@
             </div>
         }
 
-        @if (!string.IsNullOrWhiteSpace(statusMessage))
-        {
-            <p class="hcs-branding-settings__status" role="status">@statusMessage</p>
-        }
-
-        <Field>
-            <FieldLabel>@L["Settings:LegacySqlConnectionString"]</FieldLabel>
-            <textarea class="form-control" rows="4" @bind="connectionString" placeholder="@SampleConnection"></textarea>
-            <FieldHelp>@L["Settings:LegacySqlConnectionHint"]</FieldHelp>
-        </Field>
+        <div class="hcs-branding-settings__form-grid">
+            <Field>
+                <FieldLabel>@L["Settings:LegacySqlConnectionString"]</FieldLabel>
+                <TextInput @bind-Value="connectionString"
+                           placeholder="@SampleConnection"
+                           autocomplete="off"
+                           spellcheck="false" />
+                <FieldHelp>@L["Settings:LegacySqlConnectionHint"]</FieldHelp>
+            </Field>
+        </div>
 
         <footer class="hcs-branding-settings__footer">
             <span class="hcs-branding-settings__status" role="status" aria-live="polite">
                 @(hasConnectionString ? L["Settings:LegacySqlConfigured"] : L["Settings:LegacySqlNotConfigured"])
             </span>
-            <div class="d-flex gap-2">
-                <Button Color="Color.Secondary" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
+            <div class="hcs-branding-settings__actions">
+                <Button Color="Color.Light" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
                     @L["Settings:LegacySqlTest"]
                 </Button>
                 <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isBusy" Disabled="@isBusy">
@@ -69,7 +69,6 @@
     private bool hasConnectionString;
     private string connectionString = string.Empty;
     private string? errorMessage;
-    private string? statusMessage;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -77,7 +76,6 @@
     {
         isLoading = true;
         errorMessage = null;
-        statusMessage = null;
         try
         {
             var settings = await SettingsClient.GetAsync();
@@ -99,7 +97,6 @@
         if (isBusy) return;
         isBusy = true;
         errorMessage = null;
-        statusMessage = null;
         try
         {
             var result = await SettingsClient.TestAsync(new UpdateLegacySigningReportSettingsDto
@@ -126,7 +123,6 @@
         if (isBusy) return;
         isBusy = true;
         errorMessage = null;
-        statusMessage = null;
         try
         {
             await SettingsClient.UpdateAsync(new UpdateLegacySigningReportSettingsDto

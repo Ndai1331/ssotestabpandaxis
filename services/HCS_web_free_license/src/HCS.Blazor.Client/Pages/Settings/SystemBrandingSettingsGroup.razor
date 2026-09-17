@@ -140,10 +140,12 @@
             <span class="hcs-branding-settings__status" role="status" aria-live="polite">
                 @L["Settings:BrandingAutoApply"]
             </span>
-            <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isSaving" Disabled="@(isSaving || !isDirty)">
-                <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
-                @L["Settings:BrandingSave"]
-            </Button>
+            <div class="hcs-branding-settings__actions">
+                <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isSaving" Disabled="@(isSaving || !isDirty)">
+                    <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
+                    @L["Settings:BrandingSave"]
+                </Button>
+            </div>
         </footer>
     }
 </section>

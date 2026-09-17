@@ -50,6 +50,29 @@ public sealed class WorkflowDefinitionPersistenceTests
         Assert.Equal("Review updated", saved[0].Name);
     }
 
+    [Fact]
+    public async Task Soft_delete_keeps_definition_when_instances_still_reference_it()
+    {
+        await using var db = CreateDb();
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "wf", "Workflow",
+            [new WorkflowStepInput("review", "Review", 1, "Documents.Review")], Now);
+        db.WorkflowDefinitions.Add(definition);
+        await db.SaveChangesAsync();
+        db.WorkflowInstances.Add(new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-1", Now));
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var tracked = await db.WorkflowDefinitions.SingleAsync(x => x.Id == definition.Id);
+        tracked.MarkDeleted();
+        await db.SaveChangesAsync();
+
+        var saved = await db.WorkflowDefinitions.AsNoTracking().SingleAsync(x => x.Id == definition.Id);
+        Assert.True(saved.IsDeleted);
+        Assert.False(saved.IsActive);
+        Assert.Empty(await db.WorkflowDefinitions.WhereActiveWorkflowDefinitions().ToListAsync());
+        Assert.Equal(1, await db.WorkflowInstances.CountAsync(x => x.DefinitionId == definition.Id));
+    }
+
     private static DocumentServiceDbContext CreateDb()
     {
         var options = new DbContextOptionsBuilder<DocumentServiceDbContext>()

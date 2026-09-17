@@ -269,4 +269,20 @@ public sealed class WorkflowTests
         Assert.Equal("Official", kind.Name);
         Assert.False(kind.IsActive);
     }
+
+    [Fact]
+    public void Definition_soft_delete_hides_it_from_start_and_keeps_the_row()
+    {
+        var definition = new WorkflowDefinition(Guid.NewGuid(), "cv", "Cong van", new[]
+        {
+            new WorkflowStepInput("sign", "Sign", 1, "Documents.Approve", "SIGN")
+        }, Now);
+        definition.MarkDeleted();
+        Assert.True(definition.IsDeleted);
+        Assert.False(definition.IsActive);
+        Assert.Throws<InvalidOperationException>(() => definition.EnsureStartable());
+        Assert.Throws<InvalidOperationException>(() => definition.SetMetadata(null, null, true));
+        Assert.Throws<InvalidOperationException>(() =>
+            new WorkflowInstance(Guid.NewGuid(), Guid.NewGuid(), definition, "start-deleted", Now));
+    }
 }

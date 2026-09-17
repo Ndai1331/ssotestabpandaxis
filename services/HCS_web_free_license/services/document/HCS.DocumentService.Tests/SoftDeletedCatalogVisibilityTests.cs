@@ -24,6 +24,11 @@ public sealed class SoftDeletedCatalogVisibilityTests
             activeDefinition.Id, 1, "{}", Now);
         var inactiveTemplate = new WorkflowTemplate(Guid.NewGuid(), "inactive-template", "Inactive template",
             inactiveDefinition.Id, 1, "{}", Now);
+        var deletedDefinition = new WorkflowDefinition(Guid.NewGuid(), "deleted-workflow", "Deleted workflow",
+            [new WorkflowStepInput("sign", "Sign", 1, "Documents.Approve", "SIGN")], Now, activeKind.Id);
+        deletedDefinition.MarkDeleted();
+        var deletedTemplate = new WorkflowTemplate(Guid.NewGuid(), "deleted-template", "Deleted template",
+            deletedDefinition.Id, 1, "{}", Now);
         var activeCredential = new SigningCredential(Guid.NewGuid(), null, SigningKind.Electronic,
             "https://sign.local", "", Now);
         var deletedCredential = new SigningCredential(Guid.NewGuid(), null, SigningKind.Electronic,
@@ -35,8 +40,8 @@ public sealed class SoftDeletedCatalogVisibilityTests
         var inactiveSignature = new UserSignature(Guid.NewGuid(), activeSignature.UserId, "inactive.png", "image/png",
             "signatures/inactive", 10, Now, isActive: false);
 
-        db.AddRange(activeKind, inactiveKind, activeDefinition, inactiveDefinition,
-            activeTemplate, inactiveTemplate, activeCredential, deletedCredential,
+        db.AddRange(activeKind, inactiveKind, activeDefinition, inactiveDefinition, deletedDefinition,
+            activeTemplate, inactiveTemplate, deletedTemplate, activeCredential, deletedCredential,
             activeSignature, inactiveSignature);
         await db.SaveChangesAsync();
 
@@ -52,9 +57,9 @@ public sealed class SoftDeletedCatalogVisibilityTests
         Assert.Equal(activeTemplate.Id, Assert.Single(visibleTemplates).Id);
         Assert.Equal(activeCredential.Id, Assert.Single(visibleCredentials).Id);
         Assert.Equal(activeSignature.Id, Assert.Single(visibleSignatures).Id);
-        Assert.Equal(2, await db.WorkflowDefinitions.CountAsync());
-        Assert.Equal(2, await db.WorkflowSteps.CountAsync());
-        Assert.Equal(2, await db.WorkflowTemplates.CountAsync());
+        Assert.Equal(3, await db.WorkflowDefinitions.CountAsync());
+        Assert.Equal(3, await db.WorkflowSteps.CountAsync());
+        Assert.Equal(3, await db.WorkflowTemplates.CountAsync());
         Assert.Equal(2, await db.SigningCredentials.CountAsync());
         Assert.Equal(2, await db.UserSignatures.CountAsync());
     }

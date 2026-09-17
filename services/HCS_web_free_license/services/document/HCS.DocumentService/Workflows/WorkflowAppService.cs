@@ -57,7 +57,8 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task DeleteKindAsync(Guid id, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowManage);
-        if (await db.WorkflowDefinitions.AnyAsync(x => x.KindId == id, cancellationToken))
+        if (await db.WorkflowDefinitions.WhereVisibleWorkflowDefinitions()
+                .AnyAsync(x => x.KindId == id, cancellationToken))
             throw new InvalidOperationException("Workflow definitions still reference this type.");
         var kind = await db.WorkflowKinds.SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow kind not found.");
@@ -150,7 +151,8 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         Require(DocumentPermissions.WorkflowManage);
         // Do not Include(Steps) here: WorkflowDefinitionStepReplacer owns the step lifecycle
         // and needs the definition loaded without tracked children.
-        var definition = await db.WorkflowDefinitions.SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+        var definition = await db.WorkflowDefinitions.WhereVisibleWorkflowDefinitions()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
         definition.Rename(input.Name);
         definition.SetMetadata(input.KindId, input.Description, input.IsActive, input.SignMode);
@@ -161,21 +163,18 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task DeleteDefinitionAsync(Guid id, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowManage);
-        if (await db.WorkflowInstances.AnyAsync(x => x.DefinitionId == id, cancellationToken))
-            throw new InvalidOperationException("Workflow instances still reference this definition.");
-        if (await db.WorkflowTemplates.AnyAsync(x => x.DefinitionId == id, cancellationToken))
-            throw new InvalidOperationException("Workflow templates still reference this definition.");
-        var definition = await db.WorkflowDefinitions.Include(x => x.Steps)
+        var definition = await db.WorkflowDefinitions.WhereVisibleWorkflowDefinitions()
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Workflow definition not found.");
-        db.WorkflowDefinitions.Remove(definition);
+        definition.MarkDeleted();
         await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<WorkflowTemplateDto> CreateTemplateAsync(CreateWorkflowTemplateRequest input, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowManage);
-        if (!await db.WorkflowDefinitions.AnyAsync(x => x.Id == input.DefinitionId, cancellationToken))
+        if (!await db.WorkflowDefinitions.WhereActiveWorkflowDefinitions()
+                .AnyAsync(x => x.Id == input.DefinitionId, cancellationToken))
             throw new KeyNotFoundException("Workflow definition not found.");
         var template = new WorkflowTemplate(Guid.NewGuid(), input.Code, input.Name, input.DefinitionId,
             input.Version, input.TemplateJson, DateTime.UtcNow);

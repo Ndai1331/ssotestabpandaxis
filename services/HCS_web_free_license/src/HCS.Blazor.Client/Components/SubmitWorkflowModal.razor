@@ -174,11 +174,10 @@
         signingContent = string.Empty;
         submitError = null;
         useWorkflowTemplateFile = false;
-        if (definitions.Count == 0) definitions.AddRange(await Documents.GetDefinitionsAsync());
-        if (templates.Count == 0)
-        {
-            try { templates.AddRange(await Documents.GetTemplatesAsync()); } catch { }
-        }
+        definitions.Clear();
+        definitions.AddRange(await Documents.GetDefinitionsAsync());
+        templates.Clear();
+        try { templates.AddRange(await Documents.GetTemplatesAsync()); } catch { }
         if (documents.Count == 0)
         {
             var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100));

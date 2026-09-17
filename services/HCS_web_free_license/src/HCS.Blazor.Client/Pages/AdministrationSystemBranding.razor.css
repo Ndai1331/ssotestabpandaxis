@@ -35,3 +35,9 @@
     margin-bottom: 1rem;
     padding-bottom: 1rem;
 }
+
+.hcs-system-branding-page__card ::deep .hcs-branding-settings__form-grid .field,
+.hcs-system-branding-page__card ::deep .hcs-branding-settings__form-grid .form-group {
+    min-width: 0;
+    width: 100%;
+}

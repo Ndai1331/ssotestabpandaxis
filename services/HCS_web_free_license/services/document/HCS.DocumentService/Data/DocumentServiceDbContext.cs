@@ -88,7 +88,7 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
             b.Property(x => x.Code).HasMaxLength(64); b.Property(x => x.Name).HasMaxLength(256);
             b.Property(x => x.Description).HasMaxLength(2000);
             b.Property(x => x.SignMode).HasMaxLength(16);
-            b.HasIndex(x => x.Code).IsUnique();
+            b.HasIndex(x => x.Code).IsUnique().HasFilter("\"IsDeleted\" = FALSE");
             b.HasOne<WorkflowKind>().WithMany().HasForeignKey(x => x.KindId).OnDelete(DeleteBehavior.Restrict);
             b.HasMany(x => x.Steps).WithOne().HasForeignKey(x => x.DefinitionId).OnDelete(DeleteBehavior.Cascade);
             b.Navigation(x => x.Steps).UsePropertyAccessMode(PropertyAccessMode.Field);

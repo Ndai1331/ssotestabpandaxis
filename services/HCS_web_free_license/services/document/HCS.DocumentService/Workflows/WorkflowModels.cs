@@ -83,11 +83,14 @@ public sealed class WorkflowDefinition
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public bool IsDeleted { get; private set; }
     public string SignMode { get; private set; } = WorkflowSignModes.Sequential;
     public DateTime CreationTime { get; private set; }
     public IReadOnlyCollection<WorkflowStep> Steps => _steps;
     public void EnsureStartable()
     {
+        if (IsDeleted)
+            throw new InvalidOperationException("Workflow definition has been deleted.");
         if (_steps.Count == 0)
             throw new InvalidOperationException("Workflow definition has no steps. Add at least one step before starting.");
         if (!_steps.Any(x => x.IsBlocking))
@@ -96,10 +99,17 @@ public sealed class WorkflowDefinition
     public void Rename(string name) => Name = Required(name, 256);
     public void SetMetadata(Guid? kindId, string? description, bool isActive, string? signMode = null)
     {
+        if (IsDeleted)
+            throw new InvalidOperationException("Workflow definition has been deleted.");
         KindId = kindId;
         Description = Optional(description, 2000);
         IsActive = isActive;
         SignMode = WorkflowSignModes.Normalize(signMode);
+    }
+    public void MarkDeleted()
+    {
+        IsDeleted = true;
+        IsActive = false;
     }
     public void ReplaceSteps(IEnumerable<WorkflowStepInput> steps)
     {
