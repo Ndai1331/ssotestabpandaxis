@@ -284,7 +284,18 @@ else if (detail is not null)
                                     <td>
                                         <div class="pj-name">
                                             <strong>@person.FullName</strong>
-                                            @if (!string.IsNullOrWhiteSpace(person.Username))
+                                            @if (IsGuestAttendee(person))
+                                            {
+                                                @if (!string.IsNullOrWhiteSpace(person.PhoneNumber))
+                                                {
+                                                    <span>@person.PhoneNumber</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(person.Email))
+                                                {
+                                                    <span>@person.Email</span>
+                                                }
+                                            }
+                                            else if (!string.IsNullOrWhiteSpace(person.Username))
                                             {
                                                 <span>@@@person.Username</span>
                                             }
@@ -682,7 +693,7 @@ else if (detail is not null)
             await LoadDepartmentsAsync(all, CancellationToken.None);
             await CsvDownload.DownloadAsync(JsRuntime, $"attendees-{detail?.Code ?? "event"}-{DateTime.Now:yyyyMMdd}.csv",
                 [L["Event:FullName"].Value, L["Event:Username"].Value, L["Catalog:Department"].Value, L["Event:RegistrationStatus"].Value, L["Event:CheckInStatus"].Value, L["Event:Phone"].Value, L["Event:Email"].Value],
-                all.Select(x => (IReadOnlyList<string>)[x.FullName, x.Username ?? "", DepartmentName(x), RegistrationLabel(x.RegistrationStatus), CheckInLabel(x.CheckInStatus), x.PhoneNumber ?? "", x.Email ?? ""]));
+                all.Select(x => (IReadOnlyList<string>)[AttendeeListName(x), x.Username ?? "", DepartmentName(x), RegistrationLabel(x.RegistrationStatus), CheckInLabel(x.CheckInStatus), x.PhoneNumber ?? "", x.Email ?? ""]));
             await NotifySuccessAsync(L["Catalog:Exported"]);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
@@ -696,7 +707,29 @@ else if (detail is not null)
     private static string CheckInClass(string value) => value == "CheckedIn" ? "hcs-status-badge--success" : "hcs-status-badge--todo";
     private static bool IsConfirmed(EventAttendeeDto person) => person.RegistrationStatus == "Confirmed";
     private static bool IsCheckedIn(EventAttendeeDto person) => person.CheckInStatus == "CheckedIn";
-    private string DepartmentName(EventAttendeeDto person) => person.UserId is { } userId && departments.TryGetValue(userId, out var name) ? name : "—";
+    private static bool IsGuestAttendee(EventAttendeeDto person) => person.UserId is null;
+
+    private static string AttendeeListName(EventAttendeeDto person)
+    {
+        if (!IsGuestAttendee(person))
+        {
+            return person.FullName;
+        }
+
+        return string.Join(" · ", new[] { person.FullName, person.PhoneNumber, person.Email }
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!));
+    }
+
+    private string DepartmentName(EventAttendeeDto person)
+    {
+        if (IsGuestAttendee(person))
+        {
+            return L["Event:GuestDepartment"].Value;
+        }
+
+        return person.UserId is { } userId && departments.TryGetValue(userId, out var name) ? name : "—";
+    }
     private static string FormatSize(long bytes) => bytes < 1024 * 1024 ? $"{bytes / 1024d:0.#} KB" : $"{bytes / 1024d / 1024d:0.#} MB";
     private string AttachmentUrl(Guid fileId) => Work.BuildEventAttachmentUrl(fileId);
     private static bool IsChecked(object? value)

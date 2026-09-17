@@ -11,7 +11,6 @@ public sealed class BffUnauthenticatedDocumentRedirectTests
     [Theory]
     [InlineData("/", "https://localhost:44403/")]
     [InlineData("/workspace", "https://localhost:44403/workspace")]
-    [InlineData("/event-check-in/EVT-1", "https://localhost:44403/event-check-in/EVT-1")]
     [InlineData("/login", "https://localhost:44403/")]
     [InlineData("/Login", "https://localhost:44403/")]
     public void Redirects_html_documents_to_bff_login_without_booting_wasm(
@@ -50,22 +49,20 @@ public sealed class BffUnauthenticatedDocumentRedirectTests
             loginUrl);
     }
 
-    [Fact]
-    public void Keeps_event_check_in_qr_token_on_the_post_login_return_url()
+    [Theory]
+    [InlineData("/event-check-in/EVT-1")]
+    [InlineData("/event-check-in/EVT-1/guest")]
+    [InlineData("/event-check-in/EVT-1/attend")]
+    public void Does_not_redirect_event_check_in_qr_pages(string path)
     {
-        Assert.True(BffUnauthenticatedDocumentRedirect.TryGetLoginUrl(
+        Assert.False(BffUnauthenticatedDocumentRedirect.TryGetLoginUrl(
             isAuthenticated: false,
             "GET",
-            "/event-check-in/EVT-20260917012302-EC4ECEA",
+            path,
             "?token=6C0E9CE64762C440B9AFB042B5C32388",
             HtmlAccept,
             CreateConfiguration(),
-            out var loginUrl));
-
-        Assert.Equal(
-            "https://localhost:44402/bff/login?returnUrl=" +
-            Uri.EscapeDataString("https://localhost:44403/event-check-in/EVT-20260917012302-EC4ECEA?token=6C0E9CE64762C440B9AFB042B5C32388"),
-            loginUrl);
+            out _));
     }
 
     [Fact]
@@ -83,7 +80,8 @@ public sealed class BffUnauthenticatedDocumentRedirectTests
     [InlineData(true, "GET", "/", HtmlAccept)]
     [InlineData(false, "POST", "/", HtmlAccept)]
     [InlineData(false, "GET", "/", "application/json")]
-    [InlineData(false, "GET", "/survey-collections/3f1c0a5e-2b7a-4d9e-9c1f-8a6b5d4c3e2f", HtmlAccept)]
+        [InlineData(false, "GET", "/survey-collections/3f1c0a5e-2b7a-4d9e-9c1f-8a6b5d4c3e2f", HtmlAccept)]
+        [InlineData(false, "GET", "/event-check-in/EVT-1", HtmlAccept)]
     [InlineData(false, "GET", "/_framework/blazor.web.js", HtmlAccept)]
     [InlineData(false, "GET", "/hcs-tokens.css", HtmlAccept)]
     [InlineData(false, "GET", "/culture", HtmlAccept)]
@@ -105,6 +103,9 @@ public sealed class BffUnauthenticatedDocumentRedirectTests
     {
         Assert.True(BffAnonymousRoutes.IsAnonymous("survey-collections/3f1c0a5e-2b7a-4d9e-9c1f-8a6b5d4c3e2f?x=1"));
         Assert.False(BffAnonymousRoutes.IsAnonymous("survey-collections"));
+        Assert.True(BffAnonymousRoutes.IsAnonymous("event-check-in/EVT-1?token=abc"));
+        Assert.True(BffAnonymousRoutes.IsAnonymous("event-check-in/EVT-1/guest"));
+        Assert.True(BffAnonymousRoutes.IsAnonymous("event-check-in/EVT-1/attend"));
         Assert.True(BffAnonymousRoutes.IsLogin("/login?foo=1"));
     }
 

@@ -101,6 +101,7 @@ public sealed class HCSBlazorModule : AbpModule
             client.Timeout = TimeSpan.FromSeconds(15);
         });
         context.Services.AddTransient<EventCheckInGatewayClient>();
+        context.Services.AddTransient<EventGuestSession>();
 
         if (environment.IsDevelopment() && configuration.GetValue("App:EnablePII", false))
         {

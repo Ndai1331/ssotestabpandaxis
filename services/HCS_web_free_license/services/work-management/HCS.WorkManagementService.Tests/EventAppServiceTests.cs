@@ -32,6 +32,84 @@ public sealed class EventAppServiceTests
     }
 
     [Fact]
+    public async Task Guest_public_check_in_creates_attendee_without_user_id()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent();
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, new TestCurrentUser());
+        var input = new PublicEventCheckInDto("Tran Khach", "0912345678", "khach@example.test", "From QR");
+
+        await service.CheckInPublicAsync(item.Code, item.QrToken, input, cancellationToken);
+        var attendee = await db.EventAttendees.SingleAsync(x => x.EventId == item.Id, cancellationToken);
+
+        Assert.Null(attendee.UserId);
+        Assert.Equal("Tran Khach", attendee.FullName);
+        Assert.Equal("0912345678", attendee.PhoneNumber);
+        Assert.Equal("khach@example.test", attendee.Email);
+        Assert.Equal("From QR", attendee.Note);
+        Assert.Equal(EventCheckInStatuses.CheckedIn, attendee.CheckInStatus);
+
+        await service.CheckInPublicAsync(item.Code, item.QrToken, input, cancellationToken);
+        Assert.Equal(1, await db.EventAttendees.CountAsync(x => x.EventId == item.Id, cancellationToken));
+    }
+
+    [Fact]
+    public async Task Guest_public_check_in_does_not_link_an_authenticated_user()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent();
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, AuthenticatedUser(Guid.NewGuid()));
+
+        await service.CheckInPublicAsync(item.Code, item.QrToken,
+            new("Guest Name", "0987654321", "guest@example.test"), cancellationToken);
+        var attendee = await db.EventAttendees.SingleAsync(x => x.EventId == item.Id, cancellationToken);
+
+        Assert.Null(attendee.UserId);
+        Assert.Equal("Guest Name", attendee.FullName);
+    }
+
+    [Fact]
+    public async Task Get_public_returns_guest_attendance_status_by_phone_and_email()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateUpcomingEvent(ManagedEventStatuses.Preparing);
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, new TestCurrentUser());
+        var input = new PublicEventCheckInDto("Tran Khach", "0912345678", "khach@example.test");
+
+        await service.ConfirmPublicAsync(item.Code, item.QrToken, input, cancellationToken);
+        var result = await service.GetPublicAsync(item.Code, item.QrToken, "0912345678", "khach@example.test",
+            cancellationToken);
+
+        Assert.Equal(EventRegistrationStatuses.Confirmed, result.RegistrationStatus);
+        Assert.Equal(EventCheckInStatuses.NotCheckedIn, result.CheckInStatus);
+    }
+
+    [Fact]
+    public async Task Incomplete_guest_fields_are_rejected()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDb();
+        var item = CreateEvent();
+        db.ManagedEvents.Add(item);
+        await db.SaveChangesAsync(cancellationToken);
+        var service = CreateService(db, new TestCurrentUser());
+
+        var exception = await Assert.ThrowsAsync<BusinessException>(() => service.CheckInPublicAsync(
+            item.Code, item.QrToken, new("Only name"), cancellationToken));
+
+        Assert.Equal("Work:EventAttendeeRequiredFields", exception.Code);
+    }
+
+    [Fact]
     public async Task Authenticated_public_check_in_creates_attendee_linked_to_current_user()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

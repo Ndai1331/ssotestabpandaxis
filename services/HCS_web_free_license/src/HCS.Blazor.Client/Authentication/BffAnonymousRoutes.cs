@@ -7,7 +7,9 @@ internal static class BffAnonymousRoutes
     public static bool IsAnonymous(string? relativePath)
     {
         var path = Normalize(relativePath);
-        return path.StartsWith("survey-collections/", StringComparison.OrdinalIgnoreCase);
+        return path.StartsWith("survey-collections/", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("event-check-in", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("event-check-in/", StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool IsLogin(string? relativePath)

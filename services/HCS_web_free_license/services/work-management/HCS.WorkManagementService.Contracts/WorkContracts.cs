@@ -84,7 +84,8 @@ public sealed record ChangeEventAttendeeStatusDto(string? RegistrationStatus, st
 public sealed record PublicEventDto(string Code, string Name, DateTime StartTime, DateTime EndTime, string? Location,
     IReadOnlyList<EventAttachmentDto> Attachments, string Status, string? Content, string? Description,
     string? RegistrationStatus, string? CheckInStatus, DateTime? CheckedInAt);
-public sealed record PublicEventCheckInDto();
+public sealed record PublicEventCheckInDto(
+    string? FullName = null, string? PhoneNumber = null, string? Email = null, string? Note = null);
 public sealed record PublicEventConfirmResultDto(string FullName, string RegistrationStatus);
 public sealed record PublicEventCheckInResultDto(string FullName, DateTime CheckedInAt);
 public sealed record EventImportResultDto(int Imported, int Skipped);

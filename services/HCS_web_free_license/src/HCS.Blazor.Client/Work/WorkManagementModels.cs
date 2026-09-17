@@ -70,7 +70,8 @@ public sealed record PublicEventDto(string Code, string Name, DateTime StartTime
     List<EventAttachmentDto>? Attachments = null, string Status = "Preparing", string? Content = null,
     string? Description = null, string? RegistrationStatus = null, string? CheckInStatus = null,
     DateTime? CheckedInAt = null);
-public sealed record PublicEventCheckInRequest();
+public sealed record PublicEventCheckInRequest(
+    string? FullName = null, string? PhoneNumber = null, string? Email = null, string? Note = null);
 public sealed record PublicEventConfirmResultDto(string FullName, string RegistrationStatus);
 public sealed record PublicEventCheckInResultDto(string FullName, DateTime CheckedInAt);
 public sealed record EventImportResultDto(int Imported, int Skipped);

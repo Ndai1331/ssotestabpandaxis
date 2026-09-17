@@ -86,7 +86,9 @@ public sealed class EventsController(EventAppService service, WorkAssetService a
     }
 
     [AllowAnonymous, HttpGet("public/{code}")]
-    public Task<PublicEventDto> Public(string code, [FromQuery] string token, CancellationToken ct) => service.GetPublicAsync(code, token, ct);
+    public Task<PublicEventDto> Public(string code, [FromQuery] string token, [FromQuery] string? guestPhone,
+        [FromQuery] string? guestEmail, CancellationToken ct) =>
+        service.GetPublicAsync(code, token, guestPhone, guestEmail, ct);
 
     [AllowAnonymous, HttpGet("public/{code}/attachments/{fileId:guid}")]
     public async Task<IActionResult> PublicAttachment(string code, Guid fileId, [FromQuery] string token, CancellationToken ct)

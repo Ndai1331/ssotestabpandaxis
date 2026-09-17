@@ -1,0 +1,96 @@
+@page "/event-check-in/{code}/attend"
+@model EventCheckInAttendModel
+@{
+    Layout = "/Pages/Shared/_EventCheckInLayout.cshtml";
+    ViewData["Title"] = Model.Event?.Name ?? Model.T("Event:CheckIn");
+}
+@if (Model.Event is null)
+{
+    <section class="hcs-event-checkin__card">
+        <div class="hcs-empty">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+            <h1 id="checkin-title">@Model.T("Event:PublicUnavailable")</h1>
+            <p>@Model.ErrorMessage</p>
+        </div>
+    </section>
+}
+else
+{
+    <article class="hcs-event-checkin__card">
+        <partial name="_EventCheckInEventMeta" model="Model" />
+
+        @if (!string.IsNullOrWhiteSpace(Model.Event.Content))
+        {
+            <section class="hcs-event-checkin__copy" aria-labelledby="event-content-title">
+                <h2 id="event-content-title">@Model.T("Event:Content")</h2>
+                <p>@Model.Event.Content</p>
+            </section>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Event.Description))
+        {
+            <section class="hcs-event-checkin__copy" aria-labelledby="event-note-title">
+                <h2 id="event-note-title">@Model.T("Event:Description")</h2>
+                <p>@Model.Event.Description</p>
+            </section>
+        }
+
+        <div class="hcs-event-checkin__notice @EventCheckInRules.NoticeClass(Model.Event)" role="status">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                @if (Model.IsCheckedIn)
+                {
+                    <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="m8 12 2.5 2.5L16 9"/>
+                }
+                else
+                {
+                    <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>
+                }
+            </svg>
+            <span>@Model.NoticeText()</span>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="hcs-event-checkin__alert" role="alert">@Model.ErrorMessage</div>
+        }
+
+        @if (Model.Event.Attachments is { Count: > 0 })
+        {
+            <section class="hcs-event-checkin__attachments" aria-labelledby="event-attachments-title">
+                <h2 id="event-attachments-title">@Model.T("Event:Attachments")</h2>
+                <div class="hcs-event-checkin__attachment-list">
+                    @foreach (var file in Model.Event.Attachments)
+                    {
+                        <a class="hcs-event-checkin__attachment" href="@Model.PublicAttachmentUrl(file.Id)" target="_blank" rel="noopener">
+                            <span class="hcs-event-checkin__attachment-name">@file.FileName</span>
+                            <span class="hcs-event-checkin__attachment-download">@Model.T("Event:DownloadAttachment")</span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+
+        <form method="post" class="hcs-event-checkin__actions">
+            <input type="hidden" asp-for="Token" />
+            <button class="btn @(Model.CanConfirm ? "btn-primary" : "btn-outline")" type="submit"
+                    asp-page-handler="Confirm" disabled="@(!Model.CanConfirm)">
+                @(EventCheckInRules.IsConfirmed(Model.Event.RegistrationStatus) ? Model.T("Event:Confirmed") : Model.T("Event:ConfirmParticipation"))
+            </button>
+            <button class="btn @(Model.CanDecline ? "btn-danger" : "btn-outline")" type="submit"
+                    asp-page-handler="Decline" disabled="@(!Model.CanDecline)">
+                @(EventCheckInRules.IsDeclined(Model.Event.RegistrationStatus) ? Model.T("Event:Declined") : Model.T("Event:DeclineParticipation"))
+            </button>
+            <button class="btn @(Model.CanCheckIn ? "btn-primary" : "btn-outline")" type="submit"
+                    asp-page-handler="CheckIn" disabled="@(!Model.CanCheckIn)">
+                @(Model.IsCheckedIn ? Model.T("Event:CheckedIn") : Model.T("Event:CheckIn"))
+            </button>
+        </form>
+        @if (Model.ShowHomeCta)
+        {
+            <a class="btn btn-primary hcs-event-checkin__home" href="@EventCheckInRules.HomePath">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1Z"/></svg>
+                @Model.T("Event:BackToHome")
+            </a>
+            <p class="hcs-event-checkin__home-hint">@Model.T("Event:CheckInHomeHint")</p>
+        }
+    </article>
+}

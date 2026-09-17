@@ -19,16 +19,35 @@ public sealed class EventCheckInGatewayClient(
     public const string HttpClientName = "HCS.EventCheckIn";
 
     public Task<PublicEventDto> GetAsync(string code, string token, CancellationToken cancellationToken) =>
-        SendAsync<PublicEventDto>(HttpMethod.Get, PublicPath(code, token), payload: null, cancellationToken);
+        GetAsync(code, token, null, cancellationToken);
+
+    public Task<PublicEventDto> GetAsync(string code, string token, EventGuestProfile? guest,
+        CancellationToken cancellationToken) =>
+        SendAsync<PublicEventDto>(HttpMethod.Get, PublicPath(code, token, guest), payload: null, cancellationToken);
 
     public Task<PublicEventConfirmResultDto> ConfirmAsync(string code, string token, CancellationToken cancellationToken) =>
-        SendAsync<PublicEventConfirmResultDto>(HttpMethod.Post, PublicPath(code, token, "confirm"), new PublicEventCheckInRequest(), cancellationToken);
+        ConfirmAsync(code, token, null, cancellationToken);
+
+    public Task<PublicEventConfirmResultDto> ConfirmAsync(string code, string token, EventGuestProfile? guest,
+        CancellationToken cancellationToken) =>
+        SendAsync<PublicEventConfirmResultDto>(HttpMethod.Post, PublicPath(code, token, action: "confirm"),
+            ToRequest(guest), cancellationToken);
 
     public Task<PublicEventConfirmResultDto> DeclineAsync(string code, string token, CancellationToken cancellationToken) =>
-        SendAsync<PublicEventConfirmResultDto>(HttpMethod.Post, PublicPath(code, token, "decline"), new PublicEventCheckInRequest(), cancellationToken);
+        DeclineAsync(code, token, null, cancellationToken);
+
+    public Task<PublicEventConfirmResultDto> DeclineAsync(string code, string token, EventGuestProfile? guest,
+        CancellationToken cancellationToken) =>
+        SendAsync<PublicEventConfirmResultDto>(HttpMethod.Post, PublicPath(code, token, action: "decline"),
+            ToRequest(guest), cancellationToken);
 
     public Task<PublicEventCheckInResultDto> CheckInAsync(string code, string token, CancellationToken cancellationToken) =>
-        SendAsync<PublicEventCheckInResultDto>(HttpMethod.Post, PublicPath(code, token, "check-in"), new PublicEventCheckInRequest(), cancellationToken);
+        CheckInAsync(code, token, null, cancellationToken);
+
+    public Task<PublicEventCheckInResultDto> CheckInAsync(string code, string token, EventGuestProfile? guest,
+        CancellationToken cancellationToken) =>
+        SendAsync<PublicEventCheckInResultDto>(HttpMethod.Post, PublicPath(code, token, action: "check-in"),
+            ToRequest(guest), cancellationToken);
 
     public string BuildPublicAttachmentUrl(string code, string token, Guid fileId)
     {
@@ -36,10 +55,24 @@ public sealed class EventCheckInGatewayClient(
         return new Uri(origin, $"api/events/public/{Uri.EscapeDataString(code)}/attachments/{fileId:D}?token={Uri.EscapeDataString(token)}").AbsoluteUri;
     }
 
-    private static string PublicPath(string code, string token, string? action = null)
+    private static PublicEventCheckInRequest ToRequest(EventGuestProfile? guest) =>
+        guest is null
+            ? new()
+            : new(guest.FullName, guest.PhoneNumber, guest.Email, guest.Note);
+
+    private static string PublicPath(string code, string token, EventGuestProfile? guest = null, string? action = null)
     {
         var suffix = string.IsNullOrWhiteSpace(action) ? "" : "/" + action;
-        return $"/api/events/public/{Uri.EscapeDataString(code)}{suffix}?token={Uri.EscapeDataString(token)}";
+        var path =
+            $"/api/events/public/{Uri.EscapeDataString(code)}{suffix}?token={Uri.EscapeDataString(token)}";
+        if (guest is null)
+        {
+            return path;
+        }
+
+        return path
+            + $"&guestPhone={Uri.EscapeDataString(guest.PhoneNumber)}"
+            + $"&guestEmail={Uri.EscapeDataString(guest.Email)}";
     }
 
     private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)

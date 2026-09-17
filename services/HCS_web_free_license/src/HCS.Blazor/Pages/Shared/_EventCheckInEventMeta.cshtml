@@ -1,0 +1,29 @@
+@model EventCheckInPageModel
+<header class="hcs-event-checkin__brand">
+    <span aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/><path d="m9 16 2 2 4-4"/></svg>
+    </span>
+    <small>HCS · @Model.T("Menu:EventManagement")</small>
+</header>
+
+<div class="hcs-event-checkin__top">
+    <p class="hcs-event-checkin__kicker">@Model.Event!.Code</p>
+    <span class="@EventCheckInRules.StatusClass(Model.Event.Status)">@Model.StatusLabel(Model.Event.Status)</span>
+</div>
+<h1 id="checkin-title">@Model.Event.Name</h1>
+<ul class="hcs-event-checkin__meta">
+    <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>
+            <strong>@Model.T("Event:Time")</strong>
+            @Model.FormatTime(Model.Event.StartTime) – @Model.FormatTime(Model.Event.EndTime)
+        </span>
+    </li>
+    <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span>
+            <strong>@Model.T("Event:Location")</strong>
+            @(string.IsNullOrWhiteSpace(Model.Event.Location) ? Model.T("Event:OnlineOrNotSet") : Model.Event.Location)
+        </span>
+    </li>
+</ul>

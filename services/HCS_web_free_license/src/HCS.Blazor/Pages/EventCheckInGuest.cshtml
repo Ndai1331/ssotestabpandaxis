@@ -1,0 +1,53 @@
+@page "/event-check-in/{code}/guest"
+@model EventCheckInGuestModel
+@{
+    Layout = "/Pages/Shared/_EventCheckInLayout.cshtml";
+    ViewData["Title"] = Model.Event?.Name ?? Model.T("Event:Guest");
+}
+@if (Model.Event is null)
+{
+    <section class="hcs-event-checkin__card">
+        <div class="hcs-empty">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+            <h1 id="checkin-title">@Model.T("Event:PublicUnavailable")</h1>
+            <p>@Model.ErrorMessage</p>
+        </div>
+    </section>
+}
+else
+{
+    <article class="hcs-event-checkin__card">
+        <partial name="_EventCheckInEventMeta" model="Model" />
+        <div class="hcs-event-checkin__notice" role="status">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+            <span>@Model.T("Event:GuestFormHint")</span>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="hcs-event-checkin__alert" role="alert">@Model.ErrorMessage</div>
+        }
+        <form method="post" class="hcs-event-checkin__form">
+            <input type="hidden" asp-for="Token" />
+            <label class="hcs-event-checkin__field">
+                <span>@Model.T("Event:FullName")</span>
+                <input asp-for="FullName" maxlength="256" autocomplete="name" required />
+            </label>
+            <label class="hcs-event-checkin__field">
+                <span>@Model.T("Event:Phone")</span>
+                <input asp-for="PhoneNumber" maxlength="64" autocomplete="tel" inputmode="tel" required />
+            </label>
+            <label class="hcs-event-checkin__field">
+                <span>@Model.T("Event:Email")</span>
+                <input asp-for="Email" type="email" maxlength="256" autocomplete="email" required />
+            </label>
+            <label class="hcs-event-checkin__field">
+                <span>@Model.T("Event:Note")</span>
+                <textarea asp-for="Note" maxlength="2000" rows="3"></textarea>
+            </label>
+            <div class="hcs-event-checkin__actions">
+                <button class="btn btn-primary" type="submit">@Model.T("Event:ContinueAsGuest")</button>
+                <a class="btn btn-outline" href="@Model.PreUrl">@Model.T("Event:ChooseCheckInRole")</a>
+            </div>
+        </form>
+    </article>
+}

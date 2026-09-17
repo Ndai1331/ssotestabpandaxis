@@ -197,7 +197,11 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         await db.SaveChangesAsync(ct); return new(imported, skipped);
     }
 
-    public async Task<PublicEventDto> GetPublicAsync(string code, string token, CancellationToken ct)
+    public Task<PublicEventDto> GetPublicAsync(string code, string token, CancellationToken ct) =>
+        GetPublicAsync(code, token, null, null, ct);
+
+    public async Task<PublicEventDto> GetPublicAsync(string code, string token, string? guestPhone, string? guestEmail,
+        CancellationToken ct)
     {
         var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), code);
@@ -213,6 +217,11 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
             var attendees = await db.EventAttendees.AsNoTracking().Where(x => x.EventId == item.Id).ToListAsync(ct);
             attendee = MatchPublicAttendee(attendees, userId);
         }
+        else if (!string.IsNullOrWhiteSpace(guestPhone) || !string.IsNullOrWhiteSpace(guestEmail))
+        {
+            var attendees = await db.EventAttendees.AsNoTracking().Where(x => x.EventId == item.Id).ToListAsync(ct);
+            attendee = MatchGuestAttendee(attendees, guestPhone, guestEmail);
+        }
 
         return new(item.Code, item.Name, item.StartTime, item.EndTime, item.Location, attachments, item.Status,
             item.Content, item.Description, attendee?.RegistrationStatus, attendee?.CheckInStatus, attendee?.CheckedInAt);
@@ -221,31 +230,41 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
     public async Task<PublicEventConfirmResultDto> ConfirmPublicAsync(string code, string token,
         PublicEventCheckInDto input, CancellationToken ct)
     {
-        var result = await RecordPublicAttendanceAsync(code, token, checkIn: false, EventRegistrationStatuses.Confirmed, ct);
+        var result = await RecordPublicAttendanceAsync(code, token, checkIn: false, EventRegistrationStatuses.Confirmed,
+            input, ct);
         return new(result.FullName, result.RegistrationStatus);
     }
 
     public async Task<PublicEventConfirmResultDto> DeclinePublicAsync(string code, string token,
         PublicEventCheckInDto input, CancellationToken ct)
     {
-        var result = await RecordPublicAttendanceAsync(code, token, checkIn: false, EventRegistrationStatuses.Declined, ct);
+        var result = await RecordPublicAttendanceAsync(code, token, checkIn: false, EventRegistrationStatuses.Declined,
+            input, ct);
         return new(result.FullName, result.RegistrationStatus);
     }
 
     public async Task<PublicEventCheckInResultDto> CheckInPublicAsync(string code, string token,
         PublicEventCheckInDto input, CancellationToken ct)
     {
-        var result = await RecordPublicAttendanceAsync(code, token, checkIn: true, EventRegistrationStatuses.Confirmed, ct);
+        var result = await RecordPublicAttendanceAsync(code, token, checkIn: true, EventRegistrationStatuses.Confirmed,
+            input, ct);
         return new(result.FullName, result.CheckedInAt ?? DateTime.UtcNow);
     }
 
     private async Task<(string FullName, string RegistrationStatus, DateTime? CheckedInAt)> RecordPublicAttendanceAsync(
-        string code, string token, bool checkIn, string registrationStatus, CancellationToken ct)
+        string code, string token, bool checkIn, string registrationStatus, PublicEventCheckInDto? input,
+        CancellationToken ct)
     {
         var item = await db.ManagedEvents.SingleOrDefaultAsync(x => x.Code == code && x.QrToken == token, ct)
             ?? throw new EntityNotFoundException(typeof(ManagedEvent), code);
         await statuses.EnsureCurrentAsync(item, ct);
         EnsurePublicAttendanceAllowed(item, checkIn);
+
+        if (HasAnyGuestField(input))
+        {
+            EnsureManualAttendeeFields(input!.FullName ?? "", input.PhoneNumber, input.Email);
+            return await RecordGuestAttendanceAsync(item, checkIn, registrationStatus, input, ct);
+        }
 
         var authenticatedUserId = AuthenticatedUserId();
         if (authenticatedUserId is null)
@@ -296,6 +315,39 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
         return (attendee.FullName, attendee.RegistrationStatus, attendee.CheckedInAt);
     }
 
+    private async Task<(string FullName, string RegistrationStatus, DateTime? CheckedInAt)> RecordGuestAttendanceAsync(
+        ManagedEvent item, bool checkIn, string registrationStatus, PublicEventCheckInDto input, CancellationToken ct)
+    {
+        var fullName = input.FullName!.Trim();
+        var phone = input.PhoneNumber!.Trim();
+        var email = input.Email!.Trim();
+        var note = string.IsNullOrWhiteSpace(input.Note) ? null : input.Note.Trim();
+        var attendees = await db.EventAttendees.Where(x => x.EventId == item.Id).ToListAsync(ct);
+        var attendee = MatchGuestAttendee(attendees, phone, email);
+        var status = checkIn ? EventRegistrationStatuses.Confirmed : registrationStatus;
+
+        if (attendee is null)
+        {
+            attendee = new EventAttendee(Guid.NewGuid(), item.Id, null, null, null, null, fullName, null,
+                phone, email, null, status,
+                checkIn ? EventCheckInStatuses.CheckedIn : EventCheckInStatuses.NotCheckedIn, note);
+            db.EventAttendees.Add(attendee);
+            logger.LogInformation(
+                "Public event guest attendee created. EventId={EventId}, EventCode={EventCode}, Status={Status}, CheckIn={CheckIn}",
+                item.Id, item.Code, status, checkIn);
+        }
+        else
+        {
+            attendee.SetRegistrationStatus(status);
+            if (checkIn) attendee.SetCheckInStatus(EventCheckInStatuses.CheckedIn);
+        }
+
+        await db.SaveChangesAsync(ct);
+        logger.LogInformation("Public event guest {Action} succeeded. EventId={EventId}, EventCode={EventCode}",
+            checkIn ? "check-in" : status, item.Id, item.Code);
+        return (attendee.FullName, attendee.RegistrationStatus, attendee.CheckedInAt);
+    }
+
     private Guid? AuthenticatedUserId() =>
         currentUser.IsAuthenticated && currentUser.Id is { } currentId && currentId != Guid.Empty ? currentId : null;
 
@@ -309,6 +361,22 @@ public sealed class EventAppService(WorkManagementDbContext db, WorkRecordAuthor
                 ((phone.Length > 0 && NormalizePhone(x.PhoneNumber) == phone)
                 || (email.Length > 0 && NormalizeEmail(x.Email) == email)
                 || (username.Length > 0 && NormalizeUsername(x.Username) == username)));
+    }
+
+    private static bool HasAnyGuestField(PublicEventCheckInDto? input) =>
+        input is not null &&
+        (!string.IsNullOrWhiteSpace(input.FullName)
+         || !string.IsNullOrWhiteSpace(input.PhoneNumber)
+         || !string.IsNullOrWhiteSpace(input.Email)
+         || !string.IsNullOrWhiteSpace(input.Note));
+
+    private EventAttendee? MatchGuestAttendee(IEnumerable<EventAttendee> attendees, string? phone, string? email)
+    {
+        var normalizedPhone = NormalizePhone(phone);
+        var normalizedEmail = NormalizeEmail(email);
+        return attendees.FirstOrDefault(x => x.UserId is null &&
+            ((normalizedPhone.Length > 0 && NormalizePhone(x.PhoneNumber) == normalizedPhone)
+             || (normalizedEmail.Length > 0 && NormalizeEmail(x.Email) == normalizedEmail)));
     }
 
     private static void EnsurePublicAttendanceAllowed(ManagedEvent item, bool checkIn)
