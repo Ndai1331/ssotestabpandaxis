@@ -49,28 +49,30 @@ public sealed class DocumentInboxClearedNotificationHandler(CollaborationDbConte
         if (await db.InboxMessages.AnyAsync(x => x.Id == eventData.EventId)) return;
         db.InboxMessages.Add(new InboxMessage(eventData.EventId, nameof(DocumentInboxClearedEto), DateTime.UtcNow));
 
-        var prefix = $"/document-detail/{eventData.DocumentId:D}";
-        var previewToken = $"preview={eventData.DocumentId:D}";
-        var notifications = await db.Notifications
-            .Where(x => x.Title == NotificationLocalization.DocumentSentTitle
-                        && x.Link != null
-                        && (x.Link.StartsWith(prefix) || x.Link.Contains(previewToken)))
-            .ToListAsync();
-        var notificationIds = notifications.Select(x => x.Id).ToArray();
-        if (notificationIds.Length > 0)
-        {
-            var receivers = await db.NotificationReceivers
-                .Where(x => notificationIds.Contains(x.NotificationId)).ToListAsync();
-            db.NotificationReceivers.RemoveRange(receivers);
-            db.Notifications.RemoveRange(notifications);
-        }
-
-        var deliveries = await db.PushDeliveries
-            .Where(x => x.Title == NotificationLocalization.DocumentSentTitle
-                        && x.Link != null
-                        && (x.Link.StartsWith(prefix) || x.Link.Contains(previewToken)))
-            .ToListAsync();
-        db.PushDeliveries.RemoveRange(deliveries);
+        var title = NotificationLocalization.DocumentSentTitle;
+        var signingTitle = NotificationLocalization.SigningAssignedTitle;
+        var detailLink = DocumentNotificationLinks.Detail(eventData.DocumentId);
+        var signingLink = DocumentNotificationLinks.Signing(eventData.DocumentId);
+        var legacyPrefix = $"/document-detail/{eventData.DocumentId:D}";
+        await db.NotificationReceivers
+            .Where(receiver => db.Notifications.Any(notification =>
+                notification.Id == receiver.NotificationId
+                && notification.Link != null
+                && ((notification.Title == title
+                     && (notification.Link == detailLink || notification.Link.StartsWith(legacyPrefix)))
+                    || (notification.Title == signingTitle
+                        && (notification.Link == signingLink || notification.Link.StartsWith(signingLink))))))
+            .ExecuteDeleteAsync();
+        await db.Notifications
+            .Where(x => x.Link != null
+                        && ((x.Title == title && (x.Link == detailLink || x.Link.StartsWith(legacyPrefix)))
+                            || (x.Title == signingTitle && (x.Link == signingLink || x.Link.StartsWith(signingLink)))))
+            .ExecuteDeleteAsync();
+        await db.PushDeliveries
+            .Where(x => x.Link != null
+                        && ((x.Title == title && (x.Link == detailLink || x.Link.StartsWith(legacyPrefix)))
+                            || (x.Title == signingTitle && (x.Link == signingLink || x.Link.StartsWith(signingLink)))))
+            .ExecuteDeleteAsync();
 
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException exception) when (PostgresErrors.IsInboxDuplicate(exception)) { db.ChangeTracker.Clear(); }

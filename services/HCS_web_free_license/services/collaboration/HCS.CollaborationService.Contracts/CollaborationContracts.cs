@@ -105,6 +105,18 @@ public static class ChatNotificationRules
             || link.StartsWith("/chat1/", StringComparison.OrdinalIgnoreCase));
 }
 
+public static class ChatContactLookup
+{
+    public const int MaxIds = 200;
+
+    public static Guid[] NormalizeIds(IEnumerable<Guid>? userIds) =>
+        (userIds ?? [])
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .Take(MaxIds)
+            .ToArray();
+}
+
 public static class ChatContactSearch
 {
     public static bool Matches(ChatContactDto contact, string? filter)

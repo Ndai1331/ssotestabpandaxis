@@ -790,6 +790,7 @@
     private readonly HashSet<Guid> selectedContactIds = [];
     private readonly HashSet<Guid> selectedMemberIds = [];
     private readonly HashSet<string> avatarLoadFailures = new(StringComparer.Ordinal);
+    private readonly Dictionary<Guid, ChatContactDto> knownUsers = [];
     private readonly List<IBrowserFile> pendingFiles = [];
     private readonly List<ChatMessageDto> messages = [];
     private IReadOnlyList<ConversationDto> conversations = [];
@@ -950,6 +951,8 @@
             {
                 selected = current;
             }
+
+            await ResolveUserNamesAsync(VisibleUserIds());
         }
         catch (Exception exception)
         {
@@ -1017,6 +1020,7 @@
         try
         {
             contacts = await Client.GetContactsAsync(search, ContactPageSize, cancellationToken);
+            RememberUsers(contacts);
         }
         catch (OperationCanceledException)
         {
@@ -1037,6 +1041,7 @@
         try
         {
             memberContacts = await Client.GetContactsAsync(search, ContactPageSize, cancellationToken);
+            RememberUsers(memberContacts);
         }
         catch (OperationCanceledException)
         {
@@ -1076,6 +1081,7 @@
             selected = await Client.GetConversationAsync(value.Id);
             permissions = await Client.GetPermissionsAsync(value.Id);
             renameText = selected.Name ?? string.Empty;
+            await ResolveUserNamesAsync(selected.Members.Select(member => member.UserId));
             await LoadMessagesAsync(reset: true);
             await LoadPinnedMessagesAsync();
             await Client.MarkReadAsync(value.Id);
@@ -1113,6 +1119,7 @@
             messages.InsertRange(0, incoming);
             messageSkip += incoming.Count;
             totalMessageCount = response.TotalCount;
+            await ResolveUserNamesAsync(incoming.SelectMany(MessageUserIds));
             if (reset)
             {
                 scrollToBottomAfterRender = true;
@@ -1276,6 +1283,7 @@
             showAddMembers = false;
             selected = await Client.GetConversationAsync(selected.Id);
             permissions = await Client.GetPermissionsAsync(selected.Id);
+            await ResolveUserNamesAsync(selected.Members.Select(member => member.UserId));
             await LoadConversationsAsync();
         }
         catch (Exception exception)
@@ -1751,7 +1759,13 @@
             return avatarUrl;
         }
 
-        var contact = contacts.FirstOrDefault(contact => contact.Id == userId);
+        if (knownUsers.TryGetValue(userId, out var known))
+        {
+            return known.AvatarUrl;
+        }
+
+        var contact = contacts.FirstOrDefault(item => item.Id == userId)
+            ?? memberContacts.FirstOrDefault(item => item.Id == userId);
         return contact is not null
             ? contact.AvatarUrl
             : userId == Guid.Empty ? null : $"/api/identity/users/{userId:D}/avatar";
@@ -1823,8 +1837,89 @@
             return T("Chat:CurrentUser");
         }
 
-        return contacts.FirstOrDefault(contact => contact.Id == userId)?.DisplayName
-            ?? $"{userId.ToString()[..8]}…";
+        if (knownUsers.TryGetValue(userId, out var known))
+        {
+            var knownName = UserDisplayNames.FirstReal(known.DisplayName, known.UserName);
+            if (!string.IsNullOrWhiteSpace(knownName))
+            {
+                return knownName;
+            }
+        }
+
+        var contact = contacts.FirstOrDefault(item => item.Id == userId)
+            ?? memberContacts.FirstOrDefault(item => item.Id == userId);
+        var name = UserDisplayNames.FirstReal(contact?.DisplayName, contact?.UserName);
+        return string.IsNullOrWhiteSpace(name) ? $"{userId.ToString()[..8]}…" : name;
+    }
+
+    private void RememberUsers(IEnumerable<ChatContactDto> users)
+    {
+        foreach (var user in users)
+        {
+            knownUsers[user.Id] = user;
+        }
+    }
+
+    private async Task ResolveUserNamesAsync(IEnumerable<Guid> userIds)
+    {
+        var missing = userIds
+            .Where(id => id != Guid.Empty && !knownUsers.ContainsKey(id))
+            .Distinct()
+            .ToArray();
+        if (missing.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            RememberUsers(await Client.GetContactsByIdsAsync(missing));
+        }
+        catch (Exception exception)
+        {
+            LogChatError(exception, "Chat:ContactsError");
+        }
+    }
+
+    private IEnumerable<Guid> VisibleUserIds()
+    {
+        foreach (var conversation in conversations)
+        {
+            foreach (var member in conversation.Members)
+            {
+                yield return member.UserId;
+            }
+        }
+
+        if (selected is not null)
+        {
+            foreach (var member in selected.Members)
+            {
+                yield return member.UserId;
+            }
+        }
+
+        foreach (var message in messages.Concat(pinnedMessages))
+        {
+            foreach (var userId in MessageUserIds(message))
+            {
+                yield return userId;
+            }
+        }
+    }
+
+    private static IEnumerable<Guid> MessageUserIds(ChatMessageDto message)
+    {
+        yield return message.SenderUserId;
+        if (message.ReplyTo is { } reply)
+        {
+            yield return reply.SenderUserId;
+        }
+
+        if (message.ForwardedFrom is { } forwarded)
+        {
+            yield return forwarded.SenderUserId;
+        }
     }
 
     private static string Initials(string? value)

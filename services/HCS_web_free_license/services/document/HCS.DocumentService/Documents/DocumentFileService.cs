@@ -9,7 +9,8 @@ using Volo.Abp.BlobStoring;
 namespace HCS.DocumentService.Documents;
 
 public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContainer<DocumentBlobContainer> blobs,
-    IHttpContextAccessor httpContext, IDocxToPdfConverter converter, ILogger<DocumentFileService> logger)
+    IHttpContextAccessor httpContext, IDocxToPdfConverter converter, IDocumentBlobCleanup blobCleanup,
+    ILogger<DocumentFileService> logger)
 {
     public const long MaxFileSize = 50 * 1024 * 1024;
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -84,17 +85,12 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
         await db.SaveChangesAsync(cancellationToken);
 
         var pending = document.Files.Where(x => deleteIds.Contains(x.Id) && x.IsPendingDeletion).ToList();
-        foreach (var file in pending)
-        {
-            try { await blobs.DeleteAsync(file.BlobName, cancellationToken: cancellationToken); }
-            catch (Exception ex) { logger.LogWarning(ex, "Blob delete failed for {Blob}; file row will still be removed.", file.BlobName); }
-        }
-
         existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         foreach (var file in pending)
             document.CompleteFileDeletion(file.Id, userId, now);
         TrackNewChildren(db, document, existingFileIds, existingHistoryIds);
         await db.SaveChangesAsync(cancellationToken);
+        blobCleanup.Enqueue(pending.Select(file => file.BlobName), []);
     }
 
     public async Task CopyFilesAsync(DocumentAggregate source, DocumentAggregate target, Guid? actorUserId, DateTime now,

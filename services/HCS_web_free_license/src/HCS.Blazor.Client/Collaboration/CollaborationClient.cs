@@ -41,6 +41,33 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
             $"api/chat/contacts/page?search={Uri.EscapeDataString(SearchText.Normalize(search))}&skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}",
             cancellationToken);
 
+    public async Task<IReadOnlyList<ChatContactDto>> GetContactsByIdsAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Where(id => id != Guid.Empty).Distinct().ToArray();
+        if (ids.Length == 0)
+        {
+            return [];
+        }
+
+        var results = new List<ChatContactDto>(ids.Length);
+        foreach (var batch in ids.Chunk(ChatContactLookup.MaxIds))
+        {
+            results.AddRange(await GetAsync<IReadOnlyList<ChatContactDto>>(
+                BuildContactsLookupUri(batch), cancellationToken));
+        }
+
+        return results;
+    }
+
+    internal static string BuildContactsLookupUri(IEnumerable<Guid> userIds)
+    {
+        var ids = ChatContactLookup.NormalizeIds(userIds);
+        var query = string.Join("&", ids.Select(id => $"userIds={id:D}"));
+        return $"api/chat/contacts/lookup?{query}";
+    }
+
     public Task<IReadOnlyList<ConversationDto>> GetConversationsAsync(int skip = 0, int take = 100,
         CancellationToken cancellationToken = default) =>
         GetAsync<IReadOnlyList<ConversationDto>>(

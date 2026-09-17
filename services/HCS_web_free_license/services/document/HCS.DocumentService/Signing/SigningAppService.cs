@@ -21,6 +21,7 @@ public sealed class SigningAppService(
     ISigningProviderFactory providerFactory,
     IBlobContainer<DocumentBlobContainer> documentBlobs,
     IBlobContainer<SigningBlobContainer> signingBlobs,
+    IDocumentBlobCleanup blobCleanup,
     IDocxToPdfConverter converter,
     DocumentFileService documentFiles) : ISigningAppService
 {
@@ -584,7 +585,8 @@ public sealed class SigningAppService(
             throw;
         }
 
-        await signingBlobs.DeleteAsync(oldBlobName, cancellationToken: cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        blobCleanup.Enqueue([], [oldBlobName]);
         return MapSignature(signature);
     }
 
@@ -624,7 +626,7 @@ public sealed class SigningAppService(
             }
         }
         await db.SaveChangesAsync(cancellationToken);
-        await signingBlobs.DeleteAsync(signature.BlobName, cancellationToken: cancellationToken);
+        blobCleanup.Enqueue([], [signature.BlobName]);
     }
 
     public async Task<(Stream Content, string ContentType, string FileName)> OpenSignatureContentAsync(

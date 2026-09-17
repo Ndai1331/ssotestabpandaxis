@@ -114,9 +114,12 @@ internal static class DocumentAccess
         return false;
     }
 
-    public static bool CanManage(DocumentAggregate document, Guid userId, ClaimsPrincipal principal)
+    public static bool CanManage(DocumentAggregate document, Guid userId, ClaimsPrincipal principal) =>
+        CanManage(document, userId, principal, IsCreator(document, userId));
+
+    public static bool CanManage(DocumentAggregate document, Guid userId, ClaimsPrincipal principal, bool isCreator)
     {
-        if (IsCreator(document, userId)) return true;
+        if (isCreator) return true;
         if (document.SourceType == DocumentSourceType.Personal) return false;
         if (document.SourceType == DocumentSourceType.Archive)
             return IsElevated(principal)
@@ -137,9 +140,13 @@ internal static class DocumentAccess
         if (!CanView(document, userId, principal)) throw new AbpAuthorizationException("Document access denied.");
     }
 
-    public static void EnsureCanManage(DocumentAggregate document, Guid userId, ClaimsPrincipal principal)
+    public static void EnsureCanManage(DocumentAggregate document, Guid userId, ClaimsPrincipal principal) =>
+        EnsureCanManage(document, userId, principal, IsCreator(document, userId));
+
+    public static void EnsureCanManage(DocumentAggregate document, Guid userId, ClaimsPrincipal principal, bool isCreator)
     {
-        if (!CanManage(document, userId, principal)) throw new AbpAuthorizationException("Document modification denied.");
+        if (!CanManage(document, userId, principal, isCreator))
+            throw new AbpAuthorizationException("Document modification denied.");
     }
 
     public static void EnsureCanSend(DocumentAggregate document, Guid userId, ClaimsPrincipal principal)

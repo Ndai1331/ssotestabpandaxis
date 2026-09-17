@@ -38,6 +38,18 @@ public sealed class DocumentAccessTests
         Assert.True(DocumentAccess.CanActOnWorkflowTask(principal, leader, assignee));
     }
 
+    [Fact]
+    public void Creator_can_manage_without_loading_history()
+    {
+        var userId = Guid.NewGuid();
+        var document = new DocumentAggregate(Guid.NewGuid(), "CV-100", "Title", null, Guid.NewGuid(), DateTime.UtcNow);
+        var principal = Principal(userId, role: "nhanvien");
+
+        Assert.False(DocumentAccess.CanManage(document, userId, principal));
+        Assert.True(DocumentAccess.CanManage(document, userId, principal, isCreator: true));
+        DocumentAccess.EnsureCanManage(document, userId, principal, isCreator: true);
+    }
+
     private static ClaimsPrincipal Principal(Guid userId, string role) =>
         new(new ClaimsIdentity(
             [

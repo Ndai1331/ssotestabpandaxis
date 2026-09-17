@@ -83,6 +83,8 @@ public partial class ChatWorkspace
             {
                 await TryChatScriptAsync(() => Js.InvokeVoidAsync("hcsChat.preserveScrollAfterPrepend", MessagesPaneId, height));
             }
+
+            await ResolveUserNamesAsync(context.Before.SelectMany(MessageUserIds));
         }
         catch (Exception exception)
         {
@@ -163,6 +165,7 @@ public partial class ChatWorkspace
             var response = await Client.GetPinnedMessagesAsync(selected.Id);
             pinnedMessages.Clear();
             pinnedMessages.AddRange(response.Items.OrderByDescending(item => item.CreatedAt));
+            await ResolveUserNamesAsync(pinnedMessages.SelectMany(MessageUserIds));
             if (pinnedMessages.Count == 0)
             {
                 pinnedPanelOpen = false;
@@ -308,6 +311,7 @@ public partial class ChatWorkspace
             messages.AddRange(merged);
             messageSkip = messages.Count;
             totalMessageCount = Math.Max(totalMessageCount, messages.Count);
+            await ResolveUserNamesAsync(merged.SelectMany(MessageUserIds));
             jumpToMessageIdAfterRender = messageId;
         }
         catch (Exception exception)
@@ -330,6 +334,7 @@ public partial class ChatWorkspace
             memberPendingRemoval = null;
             selected = await Client.GetConversationAsync(selected.Id);
             permissions = await Client.GetPermissionsAsync(selected.Id);
+            await ResolveUserNamesAsync(selected.Members.Select(member => member.UserId));
             await LoadConversationsAsync();
         }
         catch (Exception exception)
@@ -344,7 +349,7 @@ public partial class ChatWorkspace
 
     private async Task HandleMessageReceivedAsync(ChatMessageDto message)
     {
-        await InvokeAsync(() =>
+        await InvokeAsync(async () =>
         {
             if (selected?.Id == message.ConversationId)
             {
@@ -352,8 +357,8 @@ public partial class ChatWorkspace
                 scrollToBottomAfterRender = true;
             }
 
+            await ResolveUserNamesAsync(MessageUserIds(message));
             StateHasChanged();
-            return Task.CompletedTask;
         });
     }
 

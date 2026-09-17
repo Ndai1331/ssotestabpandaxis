@@ -37,7 +37,131 @@
 
     window.hcsCharts.destroy = destroy;
 
-    window.hcsCharts.createPie = async function (canvasId, labels, data, colors, isDoughnut, title, showLegend) {
+    function formatChartNumber(value) {
+        var n = Number(value);
+        if (!isFinite(n)) return "0";
+        return Math.round(n).toLocaleString("vi-VN");
+    }
+
+    function extraFlag(extras, name) {
+        if (!extras) return undefined;
+        if (extras[name] !== undefined) return extras[name];
+        var pascal = name.charAt(0).toUpperCase() + name.slice(1);
+        return extras[pascal];
+    }
+
+    var hcsPieLabelsPlugin = {
+        id: "hcsPieLabels",
+        afterDatasetsDraw: function (chart) {
+            var opts = (chart.options.plugins || {}).hcsPieLabels || {};
+            if (!opts.display) return;
+            var dataset = chart.data.datasets[0];
+            if (!dataset) return;
+            var meta = chart.getDatasetMeta(0);
+            var values = dataset.data || [];
+            var total = values.reduce(function (sum, item) { return sum + Number(item || 0); }, 0);
+            if (total <= 0) return;
+            var ctx = chart.ctx;
+            meta.data.forEach(function (arc, index) {
+                var value = Number(values[index] || 0);
+                if (value <= 0) return;
+                var percent = value * 100 / total;
+                if (percent < 4) return;
+                var point = typeof arc.getCenterPoint === "function" ? arc.getCenterPoint() : arc.tooltipPosition();
+                ctx.save();
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.font = "700 12px Inter, system-ui, sans-serif";
+                ctx.fillText(percent.toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + "%", point.x, point.y - 7);
+                ctx.font = "600 10px Inter, system-ui, sans-serif";
+                ctx.fillStyle = "rgba(255,255,255,.92)";
+                ctx.fillText(formatChartNumber(value), point.x, point.y + 8);
+                ctx.restore();
+            });
+        }
+    };
+
+    var hcsCenterTextPlugin = {
+        id: "hcsCenterText",
+        afterDraw: function (chart) {
+            var opts = (chart.options.plugins || {}).hcsCenter || {};
+            if (!opts.label) return;
+            var meta = chart.getDatasetMeta(0);
+            if (!meta.data.length) return;
+            var center = meta.data[0];
+            var ctx = chart.ctx;
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#12263a";
+            ctx.font = "800 22px Inter, system-ui, sans-serif";
+            ctx.fillText(String(opts.label), center.x, center.y - (opts.subLabel ? 8 : 0));
+            if (opts.subLabel) {
+                ctx.fillStyle = "#5b7484";
+                ctx.font = "600 11px Inter, system-ui, sans-serif";
+                ctx.fillText(String(opts.subLabel), center.x, center.y + 12);
+            }
+            ctx.restore();
+        }
+    };
+
+    function pieOptions(isDoughnut, title, showLegend, extras) {
+        extras = extras || {};
+        var showDataLabels = !!extraFlag(extras, "showDataLabels");
+        var centerLabel = extraFlag(extras, "centerLabel") || "";
+        var centerSubLabel = extraFlag(extras, "centerSubLabel") || "";
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: isDoughnut ? "58%" : 0,
+            layout: { padding: showDataLabels ? 8 : 0 },
+            plugins: {
+                legend: {
+                    display: !!showLegend,
+                    position: "bottom",
+                    labels: {
+                        boxWidth: 10,
+                        boxHeight: 10,
+                        padding: 10,
+                        font: { size: 12, weight: "600" },
+                        generateLabels: function (chart) {
+                            var dataset = chart.data.datasets[0] || {};
+                            var values = dataset.data || [];
+                            var total = values.reduce(function (sum, item) { return sum + Number(item || 0); }, 0);
+                            var colors = dataset.backgroundColor || [];
+                            return (chart.data.labels || []).map(function (label, index) {
+                                var value = Number(values[index] || 0);
+                                var percent = total > 0 ? (value * 100 / total) : 0;
+                                return {
+                                    text: label + " · " + formatChartNumber(value) + " (" + percent.toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + "%)",
+                                    fillStyle: colors[index],
+                                    strokeStyle: colors[index],
+                                    hidden: false,
+                                    index: index
+                                };
+                            });
+                        }
+                    }
+                },
+                title: { display: !!title, text: title || "" },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            var value = Number(context.raw || 0);
+                            var total = (context.dataset.data || []).reduce(function (sum, item) { return sum + Number(item || 0); }, 0);
+                            var percent = total > 0 ? (value * 100 / total) : 0;
+                            return " " + formatChartNumber(value) + " hồ sơ (" + percent.toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + "%)";
+                        }
+                    }
+                },
+                hcsPieLabels: { display: showDataLabels },
+                hcsCenter: { label: centerLabel, subLabel: centerSubLabel }
+            }
+        };
+    }
+
+    window.hcsCharts.createPie = async function (canvasId, labels, data, colors, isDoughnut, title, showLegend, extras) {
         await loadChartJs();
         var canvas = document.getElementById(canvasId);
         if (!canvas) return;
@@ -47,25 +171,25 @@
             type: isDoughnut ? "doughnut" : "pie",
             data: {
                 labels: labels,
-                datasets: [{ data: data, backgroundColor: background, borderColor: background, borderWidth: 2 }]
+                datasets: [{ data: data, backgroundColor: background, borderColor: "#fff", borderWidth: 2, hoverOffset: 4 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: !!showLegend, position: "bottom" },
-                    title: { display: !!title, text: title || "" }
-                }
-            }
+            options: pieOptions(isDoughnut, title, showLegend, extras),
+            plugins: [hcsPieLabelsPlugin, hcsCenterTextPlugin]
         });
     };
 
-    window.hcsCharts.updatePie = function (canvasId, labels, data, colors) {
+    window.hcsCharts.updatePie = function (canvasId, labels, data, colors, extras) {
         var chart = window.chartInstances[canvasId];
         if (!chart) return;
         chart.data.labels = labels;
         chart.data.datasets[0].data = data;
         chart.data.datasets[0].backgroundColor = (colors || []).map(function (c) { return convertToRgba(c, 1); });
+        if (extras) {
+            var isDoughnut = chart.config.type === "doughnut";
+            var showLegend = !!(chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.display);
+            var title = chart.options.plugins && chart.options.plugins.title ? chart.options.plugins.title.text : "";
+            chart.options = pieOptions(isDoughnut, title, showLegend, extras);
+        }
         chart.update();
     };
 

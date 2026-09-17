@@ -24,6 +24,24 @@ public sealed class ChatContactsController(
         return page.Items;
     }
 
+    [HttpGet("lookup")]
+    public async Task<IReadOnlyList<ChatContactDto>> LookupAsync(
+        [FromQuery] Guid[]? userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = ChatContactLookup.NormalizeIds(userIds);
+        if (ids.Length == 0)
+        {
+            return [];
+        }
+
+        var users = await db.Users
+            .AsNoTracking()
+            .Where(user => ids.Contains(user.Id))
+            .ToListAsync(cancellationToken);
+        return await MapUsersAsync(users, cancellationToken);
+    }
+
     [HttpGet("page")]
     public async Task<PagedChatContactsDto> GetPageAsync(
         [FromQuery] string? search,

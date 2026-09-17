@@ -120,6 +120,19 @@ public sealed class DomainBehaviorTests
     }
 
     [Fact]
+    public void Contact_lookup_keeps_distinct_ids_and_ignores_empty()
+    {
+        var first = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var second = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        ChatContactLookup.NormalizeIds([Guid.Empty, first, first, second])
+            .ShouldBe([first, second]);
+        ChatContactLookup.NormalizeIds(null).ShouldBeEmpty();
+        ChatContactLookup.NormalizeIds(Enumerable.Range(1, ChatContactLookup.MaxIds + 5)
+                .Select(index => Guid.Parse($"00000000-0000-0000-0000-{index:D12}")))
+            .Length.ShouldBe(ChatContactLookup.MaxIds);
+    }
+
+    [Fact]
     public void Display_name_prefers_vietnamese_full_name_over_generic_user_fallback()
     {
         UserDisplayNames.FromPerson("Nguyễn", "Văn A", "doctor").ShouldBe("Nguyễn Văn A");

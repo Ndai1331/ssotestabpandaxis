@@ -83,6 +83,9 @@ public sealed class HcsDocumentServiceModule : AbpModule
             ConfigureContainer<SigningBlobContainer>(options, configuration);
         });
         context.Services.AddSingleton<IDocxToPdfConverter, LibreOfficeDocxToPdfConverter>();
+        context.Services.AddSingleton<DocumentBlobCleanupQueue>();
+        context.Services.AddSingleton<IDocumentBlobCleanup>(sp => sp.GetRequiredService<DocumentBlobCleanupQueue>());
+        context.Services.AddHostedService<DocumentBlobCleanupWorker>();
         context.Services.AddScoped<IDocumentAppService, DocumentAppService>();
         context.Services.AddScoped<IWorkflowAppService, WorkflowAppService>();
         context.Services.AddScoped<IWorkflowAssigneeResolver, HttpWorkflowAssigneeResolver>();

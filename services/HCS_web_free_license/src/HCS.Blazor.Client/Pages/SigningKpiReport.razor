@@ -1,18 +1,18 @@
 @page "/thong-ke-de-xuat"
 @page "/signing-kpi-report"
 @attribute [Authorize(Policy = "Documents.Signing.Report")]
+@using System.Globalization
 @using HCS.Blazor.Client.Components.Charts
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Menu:ProposalStatistics"] · HCS</PageTitle>
-<section class="page page-wf" aria-labelledby="proposal-stats-title">
+<section class="page page-wf hcs-kpi-page" aria-labelledby="proposal-stats-title">
     <div class="page-head">
         <div>
             <p class="event-panel-kicker">@L["Menu:Reports"]</p>
             <h1 id="proposal-stats-title">@L["Menu:ProposalStatistics"]</h1>
-            <p class="text-muted mb-0">Tổng hợp đề xuất trình ký từ SQL Server nội bộ (QLDH_MSSQL) và hệ thống HCS.</p>
         </div>
         <div class="page-actions">
             <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@loading">@(loading ? "Đang tải…" : "Làm mới")</button>
@@ -20,19 +20,21 @@
         </div>
     </div>
 
-    <div class="docs-toolbar">
-        <div class="row g-3 align-items-end w-100">
-            <div class="col-md-4">
-                <label class="form-label">Từ ngày</label>
-                <HcsDatePicker TValue="DateTime?" @bind-Value="fromDate" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Đến ngày</label>
-                <HcsDatePicker TValue="DateTime?" @bind-Value="toDate" />
-            </div>
-            <div class="col-md-4 text-muted small">Để trống khoảng ngày để xem toàn bộ dữ liệu.</div>
+    <form class="docs-toolbar event-filter hcs-kpi-filter" @onsubmit="LoadAsync" @onsubmit:preventDefault>
+        <span class="filter-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+            Khoảng ngày
+        </span>
+        <div class="hcs-kpi-filter__dates">
+            <HcsDatePicker TValue="DateTime?" @bind-Value="fromDate" Placeholder="Từ ngày" />
+            <span class="hcs-kpi-filter__sep" aria-hidden="true">–</span>
+            <HcsDatePicker TValue="DateTime?" @bind-Value="toDate" Placeholder="Đến ngày" />
         </div>
-    </div>
+        <button class="btn btn-primary" type="submit" disabled="@loading">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            Lọc
+        </button>
+    </form>
 
     @if (loading)
     {
@@ -50,46 +52,151 @@
     {
         if (!string.IsNullOrWhiteSpace(report.LegacyError))
         {
-            <Alert Color="Color.Warning" Class="mb-3">QLDH_MSSQL: @report.LegacyError</Alert>
+            <Alert Color="Color.Warning" Class="mb-2">QLDH_MSSQL: @report.LegacyError</Alert>
         }
         if (!string.IsNullOrWhiteSpace(report.HcsError))
         {
-            <Alert Color="Color.Warning" Class="mb-3">QLDH_PGSQL: @report.HcsError</Alert>
+            <Alert Color="Color.Warning" Class="mb-2">QLDH_PGSQL: @report.HcsError</Alert>
         }
 
         var metrics = report.Combined;
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Tổng hồ sơ</small><h2 class="mb-0">@metrics.TotalCount</h2></CardBody></Card></div>
-            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đã phê duyệt</small><h2 class="mb-0 text-success">@metrics.CompletedCount <small class="text-muted">(@FmtPct(metrics.CompletedRatePercent))</small></h2></CardBody></Card></div>
-            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đang xử lý</small><h2 class="mb-0 text-primary">@metrics.ProcessingIncludingNewCount</h2></CardBody></Card></div>
-            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đúng hạn</small><h2 class="mb-0">@FmtPct(metrics.OnTimeRatePercent)</h2></CardBody></Card></div>
+        var onTimeWidth = Math.Clamp(metrics.OnTimeRatePercent ?? 0, 0, 100).ToString("0.##", CultureInfo.InvariantCulture);
+
+        <section class="hcs-kpi-hero" aria-label="Chỉ số chính">
+            <article class="hcs-kpi-tile hcs-kpi-tile--total">
+                <span class="hcs-kpi-tile__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v6h6"/></svg>
+                </span>
+                <div>
+                    <p>Tổng hồ sơ</p>
+                    <strong>@FmtNum(metrics.TotalCount)</strong>
+                </div>
+            </article>
+            <article class="hcs-kpi-tile hcs-kpi-tile--done">
+                <span class="hcs-kpi-tile__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 5 5L20 7"/></svg>
+                </span>
+                <div>
+                    <p>Đã phê duyệt</p>
+                    <strong>@FmtNum(metrics.CompletedCount) <small>@FmtPct(metrics.CompletedRatePercent)</small></strong>
+                </div>
+            </article>
+            <article class="hcs-kpi-tile hcs-kpi-tile--progress">
+                <span class="hcs-kpi-tile__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                </span>
+                <div>
+                    <p>Đang xử lý</p>
+                    <strong>@FmtNum(metrics.ProcessingIncludingNewCount) <small>@FmtPct(metrics.InProgressRatePercent)</small></strong>
+                </div>
+            </article>
+            <article class="hcs-kpi-tile hcs-kpi-tile--ontime">
+                <span class="hcs-kpi-tile__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 16l5-5 4 4 7-8"/></svg>
+                </span>
+                <div>
+                    <p>Đúng hạn</p>
+                    <strong>@FmtPct(metrics.OnTimeRatePercent)</strong>
+                </div>
+            </article>
+        </section>
+
+        <div class="hcs-kpi-split">
+            <section class="hcs-kpi-panel" aria-labelledby="kpi-status-title">
+                <header class="hcs-kpi-panel__head">
+                    <div>
+                        <p>Biểu đồ</p>
+                        <h2 id="kpi-status-title">Phân bổ trạng thái</h2>
+                    </div>
+                </header>
+                @if (report.PieSlices.Count > 0)
+                {
+                    <div class="hcs-kpi-chart">
+                        <PieChart ChartId="proposal-stats-status"
+                                  Labels="PieLabels"
+                                  Data="PieData"
+                                  BackgroundColors="PieColors"
+                                  IsDoughnut="true"
+                                  ShowLegend="false"
+                                  ShowDataLabels="true"
+                                  CenterLabel="@FmtNum(metrics.TotalCount)"
+                                  CenterSubLabel="hồ sơ"
+                                  Height="220px" />
+                        <ul class="hcs-kpi-legend">
+                            @foreach (var slice in report.PieSlices)
+                            {
+                                var percent = metrics.TotalCount > 0 ? slice.Value * 100d / metrics.TotalCount : 0;
+                                <li>
+                                    <span class="hcs-kpi-legend__swatch" style="background:@slice.Color" aria-hidden="true"></span>
+                                    <span class="hcs-kpi-legend__label">@slice.Label</span>
+                                    <strong>@FmtNum(slice.Value)</strong>
+                                    <em>@FmtPct(percent)</em>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <p class="hcs-kpi-empty">Chưa có hồ sơ trong khoảng thời gian này.</p>
+                }
+            </section>
+
+            <section class="hcs-kpi-panel" aria-labelledby="kpi-ops-title">
+                <header class="hcs-kpi-panel__head">
+                    <div>
+                        <p>Hiệu suất</p>
+                        <h2 id="kpi-ops-title">Chỉ số xử lý</h2>
+                    </div>
+                </header>
+
+                <div class="hcs-kpi-ops">
+                    <article class="hcs-kpi-ops__hero">
+                        <p>Thời gian xử lý trung bình</p>
+                        <strong>@FmtHours(metrics.AverageProcessingHours)<span>giờ</span></strong>
+                    </article>
+                    <div class="hcs-kpi-ops__grid">
+                        <article class="hcs-kpi-ops__stat hcs-kpi-ops__stat--reject">
+                            <p>Từ chối</p>
+                            <strong>@FmtNum(metrics.RejectedCount)</strong>
+                            <small>@FmtPct(metrics.RejectedRatePercent)</small>
+                        </article>
+                        <article class="hcs-kpi-ops__stat hcs-kpi-ops__stat--cancel">
+                            <p>Đã hủy</p>
+                            <strong>@FmtNum(metrics.CancelledCount)</strong>
+                            <small>@FmtPct(metrics.CancelledRatePercent)</small>
+                        </article>
+                    </div>
+                    <div class="hcs-kpi-progress">
+                        <div class="hcs-kpi-progress__head">
+                            <span>Đúng hạn / có hạn</span>
+                            <strong>@FmtNum(metrics.OnTimeCount) / @FmtNum(metrics.CompletedWithDeadlineCount)</strong>
+                        </div>
+                        <div class="hcs-kpi-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)Math.Round(metrics.OnTimeRatePercent ?? 0))" aria-label="Tỷ lệ đúng hạn">
+                            <span style="width: @(onTimeWidth)%"></span>
+                        </div>
+                    </div>
+                    <div class="hcs-kpi-sources">
+                        <article class="@(report.LegacyAvailable ? "is-online" : "is-offline")">
+                            <span></span>
+                            <div>
+                                <p>QLDH_MSSQL</p>
+                                <strong>@(report.LegacyAvailable ? FmtNum(report.Legacy.TotalCount) : "Không kết nối")</strong>
+                            </div>
+                        </article>
+                        <article class="@(report.HcsAvailable ? "is-online" : "is-offline")">
+                            <span></span>
+                            <div>
+                                <p>QLDH_PGSQL</p>
+                                <strong>@(report.HcsAvailable ? FmtNum(report.Hcs.TotalCount) : "Không kết nối")</strong>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
         </div>
 
-        <div class="row g-3 mb-4">
-            <div class="col-lg-5">
-                <Card Class="h-100"><CardHeader>Phân bổ trạng thái</CardHeader><CardBody>
-                    @if (report.PieSlices.Count > 0)
-                    {
-                        <PieChart ChartId="proposal-stats-status" Labels="PieLabels" Data="PieData" BackgroundColors="PieColors" IsDoughnut="true" />
-                    }
-                    else { <p class="text-muted mb-0">Chưa có hồ sơ trong khoảng thời gian này.</p> }
-                </CardBody></Card>
-            </div>
-            <div class="col-lg-7">
-                <Card Class="h-100"><CardHeader>Chỉ số xử lý</CardHeader><CardBody>
-                    <dl class="row mb-0">
-                        <dt class="col-sm-7">Thời gian xử lý trung bình</dt><dd class="col-sm-5">@(metrics.AverageProcessingHours?.ToString("0.##") ?? "-") giờ</dd>
-                        <dt class="col-sm-7">Từ chối</dt><dd class="col-sm-5">@metrics.RejectedCount (@FmtPct(metrics.RejectedRatePercent))</dd>
-                        <dt class="col-sm-7">Đã hủy</dt><dd class="col-sm-5">@metrics.CancelledCount (@FmtPct(metrics.CancelledRatePercent))</dd>
-                        <dt class="col-sm-7">Đúng hạn / có hạn</dt><dd class="col-sm-5">@metrics.OnTimeCount / @metrics.CompletedWithDeadlineCount</dd>
-                        <dt class="col-sm-7">QLDH_MSSQL</dt><dd class="col-sm-5">@(report.LegacyAvailable ? report.Legacy.TotalCount.ToString() : "Không kết nối")</dd>
-                        <dt class="col-sm-7">QLDH_PGSQL</dt><dd class="col-sm-5">@(report.HcsAvailable ? report.Hcs.TotalCount.ToString() : "Không kết nối")</dd>
-                    </dl>
-                </CardBody></Card>
-            </div>
-        </div>
-
-        <div class="docs-table-wrap">
+        <div class="docs-table-wrap hcs-kpi-table">
             <table class="docs-table">
                 <thead>
                     <tr>
@@ -108,14 +215,14 @@
                 @foreach (var group in report.Groups)
                 {
                     <tr>
-                        <td>@group.Source</td>
+                        <td><span class="hcs-kpi-source-chip">@group.Source</span></td>
                         <td>@group.GroupCode</td>
                         <td>@group.GroupName</td>
-                        <td>@group.Metrics.TotalCount</td>
-                        <td>@group.Metrics.CompletedCount</td>
-                        <td>@group.Metrics.RejectedCount</td>
-                        <td>@group.Metrics.ProcessingIncludingNewCount</td>
-                        <td>@(group.Metrics.AverageProcessingHours?.ToString("0.##") ?? "-")</td>
+                        <td>@FmtNum(group.Metrics.TotalCount)</td>
+                        <td>@FmtNum(group.Metrics.CompletedCount)</td>
+                        <td>@FmtNum(group.Metrics.RejectedCount)</td>
+                        <td>@FmtNum(group.Metrics.ProcessingIncludingNewCount)</td>
+                        <td>@FmtHours(group.Metrics.AverageProcessingHours)</td>
                         <td>@FmtPct(group.Metrics.OnTimeRatePercent)</td>
                     </tr>
                 }
@@ -126,6 +233,7 @@
 </section>
 
 @code {
+    private static readonly CultureInfo Vi = CultureInfo.GetCultureInfo("vi-VN");
     private DateTime? fromDate = new(DateTime.Today.Year, 1, 1);
     private DateTime? toDate = DateTime.Today;
     private SigningKpiReportDto? report;
@@ -164,5 +272,7 @@
         return Task.CompletedTask;
     }
 
-    private static string FmtPct(double? value) => value.HasValue ? $"{value:0.##}%" : "-";
+    private static string FmtNum(long value) => value.ToString("N0", Vi);
+    private static string FmtPct(double? value) => value.HasValue ? $"{value.Value.ToString("0.##", Vi)}%" : "—";
+    private static string FmtHours(double? value) => value.HasValue ? value.Value.ToString("0.##", Vi) : "—";
 }

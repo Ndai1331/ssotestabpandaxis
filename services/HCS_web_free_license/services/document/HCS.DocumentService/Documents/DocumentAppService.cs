@@ -5,19 +5,15 @@ using HCS.DocumentService.Workflows;
 using HCS.IntegrationEvents.Auditing;
 using HCS.IntegrationEvents.Documents;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Npgsql;
 using Volo.Abp;
-using Volo.Abp.BlobStoring;
 
 namespace HCS.DocumentService.Documents;
 
 public sealed class DocumentAppService(
     DocumentServiceDbContext db,
     IHttpContextAccessor httpContext,
-    IBlobContainer<DocumentBlobContainer> documentBlobs,
-    IBlobContainer<SigningBlobContainer> signingBlobs,
-    ILogger<DocumentAppService> logger) : IDocumentAppService
+    IDocumentBlobCleanup blobCleanup) : IDocumentAppService
 {
     public async Task<PagedDocumentsDto> GetListAsync(string? filter = null, DocumentStatus? status = null,
         bool mine = false, int skip = 0, int take = 50, int? sourceType = null,
@@ -251,29 +247,25 @@ public sealed class DocumentAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        if (!submission) DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
-        await using var transaction = submission
-            ? await DocumentTransaction.BeginIfNeededAsync(db.Database, cancellationToken)
-            : null;
-        if (submission)
-        {
-            await db.Documents.FromSqlInterpolated($"SELECT * FROM document.\"Documents\" WHERE \"Id\" = {id} FOR UPDATE")
-                .AsNoTracking().Select(x => x.Id).SingleAsync(cancellationToken);
-            await db.ApprovalTasks.FromSqlInterpolated($"SELECT t.* FROM document.\"ApprovalTasks\" t JOIN document.\"WorkflowInstances\" i ON i.\"Id\" = t.\"InstanceId\" WHERE i.\"DocumentId\" = {id} FOR UPDATE OF t")
-                .AsNoTracking().ToListAsync(cancellationToken);
-        }
-        var document = await LoadAsync(id, cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
-        if (!submission && await db.WorkflowInstances.AnyAsync(x => x.DocumentId == id && x.Status == WorkflowInstanceStatus.Running, cancellationToken))
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
+        var document = await db.Documents.SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new KeyNotFoundException("Document not found.");
+        var isCreator = await db.DocumentHistories.AsNoTracking().AnyAsync(
+            x => x.DocumentId == id && x.Action == DocumentAccess.CreatedAction && x.ActorUserId == userId,
+            cancellationToken);
+        DocumentAccess.EnsureCanManage(document, userId, principal, isCreator);
+        if (await db.WorkflowInstances.AnyAsync(x => x.DocumentId == id && x.Status == WorkflowInstanceStatus.Running, cancellationToken))
             throw new BusinessException("Document:CannotDeleteWithRunningWorkflow");
 
         var now = DateTime.UtcNow;
-        var documentBlobNames = document.Files.Select(x => x.BlobName).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct().ToList();
-        var signingAttempts = await db.SigningAttempts.Where(x => x.DocumentId == id).ToListAsync(cancellationToken);
-        var signingBlobNames = signingAttempts.Select(x => x.OutputBlobName)
-            .Where(name => !string.IsNullOrWhiteSpace(name)).Cast<string>().Distinct().ToList();
-        var workflowInstances = await db.WorkflowInstances.Include(x => x.Tasks)
-            .Where(x => x.DocumentId == id).ToListAsync(cancellationToken);
+        var documentBlobNames = await db.DocumentFiles.AsNoTracking()
+            .Where(x => x.DocumentId == id && x.BlobName != "")
+            .Select(x => x.BlobName)
+            .ToListAsync(cancellationToken);
+        var signingBlobNames = await db.SigningAttempts.AsNoTracking()
+            .Where(x => x.DocumentId == id && x.OutputBlobName != null && x.OutputBlobName != "")
+            .Select(x => x.OutputBlobName!)
+            .ToListAsync(cancellationToken);
 
         if (submission && !WorkflowSubmissionDeletion.CanDelete(document.SourceType, document.FromUserId,
             userId, workflowInstances,
@@ -282,13 +274,35 @@ public sealed class DocumentAppService(
 
         EnqueueInboxCleared(id, now);
         AddAudit("DocumentDeleted", id, 200, null, now);
-        db.SigningAttempts.RemoveRange(signingAttempts);
-        db.WorkflowInstances.RemoveRange(workflowInstances);
-        db.Documents.Remove(document);
+        await DeletePersistedGraphAsync(id, document, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
-        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
-        await TryDeleteBlobsAsync(documentBlobs, documentBlobNames, cancellationToken);
-        await TryDeleteBlobsAsync(signingBlobs, signingBlobNames, cancellationToken);
+        blobCleanup.Enqueue(documentBlobNames, signingBlobNames);
+    }
+
+    private async Task DeletePersistedGraphAsync(Guid id, DocumentAggregate document, CancellationToken cancellationToken)
+    {
+        if (db.Database.IsRelational())
+        {
+            await db.SigningAttempts.Where(x => x.DocumentId == id).ExecuteDeleteAsync(cancellationToken);
+            await db.ApprovalTasks.Where(task => db.WorkflowInstances.Any(instance =>
+                    instance.Id == task.InstanceId && instance.DocumentId == id))
+                .ExecuteDeleteAsync(cancellationToken);
+            await db.WorkflowInstances.Where(x => x.DocumentId == id).ExecuteDeleteAsync(cancellationToken);
+            await db.DocumentFiles.Where(x => x.DocumentId == id).ExecuteDeleteAsync(cancellationToken);
+            await db.DocumentAssignments.Where(x => x.DocumentId == id).ExecuteDeleteAsync(cancellationToken);
+            await db.DocumentHistories.Where(x => x.DocumentId == id).ExecuteDeleteAsync(cancellationToken);
+            db.Entry(document).State = EntityState.Detached;
+            await db.Documents.Where(x => x.Id == id).ExecuteDeleteAsync(cancellationToken);
+            return;
+        }
+
+        db.SigningAttempts.RemoveRange(await db.SigningAttempts.Where(x => x.DocumentId == id).ToListAsync(cancellationToken));
+        db.WorkflowInstances.RemoveRange(await db.WorkflowInstances.Include(x => x.Tasks)
+            .Where(x => x.DocumentId == id).ToListAsync(cancellationToken));
+        db.Entry(document).State = EntityState.Detached;
+        var tracked = await db.Documents.Include(x => x.Files).Include(x => x.Assignments).Include(x => x.History)
+            .SingleAsync(x => x.Id == id, cancellationToken);
+        db.Documents.Remove(tracked);
     }
 
     private IQueryable<DocumentAggregate> Query() => db.Documents.AsNoTracking().AsSplitQuery()
@@ -365,23 +379,6 @@ public sealed class DocumentAppService(
 
     private static bool IsInboxView(string responsibility, string? stepCode) =>
         string.Equals(responsibility, "VIEW", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(stepCode);
-
-    private async Task TryDeleteBlobsAsync<TContainer>(IBlobContainer<TContainer> container, IEnumerable<string> blobNames,
-        CancellationToken cancellationToken)
-        where TContainer : class
-    {
-        foreach (var blobName in blobNames)
-        {
-            try
-            {
-                await container.DeleteAsync(blobName, cancellationToken: cancellationToken);
-            }
-            catch (Exception exception)
-            {
-                logger.LogWarning(exception, "Could not delete blob {BlobName} after document removal", blobName);
-            }
-        }
-    }
 
     private void AddAudit(string action, Guid id, int status, string? detail, DateTime now)
     {

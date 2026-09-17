@@ -1,8 +1,8 @@
 @inject IJSRuntime Js
 @implements IAsyncDisposable
 
-<div style="position: relative; height: 300px;">
-    <canvas id="@ChartId" width="400" height="300"></canvas>
+<div class="hcs-pie-chart" style="height: @Height;">
+    <canvas id="@ChartId"></canvas>
 </div>
 @code {
     [Parameter] public string ChartId { get; set; } = Guid.NewGuid().ToString("n");
@@ -12,6 +12,10 @@
     [Parameter] public bool IsDoughnut { get; set; }
     [Parameter] public string? Title { get; set; }
     [Parameter] public bool ShowLegend { get; set; } = true;
+    [Parameter] public bool ShowDataLabels { get; set; }
+    [Parameter] public string? CenterLabel { get; set; }
+    [Parameter] public string? CenterSubLabel { get; set; }
+    [Parameter] public string Height { get; set; } = "300px";
 
     private bool rendered;
     private string lastSignature = "";
@@ -22,13 +26,13 @@
         var signature = BuildSignature();
         if (!rendered)
         {
-            await Js.InvokeVoidAsync("hcsCharts.createPie", ChartId, Labels, Data, Colors(), IsDoughnut, Title, ShowLegend);
+            await Js.InvokeVoidAsync("hcsCharts.createPie", ChartId, Labels, Data, Colors(), IsDoughnut, Title, ShowLegend, Extras());
             rendered = true;
             lastSignature = signature;
             return;
         }
         if (signature == lastSignature) return;
-        await Js.InvokeVoidAsync("hcsCharts.updatePie", ChartId, Labels, Data, Colors());
+        await Js.InvokeVoidAsync("hcsCharts.updatePie", ChartId, Labels, Data, Colors(), Extras());
         lastSignature = signature;
     }
 
@@ -36,7 +40,14 @@
     private List<string> Colors() => BackgroundColors.Count > 0
         ? BackgroundColors
         : ["#3498db", "#2ecc71", "#e74c3c", "#f39c12", "#9b59b6", "#1abc9c"];
-    private string BuildSignature() => string.Join("|", Labels) + "#" + string.Join("|", Data) + "#" + IsDoughnut + Title;
+    private object Extras() => new
+    {
+        showDataLabels = ShowDataLabels,
+        centerLabel = CenterLabel,
+        centerSubLabel = CenterSubLabel
+    };
+    private string BuildSignature() =>
+        string.Join("|", Labels) + "#" + string.Join("|", Data) + "#" + IsDoughnut + Title + ShowLegend + ShowDataLabels + CenterLabel + CenterSubLabel;
 
     public async ValueTask DisposeAsync()
     {

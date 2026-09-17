@@ -79,6 +79,7 @@
       "clients": ["CollaborationClient", "ChatRealtimeConnection"],
       "endpoints": [
         { "method": "GET", "path": "/api/chat/contacts" },
+        { "method": "GET", "path": "/api/chat/contacts/lookup" },
         { "method": "GET", "path": "/api/chat/conversations" },
         { "method": "POST", "path": "/api/chat/conversations" },
         { "method": "GET", "path": "/api/chat/conversations/{id}" },
