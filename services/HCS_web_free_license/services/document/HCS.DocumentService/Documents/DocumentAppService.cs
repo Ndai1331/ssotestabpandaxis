@@ -267,10 +267,10 @@ public sealed class DocumentAppService(
             .Select(x => x.OutputBlobName!)
             .ToListAsync(cancellationToken);
 
-        if (submission && !WorkflowSubmissionDeletion.CanDelete(document.SourceType, document.FromUserId,
-            userId, workflowInstances,
-            signingAttempts.Any(x => x.Status != Signing.SigningStatus.Failed)))
-            throw new BusinessException("Document:CannotDeleteStartedSubmission");
+        // if (submission && !WorkflowSubmissionDeletion.CanDelete(document.SourceType, document.FromUserId,
+        //     userId, workflowInstances,
+        //     signingAttempts.Any(x => x.Status != Signing.SigningStatus.Failed)))
+        //     throw new BusinessException("Document:CannotDeleteStartedSubmission");
 
         EnqueueInboxCleared(id, now);
         AddAudit("DocumentDeleted", id, 200, null, now);
