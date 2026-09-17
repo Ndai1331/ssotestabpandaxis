@@ -125,6 +125,7 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
             b.ToTable("WorkflowInstances"); b.HasKey(x => x.Id);
             b.Property(x => x.IdempotencyKey).HasMaxLength(128);
             b.Property(x => x.ViewScopesJson).HasColumnType("jsonb");
+            b.Property(x => x.AssigneeOverridesJson).HasColumnType("jsonb");
             b.HasIndex(x => x.IdempotencyKey).IsUnique();
             b.HasIndex(x => new { x.Status, x.CreationTime });
             b.HasMany(x => x.Tasks).WithOne().HasForeignKey(x => x.InstanceId).OnDelete(DeleteBehavior.Cascade);

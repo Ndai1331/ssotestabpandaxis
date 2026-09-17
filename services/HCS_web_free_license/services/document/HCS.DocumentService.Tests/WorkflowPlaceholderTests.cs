@@ -89,7 +89,7 @@ public sealed class WorkflowPlaceholderTests
         Assert.DoesNotContain("<<FullName02>>", text);
         Assert.DoesNotContain("<<NoteContent02>>", text);
         Assert.Contains("Trần Thị B", text);
-        Assert.Contains(SigningStampText.DateLabel, text);
+        Assert.DoesNotContain(SigningStampText.DateLabel, text);
         Assert.Equal(1, ReadImagePartCount(result));
     }
 
@@ -124,6 +124,23 @@ public sealed class WorkflowPlaceholderTests
         Assert.NotNull(PdfPlaceholderReplacer.FindPlaceholder(result, "<<NoteContent02>>"));
         Assert.NotNull(PdfPlaceholderReplacer.FindPlaceholder(result, "<<NoteContent>>"));
         Assert.NotNull(PdfPlaceholderReplacer.FindPlaceholder(result, "<<Sign02>>"));
+    }
+
+    [Theory]
+    [InlineData("Electronic signer")]
+    [InlineData("")]
+    public void Electronic_pdf_signature_does_not_add_a_signing_date(string signerName)
+    {
+        var source = CreatePdf("<<Sign01>>");
+        var request = new SigningProviderRequest(source, "https://electronic.local", "", "",
+            CreatePng(640, 200), [], [], "<<Sign01>>", signerName, "", 150, 70, 30);
+
+        var result = PdfSigningDrawing.ApplyElectronic(request);
+
+        using var pdf = UglyToad.PdfPig.PdfDocument.Open(result);
+        var text = string.Join(" ", pdf.GetPages().Select(page => page.Text));
+        Assert.DoesNotContain(SigningStampText.DateLabel, text);
+        if (!string.IsNullOrEmpty(signerName)) Assert.Contains(signerName, text);
     }
 
     private static byte[] CreateDocx(string text)

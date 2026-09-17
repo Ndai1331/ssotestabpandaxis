@@ -11,6 +11,7 @@ public sealed class BffUnauthenticatedDocumentRedirectTests
     [Theory]
     [InlineData("/", "https://localhost:44403/")]
     [InlineData("/workspace", "https://localhost:44403/workspace")]
+    [InlineData("/event-check-in/EVT-1", "https://localhost:44403/event-check-in/EVT-1")]
     [InlineData("/login", "https://localhost:44403/")]
     [InlineData("/Login", "https://localhost:44403/")]
     public void Redirects_html_documents_to_bff_login_without_booting_wasm(
@@ -46,6 +47,24 @@ public sealed class BffUnauthenticatedDocumentRedirectTests
         Assert.Equal(
             "https://localhost:44402/bff/login?returnUrl=" +
             Uri.EscapeDataString("https://localhost:44403/manage-documents?sourceType=2"),
+            loginUrl);
+    }
+
+    [Fact]
+    public void Keeps_event_check_in_qr_token_on_the_post_login_return_url()
+    {
+        Assert.True(BffUnauthenticatedDocumentRedirect.TryGetLoginUrl(
+            isAuthenticated: false,
+            "GET",
+            "/event-check-in/EVT-20260917012302-EC4ECEA",
+            "?token=6C0E9CE64762C440B9AFB042B5C32388",
+            HtmlAccept,
+            CreateConfiguration(),
+            out var loginUrl));
+
+        Assert.Equal(
+            "https://localhost:44402/bff/login?returnUrl=" +
+            Uri.EscapeDataString("https://localhost:44403/event-check-in/EVT-20260917012302-EC4ECEA?token=6C0E9CE64762C440B9AFB042B5C32388"),
             loginUrl);
     }
 

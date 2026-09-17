@@ -1,11 +1,14 @@
 using Blazorise;
 using Blazorise.Bootstrap5;
 using Blazorise.Icons.FontAwesome;
+using HCS;
 using HCS.Bff;
 using HCS.Blazor.Client;
 using HCS.Blazor.Client.Authentication;
 using HCS.Blazor.Client.Navigation;
+using HCS.Blazor.Client.Work;
 using HCS.Blazor.Components;
+using HCS.Blazor.EventCheckIn;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -51,6 +54,7 @@ using Volo.Abp.UI.Navigation.Urls;
 namespace HCS.Blazor;
 
 [DependsOn(
+    typeof(HCSDomainSharedModule),
     typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreMvcClientModule),
     typeof(AbpHttpClientWebModule),
@@ -86,9 +90,17 @@ public sealed class HCSBlazorModule : AbpModule
             options.RequestCultureProviders.Insert(0, new Microsoft.AspNetCore.Localization.QueryStringRequestCultureProvider());
         });
 
+        context.Services.AddHttpContextAccessor();
+        context.Services.AddRazorPages();
         context.Services.AddRazorComponents()
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents();
+        context.Services.AddHttpClient(EventCheckInGatewayClient.HttpClientName, client =>
+        {
+            client.BaseAddress = EventCheckInOrigins.ResolveBackchannel(configuration);
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        context.Services.AddTransient<EventCheckInGatewayClient>();
 
         if (environment.IsDevelopment() && configuration.GetValue("App:EnablePII", false))
         {
@@ -372,6 +384,7 @@ public sealed class HCSBlazorModule : AbpModule
                 return Results.Content(html, "text/html; charset=utf-8");
             });
 
+            endpoints.MapRazorPages();
             endpoints.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode()
                 .AddInteractiveWebAssemblyRenderMode()

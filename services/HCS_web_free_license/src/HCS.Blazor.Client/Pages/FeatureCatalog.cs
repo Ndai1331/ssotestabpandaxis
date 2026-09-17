@@ -21,7 +21,7 @@ internal static class FeatureCatalog
             "document-signing" => F("Ký duyệt", "Hàng đợi ký điện tử và ký số.", "/api/signing", "fa fa-file-signature"),
             "workflow-definitions" => F("Loại quy trình", "Danh mục loại quy trình.", "/api/workflows/definitions", "fa fa-diagram-project"),
             "workflow-lists" or "workflow-detail" => F("Quy trình", "Thiết kế các bước xử lý và tệp mẫu.", "/api/workflows/definitions", "fa fa-code-branch"),
-            "document-workflow-instances" or "workflow-instances" => F("Hồ sơ quy trình", "Theo dõi trạng thái và nhiệm vụ phê duyệt.", "/api/workflows/instances", "fa fa-folder-open"),
+            "workflow-instances" => F("Hồ sơ quy trình", "Theo dõi trạng thái và nhiệm vụ phê duyệt.", "/api/workflows/instances", "fa fa-folder-open"),
             "projects" or "project-detail" => F("Dự án", "Quản lý tiến độ, thành viên và phạm vi dự án.", "/api/projects", "fa fa-diagram-project"),
             "tasks" or "project-task-detail" => F("Công việc", "Theo dõi phân công, ưu tiên và tiến độ thực hiện.", "/api/project-tasks", "fa fa-list-check"),
             "calendar-events" or "calendar-event-detail" => F("Lịch công tác", "Lịch cá nhân, đơn vị và các mốc liên quan công việc.", "/api/calendar", "fa fa-calendar-days"),

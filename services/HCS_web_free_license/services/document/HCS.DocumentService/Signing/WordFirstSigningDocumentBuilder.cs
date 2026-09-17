@@ -12,13 +12,8 @@ internal static class WordFirstSigningDocumentBuilder
     public static byte[] Replace(byte[] sourceDocx, SigningKind kind, byte[] signatureImage,
         int stepOrder, string signerName, string note)
     {
-        // Electronic Word-first skips the later PDF overlay, so the date must
-        // be written into the DOCX now. TAG/HSM stamps add "Ngày ký:" themselves.
-        var displayName = kind == SigningKind.Electronic
-            ? SigningStampText.FormatSignerWithDate(signerName)
-            : signerName;
         return kind == SigningKind.Electronic
-            ? WordPlaceholderReplacer.ReplaceApproval(sourceDocx, stepOrder, signatureImage, displayName, note)
-            : WordPlaceholderReplacer.ReplaceApprovalText(sourceDocx, stepOrder, displayName, note);
+            ? WordPlaceholderReplacer.ReplaceApproval(sourceDocx, stepOrder, signatureImage, signerName, note)
+            : WordPlaceholderReplacer.ReplaceApprovalText(sourceDocx, stepOrder, signerName, note);
     }
 }

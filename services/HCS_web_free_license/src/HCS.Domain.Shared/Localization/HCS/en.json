@@ -315,6 +315,8 @@
     "Work:EventAttendeeRequiredFields": "Enter full name, phone and email.",
     "Event:CheckInSuccess": "Check-in successful",
     "Event:CheckInSuccessDescription": "Hello {0}, your attendance was recorded at:",
+    "Event:BackToHome": "Back to home",
+    "Event:CheckInHomeHint": "The full app loads after you return to the home page.",
     "Permission:Documents": "Documents",
     "Permission:Documents.View": "View documents",
     "Permission:Documents.Create": "Create documents",

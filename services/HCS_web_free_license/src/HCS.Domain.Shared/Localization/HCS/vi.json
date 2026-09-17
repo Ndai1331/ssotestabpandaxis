@@ -315,6 +315,8 @@
     "Work:EventAttendeeRequiredFields": "Vui lòng nhập họ tên, số điện thoại và email.",
     "Event:CheckInSuccess": "Check-in thành công",
     "Event:CheckInSuccessDescription": "Xin chào {0}, thông tin tham dự của bạn đã được ghi nhận lúc:",
+    "Event:BackToHome": "Quay về trang chủ",
+    "Event:CheckInHomeHint": "Ứng dụng đầy đủ sẽ được tải khi bạn quay về trang chủ.",
     "Permission:Documents": "Văn bản",
     "Permission:Documents.View": "Xem văn bản",
     "Permission:Documents.Create": "Tạo văn bản",

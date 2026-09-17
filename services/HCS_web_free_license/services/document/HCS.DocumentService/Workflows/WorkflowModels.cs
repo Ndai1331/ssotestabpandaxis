@@ -263,6 +263,7 @@ public sealed class WorkflowInstance
         CurrentStep = first;
         CreationTime = now;
         ViewScopesJson = viewScopesJson;
+        AssigneeOverridesJson = assigneeOverrides is null ? null : JsonSerializer.Serialize(assigneeOverrides);
         AddTask(ordered[first], now, assigneeOverrides);
     }
     public Guid Id { get; private set; }
@@ -272,6 +273,7 @@ public sealed class WorkflowInstance
     public int CurrentStep { get; private set; }
     public string IdempotencyKey { get; private set; } = string.Empty;
     public string? ViewScopesJson { get; private set; }
+    public string? AssigneeOverridesJson { get; private set; }
     public DateTime CreationTime { get; private set; }
     public IReadOnlyCollection<ApprovalTask> Tasks => _tasks;
 
@@ -325,8 +327,17 @@ public sealed class WorkflowInstance
 
     private void AddTask(WorkflowStep step, DateTime now, IReadOnlyDictionary<string, Guid>? assigneeOverrides)
     {
+        var saved = string.IsNullOrWhiteSpace(AssigneeOverridesJson)
+            ? new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, Guid>(JsonSerializer.Deserialize<Dictionary<string, Guid>>(AssigneeOverridesJson)!,
+                StringComparer.OrdinalIgnoreCase);
+        if (assigneeOverrides is not null)
+        {
+            foreach (var (code, userId) in assigneeOverrides) saved[code] = userId;
+            AssigneeOverridesJson = JsonSerializer.Serialize(saved);
+        }
         DateTime? dueAt = step.SlaDays is { } days ? now.AddDays(days) : null;
-        _tasks.Add(new ApprovalTask(Guid.NewGuid(), Id, step.Code, now, step.ResolveAssignee(assigneeOverrides), dueAt));
+        _tasks.Add(new ApprovalTask(Guid.NewGuid(), Id, step.Code, now, step.ResolveAssignee(saved), dueAt));
     }
 
     internal static int FirstBlockingIndex(IReadOnlyList<WorkflowStep> ordered) => NextBlockingIndex(ordered, 0);
