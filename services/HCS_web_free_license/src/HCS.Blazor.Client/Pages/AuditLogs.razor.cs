@@ -10,6 +10,7 @@ using HCS.Blazor.Client.Auditing;
 using HCS.Blazor.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace HCS.Blazor.Client.Pages;
 
@@ -49,6 +50,7 @@ public partial class AuditLogs : HCSComponentBase, IDisposable
     private DateTimeOffset? lastUpdated;
 
     [Inject] private AuditLogClient AuditClient { get; set; } = default!;
+    [Inject] private IJSRuntime JsRuntime { get; set; } = default!;
 
     private int totalPages => Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
 
@@ -290,6 +292,54 @@ public partial class AuditLogs : HCSComponentBase, IDisposable
         >= 500 => "hcs-audit-status--danger",
         _ => "hcs-audit-status--muted"
     };
+
+    private async Task ExportAsync()
+    {
+        if (rows.Count == 0) return;
+        var headers = new[]
+        {
+            L["Audit:Status"].Value,
+            L["Audit:HttpMethod"].Value,
+            L["Audit:Api"].Value,
+            L["Audit:User"].Value,
+            L["Audit:IpAddress"].Value,
+            L["Audit:Time"].Value,
+            L["Audit:Duration"].Value,
+            L["Audit:Service"].Value,
+            L["Audit:Application"].Value,
+            L["Audit:CorrelationId"].Value
+        };
+        var exportRows = rows.Select(row => (IReadOnlyList<string>)
+        [
+            row.HttpStatusCode?.ToString(CultureInfo.InvariantCulture) ?? "",
+            row.HttpMethod ?? "",
+            row.Url ?? "",
+            DisplayUser(row),
+            row.ClientIpAddress ?? "",
+            FormatDate(row.ExecutionTime),
+            row.ExecutionDuration.ToString(CultureInfo.InvariantCulture),
+            row.SourceService ?? "",
+            row.ApplicationName ?? "",
+            row.CorrelationId ?? ""
+        ]);
+
+        try
+        {
+            await CsvDownload.DownloadAsync(JsRuntime, $"audit-logs-{DateTime.Now:yyyyMMdd-HHmm}.csv", headers, exportRows);
+            await NotifySuccessAsync(L["Audit:Exported"]);
+        }
+        catch (Exception)
+        {
+            await NotifyErrorAsync(L["Catalog:ExportError"].Value);
+        }
+    }
+
+    private static string ShortService(string? value)
+    {
+        var text = FirstValue(value);
+        var last = text.LastIndexOf('.');
+        return last >= 0 && last < text.Length - 1 ? text[(last + 1)..] : text;
+    }
 
     public void Dispose()
     {

@@ -58,5 +58,6 @@ public interface IDocumentAppService
     Task<DocumentDto> SendAsync(Guid id, SendDocumentRequest input, CancellationToken cancellationToken = default);
     Task<DocumentDto> RevokeAsync(Guid id, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task DeleteSubmissionAsync(Guid id, CancellationToken cancellationToken = default);
     Task<DocumentDto> RecordActivityAsync(Guid id, DocumentActivityRequest input, CancellationToken cancellationToken = default);
 }

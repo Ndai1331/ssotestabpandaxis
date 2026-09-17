@@ -86,7 +86,7 @@ public sealed record SigningQueueDocumentDto(Guid Id, string Number, string Titl
     IReadOnlyList<DocumentFileDto> Files, DateTime CreationTime, DocumentSourceType SourceType = DocumentSourceType.Workflow,
     Guid? FromUserId = null, string? DocumentCode = null);
 public sealed record SigningQueueItemDto(SigningQueueDocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance,
-    WorkflowDefinitionDto Definition);
+    WorkflowDefinitionDto Definition, bool CanDelete = false);
 
 public interface ISigningAppService
 {

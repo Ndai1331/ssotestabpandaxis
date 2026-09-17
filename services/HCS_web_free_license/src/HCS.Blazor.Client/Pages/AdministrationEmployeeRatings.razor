@@ -1,16 +1,17 @@
+@page "/employee-ratings/results/list"
 @page "/administration/employee-ratings"
 @attribute [Authorize(Policy = "WorkManagement.EmployeeRatings.Management")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
 @inject EmployeeRatingDirectoryService Directory
 
-<PageTitle>@L["Feature:EmployeeRatingManagement"] · HCS</PageTitle>
+<PageTitle>@L["Menu:EmployeeRatingResults"] · HCS</PageTitle>
 
 <section class="hcs-rating-page" aria-labelledby="employee-rating-management-title">
     <header class="hcs-rating-page__header">
         <div>
             <p class="hcs-rating-page__kicker">@L["Menu:Social"]</p>
-            <h1 id="employee-rating-management-title">@L["Feature:EmployeeRatingManagement"]</h1>
+            <h1 id="employee-rating-management-title">@L["Menu:EmployeeRatingResults"]</h1>
             <p class="hcs-rating-page__lede">@L["EmployeeRatings:ManagementSubtitle"]</p>
         </div>
     </header>
@@ -63,7 +64,7 @@
                 {
                     <div class="table-responsive hcs-rating-table-wrap--stacked">
                         <table class="table table-hover align-middle mb-0">
-                            <caption class="visually-hidden">@L["Feature:EmployeeRatingManagement"]</caption>
+                            <caption class="visually-hidden">@L["Menu:EmployeeRatingResults"]</caption>
                             <thead><tr><th>@L["EmployeeRatings:Employee"]</th><th>@L["EmployeeRatings:Department"]</th><th>@L["EmployeeRatings:Average"]</th><th>@L["EmployeeRatings:Reviews"]</th><th class="text-end">@L["EmployeeRatings:Action"]</th></tr></thead>
                             <tbody>
                                 @foreach (var person in FilteredPeople)
@@ -73,7 +74,7 @@
                                         <td data-label="@L["EmployeeRatings:Department"]">@(person.HasDepartment ? person.DepartmentName : L["EmployeeRatings:NoDepartment"])</td>
                                         <td data-label="@L["EmployeeRatings:Average"]"><span class="hcs-rating-score">@(person.Summary.ReviewCount == 0 ? L["EmployeeRatings:NoScore"].Value : $"{person.Summary.AverageScore:0.0}/5")</span></td>
                                         <td data-label="@L["EmployeeRatings:Reviews"]">@person.Summary.ReviewCount</td>
-                                        <td data-label="@L["EmployeeRatings:Action"]" class="text-end"><a class="btn btn-sm btn-outline-primary" href="/administration/employee-ratings/@person.User.UserId"><i class="fa fa-eye me-1" aria-hidden="true"></i>@L["EmployeeRatings:ViewDetail"]</a></td>
+                                        <td data-label="@L["EmployeeRatings:Action"]" class="text-end"><a class="btn btn-sm btn-outline-primary" href="/employee-ratings/results/@person.User.UserId"><i class="fa fa-eye me-1" aria-hidden="true"></i>@L["EmployeeRatings:ViewDetail"]</a></td>
                                     </tr>
                                 }
                             </tbody>

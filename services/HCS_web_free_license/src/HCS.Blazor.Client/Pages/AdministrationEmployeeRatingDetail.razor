@@ -1,3 +1,4 @@
+@page "/employee-ratings/results/{UserId:guid}"
 @page "/administration/employee-ratings/{UserId:guid}"
 @attribute [Authorize(Policy = "WorkManagement.EmployeeRatings.Management")]
 @inherits HCSComponentBase
@@ -10,7 +11,7 @@
     <header class="hcs-rating-page__header">
         <div>
             <p class="hcs-rating-page__kicker">@L["Menu:Social"]</p>
-            <a class="hcs-rating-backlink" href="/administration/employee-ratings"><i class="fa fa-arrow-left me-1" aria-hidden="true"></i>@L["EmployeeRatings:BackToList"]</a>
+            <a class="hcs-rating-backlink" href="/employee-ratings/results/list"><i class="fa fa-arrow-left me-1" aria-hidden="true"></i>@L["EmployeeRatings:BackToList"]</a>
             <h1 id="employee-rating-detail-title">@person?.User.DisplayName</h1>
             <p class="hcs-rating-page__lede">@(person?.HasDepartment == true ? person.DepartmentName : L["EmployeeRatings:NoDepartment"])</p>
         </div>

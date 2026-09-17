@@ -78,6 +78,11 @@ public sealed class SigningAppService(
         if (instances.Count == 0) return [];
 
         var documentIds = instances.Select(x => x.DocumentId).Distinct().ToArray();
+        var signingDocumentIds = (await db.SigningAttempts.AsNoTracking()
+            .Where(x => documentIds.Contains(x.DocumentId) && x.Status != SigningStatus.Failed)
+            .Select(x => x.DocumentId).Distinct().ToListAsync(cancellationToken)).ToHashSet();
+        var allInstances = await db.WorkflowInstances.AsNoTracking().Include(x => x.Tasks)
+            .Where(x => documentIds.Contains(x.DocumentId)).ToListAsync(cancellationToken);
         var documents = await db.Documents.AsNoTracking()
             .Where(x => documentIds.Contains(x.Id))
             .Include(x => x.Files)
@@ -105,7 +110,11 @@ public sealed class SigningAppService(
                 new ApprovalTaskDto(x.task.Id, x.task.InstanceId, x.task.StepCode, x.task.Status,
                     x.task.DecidedBy, x.task.DecidedAt, x.task.AssigneeUserId, x.task.DueAt, x.task.Comment),
                 WorkflowAppService.Map(x.instance),
-                WorkflowAppService.MapDefinition(x.definition)))
+                WorkflowAppService.MapDefinition(x.definition),
+                WorkflowSubmissionDeletion.CanDelete(x.document.SourceType, x.document.FromUserId,
+                    userId,
+                    allInstances.Where(instance => instance.DocumentId == x.document.Id),
+                    signingDocumentIds.Contains(x.document.Id))))
             .ToList();
     }
 
@@ -393,10 +402,16 @@ public sealed class SigningAppService(
 
         var attempt = new SigningAttempt(Guid.NewGuid(), input.DocumentId, input.FileId, userId, input.Kind,
             actualInputHash, key, DateTime.UtcNow);
-        db.SigningAttempts.Add(attempt);
         try
         {
+            // Reserve the attempt before calling a provider. Submission deletion locks
+            // the same document, so it cannot pass its checks while signing starts.
+            await using var reservation = await DocumentTransaction.BeginIfNeededAsync(db.Database, cancellationToken);
+            await db.Documents.FromSqlInterpolated($"SELECT * FROM document.\"Documents\" WHERE \"Id\" = {input.DocumentId} FOR UPDATE")
+                .AsNoTracking().Select(x => x.Id).SingleAsync(cancellationToken);
+            db.SigningAttempts.Add(attempt);
             await db.SaveChangesAsync(cancellationToken);
+            if (reservation is not null) await reservation.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException)
         {

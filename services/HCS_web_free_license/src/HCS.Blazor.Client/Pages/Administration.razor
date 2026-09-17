@@ -6,16 +6,20 @@
 @using System.Net
 @using System.Threading
 @using HCS.Blazor.Client.Pages.Organization
+@using HCS.Blazor.Client.Services
 @using HCS.Localization
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.Extensions.Localization
+@using Microsoft.JSInterop
 @using Volo.Abp.AspNetCore.Components.Messages
 @inject IdentityAdminClient IdentityClient
 @inject OrganizationCatalogClient OrganizationClient
 @inject OrganizationUnitCatalogClient OrganizationUnits
 @inject IUiMessageService UiMessageService
 @inject IStringLocalizer<HCSResource> L
+@inject IJSRuntime JsRuntime
+@inject Volo.Abp.Users.ICurrentUser CurrentUser
 
 <PageTitle>@L["Menu:Users"] · HCS</PageTitle>
 
@@ -25,6 +29,14 @@
             <div class="page-head">
                 <h1 id="users-title">@L["Menu:Users"]</h1>
                 <div class="page-actions">
+                    <button class="btn btn-outline" type="button" @onclick="ExportSelectedUsersAsync" disabled="@(isLoadingUsers || selectedIds.Count == 0)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M5 21h14"/></svg>
+                        @L["Users:ExportCsv"]@(selectedIds.Count == 0 ? null : $" ({selectedIds.Count})")
+                    </button>
+                    <button class="btn btn-outline" type="button" @onclick="DeleteSelectedUsersAsync" disabled="@(isLoadingUsers || selectedIds.Count == 0)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                        @L["Users:DeleteSelected"]@(selectedIds.Count == 0 ? null : $" ({selectedIds.Count})")
+                    </button>
                     <button class="btn btn-outline" type="button" @onclick="RefreshUsersAsync" disabled="@isLoadingUsers">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
                         @L["Catalog:Refresh"]
@@ -47,20 +59,20 @@
                 </div>
             }
 
-            <form class="docs-toolbar list-search" id="users-search-form" @onsubmit="SearchUsersAsync" @onsubmit:preventDefault>
+            <form class="docs-toolbar list-search page-admin-users__search" id="users-search-form" @onsubmit="SearchUsersAsync" @onsubmit:preventDefault>
                 <label class="sr-only" for="users-q">@L["Users:SearchPlaceholder"]</label>
                 <input class="input docs-search" id="users-q" type="search" @bind="filterText" @bind:event="oninput"
                        placeholder="@L["Users:SearchPlaceholder"]" autocomplete="off" />
-                <button class="btn btn-primary" type="submit" disabled="@isLoadingUsers">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
-                    @L["Catalog:SearchButton"]
-                </button>
-                <label class="filter-label" for="users-status-filter">@L["Catalog:Status"]</label>
-                <select class="select input" id="users-status-filter" value="@statusFilter" @onchange="OnStatusFilterChanged">
+                <label class="sr-only" for="users-status-filter">@L["Catalog:Status"]</label>
+                <select class="select input page-admin-users__status" id="users-status-filter" value="@statusFilter" @onchange="OnStatusFilterChanged">
                     <option value="">@L["Catalog:AllStatuses"]</option>
                     <option value="active">@L["Catalog:Active"]</option>
                     <option value="inactive">@L["Catalog:Inactive"]</option>
                 </select>
+                <button class="btn btn-primary" type="submit" disabled="@isLoadingUsers">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+                    @L["Catalog:SearchButton"]
+                </button>
             </form>
 
             <div class="docs-table-wrap">
@@ -77,6 +89,14 @@
                     <table class="docs-table">
                         <thead>
                             <tr>
+                                <th class="col-check" scope="col">
+                                    <label class="hcs-row-check-wrap">
+                                        <input class="hcs-row-check" type="checkbox"
+                                               @key="@($"users-all-{selectAll}-{selectedIds.Count}")"
+                                               checked="@selectAll"
+                                               @onchange="OnSelectAllChanged" aria-label="@L["Users:SelectAll"]" />
+                                    </label>
+                                </th>
                                 <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
                                 <th scope="col">@L["Account:UserName"]</th>
                                 <th scope="col">@L["FullName"]</th>
@@ -91,6 +111,14 @@
                         @foreach (var user in users)
                         {
                             <tr @key="user.Id">
+                                <td class="col-check">
+                                    <label class="hcs-row-check-wrap">
+                                        <input class="hcs-row-check" type="checkbox"
+                                               @key="@($"{user.Id}-{selectedIds.Contains(user.Id)}")"
+                                               checked="@selectedIds.Contains(user.Id)"
+                                               @onchange="args => ToggleSelected(user.Id, args)" aria-label="@user.UserName" />
+                                    </label>
+                                </td>
                                 <td class="col-actions">
                                     <div class="doc-actions">
                                         <button class="doc-action" type="button" title="@L["Catalog:Edit"]" aria-label="@L["Catalog:Edit"]" @onclick="() => OpenEditUserAsync(user)">
@@ -271,6 +299,7 @@
     private readonly Dictionary<Guid, string> userRoleNames = [];
     private readonly Dictionary<Guid, string> userDepartmentNames = [];
     private readonly Dictionary<Guid, string> userPositionNames = [];
+    private readonly HashSet<Guid> selectedIds = [];
 
     private Modal? userModal;
     private IdentityAdminUserForm userForm = new();
@@ -287,6 +316,7 @@
     private int totalUsers;
     private int pageSize = 20;
     private int currentPage = 1;
+    private bool selectAll;
 
     private int PageCount => Math.Max(1, (int)Math.Ceiling(totalUsers / (double)Math.Max(pageSize, 1)));
     private bool CanPrevPage => currentPage > 1;
@@ -314,6 +344,7 @@
             users.AddRange(loadedUsers);
             totalUsers = Math.Min(int.MaxValue, (int)result.TotalCount);
             currentPage = Math.Clamp(currentPage, 1, PageCount);
+            SyncSelection();
             await Task.WhenAll(
                 LoadUserRoleSummariesAsync(users, CancellationToken.None),
                 LoadUserOrganizationSummariesAsync(users, CancellationToken.None));
@@ -619,10 +650,17 @@
 
     private async Task DeleteUserAsync(IdentityAdminUserDto user)
     {
+        if (CurrentUser.Id == user.Id)
+        {
+            await UiMessageService.Error(L["Users:CannotDeleteSelf"].Value);
+            return;
+        }
+
         if (!await UiMessageService.Confirm(string.Format(L["Users:DeleteConfirmation"].Value, user.UserName))) return;
         try
         {
             await IdentityClient.DeleteUserAsync(user.Id);
+            selectedIds.Remove(user.Id);
             await UiMessageService.Success(L["Users:Deleted"].Value);
             if (users.Count == 1 && currentPage > 1) currentPage--;
             await LoadUsersAsync();
@@ -664,7 +702,111 @@
     private Task SearchUsersAsync()
     {
         currentPage = 1;
+        selectedIds.Clear();
         return LoadUsersAsync();
+    }
+
+    private static bool IsChecked(object? value) =>
+        value is bool flag && flag
+        || string.Equals(value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+
+    private void ToggleSelected(Guid id, ChangeEventArgs args)
+    {
+        if (IsChecked(args.Value)) selectedIds.Add(id);
+        else selectedIds.Remove(id);
+        SyncSelection();
+    }
+
+    private void OnSelectAllChanged(ChangeEventArgs args)
+    {
+        if (IsChecked(args.Value))
+        {
+            foreach (var user in users) selectedIds.Add(user.Id);
+        }
+        else
+        {
+            foreach (var user in users) selectedIds.Remove(user.Id);
+        }
+
+        SyncSelection();
+    }
+
+    private void SyncSelection()
+    {
+        selectAll = users.Count > 0 && users.All(user => selectedIds.Contains(user.Id));
+    }
+
+    private async Task ExportSelectedUsersAsync()
+    {
+        var selected = users.Where(user => selectedIds.Contains(user.Id)).ToList();
+        if (selected.Count == 0) return;
+
+        var headers = new[]
+        {
+            L["Account:UserName"].Value,
+            L["FullName"].Value,
+            L["Account:Email"].Value,
+            L["Menu:Roles"].Value,
+            L["Catalog:Department"].Value,
+            L["Catalog:Status"].Value,
+            L["Users:CreatedAt"].Value
+        };
+        var rows = selected.Select(user => (IReadOnlyList<string>)
+        [
+            user.UserName,
+            FullName(user),
+            user.Email,
+            RoleSummary(user.Id),
+            DepartmentSummary(user.Id),
+            user.IsActive ? L["Catalog:Active"].Value : L["Catalog:Inactive"].Value,
+            FormatDate(user.CreationTime)
+        ]);
+
+        try
+        {
+            await CsvDownload.DownloadAsync(JsRuntime, $"users-{DateTime.Now:yyyyMMdd-HHmm}.csv", headers, rows);
+            await UiMessageService.Success(L["Users:Exported"].Value);
+        }
+        catch (Exception)
+        {
+            await UiMessageService.Error(L["Catalog:ExportError"].Value);
+        }
+    }
+
+    private async Task DeleteSelectedUsersAsync()
+    {
+        var selected = users.Where(user => selectedIds.Contains(user.Id)).ToList();
+        if (selected.Count == 0) return;
+        if (selected.Any(user => user.Id == CurrentUser.Id))
+        {
+            await UiMessageService.Error(L["Users:CannotDeleteSelf"].Value);
+            return;
+        }
+
+        if (!await UiMessageService.Confirm(string.Format(L["Users:DeleteSelectedConfirmation"].Value, selected.Count))) return;
+
+        try
+        {
+            foreach (var user in selected)
+            {
+                await IdentityClient.DeleteUserAsync(user.Id);
+                selectedIds.Remove(user.Id);
+            }
+
+            await UiMessageService.Success(L["Users:Deleted"].Value);
+            if (users.Count == selected.Count && currentPage > 1) currentPage--;
+            await LoadUsersAsync();
+        }
+        catch (IdentityAdminApiException exception)
+        {
+            errorMessage = FriendlyApiError(exception, "Users:DeleteError");
+            await UiMessageService.Error(errorMessage);
+        }
+        catch (Exception)
+        {
+            errorMessage = L["Users:DeleteError"].Value;
+            await UiMessageService.Error(errorMessage);
+        }
     }
 
     private Task RefreshUsersAsync()
@@ -677,6 +819,7 @@
     {
         statusFilter = args.Value?.ToString() ?? string.Empty;
         currentPage = 1;
+        selectedIds.Clear();
         return LoadUsersAsync();
     }
 

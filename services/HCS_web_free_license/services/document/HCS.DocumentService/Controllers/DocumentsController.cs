@@ -43,6 +43,12 @@ public sealed class DocumentsController(
         await documents.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
+    [HttpDelete("{id:guid}/submission")]
+    public async Task<IActionResult> DeleteSubmission(Guid id, CancellationToken cancellationToken)
+    {
+        await documents.DeleteSubmissionAsync(id, cancellationToken);
+        return NoContent();
+    }
     [HttpPost("{id:guid}/files"), Authorize(Policy = DocumentPermissions.ManageFiles)]
     [RequestSizeLimit(DocumentFileService.MaxFileSize)]
     public async Task<DocumentFileDto> Upload(Guid id, IFormFile file, CancellationToken cancellationToken)

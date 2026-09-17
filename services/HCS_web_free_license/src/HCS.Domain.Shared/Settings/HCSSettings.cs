@@ -12,4 +12,6 @@ public static class HCSSettings
     public const string BrandingLogoRevision = Prefix + ".Branding.LogoRevision";
     public const string BrandingFaviconRevision = Prefix + ".Branding.FaviconRevision";
     public const string BrandingBackgroundRevision = Prefix + ".Branding.BackgroundRevision";
+    public const string LegacySigningReportSqlServerConnectionString =
+        Prefix + ".LegacySigningReport.SqlServerConnectionString";
 }

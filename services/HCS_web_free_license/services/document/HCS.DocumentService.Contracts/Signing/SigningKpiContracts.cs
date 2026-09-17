@@ -46,9 +46,12 @@ public sealed class SigningKpiPieSliceDto
 public sealed class SigningKpiReportDto
 {
     public SigningKpiMetricsDto Combined { get; set; } = new();
+    public SigningKpiMetricsDto Legacy { get; set; } = new();
     public SigningKpiMetricsDto Hcs { get; set; } = new();
     public List<SigningKpiGroupRowDto> Groups { get; set; } = [];
     public List<SigningKpiPieSliceDto> PieSlices { get; set; } = [];
+    public bool LegacyAvailable { get; set; }
+    public string? LegacyError { get; set; }
     public bool HcsAvailable { get; set; }
     public string? HcsError { get; set; }
 }
@@ -61,6 +64,7 @@ public sealed class SigningKpiDetailRowDto
     public string? GroupCode { get; set; }
     public string? GroupName { get; set; }
     public Guid? SubmitterId { get; set; }
+    public string? SubmitterName { get; set; }
     public DateTime? SubmittedAt { get; set; }
     public DateTime? DeadlineAt { get; set; }
     public DateTime? CompletedAt { get; set; }

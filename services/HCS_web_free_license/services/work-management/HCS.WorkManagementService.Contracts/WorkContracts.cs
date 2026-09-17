@@ -118,11 +118,12 @@ public sealed record ChangeSurveySessionStatusDto(string Status);
 public sealed record SubmitSurveyResultDto(Guid CriteriaId, Guid? RespondentUserId, decimal Score, string? Comment);
 public sealed record CreatePublicSurveySessionDto(Guid LocationId, string FullName, string PhoneNumber,
     string? PatientCode, DateTime SurveyTime, string? DeviceType, string? Note, string? SessionDisplay = null);
-public sealed record SurveyResultSessionSummaryDto(Guid SurveyResultId, Guid SurveySessionId, Guid CriteriaId,
-    string SurveyCriteriaName, decimal Score, string? FullName, string? PhoneNumber, string? PatientCode,
-    string? Note, DateTime SurveyTime);
+public sealed record SurveyResultSessionSummaryDto(Guid SurveySessionId, DateTime SurveyTime, string? LocationName,
+    decimal Score, string HandlingStatus, string? HandlingNote, string? FullName, string? PhoneNumber,
+    string? PatientCode, string? Note);
 public sealed record SurveyResultSessionDetailDto(Guid SurveyResultId, Guid SurveySessionId, Guid CriteriaId,
     string SurveyCriteriaName, decimal Score, string? Comment);
+public sealed record HandleSurveyResultDto(string HandlingStatus, string? HandlingNote);
 public sealed record SurveyResultStatisticsDto(int TotalReviews, IReadOnlyDictionary<int, int> ScoreDistribution,
     IReadOnlyDictionary<string, decimal> CriteriaAverageScores);
 public sealed record SurveyFileReferenceDto(Guid Id, Guid SessionId, string FileName, string ContentType, long Size);

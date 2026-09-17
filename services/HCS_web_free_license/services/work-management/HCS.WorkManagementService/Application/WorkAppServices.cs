@@ -703,15 +703,46 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
         int skip, int take, CancellationToken ct)
     {
         skip = Math.Max(skip, 0); take = Math.Clamp(take, 1, 100);
-        var query = from result in db.SurveyResults.AsNoTracking()
-                    join session in db.SurveySessions.AsNoTracking() on result.SessionId equals session.Id
-                    join criteria in db.SurveyCriteria.AsNoTracking() on result.CriteriaId equals criteria.Id
-                    where !locationId.HasValue || session.LocationId == locationId
-                    orderby session.SurveyTime descending, criteria.Name
-                    select new SurveyResultSessionSummaryDto(result.Id, session.Id, criteria.Id, criteria.Name,
-                        result.Score, session.FullName, session.PhoneNumber, session.PatientCode,
-                        session.Note, session.SurveyTime ?? session.StartsAt);
+        var query =
+            from session in db.SurveySessions.AsNoTracking()
+            where db.SurveyResults.Any(result => result.SessionId == session.Id)
+                && (!locationId.HasValue || session.LocationId == locationId)
+            orderby session.SurveyTime descending, session.Id descending
+            select new SurveyResultSessionSummaryDto(
+                session.Id,
+                session.SurveyTime ?? session.StartsAt,
+                db.SurveyLocations.Where(location => location.Id == session.LocationId).Select(location => location.Name).FirstOrDefault(),
+                db.SurveyResults.Where(result => result.SessionId == session.Id).Select(result => result.Score).Average(),
+                session.HandlingStatus,
+                session.HandlingNote,
+                session.FullName,
+                session.PhoneNumber,
+                session.PatientCode,
+                session.Note);
         return new(await query.LongCountAsync(ct), await query.Skip(skip).Take(take).ToListAsync(ct));
+    }
+
+    public async Task<SurveyResultSessionSummaryDto> HandleResultAsync(Guid sessionId, HandleSurveyResultDto input,
+        CancellationToken ct)
+    {
+        var session = await db.SurveySessions.SingleOrDefaultAsync(item => item.Id == sessionId, ct)
+            ?? throw new EntityNotFoundException(typeof(SurveySession), sessionId);
+        session.Handle(input.HandlingStatus, input.HandlingNote);
+        await db.SaveChangesAsync(ct);
+        return await MapResultSummaryAsync(session, ct);
+    }
+
+    public async Task DeleteResultSessionAsync(Guid sessionId, CancellationToken ct)
+    {
+        var session = await db.SurveySessions.SingleOrDefaultAsync(item => item.Id == sessionId, ct)
+            ?? throw new EntityNotFoundException(typeof(SurveySession), sessionId);
+        var files = await db.SurveyFiles.Where(file => file.SessionId == sessionId).ToListAsync(ct);
+        var results = await db.SurveyResults.Where(result => result.SessionId == sessionId).ToListAsync(ct);
+        db.SurveyFiles.RemoveRange(files);
+        db.SurveyResults.RemoveRange(results);
+        db.SurveySessions.Remove(session);
+        db.OutboxMessages.Add(WorkOutbox.Create(new SurveySessionChangedEto(Guid.NewGuid(), DateTime.UtcNow, sessionId, "Deleted", session.Status), Correlation()));
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task<List<SurveyResultSessionDetailDto>> GetResultDetailsAsync(Guid sessionId, Guid? locationId,
@@ -726,6 +757,23 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
                       orderby criteria.Name, result.Id
                       select new SurveyResultSessionDetailDto(result.Id, result.SessionId, result.CriteriaId,
                           criteria.Name, result.Score, result.Comment)).Take(500).ToListAsync(ct);
+    }
+
+    private async Task<SurveyResultSessionSummaryDto> MapResultSummaryAsync(SurveySession session, CancellationToken ct)
+    {
+        var locationName = session.LocationId is Guid locationId
+            ? await db.SurveyLocations.AsNoTracking()
+                .Where(location => location.Id == locationId)
+                .Select(location => location.Name)
+                .FirstOrDefaultAsync(ct)
+            : null;
+        var average = await db.SurveyResults.AsNoTracking()
+            .Where(result => result.SessionId == session.Id)
+            .Select(result => (decimal?)result.Score)
+            .AverageAsync(ct) ?? 0;
+        return new(session.Id, session.SurveyTime ?? session.StartsAt, locationName, average,
+            session.HandlingStatus, session.HandlingNote, session.FullName, session.PhoneNumber,
+            session.PatientCode, session.Note);
     }
 
     private static SurveySessionDto MapSession(SurveySession x) => new(x.Id, x.Code, x.Name, x.StartsAt, x.EndsAt,

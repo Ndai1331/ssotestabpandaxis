@@ -2,7 +2,6 @@
 @attribute [Authorize(Policy = "WorkManagement.Calendar")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
-@inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
 
@@ -53,21 +52,14 @@
                                 <SelectItem Value="@("Public")">@L["Calendar:VisibilityPublic"]</SelectItem>
                             </Select>
                         </Field>
-                        <Field><FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
-                            @if (contacts.Count == 0)
-                            {
-                                <DocsEmpty Compact="true" Title="@L["Catalog:EmptyTitle"]" />
-                            }
-                            else
-                            {
-                                <div class="hcs-cal-people">
-                                @foreach (var contact in contacts)
-                                {
-                                    <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))" Disabled="@(!item.CanManage)">@contact.DisplayName</Check>
-                                }
-                                </div>
-                            }
-                        </Field>
+                        @if (form.Visibility == "Participants")
+                        {
+                            <Field>
+                                <FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
+                                <CalendarParticipantPicker Selected="form.Participants"
+                                                          Disabled="@(!item.CanManage)" />
+                            </Field>
+                        }
                         @if (item.CanManage)
                         {
                         <div class="vb-foot">
@@ -85,7 +77,6 @@
     [Parameter] public Guid EventId { get; set; }
     private CalendarEventDto? item;
     private readonly EventForm form = new();
-    private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
 
     protected override async Task OnParametersSetAsync()
     {
@@ -94,23 +85,18 @@
             item = await Work.GetCalendarEventAsync(EventId);
             form.Title = item.Title; form.Description = item.Description ?? ""; form.Visibility = item.Visibility;
             form.Participants.Clear(); foreach (var id in item.ParticipantUserIds) form.Participants.Add(id);
-            if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
 
     private string? RelatedHref() => item is null ? null : WorkUi.RelatedEntityHref(item.RelatedType, item.RelatedId);
-    private void Toggle(Guid id, bool selected)
-    {
-        if (item is null || !item.CanManage) return;
-        if (selected) form.Participants.Add(id); else form.Participants.Remove(id);
-    }
     private async Task SaveAsync()
     {
         if (item is null || !item.CanManage) return;
         try
         {
-            item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, item.StartTime, item.EndTime, item.AllDay, item.EventType, item.Location, item.RelatedType, item.RelatedId, form.Visibility, form.Participants.ToList()));
+            var participants = form.Visibility == "Participants" ? form.Participants.ToList() : [];
+            item = await Work.UpdateCalendarEventAsync(EventId, new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, item.StartTime, item.EndTime, item.AllDay, item.EventType, item.Location, item.RelatedType, item.RelatedId, form.Visibility, participants));
             await NotifySuccessAsync(L["Catalog:Updated"]);
             Navigation.NavigateTo("/calendar-events");
         }

@@ -148,8 +148,7 @@
                 <Authorized>
             @Menu("workflows", "fa-arrow-trend-up", Localizer["Menu:Workflows"].Value,
                 ("/workflow-definitions", "fa-diagram-project", Localizer["Menu:WorkflowDefinitions"].Value),
-                ("/workflow-lists", "fa-code-branch", Localizer["Menu:WorkflowList"].Value),
-                ("/document-workflow-instances", "fa-folder-open", Localizer["Menu:WorkflowInstances"].Value))
+                ("/workflow-lists", "fa-code-branch", Localizer["Menu:WorkflowList"].Value))
                 </Authorized>
             </AuthorizeView>
 
@@ -191,11 +190,34 @@
                 </Authorized>
             </AuthorizeView>
 
-            <AuthorizeView Policy="WorkManagement.Surveys">
+            <AuthorizeView Context="surveyAuth">
                 <Authorized>
-                    @Menu("surveys", "fa-chart-line", Localizer["Menu:Surveys"].Value,
-                        ("/survey-sessions", "fa-clipboard-list", Localizer["Menu:SurveySessions"].Value),
-                        ("/survey-results", "fa-square-poll-vertical", Localizer["Menu:SurveyResults"].Value))
+                    @if (CanOpenSurveyNavigation(surveyAuth.User))
+                    {
+                        <div class="hcs-nav-menu @(IsExpanded("surveys") ? "hcs-nav-menu--expanded" : null)"
+                             @onpointerenter="@(() => OnMenuPointerEnter("surveys"))">
+                            <button class="hcs-nav-menu__trigger" type="button"
+                                    aria-expanded="@IsExpanded("surveys").ToString().ToLowerInvariant()"
+                                    aria-haspopup="true" @onmousedown:preventDefault
+                                    @onclick="@(() => ToggleSection("surveys"))">
+                                <i class="fa fa-chart-line" aria-hidden="true"></i><span>@Localizer["Menu:Surveys"]</span>
+                                <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
+                            </button>
+                            <div class="hcs-nav-menu__panel" role="menu">
+                                <AuthorizeView Policy="WorkManagement.SurveyManagement">
+                                    <Authorized>
+                                        <NavLink href="/survey-locations" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:SurveyLocations"]</NavLink>
+                                        <NavLink href="/survey-criterias" @onclick="CloseMobileNav"><i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                                <AuthorizeView Policy="WorkManagement.Surveys">
+                                    <Authorized>
+                                        <NavLink href="/survey-results" @onclick="CloseMobileNav"><i class="fa fa-square-poll-vertical" aria-hidden="true"></i>@Localizer["Menu:SurveyResults"]</NavLink>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                        </div>
+                    }
                 </Authorized>
             </AuthorizeView>
 
@@ -281,12 +303,20 @@
                             <NavLink href="/survey-criterias" @onclick="CloseMobileNav"><i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]</NavLink>
                         </Authorized>
                     </AuthorizeView>
-                    <AuthorizeView Policy="WorkManagement.Reports" Context="reportsNav">
-                        <Authorized>
+                    @if (HasReportsNavigation(catalogAuth.User))
+                    {
                             <p class="hcs-nav-menu__label">@Localizer["Menu:Reports"]</p>
-                            <NavLink href="/reports" @onclick="CloseMobileNav"><i class="fa fa-chart-column" aria-hidden="true"></i>@Localizer["Menu:Reports"]</NavLink>
-                        </Authorized>
-                    </AuthorizeView>
+                            <AuthorizeView Policy="WorkManagement.Reports" Context="reportsNav">
+                                <Authorized>
+                                    <NavLink href="/reports" @onclick="CloseMobileNav"><i class="fa fa-chart-column" aria-hidden="true"></i>@Localizer["Menu:Reports"]</NavLink>
+                                </Authorized>
+                            </AuthorizeView>
+                            <AuthorizeView Policy="Documents.Signing.Report" Context="proposalStatsNav">
+                                <Authorized>
+                                    <NavLink href="/thong-ke-de-xuat" @onclick="CloseMobileNav"><i class="fa fa-chart-pie" aria-hidden="true"></i>@Localizer["Menu:ProposalStatistics"]</NavLink>
+                                </Authorized>
+                            </AuthorizeView>
+                    }
                 </div>
             </div>
                     }
@@ -319,19 +349,16 @@
                                 </AuthorizeView>
                                 <AuthorizeView Policy="WorkManagement.EmployeeRatings">
                                     <Authorized>
-                                        <NavLink href="/employee-ratings" @onclick="CloseMobileNav"><i class="fa fa-star-half-stroke" aria-hidden="true"></i>@Localizer["Menu:EmployeeRatings"]</NavLink>
+                                        <NavLink href="/employee-ratings" Match="NavLinkMatch.All" @onclick="CloseMobileNav"><i class="fa fa-star-half-stroke" aria-hidden="true"></i>@Localizer["Menu:EmployeeRatings"]</NavLink>
                                     </Authorized>
                                 </AuthorizeView>
-                                <AuthorizeView Policy="WorkManagement.EmployeeRatings.Management">
-                                    <Authorized>
-                                        <NavLink href="/administration/employee-ratings" @onclick="CloseMobileNav"><i class="fa fa-star" aria-hidden="true"></i>@Localizer["Menu:EmployeeRatingManagement"]</NavLink>
-                                    </Authorized>
-                                </AuthorizeView>
-                                <AuthorizeView Policy="WorkManagement.EmployeeRatings.Dashboard">
-                                    <Authorized>
-                                        <NavLink href="/administration/employee-ratings-dashboard" @onclick="CloseMobileNav"><i class="fa fa-chart-pie" aria-hidden="true"></i>@Localizer["Menu:EmployeeRatingDashboard"]</NavLink>
-                                    </Authorized>
-                                </AuthorizeView>
+                                @if (HasPermission(authenticationState.User, HCSPermissions.WorkManagement.EmployeeRatingsManagement)
+                                    || HasPermission(authenticationState.User, HCSPermissions.WorkManagement.EmployeeRatingsDashboard))
+                                {
+                                    <NavLink href="@(HasPermission(authenticationState.User, HCSPermissions.WorkManagement.EmployeeRatingsManagement) ? "/employee-ratings/results" : "/employee-ratings/results/dashboard")" @onclick="CloseMobileNav">
+                                        <i class="fa fa-chart-simple" aria-hidden="true"></i>@Localizer["Menu:EmployeeRatingResults"]
+                                    </NavLink>
+                                }
                             </div>
                         </div>
                     }
@@ -458,7 +485,8 @@
             HCSCatalogPermissions.Provinces,
             HCSCatalogPermissions.Communes,
             HCSPermissions.WorkManagement.SurveyManagement,
-            HCSPermissions.WorkManagement.Reports);
+            HCSPermissions.WorkManagement.Reports,
+            HCSPermissions.Documents.SigningReport);
 
     private static bool HasHealthCatalogNavigation(System.Security.Claims.ClaimsPrincipal user) =>
         HasAnyPermission(user,
@@ -473,11 +501,21 @@
             HCSCatalogPermissions.Provinces,
             HCSCatalogPermissions.Communes);
 
+    private static bool HasReportsNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        HasAnyPermission(user,
+            HCSPermissions.WorkManagement.Reports,
+            HCSPermissions.Documents.SigningReport);
+
     private static bool HasAnyPermission(System.Security.Claims.ClaimsPrincipal user, params string[] permissions) =>
         permissions.Any(permission => HasPermission(user, permission));
 
     private static bool HasPermission(System.Security.Claims.ClaimsPrincipal user, string permission) =>
         user.HasClaim("permission", permission);
+
+    private static bool CanOpenSurveyNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        HasAnyPermission(user,
+            HCSPermissions.WorkManagement.Surveys,
+            HCSPermissions.WorkManagement.SurveyManagement);
 
     private static bool CanOpenSocialNavigation(System.Security.Claims.ClaimsPrincipal user) =>
         HasAnyPermission(user,

@@ -1,12 +1,15 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using HCS.AuthServer;
 using HCS.Branding;
 using HCS.Settings;
 using Volo.Abp.Account.Web;
 using Volo.Abp.AspNetCore.Mvc.UI.Alerts;
 using Volo.Abp.Identity;
+using Volo.Abp.SettingManagement;
 using Volo.Abp.Settings;
 
 namespace HCS.AuthServer.Pages.Account;
@@ -15,7 +18,8 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
 {
     private readonly IConfiguration _configuration;
     private readonly ISettingProvider _settingProvider;
-    private readonly ISettingStore _settingStore;
+    private readonly ISettingRepository _settingRepository;
+    private readonly IOptions<KeycloakOptions> _keycloakOptions;
 
     public bool ShowSsoLoginButton { get; private set; } = true;
     public string BrandingTitle { get; private set; } = SystemBrandingDefaults.Title;
@@ -38,7 +42,8 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
         IWebHostEnvironment webHostEnvironment,
         IConfiguration configuration,
         ISettingProvider settingProvider,
-        ISettingStore settingStore)
+        ISettingRepository settingRepository,
+        IOptions<KeycloakOptions> keycloakOptions)
         : base(
             schemeProvider,
             accountOptions,
@@ -48,21 +53,22 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
     {
         _configuration = configuration;
         _settingProvider = settingProvider;
-        _settingStore = settingStore;
+        _settingRepository = settingRepository;
+        _keycloakOptions = keycloakOptions;
     }
 
     public override async Task<IActionResult> OnGetAsync()
     {
         ApplyDefaultReturnUrl();
-        await LoadAuthenticationSettingsAsync();
         await LoadBrandingAsync();
-        return await base.OnGetAsync();
+        var result = await base.OnGetAsync();
+        await ApplySsoVisibilityAsync();
+        return result;
     }
 
     public override async Task<IActionResult> OnPostAsync(string action)
     {
         ApplyDefaultReturnUrl();
-        await LoadAuthenticationSettingsAsync();
         await LoadBrandingAsync();
         if (string.IsNullOrWhiteSpace(action))
         {
@@ -70,18 +76,21 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
             ModelState.Remove("action");
         }
 
-        return await base.OnPostAsync(action);
+        var result = await base.OnPostAsync(action);
+        await ApplySsoVisibilityAsync();
+        return result;
     }
 
-    private async Task LoadAuthenticationSettingsAsync()
+    private async Task ApplySsoVisibilityAsync()
     {
-        // Read the global row directly so AuthServer does not keep a stale in-memory
-        // setting cache after Platform saves the toggle.
-        var configuredValue = await _settingStore.GetOrNullAsync(
+        var setting = await _settingRepository.FindAsync(
             HCSSettings.ShowSsoLoginButton,
             GlobalSettingValueProvider.ProviderName,
             providerKey: null);
-        ShowSsoLoginButton = !string.Equals(configuredValue, "false", StringComparison.OrdinalIgnoreCase);
+        ShowSsoLoginButton = SsoLoginVisibility.IsVisible(
+            setting?.Value,
+            VisibleExternalProviders.Any(),
+            _keycloakOptions.Value.Enabled);
     }
 
     private async Task LoadBrandingAsync()

@@ -17,6 +17,49 @@
     gap: 6px;
 }
 
+.page-admin-users .docs-table-wrap {
+    max-height: min(70vh, 42rem);
+    overflow: auto;
+}
+
+.page-admin-users .docs-table .col-check {
+    text-align: center;
+    width: 3rem;
+}
+
+.page-admin-users .hcs-row-check-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.page-admin-users__search {
+    flex-wrap: nowrap;
+}
+
+.page-admin-users__search .docs-search {
+    flex: 1 1 auto;
+    min-width: 12rem;
+}
+
+.page-admin-users__status {
+    flex: 0 0 11.5rem;
+    min-width: 11.5rem;
+    width: 11.5rem;
+}
+
+@media (max-width: 720px) {
+    .page-admin-users__search {
+        flex-wrap: wrap;
+    }
+
+    .page-admin-users__status {
+        flex: 1 1 10rem;
+        width: auto;
+    }
+}
+
 .page-admin-users .hcs-user-tab-panel[hidden] {
     display: none !important;
 }

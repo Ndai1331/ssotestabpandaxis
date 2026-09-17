@@ -3,6 +3,7 @@
 @inherits HCSComponentBase
 @using HCS.Auditing
 @using HCS.Blazor.Client.Auditing
+@using HCS.Blazor.Client.Services
 
 <PageTitle>@L["Audit:Title"] · HCS</PageTitle>
 
@@ -15,6 +16,9 @@
         </div>
         <div class="hcs-audit-header-actions">
             <span class="hcs-audit-total" aria-live="polite">@totalCount @L["Audit:Records"]</span>
+            <button class="hcs-audit-button hcs-audit-button--secondary" type="button" @onclick="ExportAsync" disabled="@(isLoading || rows.Count == 0)">
+                <i class="fa fa-file-csv" aria-hidden="true"></i> @L["Audit:ExportCsv"]
+            </button>
             <button class="hcs-audit-button hcs-audit-button--secondary" type="button" @onclick="LoadAsync" disabled="@isLoading">
                 <i class="fa fa-refresh @(isLoading ? "fa-spin" : null)" aria-hidden="true"></i> @L["Catalog:Refresh"]
             </button>
@@ -91,13 +95,20 @@
                     @foreach (var row in rows)
                     {
                         <tr>
-                            <td><button class="hcs-audit-detail-button" type="button" @onclick="() => OpenDetailAsync(row)" aria-label="@L["Audit:OpenDetail"]"><i class="fa fa-eye" aria-hidden="true"></i> @L["Audit:Detail"]</button></td>
-                            <td><div class="hcs-audit-request"><span class="hcs-audit-status @StatusClass(row.HttpStatusCode)">@row.HttpStatusCode @StatusText(row.HttpStatusCode)</span><span class="hcs-audit-method">@FirstValue(row.HttpMethod)</span><span class="hcs-audit-url" title="@row.Url">@FirstValue(row.Url)</span></div></td>
+                            <td><button class="hcs-audit-detail-button" type="button" @onclick="() => OpenDetailAsync(row)" aria-label="@L["Audit:OpenDetail"]"><i class="fa fa-eye" aria-hidden="true"></i></button></td>
+                            <td>
+                                <div class="hcs-audit-request">
+                                    <span class="hcs-audit-status @StatusClass(row.HttpStatusCode)">@row.HttpStatusCode</span>
+                                    <span class="hcs-audit-method">@FirstValue(row.HttpMethod)</span>
+                                    <span class="hcs-audit-url" title="@row.Url">@FirstValue(row.Url)</span>
+                                </div>
+                            </td>
                             <td><span title="@row.UserId">@DisplayUser(row)</span></td>
                             <td class="hcs-audit-mono">@FirstValue(row.ClientIpAddress)</td>
                             <td><time datetime="@IsoDate(row.ExecutionTime)">@FormatDate(row.ExecutionTime)</time></td>
                             <td class="hcs-audit-duration">@row.ExecutionDuration</td>
-                            <td>@FirstValue(row.SourceService)</td><td>@FirstValue(row.ApplicationName)</td>
+                            <td title="@row.SourceService">@ShortService(row.SourceService)</td>
+                            <td title="@row.ApplicationName">@FirstValue(row.ApplicationName)</td>
                             <td>
                                 <span class="hcs-audit-correlation" title="@row.CorrelationId">@FirstValue(row.CorrelationId)</span>
                                 @if (row.HasException)
@@ -125,7 +136,10 @@
 {
     <div class="hcs-audit-modal-backdrop" @onclick="CloseDetail">
             <section @ref="detailModal" class="hcs-audit-modal" role="dialog" aria-modal="true" aria-labelledby="audit-detail-title" tabindex="-1" @onclick:stopPropagation @onkeydown="HandleDialogKeyDown">
-            <header class="hcs-audit-modal-header"><div><p class="hcs-audit-eyebrow">@L["Audit:Detail"]</p><h2 id="audit-detail-title">@L["Audit:DetailTitle"]</h2></div><button class="hcs-audit-close" type="button" @onclick="CloseDetail" aria-label="@L["Catalog:Close"]"><i class="fa fa-xmark" aria-hidden="true"></i></button></header>
+            <header class="hcs-audit-modal-header">
+                <h2 id="audit-detail-title">@L["Audit:DetailTitle"]</h2>
+                <button class="hcs-audit-close" type="button" @onclick="CloseDetail" aria-label="@L["Catalog:Close"]"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+            </header>
             @if (isLoadingDetail)
             { <div class="hcs-audit-state"><HcsLoadingIcon /> @L["Catalog:Loading"]</div> }
             else if (!string.IsNullOrWhiteSpace(detailError))
@@ -134,14 +148,23 @@
             {
                 <div class="hcs-audit-modal-body">
                     <dl class="hcs-audit-detail-grid">
-                        <div><dt>@L["Audit:Status"]</dt><dd><span class="hcs-audit-status @StatusClass(selected.HttpStatusCode)">@selected.HttpStatusCode @StatusText(selected.HttpStatusCode)</span></dd></div><div><dt>@L["Audit:HttpMethod"]</dt><dd>@FirstValue(selected.HttpMethod)</dd></div><div><dt>@L["Audit:Api"]</dt><dd class="hcs-audit-break">@FirstValue(selected.Url)</dd></div><div><dt>@L["Audit:Action"]</dt><dd>@FirstValue(selected.ActionName)</dd></div>
-                        <div><dt>@L["Audit:User"]</dt><dd>@DisplayUser(selected)</dd></div><div><dt>@L["Audit:UserId"]</dt><dd class="hcs-audit-mono">@FirstValue(selected.UserId?.ToString("D"))</dd></div><div><dt>@L["Audit:IpAddress"]</dt><dd>@FirstValue(selected.ClientIpAddress)</dd></div><div><dt>@L["Audit:Browser"]</dt><dd class="hcs-audit-break">@FirstValue(selected.BrowserInfo)</dd></div>
-                        <div><dt>@L["Audit:Time"]</dt><dd>@FormatDate(selected.ExecutionTime)</dd></div><div><dt>@L["Audit:Duration"]</dt><dd>@selected.ExecutionDuration ms</dd></div><div><dt>@L["Audit:Service"]</dt><dd>@FirstValue(selected.SourceService)</dd></div><div><dt>@L["Audit:Application"]</dt><dd>@FirstValue(selected.ApplicationName)</dd></div>
+                        <div><dt>@L["Audit:Status"]</dt><dd><span class="hcs-audit-status @StatusClass(selected.HttpStatusCode)">@selected.HttpStatusCode @StatusText(selected.HttpStatusCode)</span></dd></div>
+                        <div><dt>@L["Audit:HttpMethod"]</dt><dd><span class="hcs-audit-method">@FirstValue(selected.HttpMethod)</span></dd></div>
+                        <div class="hcs-audit-detail-grid__wide"><dt>@L["Audit:Api"]</dt><dd class="hcs-audit-break">@FirstValue(selected.Url)</dd></div>
+                        <div class="hcs-audit-detail-grid__wide"><dt>@L["Audit:Action"]</dt><dd class="hcs-audit-break">@FirstValue(selected.ActionName)</dd></div>
+                        <div><dt>@L["Audit:User"]</dt><dd>@DisplayUser(selected)</dd></div>
+                        <div><dt>@L["Audit:UserId"]</dt><dd class="hcs-audit-mono hcs-audit-id">@FirstValue(selected.UserId?.ToString("D"))</dd></div>
+                        <div><dt>@L["Audit:IpAddress"]</dt><dd>@FirstValue(selected.ClientIpAddress)</dd></div>
+                        <div><dt>@L["Audit:Time"]</dt><dd>@FormatDate(selected.ExecutionTime)</dd></div>
+                        <div><dt>@L["Audit:Duration"]</dt><dd>@selected.ExecutionDuration ms</dd></div>
+                        <div><dt>@L["Audit:Service"]</dt><dd class="hcs-audit-break" title="@selected.SourceService">@ShortService(selected.SourceService)</dd></div>
+                        <div><dt>@L["Audit:Application"]</dt><dd>@FirstValue(selected.ApplicationName)</dd></div>
+                        <div class="hcs-audit-detail-grid__wide"><dt>@L["Audit:Browser"]</dt><dd class="hcs-audit-browser" title="@selected.BrowserInfo">@FirstValue(selected.BrowserInfo)</dd></div>
                         <div class="hcs-audit-detail-grid__wide"><dt>@L["Audit:CorrelationId"]</dt><dd class="hcs-audit-mono hcs-audit-break">@FirstValue(selected.CorrelationId)</dd></div>
                     </dl>
                     @if (!string.IsNullOrWhiteSpace(selected.Exceptions)) { <div class="hcs-audit-detail-block hcs-audit-detail-block--danger"><h3>@L["Audit:Exception"]</h3><p>@selected.Exceptions</p></div> }
                     @if (!string.IsNullOrWhiteSpace(selected.Comments)) { <div class="hcs-audit-detail-block"><h3>@L["Audit:Comments"]</h3><p>@selected.Comments</p></div> }
-                    <div class="hcs-audit-detail-block"><h3>@L["Audit:Actions"]</h3>@if (selected.Actions.Count == 0) { <p class="hcs-audit-muted">@L["Audit:NoActions"]</p> } else { <ul class="hcs-audit-detail-list">@foreach (var item in selected.Actions) { <li><strong>@FirstValue(item.ServiceName)</strong> · @FirstValue(item.MethodName) <span>@FormatDate(item.ExecutionTime) · @item.ExecutionDuration ms</span></li> }</ul> }</div>
+                    <div class="hcs-audit-detail-block"><h3>@L["Audit:Actions"]</h3>@if (selected.Actions.Count == 0) { <p class="hcs-audit-muted">@L["Audit:NoActions"]</p> } else { <ul class="hcs-audit-detail-list">@foreach (var item in selected.Actions) { <li><strong>@ShortService(item.ServiceName)</strong> · @FirstValue(item.MethodName) <span>@FormatDate(item.ExecutionTime) · @item.ExecutionDuration ms</span></li> }</ul> }</div>
                     <div class="hcs-audit-detail-block"><h3>@L["Audit:EntityChanges"]</h3>@if (selected.EntityChanges.Count == 0) { <p class="hcs-audit-muted">@L["Audit:NoEntityChanges"]</p> } else { <ul class="hcs-audit-detail-list">@foreach (var item in selected.EntityChanges) { <li><strong>@FirstValue(item.ChangeType)</strong> · @FirstValue(item.EntityTypeFullName) · @FirstValue(item.EntityId) <span>@FormatDate(item.ChangeTime)</span></li> }</ul> }</div>
                 </div>
             }

@@ -12,15 +12,19 @@
             <p class="event-panel-kicker">@L["SurveyResults:Subtitle"]</p>
         </div>
     </div>
-    <form class="docs-toolbar" @onsubmit:preventDefault>
-        <span class="filter-label" id="survey-location-label">@L["SurveyLocation"]</span>
-        <ProviderSelect2 Value="@selectedLocationId"
-                         ValueChanged="OnLocationChanged"
-                         Items="LocationItems"
-                         Placeholder="@L["All"]"
-                         AriaLabel="@L["SurveyLocation"]"
-                         Search="SearchLocationsAsync" />
-        <button class="btn btn-outline" type="button" @onclick="ResetAsync">@L["Catalog:Reset"]</button>
+    <form class="hcs-survey-results__filter" @onsubmit:preventDefault>
+        <span class="hcs-survey-results__filter-label" id="survey-location-label">@L["SurveyLocation"]</span>
+        <div class="hcs-survey-results__filter-row">
+            <div class="hcs-survey-results__location-filter">
+                <ProviderSelect2 Value="@selectedLocationId"
+                                 ValueChanged="OnLocationChanged"
+                                 Items="LocationItems"
+                                 Placeholder="@L["All"]"
+                                 AriaLabel="@L["SurveyLocation"]"
+                                 Search="SearchLocationsAsync" />
+            </div>
+            <button class="btn btn-outline" type="button" @onclick="ResetAsync" disabled="@string.IsNullOrEmpty(selectedLocationId)">@L["Catalog:Reset"]</button>
+        </div>
     </form>
     <div class="event-panel">
         @if (isLoading)
@@ -30,8 +34,12 @@
         else
         {
             <div class="hcs-survey-tabs" role="tablist">
-                <button type="button" class="@(activeTab == "chart" ? "is-active" : null)" @onclick='() => activeTab = "chart"'>@L["Feature:ChartStatistics"]</button>
-                <button type="button" class="@(activeTab == "detail" ? "is-active" : null)" @onclick='() => activeTab = "detail"'>@L["Feature:DetailData"]</button>
+                <button type="button" class="@(activeTab == "chart" ? "is-active" : null)" @onclick='() => activeTab = "chart"'>
+                    <i class="fa fa-bar-chart" aria-hidden="true"></i>@L["Feature:ChartStatistics"]
+                </button>
+                <button type="button" class="@(activeTab == "detail" ? "is-active" : null)" @onclick='() => activeTab = "detail"'>
+                    <i class="fa fa-list" aria-hidden="true"></i>@L["Feature:DetailData"]
+                </button>
             </div>
             @if (activeTab == "chart")
             {
@@ -69,20 +77,44 @@
             else
             {
                 <div class="docs-table-wrap">
+                    <div class="hcs-survey-results__list-head">
+                        <h2>@L["SurveyResults:List"]</h2>
+                        <span>@L["Catalog:PagerTotal", summaries.TotalCount]</span>
+                    </div>
                     <table class="docs-table">
-                        <thead><tr><th scope="col">@L["Feature:StarRating"]</th><th scope="col">@L["Menu:SurveyCriterias"]</th><th scope="col">@L["FullName"]</th><th scope="col">@L["PhoneNumber"]</th><th scope="col">@L["SurveyTime"]</th><th class="col-actions" scope="col"></th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th scope="col">@L["SurveyTime"]</th>
+                                <th scope="col">@L["SurveyResults:Destination"]</th>
+                                <th scope="col">@L["SurveyResults:Level"]</th>
+                                <th scope="col">@L["SurveyResults:Status"]</th>
+                                <th scope="col">@L["SurveyResults:Sender"]</th>
+                                <th class="col-actions" scope="col"></th>
+                            </tr>
+                        </thead>
                         <tbody>
                             @foreach (var item in summaries.Items)
                             {
                                 <tr>
-                                    <td><span class="hcs-status-badge hcs-status-badge--info">@($"{WorkUi.ScoreToStars(item.Score)}★")</span></td>
-                                    <td>@item.SurveyCriteriaName</td>
-                                    <td>@(item.FullName ?? "—")</td>
-                                    <td>@(item.PhoneNumber ?? "—")</td>
-                                    <td>@item.SurveyTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@item.SurveyTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@(item.LocationName ?? "—")</td>
+                                    <td><span class="@LevelClass(item.Score)">@LevelText(item.Score)</span></td>
+                                    <td><span class="@HandlingClass(item.HandlingStatus)">@HandlingText(item.HandlingStatus)</span></td>
+                                    <td>
+                                        <div class="hcs-survey-results__sender">
+                                            <strong>@(item.FullName ?? "—")</strong>
+                                            <small>@(item.PhoneNumber ?? "—")</small>
+                                        </div>
+                                    </td>
                                     <td>
                                         <button type="button" class="doc-action" @onclick="() => OpenDetailAsync(item)" title="@L["ViewDetail"]" aria-label="@L["ViewDetail"]">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/></svg>
+                                        </button>
+                                        <button type="button" class="doc-action" @onclick="() => OpenHandleAsync(item)" title="@L["SurveyResults:Handle"]" aria-label="@L["SurveyResults:Handle"]">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="3" width="12" height="16" rx="2"/><path d="M8 7H5a2 2 0 0 0-2 2v11"/><path d="M11 11h6M11 15h4"/></svg>
+                                        </button>
+                                        <button type="button" class="doc-action is-danger" @onclick="() => DeleteAsync(item)" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
                                         </button>
                                     </td>
                                 </tr>
@@ -100,50 +132,86 @@
     </div>
 </section>
 
-@if (showDetail)
-{
-    <div class="hcs-public-survey__backdrop" role="presentation">
-        <div class="hcs-public-survey__dialog" role="dialog" aria-modal="true" aria-labelledby="survey-detail-title">
-            <div class="hcs-public-survey__dialog-header">
-                <h2 id="survey-detail-title">@L["SurveyDetails"]</h2>
-                <button type="button" class="btn-close" aria-label="@L["Close"]" @onclick="CloseDetail"></button>
-            </div>
-            <div class="hcs-public-survey__dialog-body">
-                @if (selectedSummary is not null)
-                {
-                    <dl class="row mb-4">
-                        <dt class="col-sm-4">@L["FullName"]</dt><dd class="col-sm-8">@(selectedSummary.FullName ?? "—")</dd>
-                        <dt class="col-sm-4">@L["PhoneNumber"]</dt><dd class="col-sm-8">@(selectedSummary.PhoneNumber ?? "—")</dd>
-                        <dt class="col-sm-4">@L["PatientCode"]</dt><dd class="col-sm-8">@(selectedSummary.PatientCode ?? "—")</dd>
-                        <dt class="col-sm-4">@L["Note"]</dt><dd class="col-sm-8">@(selectedSummary.Note ?? "—")</dd>
-                        <dt class="col-sm-4">@L["SurveyTime"]</dt><dd class="col-sm-8">@selectedSummary.SurveyTime.ToString("dd/MM/yyyy HH:mm")</dd>
-                    </dl>
-                }
-                @if (isDetailLoading)
-                {
-                    <DocsEmpty Loading="true" Compact="true" />
-                }
-                else if (details.Count == 0)
-                {
-                    <DocsEmpty Compact="true" Title="@L["NoSurveyData"]" />
-                }
-                else
-                {
-                    <div class="table-responsive"><table class="table align-middle">
-                        <thead><tr><th>@L["Menu:SurveyCriterias"]</th><th>@L["Feature:Score"]</th><th>@L["Feature:Comment"]</th></tr></thead>
-                        <tbody>
-                            @foreach (var item in details)
-                            {
-                                <tr><td>@item.SurveyCriteriaName</td><td>@($"{WorkUi.ScoreToStars(item.Score)}★")</td><td>@(item.Comment ?? "—")</td></tr>
-                            }
-                        </tbody>
-                    </table></div>
-                }
-            </div>
-            <div class="hcs-public-survey__dialog-footer"><button type="button" class="btn btn-secondary" @onclick="CloseDetail">@L["Close"]</button></div>
-        </div>
-    </div>
-}
+<Modal @ref="detailModal">
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@L["SurveyDetails"]</ModalTitle>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            @if (selectedSummary is not null)
+            {
+                <dl class="hcs-survey-results__meta">
+                    <div><dt>@L["FullName"]</dt><dd>@(selectedSummary.FullName ?? "—")</dd></div>
+                    <div><dt>@L["PhoneNumber"]</dt><dd>@(selectedSummary.PhoneNumber ?? "—")</dd></div>
+                    <div><dt>@L["PatientCode"]</dt><dd>@(selectedSummary.PatientCode ?? "—")</dd></div>
+                    <div><dt>@L["SurveyResults:Destination"]</dt><dd>@(selectedSummary.LocationName ?? "—")</dd></div>
+                    <div><dt>@L["SurveyTime"]</dt><dd>@selectedSummary.SurveyTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd></div>
+                    <div><dt>@L["SurveyResults:Status"]</dt><dd>@HandlingText(selectedSummary.HandlingStatus)</dd></div>
+                    <div class="hcs-survey-results__meta-wide"><dt>@L["Note"]</dt><dd>@(selectedSummary.Note ?? "—")</dd></div>
+                    <div class="hcs-survey-results__meta-wide"><dt>@L["SurveyResults:HandlingNote"]</dt><dd>@(selectedSummary.HandlingNote ?? "—")</dd></div>
+                </dl>
+            }
+            @if (isDetailLoading)
+            {
+                <DocsEmpty Loading="true" Compact="true" />
+            }
+            else if (details.Count == 0)
+            {
+                <DocsEmpty Compact="true" Title="@L["NoSurveyData"]" />
+            }
+            else
+            {
+                <table class="docs-table">
+                    <thead><tr><th>@L["Menu:SurveyCriterias"]</th><th>@L["SurveyResults:Level"]</th><th>@L["Feature:Comment"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var item in details)
+                        {
+                            <tr>
+                                <td>@item.SurveyCriteriaName</td>
+                                <td><span class="@LevelClass(item.Score)">@LevelText(item.Score)</span></td>
+                                <td>@(item.Comment ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <button type="button" class="btn btn-light hcs-catalog-close" @onclick="CloseDetailAsync">@L["Close"]</button>
+            @if (selectedSummary is not null)
+            {
+                <button type="button" class="btn btn-primary" @onclick="() => OpenHandleFromDetailAsync(selectedSummary)">@L["SurveyResults:Handle"]</button>
+            }
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+<Modal @ref="handleModal">
+    <ModalContent Centered Class="hcs-catalog-modal">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@L["SurveyResults:HandleTitle"]</ModalTitle>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            <Field>
+                <FieldLabel>@L["SurveyResults:Status"]</FieldLabel>
+                <Select TValue="string" @bind-Value="handlingStatus">
+                    <SelectItem Value="@("Pending")">@L["SurveyResults:Pending"]</SelectItem>
+                    <SelectItem Value="@("Processed")">@L["SurveyResults:Processed"]</SelectItem>
+                </Select>
+            </Field>
+            <Field>
+                <FieldLabel>@L["SurveyResults:HandlingNote"]</FieldLabel>
+                <textarea class="form-control" rows="4" @bind="handlingNote" placeholder="@L["SurveyResults:HandlingNotePlaceholder"]"></textarea>
+            </Field>
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <button type="button" class="btn btn-light hcs-catalog-close" @onclick="CloseHandleAsync" disabled="@isHandling">@L["Close"]</button>
+            <button type="button" class="btn btn-primary hcs-catalog-save" @onclick="SaveHandleAsync" disabled="@isHandling">@L["SurveyResults:Apply"]</button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
 
 @code {
     private const int PageSize = 20;
@@ -152,12 +220,16 @@
     private PagedWorkResponse<SurveyResultSessionSummaryDto> summaries = new(0, []);
     private readonly List<SurveyResultSessionDetailDto> details = [];
     private SurveyResultSessionSummaryDto? selectedSummary;
+    private Modal? detailModal;
+    private Modal? handleModal;
     private string selectedLocationId = string.Empty;
     private string activeTab = "chart";
+    private string handlingStatus = "Pending";
+    private string? handlingNote;
     private int page;
     private bool isLoading = true;
     private bool isDetailLoading;
-    private bool showDetail;
+    private bool isHandling;
 
     private Guid? SelectedLocation => Guid.TryParse(selectedLocationId, out var id) ? id : null;
     private bool HasNextPage => (page + 1) * PageSize < summaries.TotalCount;
@@ -242,8 +314,8 @@
     {
         selectedSummary = item;
         details.Clear();
-        showDetail = true;
         isDetailLoading = true;
+        if (detailModal is not null) await detailModal.Show();
         try
         {
             details.AddRange(await Work.GetSurveyResultDetailsAsync(item.SurveySessionId, SelectedLocation));
@@ -258,5 +330,106 @@
         }
     }
 
-    private void CloseDetail() => showDetail = false;
+    private async Task CloseDetailAsync()
+    {
+        if (detailModal is not null) await detailModal.Hide();
+    }
+
+    private async Task OpenHandleAsync(SurveyResultSessionSummaryDto item)
+    {
+        selectedSummary = item;
+        handlingStatus = string.IsNullOrWhiteSpace(item.HandlingStatus) ? "Pending" : item.HandlingStatus;
+        handlingNote = item.HandlingNote;
+        if (handleModal is not null) await handleModal.Show();
+    }
+
+    private async Task OpenHandleFromDetailAsync(SurveyResultSessionSummaryDto item)
+    {
+        await CloseDetailAsync();
+        await OpenHandleAsync(item);
+    }
+
+    private async Task CloseHandleAsync()
+    {
+        if (handleModal is not null) await handleModal.Hide();
+    }
+
+    private async Task SaveHandleAsync()
+    {
+        if (selectedSummary is null) return;
+        isHandling = true;
+        try
+        {
+            var updated = await Work.HandleSurveyResultAsync(selectedSummary.SurveySessionId,
+                new HandleSurveyResultRequest(handlingStatus, handlingNote));
+            ReplaceSummary(updated);
+            selectedSummary = updated;
+            await CloseHandleAsync();
+            await NotifySuccessAsync(L["SurveyResults:Handled"]);
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex, BffErrorKind.Save);
+        }
+        finally
+        {
+            isHandling = false;
+        }
+    }
+
+    private async Task DeleteAsync(SurveyResultSessionSummaryDto item)
+    {
+        var label = item.FullName ?? item.LocationName ?? item.SurveySessionId.ToString("D");
+        if (!await UiMessageService.Confirm(string.Format(L["Catalog:DeleteConfirmation"], label))) return;
+        try
+        {
+            await Work.DeleteSurveyResultSessionAsync(item.SurveySessionId);
+            if (page > 0 && summaries.Items.Count == 1) page--;
+            await LoadAsync();
+            await NotifySuccessAsync(L["Catalog:Deleted"]);
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex, BffErrorKind.Save);
+        }
+    }
+
+    private void ReplaceSummary(SurveyResultSessionSummaryDto updated)
+    {
+        var items = summaries.Items.Select(item =>
+            item.SurveySessionId == updated.SurveySessionId ? updated : item).ToList();
+        summaries = new(summaries.TotalCount, items);
+    }
+
+    private string LevelText(decimal score)
+    {
+        var stars = WorkUi.ScoreToStars(score);
+        var label = stars switch
+        {
+            5 => L["SurveyResults:Level5"].Value,
+            4 => L["SurveyResults:Level4"].Value,
+            3 => L["SurveyResults:Level3"].Value,
+            2 => L["SurveyResults:Level2"].Value,
+            1 => L["SurveyResults:Level1"].Value,
+            _ => L["SurveyResults:Level0"].Value
+        };
+        return $"{stars} — {label}";
+    }
+
+    private static string LevelClass(decimal score) => WorkUi.ScoreToStars(score) switch
+    {
+        >= 4 => "hcs-survey-level hcs-survey-level--high",
+        3 => "hcs-survey-level hcs-survey-level--mid",
+        _ => "hcs-survey-level hcs-survey-level--low"
+    };
+
+    private string HandlingText(string? status) =>
+        string.Equals(status, "Processed", StringComparison.OrdinalIgnoreCase)
+            ? L["SurveyResults:Processed"].Value
+            : L["SurveyResults:Pending"].Value;
+
+    private static string HandlingClass(string? status) =>
+        string.Equals(status, "Processed", StringComparison.OrdinalIgnoreCase)
+            ? "hcs-survey-handling hcs-survey-handling--done"
+            : "hcs-survey-handling";
 }

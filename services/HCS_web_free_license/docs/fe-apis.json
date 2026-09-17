@@ -230,6 +230,8 @@
         { "method": "GET", "path": "/api/surveys/results/statistics" },
         { "method": "GET", "path": "/api/surveys/results/summaries" },
         { "method": "GET", "path": "/api/surveys/results/{sessionId}/details" },
+        { "method": "PUT", "path": "/api/surveys/results/{sessionId}/handling" },
+        { "method": "DELETE", "path": "/api/surveys/results/{sessionId}" },
         { "method": "GET", "path": "/api/surveys/public/locations/{id}" },
         { "method": "GET", "path": "/api/surveys/public/criteria" },
         { "method": "POST", "path": "/api/surveys/public/sessions" },

@@ -129,7 +129,20 @@
                         @foreach (var location in locations) { <SelectItem TValue="Guid?" Value="@((Guid?)location.Id)">@location.Name</SelectItem> }
                     </Select>
                 </Field>
-                <Field><FieldLabel>@L["SurveyCriteria:ImageUrl"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Image" Name="hcsSurveyCriteriaImage" MaxLength="512" /></Field>
+                <Field>
+                    <FieldLabel>@L["SurveyCriteria:ImageUrl"]</FieldLabel>
+                    @if (!string.IsNullOrWhiteSpace(imagePreviewUrl))
+                    {
+                        <div class="hcs-survey-criteria-preview">
+                            <img src="@imagePreviewUrl" alt="" />
+                        </div>
+                    }
+                    <InputFile class="form-control hcs-catalog-input" accept="image/jpeg,image/png,image/gif,image/webp" OnChange="OnImageChanged" />
+                    @if (!string.IsNullOrWhiteSpace(imageFileName))
+                    {
+                        <FieldHelp><i class="fa fa-image me-1" aria-hidden="true"></i>@imageFileName</FieldHelp>
+                    }
+                </Field>
             </div>
             @if (editingId is not null)
             {
@@ -150,6 +163,9 @@
     private readonly List<SurveyLocationDto> locations = [];
     private Modal? modal;
     private Guid? editingId;
+    private IBrowserFile? imageFile;
+    private string? imageFileName;
+    private string? imagePreviewUrl;
     private string filter = "";
     private string statusFilter = "";
     private bool isLoading, isSaving, showFilters;
@@ -228,6 +244,7 @@
     {
         editingId = null;
         form.Reset();
+        ClearImagePicker();
         if (modal is not null) await modal.Show();
     }
 
@@ -240,7 +257,48 @@
         form.LocationId = item.LocationId;
         form.Image = item.Image ?? "";
         form.IsActive = item.IsActive;
+        ClearImagePicker();
+        imagePreviewUrl = CriteriaImageSrc(item.Image);
         if (modal is not null) await modal.Show();
+    }
+
+    private void ClearImagePicker()
+    {
+        imageFile = null;
+        imageFileName = null;
+        imagePreviewUrl = null;
+    }
+
+    private string? CriteriaImageSrc(string? image)
+    {
+        if (string.IsNullOrWhiteSpace(image)) return null;
+        if (image.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            || image.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+            || image.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
+            return image;
+        return Work.BuildResourceUrl(image);
+    }
+
+    private void OnImageChanged(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        if (file is null) return;
+        if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            imageFile = null;
+            imageFileName = null;
+            _ = NotifyErrorAsync(L["SurveyCollections:ImageOnly"]);
+            return;
+        }
+        if (file.Size > 25 * 1024 * 1024)
+        {
+            imageFile = null;
+            imageFileName = null;
+            _ = NotifyErrorAsync(L["SurveyCollections:ImageTooLarge"]);
+            return;
+        }
+        imageFile = file;
+        imageFileName = file.Name;
     }
 
     private async Task SaveAsync()
@@ -248,10 +306,17 @@
         isSaving = true;
         try
         {
+            SurveyCriteriaDto saved;
             if (editingId is { } id)
-                await Work.UpdateCriteriaAsync(id, new UpdateSurveyCriteriaRequest(form.Name.Trim(), form.SortOrder, form.IsActive, form.LocationId, Blank(form.Image)));
+            {
+                saved = await Work.UpdateCriteriaAsync(id, new UpdateSurveyCriteriaRequest(form.Name.Trim(), form.SortOrder, form.IsActive, form.LocationId, Blank(form.Image)));
+            }
             else
-                await Work.CreateCriteriaAsync(new CreateSurveyCriteriaRequest(form.Code.Trim(), form.Name.Trim(), form.SortOrder, form.LocationId, Blank(form.Image), form.IsActive));
+            {
+                saved = await Work.CreateCriteriaAsync(new CreateSurveyCriteriaRequest(form.Code.Trim(), form.Name.Trim(), form.SortOrder, form.LocationId, Blank(form.Image), form.IsActive));
+            }
+            if (imageFile is not null)
+                saved = await Work.UploadCriteriaImageAsync(saved.Id, imageFile);
             await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             await LoadAsync();

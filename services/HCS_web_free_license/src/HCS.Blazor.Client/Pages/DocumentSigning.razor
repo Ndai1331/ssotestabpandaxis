@@ -7,6 +7,7 @@
 @inject OrganizationUnitCatalogClient OrganizationUnits
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime Js
+@inject Volo.Abp.AspNetCore.Components.Messages.IUiMessageService UiMessage
 @implements IAsyncDisposable
 
 <PageTitle>@L["Menu:DocumentSigning"] · HCS</PageTitle>
@@ -128,6 +129,12 @@
                                             {
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
                                             }
+                                        </button>
+                                    }
+                                    @if (item.CanDelete)
+                                    {
+                                        <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteSubmissionAsync(item)" disabled="@deletingSubmissions.Contains(item.Document.Id)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
                                         </button>
                                     }
                                 </div>
@@ -671,7 +678,7 @@
         {
             var items = await Documents.GetSigningQueueAsync();
             queue.Clear();
-            queue.AddRange(items.Select(item => new SigningQueueItem(ToDocumentDto(item.Document), item.Task, item.Instance, item.Definition)));
+            queue.AddRange(items.Select(item => new SigningQueueItem(ToDocumentDto(item.Document), item.Task, item.Instance, item.Definition, item.CanDelete)));
             await LoadUserLookupsAsync();
             if (RelatedId is { } related && queue.FirstOrDefault(x => x.Document.Id == related) is { } match)
                 await OpenSign(match);
@@ -1023,7 +1030,23 @@
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
 
-    private sealed record SigningQueueItem(DocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance, WorkflowDefinitionDto Definition);
+    private readonly HashSet<Guid> deletingSubmissions = [];
+
+    private async Task DeleteSubmissionAsync(SigningQueueItem item)
+    {
+        if (!item.CanDelete || !deletingSubmissions.Add(item.Document.Id)) return;
+        try
+        {
+            if (!await UiMessage.Confirm(string.Format(L["Document:DeleteSubmissionConfirm"], item.Document.Title))) return;
+            await Documents.DeleteSubmissionAsync(item.Document.Id);
+            await NotifySuccessAsync(L["Catalog:Deleted"]);
+            await LoadAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex); }
+        finally { deletingSubmissions.Remove(item.Document.Id); }
+    }
+
+    private sealed record SigningQueueItem(DocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance, WorkflowDefinitionDto Definition, bool CanDelete = false);
     private static DocumentDto ToDocumentDto(SigningQueueDocumentDto document) => new(
         document.Id, document.Number, document.Title, document.Description, document.Status,
         null, null, null, null, document.Files, [], [], document.CreationTime,

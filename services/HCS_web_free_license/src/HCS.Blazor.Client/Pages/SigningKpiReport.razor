@@ -1,3 +1,4 @@
+@page "/thong-ke-de-xuat"
 @page "/signing-kpi-report"
 @attribute [Authorize(Policy = "Documents.Signing.Report")]
 @using HCS.Blazor.Client.Components.Charts
@@ -5,58 +6,61 @@
 @inject DocumentClient Documents
 @inject NavigationManager Navigation
 
-<PageTitle>KPI ký số · HCS</PageTitle>
-<section class="hcs-document-page" aria-labelledby="signing-kpi-title">
-    <header class="hcs-document-page__header">
+<PageTitle>@L["Menu:ProposalStatistics"] · HCS</PageTitle>
+<section class="page page-wf" aria-labelledby="proposal-stats-title">
+    <div class="page-head">
         <div>
-            <p class="hcs-document-page__eyebrow">Báo cáo</p>
-            <h1 id="signing-kpi-title">KPI ký số</h1>
-            <p class="text-muted mb-0">Tổng hợp hồ sơ trình ký và thời gian xử lý từ hệ thống HCS.</p>
+            <p class="event-panel-kicker">@L["Menu:Reports"]</p>
+            <h1 id="proposal-stats-title">@L["Menu:ProposalStatistics"]</h1>
+            <p class="text-muted mb-0">Tổng hợp đề xuất trình ký từ SQL Server nội bộ (QLDH_MSSQL) và hệ thống HCS.</p>
         </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary" type="button" @onclick="LoadAsync" disabled="@loading">@(loading ? "Đang tải…" : "Làm mới")</button>
-            <button class="btn btn-success" type="button" @onclick="ExportAsync" disabled="@(loading || report is null)">Xuất CSV</button>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@loading">@(loading ? "Đang tải…" : "Làm mới")</button>
+            <button class="btn btn-primary" type="button" @onclick="ExportAsync" disabled="@(loading || report is null)">Xuất CSV</button>
         </div>
-    </header>
+    </div>
 
-    <Card Class="mb-4">
-        <CardBody>
-            <div class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <Field>
-                        <FieldLabel>Từ ngày</FieldLabel>
-                        <HcsDatePicker TValue="DateTime?" @bind-Value="fromDate" />
-                    </Field>
-                </div>
-                <div class="col-md-4">
-                    <Field>
-                        <FieldLabel>Đến ngày</FieldLabel>
-                        <HcsDatePicker TValue="DateTime?" @bind-Value="toDate" />
-                    </Field>
-                </div>
-                <div class="col-md-4 text-muted small">Chọn khoảng trống để xem toàn bộ dữ liệu.</div>
+    <div class="docs-toolbar">
+        <div class="row g-3 align-items-end w-100">
+            <div class="col-md-4">
+                <label class="form-label">Từ ngày</label>
+                <HcsDatePicker TValue="DateTime?" @bind-Value="fromDate" />
             </div>
-        </CardBody>
-    </Card>
+            <div class="col-md-4">
+                <label class="form-label">Đến ngày</label>
+                <HcsDatePicker TValue="DateTime?" @bind-Value="toDate" />
+            </div>
+            <div class="col-md-4 text-muted small">Để trống khoảng ngày để xem toàn bộ dữ liệu.</div>
+        </div>
+    </div>
 
     @if (loading)
     {
         <HcsLoading CssClass="py-5" Title="Đang tải báo cáo…" />
     }
-    else if (!string.IsNullOrWhiteSpace(error))
+    else if (!string.IsNullOrWhiteSpace(error) && report is null)
     {
         <Alert Color="Color.Warning">@error</Alert>
     }
-    else if (report is null || !report.HcsAvailable)
+    else if (report is null || (!report.HcsAvailable && !report.LegacyAvailable))
     {
-        <div class="hcs-empty py-5"><i class="fa fa-chart-column" aria-hidden="true"></i><h2>Chưa có số liệu</h2><p>Chưa thể đọc dữ liệu workflow trình ký.</p></div>
+        <DocsEmpty Title="Chưa có số liệu" Hint="@(report?.LegacyError ?? report?.HcsError ?? "Chưa thể đọc dữ liệu trình ký từ SQL Server nội bộ hoặc HCS.")" />
     }
     else
     {
+        if (!string.IsNullOrWhiteSpace(report.LegacyError))
+        {
+            <Alert Color="Color.Warning" Class="mb-3">QLDH_MSSQL: @report.LegacyError</Alert>
+        }
+        if (!string.IsNullOrWhiteSpace(report.HcsError))
+        {
+            <Alert Color="Color.Warning" Class="mb-3">QLDH_PGSQL: @report.HcsError</Alert>
+        }
+
         var metrics = report.Combined;
         <div class="row g-3 mb-4">
             <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Tổng hồ sơ</small><h2 class="mb-0">@metrics.TotalCount</h2></CardBody></Card></div>
-            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đã hoàn tất</small><h2 class="mb-0 text-success">@metrics.CompletedCount <small class="text-muted">(@FmtPct(metrics.CompletedRatePercent))</small></h2></CardBody></Card></div>
+            <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đã phê duyệt</small><h2 class="mb-0 text-success">@metrics.CompletedCount <small class="text-muted">(@FmtPct(metrics.CompletedRatePercent))</small></h2></CardBody></Card></div>
             <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đang xử lý</small><h2 class="mb-0 text-primary">@metrics.ProcessingIncludingNewCount</h2></CardBody></Card></div>
             <div class="col-6 col-lg-3"><Card Class="h-100"><CardBody><small class="text-muted">Đúng hạn</small><h2 class="mb-0">@FmtPct(metrics.OnTimeRatePercent)</h2></CardBody></Card></div>
         </div>
@@ -66,7 +70,7 @@
                 <Card Class="h-100"><CardHeader>Phân bổ trạng thái</CardHeader><CardBody>
                     @if (report.PieSlices.Count > 0)
                     {
-                        <PieChart ChartId="signing-kpi-status" Labels="PieLabels" Data="PieData" BackgroundColors="PieColors" IsDoughnut="true" />
+                        <PieChart ChartId="proposal-stats-status" Labels="PieLabels" Data="PieData" BackgroundColors="PieColors" IsDoughnut="true" />
                     }
                     else { <p class="text-muted mb-0">Chưa có hồ sơ trong khoảng thời gian này.</p> }
                 </CardBody></Card>
@@ -78,25 +82,46 @@
                         <dt class="col-sm-7">Từ chối</dt><dd class="col-sm-5">@metrics.RejectedCount (@FmtPct(metrics.RejectedRatePercent))</dd>
                         <dt class="col-sm-7">Đã hủy</dt><dd class="col-sm-5">@metrics.CancelledCount (@FmtPct(metrics.CancelledRatePercent))</dd>
                         <dt class="col-sm-7">Đúng hạn / có hạn</dt><dd class="col-sm-5">@metrics.OnTimeCount / @metrics.CompletedWithDeadlineCount</dd>
+                        <dt class="col-sm-7">QLDH_MSSQL</dt><dd class="col-sm-5">@(report.LegacyAvailable ? report.Legacy.TotalCount.ToString() : "Không kết nối")</dd>
+                        <dt class="col-sm-7">QLDH_PGSQL</dt><dd class="col-sm-5">@(report.HcsAvailable ? report.Hcs.TotalCount.ToString() : "Không kết nối")</dd>
                     </dl>
                 </CardBody></Card>
             </div>
         </div>
 
-        <Card>
-            <CardHeader>Thống kê theo quy trình</CardHeader>
-            <CardBody Class="p-0">
-                <div class="table-responsive"><table class="table table-hover align-middle mb-0">
-                    <thead><tr><th>Nguồn</th><th>Mã quy trình</th><th>Tên quy trình</th><th>Tổng</th><th>Hoàn tất</th><th>Từ chối</th><th>Đang xử lý</th><th>TB giờ</th><th>Đúng hạn</th></tr></thead>
-                    <tbody>
-                    @foreach (var group in report.Groups)
-                    {
-                        <tr><td>@group.Source</td><td>@group.GroupCode</td><td>@group.GroupName</td><td>@group.Metrics.TotalCount</td><td>@group.Metrics.CompletedCount</td><td>@group.Metrics.RejectedCount</td><td>@group.Metrics.ProcessingIncludingNewCount</td><td>@(group.Metrics.AverageProcessingHours?.ToString("0.##") ?? "-")</td><td>@FmtPct(group.Metrics.OnTimeRatePercent)</td></tr>
-                    }
-                    </tbody>
-                </table></div>
-            </CardBody>
-        </Card>
+        <div class="docs-table-wrap">
+            <table class="docs-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Nguồn</th>
+                        <th scope="col">Mã nhóm</th>
+                        <th scope="col">Tên nhóm</th>
+                        <th scope="col">Tổng</th>
+                        <th scope="col">Hoàn tất</th>
+                        <th scope="col">Từ chối</th>
+                        <th scope="col">Đang xử lý</th>
+                        <th scope="col">TB giờ</th>
+                        <th scope="col">Đúng hạn</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var group in report.Groups)
+                {
+                    <tr>
+                        <td>@group.Source</td>
+                        <td>@group.GroupCode</td>
+                        <td>@group.GroupName</td>
+                        <td>@group.Metrics.TotalCount</td>
+                        <td>@group.Metrics.CompletedCount</td>
+                        <td>@group.Metrics.RejectedCount</td>
+                        <td>@group.Metrics.ProcessingIncludingNewCount</td>
+                        <td>@(group.Metrics.AverageProcessingHours?.ToString("0.##") ?? "-")</td>
+                        <td>@FmtPct(group.Metrics.OnTimeRatePercent)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
     }
 </section>
 
@@ -121,7 +146,8 @@
         {
             var to = toDate?.Date.AddDays(1).AddTicks(-1);
             report = await Documents.GetSigningKpiAsync(new SigningKpiQuery(null, fromDate?.Date, to));
-            if (!report.HcsAvailable) error = report.HcsError ?? "Không thể đọc dữ liệu KPI ký số.";
+            if (!report.HcsAvailable && !report.LegacyAvailable)
+                error = report.LegacyError ?? report.HcsError ?? "Không thể đọc dữ liệu thống kê đề xuất.";
         }
         catch (Exception exception)
         {

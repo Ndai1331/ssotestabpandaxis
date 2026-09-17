@@ -95,6 +95,7 @@ public class HCSBlazorClientModule : AbpModule
         context.Services.AddScoped<Work.EmployeeRatingDirectoryService>();
         context.Services.AddScoped<Documents.DocumentClient>();
         context.Services.AddScoped<AuthenticationSettingsClient>();
+        context.Services.AddScoped<LegacySigningReportSettingsClient>();
         context.Services.AddScoped<SystemBrandingClient>();
         context.Services.AddScoped<SystemBrandingState>();
         ConfigureRouter(context);

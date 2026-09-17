@@ -1,5 +1,6 @@
 @page "/social"
 @page "/social/profile"
+@page "/social/profile/{ProfileUserId:guid}"
 @using Microsoft.AspNetCore.Components.Routing
 @using HCS.Blazor.Client.Account
 @using System.Threading
@@ -11,9 +12,13 @@
 @inject AccountProfileClient Account
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject WorkManagementClient Work
+@inject CollaborationClient Chat
+@inject OrganizationUnitCatalogClient OrganizationUnits
+@inject OrganizationCatalogClient Organization
 @inject IJSRuntime JS
 
-<PageTitle>@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"]) · HCS</PageTitle>
+<PageTitle>@(ProfilePageTitle) · HCS</PageTitle>
 
 <section class="hcs-social-page page-social" aria-label='@(isProfile ? L["Social:ProfileTitle"] : L["Social:Title"])'>
     <div class="social-wrap" @onclick="ClosePostMenu">
@@ -25,6 +30,7 @@
                 <h1 id="social-title">@L["Social:Title"]</h1>
             </div>
             <div class="page-actions">
+                @SocialSearchFilter("btn btn-outline")
                 <a class="btn btn-primary" href="/social/profile">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
                     @L["Social:OpenProfile"]
@@ -45,60 +51,92 @@
             <div class="social-cover-body hcs-social-profile-card__content">
                 @SocialAvatar(profile.UserId, profile.DisplayName, profile.AvatarUrl, "hcs-social-avatar--profile social-cover-avatar")
                 <div class="social-cover-meta hcs-social-profile-card__identity">
-                    <h1 id="social-my-profile-title">@profile.DisplayName</h1>
+                    <div class="social-cover-title">
+                        <h1 id="social-my-profile-title">@profile.DisplayName</h1>
+                        @if (canReadRatings)
+                        {
+                            <button type="button" class="social-cover-trust" @onclick="OpenTrustPopup"
+                                    @onclick:stopPropagation="true"
+                                    aria-haspopup="dialog" aria-expanded="@trustOpen.ToString().ToLowerInvariant()"
+                                    title="@TrustSummary()">
+                                <span class="hcs-rating-meter" aria-hidden="true">
+                                    @foreach (var score in Enumerable.Range(1, 5))
+                                    {
+                                        <i class="@(score <= TrustStars ? "fa-solid" : "fa-regular") fa-star"></i>
+                                    }
+                                </span>
+                                <strong>@(ratingSummary is { ReviewCount: > 0 } ? $"{ratingSummary.AverageScore:0.0}" : "—")</strong>
+                                <span>@(ratingSummary is { ReviewCount: > 0 } ? $"{TrustPercent}%" : L["EmployeeRatings:NoScore"])</span>
+                            </button>
+                        }
+                    </div>
                     <p class="social-handle hcs-social-profile-card__username">@@@profile.UserName</p>
                     <ul class="social-contact hcs-social-profile-card__meta">
                         <li>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                            @L["Social:Position"]: <span>@(profile.PositionName ?? L["Social:NoProfileValue"])</span>
+                            <span><em>@L["Social:Position"]</em> @(profile.PositionName ?? L["Social:NoProfileValue"])</span>
                         </li>
                         @if (!string.IsNullOrWhiteSpace(profile.DepartmentName))
                         {
                             <li>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21V8l8-4 8 4v13"/><path d="M9 21v-6h6v6"/></svg>
-                                @L["Social:Department"]: <span>@profile.DepartmentName</span>
+                                <span><em>@L["Social:Department"]</em> @profile.DepartmentName</span>
                             </li>
                         }
                         <li>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6.5 4h3l1.5 4-2 1.2a12 12 0 0 0 5.8 5.8L16 13l4 1.5v3A16 16 0 0 1 6.5 4z"/></svg>
-                            @L["Social:Phone"]: <span>@(profile.PhoneNumber ?? L["Social:NoProfileValue"])</span>
+                            <span><em>@L["Social:Phone"]</em> @(profile.PhoneNumber ?? L["Social:NoProfileValue"])</span>
                         </li>
                         <li>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
-                            @L["Social:Email"]:
-                            @if (!string.IsNullOrWhiteSpace(profile.Email))
-                            {
-                                <a href="mailto:@profile.Email">@profile.Email</a>
-                            }
-                            else
-                            {
-                                <span>@L["Social:NoProfileValue"]</span>
-                            }
+                            <span>
+                                <em>@L["Social:Email"]</em>
+                                @if (!string.IsNullOrWhiteSpace(profile.Email))
+                                {
+                                    <a href="mailto:@profile.Email">@profile.Email</a>
+                                }
+                                else
+                                {
+                                    @L["Social:NoProfileValue"]
+                                }
+                            </span>
                         </li>
                     </ul>
+                </div>
+                <div class="social-cover-cta">
+                    @if (canRate)
+                    {
+                        <button class="icon-btn social-cover-tool" type="button" @onclick="OpenTrustPopup"
+                                @onclick:stopPropagation="true"
+                                aria-haspopup="dialog" aria-expanded="@trustOpen.ToString().ToLowerInvariant()"
+                                title="@L["EmployeeRatings:Rate"]" aria-label="@L["EmployeeRatings:Rate"]">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 3 2.4 6.9H21l-5.4 4.1 2 7L12 17.2 6.4 21l2-7L3 9.9h6.6z"/></svg>
+                        </button>
+                    }
+                    @if (canChat)
+                    {
+                        <button class="icon-btn social-cover-tool" type="button" @onclick="StartChatAsync"
+                                disabled="@isStartingChat" title="@L["Social:Chat"]" aria-label="@L["Social:Chat"]">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                        </button>
+                    }
+                    @SocialSearchFilter("icon-btn social-cover-tool", iconOnly: true)
                 </div>
             </div>
         </section>
     }
 
+    @if (isProfile && !isOtherProfile)
+    {
     <div class="social-toolbar card @(isChangingVisibility ? "is-loading" : null)">
         <div class="social-toolbar-main">
             <span class="social-toolbar-label">@L["Social:ViewLabel"]</span>
             <div class="social-pills" role="tablist" aria-label='@L["Social:ViewLabel"]' aria-busy="@(isChangingVisibility)">
-                @if (isProfile)
-                {
-                    <button type="button" class="social-pill @(IsVisibilitySelected(null) ? "is-active" : null)"
-                            role="tab" aria-selected="@IsVisibilitySelected(null)" @onclick="() => SelectVisibilityAsync(null)"
-                            disabled="@(isLoading || isChangingVisibility)">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
-                        @L["Social:All"]
-                    </button>
-                }
-                <button type="button" class="social-pill @(IsVisibilitySelected(SocialPostVisibility.Public) ? "is-active" : null)"
-                        role="tab" aria-selected="@IsVisibilitySelected(SocialPostVisibility.Public)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Public)"
+                <button type="button" class="social-pill @(IsVisibilitySelected(null) ? "is-active" : null)"
+                        role="tab" aria-selected="@IsVisibilitySelected(null)" @onclick="() => SelectVisibilityAsync(null)"
                         disabled="@(isLoading || isChangingVisibility)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 3.8 6 3.8 9S14.5 18 12 21c-2.5-3-3.8-6-3.8-9S9.5 6 12 3z"/></svg>
-                    @L["Social:Public"]
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
+                    @L["Social:All"]
                 </button>
                 <button type="button" class="social-pill @(IsVisibilitySelected(SocialPostVisibility.Internal) ? "is-active" : null)"
                         role="tab" aria-selected="@IsVisibilitySelected(SocialPostVisibility.Internal)" @onclick="() => SelectVisibilityAsync(SocialPostVisibility.Internal)"
@@ -114,68 +152,93 @@
                     </span>
                 }
             </div>
-            <button class="icon-btn social-search-toggle @(HasSearchFilters() ? "is-filtered" : null)" type="button"
-                    aria-expanded="@searchOpen.ToString().ToLowerInvariant()" aria-controls="social-search-form"
-                    aria-label='@L["Social:Search"]' @onclick="ToggleSearchPanel">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
-            </button>
         </div>
-
-        <form id="social-search-form" class="social-search-form hcs-social-search" hidden="@(!searchOpen)" @onsubmit="ApplySearchAsync" @onsubmit:preventDefault>
-            <div class="social-search-head hcs-social-search__heading">
-                <h2 id="social-search-title" class="sr-only">@L["Social:SearchTitle"]</h2>
-                <div class="social-search-modes hcs-social-search__modes" role="tablist" aria-label='@L["Social:SearchTitle"]'>
-                    <button type="button" class="social-mode hcs-social-search__mode @(!peopleSearchMode ? "is-active" : null)"
-                            role="tab" aria-selected="@(!peopleSearchMode)" @onclick="() => SelectSearchMode(false)">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
-                        @L["Social:SearchTitle"]
-                    </button>
-                    <button type="button" class="social-mode hcs-social-search__mode @(peopleSearchMode ? "is-active" : null)"
-                            role="tab" aria-selected="@peopleSearchMode" @onclick="() => SelectSearchMode(true)">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
-                        @L["Social:PeopleSearch"]
-                    </button>
-                </div>
-            </div>
-            <div class="social-search-row">
-                <div class="social-search-fields">
-                    <div class="field hcs-social-search__field hcs-social-search__field--keyword">
-                        <label class="field-label" for="social-search-keyword">@(peopleSearchMode ? L["Social:PeopleSearch"] : L["Social:Keyword"])</label>
-                        <input id="social-search-keyword" class="input" @bind="keywordInput"
-                               placeholder='@(peopleSearchMode ? L["Social:PeopleSearchPlaceholder"] : L["Social:KeywordPlaceholder"])' autocomplete="off" />
-                    </div>
-                    @if (!peopleSearchMode)
-                    {
-                        <div class="field hcs-social-search__field">
-                            <label class="field-label" for="social-search-hashtag">@L["Social:Hashtag"]</label>
-                            <input id="social-search-hashtag" class="input" @bind="hashtagInput"
-                                   placeholder="#hcs" autocomplete="off" />
-                        </div>
-                    }
-                </div>
-                <div class="social-search-actions hcs-social-search__actions">
-                    <button class="btn btn-primary social-search-btn hcs-social-search__submit" type="submit">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
-                        @L["Social:Search"]
-                    </button>
-                    @if (!peopleSearchMode)
-                    {
-                        <button class="btn btn-ghost hcs-social-search__clear" type="button" @onclick="ClearSearchAsync"
-                                disabled="@(!HasSearchFilters())">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-                            @L["Social:ClearSearch"]
-                        </button>
-                    }
-                </div>
-            </div>
-        </form>
     </div>
+    }
     @if (!string.IsNullOrWhiteSpace(searchError))
     {
         <p class="social-inline-error" role="alert">@SocialWarningIcon()@searchError</p>
     }
 
     <div class="social-split hcs-social-layout">
+        <aside class="social-aside" aria-label='@L["Social:Shortcuts"]'>
+            <section class="card social-aside-card">
+                <div class="social-aside-section">
+                    <h2>@L["Social:Shortcuts"]</h2>
+                    <a class="social-shortcut" href="/social">
+                        <span class="social-shortcut-icon" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                        </span>
+                        @L["Social:Title"]
+                    </a>
+                    <a class="social-shortcut" href="/social/profile">
+                        <span class="chat-avatar sm">@(Initials(CurrentDisplayName()))</span>
+                        @L["Social:OpenProfile"]
+                    </a>
+                    <a class="social-shortcut" href="/chat">
+                        <span class="social-shortcut-icon" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                        </span>
+                        @L["Chat:Title"]
+                    </a>
+                    @if (canRate)
+                    {
+                        <a class="social-shortcut" href="/employee-ratings">
+                            <span class="social-shortcut-icon" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 5 3.4 7.8 7 9 3.6-1.2 7-4 7-9V6z"/></svg>
+                            </span>
+                            @L["Feature:EmployeeRatings"]
+                        </a>
+                    }
+                </div>
+                <div class="social-aside-section">
+                    <h2>@L["Social:TopTags"]</h2>
+                    @if (topTags.Count == 0)
+                    {
+                        <p>@L["Social:DiscoverEmpty"]</p>
+                    }
+                    else
+                    {
+                        <div class="social-tag-cloud">
+                            @foreach (var tag in topTags)
+                            {
+                                <a class="social-tag" href="@BuildViewUri(false, SocialPostVisibility.Public, hashtag: tag.Tag)">#@tag.Tag <span>@tag.Count</span></a>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="social-aside-section">
+                    <h2>@L["Social:FindColleague"]</h2>
+                    <div class="social-aside-search">
+                        <div class="list-search-select">
+                            <UserSelect2 ValueChanged="OnSidebarPersonSelected"
+                                         Placeholder="@L["Social:FindColleaguePlaceholder"]"
+                                         Search="SearchSidebarPeopleSelectAsync" />
+                        </div>
+                    </div>
+                    <h3 class="social-aside-sub">@L["Social:TopAuthors"]</h3>
+                    @if (topAuthors.Count == 0)
+                    {
+                        <p>@L["Social:DiscoverEmpty"]</p>
+                    }
+                    else
+                    {
+                        <div class="social-aside-people">
+                            @foreach (var author in topAuthors)
+                            {
+                                <a class="social-shortcut" href="@ProfileHref(author.UserId)">
+                                    <span class="chat-avatar sm">@Initials(author.DisplayName)</span>
+                                    <span>
+                                        <strong>@author.DisplayName</strong>
+                                        <small>@string.Format(L["Social:PostCount"].Value, author.PostCount)</small>
+                                    </span>
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </section>
+        </aside>
         <div class="social-main hcs-social-stream">
             @if (peopleSearchMode && peopleSearchExecuted)
             {
@@ -197,7 +260,7 @@
                     {
                         @foreach (var person in people)
                         {
-                            <article class="people-card">
+                            <a class="people-card" href="@ProfileHref(person.UserId)">
                                 @SocialAvatar(person.UserId, person.DisplayName, person.AvatarUrl)
                                 <span>
                                     <strong>@person.DisplayName</strong>
@@ -208,14 +271,16 @@
                                     }
                                     @if (!string.IsNullOrWhiteSpace(person.Email))
                                     {
-                                        <a href="mailto:@person.Email">@person.Email</a>
+                                        <span>@person.Email</span>
                                     }
                                 </span>
-                            </article>
+                            </a>
                         }
                     }
                 </section>
             }
+            @if (!isOtherProfile)
+            {
             <section class="card social-composer hcs-social-composer" aria-labelledby="social-composer-title">
                 <div class="social-composer-head hcs-social-card-heading">
                     @SocialAvatar(currentUserId ?? Guid.Empty, CurrentDisplayName(), null, "hcs-social-avatar--accent chat-avatar")
@@ -284,6 +349,7 @@
                     </div>
                 }
             </section>
+            }
 
             @if (!(peopleSearchMode && peopleSearchExecuted))
             {
@@ -307,7 +373,7 @@
             else if (posts.Count == 0)
             {
                 <p class="social-empty">
-                    @(isProfile ? L["Social:EmptyProfile"] : L["Social:EmptyFeed"])
+                    @(isOtherProfile ? L["Social:EmptyOtherProfile"] : isProfile ? L["Social:EmptyProfile"] : L["Social:EmptyFeed"])
                 </p>
             }
             else
@@ -319,7 +385,7 @@
                         <header class="post-head hcs-social-post__header">
                             @SocialAvatar(post.AuthorUserId, post.AuthorName, post.AvatarUrl, "chat-avatar")
                             <div class="post-meta hcs-social-post__author">
-                                <a class="post-author" id="post-@post.Id">@post.AuthorName</a>
+                                <a class="post-author" id="post-@post.Id" href="@ProfileHref(post.AuthorUserId)">@post.AuthorName</a>
                                 <p>
                                     <time datetime="@post.CreatedAt.ToString("O")" title="@post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")">
                                         @post.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
@@ -469,16 +535,16 @@
                             <div class="react-wrap">
                                 <button class="post-action @(post.Reactions.CurrentUserReaction is not null ? $"is-on {ReactionColorClass(post.Reactions.CurrentUserReaction.Value)}" : null)"
                                         type="button" data-react-open
-                                        disabled="@(reactionLoadingPostId == post.Id)" aria-haspopup="listbox">
+                                        disabled="@(reactionLoadingPostId == post.Id)" aria-haspopup="listbox"
+                                        aria-label='@(post.Reactions.CurrentUserReaction is { } current ? ReactionLabel(current) : L["Social:React"])'
+                                        title='@(post.Reactions.CurrentUserReaction is { } currentTitle ? ReactionLabel(currentTitle) : L["Social:React"])'>
                                     @if (post.Reactions.CurrentUserReaction is { } currentReaction)
                                     {
                                         @((MarkupString)ReactionGlyph(currentReaction))
-                                        <span>@ReactionLabel(currentReaction)</span>
                                     }
                                     else
                                     {
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 11v10H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3zm0 0 4.2-7.2A2 2 0 0 1 16 5v4h4.3a2 2 0 0 1 2 2.3l-1.2 8A2 2 0 0 1 19.1 21H8"/></svg>
-                                        <span>@L["Social:React"]</span>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 11v10H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3zm0 0 4.2-7.2A2 2 0 0 1 16 5v4h4.3a2 2 0 0 1 2 2.3l-1.2 8A2 2 0 0 1 19.1 21H8"/></svg>
                                     }
                                 </button>
                                 <div class="react-bar" role="listbox" aria-label='@L["Social:React"]'>
@@ -496,18 +562,26 @@
                                 </div>
                             </div>
                             <button class="post-action" type="button" data-comment-toggle @onclick="() => ToggleCommentsAsync(post)"
-                                    aria-expanded="@expandedPostIds.Contains(post.Id)">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
-                                <span>@L["Social:Comment"]</span>
+                                    aria-expanded="@expandedPostIds.Contains(post.Id)"
+                                    aria-label='@($"{post.CommentCount} {L["Social:Comments"]}")'>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
+                                @if (post.CommentCount > 0)
+                                {
+                                    <span>@post.CommentCount</span>
+                                }
                             </button>
                             <button class="post-action" type="button" data-share @onclick="() => SharePostAsync(post)"
-                                    disabled="@(shareLoadingPostId == post.Id)" aria-label='@L["Social:Share"]'>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
-                                <span>@L["Social:Share"]</span>
-                            </button>
-                            <div class="post-actions-meta">
-                                @if (post.Reactions.TotalCount > 0)
+                                    disabled="@(shareLoadingPostId == post.Id)"
+                                    aria-label='@($"{post.ShareCount} {L["Social:Shares"]}")'>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+                                @if (post.ShareCount > 0)
                                 {
+                                    <span>@post.ShareCount</span>
+                                }
+                            </button>
+                            @if (post.Reactions.TotalCount > 0)
+                            {
+                                <div class="post-actions-meta">
                                     <span data-react-summary class="post-react-summary" aria-label='@L["Social:ReactionSummary"]'>
                                         @foreach (var reaction in post.Reactions.Counts.Take(3))
                                         {
@@ -515,18 +589,9 @@
                                                 @((MarkupString)ReactionGlyph(reaction.Type))
                                             </span>
                                         }
-                                        <span>@post.Reactions.TotalCount</span>
                                     </span>
-                                }
-                                <button type="button" class="post-actions-meta-btn" data-comment-toggle @onclick="() => OpenCommentsAsync(post)"
-                                        aria-expanded="@expandedPostIds.Contains(post.Id)">
-                                    @post.CommentCount @L["Social:Comments"]
-                                    @if (post.ShareCount > 0)
-                                    {
-                                        <span> · @post.ShareCount @L["Social:Shares"]</span>
-                                    }
-                                </button>
-                            </div>
+                                </div>
+                            }
                         </div>
 
                         @if (expandedPostIds.Contains(post.Id))
@@ -584,7 +649,7 @@
                                     @if (replyingToPostId == post.Id && replyingToCommentId.HasValue)
                                     {
                                         <div class="comment-replying">
-                                            <span>@(string.IsNullOrWhiteSpace(replyingToName) ? L["Social:ReplyingTo"] : string.Format(L["Social:ReplyingToName"], replyingToName))</span>
+                                            <span>@(string.IsNullOrWhiteSpace(replyingToName) ? L["Social:ReplyingTo"] : string.Format(L["Social:ReplyingToName"].Value, $"@{replyingToName}"))</span>
                                             <button type="button" data-reply @onclick="CancelReply">@L["Social:CancelReply"]</button>
                                         </div>
                                     }
@@ -593,7 +658,7 @@
                                         <label class="sr-only" for="comment-@post.Id">@L["Social:Comment"]</label>
                                         <input id="comment-@post.Id" class="input" type="text" autocomplete="off"
                                                @bind="commentDraft" @bind:event="oninput"
-                                               placeholder='@L["Social:CommentPlaceholder"]' disabled="@isSubmittingComment" />
+                                               placeholder='@(replyingToPostId == post.Id && !string.IsNullOrWhiteSpace(replyingToName) ? $"@{replyingToName}" : L["Social:CommentPlaceholder"])' disabled="@isSubmittingComment" />
                                         <label class="icon-btn comment-attach" for="@($"comment-attachment-{post.Id:D}")"
                                                title='@L["Social:AddCommentAttachment"]'>
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.5 12.5 21a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7l-9.2 9.1a2 2 0 1 1-2.8-2.8l8.1-8.2"/></svg>
@@ -668,30 +733,6 @@
             }
             }
         </div>
-
-        <aside class="social-aside" aria-label='@L["Social:Shortcuts"]'>
-            <section class="card social-aside-card is-hint" hidden="@(!isProfile)">
-                <div class="social-aside-icon" aria-hidden="true">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 5 3.4 7.8 7 9 3.6-1.2 7-4 7-9V6z"/></svg>
-                </div>
-                <h2>@L["Social:Internal"]</h2>
-                <p>@L["Social:InternalHint"]</p>
-            </section>
-            <section class="card social-aside-card" hidden="@isProfile">
-                <h2>@L["Social:Shortcuts"]</h2>
-                <a class="social-shortcut" href="/social/profile">
-                    <span class="chat-avatar sm">@(Initials(CurrentDisplayName()))</span>
-                    @L["Social:OpenProfile"]
-                </a>
-                <a class="social-shortcut" href="/chat">
-                    <span class="social-shortcut-icon" aria-hidden="true">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
-                    </span>
-                    @L["Chat:Title"]
-                </a>
-                <p>@L["Social:PublicHint"]</p>
-            </section>
-        </aside>
     </div>
     </div>
     @if (previewImageUrl is not null)
@@ -756,6 +797,74 @@
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
                         <span>@L["Social:DeleteAction"]</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    }
+    @if (trustOpen && ratingSummary is { } trust)
+    {
+        var ratedToday = trust.MyTodayScore.HasValue;
+        var interactiveScore = ratingHoverScore ?? trust.MyTodayScore ?? 0;
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="social-trust-title" @onclick="CloseTrustPopup">
+            <div class="chat-dialog social-trust-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="social-trust-title">@L["Social:TrustRatio"]</h2>
+                    <button class="icon-btn" type="button" aria-label='@L["Chat:ClosePreview"]' @onclick="CloseTrustPopup">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <div class="chat-dialog-view">
+                    <div class="social-trust-hero">
+                        <strong>@(trust.ReviewCount > 0 ? $"{trust.AverageScore:0.0}" : "—")</strong>
+                        <span class="hcs-rating-meter" aria-hidden="true">
+                            @foreach (var score in Enumerable.Range(1, 5))
+                            {
+                                <i class="@(score <= TrustStars ? "fa-solid" : "fa-regular") fa-star"></i>
+                            }
+                        </span>
+                        <p>
+                            @(trust.ReviewCount > 0
+                                ? $"{TrustPercent}% · {trust.AverageScore:0.0}/5 · {trust.ReviewCount} {L["EmployeeRatings:Reviews"]}"
+                                : L["EmployeeRatings:NoScore"].Value)
+                        </p>
+                    </div>
+                    @if (trust.ReviewCount > 0)
+                    {
+                        <p class="social-trust-dist-label">@L["EmployeeRatings:Distribution"]</p>
+                        <ul class="social-trust-bars">
+                            @foreach (var score in Enumerable.Range(1, 5).Reverse())
+                            {
+                                var count = TrustScoreCount(score);
+                                var percent = trust.ReviewCount == 0 ? 0 : (int)Math.Round(count * 100d / trust.ReviewCount);
+                                <li>
+                                    <span>@score ★</span>
+                                    <span class="social-trust-track" aria-hidden="true"><span style="width: @percent%"></span></span>
+                                    <span>@count</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    @if (isOtherProfile && canRate)
+                    {
+                        <div class="social-trust-rate">
+                            <span>@(ratedToday ? L["EmployeeRatings:YourScore"] : L["EmployeeRatings:RatePrompt"])</span>
+                            <div class="hcs-rating-stars" role="group" aria-label="@L["EmployeeRatings:RatePrompt"]" @onmouseleave="ClearRatingHover">
+                                @foreach (var score in Enumerable.Range(1, 5))
+                                {
+                                    var starScore = score;
+                                    var active = interactiveScore >= starScore;
+                                    <button type="button" class="hcs-rating-star @(active ? "is-active" : null)"
+                                            aria-label="@($"{L["EmployeeRatings:Rate"]} {starScore}/5")"
+                                            disabled="@(isSubmittingRating || ratedToday)"
+                                            @onmouseenter="() => SetRatingHover(starScore)"
+                                            @onclick="() => RateProfileAsync(starScore)">
+                                        <i class="@(active ? "fa-solid" : "fa-regular") fa-star" aria-hidden="true"></i>
+                                    </button>
+                                }
+                            </div>
+                            <small>@L["EmployeeRatings:OnePerDay"]</small>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -831,6 +940,104 @@
     private string routeStateKey = string.Empty;
     private string keywordFilter = string.Empty;
     private string hashtagFilter = string.Empty;
+    private Guid? profileUserId;
+    [Parameter] public Guid? ProfileUserId { get; set; }
+    private EmployeeRatingSummaryDto? ratingSummary;
+    private int? ratingHoverScore;
+    private bool canChat;
+    private bool canRate;
+    private bool canReadRatings;
+    private bool isSubmittingRating;
+    private bool isStartingChat;
+    private bool trustOpen;
+    private bool isOtherProfile => isProfile && profileUserId.HasValue && profileUserId != currentUserId;
+    private readonly List<SocialTagStatDto> topTags = [];
+    private readonly List<SocialTopAuthorDto> topAuthors = [];
+    private readonly List<SocialPersonDto> sidebarPeopleCache = [];
+    private readonly List<DepartmentCatalogDto> departments = [];
+    private readonly List<PositionCatalogDto> positions = [];
+    private Guid? peopleDepartmentId;
+    private Guid? peoplePositionId;
+    private int TrustPercent => ratingSummary is { ReviewCount: > 0 }
+        ? (int)Math.Round(ratingSummary.AverageScore / 5m * 100m, MidpointRounding.AwayFromZero)
+        : 0;
+    private int TrustStars => ratingSummary is { ReviewCount: > 0 }
+        ? Math.Clamp((int)Math.Round(ratingSummary.AverageScore, MidpointRounding.AwayFromZero), 0, 5)
+        : 0;
+    private string ProfilePageTitle => isOtherProfile && myProfile is { } person
+        ? person.DisplayName
+        : isProfile ? L["Social:ProfileTitle"].Value : L["Social:Title"].Value;
+
+    private static string SearchFilterPopClass(bool iconOnly) =>
+        iconOnly ? "filter-pop social-filter-pop is-icon" : "filter-pop social-filter-pop";
+
+    private RenderFragment SocialSearchFilter(string buttonClass, bool iconOnly = false) => @<HcsDismissible Class="@SearchFilterPopClass(iconOnly)" @bind-IsOpen="searchOpen">
+        <button class="@($"{buttonClass} {(searchOpen ? "is-open" : null)} {(HasSearchFilters() ? "is-filtered" : null)}")" type="button"
+                aria-expanded="@searchOpen.ToString().ToLowerInvariant()"
+                aria-controls="social-search-form" aria-label='@L["Catalog:Search"]' @onclick="ToggleSearchPanel">
+            @if (iconOnly)
+            {
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            }
+            else
+            {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+                @L["Catalog:Filter"]
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            }
+        </button>
+        <form id="social-search-form" class="docs-filter-pop @(searchOpen ? "is-open" : null)" hidden="@(!searchOpen)"
+              @onsubmit="ApplySearchAsync" @onsubmit:preventDefault>
+            <div class="vb-field-row">
+                <div class="filter-menu-field">
+                    <label class="field-label" for="social-search-scope">@L["Social:SearchScope"]</label>
+                    <select id="social-search-scope" class="select input" value="@(peopleSearchMode ? "people" : "posts")" @onchange="OnSearchScopeChanged">
+                        <option value="posts">@L["Social:SearchTitle"]</option>
+                        <option value="people">@L["Social:PeopleSearch"]</option>
+                    </select>
+                </div>
+                <div class="filter-menu-field">
+                    <label class="field-label" for="social-search-keyword">@(peopleSearchMode ? L["Social:PeopleSearch"] : L["Social:Keyword"])</label>
+                    <input id="social-search-keyword" class="input" @bind="keywordInput"
+                           placeholder='@(peopleSearchMode ? L["Social:PeopleSearchPlaceholder"] : L["Social:KeywordPlaceholder"])' autocomplete="off" />
+                </div>
+            </div>
+            @if (!peopleSearchMode)
+            {
+                <div class="vb-field-row">
+                    <div class="filter-menu-field">
+                        <label class="field-label" for="social-search-hashtag">@L["Social:Hashtag"]</label>
+                        <input id="social-search-hashtag" class="input" @bind="hashtagInput" placeholder="#hcs" autocomplete="off" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="vb-field-row">
+                    <div class="filter-menu-field">
+                        <label class="field-label">@L["Work:FilterDepartment"]</label>
+                        <CatalogSelect2 Value="peopleDepartmentId"
+                                        ValueChanged="value => peopleDepartmentId = value"
+                                        Placeholder="@L["Work:FilterDepartment"]"
+                                        SelectedText="@DepartmentSelectText(peopleDepartmentId)"
+                                        Search="SearchDepartmentsAsync" />
+                    </div>
+                    <div class="filter-menu-field">
+                        <label class="field-label">@L["Social:Position"]</label>
+                        <CatalogSelect2 Value="peoplePositionId"
+                                        ValueChanged="value => peoplePositionId = value"
+                                        Placeholder="@L["Social:Position"]"
+                                        SelectedText="@PositionSelectText(peoplePositionId)"
+                                        Search="SearchPositionsAsync" />
+                    </div>
+                </div>
+            }
+            <div class="docs-filter-actions">
+                <button class="btn btn-outline" type="button" @onclick="ClearSearchAsync" disabled="@(!HasSearchFilters() && !peopleSearchExecuted)">@L["Catalog:Reset"]</button>
+                <button class="btn btn-primary" type="submit">@L["Catalog:SearchButton"]</button>
+            </div>
+        </form>
+    </HcsDismissible>;
 
     protected override void OnInitialized()
     {
@@ -853,6 +1060,11 @@
         }
         currentDisplayName = authenticationState.User.FindFirst("name")?.Value
             ?? authenticationState.User.Identity?.Name ?? L["Auth:UserFallback"].Value;
+        canChat = await HasPermissionAsync(CollaborationPermissions.Chat);
+        canRate = await HasPermissionAsync("WorkManagement.EmployeeRatings");
+        canReadRatings = canRate
+            || await HasPermissionAsync("WorkManagement.EmployeeRatings.Management")
+            || await HasPermissionAsync("WorkManagement.EmployeeRatings.Dashboard");
         await ReloadForCurrentRouteAsync();
     }
 
@@ -875,6 +1087,7 @@
                 return;
 
             isProfile = route.IsProfile;
+            profileUserId = route.ProfileUserId;
             visibilityFilter = route.Visibility;
             selectedPostId = route.PostId;
             pendingScrollPostId = route.PostId;
@@ -883,6 +1096,7 @@
             keywordInput = keywordFilter;
             hashtagInput = hashtagFilter;
             searchOpen = searchOpen || !string.IsNullOrWhiteSpace(keywordFilter) || !string.IsNullOrWhiteSpace(hashtagFilter);
+            trustOpen = false;
             searchError = null;
             people.Clear();
             peopleSearchExecuted = false;
@@ -905,17 +1119,26 @@
         try
         {
             await LoadPersonalAvatarAsync();
+            var authorUserId = isOtherProfile ? profileUserId : null;
             var result = isProfile
                     ? await Social.GetProfilePostsAsync(visibility: visibilityFilter, keyword: keywordFilter,
-                    hashtag: hashtagFilter, postId: selectedPostId)
+                    hashtag: hashtagFilter, postId: selectedPostId, authorUserId: authorUserId)
                 : await Social.GetFeedAsync(keyword: keywordFilter, hashtag: hashtagFilter, postId: selectedPostId);
             posts.Clear();
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
+            ratingSummary = null;
+            ratingHoverScore = null;
             if (isProfile)
             {
-                try { myProfile = await Social.GetMyProfileAsync(); }
+                try
+                {
+                    myProfile = isOtherProfile && profileUserId is { } otherId
+                        ? await Social.GetProfileAsync(otherId)
+                        : await Social.GetMyProfileAsync();
+                }
                 catch { myProfile = null; }
+                await LoadRatingSummaryAsync();
             }
             else
             {
@@ -924,6 +1147,7 @@
             commentsByPost.Clear();
             commentTotalCounts.Clear();
             expandedPostIds.Clear();
+            await LoadDiscoverAsync();
             routeLoaded = true;
         }
         catch
@@ -961,7 +1185,7 @@
         {
             var result = isProfile
                 ? await Social.GetProfilePostsAsync(posts.Count, visibility: visibilityFilter, keyword: keywordFilter,
-                    hashtag: hashtagFilter, postId: selectedPostId)
+                    hashtag: hashtagFilter, postId: selectedPostId, authorUserId: isOtherProfile ? profileUserId : null)
                 : await Social.GetFeedAsync(posts.Count, keyword: keywordFilter, hashtag: hashtagFilter, postId: selectedPostId);
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
@@ -1118,6 +1342,211 @@
 
     private bool IsOwnComment(SocialCommentDto comment) => currentUserId == comment.AuthorUserId;
 
+    private async Task LoadDiscoverAsync()
+    {
+        topTags.Clear();
+        topAuthors.Clear();
+        var tagsFailed = false;
+        var authorsFailed = false;
+        try { topTags.AddRange(await Social.GetTopTagsAsync()); }
+        catch { tagsFailed = true; }
+        try { topAuthors.AddRange(await Social.GetTopAuthorsAsync()); }
+        catch { authorsFailed = true; }
+
+        if ((tagsFailed && topTags.Count == 0) || (authorsFailed && topAuthors.Count == 0))
+            await FillDiscoverFromPublicFeedAsync(fillTags: tagsFailed, fillAuthors: authorsFailed);
+    }
+
+    private async Task FillDiscoverFromPublicFeedAsync(bool fillTags, bool fillAuthors)
+    {
+        IReadOnlyList<SocialPostDto> sample;
+        try
+        {
+            sample = (await Social.GetFeedAsync(take: 50)).Items;
+        }
+        catch
+        {
+            return;
+        }
+
+        if (fillTags && topTags.Count == 0)
+        {
+            topTags.AddRange(sample
+                .SelectMany(post => SocialPostRules.ExtractHashtags(post.Text))
+                .GroupBy(tag => tag, StringComparer.OrdinalIgnoreCase)
+                .Select(group => new SocialTagStatDto(group.Key, group.Count()))
+                .OrderByDescending(item => item.Count)
+                .ThenBy(item => item.Tag)
+                .Take(10));
+        }
+
+        if (fillAuthors && topAuthors.Count == 0)
+        {
+            topAuthors.AddRange(sample
+                .GroupBy(post => post.AuthorUserId)
+                .Select(group => new SocialTopAuthorDto(
+                    group.Key,
+                    group.Select(post => post.AuthorName).LastOrDefault() ?? string.Empty,
+                    group.Count()))
+                .OrderByDescending(item => item.PostCount)
+                .ThenBy(item => item.DisplayName)
+                .Take(8));
+        }
+    }
+
+    private void OnSidebarPersonSelected(Guid? userId)
+    {
+        if (userId is { } id)
+            Navigation.NavigateTo(ProfileHref(id));
+    }
+
+    private async Task<CatalogSelect2SearchResponse> SearchSidebarPeopleSelectAsync(string term, int page)
+    {
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            return new(topAuthors.Select(author => new CatalogSelect2Item(
+                author.UserId.ToString(),
+                author.DisplayName,
+                string.Format(L["Social:PostCount"].Value, author.PostCount),
+                null,
+                Initials(author.DisplayName))).ToList(), false);
+        }
+
+        try
+        {
+            var found = await FindPeopleAsync(term, null, null, 20);
+            return CatalogSelect2Cache.Merge(sidebarPeopleCache, found, person => person.UserId,
+                person => person.DisplayName, more: found.Count >= 20, SidebarPersonItem);
+        }
+        catch
+        {
+            return new([], false);
+        }
+    }
+
+    private CatalogSelect2Item SidebarPersonItem(SocialPersonDto person) =>
+        new(person.UserId.ToString(), person.DisplayName,
+            person.DepartmentName ?? person.PositionName ?? person.UserName,
+            person.AvatarUrl, Initials(person.DisplayName));
+
+    private string ProfileHref(Guid userId) =>
+        currentUserId == userId ? "/social/profile" : $"/social/profile/{userId:D}";
+
+    private string TrustSummary() =>
+        ratingSummary is null || ratingSummary.ReviewCount == 0
+            ? L["EmployeeRatings:NoScore"]
+            : $"{L["Social:TrustRatio"]}: {TrustPercent}%, {ratingSummary.AverageScore:0.0}/5, {ratingSummary.ReviewCount} {L["EmployeeRatings:Reviews"]}";
+
+    private int TrustScoreCount(int score) =>
+        ratingSummary?.ScoreDistribution is { } distribution && distribution.TryGetValue(score, out var count)
+            ? count
+            : 0;
+
+    private void OpenTrustPopup() => trustOpen = true;
+
+    private void CloseTrustPopup()
+    {
+        trustOpen = false;
+        ratingHoverScore = ratingSummary?.MyTodayScore;
+    }
+
+    private async Task<bool> HasPermissionAsync(string permission)
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return (await AuthorizationService.AuthorizeAsync(state.User, null, permission)).Succeeded;
+    }
+
+    private static EmployeeRatingSummaryDto EmptyRatingSummary(Guid userId) =>
+        new(userId, 0, 0, Enumerable.Range(1, 5).ToDictionary(score => score, _ => 0));
+
+    private async Task LoadRatingSummaryAsync()
+    {
+        ratingSummary = null;
+        if (!canReadRatings || myProfile is null)
+            return;
+        try
+        {
+            var page = await Work.GetEmployeeRatingSummariesAsync(0, 1, userId: myProfile.UserId);
+            ratingSummary = page.Items.FirstOrDefault() ?? EmptyRatingSummary(myProfile.UserId);
+        }
+        catch
+        {
+            canReadRatings = false;
+            canRate = false;
+        }
+    }
+
+    private async Task StartChatAsync()
+    {
+        if (isStartingChat)
+            return;
+        if (!isOtherProfile)
+        {
+            Navigation.NavigateTo("/chat");
+            return;
+        }
+        if (profileUserId is not { } target)
+            return;
+        isStartingChat = true;
+        try
+        {
+            var created = await Chat.CreateConversationAsync(new CreateConversationInput
+            {
+                Type = ConversationType.User,
+                TargetUserId = target,
+                MemberUserIds = currentUserId is { } me ? [me, target] : [target]
+            });
+            Navigation.NavigateTo($"/chat/{created.Id:D}");
+        }
+        catch
+        {
+            await NotifyErrorAsync(L["Chat:LoadError"]);
+        }
+        finally
+        {
+            isStartingChat = false;
+        }
+    }
+
+    private async Task RateProfileAsync(int score)
+    {
+        if (!isOtherProfile || myProfile is null || ratingSummary is null
+            || isSubmittingRating || ratingSummary.MyTodayScore.HasValue)
+            return;
+        isSubmittingRating = true;
+        ratingHoverScore = score;
+        try
+        {
+            await Work.SubmitEmployeeRatingAsync(new SubmitEmployeeRatingRequest(myProfile.UserId, score));
+            await LoadRatingSummaryAsync();
+            await NotifySuccessAsync(L["EmployeeRatings:SaveSuccess"]);
+        }
+        catch (Exception exception)
+        {
+            if (exception is BffApiException { StatusCode: System.Net.HttpStatusCode.Conflict })
+                await NotifyErrorAsync(L["EmployeeRatings:AlreadyRatedToday"]);
+            else
+                await NotifyErrorAsync(exception, BffErrorKind.Save);
+        }
+        finally
+        {
+            isSubmittingRating = false;
+            ratingHoverScore = null;
+        }
+    }
+
+    private void SetRatingHover(int score)
+    {
+        if (ratingSummary?.MyTodayScore.HasValue == true) return;
+        ratingHoverScore = score;
+    }
+
+    private void ClearRatingHover()
+    {
+        if (ratingSummary?.MyTodayScore.HasValue == true) return;
+        ratingHoverScore = null;
+    }
+
     private void ClosePostMenu() => postMenuId = null;
 
     private void TogglePostMenu(Guid postId)
@@ -1213,7 +1642,7 @@
             await Social.DeletePostAsync(post.Id);
             if (selectedPostId == post.Id)
             {
-                Navigation.NavigateTo(isProfile ? "/social/profile" : "/social");
+                Navigation.NavigateTo(BuildViewUri(isProfile, visibilityFilter, keywordFilter, hashtagFilter));
                 return;
             }
 
@@ -1332,6 +1761,7 @@
         searchError = null;
         keywordFilter = keywordInput.Trim();
         hashtagFilter = hashtagInput.Trim();
+        searchOpen = false;
         var target = BuildViewUri(isProfile, visibilityFilter, keywordFilter, hashtagFilter);
         if (BuildRouteStateKey(target) == routeStateKey)
             await ReloadForCurrentRouteAsync(force: true);
@@ -1375,14 +1805,18 @@
         peopleSearchExecuted = true;
         peopleSearchError = null;
         people.Clear();
-        var search = keywordInput.Trim();
-        if (string.IsNullOrWhiteSpace(search))
+        if (!HasPeopleFilters())
+        {
+            peopleSearchError = L["Social:PeopleFilterHint"].Value;
             return;
+        }
 
         isSearchingPeople = true;
         try
         {
-            people.AddRange(await Social.SearchPeopleAsync(search, 30));
+            people.AddRange(await FindPeopleAsync(keywordInput, peopleDepartmentId, peoplePositionId, 30));
+            if (people.Count == 0)
+                peopleSearchError = null;
         }
         catch
         {
@@ -1391,7 +1825,55 @@
         finally
         {
             isSearchingPeople = false;
+            searchOpen = false;
         }
+    }
+
+    private async Task<IReadOnlyList<SocialPersonDto>> FindPeopleAsync(
+        string? query, Guid? departmentId, Guid? positionId, int take)
+    {
+        var search = query?.Trim() ?? string.Empty;
+        if (departmentId is { } department)
+        {
+            IReadOnlyList<SocialPersonDto> fromDepartment;
+            try
+            {
+                var members = await OrganizationUnits.GetMembersAsync(
+                    department, string.IsNullOrWhiteSpace(search) ? null : search, 0, Math.Clamp(take * 3, 8, 50));
+                fromDepartment = members.Items
+                    .Where(member => member.IsActive)
+                    .Select(member => new SocialPersonDto(
+                        member.Id,
+                        member.UserName,
+                        string.IsNullOrWhiteSpace(member.FullName) ? member.UserName : member.FullName,
+                        member.Email,
+                        null,
+                        null))
+                    .ToArray();
+                fromDepartment = await Social.AttachOrganizationAsync(fromDepartment);
+            }
+            catch
+            {
+                fromDepartment = string.IsNullOrWhiteSpace(search)
+                    ? []
+                    : await Social.SearchPeopleAsync(search, take);
+                fromDepartment = fromDepartment
+                    .Where(person => person.DepartmentId == department)
+                    .ToArray();
+            }
+
+            if (positionId is { } departmentPosition)
+                fromDepartment = fromDepartment.Where(person => person.PositionId == departmentPosition).ToArray();
+            return fromDepartment.Take(take).ToArray();
+        }
+
+        if (string.IsNullOrWhiteSpace(search))
+            return [];
+
+        var found = await Social.SearchPeopleAsync(search, take);
+        if (positionId is { } onlyPosition)
+            found = found.Where(person => person.PositionId == onlyPosition).ToArray();
+        return found;
     }
 
     private async Task ClearSearchAsync()
@@ -1400,7 +1882,18 @@
         hashtagInput = string.Empty;
         keywordFilter = string.Empty;
         hashtagFilter = string.Empty;
+        peopleDepartmentId = null;
+        peoplePositionId = null;
+        people.Clear();
+        peopleSearchExecuted = false;
+        peopleSearchError = null;
         searchError = null;
+        if (peopleSearchMode)
+        {
+            searchOpen = false;
+            return;
+        }
+
         var target = BuildViewUri(isProfile, visibilityFilter, keywordFilter, hashtagFilter);
         if (BuildRouteStateKey(target) == routeStateKey)
             await ReloadForCurrentRouteAsync(force: true);
@@ -1408,24 +1901,57 @@
             Navigation.NavigateTo(target);
     }
 
-    private bool HasSearchFilters() => !string.IsNullOrWhiteSpace(keywordInput) ||
-        !string.IsNullOrWhiteSpace(hashtagInput);
+    private bool HasSearchFilters() =>
+        !string.IsNullOrWhiteSpace(keywordInput)
+        || !string.IsNullOrWhiteSpace(hashtagInput)
+        || peopleDepartmentId.HasValue
+        || peoplePositionId.HasValue;
+
+    private bool HasPeopleFilters() =>
+        !string.IsNullOrWhiteSpace(keywordInput) || peopleDepartmentId.HasValue || peoplePositionId.HasValue;
+
+    private void OnSearchScopeChanged(ChangeEventArgs args) =>
+        SelectSearchMode(string.Equals(args.Value as string, "people", StringComparison.Ordinal));
+
+    private string DepartmentSelectText(Guid? id) =>
+        CatalogSelect2Cache.TextFor(departments, id, x => x.Id, OrganizationUnitCatalogMapper.DisplayText);
+
+    private string PositionSelectText(Guid? id) =>
+        CatalogSelect2Cache.TextFor(positions, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
+
+    private async Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
+    {
+        var skip = Math.Max(page - 1, 0) * 20;
+        var result = await OrganizationUnits.SearchDepartmentsAsync(term, skip, 20);
+        return CatalogSelect2Cache.Merge(departments, result.Items, x => x.Id,
+            OrganizationUnitCatalogMapper.DisplayText, more: skip + result.Items.Count < result.TotalCount);
+    }
+
+    private async Task<CatalogSelect2SearchResponse> SearchPositionsAsync(string term, int page)
+    {
+        var skip = Math.Max(page - 1, 0) * 20;
+        var result = await Organization.GetPositionsAsync(new OrganizationCatalogQuery(term, true, skip, 20));
+        return CatalogSelect2Cache.Merge(positions, result.Items, x => x.Id,
+            x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
+    }
 
     private bool IsVisibilitySelected(SocialPostVisibility? selectedVisibility) => visibilityFilter == selectedVisibility;
 
-    private (bool IsProfile, SocialPostVisibility? Visibility, Guid? PostId, string Keyword,
+    private (bool IsProfile, Guid? ProfileUserId, SocialPostVisibility? Visibility, Guid? PostId, string Keyword,
         string Hashtag, string Key) ReadRouteState()
     {
         var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
         var queryStart = relative.IndexOf('?');
         var path = (queryStart >= 0 ? relative[..queryStart] : relative).Trim('/');
-        var isCurrentProfile = path.EndsWith("social/profile", StringComparison.OrdinalIgnoreCase);
+        var routeProfileUserId = ReadProfileUserId(path);
+        var isCurrentProfile = path.Equals("social/profile", StringComparison.OrdinalIgnoreCase)
+            || routeProfileUserId.HasValue;
         var selectedVisibility = isCurrentProfile ? ReadVisibility(relative, queryStart) : SocialPostVisibility.Public;
         var postId = ReadGuid(ReadQueryValue(relative, queryStart, "post"));
         var keyword = ReadQueryValue(relative, queryStart, "keyword") ?? string.Empty;
         var hashtag = ReadQueryValue(relative, queryStart, "hashtag") ?? string.Empty;
-        return (isCurrentProfile, selectedVisibility, postId, keyword, hashtag,
-            BuildRouteStateKey(isCurrentProfile, selectedVisibility, keyword, hashtag: hashtag, postId: postId));
+        return (isCurrentProfile, routeProfileUserId, selectedVisibility, postId, keyword, hashtag,
+            BuildRouteStateKey(isCurrentProfile, routeProfileUserId, selectedVisibility, keyword, hashtag: hashtag, postId: postId));
     }
 
     private static SocialPostVisibility? ReadVisibility(string relative, int queryStart)
@@ -1453,28 +1979,40 @@
         return null;
     }
 
-    private static string BuildRouteStateKey(bool profile, SocialPostVisibility? selectedVisibility,
+    private static Guid? ReadProfileUserId(string path)
+    {
+        const string prefix = "social/profile/";
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return null;
+        return Guid.TryParse(path[prefix.Length..].Trim('/'), out var id) ? id : null;
+    }
+
+    private static string BuildRouteStateKey(bool profile, Guid? routeProfileUserId, SocialPostVisibility? selectedVisibility,
         string keyword = "", string hashtag = "", Guid? postId = null) =>
-        $"{(profile ? "profile" : "feed")}:{selectedVisibility?.ToString() ?? "all"}|post={postId}|q={keyword}|tag={hashtag}";
+        $"{(profile ? $"profile:{routeProfileUserId}" : "feed")}:{selectedVisibility?.ToString() ?? "all"}|post={postId}|q={keyword}|tag={hashtag}";
 
     private static string BuildRouteStateKey(string target)
     {
         var queryStart = target.IndexOf('?');
         var path = (queryStart >= 0 ? target[..queryStart] : target).Trim('/');
-        var isTargetProfile = path.Equals("social/profile", StringComparison.OrdinalIgnoreCase);
+        var routeProfileUserId = ReadProfileUserId(path);
+        var isTargetProfile = path.Equals("social/profile", StringComparison.OrdinalIgnoreCase)
+            || routeProfileUserId.HasValue;
         SocialPostVisibility? selectedVisibility = isTargetProfile ? ReadVisibility(target, queryStart) : SocialPostVisibility.Public;
         var postId = ReadGuid(ReadQueryValue(target, queryStart, "post"));
-        return BuildRouteStateKey(isTargetProfile, selectedVisibility,
+        return BuildRouteStateKey(isTargetProfile, routeProfileUserId, selectedVisibility,
             ReadQueryValue(target, queryStart, "keyword") ?? string.Empty,
             ReadQueryValue(target, queryStart, "hashtag") ?? string.Empty, postId);
     }
 
-    private static string BuildViewUri(bool profile, SocialPostVisibility? selectedVisibility,
+    private string BuildViewUri(bool profile, SocialPostVisibility? selectedVisibility,
         string? keyword = null, string? hashtag = null, Guid? postId = null)
     {
-        var uri = profile
-            ? "/social/profile"
-            : "/social";
+        var uri = !profile
+            ? "/social"
+            : isOtherProfile && profileUserId is { } id
+                ? $"/social/profile/{id:D}"
+                : "/social/profile";
         if (profile && selectedVisibility.HasValue)
             uri += $"?visibility={selectedVisibility.Value.ToString().ToLowerInvariant()}";
 
@@ -1713,7 +2251,7 @@
         var comments = commentsByPost.GetValueOrDefault(post.Id, []);
         replyingToCommentId = ThreadRootId(comment, comments);
         replyingToName = comment.AuthorName;
-        commentDraft = string.Empty;
+        commentDraft = $"@{comment.AuthorName} ";
     }
 
     private void CancelReply()
@@ -1723,6 +2261,18 @@
         replyingToName = null;
         commentDraft = string.Empty;
     }
+
+    private string? ReplyTargetName(SocialPostDto post, SocialCommentDto comment)
+    {
+        if (comment.ParentCommentId is not { } parentId)
+            return null;
+        return commentsByPost.GetValueOrDefault(post.Id, [])
+            .FirstOrDefault(item => item.Id == parentId)?.AuthorName;
+    }
+
+    private static bool CommentStartsWithMention(string? text, string name) =>
+        !string.IsNullOrWhiteSpace(text)
+        && text.TrimStart().StartsWith("@" + name, StringComparison.OrdinalIgnoreCase);
 
     private void OpenImagePreview(string url, string? name)
     {
@@ -1778,9 +2328,19 @@
         <div class="comment-main">
             <div class="comment-bubble">
                 <strong>@comment.AuthorName</strong>
-                @if (!string.IsNullOrWhiteSpace(comment.Text))
+                @if (isReply || !string.IsNullOrWhiteSpace(comment.Text))
                 {
-                    <p>@comment.Text</p>
+                    var mention = isReply ? ReplyTargetName(post, comment) : null;
+                    <p>
+                        @if (!string.IsNullOrWhiteSpace(mention) && !CommentStartsWithMention(comment.Text, mention))
+                        {
+                            <strong class="comment-mention">@@@mention</strong>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(comment.Text))
+                        {
+                            @comment.Text
+                        }
+                    </p>
                 }
                 @if (comment.Attachments.Count > 0)
                 {

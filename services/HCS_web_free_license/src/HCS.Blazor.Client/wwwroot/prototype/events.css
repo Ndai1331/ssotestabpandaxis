@@ -865,6 +865,35 @@ a.event-name:hover {
 .cal-type-dot.is-task { background: #38BDF8; }
 .cal-type-dot.is-event { background: var(--color-primary); }
 
+.hcs-catalog-modal .hcs-cal-people-toolbar,
+.page-cal .hcs-cal-people-toolbar,
+.page-vb .hcs-cal-people-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hcs-catalog-modal .hcs-cal-people-toolbar .form-control,
+.page-cal .hcs-cal-people-toolbar .form-control,
+.page-vb .hcs-cal-people-toolbar .form-control {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.hcs-catalog-modal .hcs-cal-people-select-all,
+.page-cal .hcs-cal-people-select-all,
+.page-vb .hcs-cal-people-select-all {
+  align-items: center;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+  margin: 0;
+  white-space: nowrap;
+}
+
 .hcs-catalog-modal .hcs-cal-people,
 .page-cal .hcs-cal-people,
 .page-vb .hcs-cal-people {

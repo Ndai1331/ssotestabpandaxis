@@ -40,6 +40,17 @@ public sealed class SocialPeopleController(
         if (currentUser.Id is not { } userId)
             return Unauthorized();
 
+        return await LoadProfileAsync(userId, cancellationToken);
+    }
+
+    [HttpGet("social-profile/{userId:guid}")]
+    public Task<ActionResult<SocialPersonDto>> GetProfileByIdAsync(
+        Guid userId, CancellationToken cancellationToken = default) =>
+        LoadProfileAsync(userId, cancellationToken);
+
+    private async Task<ActionResult<SocialPersonDto>> LoadProfileAsync(
+        Guid userId, CancellationToken cancellationToken)
+    {
         var user = await identityUsers.FindAsync(userId, includeDetails: false, cancellationToken: cancellationToken);
         if (user is null || !user.IsActive)
             return NotFound();

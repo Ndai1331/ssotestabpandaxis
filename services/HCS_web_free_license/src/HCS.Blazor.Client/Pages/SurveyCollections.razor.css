@@ -1,6 +1,11 @@
+.hcs-public-survey .hcs-empty {
+    text-align: center;
+}
+
 .hcs-star-rating {
     display: flex;
     gap: .2rem;
+    justify-content: center;
 }
 
 .hcs-star-rating button {
@@ -17,7 +22,19 @@
 }
 
 .hcs-public-survey__header {
-    align-items: flex-start;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 .25rem;
+    text-align: center;
+}
+
+.hcs-public-survey__header h1 {
+    color: var(--hcs-color-heading, var(--color-primary));
+    font-size: clamp(1.55rem, 2.4vw, 2rem);
+    font-weight: 800;
+    line-height: 1.2;
+    margin: .15rem 0 0;
 }
 
 .hcs-public-survey__eyebrow {
@@ -25,12 +42,21 @@
     font-size: .75rem;
     font-weight: 700;
     letter-spacing: .12em;
+    margin: 0;
     text-transform: uppercase;
+}
+
+.hcs-public-survey__description {
+    color: #5b7285;
+    margin: .45rem 0 0;
+    max-width: 36rem;
 }
 
 .hcs-public-survey__intro {
     color: #355770;
-    margin: 1.5rem 0 1rem;
+    margin: 1.25rem auto 1.15rem;
+    max-width: 36rem;
+    text-align: center;
 }
 
 .hcs-public-survey__criteria-grid {
@@ -128,11 +154,13 @@
 
 .hcs-public-survey__dialog {
     background: #fff;
-    border-radius: .75rem;
+    border-radius: 16px;
     box-shadow: 0 1rem 3rem rgba(0, 0, 0, .2);
+    display: flex;
+    flex-direction: column;
     max-height: calc(100dvh - 2rem);
     max-width: 760px;
-    overflow: auto;
+    overflow: hidden;
     width: 100%;
 }
 
@@ -146,6 +174,7 @@
 
 .hcs-public-survey__dialog-header {
     border-bottom: 1px solid #e5edf2;
+    border-radius: 16px 16px 0 0;
 }
 
 .hcs-public-survey__dialog-header h2 {
@@ -155,10 +184,12 @@
 }
 
 .hcs-public-survey__dialog-body {
+    overflow: auto;
     padding: 1.25rem;
 }
 
 .hcs-public-survey__dialog-footer {
+    border-radius: 0 0 16px 16px;
     border-top: 1px solid #e5edf2;
     gap: .75rem;
     justify-content: flex-end;

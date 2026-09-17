@@ -1,0 +1,15 @@
+.hcs-survey-criteria-preview {
+    background: #f5f8fa;
+    border: 1px solid var(--color-border, #e5edf2);
+    border-radius: .65rem;
+    height: 120px;
+    margin-bottom: .5rem;
+    overflow: hidden;
+    width: 120px;
+}
+
+.hcs-survey-criteria-preview img {
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+}

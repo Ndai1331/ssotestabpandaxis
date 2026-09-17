@@ -5,14 +5,73 @@ using Microsoft.Extensions.Logging;
 
 namespace HCS.DocumentService.Signing;
 
-public sealed class SigningKpiReportService(DocumentServiceDbContext db, ILogger<SigningKpiReportService> logger) : ISigningKpiReportService
+public sealed class SigningKpiReportService(
+    DocumentServiceDbContext db,
+    ILegacySqlServerKpiReader legacyReader,
+    ILogger<SigningKpiReportService> logger) : ISigningKpiReportService
 {
-    private const string Source = "HCS";
+    private const string HcsSource = "QLDH_PGSQL";
 
     public async Task<SigningKpiReportDto> GetAsync(GetSigningKpiInput input,
         CancellationToken cancellationToken = default)
     {
         Validate(input);
+        var hcsTask = LoadHcsAsync(input, cancellationToken);
+        var legacyTask = legacyReader.GetAsync(input, cancellationToken);
+        await Task.WhenAll(hcsTask, legacyTask);
+
+        var hcs = await hcsTask;
+        var legacy = await legacyTask;
+        var combined = SigningKpiReportCalculator.Merge(
+            legacy.Available ? legacy.Overall : new SigningKpiMetricsDto(),
+            hcs.Available ? hcs.Overall : new SigningKpiMetricsDto());
+
+        var groups = new List<SigningKpiGroupRowDto>();
+        if (legacy.Available) groups.AddRange(legacy.Groups);
+        if (hcs.Available) groups.AddRange(hcs.Groups);
+        groups.Add(new SigningKpiGroupRowDto
+        {
+            Source = "Tổng hợp",
+            GroupCode = "Tất cả",
+            GroupName = "Tổng hợp",
+            Metrics = combined
+        });
+
+        return new SigningKpiReportDto
+        {
+            Combined = combined,
+            Legacy = legacy.Available ? legacy.Overall : new SigningKpiMetricsDto(),
+            Hcs = hcs.Available ? hcs.Overall : new SigningKpiMetricsDto(),
+            Groups = groups,
+            PieSlices = SigningKpiReportCalculator.BuildPie(combined),
+            LegacyAvailable = legacy.Available,
+            LegacyError = legacy.Error,
+            HcsAvailable = hcs.Available,
+            HcsError = hcs.Error
+        };
+    }
+
+    public async Task<IReadOnlyList<SigningKpiDetailRowDto>> GetDetailsAsync(GetSigningKpiInput input,
+        CancellationToken cancellationToken = default)
+    {
+        Validate(input);
+        var hcsTask = LoadRowsAsync(input, 10_000, cancellationToken);
+        var legacyTask = legacyReader.GetDetailRowsAsync(input, 10_000, cancellationToken);
+        await Task.WhenAll(hcsTask, legacyTask);
+
+        var rows = new List<SigningKpiDetailRowDto>();
+        var legacy = await legacyTask;
+        if (legacy.Available) rows.AddRange(legacy.Rows);
+        rows.AddRange(await hcsTask);
+        return rows
+            .OrderByDescending(x => x.SubmittedAt ?? DateTime.MinValue)
+            .ThenBy(x => x.Source)
+            .ToList();
+    }
+
+    private async Task<SigningKpiSourceResult> LoadHcsAsync(GetSigningKpiInput input,
+        CancellationToken cancellationToken)
+    {
         try
         {
             var rows = await LoadRowsAsync(input, null, cancellationToken);
@@ -21,45 +80,28 @@ public sealed class SigningKpiReportService(DocumentServiceDbContext db, ILogger
                 .OrderBy(x => x.Key.GroupName)
                 .Select(x => new SigningKpiGroupRowDto
                 {
-                    Source = Source,
+                    Source = HcsSource,
                     GroupCode = x.Key.GroupCode,
                     GroupName = x.Key.GroupName,
                     Metrics = SigningKpiReportCalculator.Calculate(x.ToList())
                 }).ToList();
 
-            groups.Add(new SigningKpiGroupRowDto
+            return new SigningKpiSourceResult
             {
-                Source = "Combined",
-                GroupCode = Source,
-                GroupName = "Tất cả quy trình trình ký",
-                Metrics = metrics
-            });
-
-            return new SigningKpiReportDto
-            {
-                Combined = metrics,
-                Hcs = metrics,
-                Groups = groups,
-                PieSlices = SigningKpiReportCalculator.BuildPie(metrics),
-                HcsAvailable = true
+                Available = true,
+                Overall = metrics,
+                Groups = groups
             };
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             logger.LogWarning(exception, "HCS signing KPI query failed");
-            return new SigningKpiReportDto
+            return new SigningKpiSourceResult
             {
-                HcsAvailable = false,
-                HcsError = "Không thể đọc dữ liệu KPI ký số. Hãy kiểm tra kết nối Document service."
+                Available = false,
+                Error = "Không thể đọc dữ liệu KPI ký số. Hãy kiểm tra kết nối Document service."
             };
         }
-    }
-
-    public async Task<IReadOnlyList<SigningKpiDetailRowDto>> GetDetailsAsync(GetSigningKpiInput input,
-        CancellationToken cancellationToken = default)
-    {
-        Validate(input);
-        return await LoadRowsAsync(input, 10_000, cancellationToken);
     }
 
     private async Task<List<SigningKpiDetailRowDto>> LoadRowsAsync(GetSigningKpiInput input, int? maxRows,
@@ -116,7 +158,7 @@ public sealed class SigningKpiReportService(DocumentServiceDbContext db, ILogger
 
             rows.Add(new SigningKpiDetailRowDto
             {
-                Source = Source,
+                Source = HcsSource,
                 Code = document.Number,
                 Title = document.Title,
                 GroupCode = groupCode,
@@ -152,35 +194,76 @@ internal static class SigningKpiReportCalculator
 {
     public static SigningKpiMetricsDto Calculate(IReadOnlyCollection<SigningKpiDetailRowDto> rows)
     {
-        var completed = rows.Where(x => x.StatusCode == nameof(WorkflowInstanceStatus.Completed)).ToList();
+        var completed = rows.Where(x => x.StatusCode is nameof(WorkflowInstanceStatus.Completed) or "COMPLETED").ToList();
         var hours = completed.Where(x => x.ProcessingHours is >= 0).Select(x => x.ProcessingHours!.Value).ToList();
         var metrics = new SigningKpiMetricsDto
         {
             TotalCount = rows.Count,
-            InProgressCount = rows.Count(x => x.StatusCode is nameof(WorkflowInstanceStatus.Running) or nameof(WorkflowInstanceStatus.Returned)),
+            InProgressCount = rows.Count(x => x.StatusCode is nameof(WorkflowInstanceStatus.Running)
+                or nameof(WorkflowInstanceStatus.Returned) or "IN_PROGRESS"),
+            NewCount = rows.Count(x => x.StatusCode == "NEW"),
             CompletedCount = completed.Count,
-            RejectedCount = rows.Count(x => x.StatusCode == nameof(WorkflowInstanceStatus.Rejected)),
-            CancelledCount = rows.Count(x => x.StatusCode == nameof(WorkflowInstanceStatus.Cancelled)),
+            RejectedCount = rows.Count(x => x.StatusCode is nameof(WorkflowInstanceStatus.Rejected) or "REJECTED"),
+            CancelledCount = rows.Count(x => x.StatusCode is nameof(WorkflowInstanceStatus.Cancelled) or "CANCELLED"),
             AverageProcessingHours = hours.Count == 0 ? null : Math.Round(hours.Average(), 2),
             OnTimeCount = completed.Count(x => x.IsOnTime == true),
             LateCount = completed.Count(x => x.IsOnTime == false),
             CompletedWithDeadlineCount = completed.Count(x => x.DeadlineAt.HasValue)
         };
-
-        metrics.OnTimeRatePercent = Percent(metrics.OnTimeCount, metrics.CompletedWithDeadlineCount);
-        metrics.CompletedRatePercent = Percent(metrics.CompletedCount, metrics.TotalCount);
-        metrics.InProgressRatePercent = Percent(metrics.ProcessingIncludingNewCount, metrics.TotalCount);
-        metrics.RejectedRatePercent = Percent(metrics.RejectedCount, metrics.TotalCount);
-        metrics.CancelledRatePercent = Percent(metrics.CancelledCount, metrics.TotalCount);
+        FinalizeRates(metrics);
         return metrics;
+    }
+
+    public static SigningKpiMetricsDto Merge(SigningKpiMetricsDto a, SigningKpiMetricsDto b)
+    {
+        var merged = new SigningKpiMetricsDto
+        {
+            TotalCount = a.TotalCount + b.TotalCount,
+            NewCount = a.NewCount + b.NewCount,
+            InProgressCount = a.InProgressCount + b.InProgressCount,
+            CompletedCount = a.CompletedCount + b.CompletedCount,
+            RejectedCount = a.RejectedCount + b.RejectedCount,
+            CancelledCount = a.CancelledCount + b.CancelledCount,
+            OnTimeCount = a.OnTimeCount + b.OnTimeCount,
+            LateCount = a.LateCount + b.LateCount,
+            CompletedWithDeadlineCount = a.CompletedWithDeadlineCount + b.CompletedWithDeadlineCount
+        };
+
+        double weightedSum = 0;
+        long weightedCount = 0;
+        if (a.AverageProcessingHours.HasValue && a.CompletedCount > 0)
+        {
+            weightedSum += a.AverageProcessingHours.Value * a.CompletedCount;
+            weightedCount += a.CompletedCount;
+        }
+        if (b.AverageProcessingHours.HasValue && b.CompletedCount > 0)
+        {
+            weightedSum += b.AverageProcessingHours.Value * b.CompletedCount;
+            weightedCount += b.CompletedCount;
+        }
+
+        merged.AverageProcessingHours = weightedCount == 0 ? null : weightedSum / weightedCount;
+        FinalizeRates(merged);
+        return merged;
+    }
+
+    public static void FinalizeRates(SigningKpiMetricsDto dto)
+    {
+        dto.OnTimeRatePercent = Percent(dto.OnTimeCount, dto.CompletedWithDeadlineCount);
+        dto.CompletedRatePercent = Percent(dto.CompletedCount, dto.TotalCount);
+        dto.InProgressRatePercent = Percent(dto.ProcessingIncludingNewCount, dto.TotalCount);
+        dto.RejectedRatePercent = Percent(dto.RejectedCount, dto.TotalCount);
+        dto.CancelledRatePercent = Percent(dto.CancelledCount, dto.TotalCount);
+        if (dto.AverageProcessingHours.HasValue)
+            dto.AverageProcessingHours = Math.Round(dto.AverageProcessingHours.Value, 2);
     }
 
     public static List<SigningKpiPieSliceDto> BuildPie(SigningKpiMetricsDto metrics) => new List<SigningKpiPieSliceDto>
     {
-        new() { Label = "Đang xử lý", Value = metrics.ProcessingIncludingNewCount, Color = "#3498db" },
-        new() { Label = "Đã hoàn tất", Value = metrics.CompletedCount, Color = "#2ecc71" },
-        new() { Label = "Từ chối", Value = metrics.RejectedCount, Color = "#e74c3c" },
-        new() { Label = "Đã hủy", Value = metrics.CancelledCount, Color = "#9333ea" }
+        new() { Label = "Đã phê duyệt", Value = metrics.CompletedCount, Color = "#1D9E75" },
+        new() { Label = "Từ chối", Value = metrics.RejectedCount, Color = "#DC2626" },
+        new() { Label = "Hủy", Value = metrics.CancelledCount, Color = "#9333EA" },
+        new() { Label = "Đang xử lý", Value = metrics.ProcessingIncludingNewCount, Color = "#2563EB" }
     }.Where(x => x.Value > 0).ToList();
 
     public static string StatusLabel(WorkflowInstanceStatus status) => status switch

@@ -4,7 +4,6 @@
 @using System.Globalization
 @inject WorkManagementClient Work
 @inject OrganizationCatalogClient Catalog
-@inject CollaborationClient Chat
 
 <PageTitle>@L["Menu:CalendarEvents"] · HCS</PageTitle>
 <section class="page page-wf page-cal" aria-labelledby="calendar-title">
@@ -139,22 +138,13 @@
                                 Search="SearchRelatedAsync" />
             </Field>
         }
-        <Field>
-            <FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
-            @if (contacts.Count == 0)
-            {
-                <p class="hcs-form-note mb-0">@L["Catalog:EmptyTitle"]</p>
-            }
-            else
-            {
-                <div class="hcs-cal-people">
-                    @foreach (var contact in contacts)
-                    {
-                        <Check TValue="bool" Value="form.Participants.Contains(contact.Id)" ValueChanged="@((bool value) => Toggle(contact.Id, value))">@contact.DisplayName</Check>
-                    }
-                </div>
-            }
-        </Field>
+        @if (form.Visibility == "Participants")
+        {
+            <Field>
+                <FieldLabel>@L["Chat:SelectContacts"]</FieldLabel>
+                <CalendarParticipantPicker @key="form" Selected="form.Participants" />
+            </Field>
+        }
         </div>
     </ModalBody>
     <ModalFooter Class="hcs-catalog-modal__footer">
@@ -172,7 +162,6 @@
     private HcsCalendar? calendar;
     private readonly List<CalendarEventDto> events = [];
     private readonly List<MasterDataCatalogDto> eventTypes = [];
-    private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
     private EventForm form = new();
     private Modal? modal;
     private ProjectTaskViewModal? taskModal;
@@ -215,7 +204,6 @@
                 var page = await Catalog.GetMasterDataAsync("EventType", new OrganizationCatalogQuery(null, true, 0, 100));
                 eventTypes.AddRange(page.Items);
             }
-            if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
@@ -275,12 +263,12 @@
         if (!string.Equals(form.RelatedType, value, StringComparison.Ordinal)) form.RelatedId = null;
         form.RelatedType = value;
     }
-    private void Toggle(Guid id, bool selected) { if (selected) form.Participants.Add(id); else form.Participants.Remove(id); }
     private async Task CreateAsync()
     {
         try
         {
-            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, string.IsNullOrWhiteSpace(form.Location) ? null : form.Location.Trim(), form.RelatedType, form.RelatedId?.ToString(), form.Visibility, form.Participants.ToList()));
+            var participants = form.Visibility == "Participants" ? form.Participants.ToList() : [];
+            await Work.CreateCalendarEventAsync(new UpsertCalendarEventRequest(form.Title.Trim(), string.IsNullOrWhiteSpace(form.Description) ? null : form.Description, form.Start, form.End, false, form.EventType, string.IsNullOrWhiteSpace(form.Location) ? null : form.Location.Trim(), form.RelatedType, form.RelatedId?.ToString(), form.Visibility, participants));
             if (modal is not null) await modal.Hide();
             await LoadEventsAsync();
         }

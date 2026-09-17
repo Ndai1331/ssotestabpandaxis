@@ -29,6 +29,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (IsPublicSurveyRoute)
+        {
+            isChecking = false;
+            return;
+        }
+
         try
         {
             var authenticationState = await AuthenticationStateProvider.RefreshAsync();

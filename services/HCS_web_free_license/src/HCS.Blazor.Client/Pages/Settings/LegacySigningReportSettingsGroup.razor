@@ -1,0 +1,148 @@
+@using HCS.Blazor.Client.Settings
+@using HCS.Settings
+@inherits HCSComponentBase
+@inject LegacySigningReportSettingsClient SettingsClient
+
+<section class="hcs-branding-settings" aria-labelledby="hcs-legacy-sql-settings-title" aria-busy="@(isLoading || isBusy ? "true" : "false")">
+    <header class="hcs-branding-settings__header">
+        <div>
+            <p class="hcs-branding-settings__eyebrow">@L["Settings:LegacySqlEyebrow"]</p>
+            <h2 id="hcs-legacy-sql-settings-title">@L["Settings:LegacySqlGroup"]</h2>
+            <p>@L["Settings:LegacySqlDescription"]</p>
+        </div>
+        <i class="fa fa-database hcs-branding-settings__icon" aria-hidden="true"></i>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="hcs-branding-settings__state" role="status" aria-live="polite">
+            <HcsLoadingIcon />
+            <span>@L["Settings:LegacySqlLoading"]</span>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="hcs-branding-settings__error" role="alert">
+                <span>@errorMessage</span>
+                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isBusy">
+                    @L["Settings:BrandingRetry"]
+                </Button>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(statusMessage))
+        {
+            <p class="hcs-branding-settings__status" role="status">@statusMessage</p>
+        }
+
+        <Field>
+            <FieldLabel>@L["Settings:LegacySqlConnectionString"]</FieldLabel>
+            <textarea class="form-control" rows="4" @bind="connectionString" placeholder="@SampleConnection"></textarea>
+            <FieldHelp>@L["Settings:LegacySqlConnectionHint"]</FieldHelp>
+        </Field>
+
+        <footer class="hcs-branding-settings__footer">
+            <span class="hcs-branding-settings__status" role="status" aria-live="polite">
+                @(hasConnectionString ? L["Settings:LegacySqlConfigured"] : L["Settings:LegacySqlNotConfigured"])
+            </span>
+            <div class="d-flex gap-2">
+                <Button Color="Color.Secondary" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
+                    @L["Settings:LegacySqlTest"]
+                </Button>
+                <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isBusy" Disabled="@isBusy">
+                    <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
+                    @L["Settings:LegacySqlSave"]
+                </Button>
+            </div>
+        </footer>
+    }
+</section>
+
+@code {
+    private const string SampleConnection =
+        "Server=192.168.6.3,1433;Database=LVT_QLDH;User Id=sa;Password=***;Encrypt=False;TrustServerCertificate=True;Connection Timeout=30;";
+
+    private bool isLoading = true;
+    private bool isBusy;
+    private bool hasConnectionString;
+    private string connectionString = string.Empty;
+    private string? errorMessage;
+    private string? statusMessage;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        statusMessage = null;
+        try
+        {
+            var settings = await SettingsClient.GetAsync();
+            hasConnectionString = settings.HasConnectionString;
+            connectionString = settings.ConnectionString ?? string.Empty;
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task TestAsync()
+    {
+        if (isBusy) return;
+        isBusy = true;
+        errorMessage = null;
+        statusMessage = null;
+        try
+        {
+            var result = await SettingsClient.TestAsync(new UpdateLegacySigningReportSettingsDto
+            {
+                ConnectionString = connectionString
+            });
+            if (result.Success)
+                await NotifySuccessAsync(result.Message ?? L["Settings:LegacySqlTestOk"]);
+            else
+                errorMessage = result.Message ?? L["Settings:LegacySqlTestFailed"];
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (isBusy) return;
+        isBusy = true;
+        errorMessage = null;
+        statusMessage = null;
+        try
+        {
+            await SettingsClient.UpdateAsync(new UpdateLegacySigningReportSettingsDto
+            {
+                ConnectionString = connectionString
+            });
+            hasConnectionString = !string.IsNullOrWhiteSpace(connectionString);
+            await NotifySuccessAsync(L["Settings:LegacySqlSaved"]);
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception, BffErrorKind.Save);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

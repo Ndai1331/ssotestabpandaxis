@@ -1,3 +1,4 @@
+@page "/employee-ratings/results/dashboard"
 @page "/administration/employee-ratings-dashboard"
 @attribute [Authorize(Policy = "WorkManagement.EmployeeRatings.Dashboard")]
 @using HCS.Blazor.Client.Components.Charts
@@ -5,13 +6,13 @@
 @inject WorkManagementClient Work
 @inject EmployeeRatingDirectoryService Directory
 
-<PageTitle>@L["Feature:EmployeeRatingDashboard"] · HCS</PageTitle>
+<PageTitle>@L["Menu:EmployeeRatingResults"] · HCS</PageTitle>
 
 <section class="hcs-rating-page" aria-labelledby="employee-rating-dashboard-title">
     <header class="hcs-rating-page__header">
         <div>
             <p class="hcs-rating-page__kicker">@L["Menu:Social"]</p>
-            <h1 id="employee-rating-dashboard-title">@L["Feature:EmployeeRatingDashboard"]</h1>
+            <h1 id="employee-rating-dashboard-title">@L["Menu:EmployeeRatingResults"]</h1>
             <p class="hcs-rating-page__lede">@L["EmployeeRatings:DashboardSubtitle"]</p>
         </div>
         <div>

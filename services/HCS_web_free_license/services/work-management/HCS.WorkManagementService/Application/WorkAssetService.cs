@@ -17,6 +17,48 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
 {
     public const long MaxFileSize = 25 * 1024 * 1024;
 
+    public async Task<SurveyCriteriaDto> SaveCriteriaImageAsync(Guid criteriaId, Stream stream, string fileName,
+        string contentType, long size, CancellationToken ct)
+    {
+        if (size is <= 0 or > MaxFileSize) throw new BusinessException("Work:InvalidAssetSize");
+        if (!contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            throw new BusinessException("Work:SurveyImageOnly");
+        var criteria = await db.SurveyCriteria.SingleOrDefaultAsync(x => x.Id == criteriaId, ct)
+            ?? throw new EntityNotFoundException(typeof(SurveyCriteria), criteriaId);
+        var blobName = WorkAssetBlobNamePolicy.Criteria(criteriaId);
+        await blobs.SaveAsync(blobName, stream, overrideExisting: true, cancellationToken: ct);
+        var imagePath = $"/api/surveys/public/criteria/{criteriaId:D}/image";
+        criteria.Change(criteria.Name, criteria.SortOrder, criteria.IsActive, criteria.LocationId, imagePath);
+        await db.SaveChangesAsync(ct);
+        return new SurveyCriteriaDto(criteria.Id, criteria.Code, criteria.Name, criteria.SortOrder, criteria.IsActive,
+            criteria.LocationId, criteria.Image);
+    }
+
+    public async Task<(Stream Stream, string FileName, string ContentType)> GetPublicCriteriaImageAsync(
+        Guid criteriaId, CancellationToken ct)
+    {
+        var exists = await db.SurveyCriteria.AsNoTracking()
+            .AnyAsync(x => x.Id == criteriaId && x.IsActive && x.Image != null && x.Image != "", ct);
+        if (!exists) throw new EntityNotFoundException(typeof(SurveyCriteria), criteriaId);
+        var blobName = WorkAssetBlobNamePolicy.Criteria(criteriaId);
+        await using var blob = await blobs.GetAsync(blobName, cancellationToken: ct);
+        var ms = new MemoryStream();
+        await blob.CopyToAsync(ms, ct);
+        ms.Position = 0;
+        return (ms, "criteria", DetectImageContentType(ms));
+    }
+
+    private static string DetectImageContentType(MemoryStream stream)
+    {
+        var span = stream.GetBuffer().AsSpan(0, (int)Math.Min(12, stream.Length));
+        if (span.Length >= 3 && span[0] == 0xFF && span[1] == 0xD8 && span[2] == 0xFF) return "image/jpeg";
+        if (span.Length >= 8 && span[0] == 0x89 && span[1] == 0x50 && span[2] == 0x4E && span[3] == 0x47) return "image/png";
+        if (span.Length >= 6 && span[0] == 0x47 && span[1] == 0x49 && span[2] == 0x46) return "image/gif";
+        if (span.Length >= 12 && span[0] == 0x52 && span[8] == 0x57 && span[9] == 0x45 && span[10] == 0x42 && span[11] == 0x50)
+            return "image/webp";
+        return "application/octet-stream";
+    }
+
     public async Task<SurveyFileReferenceDto> SaveSurveyFileAsync(Guid sessionId, Stream stream, string fileName,
         string contentType, long size, CancellationToken ct)
     {

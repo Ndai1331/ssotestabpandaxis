@@ -18,7 +18,6 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         documents.AddPermission(HCSPermissions.Documents.Assign, L("Permission:Documents.Assign"));
         documents.AddPermission(HCSPermissions.Documents.ManageFiles, L("Permission:Documents.ManageFiles"));
         documents.AddPermission(HCSPermissions.Documents.SigningExecute, L("Permission:Documents.Signing.Execute"));
-        documents.AddPermission(HCSPermissions.Documents.SigningReport, L("Permission:Documents.Signing.Report"));
 
         var workflows = context.AddGroup(HCSPermissions.MenuGroups.Workflows, L("Menu:Workflows"));
         workflows.AddPermission(HCSPermissions.Documents.WorkflowView, L("Permission:Documents.Workflow.View"));
@@ -38,6 +37,7 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
 
         var surveys = context.AddGroup(HCSPermissions.MenuGroups.Surveys, L("Menu:Surveys"));
         surveys.AddPermission(HCSPermissions.WorkManagement.Surveys, L("Permission:WorkManagement.Surveys"));
+        surveys.AddPermission(HCSPermissions.WorkManagement.SurveyManagement, L("Permission:WorkManagement.SurveyManagement"));
 
         var catalogs = context.AddGroup(HCSPermissions.MenuGroups.Catalogs, L("Menu:Catalogs"));
         AddCrud(catalogs.AddPermission(HCSPermissions.Catalogs.MasterData, L("Permission:Catalogs.MasterData")));
@@ -60,8 +60,8 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         AddCrud(catalogs.AddPermission(HCSPermissions.Organization.Units, L("Permission:Organization.Units")));
         AddCrud(catalogs.AddPermission(HCSPermissions.Organization.Positions, L("Permission:Organization.Positions")));
         catalogs.AddPermission(HCSPermissions.Organization.MasterData, L("Permission:Organization.MasterData"));
-        catalogs.AddPermission(HCSPermissions.WorkManagement.SurveyManagement, L("Permission:WorkManagement.SurveyManagement"));
         catalogs.AddPermission(HCSPermissions.WorkManagement.Reports, L("Permission:WorkManagement.Reports"));
+        catalogs.AddPermission(HCSPermissions.Documents.SigningReport, L("Permission:Documents.Signing.Report"));
         catalogs.AddPermission(HCSPermissions.Documents.SigningConfigure, L("Permission:Documents.Signing.Configure"));
 
         var social = context.AddGroup(HCSPermissions.MenuGroups.Social, L("Menu:Social"));

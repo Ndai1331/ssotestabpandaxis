@@ -43,10 +43,10 @@ public sealed class HCSMenuContributor : IMenuContributor
             .RequirePermissions(HCSPermissions.Collaboration.Chat));
         social.AddItem(Item("HCS.Social.EmployeeRatings", "Tín nhiệm nhân viên", "/employee-ratings", "fa fa-star-half-stroke", 30)
             .RequirePermissions(HCSPermissions.WorkManagement.EmployeeRatings));
-        social.AddItem(Item("HCS.Social.EmployeeRatingManagement", "Danh sách tín nhiệm nhân viên", "/administration/employee-ratings", "fa fa-star", 40)
-            .RequirePermissions(HCSPermissions.WorkManagement.EmployeeRatingsManagement));
-        social.AddItem(Item("HCS.Social.EmployeeRatingDashboard", "Dashboard tín nhiệm nhân viên", "/administration/employee-ratings-dashboard", "fa fa-chart-pie", 50)
-            .RequirePermissions(HCSPermissions.WorkManagement.EmployeeRatingsDashboard));
+        social.AddItem(Item("HCS.Social.EmployeeRatingResults", "Kết quả đánh giá", "/employee-ratings/results", "fa fa-chart-simple", 40)
+            .RequirePermissions(false,
+                HCSPermissions.WorkManagement.EmployeeRatingsManagement,
+                HCSPermissions.WorkManagement.EmployeeRatingsDashboard));
         context.Menu.AddItem(social);
 
         var documents = Item("HCS.Documents", "Văn bản", icon: "fa fa-file-lines", order: 120);
@@ -58,16 +58,12 @@ public sealed class HCSMenuContributor : IMenuContributor
             .RequirePermissions(HCSPermissions.Documents.View));
         documents.AddItem(Item("HCS.Documents.Signing", "Ký duyệt", "/document-signing", "fa fa-signature", 40)
             .RequirePermissions(false, HCSPermissions.Documents.View, HCSPermissions.Documents.SigningExecute));
-        documents.AddItem(Item("HCS.Documents.SigningKpi", "KPI ký số", "/signing-kpi-report", "fa fa-chart-column", 50)
-            .RequirePermissions(HCSPermissions.Documents.SigningReport));
         context.Menu.AddItem(documents);
 
         var workflows = Item("HCS.Workflows", "Quy trình", icon: "fa fa-arrow-trend-up", order: 150);
         workflows.AddItem(Item("HCS.Workflows.Kinds", "Loại quy trình", "/workflow-definitions", "fa fa-diagram-project", 10)
             .RequirePermissions(HCSPermissions.Documents.WorkflowView));
         workflows.AddItem(Item("HCS.Workflows.List", "Quy trình", "/workflow-lists", "fa fa-code-branch", 20)
-            .RequirePermissions(HCSPermissions.Documents.WorkflowView));
-        workflows.AddItem(Item("HCS.Workflows.Instances", "Hồ sơ quy trình", "/document-workflow-instances", "fa fa-folder-open", 30)
             .RequirePermissions(HCSPermissions.Documents.WorkflowView));
         context.Menu.AddItem(workflows);
 
@@ -79,6 +75,16 @@ public sealed class HCSMenuContributor : IMenuContributor
         organization.AddItem(Item("HCS.Organization.Positions", "Chức vụ", "/positions", "fa fa-id-badge", 30)
             .RequirePermissions(HCSPermissions.Organization.Positions));
         context.Menu.AddItem(organization);
+
+        var surveys = Item("HCS.Surveys", "Khảo sát", icon: "fa fa-chart-line", order: 180)
+            .RequirePermissions(false, HCSPermissions.WorkManagement.Surveys, HCSPermissions.WorkManagement.SurveyManagement);
+        surveys.AddItem(Item("HCS.Surveys.Locations", "Địa điểm khảo sát", "/survey-locations", "fa fa-location-dot", 10)
+            .RequirePermissions(HCSPermissions.WorkManagement.SurveyManagement));
+        surveys.AddItem(Item("HCS.Surveys.Criterias", "Tiêu chí khảo sát", "/survey-criterias", "fa fa-list-ol", 20)
+            .RequirePermissions(HCSPermissions.WorkManagement.SurveyManagement));
+        surveys.AddItem(Item("HCS.Surveys.Results", "Kết quả khảo sát", "/survey-results", "fa fa-square-poll-vertical", 30)
+            .RequirePermissions(HCSPermissions.WorkManagement.Surveys));
+        context.Menu.AddItem(surveys);
 
         var catalogs = Item("HCS.Catalogs", "Danh mục", icon: "fa fa-tags", order: 300);
         catalogs.AddItem(Item("HCS.Catalogs.MasterData", "Danh mục dùng chung", "/master-datas", "fa fa-list", 10)
@@ -101,6 +107,8 @@ public sealed class HCSMenuContributor : IMenuContributor
         documentCatalogs.AddItem(Item("HCS.Catalogs.EventTypes", "Loại sự kiện", "/event-types", order: 80)
             .RequirePermissions(false, HCSPermissions.Catalogs.EventTypes, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
         catalogs.AddItem(documentCatalogs);
+        catalogs.AddItem(Item("HCS.Catalogs.ProposalStatistics", "Thống kê đề xuất", "/thong-ke-de-xuat", "fa fa-chart-pie", 90)
+            .RequirePermissions(HCSPermissions.Documents.SigningReport));
         context.Menu.AddItem(catalogs);
 
         var administration = Item("HCS.Administration", "Quản trị", icon: "fa fa-shield-halved", order: 350)

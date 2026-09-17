@@ -413,6 +413,7 @@ public sealed class SurveySession : FullAuditedAggregateRoot<Guid>
         Code = Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength);
         Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
         StartsAt = startsAt; EndsAt = endsAt; LocationId = locationId; Status = "Draft";
+        HandlingStatus = "Pending";
         OwnerUserId = ownerUserId == Guid.Empty ? throw new BusinessException("Work:OwnerRequired") : ownerUserId;
     }
     private SurveySession(Guid id, string code, string name, DateTime startsAt, DateTime endsAt, Guid? locationId,
@@ -425,6 +426,7 @@ public sealed class SurveySession : FullAuditedAggregateRoot<Guid>
         Code = Check.NotNullOrWhiteSpace(code, nameof(code), WorkConsts.CodeLength);
         Name = Check.NotNullOrWhiteSpace(name, nameof(name), WorkConsts.NameLength);
         StartsAt = startsAt; EndsAt = endsAt; LocationId = locationId; Status = "Active";
+        HandlingStatus = "Pending";
         OwnerUserId = Guid.Empty; IsPublic = true; FullName = fullName; PhoneNumber = phoneNumber;
         PatientCode = patientCode; SurveyTime = WorkTimestamps.ToUtc(surveyTime); DeviceType = deviceType;
         Note = note; SessionDisplay = Check.NotNullOrWhiteSpace(sessionDisplay, nameof(sessionDisplay), WorkConsts.NameLength);
@@ -450,6 +452,8 @@ public sealed class SurveySession : FullAuditedAggregateRoot<Guid>
     public string? DeviceType { get; private set; }
     public string? Note { get; private set; }
     public string? SessionDisplay { get; private set; }
+    public string HandlingStatus { get; private set; } = "Pending";
+    public string? HandlingNote { get; private set; }
     public void Change(string name, DateTime startsAt, DateTime endsAt, Guid? locationId)
     {
         startsAt = WorkTimestamps.ToUtc(startsAt);
@@ -461,6 +465,17 @@ public sealed class SurveySession : FullAuditedAggregateRoot<Guid>
         LocationId = locationId;
     }
     public void ChangeStatus(string status) => Status = Check.NotNullOrWhiteSpace(status, nameof(status), WorkConsts.StatusLength);
+    public void Handle(string status, string? note)
+    {
+        var normalized = Check.NotNullOrWhiteSpace(status, nameof(status), WorkConsts.StatusLength).Trim();
+        if (normalized is not ("Pending" or "Processed"))
+        {
+            throw new BusinessException("Work:InvalidSurveyHandlingStatus");
+        }
+
+        HandlingStatus = normalized;
+        HandlingNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+    }
 }
 
 public sealed class SurveyResult : FullAuditedAggregateRoot<Guid>

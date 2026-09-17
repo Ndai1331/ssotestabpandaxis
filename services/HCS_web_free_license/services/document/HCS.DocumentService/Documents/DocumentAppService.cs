@@ -241,14 +241,30 @@ public sealed class DocumentAppService(
         return Map(document);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
+        DeleteCoreAsync(id, false, cancellationToken);
+
+    public Task DeleteSubmissionAsync(Guid id, CancellationToken cancellationToken = default) =>
+        DeleteCoreAsync(id, true, cancellationToken);
+
+    private async Task DeleteCoreAsync(Guid id, bool submission, CancellationToken cancellationToken)
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
+        if (!submission) DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
+        await using var transaction = submission
+            ? await DocumentTransaction.BeginIfNeededAsync(db.Database, cancellationToken)
+            : null;
+        if (submission)
+        {
+            await db.Documents.FromSqlInterpolated($"SELECT * FROM document.\"Documents\" WHERE \"Id\" = {id} FOR UPDATE")
+                .AsNoTracking().Select(x => x.Id).SingleAsync(cancellationToken);
+            await db.ApprovalTasks.FromSqlInterpolated($"SELECT t.* FROM document.\"ApprovalTasks\" t JOIN document.\"WorkflowInstances\" i ON i.\"Id\" = t.\"InstanceId\" WHERE i.\"DocumentId\" = {id} FOR UPDATE OF t")
+                .AsNoTracking().ToListAsync(cancellationToken);
+        }
         var document = await LoadAsync(id, cancellationToken);
         DocumentAccess.EnsureCanManage(document, userId, principal);
-        if (await db.WorkflowInstances.AnyAsync(x => x.DocumentId == id && x.Status == WorkflowInstanceStatus.Running, cancellationToken))
+        if (!submission && await db.WorkflowInstances.AnyAsync(x => x.DocumentId == id && x.Status == WorkflowInstanceStatus.Running, cancellationToken))
             throw new BusinessException("Document:CannotDeleteWithRunningWorkflow");
 
         var now = DateTime.UtcNow;
@@ -259,12 +275,18 @@ public sealed class DocumentAppService(
         var workflowInstances = await db.WorkflowInstances.Include(x => x.Tasks)
             .Where(x => x.DocumentId == id).ToListAsync(cancellationToken);
 
+        if (submission && !WorkflowSubmissionDeletion.CanDelete(document.SourceType, document.FromUserId,
+            userId, workflowInstances,
+            signingAttempts.Any(x => x.Status != Signing.SigningStatus.Failed)))
+            throw new BusinessException("Document:CannotDeleteStartedSubmission");
+
         EnqueueInboxCleared(id, now);
         AddAudit("DocumentDeleted", id, 200, null, now);
         db.SigningAttempts.RemoveRange(signingAttempts);
         db.WorkflowInstances.RemoveRange(workflowInstances);
         db.Documents.Remove(document);
         await db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         await TryDeleteBlobsAsync(documentBlobs, documentBlobNames, cancellationToken);
         await TryDeleteBlobsAsync(signingBlobs, signingBlobNames, cancellationToken);
     }

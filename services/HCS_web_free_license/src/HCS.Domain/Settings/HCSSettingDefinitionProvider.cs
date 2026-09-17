@@ -35,6 +35,14 @@ public class HCSSettingDefinitionProvider : SettingDefinitionProvider
         context.Add(new SettingDefinition(HCSSettings.BrandingLogoRevision, defaultValue: "0"));
         context.Add(new SettingDefinition(HCSSettings.BrandingFaviconRevision, defaultValue: "0"));
         context.Add(new SettingDefinition(HCSSettings.BrandingBackgroundRevision, defaultValue: "0"));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.LegacySigningReportSqlServerConnectionString,
+                defaultValue: null,
+                displayName: L("Settings:LegacySqlConnectionString"),
+                description: L("Settings:LegacySqlConnectionHint"),
+                isVisibleToClients: false,
+                isEncrypted: true));
     }
 
     private static LocalizableString L(string name)

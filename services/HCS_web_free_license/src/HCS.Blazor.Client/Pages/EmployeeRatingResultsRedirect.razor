@@ -1,0 +1,23 @@
+@page "/employee-ratings/results"
+@attribute [Authorize]
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IAuthorizationService AuthorizationService
+
+<HcsLoading CssClass="py-5" />
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        var canManage = (await AuthorizationService.AuthorizeAsync(user, "WorkManagement.EmployeeRatings.Management")).Succeeded;
+        if (canManage)
+        {
+            Navigation.NavigateTo("/employee-ratings/results/list", replace: true);
+            return;
+        }
+
+        var canViewDashboard = (await AuthorizationService.AuthorizeAsync(user, "WorkManagement.EmployeeRatings.Dashboard")).Succeeded;
+        Navigation.NavigateTo(canViewDashboard ? "/employee-ratings/results/dashboard" : "/workspace", replace: true);
+    }
+}

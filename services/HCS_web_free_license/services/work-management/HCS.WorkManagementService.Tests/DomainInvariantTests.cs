@@ -208,6 +208,10 @@ public sealed class DomainInvariantTests
         Assert.Throws<BusinessException>(() => session.Change("Updated", start, start.AddDays(-1), null));
         session.Change("Updated", start, start.AddDays(2), null);
         Assert.Equal("Updated", session.Name);
+        session.Handle("Processed", "Đã liên hệ khách hàng");
+        Assert.Equal("Processed", session.HandlingStatus);
+        Assert.Equal("Đã liên hệ khách hàng", session.HandlingNote);
+        Assert.Throws<BusinessException>(() => session.Handle("Unknown", null));
     }
 
     [Theory]

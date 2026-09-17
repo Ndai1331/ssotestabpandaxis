@@ -20,6 +20,7 @@
     <PackageReference Include="Volo.Abp.Account.Application" Version="10.6.0" />
     <PackageReference Include="Volo.Abp.Identity.Application" Version="10.6.0" />
     <PackageReference Include="MiniExcel" Version="1.41.4" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
   </ItemGroup>
 
 </Project>

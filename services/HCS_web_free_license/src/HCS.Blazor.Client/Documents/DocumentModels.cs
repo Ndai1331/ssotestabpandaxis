@@ -80,7 +80,7 @@ public sealed record SigningQueueDocumentDto(Guid Id, string Number, string Titl
     List<DocumentFileDto> Files, DateTime CreationTime, DocumentSourceType SourceType = DocumentSourceType.Workflow,
     Guid? FromUserId = null, string? DocumentCode = null);
 public sealed record SigningQueueItemDto(SigningQueueDocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance,
-    WorkflowDefinitionDto Definition);
+    WorkflowDefinitionDto Definition, bool CanDelete = false);
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, List<Guid> DepartmentIds, List<Guid> UserIds);
 public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null,
@@ -155,9 +155,12 @@ public sealed class SigningKpiPieSliceDto
 public sealed class SigningKpiReportDto
 {
     public SigningKpiMetricsDto Combined { get; set; } = new();
+    public SigningKpiMetricsDto Legacy { get; set; } = new();
     public SigningKpiMetricsDto Hcs { get; set; } = new();
     public List<SigningKpiGroupRowDto> Groups { get; set; } = [];
     public List<SigningKpiPieSliceDto> PieSlices { get; set; } = [];
+    public bool LegacyAvailable { get; set; }
+    public string? LegacyError { get; set; }
     public bool HcsAvailable { get; set; }
     public string? HcsError { get; set; }
 }

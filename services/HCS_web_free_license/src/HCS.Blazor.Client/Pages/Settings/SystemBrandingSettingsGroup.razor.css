@@ -35,6 +35,10 @@
 .hcs-branding-settings h2 { font-size: 1.15rem; margin: 0; }
 .hcs-branding-settings h3 { font-size: 1rem; margin: 0 0 .35rem; }
 .hcs-branding-settings p { color: #5b7484; line-height: 1.55; margin: .45rem 0 0; }
+.hcs-branding-settings textarea.form-control {
+    min-height: 6.5rem;
+    width: 100%;
+}
 .hcs-branding-settings__icon { color: var(--hcs-color-primary, #00b4a9); font-size: 1.5rem; }
 
 .hcs-branding-settings__form-grid {

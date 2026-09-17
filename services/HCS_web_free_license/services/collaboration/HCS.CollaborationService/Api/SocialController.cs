@@ -24,8 +24,16 @@ public sealed class SocialController(
     public Task<PagedSocialPostsDto> ProfilePosts([FromQuery] int skip = 0, [FromQuery] int take = 20,
         [FromQuery] SocialPostVisibility? visibility = null, [FromQuery] string? keyword = null,
         [FromQuery] DateOnly? from = null, [FromQuery] DateOnly? to = null, [FromQuery] string? hashtag = null,
-        [FromQuery] Guid? postId = null, CancellationToken ct = default) =>
-        posts.GetProfilePostsAsync(skip, take, visibility, keyword, from, to, hashtag, postId, ct);
+        [FromQuery] Guid? postId = null, [FromQuery] Guid? authorUserId = null, CancellationToken ct = default) =>
+        posts.GetProfilePostsAsync(skip, take, visibility, keyword, from, to, hashtag, postId, authorUserId, ct);
+
+    [HttpGet("tags")]
+    public Task<IReadOnlyList<SocialTagStatDto>> TopTags([FromQuery] int take = 10, CancellationToken ct = default) =>
+        posts.GetTopTagsAsync(take, ct);
+
+    [HttpGet("top-authors")]
+    public Task<IReadOnlyList<SocialTopAuthorDto>> TopAuthors([FromQuery] int take = 8, CancellationToken ct = default) =>
+        posts.GetTopAuthorsAsync(take, ct);
 
     [HttpPost("posts")]
     public Task<SocialPostDto> CreatePost(CreateSocialPostInput input, CancellationToken ct) => posts.CreateAsync(input, ct);

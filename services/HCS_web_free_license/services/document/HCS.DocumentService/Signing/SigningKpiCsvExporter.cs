@@ -17,7 +17,7 @@ internal static class SigningKpiCsvExporter
         {
             builder.AppendLine(string.Join(',',
                 Csv(row.Source), Csv(row.Code), Csv(row.Title), Csv(row.GroupCode), Csv(row.GroupName),
-                Csv(row.SubmitterId), Csv(row.SubmittedAt), Csv(row.DeadlineAt), Csv(row.CompletedAt),
+                Csv(row.SubmitterName ?? row.SubmitterId?.ToString()), Csv(row.SubmittedAt), Csv(row.DeadlineAt), Csv(row.CompletedAt),
                 Csv(row.StatusCode), Csv(row.StatusLabel), Csv(row.IsOnTime), Csv(row.ProcessingHours),
                 Csv(row.SignerChain), Csv(row.Note)));
         }

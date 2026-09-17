@@ -1,15 +1,16 @@
 @page "/survey-collections/{SurveyLocationId:guid}"
+@layout HCSPublicLayout
 @attribute [AllowAnonymous]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
 @inject NavigationManager Navigation
 
-<PageTitle>@L["SurveyCollections:Title"] · HCS</PageTitle>
+<PageTitle>@L["SurveyCollections:Title"]</PageTitle>
 
-<section class="hcs-document-page hcs-public-survey">
+<section class="hcs-public-survey">
     @if (isLoading)
     {
-        <HcsLoading CssClass="py-5" />
+        <HcsLoading CssClass="py-5" Title="@L["SurveyCollections:Loading"]" />
     }
     else if (location is null)
     {
@@ -22,24 +23,22 @@
             <h1>@L["SurveyCollections:ThankYou"]</h1>
             <p>@L["SurveyCollections:ThankYouMessage"]</p>
             <p class="text-muted">@L["SurveyCollections:YourFeedbackIsImportant"]</p>
-            <button type="button" class="btn btn-primary" @onclick="ReloadPage">@L["Back"]</button>
+            <button type="button" class="btn btn-primary" @onclick="ReloadPage">@L["SurveyCollections:RateAgain"]</button>
         </div>
     }
     else
     {
-        <header class="hcs-document-page__header hcs-public-survey__header">
-            <div>
-                <div class="hcs-public-survey__eyebrow">@L["SurveyCollections:Title"]</div>
-                <h1>@location.Name</h1>
-                @if (!string.IsNullOrWhiteSpace(location.Description))
-                {
-                    <p class="mb-0 text-muted">@location.Description</p>
-                }
-            </div>
+        <header class="hcs-public-survey__header">
+            <p class="hcs-public-survey__eyebrow">@L["SurveyCollections:Title"]</p>
+            <h1>@location.Name</h1>
+            @if (!string.IsNullOrWhiteSpace(location.Description))
+            {
+                <p class="hcs-public-survey__description">@location.Description</p>
+            }
         </header>
         @if (criteria.Count == 0)
         {
-            <div class="alert alert-warning mt-4">@L["SurveyCollections:NoCriteriaPleaseComeBackLater"]</div>
+            <div class="alert alert-warning mt-4 text-center">@L["SurveyCollections:NoCriteriaPleaseComeBackLater"]</div>
         }
         else
         {
@@ -49,9 +48,9 @@
                 {
                     <article class="hcs-public-survey__criteria-card">
                         <div class="hcs-public-survey__criteria-image">
-                            @if (!string.IsNullOrWhiteSpace(item.Image))
+                            @if (!string.IsNullOrWhiteSpace(CriteriaImageSrc(item)))
                             {
-                                <img src="@item.Image" alt="@item.Name" loading="lazy" />
+                                <img src="@CriteriaImageSrc(item)" alt="@item.Name" loading="lazy" />
                             }
                             else
                             {
@@ -63,7 +62,7 @@
                             @for (var star = 1; star <= WorkUi.MaxStars; star++)
                             {
                                 var currentStar = star;
-                                <button type="button" class="@(SelectedStars(item.Id) >= currentStar ? "is-active" : null)" role="radio" aria-checked="@(SelectedStars(item.Id) == currentStar)" aria-label="@($"{currentStar} {L["SurveyCollections:Star"]}")" @onclick="() => SetRating(item.Id, currentStar)">★</button>
+                                <button type="button" class="@(SelectedStars(item.Id) >= currentStar ? "is-active" : null)" role="radio" aria-checked="@(SelectedStars(item.Id) == currentStar)" aria-label="@($"{currentStar} sao")" @onclick="() => SetRating(item.Id, currentStar)">★</button>
                             }
                         </div>
                     </article>
@@ -86,11 +85,10 @@
             </div>
             <div class="hcs-public-survey__dialog-body">
                 <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label" for="survey-full-name">@L["FullName"] <span class="text-danger">*</span></label><input id="survey-full-name" class="form-control" @bind="fullName" autocomplete="name" autofocus /></div>
-                    <div class="col-md-6"><label class="form-label" for="survey-phone">@L["PhoneNumber"] <span class="text-danger">*</span></label><input id="survey-phone" class="form-control" @bind="phoneNumber" autocomplete="tel" inputmode="tel" /></div>
-                    <div class="col-md-6"><label class="form-label" for="survey-patient-code">@L["PatientCode"]</label><input id="survey-patient-code" class="form-control" @bind="patientCode" autocomplete="off" /></div>
-                    <div class="col-md-6"><label class="form-label" for="survey-device-type">@L["DeviceType"]</label><input id="survey-device-type" class="form-control" value="WEB" readonly /></div>
-                    <div class="col-12"><label class="form-label" for="survey-note">@L["Note"]</label><textarea id="survey-note" class="form-control" rows="3" @bind="note"></textarea></div>
+                    <div class="col-md-6"><label class="form-label" for="survey-full-name">@L["FullName"] <span class="text-danger">*</span></label><input id="survey-full-name" class="form-control" @bind="fullName" autocomplete="name" placeholder="@L["SurveyCollections:FullNamePlaceholder"]" autofocus /></div>
+                    <div class="col-md-6"><label class="form-label" for="survey-phone">@L["PhoneNumber"] <span class="text-danger">*</span></label><input id="survey-phone" class="form-control" @bind="phoneNumber" autocomplete="tel" inputmode="tel" placeholder="@L["SurveyCollections:PhonePlaceholder"]" /></div>
+                    <div class="col-md-6"><label class="form-label" for="survey-patient-code">@L["PatientCode"]</label><input id="survey-patient-code" class="form-control" @bind="patientCode" autocomplete="off" placeholder="@L["SurveyCollections:PatientCodePlaceholder"]" /></div>
+                    <div class="col-12"><label class="form-label" for="survey-note">@L["Note"]</label><textarea id="survey-note" class="form-control" rows="3" @bind="note" placeholder="@L["SurveyCollections:NotePlaceholder"]"></textarea></div>
                     <div class="col-12"><label class="form-label" for="survey-photo">@L["SurveyCollections:UploadPhoto"]</label><InputFile id="survey-photo" class="form-control" OnChange="OnFileChanged" accept="image/*" />
                         @if (!string.IsNullOrWhiteSpace(selectedFileName)) { <div class="text-success small mt-2"><i class="fa fa-check-circle me-1"></i>@selectedFileName</div> }
                     </div>
@@ -98,7 +96,7 @@
                 @if (!string.IsNullOrWhiteSpace(formError)) { <div class="alert alert-danger mt-3 mb-0">@formError</div> }
             </div>
             <div class="hcs-public-survey__dialog-footer">
-                <button type="button" class="btn btn-light" @onclick="CloseForm" disabled="@isSubmitting">@L["Catalog:Cancel"]</button>
+                <button type="button" class="btn btn-light" @onclick="CloseForm" disabled="@isSubmitting">@L["Close"]</button>
                 <button type="button" class="btn btn-primary" @onclick="SubmitAsync" disabled="@isSubmitting">@if (isSubmitting) { <i class="fa fa-spinner fa-spin me-2"></i> } @L["SurveyCollections:SubmitSurvey"]</button>
             </div>
         </div>
@@ -124,6 +122,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var vietnamese = new System.Globalization.CultureInfo("vi");
+        System.Globalization.CultureInfo.CurrentCulture = vietnamese;
+        System.Globalization.CultureInfo.CurrentUICulture = vietnamese;
+        System.Globalization.CultureInfo.DefaultThreadCurrentCulture = vietnamese;
+        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = vietnamese;
+
         try
         {
             location = await Work.GetPublicLocationAsync(SurveyLocationId);
@@ -132,7 +136,10 @@
         }
         catch (Exception ex)
         {
-            await NotifyErrorAsync(ex);
+            if (BffErrorMapper.GetStatusCode(ex) != System.Net.HttpStatusCode.Unauthorized)
+            {
+                await NotifyErrorAsync(ex);
+            }
         }
         finally
         {
@@ -141,6 +148,16 @@
     }
 
     private int SelectedStars(Guid criteriaId) => scores.GetValueOrDefault(criteriaId, WorkUi.MaxStars);
+
+    private string CriteriaImageSrc(SurveyCriteriaDto item)
+    {
+        if (string.IsNullOrWhiteSpace(item.Image)) return string.Empty;
+        if (item.Image.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            || item.Image.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+            || item.Image.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
+            return item.Image;
+        return Work.BuildResourceUrl(item.Image);
+    }
 
     private void SetRating(Guid criteriaId, int rating) => scores[criteriaId] = Math.Clamp(rating, 1, WorkUi.MaxStars);
 

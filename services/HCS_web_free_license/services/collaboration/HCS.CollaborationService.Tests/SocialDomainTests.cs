@@ -8,6 +8,17 @@ namespace HCS.CollaborationService.Tests;
 public sealed class SocialDomainTests
 {
     [Fact]
+    public void Only_the_author_can_see_only_me_posts()
+    {
+        var author = Guid.NewGuid();
+        var viewer = Guid.NewGuid();
+        SocialPostRules.IsVisibleTo(viewer, author, SocialPostVisibility.Public).ShouldBeTrue();
+        SocialPostRules.IsVisibleTo(viewer, author, SocialPostVisibility.Internal).ShouldBeFalse();
+        SocialPostRules.IsVisibleTo(author, author, SocialPostVisibility.Internal).ShouldBeTrue();
+        SocialPostRules.SplitHashtagIndex("|hcs||nội_bộ|").ShouldBe(new[] { "hcs", "nội_bộ" });
+    }
+
+    [Fact]
     public void Post_rules_require_text_or_media_and_limit_visibility()
     {
         Should.Throw<BusinessException>(() => SocialPostRules.DemandContent(null, 0));

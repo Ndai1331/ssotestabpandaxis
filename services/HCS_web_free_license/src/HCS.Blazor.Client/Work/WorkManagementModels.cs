@@ -94,9 +94,10 @@ public sealed record ChangeSurveySessionStatusRequest(string Status);
 public sealed record SubmitSurveyResultRequest(Guid CriteriaId, Guid? RespondentUserId, decimal Score, string? Comment);
 public sealed record CreatePublicSurveySessionRequest(Guid LocationId, string FullName, string PhoneNumber,
     string? PatientCode, DateTime SurveyTime, string? DeviceType, string? Note, string? SessionDisplay = null);
-public sealed record SurveyResultSessionSummaryDto(Guid SurveyResultId, Guid SurveySessionId, Guid CriteriaId,
-    string SurveyCriteriaName, decimal Score, string? FullName, string? PhoneNumber, string? PatientCode,
-    string? Note, DateTime SurveyTime);
+public sealed record SurveyResultSessionSummaryDto(Guid SurveySessionId, DateTime SurveyTime, string? LocationName,
+    decimal Score, string HandlingStatus, string? HandlingNote, string? FullName, string? PhoneNumber,
+    string? PatientCode, string? Note);
+public sealed record HandleSurveyResultRequest(string HandlingStatus, string? HandlingNote);
 public sealed record SurveyResultSessionDetailDto(Guid SurveyResultId, Guid SurveySessionId, Guid CriteriaId,
     string SurveyCriteriaName, decimal Score, string? Comment);
 public sealed record SurveyResultStatisticsDto(int TotalReviews, Dictionary<int, int> ScoreDistribution,

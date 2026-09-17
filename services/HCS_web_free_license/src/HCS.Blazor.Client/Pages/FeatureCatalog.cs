@@ -42,7 +42,7 @@ internal static class FeatureCatalog
             "even-types" or "event-types" => Master("Loại sự kiện", "EventType"),
             "signature-settings" => F("Cấu hình chữ ký", "Thông tin xác thực được che và gửi an toàn đến dịch vụ ký.", "/api/signing/credentials/current", "fa fa-key"),
             "user-signatures" => F("Chữ ký cá nhân", "Quản lý mẫu chữ ký và quyền sử dụng.", "/api/signing/signatures", "fa fa-signature"),
-            "signing-kpi-report" => F("Báo cáo ký số", "Theo dõi kết quả ký và lỗi xác minh.", "/api/reports?dimension=signing", "fa fa-chart-pie"),
+            "signing-kpi-report" or "thong-ke-de-xuat" => F("Thống kê đề xuất", "Tổng hợp đề xuất trình ký từ SQL Server nội bộ và HCS.", "/api/signing/kpi", "fa fa-chart-pie"),
             "reports" or "report-web-frame" => F("Báo cáo", "Các mô hình đọc tổng hợp từ dữ liệu nghiệp vụ.", "/api/reports", "fa fa-chart-column"),
             "notification-receivers" => F("Thông báo", "Thông báo nghiệp vụ và trạng thái đã đọc.", "/api/notifications", "fa fa-bell", false),
             "chat" or "chat1" => F("Trao đổi", "Trao đổi trực tiếp, nhóm, dự án và công việc theo thời gian thực.", "/api/chat", "fa fa-comments", false),

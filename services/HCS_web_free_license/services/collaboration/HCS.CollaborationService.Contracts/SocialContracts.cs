@@ -41,7 +41,9 @@ public sealed record SocialLinkPreviewDto(string Url, string? Title, string? Des
 
 public sealed record SocialPersonDto(Guid UserId, string UserName, string DisplayName,
     string? Email, string? PhoneNumber, string? AvatarUrl, string? PositionName = null,
-    string? DepartmentName = null);
+    string? DepartmentName = null, Guid? DepartmentId = null, Guid? PositionId = null);
+public sealed record SocialTagStatDto(string Tag, int Count);
+public sealed record SocialTopAuthorDto(Guid UserId, string DisplayName, int PostCount);
 
 public sealed record SocialReactionCountDto(SocialReactionType Type, int Count);
 
@@ -109,6 +111,9 @@ public static class SocialPostRules
     private static readonly Regex HashtagRegex = new(@"(?<!\w)#(?<tag>[\p{L}\p{N}_-]{1,64})", RegexOptions.CultureInvariant);
     private static readonly Regex HashtagValueRegex = new(@"\A[\p{L}\p{N}_-]{1,64}\z", RegexOptions.CultureInvariant);
 
+    public static bool IsVisibleTo(Guid viewerUserId, Guid authorUserId, SocialPostVisibility visibility) =>
+        authorUserId == viewerUserId || visibility == SocialPostVisibility.Public;
+
     public static void DemandValidVisibility(SocialPostVisibility visibility)
     {
         if (!Enum.IsDefined(visibility))
@@ -152,6 +157,9 @@ public static class SocialPostRules
 
     public static string BuildHashtagIndex(string? text) =>
         string.Concat(ExtractHashtags(text).Select(tag => $"|{tag}|"));
+
+    public static IReadOnlyList<string> SplitHashtagIndex(string? hashtags) =>
+        (hashtags ?? string.Empty).Split('|', StringSplitOptions.RemoveEmptyEntries);
 
     public static string? NormalizeHashtag(string? value)
     {

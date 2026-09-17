@@ -33,7 +33,8 @@ public static class HCSPermissionMenuMap
             return HCSPermissions.MenuGroups.Workflows;
         }
 
-        if (IsOrChild(permissionName, HCSPermissions.Documents.SigningConfigure))
+        if (IsOrChild(permissionName, HCSPermissions.Documents.SigningConfigure)
+            || IsOrChild(permissionName, HCSPermissions.Documents.SigningReport))
         {
             return HCSPermissions.MenuGroups.Catalogs;
         }
@@ -65,13 +66,12 @@ public static class HCSPermissionMenuMap
         }
 
         if (IsOrChild(permissionName, HCSPermissions.WorkManagement.Surveys)
-            && !IsOrChild(permissionName, HCSPermissions.WorkManagement.SurveyManagement))
+            || IsOrChild(permissionName, HCSPermissions.WorkManagement.SurveyManagement))
         {
             return HCSPermissions.MenuGroups.Surveys;
         }
 
-        if (IsOrChild(permissionName, HCSPermissions.WorkManagement.SurveyManagement)
-            || IsOrChild(permissionName, HCSPermissions.WorkManagement.Reports)
+        if (IsOrChild(permissionName, HCSPermissions.WorkManagement.Reports)
             || IsOrChild(permissionName, HCSPermissions.Catalogs.Default)
             || (IsOrChild(permissionName, HCSPermissions.Organization.Default)
                 && !IsOrChild(permissionName, HCSPermissions.Organization.UserMappings)))

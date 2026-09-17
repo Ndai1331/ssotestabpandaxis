@@ -17,6 +17,14 @@ public sealed class SurveysController(SurveyAppService service, WorkAssetService
     public Task<List<SurveyCriteriaDto>> GetPublicCriteria(Guid locationId, CancellationToken ct) => service.GetPublicCriteriaAsync(locationId, ct);
 
     [AllowAnonymous]
+    [HttpGet("public/criteria/{id:guid}/image")]
+    public async Task<IActionResult> GetPublicCriteriaImage(Guid id, CancellationToken ct)
+    {
+        var result = await assets.GetPublicCriteriaImageAsync(id, ct);
+        return File(result.Stream, result.ContentType, result.FileName, enableRangeProcessing: true);
+    }
+
+    [AllowAnonymous]
     [HttpPost("public/sessions")]
     public Task<SurveySessionDto> CreatePublicSession(CreatePublicSurveySessionDto input, CancellationToken ct) => service.CreatePublicSessionAsync(input, ct);
 
@@ -47,12 +55,31 @@ public sealed class SurveysController(SurveyAppService service, WorkAssetService
     public Task<List<SurveyResultSessionDetailDto>> GetResultDetails(Guid sessionId, Guid? locationId, CancellationToken ct) =>
         service.GetResultDetailsAsync(sessionId, locationId, ct);
 
+    [Authorize(Policy = WorkPermissions.Surveys)]
+    [HttpPut("results/{sessionId:guid}/handling")]
+    public Task<SurveyResultSessionSummaryDto> HandleResult(Guid sessionId, HandleSurveyResultDto input, CancellationToken ct) =>
+        service.HandleResultAsync(sessionId, input, ct);
+
+    [Authorize(Policy = WorkPermissions.Surveys)]
+    [HttpDelete("results/{sessionId:guid}")]
+    public async Task<IActionResult> DeleteResult(Guid sessionId, CancellationToken ct)
+    {
+        await service.DeleteResultSessionAsync(sessionId, ct);
+        return NoContent();
+    }
+
     [HttpGet("criteria")]
     public Task<List<SurveyCriteriaDto>> GetCriteria(CancellationToken ct) => service.GetCriteriaAsync(ct);
     [HttpPost("criteria"), Authorize(Policy = WorkPermissions.SurveyManagement)]
     public Task<SurveyCriteriaDto> CreateCriteria(CreateSurveyCriteriaDto input, CancellationToken ct) => service.CreateCriteriaAsync(input, ct);
     [HttpPut("criteria/{id:guid}"), Authorize(Policy = WorkPermissions.SurveyManagement)]
     public Task<SurveyCriteriaDto> UpdateCriteria(Guid id, UpdateSurveyCriteriaDto input, CancellationToken ct) => service.UpdateCriteriaAsync(id, input, ct);
+    [HttpPost("criteria/{id:guid}/image"), Authorize(Policy = WorkPermissions.SurveyManagement), RequestSizeLimit(WorkAssetService.MaxFileSize)]
+    public async Task<SurveyCriteriaDto> UploadCriteriaImage(Guid id, IFormFile file, CancellationToken ct)
+    {
+        await using var stream = file.OpenReadStream();
+        return await assets.SaveCriteriaImageAsync(id, stream, file.FileName, file.ContentType, file.Length, ct);
+    }
     [HttpDelete("criteria/{id:guid}"), Authorize(Policy = WorkPermissions.SurveyManagement)]
     public async Task<IActionResult> DeleteCriteria(Guid id, CancellationToken ct)
     {

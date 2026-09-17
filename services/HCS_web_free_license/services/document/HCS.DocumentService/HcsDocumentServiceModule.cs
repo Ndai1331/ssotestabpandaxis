@@ -100,6 +100,9 @@ public sealed class HcsDocumentServiceModule : AbpModule
             if (!string.IsNullOrWhiteSpace(baseUrl))
                 client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         });
+        context.Services.Configure<LegacySigningReportOptions>(
+            configuration.GetSection(LegacySigningReportOptions.SectionName));
+        context.Services.AddScoped<ILegacySqlServerKpiReader, LegacySqlServerKpiReader>();
         context.Services.AddScoped<ISigningAppService, SigningAppService>();
         context.Services.AddScoped<ISigningKpiReportService, SigningKpiReportService>();
         context.Services.AddScoped<DocumentFileService>();

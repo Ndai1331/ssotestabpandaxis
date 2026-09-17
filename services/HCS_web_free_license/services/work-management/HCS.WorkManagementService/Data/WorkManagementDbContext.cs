@@ -161,6 +161,8 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.Property(x => x.Code).HasMaxLength(WorkConsts.CodeLength).IsRequired();
             b.Property(x => x.Name).HasMaxLength(WorkConsts.NameLength).IsRequired();
             b.Property(x => x.Status).HasMaxLength(WorkConsts.StatusLength).IsRequired();
+            b.Property(x => x.HandlingStatus).HasMaxLength(WorkConsts.StatusLength).IsRequired().HasDefaultValue("Pending");
+            b.Property(x => x.HandlingNote).HasMaxLength(2000);
             b.Property(x => x.FullName).HasMaxLength(WorkConsts.NameLength);
             b.Property(x => x.PhoneNumber).HasMaxLength(64);
             b.Property(x => x.PatientCode).HasMaxLength(64);

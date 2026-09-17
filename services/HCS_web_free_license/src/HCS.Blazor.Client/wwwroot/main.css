@@ -35,7 +35,8 @@ body.abp-application-layout {
     z-index: 2000;
 }
 
-body:has(.hcs-app-shell) .hcs-boot-screen {
+body:has(.hcs-app-shell) .hcs-boot-screen,
+body:has(.hcs-public-shell) .hcs-boot-screen {
     opacity: 0;
     pointer-events: none;
     visibility: hidden;
@@ -3142,11 +3143,14 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     border-top: 1px solid var(--color-gray-100, #F1F5F9);
     padding-top: .65rem;
 }
+
+.hcs-workspace .hcs-ws-doc-groups {
     display: flex;
     flex-direction: column;
     gap: .85rem;
     max-height: 18rem;
     overflow: auto;
+    overscroll-behavior: contain;
 }
 .hcs-workspace .hcs-ws-doc-group-title {
     align-items: baseline;
@@ -3252,6 +3256,7 @@ select.hcs-catalog-select2 + .select2-container .select2-selection--single {
     .hcs-workspace .hcs-ws-task,
     .hcs-workspace .hcs-ws-ev,
     .hcs-workspace .hcs-ws-notif { max-height: none; overflow: visible; }
+    .hcs-workspace .hcs-ws-doc-groups { max-height: 18rem; overflow: auto; }
 }
 
 @media (max-width: 576px) {

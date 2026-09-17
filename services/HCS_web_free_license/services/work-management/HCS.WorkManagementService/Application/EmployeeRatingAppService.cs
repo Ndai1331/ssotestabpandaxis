@@ -101,9 +101,12 @@ public sealed class EmployeeRatingAppService(
     }
 
     public async Task<PagedWorkDto<EmployeeRatingSummaryDto>> GetSummariesAsync(
-        DateTime? from, DateTime? to, int skip, int take, CancellationToken cancellationToken)
+        DateTime? from, DateTime? to, int skip, int take, Guid? userId = null,
+        CancellationToken cancellationToken = default)
     {
         var query = ApplyRange(db.EmployeeRatings.AsNoTracking(), from, to);
+        if (userId.HasValue)
+            query = query.Where(x => x.TargetUserId == userId.Value);
         var rows = await query.Select(x => new RatingRow(x.TargetUserId, x.VoterUserId,
                 x.Score, x.EvaluationDate, x.CreationTime)).ToListAsync(cancellationToken);
         var summaries = BuildSummaries(rows, currentUser.Id, clock.Today());

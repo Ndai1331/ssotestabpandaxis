@@ -29,8 +29,9 @@ public sealed class EmployeeRatingsController(EmployeeRatingAppService service) 
     public Task<PagedWorkDto<EmployeeRatingSummaryDto>> Summary(
         [FromQuery] DateTime? from, [FromQuery] DateTime? to,
         [FromQuery] int skip = 0, [FromQuery] int take = 100,
+        [FromQuery] Guid? userId = null,
         CancellationToken cancellationToken = default) =>
-        service.GetSummariesAsync(from, to, skip, take, cancellationToken);
+        service.GetSummariesAsync(from, to, skip, take, userId, cancellationToken);
 
     [HttpGet("{userId:guid}/detail")]
     [Authorize(Policy = WorkPermissions.EmployeeRatingsManagement)]

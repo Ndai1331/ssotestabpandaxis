@@ -35,14 +35,23 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory, IConfig
 
     public Task<PagedSocialPostsDto> GetProfilePostsAsync(int skip = 0, int take = 20,
         SocialPostVisibility? visibility = null, string? keyword = null, DateOnly? from = null,
-        DateOnly? to = null, string? hashtag = null, Guid? postId = null, CancellationToken ct = default)
+        DateOnly? to = null, string? hashtag = null, Guid? postId = null, Guid? authorUserId = null,
+        CancellationToken ct = default)
     {
         var uri = $"api/social/profile/posts?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 50)}";
         if (visibility.HasValue)
             uri += $"&visibility={visibility.Value.ToString().ToLowerInvariant()}";
+        if (authorUserId.HasValue)
+            uri += $"&authorUserId={authorUserId.Value:D}";
 
         return GetAsync<PagedSocialPostsDto>(BuildSearchUri(uri, keyword, from, to, hashtag, postId), ct);
     }
+
+    public Task<IReadOnlyList<SocialTagStatDto>> GetTopTagsAsync(int take = 10, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<SocialTagStatDto>>($"api/social/tags?take={Math.Clamp(take, 1, 20)}", ct);
+
+    public Task<IReadOnlyList<SocialTopAuthorDto>> GetTopAuthorsAsync(int take = 8, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<SocialTopAuthorDto>>($"api/social/top-authors?take={Math.Clamp(take, 1, 12)}", ct);
 
     public async Task<IReadOnlyList<SocialPersonDto>> SearchPeopleAsync(
         string search, int take = 20, CancellationToken ct = default)
@@ -50,6 +59,13 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory, IConfig
         var people = await GetAsync<IReadOnlyList<SocialPersonDto>>(
             $"api/identity/social-people?search={Uri.EscapeDataString(search.Trim())}&take={Math.Clamp(take, 1, 30)}", ct);
         return await EnrichPeopleAsync(people, ct);
+    }
+
+    public async Task<SocialPersonDto?> GetProfileAsync(Guid userId, CancellationToken ct = default)
+    {
+        var profile = await GetAsync<SocialPersonDto>($"api/identity/social-profile/{userId:D}", ct);
+        var enriched = await EnrichPeopleAsync([profile], ct);
+        return enriched.FirstOrDefault();
     }
 
     public async Task<SocialPersonDto?> GetMyProfileAsync(CancellationToken ct = default)
@@ -254,10 +270,16 @@ internal sealed class SocialClient(IHttpClientFactory httpClientFactory, IConfig
             ? person with
             {
                 PositionName = item.PositionName,
-                DepartmentName = item.DepartmentName ?? item.DisplayName
+                DepartmentName = item.DepartmentName ?? item.DisplayName,
+                DepartmentId = item.DepartmentId ?? item.OrganizationUnitId,
+                PositionId = item.PositionId
             }
             : person).ToArray();
     }
+
+    public Task<IReadOnlyList<SocialPersonDto>> AttachOrganizationAsync(
+        IReadOnlyList<SocialPersonDto> people, CancellationToken ct = default) =>
+        EnrichPeopleAsync(people, ct);
 
     private HttpClient CreateClient() => httpClientFactory.CreateClient("HCS.Bff");
 

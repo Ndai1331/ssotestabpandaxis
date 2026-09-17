@@ -58,6 +58,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task DeleteDocumentAsync(Guid id, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"/api/documents/{id:D}", null, cancellationToken);
 
+    public Task DeleteSubmissionAsync(Guid id, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"/api/documents/{id:D}/submission", null, cancellationToken);
+
     public Task DeleteFileAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Delete, $"/api/documents/{documentId:D}/files/{fileId:D}", null, cancellationToken);
 

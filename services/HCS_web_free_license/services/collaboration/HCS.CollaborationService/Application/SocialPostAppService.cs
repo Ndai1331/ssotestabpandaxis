@@ -31,9 +31,54 @@ public class SocialPostAppService(
 
     public async Task<PagedSocialPostsDto> GetProfilePostsAsync(int skip = 0, int take = 20,
         SocialPostVisibility? visibility = null, string? keyword = null, DateOnly? from = null,
-        DateOnly? to = null, string? hashtag = null, Guid? postId = null, CancellationToken ct = default) =>
-        await GetPostsAsync(ApplySearch(db.SocialPosts.AsNoTracking().Where(x => x.AuthorUserId == UserId &&
-            (!visibility.HasValue || x.Visibility == visibility.Value)), keyword, from, to, hashtag, postId), skip, take, ct);
+        DateOnly? to = null, string? hashtag = null, Guid? postId = null, Guid? authorUserId = null,
+        CancellationToken ct = default)
+    {
+        var authorId = authorUserId is { } requested && requested != Guid.Empty ? requested : UserId;
+        var query = db.SocialPosts.AsNoTracking().Where(x => x.AuthorUserId == authorId);
+        if (authorId != UserId)
+            query = query.Where(x => x.Visibility == SocialPostVisibility.Public);
+        if (visibility.HasValue)
+            query = query.Where(x => x.Visibility == visibility.Value);
+        return await GetPostsAsync(ApplySearch(query, keyword, from, to, hashtag, postId), skip, take, ct);
+    }
+
+    public async Task<IReadOnlyList<SocialTagStatDto>> GetTopTagsAsync(int take = 10, CancellationToken ct = default)
+    {
+        take = Math.Clamp(take, 1, 20);
+        var indexes = await db.SocialPosts.AsNoTracking()
+            .Where(x => x.Visibility == SocialPostVisibility.Public && x.Hashtags != "")
+            .Select(x => x.Hashtags)
+            .ToListAsync(ct);
+        return indexes.SelectMany(SocialPostRules.SplitHashtagIndex)
+            .GroupBy(tag => tag, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new SocialTagStatDto(group.Key, group.Count()))
+            .OrderByDescending(item => item.Count)
+            .ThenBy(item => item.Tag)
+            .Take(take)
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<SocialTopAuthorDto>> GetTopAuthorsAsync(int take = 8, CancellationToken ct = default)
+    {
+        take = Math.Clamp(take, 1, 12);
+        var rows = await db.SocialPosts.AsNoTracking()
+            .Where(x => x.Visibility == SocialPostVisibility.Public)
+            .GroupBy(x => x.AuthorUserId)
+            .Select(group => new
+            {
+                UserId = group.Key,
+                DisplayName = group.Max(x => x.AuthorName),
+                PostCount = group.Count()
+            })
+            .OrderByDescending(item => item.PostCount)
+            .ThenBy(item => item.DisplayName)
+            .Take(take)
+            .ToListAsync(ct);
+        return rows
+            .Select(item => new SocialTopAuthorDto(item.UserId, item.DisplayName, item.PostCount))
+            .ToList();
+    }
 
     public async Task<SocialPostDto> CreateAsync(CreateSocialPostInput input, CancellationToken ct = default)
     {
@@ -161,7 +206,7 @@ public class SocialPostAppService(
     {
         var me = UserId;
         return await db.SocialPosts.SingleOrDefaultAsync(x => x.Id == postId &&
-            (x.Visibility == SocialPostVisibility.Public || x.AuthorUserId == me), ct)
+            (x.AuthorUserId == me || x.Visibility == SocialPostVisibility.Public), ct)
             ?? throw new AbpAuthorizationException("Social post is not visible to the current user.");
     }
 

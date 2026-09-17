@@ -1,0 +1,12 @@
+.hcs-public-shell {
+    min-height: 100vh;
+    background:
+        radial-gradient(900px 420px at 50% -10%, var(--color-primary-soft, #e7f6f3), transparent 70%),
+        var(--color-background, #f5f8fa);
+}
+
+.hcs-public-shell__main {
+    margin: 0 auto;
+    max-width: 1100px;
+    padding: 1.5rem 1rem 2.5rem;
+}

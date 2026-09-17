@@ -1,7 +1,8 @@
 ﻿/* Blazor host adapters — keep prototype chat/social look inside .hcs-app-shell.
    Loaded last so leftover .hcs-app-shell / Bootstrap rules cannot restyle the sample. */
 
-html:has(.hcs-app-shell) {
+html:has(.hcs-app-shell),
+html:has(.hcs-public-shell) {
   height: auto !important;
   max-height: none !important;
   max-width: 100%;
@@ -11,7 +12,9 @@ html:has(.hcs-app-shell) {
 }
 
 body:has(.hcs-app-shell),
-body.abp-application-layout:has(.hcs-app-shell) {
+body.abp-application-layout:has(.hcs-app-shell),
+body:has(.hcs-public-shell),
+body.abp-application-layout:has(.hcs-public-shell) {
   height: auto !important;
   max-height: none !important;
   max-width: 100%;
@@ -615,9 +618,59 @@ body:has(.page-chat) {
   padding: 0 !important;
 }
 
+.hcs-app-shell .page-social .social-cover-bar .social-search-toggle.icon-btn {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+.hcs-app-shell .page-social .social-cover-bar .social-search-toggle.icon-btn:hover,
+.hcs-app-shell .page-social .social-cover-bar .social-search-toggle.icon-btn[aria-expanded="true"] {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
 .hcs-app-shell .page-social .social-toolbar.card {
   min-height: 56px;
+  overflow: visible !important;
   padding: 8px 18px !important;
+}
+
+.hcs-app-shell .page-social .social-feed-head,
+.hcs-app-shell .page-social .social-feed-head .page-actions,
+.hcs-app-shell .page-social .social-toolbar-main {
+  overflow: visible;
+}
+
+.hcs-app-shell .page-social .docs-filter-pop {
+  background: var(--color-white, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-md);
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  overflow: visible;
+  padding: 12px 14px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(36rem, calc(100vw - 32px));
+  z-index: var(--z-dropdown, 60);
+}
+
+.hcs-app-shell .page-social .docs-filter-pop.is-open {
+  display: flex;
+}
+
+.hcs-app-shell .page-social .docs-filter-pop[hidden] {
+  display: none !important;
+}
+
+.hcs-app-shell .page-social .docs-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .hcs-app-shell .page-social .card,
@@ -654,7 +707,7 @@ body:has(.page-chat) {
   resize: none;
 }
 
-.hcs-app-shell .page-social button:not(.btn):not(.social-mode):not([role="menuitem"]) {
+.hcs-app-shell .page-social button:not(.btn):not(.social-mode):not([role="menuitem"]):not(.hcs-rating-star):not(.social-trust-chip):not(.social-cover-trust) {
   -webkit-appearance: none !important;
   appearance: none !important;
   border: 0 !important;
@@ -666,14 +719,35 @@ body:has(.page-chat) {
   border: 0 !important;
 }
 
+.hcs-app-shell .page-social .social-cover {
+  overflow: visible;
+}
+
+.hcs-app-shell .page-social .social-cover-tool.icon-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  color: var(--color-primary);
+  background: var(--color-teal-50, #e7f6f3) !important;
+}
+
+.hcs-app-shell .page-social .social-cover-tool.icon-btn:hover,
+.hcs-app-shell .page-social .social-cover-tool.icon-btn.is-open,
+.hcs-app-shell .page-social .social-cover-tool.icon-btn[aria-expanded="true"] {
+  background: #d8f0eb !important;
+}
+
 .hcs-app-shell .page-social .post-action {
-  min-height: 44px;
+  min-height: 36px;
+  padding: 4px 8px;
   background: transparent;
+  border-radius: 0;
 }
 
 .hcs-app-shell .page-social .post-action:hover,
 .hcs-app-shell .page-social .post-action.is-on {
-  background: var(--color-primary-soft);
+  background: transparent;
 }
 
 .hcs-app-shell .page-social .post-actions-meta button,
@@ -2312,6 +2386,11 @@ body:has(.hcs-app-shell) .select2-dropdown {
   .hcs-app-shell .hcs-workspace :is(.hcs-ws-doc, .hcs-ws-proj, .hcs-ws-task, .hcs-ws-ev, .hcs-ws-notif) {
     max-height: none;
     overflow: visible;
+  }
+
+  .hcs-app-shell .hcs-workspace .hcs-ws-doc-groups {
+    max-height: 18rem;
+    overflow: auto;
   }
 
   .hcs-app-shell .hcs-main-content:not(:has(.hcs-chat-page)):not(:has(.page-chat)) {

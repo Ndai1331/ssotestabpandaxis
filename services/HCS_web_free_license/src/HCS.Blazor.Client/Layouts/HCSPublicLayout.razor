@@ -1,0 +1,26 @@
+@inherits LayoutComponentBase
+@using HCS.Blazor.Client.Branding
+@inject SystemBrandingState Branding
+
+<HeadContent>
+    <link rel="icon" href="@Branding.FaviconUrl" data-hcs-system-branding-favicon />
+</HeadContent>
+
+<div class="hcs-public-shell" style="@Branding.BackgroundStyle">
+    <main class="hcs-public-shell__main">
+        @Body
+    </main>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await Branding.EnsureLoadedAsync();
+        StateHasChanged();
+    }
+}

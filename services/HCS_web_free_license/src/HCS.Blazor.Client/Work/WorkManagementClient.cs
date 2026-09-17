@@ -255,6 +255,21 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
             ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
     }
 
+    public async Task<SurveyCriteriaDto> UploadCriteriaImageAsync(Guid criteriaId, IBrowserFile file,
+        CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream(25 * 1024 * 1024, cancellationToken);
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+        content.Add(fileContent, "file", file.Name);
+        using var response = await CreateClient().PostAsync($"/api/surveys/criteria/{criteriaId:D}/image", content, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SurveyCriteriaDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+
     public Task<SurveyResultStatisticsDto> GetSurveyStatisticsAsync(Guid? locationId = null,
         CancellationToken cancellationToken = default) =>
         GetAsync<SurveyResultStatisticsDto>(
@@ -269,6 +284,13 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
         return GetAsync<PagedWorkResponse<SurveyResultSessionSummaryDto>>(uri, cancellationToken);
     }
 
+    public Task<SurveyResultSessionSummaryDto> HandleSurveyResultAsync(Guid sessionId, HandleSurveyResultRequest request,
+        CancellationToken cancellationToken = default) =>
+        SendAsync<SurveyResultSessionSummaryDto>(HttpMethod.Put, $"/api/surveys/results/{sessionId:D}/handling", request, cancellationToken);
+
+    public Task DeleteSurveyResultSessionAsync(Guid sessionId, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Delete, $"/api/surveys/results/{sessionId:D}", cancellationToken);
+
     public Task<List<SurveyResultSessionDetailDto>> GetSurveyResultDetailsAsync(Guid sessionId, Guid? locationId = null,
         CancellationToken cancellationToken = default)
     {
@@ -279,10 +301,15 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
 
     public Task<PagedWorkResponse<EmployeeRatingSummaryDto>> GetEmployeeRatingSummariesAsync(
         int skip = 0, int take = MaxPageSize, DateTime? from = null, DateTime? to = null,
-        CancellationToken cancellationToken = default) =>
-        GetAsync<PagedWorkResponse<EmployeeRatingSummaryDto>>(
-            BuildDateRangeUri($"/api/employee-ratings/summary?skip={Math.Max(0, skip)}&take={Math.Clamp(take, 1, MaxPageSize)}", from, to),
-            cancellationToken);
+        Guid? userId = null, CancellationToken cancellationToken = default)
+    {
+        var uri = BuildDateRangeUri(
+            $"/api/employee-ratings/summary?skip={Math.Max(0, skip)}&take={Math.Clamp(take, 1, MaxPageSize)}",
+            from, to);
+        if (userId.HasValue)
+            uri += $"&userId={userId.Value:D}";
+        return GetAsync<PagedWorkResponse<EmployeeRatingSummaryDto>>(uri, cancellationToken);
+    }
 
     public async Task<List<EmployeeRatingSummaryDto>> GetAllEmployeeRatingSummariesAsync(
         DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
@@ -291,7 +318,8 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
         var skip = 0;
         while (true)
         {
-            var page = await GetEmployeeRatingSummariesAsync(skip, MaxPageSize, from, to, cancellationToken);
+            var page = await GetEmployeeRatingSummariesAsync(skip, MaxPageSize, from, to,
+                cancellationToken: cancellationToken);
             all.AddRange(page.Items);
             skip += page.Items.Count;
             if (page.Items.Count == 0 || skip >= page.TotalCount) break;
