@@ -31,4 +31,18 @@ Mỗi host enrich property `Application` (allow-list): `HCS.AuthServer`, `HCS.We
 - Browser **không** gọi Seq. Filter Seq được dựng server-side; raw Seq query từ client bị từ chối.
 - Seq down: page báo lỗi, Platform không crash.
 
+## Production
+
+`deploy/ubuntu` và `deploy/panel` phải có service `seq` (cùng project `hcs-apps`, hostname Docker `seq`) và `Seq__ServerUrl=http://seq` trong `common-env` của **mọi** app. Không public Seq qua Nginx; chỉ bind `127.0.0.1:5341` nếu cần UI ops trên host.
+
+- Seq log `HTTP GET /api/events` mỗi ~3s: Platform query được (auto-refresh).
+- Seq log `Wrote 0 index sets`: app chưa ingest — thiếu `Seq__ServerUrl` hoặc image chưa có Serilog Seq sink.
+- API vẫn 403/exception trong khi Seq 200: payload gzip/CLEF; Platform cần image có parser + `AutomaticDecompression`.
+
+```bash
+docker exec hcs-apps-platform-1 printenv | grep Seq
+docker exec hcs-apps-platform-1 wget -qO- 'http://seq/api/events?count=1&render=true'
+docker logs hcs-apps-platform-1 --since 10m 2>&1 | grep -i seq
+```
+
 Role `admin` luôn được phép xem nhật ký service: `HcsAdminPermissionValueProvider` cấp mọi permission cho admin (kể cả quyền mới chưa có trong DB). `HCSRolePermissionSynchronizer` vẫn seed grant còn thiếu cho admin khi Platform/AuthServer khởi động. Restart Platform sau khi deploy; admin không cần sign out/in. User không phải admin cần grant `HCS.ServiceLogs` rồi đăng nhập lại.

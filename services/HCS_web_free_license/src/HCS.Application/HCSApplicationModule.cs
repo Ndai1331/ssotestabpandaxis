@@ -1,15 +1,17 @@
-﻿using Volo.Abp.PermissionManagement;
-using Volo.Abp.SettingManagement;
-using Volo.Abp.Account;
-using Volo.Abp.Identity;
-using Volo.Abp.Mapperly;
-using Volo.Abp.FeatureManagement;
-using Volo.Abp.Modularity;
+﻿using HCS.Logging;
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using HCS.Logging;
-using System;
-using System.Net.Http.Headers;
+using Volo.Abp.Account;
+using Volo.Abp.FeatureManagement;
+using Volo.Abp.Identity;
+using Volo.Abp.Mapperly;
+using Volo.Abp.Modularity;
+using Volo.Abp.PermissionManagement;
+using Volo.Abp.SettingManagement;
 
 namespace HCS;
 
@@ -45,6 +47,9 @@ public class HCSApplicationModule : AbpModule
             }
 
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            AutomaticDecompression = DecompressionMethods.All
         });
     }
 }
