@@ -9,7 +9,6 @@ using HCS.Settings;
 using Volo.Abp.Account.Web;
 using Volo.Abp.AspNetCore.Mvc.UI.Alerts;
 using Volo.Abp.Identity;
-using Volo.Abp.SettingManagement;
 using Volo.Abp.Settings;
 
 namespace HCS.AuthServer.Pages.Account;
@@ -18,8 +17,7 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
 {
     private readonly IConfiguration _configuration;
     private readonly ISettingProvider _settingProvider;
-    private readonly ISettingRepository _settingRepository;
-    private readonly IOptions<KeycloakOptions> _keycloakOptions;
+    private readonly KeycloakSettingsResolver _keycloakSettingsResolver;
 
     public bool ShowSsoLoginButton { get; private set; } = true;
     public string BrandingTitle { get; private set; } = SystemBrandingDefaults.Title;
@@ -42,8 +40,7 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
         IWebHostEnvironment webHostEnvironment,
         IConfiguration configuration,
         ISettingProvider settingProvider,
-        ISettingRepository settingRepository,
-        IOptions<KeycloakOptions> keycloakOptions)
+        KeycloakSettingsResolver keycloakSettingsResolver)
         : base(
             schemeProvider,
             accountOptions,
@@ -53,8 +50,7 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
     {
         _configuration = configuration;
         _settingProvider = settingProvider;
-        _settingRepository = settingRepository;
-        _keycloakOptions = keycloakOptions;
+        _keycloakSettingsResolver = keycloakSettingsResolver;
     }
 
     public override async Task<IActionResult> OnGetAsync()
@@ -83,14 +79,11 @@ public class LoginModel : Volo.Abp.Account.Web.Pages.Account.LoginModel
 
     private async Task ApplySsoVisibilityAsync()
     {
-        var setting = await _settingRepository.FindAsync(
-            HCSSettings.ShowSsoLoginButton,
-            GlobalSettingValueProvider.ProviderName,
-            providerKey: null);
+        var settings = await _keycloakSettingsResolver.RefreshAsync();
         ShowSsoLoginButton = SsoLoginVisibility.IsVisible(
-            setting?.Value,
+            settings.ShowSsoLoginButton ? "true" : "false",
             VisibleExternalProviders.Any(),
-            _keycloakOptions.Value.Enabled);
+            settings.Enabled);
     }
 
     private async Task LoadBrandingAsync()

@@ -3,7 +3,7 @@
 @inherits HCSComponentBase
 @inject AuthenticationSettingsClient SettingsClient
 
-<section class="hcs-auth-settings" aria-labelledby="hcs-sso-login-settings-title" aria-busy="@(isLoading ? "true" : "false")">
+<section class="hcs-auth-settings" aria-labelledby="hcs-sso-login-settings-title" aria-busy="@(isLoading || isBusy ? "true" : "false")">
     <header class="hcs-auth-settings__header">
         <div>
             <p class="hcs-auth-settings__eyebrow">@L["Settings:SsoLoginEyebrow"]</p>
@@ -26,11 +26,29 @@
         {
             <div class="hcs-auth-settings__error" role="alert">
                 <span>@errorMessage</span>
-                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isSaving">
+                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isBusy">
                     @L["Settings:SsoLoginRetry"]
                 </Button>
             </div>
         }
+
+        <div class="hcs-auth-settings__row">
+            <div>
+                <h3>@L["Settings:SsoEnabled"]</h3>
+                <p id="hcs-sso-enabled-description">@L["Settings:SsoEnabledDescription"]</p>
+            </div>
+            <button type="button"
+                    class="hcs-auth-settings__switch @(enabled ? "is-enabled" : "is-disabled")"
+                    aria-pressed="@(enabled ? "true" : "false")"
+                    aria-describedby="hcs-sso-enabled-description"
+                    @onclick="ToggleEnabled"
+                    disabled="@isBusy">
+                <span class="hcs-auth-settings__switch-track" aria-hidden="true">
+                    <span class="hcs-auth-settings__switch-thumb"></span>
+                </span>
+                <span>@(enabled ? L["Settings:SsoEnabledOn"] : L["Settings:SsoEnabledOff"])</span>
+            </button>
+        </div>
 
         <div class="hcs-auth-settings__row">
             <div>
@@ -42,7 +60,7 @@
                     aria-pressed="@(showSsoLoginButton ? "true" : "false")"
                     aria-describedby="hcs-sso-login-settings-description"
                     @onclick="ToggleSsoLoginButton"
-                    disabled="@isSaving">
+                    disabled="@isBusy">
                 <span class="hcs-auth-settings__switch-track" aria-hidden="true">
                     <span class="hcs-auth-settings__switch-thumb"></span>
                 </span>
@@ -50,32 +68,149 @@
             </button>
         </div>
 
+        <div class="hcs-auth-settings__form-grid">
+            <Field>
+                <FieldLabel>@L["Settings:SsoBaseUrl"]</FieldLabel>
+                <TextInput @bind-Value="baseUrl" placeholder="https://sso-hcs.htltech.vn" autocomplete="off" spellcheck="false" />
+                <FieldHelp>@L["Settings:SsoBaseUrlHint"]</FieldHelp>
+            </Field>
+            <Field>
+                <FieldLabel>@L["Settings:SsoRealm"]</FieldLabel>
+                <TextInput @bind-Value="realm" placeholder="@KeycloakSettingDefaults.Realm" autocomplete="off" />
+            </Field>
+            <Field>
+                <FieldLabel>@L["Settings:SsoClientId"]</FieldLabel>
+                <TextInput @bind-Value="clientId" placeholder="@KeycloakSettingDefaults.ClientId" autocomplete="off" />
+            </Field>
+            <Field>
+                <FieldLabel>@L["Settings:SsoClientSecret"]</FieldLabel>
+                <input class="form-control"
+                       type="password"
+                       @bind="clientSecret"
+                       autocomplete="new-password"
+                       placeholder="@(hasClientSecret ? L["Settings:SsoSecretConfigured"].Value : null)" />
+                <FieldHelp>@L["Settings:SsoSecretHint"]</FieldHelp>
+            </Field>
+            <Field>
+                <FieldLabel>@L["Settings:SsoAdminUser"]</FieldLabel>
+                <TextInput @bind-Value="adminUser" autocomplete="off" />
+                <FieldHelp>@L["Settings:SsoAdminUserHint"]</FieldHelp>
+            </Field>
+            <Field>
+                <FieldLabel>@L["Settings:SsoAdminSecret"]</FieldLabel>
+                <input class="form-control"
+                       type="password"
+                       @bind="adminSecret"
+                       autocomplete="new-password"
+                       placeholder="@(hasAdminSecret ? L["Settings:SsoSecretConfigured"].Value : null)" />
+            </Field>
+        </div>
+
+        <div class="hcs-auth-settings__row">
+            <div>
+                <h3>@L["Settings:SsoRequireHttps"]</h3>
+                <p id="hcs-sso-https-description">@L["Settings:SsoRequireHttpsDescription"]</p>
+            </div>
+            <button type="button"
+                    class="hcs-auth-settings__switch @(requireHttpsMetadata ? "is-enabled" : "is-disabled")"
+                    aria-pressed="@(requireHttpsMetadata ? "true" : "false")"
+                    aria-describedby="hcs-sso-https-description"
+                    @onclick="ToggleRequireHttps"
+                    disabled="@isBusy">
+                <span class="hcs-auth-settings__switch-track" aria-hidden="true">
+                    <span class="hcs-auth-settings__switch-thumb"></span>
+                </span>
+                <span>@(requireHttpsMetadata ? L["Settings:SsoRequireHttpsOn"] : L["Settings:SsoRequireHttpsOff"])</span>
+            </button>
+        </div>
+
+        <div class="hcs-auth-settings__mappings">
+            <div class="hcs-auth-settings__mappings-header">
+                <div>
+                    <h3>@L["Settings:SsoRoleMappings"]</h3>
+                    <p>@L["Settings:SsoRoleMappingsDescription"]</p>
+                </div>
+            </div>
+            <Field>
+                <FieldLabel>@L["Settings:SsoAppAccessGroup"]</FieldLabel>
+                <TextInput @bind-Value="appAccessGroup" placeholder="@KeycloakSettingDefaults.AppAccessGroup" autocomplete="off" />
+                <FieldHelp>@L["Settings:SsoAppAccessGroupHint"]</FieldHelp>
+            </Field>
+            <table class="hcs-auth-settings__table">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Settings:SsoMappingGroup"]</th>
+                        <th scope="col">@L["Settings:SsoMappingRole"]</th>
+                        <th scope="col"><span class="visually-hidden">@L["Settings:SsoMappingRemove"]</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var index = 0; index < mappings.Count; index++)
+                    {
+                        var row = index;
+                        <tr>
+                            <td>
+                                <TextInput Value="@mappings[row].Group"
+                                           ValueChanged="value => SetMappingGroup(row, value)"
+                                           autocomplete="off" />
+                            </td>
+                            <td>
+                                <TextInput Value="@mappings[row].Role"
+                                           ValueChanged="value => SetMappingRole(row, value)"
+                                           autocomplete="off" />
+                            </td>
+                            <td>
+                                <Button Color="Color.Light" Size="Size.Small" Clicked="() => RemoveMapping(row)" Disabled="@isBusy">
+                                    @L["Settings:SsoMappingRemove"]
+                                </Button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <Button Color="Color.Light" Size="Size.Small" Clicked="AddMapping" Disabled="@isBusy">
+                @L["Settings:SsoMappingAdd"]
+            </Button>
+        </div>
+
         <div class="hcs-auth-settings__footer">
             <span class="hcs-auth-settings__status" role="status" aria-live="polite">
-                @(showSsoLoginButton ? L["Settings:SsoLoginStatusEnabled"] : L["Settings:SsoLoginStatusDisabled"])
+                @(enabled
+                    ? (showSsoLoginButton ? L["Settings:SsoLoginStatusEnabled"] : L["Settings:SsoLoginStatusDisabled"])
+                    : L["Settings:SsoEnabledStatusOff"])
             </span>
-            <Button Color="Color.Primary"
-                    Clicked="SaveAsync"
-                    Loading="@isSaving"
-                    Disabled="@(isSaving || !isDirty)">
-                <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
-                @L["Settings:SsoLoginSave"]
-            </Button>
+            <div class="hcs-auth-settings__actions">
+                <Button Color="Color.Light" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
+                    @L["Settings:SsoTest"]
+                </Button>
+                <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isBusy" Disabled="@isBusy">
+                    <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
+                    @L["Settings:SsoLoginSave"]
+                </Button>
+            </div>
         </div>
     }
 </section>
 
 @code {
     private bool isLoading = true;
-    private bool isSaving;
-    private bool isDirty;
+    private bool isBusy;
+    private bool enabled;
     private bool showSsoLoginButton = true;
+    private bool requireHttpsMetadata = true;
+    private bool hasClientSecret;
+    private bool hasAdminSecret;
+    private string baseUrl = string.Empty;
+    private string realm = KeycloakSettingDefaults.Realm;
+    private string clientId = KeycloakSettingDefaults.ClientId;
+    private string clientSecret = string.Empty;
+    private string adminUser = string.Empty;
+    private string adminSecret = string.Empty;
+    private string appAccessGroup = KeycloakSettingDefaults.AppAccessGroup;
+    private List<KeycloakRoleMapping> mappings = [.. KeycloakSettingDefaults.RoleMappings];
     private string? errorMessage;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadAsync();
-    }
+    protected override Task OnInitializedAsync() => LoadAsync();
 
     private async Task LoadAsync()
     {
@@ -84,10 +219,9 @@
         try
         {
             var settings = await SettingsClient.GetAsync();
-            showSsoLoginButton = settings.ShowSsoLoginButton;
-            isDirty = false;
+            Apply(settings);
         }
-        catch (System.Exception exception)
+        catch (Exception exception)
         {
             errorMessage = MapBffError(exception);
         }
@@ -97,43 +231,154 @@
         }
     }
 
-    private Task ToggleSsoLoginButton()
+    private void Apply(AuthenticationSettingsDto settings)
     {
-        if (!isSaving)
-        {
-            showSsoLoginButton = !showSsoLoginButton;
-            isDirty = true;
-            errorMessage = null;
-        }
-
-        return Task.CompletedTask;
+        enabled = settings.Enabled;
+        showSsoLoginButton = settings.ShowSsoLoginButton;
+        requireHttpsMetadata = settings.RequireHttpsMetadata;
+        hasClientSecret = settings.HasClientSecret;
+        hasAdminSecret = settings.HasAdminSecret;
+        baseUrl = settings.BaseUrl ?? string.Empty;
+        realm = string.IsNullOrWhiteSpace(settings.Realm) ? KeycloakSettingDefaults.Realm : settings.Realm;
+        clientId = string.IsNullOrWhiteSpace(settings.ClientId) ? KeycloakSettingDefaults.ClientId : settings.ClientId;
+        clientSecret = string.Empty;
+        adminUser = settings.AdminUser ?? string.Empty;
+        adminSecret = string.Empty;
+        appAccessGroup = string.IsNullOrWhiteSpace(settings.AppAccessGroup)
+            ? KeycloakSettingDefaults.AppAccessGroup
+            : settings.AppAccessGroup;
+        mappings = settings.RoleMappings is { Count: > 0 }
+            ? settings.RoleMappings.Select(mapping => new KeycloakRoleMapping { Group = mapping.Group, Role = mapping.Role }).ToList()
+            : [.. KeycloakSettingDefaults.RoleMappings];
     }
 
-    private async Task SaveAsync()
+    private void ToggleEnabled()
     {
-        if (isSaving || !isDirty)
+        if (!isBusy)
+        {
+            enabled = !enabled;
+            errorMessage = null;
+        }
+    }
+
+    private void ToggleSsoLoginButton()
+    {
+        if (!isBusy)
+        {
+            showSsoLoginButton = !showSsoLoginButton;
+            errorMessage = null;
+        }
+    }
+
+    private void ToggleRequireHttps()
+    {
+        if (!isBusy)
+        {
+            requireHttpsMetadata = !requireHttpsMetadata;
+            errorMessage = null;
+        }
+    }
+
+    private void AddMapping()
+    {
+        mappings.Add(new KeycloakRoleMapping());
+    }
+
+    private void RemoveMapping(int index)
+    {
+        if (index >= 0 && index < mappings.Count)
+        {
+            mappings.RemoveAt(index);
+        }
+    }
+
+    private void SetMappingGroup(int index, string value)
+    {
+        if (index >= 0 && index < mappings.Count)
+        {
+            mappings[index].Group = value;
+        }
+    }
+
+    private void SetMappingRole(int index, string value)
+    {
+        if (index >= 0 && index < mappings.Count)
+        {
+            mappings[index].Role = value;
+        }
+    }
+
+    private UpdateAuthenticationSettingsDto CreateInput() => new()
+    {
+        ShowSsoLoginButton = showSsoLoginButton,
+        Enabled = enabled,
+        BaseUrl = baseUrl,
+        Realm = realm,
+        ClientId = clientId,
+        ClientSecret = clientSecret,
+        RequireHttpsMetadata = requireHttpsMetadata,
+        AdminUser = adminUser,
+        AdminSecret = adminSecret,
+        AppAccessGroup = appAccessGroup,
+        RoleMappings = mappings.Select(mapping => new KeycloakRoleMapping { Group = mapping.Group, Role = mapping.Role }).ToList()
+    };
+
+    private async Task TestAsync()
+    {
+        if (isBusy)
         {
             return;
         }
 
-        isSaving = true;
+        isBusy = true;
         errorMessage = null;
         try
         {
-            await SettingsClient.UpdateAsync(new UpdateAuthenticationSettingsDto
+            var result = await SettingsClient.TestAsync(CreateInput());
+            if (result.Success)
             {
-                ShowSsoLoginButton = showSsoLoginButton
-            });
-            isDirty = false;
+                await NotifySuccessAsync(result.Message ?? L["Settings:SsoTestDiscoveryOk"]);
+            }
+            else
+            {
+                errorMessage = result.Message ?? L["Settings:SsoTestDiscoveryFailed"];
+            }
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (isBusy)
+        {
+            return;
+        }
+
+        isBusy = true;
+        errorMessage = null;
+        try
+        {
+            await SettingsClient.UpdateAsync(CreateInput());
+            hasClientSecret = hasClientSecret || !string.IsNullOrWhiteSpace(clientSecret);
+            hasAdminSecret = hasAdminSecret || !string.IsNullOrWhiteSpace(adminSecret);
+            clientSecret = string.Empty;
+            adminSecret = string.Empty;
             await NotifySuccessAsync(L["Settings:SsoLoginSaved"]);
         }
-        catch (System.Exception exception)
+        catch (Exception exception)
         {
             errorMessage = MapBffError(exception, BffErrorKind.Save);
         }
         finally
         {
-            isSaving = false;
+            isBusy = false;
         }
     }
 }

@@ -59,7 +59,53 @@
     background: #f6fafb;
     border: 1px solid #dfebef;
     border-radius: 6px;
+    margin-bottom: 1rem;
     padding: 1rem 1.15rem;
+}
+
+.hcs-auth-settings__form-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 0 1rem;
+}
+
+.hcs-auth-settings ::deep .form-label {
+    color: var(--hcs-color-heading, #193b57);
+    font-size: .9rem;
+    font-weight: 700;
+}
+
+.hcs-auth-settings ::deep .form-control,
+.hcs-auth-settings input.form-control {
+    width: 100%;
+}
+
+.hcs-auth-settings__mappings {
+    border: 1px solid #dfebef;
+    border-radius: 6px;
+    display: grid;
+    gap: 1rem;
+    margin-bottom: .25rem;
+    padding: 1rem 1.15rem;
+}
+
+.hcs-auth-settings__table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.hcs-auth-settings__table th,
+.hcs-auth-settings__table td {
+    padding: .45rem .4rem .45rem 0;
+    vertical-align: middle;
+}
+
+.hcs-auth-settings__table th {
+    color: #5b7484;
+    font-size: .8rem;
+    font-weight: 700;
+    text-align: left;
 }
 
 .hcs-auth-settings__row > div:first-child {
@@ -131,6 +177,12 @@
     margin-top: 1.1rem;
 }
 
+.hcs-auth-settings__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+}
+
 .hcs-auth-settings__status {
     color: #5b7484;
     font-size: .9rem;
@@ -159,9 +211,11 @@
 
 @media (max-width: 576px) {
     .hcs-auth-settings__row,
-    .hcs-auth-settings__footer {
+    .hcs-auth-settings__footer,
+    .hcs-auth-settings__form-grid {
         align-items: flex-start;
         flex-direction: column;
+        grid-template-columns: 1fr;
     }
 
     .hcs-auth-settings__switch {

@@ -124,6 +124,8 @@ services:
       # Token refresh is sent by WebGateway over the private Docker network.
       # Public browser traffic remains terminated as HTTPS by Caddy.
       AuthServer__RequireHttpsMetadata: "false"
+      # First-boot fallback. After Save on /administration/system-branding, ABP settings win.
+      # MetadataAddress stays env-only (Docker backchannel to Keycloak).
       Authentication__Keycloak__Enabled: "true"
       # Browser OIDC redirects must use localhost; metadata is fetched via host.docker.internal.
       Authentication__Keycloak__Authority: http://localhost:5110/realms/bd

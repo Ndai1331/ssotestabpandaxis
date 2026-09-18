@@ -27,3 +27,5 @@ Configure the Keycloak client as confidential, enable standard authorization cod
 - The authorization request always uses `prompt=login`.
 
 Development settings allow HTTP metadata for the local Keycloak endpoint only. Use HTTPS metadata outside the local lab.
+
+After the first boot, operators can change URL, realm, client, secret, and group→role mappings on `/administration/system-branding` (SSO block). AuthServer reads those ABP settings first and falls back to `Authentication__Keycloak__*` env values. `MetadataAddress` remains env-only.

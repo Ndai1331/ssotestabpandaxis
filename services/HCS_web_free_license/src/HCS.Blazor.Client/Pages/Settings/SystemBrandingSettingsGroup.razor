@@ -38,24 +38,6 @@
             </div>
         }
 
-        <div class="hcs-branding-settings__sso">
-            <div>
-                <h3>@L["Settings:SsoLoginButton"]</h3>
-                <p id="hcs-sso-login-settings-description">@L["Settings:SsoLoginButtonDescription"]</p>
-            </div>
-            <button type="button"
-                    class="hcs-branding-settings__switch @(showSsoLoginButton ? "is-enabled" : "is-disabled")"
-                    aria-pressed="@(showSsoLoginButton ? "true" : "false")"
-                    aria-describedby="hcs-sso-login-settings-description"
-                    @onclick="ToggleSsoLoginButton"
-                    disabled="@isSaving">
-                <span class="hcs-branding-settings__switch-track" aria-hidden="true">
-                    <span class="hcs-branding-settings__switch-thumb"></span>
-                </span>
-                <span>@(showSsoLoginButton ? L["Settings:SsoLoginButtonEnabled"] : L["Settings:SsoLoginButtonDisabled"])</span>
-            </button>
-        </div>
-
         <div class="hcs-branding-settings__form-grid">
             <Field>
                 <FieldLabel>@L["Settings:BrandingTitle"]</FieldLabel>
@@ -179,15 +161,6 @@
         ? string.Empty
         : $"background-image: linear-gradient(color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent), color-mix(in srgb, var(--hcs-color-background, #F3F7F8) 72%, transparent)), url('{backgroundPreviewUrl ?? backgroundUrl}'); background-position: center; background-size: cover;";
 
-    private void ToggleSsoLoginButton()
-    {
-        if (!isSaving)
-        {
-            showSsoLoginButton = !showSsoLoginButton;
-            MarkDirty();
-        }
-    }
-
     private void MarkDirty()
     {
         isDirty = true;
@@ -245,8 +218,7 @@
                 RemoveBackground,
                 logoFile,
                 faviconFile,
-                backgroundFile,
-                showSsoLoginButton);
+                backgroundFile);
             await BrandingState.ApplyAsync(settings);
             logoUrl = BrandingState.LogoUrl;
             faviconUrl = BrandingState.FaviconUrl;

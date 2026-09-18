@@ -173,12 +173,9 @@ public sealed class HCSAuthServerModule : AbpModule
 
         context.Services.AddOptions<KeycloakOptions>()
             .Bind(section);
+        context.Services.ConfigureOptions<KeycloakOpenIdConnectOptionsSetup>();
 
-        if (!settings.Enabled)
-        {
-            return;
-        }
-
+        // Always register the scheme so enabling SSO from settings does not require a restart.
         context.Services.AddAuthentication()
             .AddOpenIdConnect(KeycloakOptions.Scheme, "Login với SSO", options =>
             {

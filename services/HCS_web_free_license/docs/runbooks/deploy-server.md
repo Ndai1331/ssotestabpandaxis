@@ -218,8 +218,10 @@ Compose set (HTTPS):
 | | `PostLogoutRootUrl=https://hanhchinhso.htltech.vn` |
 | web-gateway | `Bff__PublicOrigin=https://api-hcs.htltech.vn`, `Bff__CookieDomain=htltech.vn` |
 | blazor | `App__SelfUrl=https://hanhchinhso.htltech.vn`, `Bff__PublicOrigin=https://api-hcs.htltech.vn` |
-| auth-server | `Authentication__Keycloak__Authority=https://sso-hcs.htltech.vn/realms/bd` |
+| auth-server | `Authentication__Keycloak__Authority=https://sso-hcs.htltech.vn/realms/bd` (fallback; SSO URL/realm/client/secret sửa trên UI `/administration/system-branding`) |
 | keycloak | `KC_HOSTNAME=https://sso-hcs.htltech.vn` |
+
+Sau lần boot đầu, sửa SSO trên **Cấu hình hệ thống → Cấu hình SSO**. Compose `Authentication__Keycloak__*` chỉ là fallback. `MetadataAddress` (Docker backchannel) vẫn chỉ cấu hình bằng env, không đưa lên UI.
 
 ### B.7 Bootstrap Keycloak realm `bd`
 

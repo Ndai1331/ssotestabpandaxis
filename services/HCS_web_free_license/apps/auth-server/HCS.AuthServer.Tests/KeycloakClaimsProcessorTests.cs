@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using HCS.Settings;
 using Volo.Abp.Security.Claims;
 using Xunit;
 
@@ -46,6 +47,20 @@ public sealed class KeycloakClaimsProcessorTests
         Assert.True(result.IsAllowed);
         Assert.Single(principal.FindAll(AbpClaimTypes.Role));
         Assert.Single(principal.FindAll(ClaimTypes.Role));
+    }
+
+    [Fact]
+    public void Apply_UsesCustomAccessGroup()
+    {
+        var principal = CreatePrincipal(new Claim("groups", "[\"hcs-users\",\"bd-admin\"]"));
+
+        var result = KeycloakClaimsProcessor.Apply(
+            principal,
+            "hcs-users",
+            [new KeycloakRoleMapping { Group = "bd-admin", Role = "admin" }]);
+
+        Assert.True(result.IsAllowed);
+        Assert.Equal(["admin"], result.Roles);
     }
 
     private static ClaimsPrincipal CreatePrincipal(params Claim[] claims) =>

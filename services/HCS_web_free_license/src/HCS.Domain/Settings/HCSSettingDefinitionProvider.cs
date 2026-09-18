@@ -16,6 +16,66 @@ public class HCSSettingDefinitionProvider : SettingDefinitionProvider
                 description: L("Settings:SsoLoginButtonDescription")));
         context.Add(
             new SettingDefinition(
+                HCSSettings.KeycloakEnabled,
+                defaultValue: null,
+                displayName: L("Settings:SsoEnabled"),
+                description: L("Settings:SsoEnabledDescription")));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakBaseUrl,
+                defaultValue: null,
+                displayName: L("Settings:SsoBaseUrl")));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakRealm,
+                defaultValue: KeycloakSettingDefaults.Realm,
+                displayName: L("Settings:SsoRealm")));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakClientId,
+                defaultValue: KeycloakSettingDefaults.ClientId,
+                displayName: L("Settings:SsoClientId")));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakClientSecret,
+                defaultValue: null,
+                displayName: L("Settings:SsoClientSecret"),
+                isVisibleToClients: false,
+                isEncrypted: true));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakRequireHttpsMetadata,
+                defaultValue: null,
+                displayName: L("Settings:SsoRequireHttps")));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakAdminUser,
+                defaultValue: null,
+                displayName: L("Settings:SsoAdminUser")));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakAdminSecret,
+                defaultValue: null,
+                displayName: L("Settings:SsoAdminSecret"),
+                isVisibleToClients: false,
+                isEncrypted: true));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakAppAccessGroup,
+                defaultValue: KeycloakSettingDefaults.AppAccessGroup,
+                displayName: L("Settings:SsoAppAccessGroup")));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakRoleMappings,
+                defaultValue: KeycloakRoleMappingSerializer.Serialize(KeycloakSettingDefaults.RoleMappings),
+                displayName: L("Settings:SsoRoleMappings")));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.KeycloakRevision,
+                defaultValue: "0",
+                displayName: L("Settings:SsoRevision")));
+        context.Add(
+            new SettingDefinition(
                 HCSSettings.AllowSigningFromDocuments,
                 defaultValue: "true",
                 displayName: L("Settings:AllowSigningFromDocuments"),

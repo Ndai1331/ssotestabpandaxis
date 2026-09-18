@@ -1,36 +1,47 @@
+using HCS.Settings;
+
 namespace HCS.AuthServer;
 
 public static class KeycloakGroupRoleMapper
 {
     public const string GroupsClaim = "groups";
-    public const string AppAccessGroup = "bd-app-hcs";
-
-    private static readonly (string Group, string Role)[] Mappings =
-    [
-        ("bd-admin", "admin"),
-        ("bd-lanhdao", "lanhdao"),
-        ("bd-bacsi", "bacsi"),
-        ("bd-nhanvien", "nhanvien")
-    ];
+    public const string AppAccessGroup = KeycloakSettingDefaults.AppAccessGroup;
 
     public static bool HasAppAccess(IEnumerable<string> groups) =>
-        Normalize(groups).Contains(AppAccessGroup);
+        HasAppAccess(groups, AppAccessGroup);
 
-    public static IReadOnlyList<string> ResolveRoles(IEnumerable<string> groups)
+    public static bool HasAppAccess(IEnumerable<string> groups, string? appAccessGroup)
+    {
+        var required = NormalizeGroup(appAccessGroup) ?? AppAccessGroup;
+        return Normalize(groups).Contains(required);
+    }
+
+    public static IReadOnlyList<string> ResolveRoles(IEnumerable<string> groups) =>
+        ResolveRoles(groups, AppAccessGroup, KeycloakSettingDefaults.RoleMappings);
+
+    public static IReadOnlyList<string> ResolveRoles(
+        IEnumerable<string> groups,
+        string? appAccessGroup,
+        IEnumerable<KeycloakRoleMapping>? mappings)
     {
         var normalizedGroups = Normalize(groups);
-        if (!normalizedGroups.Contains(AppAccessGroup))
+        var required = NormalizeGroup(appAccessGroup) ?? AppAccessGroup;
+        if (!normalizedGroups.Contains(required))
         {
             return [];
         }
 
-        var roles = Mappings
+        var roles = KeycloakRoleMappingSerializer.Normalize(mappings)
             .Where(mapping => normalizedGroups.Contains(mapping.Group))
             .Select(mapping => mapping.Role)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        return roles.Count == 0 ? ["nhanvien"] : roles;
+        return roles.Count == 0 ? [KeycloakSettingDefaults.DefaultRole] : roles;
     }
+
+    private static string? NormalizeGroup(string? group) =>
+        string.IsNullOrWhiteSpace(group) ? null : group.Trim().TrimStart('/');
 
     private static HashSet<string> Normalize(IEnumerable<string> groups) =>
         groups

@@ -7,4 +7,5 @@ public interface IAuthenticationSettingsAppService : IApplicationService
 {
     Task<AuthenticationSettingsDto> GetAsync();
     Task UpdateAsync(UpdateAuthenticationSettingsDto input);
+    Task<AuthenticationConnectionTestResultDto> TestAsync(UpdateAuthenticationSettingsDto input);
 }

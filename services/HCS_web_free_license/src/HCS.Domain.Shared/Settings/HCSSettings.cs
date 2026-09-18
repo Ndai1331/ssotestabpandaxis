@@ -7,6 +7,17 @@ public static class HCSSettings
     private const string Prefix = "HCS";
 
     public const string ShowSsoLoginButton = Prefix + ".Authentication.ShowSsoLoginButton";
+    public const string KeycloakEnabled = Prefix + ".Authentication.Keycloak.Enabled";
+    public const string KeycloakBaseUrl = Prefix + ".Authentication.Keycloak.BaseUrl";
+    public const string KeycloakRealm = Prefix + ".Authentication.Keycloak.Realm";
+    public const string KeycloakClientId = Prefix + ".Authentication.Keycloak.ClientId";
+    public const string KeycloakClientSecret = Prefix + ".Authentication.Keycloak.ClientSecret";
+    public const string KeycloakRequireHttpsMetadata = Prefix + ".Authentication.Keycloak.RequireHttpsMetadata";
+    public const string KeycloakAdminUser = Prefix + ".Authentication.Keycloak.AdminUser";
+    public const string KeycloakAdminSecret = Prefix + ".Authentication.Keycloak.AdminSecret";
+    public const string KeycloakAppAccessGroup = Prefix + ".Authentication.Keycloak.AppAccessGroup";
+    public const string KeycloakRoleMappings = Prefix + ".Authentication.Keycloak.RoleMappings";
+    public const string KeycloakRevision = Prefix + ".Authentication.Keycloak.Revision";
     public const string AllowSigningFromDocuments = Prefix + ".Workflow.AllowSigningFromDocuments";
     public const string BrandingTitle = Prefix + ".Branding.Title";
     public const string BrandingDescription = Prefix + ".Branding.Description";

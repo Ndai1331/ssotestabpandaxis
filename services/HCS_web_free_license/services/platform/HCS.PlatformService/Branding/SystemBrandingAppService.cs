@@ -99,9 +99,6 @@ public sealed class SystemBrandingAppService(
             await settingManager.SetGlobalAsync(HCSSettings.BrandingTitle, title);
             await settingManager.SetGlobalAsync(HCSSettings.BrandingDescription, description);
             await settingManager.SetGlobalAsync(
-                HCSSettings.ShowSsoLoginButton,
-                input.ShowSsoLoginButton ? "true" : "false");
-            await settingManager.SetGlobalAsync(
                 HCSSettings.BrandingShowText,
                 (!string.IsNullOrWhiteSpace(title) || !string.IsNullOrWhiteSpace(description))
                     ? "true"

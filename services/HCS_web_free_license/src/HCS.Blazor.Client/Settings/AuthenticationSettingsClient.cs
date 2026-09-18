@@ -28,6 +28,16 @@ public sealed class AuthenticationSettingsClient(IHttpClientFactory httpClientFa
         await EnsureSuccessAsync(response, cancellationToken);
     }
 
+    public async Task<AuthenticationConnectionTestResultDto> TestAsync(
+        UpdateAuthenticationSettingsDto input,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().PostAsJsonAsync($"{Endpoint}/test", input, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<AuthenticationConnectionTestResultDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+
     private static async Task EnsureSuccessAsync(
         HttpResponseMessage response,
         CancellationToken cancellationToken)

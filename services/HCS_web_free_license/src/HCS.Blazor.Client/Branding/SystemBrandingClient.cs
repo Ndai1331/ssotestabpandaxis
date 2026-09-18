@@ -44,7 +44,6 @@ public sealed class SystemBrandingClient(
         IBrowserFile? logo,
         IBrowserFile? favicon,
         IBrowserFile? background,
-        bool showSsoLoginButton = true,
         CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
@@ -53,7 +52,6 @@ public sealed class SystemBrandingClient(
         content.Add(new StringContent(removeLogo ? "true" : "false"), "RemoveLogo");
         content.Add(new StringContent(removeFavicon ? "true" : "false"), "RemoveFavicon");
         content.Add(new StringContent(removeBackground ? "true" : "false"), "RemoveBackground");
-        content.Add(new StringContent(showSsoLoginButton ? "true" : "false"), "ShowSsoLoginButton");
 
         AddFile(content, logo, "Logo", SystemBrandingLimits.MaxLogoBytes, cancellationToken);
         AddFile(content, favicon, "Favicon", SystemBrandingLimits.MaxFaviconBytes, cancellationToken);

@@ -1,4 +1,5 @@
 ﻿using HCS.Logging;
+using HCS.Settings;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -50,6 +51,11 @@ public class HCSApplicationModule : AbpModule
         }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All
+        });
+        context.Services.AddHttpClient(AuthenticationSettingsAppService.HttpClientName, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
     }
 }

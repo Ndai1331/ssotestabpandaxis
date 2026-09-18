@@ -141,6 +141,7 @@ services:
       App__RedirectAllowedUrls: https://${HCS_PUBLIC_HOST},https://${HCS_API_PUBLIC_HOST},https://${HCS_AUTH_PUBLIC_HOST}
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
       AuthServer__RequireHttpsMetadata: "false"
+      # First-boot fallback. After Save on /administration/system-branding, ABP settings win.
       Authentication__Keycloak__Enabled: "true"
       Authentication__Keycloak__Authority: https://${HCS_SSO_PUBLIC_HOST}/realms/bd
       Authentication__Keycloak__ClientId: hcs-free-auth

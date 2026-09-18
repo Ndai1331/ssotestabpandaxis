@@ -7,10 +7,23 @@ public static class KeycloakOpenIdConnectEvents
 {
     public static OpenIdConnectEvents Create() => new()
     {
-        OnRedirectToIdentityProvider = context =>
+        OnRedirectToIdentityProvider = async context =>
         {
+            var resolver = context.HttpContext.RequestServices.GetRequiredService<KeycloakSettingsResolver>();
+            var previous = resolver.Current;
+            var settings = await resolver.RefreshAsync(context.HttpContext.RequestAborted);
+            if (!settings.Enabled)
+            {
+                context.HandleResponse();
+                context.Response.Redirect("/Account/Login");
+                return;
+            }
+
+            var forceRefresh = !string.Equals(previous.Revision, settings.Revision, StringComparison.Ordinal)
+                || !string.Equals(previous.Authority, settings.Authority, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(previous.ClientSecret, settings.ClientSecret, StringComparison.Ordinal);
+            KeycloakOpenIdConnectOptionsSetup.Apply(context.Options, settings, forceRefresh);
             context.ProtocolMessage.Prompt = "login";
-            return Task.CompletedTask;
         },
         OnTokenValidated = async context =>
         {
@@ -20,7 +33,12 @@ public static class KeycloakOpenIdConnectEvents
                 return;
             }
 
-            var result = KeycloakClaimsProcessor.Apply(context.Principal);
+            var resolver = context.HttpContext.RequestServices.GetRequiredService<KeycloakSettingsResolver>();
+            var settings = resolver.Current;
+            var result = KeycloakClaimsProcessor.Apply(
+                context.Principal,
+                settings.AppAccessGroup,
+                settings.RoleMappings);
             if (!result.IsAllowed)
             {
                 context.Fail(result.FailureReason!);

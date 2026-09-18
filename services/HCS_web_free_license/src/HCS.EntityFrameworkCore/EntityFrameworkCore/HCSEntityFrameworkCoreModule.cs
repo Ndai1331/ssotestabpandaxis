@@ -62,6 +62,14 @@ public class HCSEntityFrameworkCoreModule : AbpModule
             options.Outboxes.Configure(config => config.UseDbContext<HCSDbContext>());
         });
 
+        // Default Retry rethrows and retries every PeriodTimeSpan (2s), which
+        // spam-logs poison inbox events such as UserDeletedEto with a null Entity.
+        Configure<AbpEventBusBoxesOptions>(options =>
+        {
+            options.InboxProcessorFailurePolicy = InboxProcessorFailurePolicy.RetryLater;
+            options.InboxProcessorMaxRetryCount = 10;
+        });
+
         Configure<AbpDbContextOptions>(options =>
         {
             /* The main point to change your DBMS.

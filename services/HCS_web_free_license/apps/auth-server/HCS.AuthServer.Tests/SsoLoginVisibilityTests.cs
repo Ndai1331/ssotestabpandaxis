@@ -21,4 +21,10 @@ public sealed class SsoLoginVisibilityTests
     {
         Assert.True(SsoLoginVisibility.IsVisible("true", hasExternalProviders: false, keycloakEnabled: true));
     }
+
+    [Fact]
+    public void Disabled_Keycloak_Hides_Sso_Even_When_Scheme_Is_Registered()
+    {
+        Assert.False(SsoLoginVisibility.IsVisible("true", hasExternalProviders: true, keycloakEnabled: false));
+    }
 }

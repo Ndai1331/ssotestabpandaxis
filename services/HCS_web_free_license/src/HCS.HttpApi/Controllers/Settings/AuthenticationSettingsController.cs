@@ -22,4 +22,8 @@ public sealed class AuthenticationSettingsController : HCSController, IAuthentic
 
     [HttpPut]
     public Task UpdateAsync(UpdateAuthenticationSettingsDto input) => _service.UpdateAsync(input);
+
+    [HttpPost("test")]
+    public Task<AuthenticationConnectionTestResultDto> TestAsync(UpdateAuthenticationSettingsDto input) =>
+        _service.TestAsync(input);
 }

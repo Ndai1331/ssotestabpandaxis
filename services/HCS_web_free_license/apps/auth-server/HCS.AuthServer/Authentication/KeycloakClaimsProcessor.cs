@@ -1,18 +1,28 @@
 using System.Security.Claims;
 using System.Text.Json;
+using HCS.Settings;
 using Volo.Abp.Security.Claims;
 
 namespace HCS.AuthServer;
 
 public static class KeycloakClaimsProcessor
 {
-    public static KeycloakClaimsResult Apply(ClaimsPrincipal principal)
+    public static KeycloakClaimsResult Apply(ClaimsPrincipal principal) =>
+        Apply(principal, KeycloakSettingDefaults.AppAccessGroup, KeycloakSettingDefaults.RoleMappings);
+
+    public static KeycloakClaimsResult Apply(
+        ClaimsPrincipal principal,
+        string? appAccessGroup,
+        IEnumerable<KeycloakRoleMapping>? mappings)
     {
         var groups = ExtractGroups(principal).ToList();
-        if (!KeycloakGroupRoleMapper.HasAppAccess(groups))
+        var requiredGroup = string.IsNullOrWhiteSpace(appAccessGroup)
+            ? KeycloakGroupRoleMapper.AppAccessGroup
+            : appAccessGroup.Trim().TrimStart('/');
+        if (!KeycloakGroupRoleMapper.HasAppAccess(groups, requiredGroup))
         {
             return KeycloakClaimsResult.Denied(
-                $"Missing required Keycloak group '{KeycloakGroupRoleMapper.AppAccessGroup}'.");
+                $"Missing required Keycloak group '{requiredGroup}'.");
         }
 
         var identity = principal.Identity as ClaimsIdentity;
@@ -21,7 +31,7 @@ public static class KeycloakClaimsProcessor
             return KeycloakClaimsResult.Denied("The external identity is unavailable.");
         }
 
-        var roles = KeycloakGroupRoleMapper.ResolveRoles(groups);
+        var roles = KeycloakGroupRoleMapper.ResolveRoles(groups, requiredGroup, mappings);
         foreach (var claim in identity.Claims.Where(claim => claim.Type == AbpClaimTypes.Role || claim.Type == ClaimTypes.Role).ToArray())
         {
             identity.RemoveClaim(claim);
