@@ -384,7 +384,7 @@
                                 <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
                             </button>
                             <div class="hcs-nav-menu__panel" role="menu">
-                                @if (authenticationState.User.IsInRole("admin"))
+                                @if (authenticationState.User.IsInRole("admin") || authenticationState.User.IsInRole("ADMIN"))
                                 {
                                     <NavLink href="/administration" @onclick="CloseMobileNav"><i class="fa fa-users-gear" aria-hidden="true"></i>@Localizer["Menu:Users"]</NavLink>
                                     <NavLink href="/administration/roles" @onclick="CloseMobileNav"><i class="fa fa-shield-halved" aria-hidden="true"></i>@Localizer["Menu:Roles"]</NavLink>

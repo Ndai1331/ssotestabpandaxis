@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using HCS.DocumentService.Integration;
+using HCS.DocumentService.Signing;
 using HCS.DocumentService.Storage;
 using HCS.DocumentService.Workflows;
 using HCS.IntegrationEvents.Auditing;
@@ -247,14 +248,27 @@ public sealed class DocumentAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
+        if (!submission) DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
+        await using var transaction = submission && db.Database.IsRelational()
+            ? await DocumentTransaction.BeginIfNeededAsync(db.Database, cancellationToken)
+            : null;
+        if (submission && db.Database.IsRelational())
+        {
+            await db.Documents.FromSqlInterpolated($"SELECT * FROM document.\"Documents\" WHERE \"Id\" = {id} FOR UPDATE")
+                .AsNoTracking().Select(x => x.Id).SingleAsync(cancellationToken);
+            await db.ApprovalTasks.FromSqlInterpolated($"SELECT t.* FROM document.\"ApprovalTasks\" t JOIN document.\"WorkflowInstances\" i ON i.\"Id\" = t.\"InstanceId\" WHERE i.\"DocumentId\" = {id} FOR UPDATE OF t")
+                .AsNoTracking().ToListAsync(cancellationToken);
+        }
+
         var document = await db.Documents.SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException("Document not found.");
         var isCreator = await db.DocumentHistories.AsNoTracking().AnyAsync(
             x => x.DocumentId == id && x.Action == DocumentAccess.CreatedAction && x.ActorUserId == userId,
             cancellationToken);
         DocumentAccess.EnsureCanManage(document, userId, principal, isCreator);
-        if (await db.WorkflowInstances.AnyAsync(x => x.DocumentId == id && x.Status == WorkflowInstanceStatus.Running, cancellationToken))
+        var workflowInstances = await db.WorkflowInstances.AsNoTracking().Include(x => x.Tasks)
+            .Where(x => x.DocumentId == id).ToListAsync(cancellationToken);
+        if (!submission && workflowInstances.Any(x => x.Status == WorkflowInstanceStatus.Running))
             throw new BusinessException("Document:CannotDeleteWithRunningWorkflow");
 
         var now = DateTime.UtcNow;
@@ -262,20 +276,24 @@ public sealed class DocumentAppService(
             .Where(x => x.DocumentId == id && x.BlobName != "")
             .Select(x => x.BlobName)
             .ToListAsync(cancellationToken);
-        var signingBlobNames = await db.SigningAttempts.AsNoTracking()
-            .Where(x => x.DocumentId == id && x.OutputBlobName != null && x.OutputBlobName != "")
-            .Select(x => x.OutputBlobName!)
+        var signingAttempts = await db.SigningAttempts.AsNoTracking()
+            .Where(x => x.DocumentId == id)
             .ToListAsync(cancellationToken);
+        var signingBlobNames = signingAttempts
+            .Where(x => !string.IsNullOrEmpty(x.OutputBlobName))
+            .Select(x => x.OutputBlobName!)
+            .ToList();
 
-        // if (submission && !WorkflowSubmissionDeletion.CanDelete(document.SourceType, document.FromUserId,
-        //     userId, workflowInstances,
-        //     signingAttempts.Any(x => x.Status != Signing.SigningStatus.Failed)))
-        //     throw new BusinessException("Document:CannotDeleteStartedSubmission");
+        if (submission && !WorkflowSubmissionDeletion.CanDelete(document.SourceType, document.FromUserId,
+            userId, workflowInstances,
+            signingAttempts.Any(x => x.Status != SigningStatus.Failed)))
+            throw new BusinessException("Document:CannotDeleteStartedSubmission");
 
         EnqueueInboxCleared(id, now);
         AddAudit("DocumentDeleted", id, 200, null, now);
         await DeletePersistedGraphAsync(id, document, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         blobCleanup.Enqueue(documentBlobNames, signingBlobNames);
     }
 
