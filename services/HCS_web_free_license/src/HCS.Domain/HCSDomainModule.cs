@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using HCS.Data;
 using HCS.Localization;
+using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.Data;
 using Volo.Abp.PermissionManagement;
 using System;
@@ -42,6 +44,11 @@ public class HCSDomainModule : AbpModule
         PostConfigure<AbpDataSeedOptions>(options =>
         {
             options.Contributors.Remove(typeof(PermissionDataSeedContributor));
+        });
+
+        Configure<AbpPermissionOptions>(options =>
+        {
+            options.ValueProviders.Add<HcsAdminPermissionValueProvider>();
         });
 
         Configure<AbpLocalizationOptions>(options =>

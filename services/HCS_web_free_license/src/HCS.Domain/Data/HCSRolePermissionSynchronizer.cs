@@ -11,7 +11,8 @@ using Volo.Abp.PermissionManagement;
 namespace HCS.Data;
 
 /// <summary>
-/// Grants every enabled permission to the default <c>admin</c> role until customized.
+/// Grants every enabled permission to the default <c>admin</c> role, including
+/// permissions added after the role's persisted grants were last customized.
 /// Other roles are created and granted only by administrators; this synchronizer
 /// never inserts product roles such as <c>bacsi</c>, <c>lanhdao</c>, or <c>nhanvien</c>.
 /// </summary>
@@ -46,17 +47,14 @@ public sealed class HCSRolePermissionSynchronizer(
 
         await NormalizeAdminFlagsAsync(adminRole);
 
-        if (adminRole.GetProperty<bool>(CustomPermissionsProperty))
-        {
-            return;
-        }
-
         var permissions = (await permissionDefinitionManager.GetPermissionsAsync())
             .Where(permission => permission.IsEnabled)
             .Select(permission => permission.Name)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 
+        // Always grant newly introduced permissions to admin. CustomPermissions
+        // only skips a destructive reset; SeedAsync adds missing grants.
         await permissionDataSeeder.SeedAsync(
             RolePermissionValueProvider.ProviderName,
             "admin",

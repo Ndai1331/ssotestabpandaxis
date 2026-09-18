@@ -31,4 +31,4 @@ Mỗi host enrich property `Application` (allow-list): `HCS.AuthServer`, `HCS.We
 - Browser **không** gọi Seq. Filter Seq được dựng server-side; raw Seq query từ client bị từ chối.
 - Seq down: page báo lỗi, Platform không crash.
 
-Admin role nhận `HCS.ServiceLogs` qua `HCSRolePermissionSynchronizer`. Sign out/in lại sau khi đổi quyền.
+Role `admin` luôn được phép xem nhật ký service: `HcsAdminPermissionValueProvider` cấp mọi permission cho admin (kể cả quyền mới chưa có trong DB). `HCSRolePermissionSynchronizer` vẫn seed grant còn thiếu cho admin khi Platform/AuthServer khởi động. Restart Platform sau khi deploy; admin không cần sign out/in. User không phải admin cần grant `HCS.ServiceLogs` rồi đăng nhập lại.

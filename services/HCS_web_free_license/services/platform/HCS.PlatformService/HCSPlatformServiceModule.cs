@@ -79,9 +79,12 @@ public sealed class HCSPlatformServiceModule : AbpModule
             options.AddPolicy(HCSPermissions.Collaboration.ChatRead, policy => policy.RequireAssertion(context =>
                 context.User.HasClaim("permission", HCSPermissions.Collaboration.Chat)
                 || context.User.HasClaim("permission", HCSPermissions.WorkManagement.Dashboard)
-                || context.User.IsInRole("admin")));
+                || HcsAdministrator.Is(context.User)));
             options.AddPolicy(HCSPermissions.Collaboration.Social,
                 policy => policy.RequireClaim("permission", HCSPermissions.Collaboration.Social));
+            options.AddPolicy(HCSPermissions.ServiceLogs.Default, policy => policy.RequireAssertion(context =>
+                HcsAdministrator.Is(context.User)
+                || context.User.HasClaim("permission", HCSPermissions.ServiceLogs.Default)));
         });
         context.Services.Configure<AbpClaimsPrincipalFactoryOptions>(options =>
             options.IsDynamicClaimsEnabled = true);
