@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\HCS.Application\HCS.Application.csproj" />
     <ProjectReference Include="..\..\src\HCS.HttpApi\HCS.HttpApi.csproj" />
+    <ProjectReference Include="..\..\building-blocks\HCS.BlobStorage\HCS.BlobStorage.csproj" />
     <ProjectReference Include="..\HCS.Domain.Tests\HCS.Domain.Tests.csproj" />
   </ItemGroup>
 

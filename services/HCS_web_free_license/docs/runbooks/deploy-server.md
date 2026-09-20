@@ -223,6 +223,8 @@ Compose set (HTTPS):
 
 Sau lần boot đầu, sửa SSO trên **Cấu hình hệ thống → Cấu hình SSO**. Compose `Authentication__Keycloak__*` chỉ là fallback. `MetadataAddress` (Docker backchannel) vẫn chỉ cấu hình bằng env, không đưa lên UI.
 
+Sửa storage (MinIO / Amazon S3) trên **Cấu hình hệ thống → Cấu hình storage** (`?tab=storage`). Compose `Minio__*` chỉ là fallback lần boot đầu; FTP trên UI chỉ kiểm tra kết nối, không ghi file. `MetadataAddress` Keycloak không liên quan đến storage.
+
 ### B.7 Bootstrap Keycloak realm `bd`
 
 Sau khi Keycloak healthy và Nginx proxy `https://sso-hcs.htltech.vn`:

@@ -39,6 +39,19 @@
         "resolved": "1.41.4",
         "contentHash": "fQwTTA2awWICM4xqjkldGTkAEr+U8TfncNdd7CCdQIMo3khCXoFkA1F080Ts8el7oeuRNhRauYjQs8aU0Z6v9Q=="
       },
+      "Minio": {
+        "type": "Direct",
+        "requested": "[6.0.5, )",
+        "resolved": "6.0.5",
+        "contentHash": "AK3JIDZnFZg2Hpkqo6vlzyiEC4OifG+jQbuqpAtXePnIo49G4pNn27THh3DI8s4o84b/MMBQF+n1DEwBNenxsg==",
+        "dependencies": {
+          "CommunityToolkit.HighPerformance": "8.4.0",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.4",
+          "Microsoft.Extensions.Logging": "9.0.4",
+          "System.IO.Hashing": "9.0.4",
+          "System.Reactive": "6.0.1"
+        }
+      },
       "Volo.Abp.Account.Application": {
         "type": "Direct",
         "requested": "[10.6.0, )",
@@ -120,6 +133,11 @@
           "Microsoft.Identity.Client.Extensions.Msal": "4.61.3",
           "System.Security.Cryptography.ProtectedData": "4.7.0"
         }
+      },
+      "CommunityToolkit.HighPerformance": {
+        "type": "Transitive",
+        "resolved": "8.4.0",
+        "contentHash": "flxspiBs0G/0GMp7IK2J2ijV9bTG6hEwFc/z6ekHqB6nwRJ4Ry2yLdx+TkbCUYFCl4XhABkAwomeKbT6zM2Zlg=="
       },
       "JetBrains.Annotations": {
         "type": "Transitive",
@@ -604,6 +622,11 @@
           "Microsoft.IdentityModel.Tokens": "7.5.0"
         }
       },
+      "System.IO.Hashing": {
+        "type": "Transitive",
+        "resolved": "9.0.4",
+        "contentHash": "WogPvgAFqQORFD8Iyha6RZ+/1QB3dsWRWxbwi8/HHVgiGQ8z0oMWpwe8Kk3Ti+Roe+P6a3sBg+WwBfEsyziZKg=="
+      },
       "System.Linq.Dynamic.Core": {
         "type": "Transitive",
         "resolved": "1.6.7",
@@ -621,6 +644,11 @@
         "type": "Transitive",
         "resolved": "1.0.2",
         "contentHash": "JGkzeqgBsiZwKJZ1IxPNsDFZDhUvuEdX8L8BDC8N3KOj+6zMcNU28CNN59TpZE/VJYy9cP+5M+sbxtWJx3/xtw=="
+      },
+      "System.Reactive": {
+        "type": "Transitive",
+        "resolved": "6.0.1",
+        "contentHash": "rHaWtKDwCi9qJ3ObKo8LHPMuuwv33YbmQi7TcUK1C264V3MFnOr5Im7QgCTdLniztP3GJyeiSg5x8NqYJFqRmg=="
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",

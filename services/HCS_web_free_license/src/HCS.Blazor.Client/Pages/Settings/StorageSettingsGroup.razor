@@ -1,0 +1,304 @@
+@using HCS.Blazor.Client.Settings
+@using HCS.Settings
+@inherits HCSComponentBase
+@inject StorageSettingsClient SettingsClient
+
+<section class="hcs-branding-settings" aria-labelledby="hcs-storage-settings-title" aria-busy="@(isLoading || isBusy ? "true" : "false")">
+    <header class="hcs-branding-settings__header">
+        <div>
+            <p class="hcs-branding-settings__eyebrow">@L["Settings:StorageEyebrow"]</p>
+            <h2 id="hcs-storage-settings-title">@L["Settings:StorageGroup"]</h2>
+            <p>@L["Settings:StorageDescription"]</p>
+        </div>
+        <i class="fa fa-hard-drive hcs-branding-settings__icon" aria-hidden="true"></i>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="hcs-branding-settings__state" role="status" aria-live="polite">
+            <HcsLoadingIcon />
+            <span>@L["Settings:StorageLoading"]</span>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="hcs-branding-settings__error" role="alert">
+                <span>@errorMessage</span>
+                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isBusy">
+                    @L["Settings:StorageRetry"]
+                </Button>
+            </div>
+        }
+
+        <div class="hcs-branding-settings__form-grid">
+            <Field>
+                <FieldLabel>@L["Settings:StorageProvider"]</FieldLabel>
+                <Select TValue="string" @bind-SelectedValue="provider">
+                    <SelectItem Value="@nameof(StorageProviderKind.Minio)">@L["Settings:StorageProviderMinio"]</SelectItem>
+                    <SelectItem Value="@nameof(StorageProviderKind.AmazonS3)">@L["Settings:StorageProviderAmazonS3"]</SelectItem>
+                    <SelectItem Value="@nameof(StorageProviderKind.Ftp)">@L["Settings:StorageProviderFtp"]</SelectItem>
+                </Select>
+                <FieldHelp>@L["Settings:StorageProviderHint"]</FieldHelp>
+            </Field>
+        </div>
+
+        @if (IsFtp)
+        {
+            <div class="hcs-branding-settings__error" role="status">
+                <span>@L["Settings:StorageFtpWarning"]</span>
+            </div>
+            <div class="hcs-branding-settings__form-grid">
+                <Field>
+                    <FieldLabel>@L["Settings:StorageFtpHost"]</FieldLabel>
+                    <TextInput @bind-Value="ftpHost" autocomplete="off" />
+                </Field>
+                <Field>
+                    <FieldLabel>@L["Settings:StorageFtpPort"]</FieldLabel>
+                    <input class="form-control" type="number" min="1" max="65535" @bind="ftpPort" />
+                </Field>
+                <Field>
+                    <FieldLabel>@L["Settings:StorageFtpUser"]</FieldLabel>
+                    <TextInput @bind-Value="ftpUser" autocomplete="off" />
+                </Field>
+                <Field>
+                    <FieldLabel>@L["Settings:StorageFtpPassword"]</FieldLabel>
+                    <input class="form-control"
+                           type="password"
+                           @bind="ftpPassword"
+                           autocomplete="new-password"
+                           placeholder="@(hasFtpPassword ? L["Settings:StorageSecretConfigured"].Value : null)" />
+                </Field>
+                <Field>
+                    <FieldLabel>@L["Settings:StorageFtpBasePath"]</FieldLabel>
+                    <TextInput @bind-Value="ftpBasePath" autocomplete="off" />
+                </Field>
+            </div>
+            <div class="hcs-branding-settings__sso">
+                <div>
+                    <h3>@L["Settings:StorageFtpPassive"]</h3>
+                </div>
+                <button type="button"
+                        class="hcs-branding-settings__switch @(ftpPassive ? "is-enabled" : "is-disabled")"
+                        aria-pressed="@(ftpPassive ? "true" : "false")"
+                        @onclick="() => ftpPassive = !ftpPassive"
+                        disabled="@isBusy">
+                    <span class="hcs-branding-settings__switch-track" aria-hidden="true">
+                        <span class="hcs-branding-settings__switch-thumb"></span>
+                    </span>
+                    <span>@(ftpPassive ? L["Settings:StorageFtpPassiveOn"] : L["Settings:StorageFtpPassiveOff"])</span>
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="hcs-branding-settings__form-grid">
+                <Field>
+                    <FieldLabel>@L["Settings:StorageEndPoint"]</FieldLabel>
+                    <TextInput @bind-Value="endPoint" autocomplete="off" spellcheck="false" />
+                    <FieldHelp>@L["Settings:StorageEndPointHint"]</FieldHelp>
+                </Field>
+                @if (IsAmazonS3)
+                {
+                    <Field>
+                        <FieldLabel>@L["Settings:StorageRegion"]</FieldLabel>
+                        <TextInput @bind-Value="region" placeholder="ap-southeast-1" autocomplete="off" />
+                        <FieldHelp>@L["Settings:StorageRegionHint"]</FieldHelp>
+                    </Field>
+                }
+                <Field>
+                    <FieldLabel>@L["Settings:StorageAccessKey"]</FieldLabel>
+                    <input class="form-control"
+                           type="password"
+                           @bind="accessKey"
+                           autocomplete="new-password"
+                           placeholder="@(hasAccessKey ? L["Settings:StorageSecretConfigured"].Value : null)" />
+                </Field>
+                <Field>
+                    <FieldLabel>@L["Settings:StorageSecretKey"]</FieldLabel>
+                    <input class="form-control"
+                           type="password"
+                           @bind="secretKey"
+                           autocomplete="new-password"
+                           placeholder="@(hasSecretKey ? L["Settings:StorageSecretConfigured"].Value : null)" />
+                    <FieldHelp>@L["Settings:StorageSecretHint"]</FieldHelp>
+                </Field>
+            </div>
+            <div class="hcs-branding-settings__sso">
+                <div>
+                    <h3>@L["Settings:StorageWithSsl"]</h3>
+                    <p>@L["Settings:StorageWithSslDescription"]</p>
+                </div>
+                <button type="button"
+                        class="hcs-branding-settings__switch @(withSsl ? "is-enabled" : "is-disabled")"
+                        aria-pressed="@(withSsl ? "true" : "false")"
+                        @onclick="() => withSsl = !withSsl"
+                        disabled="@isBusy">
+                    <span class="hcs-branding-settings__switch-track" aria-hidden="true">
+                        <span class="hcs-branding-settings__switch-thumb"></span>
+                    </span>
+                    <span>@(withSsl ? L["Settings:StorageWithSslOn"] : L["Settings:StorageWithSslOff"])</span>
+                </button>
+            </div>
+            <div class="hcs-branding-settings__sso">
+                <div>
+                    <h3>@L["Settings:StorageCreateBucket"]</h3>
+                    <p>@L["Settings:StorageCreateBucketDescription"]</p>
+                </div>
+                <button type="button"
+                        class="hcs-branding-settings__switch @(createBucketIfNotExists ? "is-enabled" : "is-disabled")"
+                        aria-pressed="@(createBucketIfNotExists ? "true" : "false")"
+                        @onclick="() => createBucketIfNotExists = !createBucketIfNotExists"
+                        disabled="@isBusy">
+                    <span class="hcs-branding-settings__switch-track" aria-hidden="true">
+                        <span class="hcs-branding-settings__switch-thumb"></span>
+                    </span>
+                    <span>@(createBucketIfNotExists ? L["Settings:StorageCreateBucketOn"] : L["Settings:StorageCreateBucketOff"])</span>
+                </button>
+            </div>
+        }
+
+        <footer class="hcs-branding-settings__footer">
+            <span class="hcs-branding-settings__status" role="status" aria-live="polite">
+                @(IsFtp ? L["Settings:StorageFtpWarning"] : L["Settings:StorageProviderHint"])
+            </span>
+            <div class="hcs-branding-settings__actions">
+                <Button Color="Color.Light" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
+                    @L["Settings:StorageTest"]
+                </Button>
+                <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isBusy" Disabled="@isBusy">
+                    <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
+                    @L["Settings:StorageSave"]
+                </Button>
+            </div>
+        </footer>
+    }
+</section>
+
+@code {
+    private bool isLoading = true;
+    private bool isBusy;
+    private string provider = nameof(StorageProviderKind.Minio);
+    private string endPoint = string.Empty;
+    private string accessKey = string.Empty;
+    private string secretKey = string.Empty;
+    private bool withSsl;
+    private bool createBucketIfNotExists = true;
+    private string region = string.Empty;
+    private string ftpHost = string.Empty;
+    private int ftpPort = StorageSettingDefaults.FtpPort;
+    private string ftpUser = string.Empty;
+    private string ftpPassword = string.Empty;
+    private bool ftpPassive = true;
+    private string ftpBasePath = string.Empty;
+    private bool hasAccessKey;
+    private bool hasSecretKey;
+    private bool hasFtpPassword;
+    private string? errorMessage;
+
+    private bool IsFtp => string.Equals(provider, nameof(StorageProviderKind.Ftp), StringComparison.OrdinalIgnoreCase);
+    private bool IsAmazonS3 => string.Equals(provider, nameof(StorageProviderKind.AmazonS3), StringComparison.OrdinalIgnoreCase);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var settings = await SettingsClient.GetAsync();
+            provider = string.IsNullOrWhiteSpace(settings.Provider) ? nameof(StorageProviderKind.Minio) : settings.Provider;
+            endPoint = settings.EndPoint ?? string.Empty;
+            hasAccessKey = settings.HasAccessKey;
+            hasSecretKey = settings.HasSecretKey;
+            accessKey = string.Empty;
+            secretKey = string.Empty;
+            withSsl = settings.WithSsl;
+            createBucketIfNotExists = settings.CreateBucketIfNotExists;
+            region = settings.Region ?? string.Empty;
+            ftpHost = settings.FtpHost ?? string.Empty;
+            ftpPort = settings.FtpPort > 0 ? settings.FtpPort : StorageSettingDefaults.FtpPort;
+            ftpUser = settings.FtpUser ?? string.Empty;
+            ftpPassword = string.Empty;
+            hasFtpPassword = settings.HasFtpPassword;
+            ftpPassive = settings.FtpPassive;
+            ftpBasePath = settings.FtpBasePath ?? string.Empty;
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private UpdateStorageSettingsDto CreateInput() => new()
+    {
+        Provider = provider,
+        EndPoint = endPoint,
+        AccessKey = accessKey,
+        SecretKey = secretKey,
+        WithSsl = withSsl,
+        CreateBucketIfNotExists = createBucketIfNotExists,
+        Region = region,
+        FtpHost = ftpHost,
+        FtpPort = ftpPort,
+        FtpUser = ftpUser,
+        FtpPassword = ftpPassword,
+        FtpPassive = ftpPassive,
+        FtpBasePath = ftpBasePath
+    };
+
+    private async Task TestAsync()
+    {
+        if (isBusy) return;
+        isBusy = true;
+        errorMessage = null;
+        try
+        {
+            var result = await SettingsClient.TestAsync(CreateInput());
+            if (result.Success)
+                await NotifySuccessAsync(result.Message ?? L["Settings:StorageTestObjectOk"]);
+            else
+                errorMessage = result.Message ?? L["Settings:StorageTestMissingEndPoint"];
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (isBusy) return;
+        isBusy = true;
+        errorMessage = null;
+        try
+        {
+            await SettingsClient.UpdateAsync(CreateInput());
+            hasAccessKey = hasAccessKey || !string.IsNullOrWhiteSpace(accessKey);
+            hasSecretKey = hasSecretKey || !string.IsNullOrWhiteSpace(secretKey);
+            hasFtpPassword = hasFtpPassword || !string.IsNullOrWhiteSpace(ftpPassword);
+            accessKey = string.Empty;
+            secretKey = string.Empty;
+            ftpPassword = string.Empty;
+            await NotifySuccessAsync(L["Settings:StorageSaved"]);
+        }
+        catch (Exception exception)
+        {
+            errorMessage = MapBffError(exception, BffErrorKind.Save);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

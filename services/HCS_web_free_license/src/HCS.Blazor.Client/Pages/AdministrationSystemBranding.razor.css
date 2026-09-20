@@ -24,6 +24,35 @@
     text-transform: uppercase;
 }
 
+.hcs-system-config-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    border-bottom: 1px solid #e5edf2;
+}
+
+.hcs-system-config-tabs button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    color: #355770;
+    display: inline-flex;
+    font-weight: 650;
+    gap: .45rem;
+    padding: .45rem 0 .7rem;
+}
+
+.hcs-system-config-tabs button.is-active {
+    border-bottom-color: var(--hcs-color-primary, #00b4a9);
+    color: var(--hcs-color-primary, #007f7c);
+}
+
+.hcs-system-config-tab-panels {
+    display: grid;
+    gap: 1.25rem;
+}
+
 .hcs-system-branding-page__card {
     border: 0;
     border-radius: var(--card-radius, 16px);

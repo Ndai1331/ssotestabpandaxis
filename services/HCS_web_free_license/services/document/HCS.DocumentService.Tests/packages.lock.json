@@ -597,13 +597,16 @@
       },
       "Polly": {
         "type": "Transitive",
-        "resolved": "7.2.4",
-        "contentHash": "bw00Ck5sh6ekduDE3mnCo1ohzuad946uslCDEENu3091+6UKnBuKLo4e+yaNcCzXxOZCXWY2gV4a35+K1d4LDA=="
+        "resolved": "8.6.3",
+        "contentHash": "8X6mWAGDrgTHyqDthifiv9QGR+FgnRe13/sPhSR4ZbhXCqUDJuLrVqunB39LLbf87TXZ+06dMdopd6LpY4oK0w==",
+        "dependencies": {
+          "Polly.Core": "8.6.3"
+        }
       },
       "Polly.Core": {
         "type": "Transitive",
-        "resolved": "8.4.2",
-        "contentHash": "BpE2I6HBYYA5tF0Vn4eoQOGYTYIK1BlF5EXVgkWGn3mqUUjbXAr13J6fZVbp7Q3epRR8yshacBMlsHMhpOiV3g=="
+        "resolved": "8.6.3",
+        "contentHash": "xRlcE+1FidqIfZ7zxBT6klSblJ/7MAJq1x5yvYoLnwNhs8Xc2gp3Srf8wHG2NpFxVBqrldc3svhkMPJjSzTmzw=="
       },
       "Polly.Extensions": {
         "type": "Transitive",
@@ -1049,6 +1052,16 @@
           "Volo.Abp.Core": "10.6.0"
         }
       },
+      "Volo.Abp.AuditLogging.Domain.Shared": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "lX6U1xF+Az2iMTfuEcpUMk3UbmWqlvGnfVJWRUJHykypDbgvUqmfxvVv5zVdVz59Rqzimi1k1q2mIk4CXkoyOQ==",
+        "dependencies": {
+          "Microsoft.Extensions.FileProviders.Embedded": "10.0.9",
+          "Volo.Abp.Localization": "10.6.0",
+          "Volo.Abp.Validation": "10.6.0"
+        }
+      },
       "Volo.Abp.Authorization": {
         "type": "Transitive",
         "resolved": "10.6.0",
@@ -1080,6 +1093,14 @@
           "Volo.Abp.Castle.Core": "10.6.0"
         }
       },
+      "Volo.Abp.BackgroundJobs.Domain.Shared": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "LXm9IHonWuD83hQQWrC9BPWLACTpE3SxzHy1AK40/BCdv9QHOqBGX2akn43OKd/osEnu8wmnOGcfsVdBawJYIA==",
+        "dependencies": {
+          "Volo.Abp.Core": "10.6.0"
+        }
+      },
       "Volo.Abp.BackgroundWorkers": {
         "type": "Transitive",
         "resolved": "10.6.0",
@@ -1097,6 +1118,14 @@
           "Volo.Abp.Core": "10.6.0",
           "Volo.Abp.MultiTenancy": "10.6.0",
           "Volo.Abp.Threading": "10.6.0"
+        }
+      },
+      "Volo.Abp.BlobStoring.Database.Domain.Shared": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "5fkvCm4jZglPhmM29zqecouleGJGLxa6wgFO7z6hjMe4xoR80f6obyzcNMy6FeqMMwHiwhCtCGRUyFwpyFSSow==",
+        "dependencies": {
+          "Volo.Abp.Validation": "10.6.0"
         }
       },
       "Volo.Abp.BlobStoring.Minio": {
@@ -1272,6 +1301,16 @@
           "Microsoft.Extensions.FileProviders.Embedded": "10.0.9",
           "Volo.Abp.Data": "10.6.0",
           "Volo.Abp.Localization": "10.6.0"
+        }
+      },
+      "Volo.Abp.FeatureManagement.Domain.Shared": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "vUqE6WEILgkA8KZXdIaUvvgCl2WrXvClXhwHOxkciJk3W6L+/lIjvFNwglkvKA2pGHjv5Uw7LhKFEKqvoZB4KA==",
+        "dependencies": {
+          "Microsoft.Extensions.FileProviders.Embedded": "10.0.9",
+          "Volo.Abp.Json.SystemTextJson": "10.6.0",
+          "Volo.Abp.Validation": "10.6.0"
         }
       },
       "Volo.Abp.Features": {
@@ -1483,6 +1522,15 @@
           "Volo.Abp.Validation": "10.6.0"
         }
       },
+      "Volo.Abp.PermissionManagement.Domain.Shared": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "jsszG9FyUD+kI4R7QT4Wrqtwt5ffzmgvaNAv5UVBvtMU0NfFvvET8DsxPSIakzX9tzMY0DpjIBKn1AHs+5C45Q==",
+        "dependencies": {
+          "Microsoft.Extensions.FileProviders.Embedded": "10.0.9",
+          "Volo.Abp.Validation": "10.6.0"
+        }
+      },
       "Volo.Abp.RabbitMQ": {
         "type": "Transitive",
         "resolved": "10.6.0",
@@ -1507,6 +1555,38 @@
         "contentHash": "nlnWb5P1thGbZMcsmnk1j7cUISmSqua4LMPpFPK2AuQze3ef4hTrZupxzkp6/tYEPL1L8RVRAmlxIFjwhQt8yg==",
         "dependencies": {
           "Volo.Abp.Core": "10.6.0"
+        }
+      },
+      "Volo.Abp.SettingManagement.Domain": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "xAjhrJ8H266VdGRsd7XTJTGjtnqxjsZu3+n7wP8HvnRd15Vz56v/oJ4207NBlUaU1Omn7DvQNGxadvcJKYUddg==",
+        "dependencies": {
+          "Polly": "8.6.3",
+          "Volo.Abp.Caching": "10.6.0",
+          "Volo.Abp.Ddd.Domain": "10.6.0",
+          "Volo.Abp.SettingManagement.Domain.Shared": "10.6.0",
+          "Volo.Abp.Settings": "10.6.0"
+        }
+      },
+      "Volo.Abp.SettingManagement.Domain.Shared": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "UqaStDx1eb1UQGi8+NDrSJH/4W0/5yJUKrKIZCjmN4K+c3E+xB0GOwjrXpLx0vA4wc9Nf7Hw4Q/XG+s5eShP0g==",
+        "dependencies": {
+          "Microsoft.Extensions.FileProviders.Embedded": "10.0.9",
+          "Volo.Abp.Features": "10.6.0",
+          "Volo.Abp.Localization": "10.6.0",
+          "Volo.Abp.Validation": "10.6.0"
+        }
+      },
+      "Volo.Abp.SettingManagement.EntityFrameworkCore": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "9+gd+aVnSagYwQxpk/VXMhV/og7rGK5WVl2z1qeVoF0tU9J0QmNQgtMtEykqlB+HmLPWSXlYnFgqULBC0q5O2A==",
+        "dependencies": {
+          "Volo.Abp.EntityFrameworkCore": "10.6.0",
+          "Volo.Abp.SettingManagement.Domain": "10.6.0"
         }
       },
       "Volo.Abp.Settings": {
@@ -1675,12 +1755,23 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "hcs.blobstorage": {
+        "type": "Project",
+        "dependencies": {
+          "HCS.Domain.Shared": "[1.0.0, )",
+          "Volo.Abp.BlobStoring.Minio": "[10.6.0, )",
+          "Volo.Abp.EntityFrameworkCore.PostgreSql": "[10.6.0, )",
+          "Volo.Abp.SettingManagement.Domain": "[10.6.0, )",
+          "Volo.Abp.SettingManagement.EntityFrameworkCore": "[10.6.0, )"
+        }
+      },
       "hcs.documentservice": {
         "type": "Project",
         "dependencies": {
           "Bnn.Sdk": "[1.1.3, )",
           "Bnn.SignLib": "[1.2.5, )",
           "DocumentFormat.OpenXml": "[3.4.1, )",
+          "HCS.BlobStorage": "[1.0.0, )",
           "HCS.DocumentService.Contracts": "[1.0.0, )",
           "HCS.IntegrationEvents": "[1.0.0, )",
           "HCS.Logging": "[1.0.0, )",
@@ -1708,6 +1799,22 @@
         "type": "Project",
         "dependencies": {
           "Volo.Abp.Ddd.Application.Contracts": "[10.6.0, )"
+        }
+      },
+      "hcs.domain.shared": {
+        "type": "Project",
+        "dependencies": {
+          "HCS.IntegrationEvents": "[1.0.0, )",
+          "Microsoft.Extensions.FileProviders.Embedded": "[10.0.9, )",
+          "Volo.Abp.AuditLogging.Domain.Shared": "[10.6.0, )",
+          "Volo.Abp.BackgroundJobs.Domain.Shared": "[10.6.0, )",
+          "Volo.Abp.BlobStoring.Database.Domain.Shared": "[10.6.0, )",
+          "Volo.Abp.FeatureManagement.Domain.Shared": "[10.6.0, )",
+          "Volo.Abp.GlobalFeatures": "[10.6.0, )",
+          "Volo.Abp.Identity.Domain.Shared": "[10.6.0, )",
+          "Volo.Abp.OpenIddict.Domain.Shared": "[10.6.0, )",
+          "Volo.Abp.PermissionManagement.Domain.Shared": "[10.6.0, )",
+          "Volo.Abp.SettingManagement.Domain.Shared": "[10.6.0, )"
         }
       },
       "hcs.integrationevents": {

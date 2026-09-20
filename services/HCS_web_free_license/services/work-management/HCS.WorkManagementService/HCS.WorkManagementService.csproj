@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="../HCS.WorkManagementService.Contracts/HCS.WorkManagementService.Contracts.csproj" />
     <ProjectReference Include="../../../building-blocks/HCS.Logging/HCS.Logging.csproj" />
+    <ProjectReference Include="../../../building-blocks/HCS.BlobStorage/HCS.BlobStorage.csproj" />
     <InternalsVisibleTo Include="HCS.WorkManagementService.Tests" />
   </ItemGroup>
   <ItemGroup>

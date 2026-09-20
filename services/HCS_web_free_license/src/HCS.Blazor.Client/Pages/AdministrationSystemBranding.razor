@@ -3,7 +3,10 @@
 @using HCS.Blazor.Client.Pages.Settings
 @using HCS.Permissions
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.WebUtilities
 @inherits HCSComponentBase
+@inject NavigationManager Navigation
 
 <PageTitle>@L["Settings:SystemConfigTitle"] · HCS</PageTitle>
 
@@ -16,27 +19,99 @@
         </div>
     </header>
 
-    <Card Class="hcs-system-branding-page__card">
-        <CardBody>
-            <SystemBrandingSettingsGroup />
-        </CardBody>
-    </Card>
+    <div class="hcs-system-config-tabs" role="tablist" aria-label="@L["Settings:SystemConfigTitle"]">
+        <button type="button"
+                class="@(IsActive("system") ? "is-active" : null)"
+                role="tab"
+                aria-selected="@IsActive("system")"
+                @onclick='() => SelectTab("system")'>
+            <i class="fa fa-palette me-1" aria-hidden="true"></i>
+            @L["Settings:SystemConfigTabSystem"]
+        </button>
+        <button type="button"
+                class="@(IsActive("sso") ? "is-active" : null)"
+                role="tab"
+                aria-selected="@IsActive("sso")"
+                @onclick='() => SelectTab("sso")'>
+            <i class="fa fa-shield-halved me-1" aria-hidden="true"></i>
+            @L["Settings:SystemConfigTabSso"]
+        </button>
+        <button type="button"
+                class="@(IsActive("storage") ? "is-active" : null)"
+                role="tab"
+                aria-selected="@IsActive("storage")"
+                @onclick='() => SelectTab("storage")'>
+            <i class="fa fa-hard-drive me-1" aria-hidden="true"></i>
+            @L["Settings:SystemConfigTabStorage"]
+        </button>
+    </div>
 
-    <Card Class="hcs-system-branding-page__card">
-        <CardBody>
-            <AuthenticationSettingsGroup />
-        </CardBody>
-    </Card>
-
-    <Card Class="hcs-system-branding-page__card">
-        <CardBody>
-            <GeneralSettingsGroup />
-        </CardBody>
-    </Card>
-
-    <Card Class="hcs-system-branding-page__card">
-        <CardBody>
-            <LegacySigningReportSettingsGroup />
-        </CardBody>
-    </Card>
+    @if (IsActive("system"))
+    {
+        <div class="hcs-system-config-tab-panels" role="tabpanel">
+            <Card Class="hcs-system-branding-page__card">
+                <CardBody>
+                    <SystemBrandingSettingsGroup />
+                </CardBody>
+            </Card>
+            <Card Class="hcs-system-branding-page__card">
+                <CardBody>
+                    <GeneralSettingsGroup />
+                </CardBody>
+            </Card>
+            <Card Class="hcs-system-branding-page__card">
+                <CardBody>
+                    <LegacySigningReportSettingsGroup />
+                </CardBody>
+            </Card>
+        </div>
+    }
+    else if (IsActive("sso"))
+    {
+        <div class="hcs-system-config-tab-panels" role="tabpanel">
+            <Card Class="hcs-system-branding-page__card">
+                <CardBody>
+                    <AuthenticationSettingsGroup />
+                </CardBody>
+            </Card>
+        </div>
+    }
+    else
+    {
+        <div class="hcs-system-config-tab-panels" role="tabpanel">
+            <Card Class="hcs-system-branding-page__card">
+                <CardBody>
+                    <StorageSettingsGroup />
+                </CardBody>
+            </Card>
+        </div>
+    }
 </main>
+
+@code {
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? Tab { get; set; }
+
+    private string ActiveTab => Normalize(Tab);
+
+    private static string Normalize(string? tab) =>
+        tab?.Trim().ToLowerInvariant() switch
+        {
+            "sso" => "sso",
+            "storage" => "storage",
+            _ => "system"
+        };
+
+    private bool IsActive(string tab) => ActiveTab == tab;
+
+    private void SelectTab(string tab)
+    {
+        var uri = new Uri(Navigation.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query).ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value.ToString(),
+            StringComparer.OrdinalIgnoreCase);
+        query["tab"] = tab;
+        Navigation.NavigateTo(QueryHelpers.AddQueryString(uri.AbsolutePath, query!), replace: true);
+    }
+}

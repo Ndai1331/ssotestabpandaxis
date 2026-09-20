@@ -1,3 +1,4 @@
+using HCS.BlobStorage;
 using HCS.EntityFrameworkCore;
 using HCS.Permissions;
 using HCS.PlatformService.Filters;
@@ -26,6 +27,7 @@ namespace HCS.PlatformService;
 [DependsOn(
     typeof(HCSApplicationModule),
     typeof(HCSEntityFrameworkCoreModule),
+    typeof(HcsBlobStorageModule),
     typeof(HCSHttpApiModule),
     typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreMvcModule),
@@ -115,22 +117,8 @@ public sealed class HCSPlatformServiceModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         Configure<AbpBlobStoringOptions>(options =>
         {
-            options.Containers.Configure<AvatarBlobContainer>(container => container.UseMinio(minio =>
-            {
-                minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
-                minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
-                minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
-                minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
-                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
-            }));
-            options.Containers.Configure<BrandingBlobContainer>(container => container.UseMinio(minio =>
-            {
-                minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
-                minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
-                minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
-                minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
-                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
-            }));
+            options.Containers.Configure<AvatarBlobContainer>(container => container.UseHcsStorage(configuration));
+            options.Containers.Configure<BrandingBlobContainer>(container => container.UseHcsStorage(configuration));
         });
     }
 

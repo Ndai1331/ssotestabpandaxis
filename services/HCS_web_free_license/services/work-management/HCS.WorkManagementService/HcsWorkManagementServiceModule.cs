@@ -1,3 +1,4 @@
+using HCS.BlobStorage;
 using HCS.WorkManagementService.Application;
 using HCS.WorkManagementService.Contracts;
 using HCS.WorkManagementService.Data;
@@ -23,6 +24,7 @@ namespace HCS.WorkManagementService;
 
 [DependsOn(typeof(AbpAutofacModule), typeof(AbpAspNetCoreMvcModule), typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEntityFrameworkCorePostgreSqlModule), typeof(AbpBlobStoringMinioModule),
+    typeof(HcsBlobStorageModule),
     typeof(AbpEventBusRabbitMqModule), typeof(AbpSwashbuckleModule),
     typeof(AbpOpenIddictAspNetCoreModule))]
 public sealed class HcsWorkManagementServiceModule : AbpModule
@@ -96,14 +98,7 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
         context.Services.AddDbContext<WorkManagementDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString(WorkManagementDbContext.ConnectionStringName)));
         Configure<AbpBlobStoringOptions>(options => options.Containers.Configure<WorkAssetBlobContainer>(container =>
-            container.UseMinio(minio =>
-            {
-                minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
-                minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
-                minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
-                minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
-                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
-            })));
+            container.UseHcsStorage(configuration)));
         context.Services.AddScoped<IInboxExecutor, EfInboxExecutor>();
         context.Services.AddScoped<OutboxDispatcher>();
         context.Services.AddHostedService<OutboxWorker>();

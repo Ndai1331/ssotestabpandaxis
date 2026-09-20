@@ -39,6 +39,7 @@ x-hcs-image: &hcs-image
     RabbitMQ__Connections__Default__HostName: ${HCS_RABBITMQ_HOST:-rabbitmq}
     RabbitMQ__Connections__Default__UserName: ${HCS_RABBITMQ_USER}
     RabbitMQ__Connections__Default__Password: ${HCS_RABBITMQ_PASSWORD}
+    # First-boot fallback. After Save on /administration/system-branding?tab=storage, ABP settings win.
     Minio__EndPoint: ${HCS_MINIO_HOST:-${HCS_DATA_HOST}}:9000
     Minio__AccessKey: ${HCS_MINIO_ROOT_USER}
     Minio__SecretKey: ${HCS_MINIO_ROOT_PASSWORD}

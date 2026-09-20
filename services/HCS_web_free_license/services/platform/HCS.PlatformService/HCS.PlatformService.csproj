@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../../building-blocks/HCS.Logging/HCS.Logging.csproj" />
+    <ProjectReference Include="../../../building-blocks/HCS.BlobStorage/HCS.BlobStorage.csproj" />
     <ProjectReference Include="../../../src/HCS.Application/HCS.Application.csproj" />
     <ProjectReference Include="../../../src/HCS.EntityFrameworkCore/HCS.EntityFrameworkCore.csproj" />
     <ProjectReference Include="../../../src/HCS.HttpApi/HCS.HttpApi.csproj" />

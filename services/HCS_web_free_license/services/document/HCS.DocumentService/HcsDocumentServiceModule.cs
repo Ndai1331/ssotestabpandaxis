@@ -1,3 +1,4 @@
+using HCS.BlobStorage;
 using HCS.DocumentService.Conversion;
 using HCS.DocumentService.Documents;
 using HCS.DocumentService.Integration;
@@ -28,6 +29,7 @@ namespace HCS.DocumentService;
 
 [DependsOn(typeof(AbpAutofacModule), typeof(AbpAspNetCoreMvcModule), typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEntityFrameworkCorePostgreSqlModule), typeof(AbpBlobStoringMinioModule),
+    typeof(HcsBlobStorageModule),
     typeof(AbpEventBusRabbitMqModule), typeof(AbpSwashbuckleModule),
     typeof(AbpOpenIddictAspNetCoreModule))]
 public sealed class HcsDocumentServiceModule : AbpModule
@@ -149,14 +151,7 @@ public sealed class HcsDocumentServiceModule : AbpModule
 
     private static void ConfigureContainer<T>(AbpBlobStoringOptions options, IConfiguration configuration)
     {
-        options.Containers.Configure<T>(container => container.UseMinio(minio =>
-        {
-            minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
-            minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
-            minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
-            minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
-            minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
-        }));
+        options.Containers.Configure<T>(container => container.UseHcsStorage(configuration));
     }
 
     private static string[] GetDocumentPermissions() =>

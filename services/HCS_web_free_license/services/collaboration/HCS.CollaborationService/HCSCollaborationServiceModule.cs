@@ -1,3 +1,4 @@
+using HCS.BlobStorage;
 using HCS.CollaborationService.Application;
 using HCS.CollaborationService.Contracts;
 using HCS.CollaborationService.Data;
@@ -26,6 +27,7 @@ namespace HCS.CollaborationService;
 
 [DependsOn(typeof(AbpAutofacModule), typeof(AbpAspNetCoreMvcModule), typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEntityFrameworkCorePostgreSqlModule), typeof(AbpBlobStoringMinioModule),
+    typeof(HcsBlobStorageModule),
     typeof(AbpEventBusRabbitMqModule), typeof(AbpSwashbuckleModule))]
 public sealed class HCSCollaborationServiceModule : AbpModule
 {
@@ -72,25 +74,11 @@ public sealed class HCSCollaborationServiceModule : AbpModule
         context.Services.AddHostedService<CollaborationOutboxDispatcher>();
         context.Services.AddHostedService<PushDeliveryWorker>();
         Configure<AbpBlobStoringOptions>(options => options.Containers.Configure<CollaborationAttachmentContainer>(container =>
-            container.UseMinio(minio =>
-            {
-                minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
-                minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
-                minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
-                minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
-                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
-                minio.PresignedGetExpirySeconds = configuration.GetValue("AttachmentPolicy:PresignedLifetimeSeconds", 300);
-            })));
+            container.UseHcsStorage(configuration, minio =>
+                minio.PresignedGetExpirySeconds = configuration.GetValue("AttachmentPolicy:PresignedLifetimeSeconds", 300))));
         Configure<AbpBlobStoringOptions>(options => options.Containers.Configure<SocialMediaContainer>(container =>
-            container.UseMinio(minio =>
-            {
-                minio.EndPoint = configuration["Minio:EndPoint"] ?? "localhost:9000";
-                minio.AccessKey = configuration["Minio:AccessKey"] ?? string.Empty;
-                minio.SecretKey = configuration["Minio:SecretKey"] ?? string.Empty;
-                minio.WithSSL = configuration.GetValue("Minio:WithSSL", false);
-                minio.CreateBucketIfNotExists = configuration.GetValue("Minio:CreateBucketIfNotExists", true);
-                minio.PresignedGetExpirySeconds = configuration.GetValue("SocialPolicy:PresignedLifetimeSeconds", 300);
-            })));
+            container.UseHcsStorage(configuration, minio =>
+                minio.PresignedGetExpirySeconds = configuration.GetValue("SocialPolicy:PresignedLifetimeSeconds", 300))));
         context.Services.AddHealthChecks().AddDbContextCheck<CollaborationDbContext>("hcs_collaboration");
         context.Services.AddAbpSwaggerGen(options =>
         {

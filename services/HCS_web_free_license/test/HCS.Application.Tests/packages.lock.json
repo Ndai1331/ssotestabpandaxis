@@ -114,6 +114,11 @@
           "Castle.Core": "4.4.0"
         }
       },
+      "CommunityToolkit.HighPerformance": {
+        "type": "Transitive",
+        "resolved": "8.4.0",
+        "contentHash": "flxspiBs0G/0GMp7IK2J2ijV9bTG6hEwFc/z6ekHqB6nwRJ4Ry2yLdx+TkbCUYFCl4XhABkAwomeKbT6zM2Zlg=="
+      },
       "DiffEngine": {
         "type": "Transitive",
         "resolved": "11.3.0",
@@ -180,6 +185,33 @@
         "type": "Transitive",
         "resolved": "6.0.2",
         "contentHash": "f+pRODTWX7Y67jXO3T5S2dIPZ9qMJNySjlZT/TKmWVNWe19N8jcWmHaqHnnchaq3gxEKv1SWVY5EFzOD06l41w=="
+      },
+      "Microsoft.EntityFrameworkCore": {
+        "type": "Transitive",
+        "resolved": "10.0.9",
+        "contentHash": "tu85SRzOT021V7EQlViCiAE7TqldVn469Y6lt5TEn/+XC4/MeNCHgMRSxqYuWqvF4zAQZUhCmtNEZuM3ss4LeA==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.9",
+          "Microsoft.EntityFrameworkCore.Analyzers": "10.0.9"
+        }
+      },
+      "Microsoft.EntityFrameworkCore.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.0.9",
+        "contentHash": "GRMaiPkqYna/gCsyDffYDWmefGPC3hDrdMw+2rrGcQwhs6uZOsaMQXMJnoXQ35tx9SkBV2ieRRU9N/jLOO6BZw=="
+      },
+      "Microsoft.EntityFrameworkCore.Analyzers": {
+        "type": "Transitive",
+        "resolved": "10.0.9",
+        "contentHash": "aiEFB+C5EsZGqxvMPazE07hbWsp4iPaufJpanGt5O+lrwv7mJLrqma5haVIgFAPCyhQkmk75XSCEubT1zUjxtA=="
+      },
+      "Microsoft.EntityFrameworkCore.Relational": {
+        "type": "Transitive",
+        "resolved": "10.0.9",
+        "contentHash": "dEoyYKgiaZHHgOFm1WMWm1sFEsEuhPWufX4L9PekKtqd/RaIcPjkCjvbrVvJtApErb5wPSJhYvnTlxhH+p9h2g==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "10.0.9"
+        }
       },
       "Microsoft.Extensions.Caching.Hybrid": {
         "type": "Transitive",
@@ -278,6 +310,16 @@
         "resolved": "1.41.4",
         "contentHash": "fQwTTA2awWICM4xqjkldGTkAEr+U8TfncNdd7CCdQIMo3khCXoFkA1F080Ts8el7oeuRNhRauYjQs8aU0Z6v9Q=="
       },
+      "Minio": {
+        "type": "Transitive",
+        "resolved": "6.0.5",
+        "contentHash": "AK3JIDZnFZg2Hpkqo6vlzyiEC4OifG+jQbuqpAtXePnIo49G4pNn27THh3DI8s4o84b/MMBQF+n1DEwBNenxsg==",
+        "dependencies": {
+          "CommunityToolkit.HighPerformance": "8.4.0",
+          "System.IO.Hashing": "9.0.4",
+          "System.Reactive": "6.0.1"
+        }
+      },
       "MyCSharp.HttpUserAgentParser": {
         "type": "Transitive",
         "resolved": "3.0.28",
@@ -308,6 +350,21 @@
         "type": "Transitive",
         "resolved": "2.2.1",
         "contentHash": "6sZ5uynQeAE9dPWBQGKebNmxbY4xsvcc5VplB5WkYEESUS7oy4AwnFp0FhqxTSKm/PaFrFqLrYr696CYN8cugg=="
+      },
+      "Npgsql": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "xZAYhPOU2rUIFpV48xsqhCx9vXs6Y+0jX2LCoSEfDFYMw9jtAOUk3iQsCnDLrFIv9NT3JGMihn7nnuZsPKqJmA=="
+      },
+      "Npgsql.EntityFrameworkCore.PostgreSQL": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "E2+uSWxSB8LdsUVwPaqRWOcGOP92biry2JEwc0KJMdLJF+aZdczeIdEXVwEyv4nSVMQJH0o8tLhyAMiR6VF0lw==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.0, 11.0.0)",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.0, 11.0.0)",
+          "Npgsql": "10.0.0"
+        }
       },
       "NSubstitute": {
         "type": "Transitive",
@@ -400,6 +457,11 @@
           "Microsoft.IdentityModel.Tokens": "8.0.1"
         }
       },
+      "System.IO.Hashing": {
+        "type": "Transitive",
+        "resolved": "9.0.4",
+        "contentHash": "WogPvgAFqQORFD8Iyha6RZ+/1QB3dsWRWxbwi8/HHVgiGQ8z0oMWpwe8Kk3Ti+Roe+P6a3sBg+WwBfEsyziZKg=="
+      },
       "System.Linq.Dynamic.Core": {
         "type": "Transitive",
         "resolved": "1.6.7",
@@ -417,6 +479,11 @@
         "type": "Transitive",
         "resolved": "1.0.2",
         "contentHash": "JGkzeqgBsiZwKJZ1IxPNsDFZDhUvuEdX8L8BDC8N3KOj+6zMcNU28CNN59TpZE/VJYy9cP+5M+sbxtWJx3/xtw=="
+      },
+      "System.Reactive": {
+        "type": "Transitive",
+        "resolved": "6.0.1",
+        "contentHash": "rHaWtKDwCi9qJ3ObKo8LHPMuuwv33YbmQi7TcUK1C264V3MFnOr5Im7QgCTdLniztP3GJyeiSg5x8NqYJFqRmg=="
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",
@@ -660,6 +727,15 @@
           "Volo.Abp.Validation": "10.6.0"
         }
       },
+      "Volo.Abp.BlobStoring.Minio": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "IlgMzpPKV3IPoLVMpRfE35g53qG/R/oXiFfze9/Z2iQ8v4025/loBA0DySEvhuhSfyauvjzYsAML0g4OgYHXrQ==",
+        "dependencies": {
+          "Minio": "6.0.5",
+          "Volo.Abp.BlobStoring": "10.6.0"
+        }
+      },
       "Volo.Abp.Caching": {
         "type": "Transitive",
         "resolved": "10.6.0",
@@ -776,6 +852,26 @@
           "Volo.Abp.Settings": "10.6.0",
           "Volo.Abp.TextTemplating": "10.6.0",
           "Volo.Abp.VirtualFileSystem": "10.6.0"
+        }
+      },
+      "Volo.Abp.EntityFrameworkCore": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "DQbpmI7lBSR1vP1xm02UdF8efrlvsKqvlidu3LgrPDi+FyhiuuyrObG1oZUHsLpzCkO2pia8lrdo4YCdDvnOfw==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "10.0.9",
+          "Microsoft.EntityFrameworkCore.Relational": "10.0.9",
+          "Volo.Abp.Ddd.Domain": "10.6.0",
+          "Volo.Abp.Json": "10.6.0"
+        }
+      },
+      "Volo.Abp.EntityFrameworkCore.PostgreSql": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "ID5Jd3O2T/9e5JkT2fs4EHGjVkT78Ni5ek8i8PeS0f/byAp1kuOsrioVhDj41Pi9Zerf6TSYcf7NaH9g3ovoiQ==",
+        "dependencies": {
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.0",
+          "Volo.Abp.EntityFrameworkCore": "10.6.0"
         }
       },
       "Volo.Abp.EventBus": {
@@ -1219,6 +1315,15 @@
           "Volo.Abp.Validation": "10.6.0"
         }
       },
+      "Volo.Abp.SettingManagement.EntityFrameworkCore": {
+        "type": "Transitive",
+        "resolved": "10.6.0",
+        "contentHash": "9+gd+aVnSagYwQxpk/VXMhV/og7rGK5WVl2z1qeVoF0tU9J0QmNQgtMtEykqlB+HmLPWSXlYnFgqULBC0q5O2A==",
+        "dependencies": {
+          "Volo.Abp.EntityFrameworkCore": "10.6.0",
+          "Volo.Abp.SettingManagement.Domain": "10.6.0"
+        }
+      },
       "Volo.Abp.SettingManagement.HttpApi": {
         "type": "Transitive",
         "resolved": "10.6.0",
@@ -1440,6 +1545,7 @@
           "HCS.Domain": "[1.0.0, )",
           "Microsoft.Data.SqlClient": "[6.0.2, )",
           "MiniExcel": "[1.41.4, )",
+          "Minio": "[6.0.5, )",
           "Volo.Abp.Account.Application": "[10.6.0, )",
           "Volo.Abp.FeatureManagement.Application": "[10.6.0, )",
           "Volo.Abp.Identity.Application": "[10.6.0, )",
@@ -1456,6 +1562,16 @@
           "Volo.Abp.Identity.Application.Contracts": "[10.6.0, )",
           "Volo.Abp.PermissionManagement.Application.Contracts": "[10.6.0, )",
           "Volo.Abp.SettingManagement.Application.Contracts": "[10.6.0, )"
+        }
+      },
+      "hcs.blobstorage": {
+        "type": "Project",
+        "dependencies": {
+          "HCS.Domain.Shared": "[1.0.0, )",
+          "Volo.Abp.BlobStoring.Minio": "[10.6.0, )",
+          "Volo.Abp.EntityFrameworkCore.PostgreSql": "[10.6.0, )",
+          "Volo.Abp.SettingManagement.Domain": "[10.6.0, )",
+          "Volo.Abp.SettingManagement.EntityFrameworkCore": "[10.6.0, )"
         }
       },
       "hcs.domain": {

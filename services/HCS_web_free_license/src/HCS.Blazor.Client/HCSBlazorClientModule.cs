@@ -97,6 +97,7 @@ public class HCSBlazorClientModule : AbpModule
         context.Services.AddScoped<Work.EmployeeRatingDirectoryService>();
         context.Services.AddScoped<Documents.DocumentClient>();
         context.Services.AddScoped<AuthenticationSettingsClient>();
+        context.Services.AddScoped<StorageSettingsClient>();
         context.Services.AddScoped<LegacySigningReportSettingsClient>();
         context.Services.AddScoped<SystemFeatureSettingsClient>();
         context.Services.AddScoped<SystemFeatureState>();

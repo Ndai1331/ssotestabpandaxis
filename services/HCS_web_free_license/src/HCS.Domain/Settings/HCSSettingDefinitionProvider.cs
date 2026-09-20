@@ -117,6 +117,7 @@ public class HCSSettingDefinitionProvider : SettingDefinitionProvider
                 description: L("Settings:LegacySqlConnectionHint"),
                 isVisibleToClients: false,
                 isEncrypted: true));
+        StorageSettingDefinitions.Add(context);
     }
 
     private static LocalizableString L(string name)

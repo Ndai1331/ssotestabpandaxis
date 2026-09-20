@@ -10,6 +10,7 @@
     <ProjectReference Include="../HCS.CollaborationService.Contracts/HCS.CollaborationService.Contracts.csproj" />
     <ProjectReference Include="../../../building-blocks/HCS.IntegrationEvents/HCS.IntegrationEvents.csproj" />
     <ProjectReference Include="../../../building-blocks/HCS.Logging/HCS.Logging.csproj" />
+    <ProjectReference Include="../../../building-blocks/HCS.BlobStorage/HCS.BlobStorage.csproj" />
     <ProjectReference Include="../../work-management/HCS.WorkManagementService.Contracts/HCS.WorkManagementService.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>

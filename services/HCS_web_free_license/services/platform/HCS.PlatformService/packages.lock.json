@@ -2085,6 +2085,7 @@
           "HCS.Domain": "[1.0.0, )",
           "Microsoft.Data.SqlClient": "[6.0.2, )",
           "MiniExcel": "[1.41.4, )",
+          "Minio": "[6.0.5, )",
           "Volo.Abp.Account.Application": "[10.6.0, )",
           "Volo.Abp.FeatureManagement.Application": "[10.6.0, )",
           "Volo.Abp.Identity.Application": "[10.6.0, )",
@@ -2101,6 +2102,16 @@
           "Volo.Abp.Identity.Application.Contracts": "[10.6.0, )",
           "Volo.Abp.PermissionManagement.Application.Contracts": "[10.6.0, )",
           "Volo.Abp.SettingManagement.Application.Contracts": "[10.6.0, )"
+        }
+      },
+      "hcs.blobstorage": {
+        "type": "Project",
+        "dependencies": {
+          "HCS.Domain.Shared": "[1.0.0, )",
+          "Volo.Abp.BlobStoring.Minio": "[10.6.0, )",
+          "Volo.Abp.EntityFrameworkCore.PostgreSql": "[10.6.0, )",
+          "Volo.Abp.SettingManagement.Domain": "[10.6.0, )",
+          "Volo.Abp.SettingManagement.EntityFrameworkCore": "[10.6.0, )"
         }
       },
       "hcs.collaborationservice.contracts": {
