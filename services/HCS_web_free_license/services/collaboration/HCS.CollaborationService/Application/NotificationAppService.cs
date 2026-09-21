@@ -22,7 +22,8 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
     private bool CanReadGeneralNotifications => httpContextAccessor.HttpContext?.User
         .HasClaim("permission", CollaborationPermissions.Notifications) == true;
 
-    public async Task<IReadOnlyList<NotificationDto>> GetMineAsync(bool unreadOnly, int skip, int take, CancellationToken ct = default)
+    public async Task<IReadOnlyList<NotificationDto>> GetMineAsync(bool unreadOnly, int skip, int take, CancellationToken ct = default,
+        DateTime? createdFrom = null, DateTime? toExclusive = null)
     {
         var me = UserId;
         take = Math.Clamp(take, 1, 100);
@@ -36,6 +37,8 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
                         : notification.CreationTime >= epoch ? notification.CreationTime
                         : receiver.CreationTime
                     where !socialOnly || SocialNotificationKinds.TitleKeys.Contains(notification.Title)
+                    where (!createdFrom.HasValue || createdAt >= createdFrom.Value)
+                        && (!toExclusive.HasValue || createdAt < toExclusive.Value)
                     orderby createdAt descending, notification.Id descending
                     select new NotificationDto(notification.Id, receiver.UserId, notification.Title, notification.Body,
                         notification.Link, receiver.IsRead, createdAt);

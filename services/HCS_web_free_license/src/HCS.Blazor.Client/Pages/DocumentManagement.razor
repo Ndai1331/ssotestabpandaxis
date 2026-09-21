@@ -9,7 +9,6 @@
 @inject OrganizationCatalogClient Catalog
 @inject NavigationManager Navigation
 @inject SystemFeatureState Features
-@implements IDisposable
 @using System.Threading
 @using HCS.Permissions
 
@@ -330,21 +329,16 @@
     private bool CanPrev => currentPage > 1;
     private bool CanNext => currentPage < PageCount;
 
-    protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
     protected override async Task OnParametersSetAsync()
     {
         await Features.EnsureLoadedAsync();
-        canManageArchive = await AuthorizationService.IsGrantedAsync(HCSPermissions.Documents.Create);
+        // Use the same authenticated principal and policy as the archive menu.
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        canManageArchive = (await AuthorizationService.AuthorizeAsync(
+            authenticationState.User, null, HCSPermissions.Documents.Create)).Succeeded;
         await ReloadIfSourceChangedAsync(resetFilter: lastLoadedSource != int.MinValue);
     }
     protected override async Task OnAfterRenderAsync(bool firstRender) => await OpenInboxPreviewFromQueryAsync();
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) =>
-        _ = InvokeAsync(async () =>
-        {
-            await ReloadIfSourceChangedAsync(resetFilter: true);
-            await OpenInboxPreviewFromQueryAsync();
-        });
-    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 
     private async Task ReloadIfSourceChangedAsync(bool resetFilter)
     {

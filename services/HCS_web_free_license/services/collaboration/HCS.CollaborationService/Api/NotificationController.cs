@@ -10,7 +10,9 @@ namespace HCS.CollaborationService.Api;
 public sealed class NotificationController(NotificationAppService app) : AbpControllerBase
 {
     [HttpGet]
-    public Task<IReadOnlyList<NotificationDto>> GetMine([FromQuery] bool unreadOnly = false, [FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default) => app.GetMineAsync(unreadOnly, skip, take, ct);
+    public Task<IReadOnlyList<NotificationDto>> GetMine([FromQuery] bool unreadOnly = false, [FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default,
+        [FromQuery] DateTime? from = null, [FromQuery] DateTime? toExclusive = null) =>
+        app.GetMineAsync(unreadOnly, skip, take, ct, from, toExclusive);
 
     [HttpGet("unread-count")]
     public Task<int> UnreadCount(CancellationToken ct) => app.CountUnreadAsync(ct);

@@ -329,7 +329,11 @@
     {
         try
         {
-            if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+            try
+            {
+                if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+            }
+            catch { }
             if (kinds.Count == 0) kinds.AddRange(await Documents.GetKindsAsync());
             if (roles.Count == 0) roles.AddRange(await LoadRolesAsync());
             if (departmentTree.Count == 0)
@@ -419,6 +423,11 @@
         form.Steps.Clear();
         foreach (var step in definition.Steps.OrderBy(x => x.Order))
             form.Steps.Add(StepDraft.From(step));
+        await ChatContactDirectory.EnsureAsync(
+            Chat,
+            contacts,
+            form.Steps.SelectMany(step => step.UserIds.Append(step.AssigneeUserId ?? Guid.Empty)),
+            CurrentUser);
         var templates = await Documents.GetTemplatesAsync();
         template = templates.Where(x => x.DefinitionId == id).OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Version).FirstOrDefault();
         BindTemplateForm();
@@ -702,7 +711,7 @@
     }).ToList();
     private string KindName(Guid? id) => id is null ? "" : kinds.FirstOrDefault(x => x.Id == id)?.Name ?? "";
     private void GoBackToList() => Navigation.NavigateTo("/workflow-lists");
-    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private string ContactName(Guid? id) => ChatContactDirectory.Name(contacts, id);
     private CatalogSelect2Item? ContactItem(Guid? id) =>
         contacts.FirstOrDefault(x => x.Id == id) is { } contact ? CatalogSelect2Cache.UserItem(contact) : null;
     private IReadOnlyList<CatalogSelect2Item> ContactItems(IEnumerable<Guid> ids) =>
@@ -727,7 +736,8 @@
             editingStep.RoleId = null;
         await InvokeAsync(StateHasChanged);
     }
-    private IReadOnlyList<string> UserNames(IEnumerable<Guid> ids) => CatalogSelect2Cache.TextsFor(contacts, ids, x => x.Id, x => x.DisplayName);
+    private IReadOnlyList<string> UserNames(IEnumerable<Guid> ids) =>
+        ids.Select(id => ChatContactDirectory.Name(contacts, id)).ToList();
     private Task<CatalogSelect2SearchResponse> SearchRolesAsync(string term, int page)
     {
         var found = roles.Where(x => string.IsNullOrWhiteSpace(term)
@@ -741,7 +751,7 @@
     }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
-        var found = await Chat.GetContactsAsync(term, 50);
+        var found = ChatContactDirectory.WithCurrentUser(await Chat.GetContactsAsync(term, 50), contacts, CurrentUser, term);
         return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false, itemOf: CatalogSelect2Cache.UserItem);
     }
     public async ValueTask DisposeAsync()

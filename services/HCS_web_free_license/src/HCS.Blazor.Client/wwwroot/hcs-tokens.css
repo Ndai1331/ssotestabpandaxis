@@ -126,6 +126,12 @@
 
   --color-htl: #4E9BC7;
 
+  --task-status-todo: #64748B;
+  --task-status-doing: #355dff;
+  --task-status-waiting: #D97706;
+  --task-status-done: #1d9e75;
+  --task-status-cancelled: #dc2626;
+
   /* ——— Component ——— */
   --button-bg: var(--color-primary);
   --button-fg: var(--color-primary-foreground);

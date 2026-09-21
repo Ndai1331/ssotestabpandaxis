@@ -179,6 +179,8 @@
     "Menu:Documents": "Văn bản",
     "Menu:DocumentList": "Quản lý tài liệu",
     "Menu:MyDocuments": "Văn bản của tôi",
+    "Work:SigningDocuments": "Văn bản ký duyệt",
+    "Work:LoadMoreDocuments": "Tải thêm",
     "Menu:DocumentsICreated": "Văn bản tôi tạo",
     "Menu:DocumentsSentToMe": "Văn bản gửi đến tôi",
     "Menu:DocumentSigning": "Ký duyệt",

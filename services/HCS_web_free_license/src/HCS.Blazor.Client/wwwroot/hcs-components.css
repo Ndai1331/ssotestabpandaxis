@@ -1211,10 +1211,10 @@ body:has(.hcs-app-shell) .datepicker .datepicker-header .datepicker-next {
     margin-right: auto;
     white-space: nowrap;
 }
-    min-height: 32px;
+    /* min-height: 32px;
     height: 32px;
     border-radius: var(--radius-xl);
-}
+} */
 
 .hcs-app-shell textarea.form-control,
 .hcs-app-shell textarea.input,

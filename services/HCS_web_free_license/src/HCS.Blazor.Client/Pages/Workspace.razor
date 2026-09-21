@@ -36,10 +36,10 @@
             <div class="hcs-ws-kpi-num">@events.Count</div>
             <div class="hcs-ws-kpi-lbl">@L["Work:Events"]</div>
         </div>
-        <a class="hcs-ws-kpi" href="/manage-documents?sourceType=2">
-            <span class="hcs-ws-kpi-icon red" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span>
+        <a class="hcs-ws-kpi" href="/document-signing">
+            <span class="hcs-ws-kpi-icon teal" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 12h8m-8 4 2 2 5-5"/></svg></span>
             <div class="hcs-ws-kpi-num">@myDocumentCount</div>
-            <div class="hcs-ws-kpi-lbl">@L["Menu:MyDocuments"]</div>
+            <div class="hcs-ws-kpi-lbl">@L["Work:SigningDocuments"]</div>
         </a>
         <a class="hcs-ws-kpi" href="/projects">
             <span class="hcs-ws-kpi-icon blue" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h7l2 2h9v10H3z"/></svg></span>
@@ -153,33 +153,41 @@
         <article class="hcs-ws-card">
             <header class="hcs-ws-card-hd">
                 <div class="hcs-ws-card-title-wrap">
-                    <div class="hcs-ws-card-icon red" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></div>
+                    <div class="hcs-ws-card-icon teal" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 12h8m-8 4 2 2 5-5"/></svg></div>
                     <div>
-                        <div class="hcs-ws-card-title">@L["Menu:MyDocuments"]</div>
+                        <div class="hcs-ws-card-title">@L["Work:SigningDocuments"]</div>
                         <div class="hcs-ws-card-sub">@workflows.Count @L["Menu:Documents"]</div>
                     </div>
                 </div>
             </header>
             <div class="hcs-ws-card-body">
                 @if (isLoading) { <HcsLoading CssClass="py-4" /> }
-                else if (workflows.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div> }
                 else
                 {
-                    <div class="hcs-ws-doc-groups">
-                        <section class="hcs-ws-doc-group" aria-label="@L["Work:CreatedByMe"]">
-                            <div class="hcs-ws-doc-group-title">@L["Work:CreatedByMe"] <span>@createdWorkflows.Count</span></div>
-                            @WorkflowDocRows(createdWorkflows)
-                        </section>
-                        <section class="hcs-ws-doc-group" aria-label="@L["Work:ReceivedByMe"]">
-                            <div class="hcs-ws-doc-group-title">@L["Work:ReceivedByMe"] <span>@receivedWorkflows.Count</span></div>
-                            @WorkflowDocRows(receivedWorkflows)
-                        </section>
-                        @if (otherWorkflows.Count > 0)
+                    <div class="hcs-ws-signing-tabs" aria-label="@L["Work:SigningDocuments"]">
+                        @foreach (var tab in SigningTabs)
                         {
-                            <section class="hcs-ws-doc-group" aria-label="@L["All"]">
-                                <div class="hcs-ws-doc-group-title">@L["All"] <span>@otherWorkflows.Count</span></div>
-                                @WorkflowDocRows(otherWorkflows)
-                            </section>
+                            <button type="button" class="hcs-ws-signing-tab @(signingTab == tab.Key ? "is-active" : null)"
+                                    aria-pressed="@((signingTab == tab.Key).ToString().ToLowerInvariant())"
+                                    @onclick="() => SelectSigningTab(tab.Key)">
+                                @L[tab.Label] <span>@tab.Count</span>
+                            </button>
+                        }
+                    </div>
+                    <div class="hcs-ws-doc-groups" @key="signingTab" aria-live="polite">
+                        @if (FilteredSigningWorkflows.Count == 0)
+                        {
+                            <div class="hcs-ws-empty">@L["Work:NoRecentDocuments"]</div>
+                        }
+                        else
+                        {
+                            @WorkflowDocRows(FilteredSigningWorkflows.Take(signingVisibleCount).ToList())
+                        }
+                        @if (signingVisibleCount < FilteredSigningWorkflows.Count)
+                        {
+                            <div class="hcs-ws-signing-more">
+                                <button type="button" class="btn btn-outline btn-sm" @onclick="LoadMoreSigningDocuments">@L["Work:LoadMoreDocuments"]</button>
+                            </div>
                         }
                     </div>
                 }
@@ -451,9 +459,9 @@
     private readonly List<CalendarEventDto> events = [];
     private readonly List<ProjectDto> projects = [];
     private readonly List<ProjectTaskDto> tasks = [];
-    private readonly List<MyDocumentRow> myDocuments = [];
+    private readonly Dictionary<Guid, SigningQueueItemDto> signingQueue = [];
     private readonly List<WorkflowInstanceDto> workflows = [];
-    private readonly Dictionary<Guid, DocumentDto> workflowDocuments = [];
+    private readonly Dictionary<Guid, SigningQueueDocumentDto> workflowDocuments = [];
     private readonly List<NotificationDto> notifications = [];
     private readonly List<DepartmentCatalogDto> departments = [];
     private readonly Dictionary<Guid, string> memberNames = [];
@@ -472,6 +480,7 @@
     private IReadOnlyList<DateTime?> selectedDates = [DateTime.Today.AddMonths(-1), DateTime.Today.AddMonths(1)];
     private DateTime selectedDay = DateTime.Today;
     private bool isLoading;
+    private int loadGeneration;
     private long myDocumentCount;
 
     private IReadOnlyList<DateTime> visibleDays
@@ -498,22 +507,45 @@
     private List<ProjectTaskDto> myTasks => tasks.Where(x => x.Status is not "Completed" and not "Cancelled").ToList();
     private List<WorkflowInstanceDto> createdWorkflows => workflows.Where(IsCreatedByMe).ToList();
     private List<WorkflowInstanceDto> receivedWorkflows => workflows.Where(IsReceivedByMe).ToList();
-    private List<WorkflowInstanceDto> otherWorkflows => workflows.Where(item => !IsCreatedByMe(item) && !IsReceivedByMe(item)).ToList();
-    private IReadOnlyList<(string Label, int Count, int Percent, string Color)> workflowGroups => StatusGroups(workflows,
-        (L["Work:Status.Doing"], "#355dff", x => x.Status == WorkflowInstanceStatus.Running),
-        (L["Work:Status.Done"], "#1d9e75", x => x.Status == WorkflowInstanceStatus.Completed),
-        (L["Work:Status.Cancelled"], "#dc2626", x => x.Status is WorkflowInstanceStatus.Cancelled or WorkflowInstanceStatus.Rejected or WorkflowInstanceStatus.Returned));
+    private string signingTab = "all";
+    private int signingVisibleCount = 6;
+    private IReadOnlyList<(string Key, string Label, int Count)> SigningTabs =>
+    [
+        ("all", "All", workflows.Count),
+        ("created", "Work:CreatedByMe", createdWorkflows.Count),
+        ("received", "Feature:SigningSentToMe", receivedWorkflows.Count)
+    ];
+    private List<WorkflowInstanceDto> FilteredSigningWorkflows => (signingTab switch
+    {
+        "created" => createdWorkflows,
+        "received" => receivedWorkflows,
+        _ => workflows
+    }).OrderByDescending(item => item.CreationTime).ThenByDescending(item => item.Id).ToList();
+    private void SelectSigningTab(string tab)
+    {
+        signingTab = tab;
+        signingVisibleCount = 6;
+    }
+    private void LoadMoreSigningDocuments() => signingVisibleCount += 6;
+    private IReadOnlyList<(string Label, int Count, int Percent, string Color)> workflowGroups =>
+        SigningStatusDisplay.Styles.Where(style => style.Key != "Completed")
+            .Select(style =>
+            {
+                var count = workflows.Count(item => SigningStatusDisplay.ForWorkflow(item).Key == style.Key);
+                return (L[style.TextKey].Value, count,
+                    (int)Math.Round(100d * count / Math.Max(workflows.Count, 1)), style.Color);
+            }).ToList();
     private IReadOnlyList<(string Label, int Count, int Percent, string Color)> projectGroups => StatusGroups(projects,
-        (L["Work:Status.Planning"], "#64748B", x => x.Status is "Draft" or "Planning"),
-        (L["Work:Status.InProgress"], "#355dff", x => x.Status == "Active"),
+        (L["Work:Status.Planning"], "var(--color-gray-600, #64748B)", x => x.Status is "Draft" or "Planning"),
+        (L["Work:Status.InProgress"], "#2563EB", x => x.Status == "Active"),
         (L["Work:Status.Completed"], "#1d9e75", x => x.Status == "Completed"),
-        (L["Work:Status.Cancelled"], "#dc2626", x => x.Status == "Cancelled"));
+        (L["Work:Status.Cancelled"], "#DB2777", x => x.Status == "Cancelled"));
     private IReadOnlyList<(string Label, int Count, int Percent, string Color)> taskGroups => StatusGroups(tasks,
-        (L["Work:Status.Todo"], "#64748B", x => x.Status == "New"),
-        (L["Work:Status.Doing"], "#355dff", x => x.Status == "InProgress"),
-        (L["Work:Status.Waiting"], "#D97706", x => x.Status == "Waiting"),
-        (L["Work:Status.Done"], "#1d9e75", x => x.Status == "Completed"),
-        (L["Work:Status.Cancelled"], "#dc2626", x => x.Status == "Cancelled"));
+        (L["Work:Status.Todo"], WorkUi.TaskStatusColor("New"), x => x.Status == "New"),
+        (L["Work:Status.Doing"], WorkUi.TaskStatusColor("InProgress"), x => x.Status == "InProgress"),
+        (L["Work:Status.Waiting"], WorkUi.TaskStatusColor("Waiting"), x => x.Status == "Waiting"),
+        (L["Work:Status.Done"], WorkUi.TaskStatusColor("Completed"), x => x.Status == "Completed"),
+        (L["Work:Status.Cancelled"], WorkUi.TaskStatusColor("Cancelled"), x => x.Status == "Cancelled"));
 
     private static IReadOnlyList<(string Label, int Count, int Percent, string Color)> StatusGroups<T>(
         IReadOnlyCollection<T> items, params (string Label, string Color, Func<T, bool> Match)[] defs)
@@ -708,16 +740,21 @@
 
     private async Task LoadMemberNamesAsync(IEnumerable<Guid> userIds)
     {
-        try
+        memberNames.Clear();
+        var ids = userIds.Where(id => id != Guid.Empty).Distinct().ToArray();
+        if (ids.Length == 0) return;
+
+        var contacts = new List<ChatContactDto>();
+        await ChatContactDirectory.EnsureAsync(Chat, contacts, ids, CurrentUser);
+        foreach (var id in ids)
         {
-            var contacts = await Chat.GetContactsAsync(null, 100);
-            foreach (var contact in contacts.Where(x => userIds.Contains(x.Id)))
-                memberNames[contact.Id] = UserDisplayNames.FirstReal(contact.DisplayName, contact.UserName);
+            var name = ChatContactDirectory.Name(contacts, id);
+            if (!string.IsNullOrWhiteSpace(name))
+                memberNames[id] = name;
         }
-        catch { }
     }
 
-    private string MemberName(Guid userId) => memberNames.GetValueOrDefault(userId, userId.ToString("N")[..8]);
+    private string MemberName(Guid userId) => memberNames.GetValueOrDefault(userId, "");
     private string ProjectRoleLabel(string role) => role switch
     {
         "Manager" => L["Work:ProjectRole.Manager"],
@@ -742,18 +779,24 @@
     private Task OnRangeChanged(IReadOnlyList<DateTime?> dates)
     {
         selectedDates = dates;
-        if (dates.Count >= 2 && dates[0] is { } start && dates[1] is { } end)
-        {
-            fromDate = (start <= end ? start : end).Date;
-            toDate = (start <= end ? end : start).Date;
-            if (selectedDay.Date < fromDate || selectedDay.Date > toDate) selectedDay = fromDate;
-            return LoadAsync();
-        }
-        return Task.CompletedTask;
+        if (dates.Count < 2 || dates[0] is not { } start || dates[1] is not { } end)
+            return Task.CompletedTask;
+
+        var from = LocalDate(start <= end ? start : end);
+        var to = LocalDate(start <= end ? end : start);
+        if (from == fromDate.Date && to == toDate.Date)
+            return Task.CompletedTask;
+
+        fromDate = from;
+        toDate = to;
+        if (selectedDay.Date < fromDate || selectedDay.Date > toDate)
+            selectedDay = fromDate;
+        return LoadAsync();
     }
 
     private async Task LoadAsync()
     {
+        var generation = ++loadGeneration;
         isLoading = true;
         try
         {
@@ -762,76 +805,99 @@
             events.Clear();
             projects.Clear();
             tasks.Clear();
-            myDocuments.Clear();
+            signingQueue.Clear();
             myDocumentCount = 0;
             workflowDocuments.Clear();
             workflows.Clear();
             notifications.Clear();
+            signingVisibleCount = 6;
             await LoadWorkspaceWidgetAsync(async () =>
             {
                 events.AddRange((await Work.GetCalendarAsync(from, to)).Where(x => x.StartTime.ToLocalTime() >= from && x.StartTime.ToLocalTime() <= to));
-            });
+            }, generation);
             await LoadWorkspaceWidgetAsync(async () =>
             {
                 projects.AddRange((await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100))).Items
                     .Where(x => x.EndDate >= from && x.StartDate <= to));
-            });
+            }, generation);
             await LoadWorkspaceWidgetAsync(async () =>
             {
                 tasks.AddRange((await Work.GetTasksAsync(null, new WorkListQuery(null, null, 0, 100))).Items
                     .Where(x => x.DueDate >= from && x.StartDate <= to));
-            });
+            }, generation);
             await LoadWorkspaceWidgetAsync(async () =>
             {
-                var inbox = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 2, From: from, To: toDate));
-                var rows = inbox.Items
-                    .Select(item => new MyDocumentRow(item.Id, item.Title, item.Status, item.CreationTime, false))
-                    .ToList();
-                try
+                var queue = await Documents.GetSigningQueueAsync();
+                foreach (var item in queue.Where(item => InRange(item.Document.CreationTime, from, to)))
                 {
-                    foreach (var item in await Documents.GetSigningQueueAsync())
-                    {
-                        if (!InRange(item.Document.CreationTime, from, to)) continue;
-                        if (rows.Any(x => x.Id == item.Document.Id)) continue;
-                        rows.Add(new MyDocumentRow(item.Document.Id, item.Document.Title, item.Document.Status, item.Document.CreationTime, true));
-                    }
+                    signingQueue[item.Instance.Id] = item;
+                    workflowDocuments[item.Document.Id] = item.Document;
                 }
-                catch { /* signing queue is optional for this card */ }
-                myDocuments.AddRange(rows.OrderByDescending(x => x.When));
-                myDocumentCount = myDocuments.Count;
-            });
+                workflows.AddRange(signingQueue.Values.Select(item => item.Instance));
+                myDocumentCount = workflows.Count;
+            }, generation);
             await LoadWorkspaceWidgetAsync(async () =>
             {
-                var workflowPage = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 3));
-                foreach (var document in workflowPage.Items)
-                    workflowDocuments[document.Id] = document;
-            });
-            await LoadWorkspaceWidgetAsync(async () =>
-            {
-                workflows.AddRange((await Documents.GetInstancesAsync()).Where(x => InRange(x.CreationTime, from, to)));
-            });
-            await LoadWorkspaceWidgetAsync(async () =>
-            {
-                notifications.AddRange((await Chat.GetNotificationsAsync())
+                notifications.AddRange((await Chat.GetNotificationsAsync(
+                    from: from, toExclusive: toDate.Date.AddDays(1)))
                     .OrderByDescending(x => x.CreatedAt)
                     .ThenByDescending(x => x.Id));
-            });
+            }, generation);
+            if (generation != loadGeneration)
+                return;
             if (!visibleDays.Contains(selectedDay.Date))
                 selectedDay = visibleDays.Contains(DateTime.Today) ? DateTime.Today : fromDate.Date;
         }
-        catch (Exception ex) { await NotifyErrorAsync(ex); }
-        finally { isLoading = false; }
+        catch (Exception ex)
+        {
+            if (generation == loadGeneration)
+                await NotifyWorkspaceErrorAsync(ex);
+        }
+        finally
+        {
+            if (generation == loadGeneration)
+                isLoading = false;
+        }
     }
 
-    private async Task LoadWorkspaceWidgetAsync(Func<Task> load)
+    private async Task LoadWorkspaceWidgetAsync(Func<Task> load, int generation)
     {
         try { await load(); }
+        catch (Exception ex) when (generation != loadGeneration) { }
         catch (Exception ex) when (BffErrorMapper.GetStatusCode(ex) == HttpStatusCode.Forbidden)
         {
             // Keep other workspace widgets visible when a sibling API is not granted.
         }
+        catch (Exception ex) when (BffErrorMapper.GetStatusCode(ex) == HttpStatusCode.Unauthorized)
+        {
+            if (generation != loadGeneration)
+                return;
+            if (!await IsBrowserSessionActiveAsync())
+            {
+                await NotifyErrorAsync(ex);
+                return;
+            }
+
+            try { await load(); }
+            catch (Exception retry) when (generation != loadGeneration) { }
+            catch (Exception retry) when (BffErrorMapper.GetStatusCode(retry) is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            {
+                // Cookie session is still valid; this widget's API is unavailable.
+            }
+            catch (Exception retry) { await NotifyErrorAsync(retry); }
+        }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
+
+    private async Task NotifyWorkspaceErrorAsync(Exception ex)
+    {
+        if (BffErrorMapper.GetStatusCode(ex) == HttpStatusCode.Unauthorized && await IsBrowserSessionActiveAsync())
+            return;
+        await NotifyErrorAsync(ex);
+    }
+
+    private static DateTime LocalDate(DateTime value) =>
+        (value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : value).Date;
 
     private string ProjectLabel(CalendarEventDto item)
     {
@@ -868,30 +934,26 @@
 
     private bool IsReceivedByMe(WorkflowInstanceDto instance) =>
         CurrentUser.Id is { } userId &&
-        instance.Tasks.Any(task => task.AssigneeUserId == userId);
+        signingQueue.TryGetValue(instance.Id, out var item) &&
+        instance.Tasks.Any(task => (task.AssigneeUserId == userId || task.DecidedBy == userId)
+            && item.Definition.Steps.Any(step =>
+                string.Equals(step.Code, task.StepCode, StringComparison.OrdinalIgnoreCase)
+                && step.Type is "PROCESS" or "SIGN"));
 
     private string WorkflowDocTitle(WorkflowInstanceDto instance) =>
         workflowDocuments.TryGetValue(instance.DocumentId, out var document) && !string.IsNullOrWhiteSpace(document.Title)
             ? document.Title
             : instance.DocumentId.ToString("N")[..8];
 
-    private static string WorkflowBadgeClass(WorkflowInstanceStatus status) => status switch
-    {
-        WorkflowInstanceStatus.Running => "hcs-status-badge--warning",
-        WorkflowInstanceStatus.Completed => "hcs-status-badge--success",
-        WorkflowInstanceStatus.Returned => "hcs-status-badge--warning",
-        _ => "hcs-status-badge--danger"
-    };
-
     private RenderFragment WorkflowDocRows(IReadOnlyList<WorkflowInstanceDto> items) => items.Count == 0
         ? @<text></text>
         : @<div class="hcs-ws-doc">
-            @foreach (var item in items.Take(6))
+            @foreach (var item in items)
             {
-                <div class="hcs-ws-doc-row">
-                    <svg class="hcs-ws-file-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+                <div class="hcs-ws-doc-row" @key="item.Id">
+                    <svg class="hcs-ws-file-icon hcs-ws-signing-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 12h8m-8 4 2 2 5-5"/></svg>
                     <button type="button" class="hcs-ws-doc-name" @onclick="() => PreviewDocumentAsync(item.DocumentId)">@WorkflowDocTitle(item)</button>
-                    <span class="hcs-status-badge @WorkflowBadgeClass(item.Status)">@L[$"Work:WorkflowStatus.{item.Status}"]</span>
+                    <span class="@SigningStatusDisplay.ForWorkflow(item).Css">@L[SigningStatusDisplay.ForWorkflow(item).TextKey]</span>
                     <button type="button" class="icon-btn eye" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewDocumentAsync(item.DocumentId)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>

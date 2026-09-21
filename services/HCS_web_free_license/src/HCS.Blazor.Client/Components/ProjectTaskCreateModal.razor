@@ -122,7 +122,12 @@
         projects.Clear();
         var page = await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100));
         projects.AddRange(page.Items);
-        if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+        try
+        {
+            if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+        }
+        catch { }
+        await ChatContactDirectory.EnsureAsync(Chat, contacts, CurrentUser.Id is { } me ? [me] : [], CurrentUser);
         await LoadParentsAsync();
         if (modal is not null) await modal.Show();
     }
@@ -247,14 +252,14 @@
         return CatalogSelect2Cache.Merge(projects, result.Items, x => x.Id,
             x => CatalogSelect2Text.CodeName(x.Code, x.Name), more: skip + result.Items.Count < result.TotalCount);
     }
-    private string ContactName(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? "";
+    private string ContactName(Guid? id) => ChatContactDirectory.Name(contacts, id);
     private CatalogSelect2Item? ContactItem(Guid? id) => id is { } userId
         ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault()
         : null;
     private string DocumentName(Guid? id) => id is null ? "" : documents.FirstOrDefault(x => x.Id == id) is { } d ? $"{d.Number} · {d.Title}" : "";
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
-        var found = await Chat.GetContactsAsync(term, 50);
+        var found = ChatContactDirectory.WithCurrentUser(await Chat.GetContactsAsync(term, 50), contacts, CurrentUser, term);
         return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
     }
     private async Task<CatalogSelect2SearchResponse> SearchDocumentsAsync(string term, int page)

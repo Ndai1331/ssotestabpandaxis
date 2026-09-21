@@ -563,6 +563,21 @@
   color: var(--color-gray-600);
 }
 
+.page-home .badge-success {
+  background: #e8f8ee;
+  color: #1d9e75;
+}
+
+.page-home .badge-waiting {
+  background: #fff4e5;
+  color: var(--task-status-waiting, #D97706);
+}
+
+.page-home .badge-danger {
+  background: #fde8ee;
+  color: var(--task-status-cancelled, #dc2626);
+}
+
 .page-home .icon-btn.eye,
 .page-home .eye {
   width: 32px;

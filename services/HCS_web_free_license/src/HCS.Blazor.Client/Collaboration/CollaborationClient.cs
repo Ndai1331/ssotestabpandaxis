@@ -169,9 +169,13 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
         bool unreadOnly = false,
         int skip = 0,
         int take = 20,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        DateTime? from = null,
+        DateTime? toExclusive = null) =>
         GetAsync<IReadOnlyList<NotificationDto>>(
-            $"api/notifications?unreadOnly={unreadOnly}&skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 100)}",
+            $"api/notifications?unreadOnly={unreadOnly}&skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 100)}"
+                + (from.HasValue ? $"&from={Uri.EscapeDataString(from.Value.ToUniversalTime().ToString("O"))}" : "")
+                + (toExclusive.HasValue ? $"&toExclusive={Uri.EscapeDataString(toExclusive.Value.ToUniversalTime().ToString("O"))}" : ""),
             cancellationToken);
 
     public Task<int> GetNotificationUnreadCountAsync(CancellationToken cancellationToken = default) =>

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Net;
+using HCS.Blazor.Client.Authentication;
 using HCS.Blazor.Client.Services;
 using HCS.Blazor.Client.Navigation;
 using HCS.Localization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using Volo.Abp.AspNetCore.Components;
@@ -22,6 +24,7 @@ public abstract class HCSComponentBase : AbpComponentBase
     [Inject] protected IUiMessageService UiMessageService { get; set; } = default!;
     [Inject] protected IConfiguration Configuration { get; set; } = default!;
     [Inject] protected NavigationManager LoginNavigation { get; set; } = default!;
+    [Inject] protected AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
 
     protected string MapBffError(Exception exception, BffErrorKind kind = BffErrorKind.Load) =>
         BffErrorMapper.From(L, exception, kind);
@@ -39,6 +42,12 @@ public abstract class HCSComponentBase : AbpComponentBase
 
     protected async Task ShowErrorAsync(string message, HttpStatusCode? statusCode = null)
     {
+        if (statusCode == HttpStatusCode.Unauthorized && await IsBrowserSessionActiveAsync())
+        {
+            await UiMessageService.Error(L["Catalog:LoadError"].Value);
+            return;
+        }
+
         if (statusCode != HttpStatusCode.Unauthorized)
         {
             await UiMessageService.Error(message);
@@ -57,5 +66,14 @@ public abstract class HCSComponentBase : AbpComponentBase
                 BffLoginUrlBuilder.Build(Configuration, LoginNavigation.Uri),
                 forceLoad: true);
         }
+    }
+
+    protected async Task<bool> IsBrowserSessionActiveAsync()
+    {
+        if (CurrentUser.IsAuthenticated)
+            return true;
+
+        return AuthenticationStateProvider is BffAuthenticationStateProvider bff
+            && await bff.HasActiveSessionAsync();
     }
 }

@@ -216,7 +216,11 @@
         isLoading = true;
         try
         {
-            if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+            try
+            {
+                if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+            }
+            catch { }
             if (departments.Count == 0)
             {
                 try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
@@ -225,6 +229,7 @@
             {
                 detail = await Work.GetProjectAsync(id);
                 BindProjectForm(detail.Project);
+                await ChatContactDirectory.EnsureAsync(Chat, contacts, detail.Members.Select(x => x.UserId), CurrentUser);
             }
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
@@ -283,6 +288,7 @@
             await Work.AddMemberAsync(projectId, new AddProjectMemberRequest(userId, memberRole));
             await NotifySuccessAsync(L["Feature:MemberAdded"]);
             detail = await Work.GetProjectAsync(projectId);
+            await ChatContactDirectory.EnsureAsync(Chat, contacts, detail.Members.Select(x => x.UserId), CurrentUser);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
@@ -310,9 +316,10 @@
         if (ProjectId is not { } projectId) return;
         detail = await Work.GetProjectAsync(projectId);
         BindProjectForm(detail.Project);
+        await ChatContactDirectory.EnsureAsync(Chat, contacts, detail.Members.Select(x => x.UserId), CurrentUser);
     }
 
-    private string Name(Guid? id) => id is null ? "" : contacts.FirstOrDefault(x => x.Id == id)?.DisplayName ?? id.Value.ToString("N")[..8];
+    private string Name(Guid? id) => ChatContactDirectory.Name(contacts, id);
     private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[..1];
     private string OwnerDepartmentLabel => DepartmentSelectText(projectForm.OwnerDepartmentId);
     private string DepartmentSelectText(Guid? id) =>
@@ -330,7 +337,7 @@
     }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
-        var found = await Chat.GetContactsAsync(term, 50);
+        var found = ChatContactDirectory.WithCurrentUser(await Chat.GetContactsAsync(term, 50), contacts, CurrentUser, term);
         return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, more: false, itemOf: CatalogSelect2Cache.UserItem);
     }
     private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

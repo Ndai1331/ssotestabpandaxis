@@ -28,6 +28,32 @@ internal sealed class BffAuthenticationStateProvider(IHttpClientFactory httpClie
         return currentState;
     }
 
+    public async Task<bool> HasActiveSessionAsync()
+    {
+        try
+        {
+            using var client = httpClientFactory.CreateClient("HCS.Bff");
+            using var response = await client.GetAsync("bff/user");
+            if (!response.IsSuccessStatusCode)
+                return false;
+
+            var profile = await response.Content.ReadFromJsonAsync<BffUserResponse>(JsonOptions);
+            return profile?.IsAuthenticated == true;
+        }
+        catch (HttpRequestException)
+        {
+            return false;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+    }
+
     private async Task<AuthenticationState> LoadStateAsync()
     {
         try

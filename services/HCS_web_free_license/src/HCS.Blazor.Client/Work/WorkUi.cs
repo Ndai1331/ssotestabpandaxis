@@ -37,6 +37,15 @@ internal static class WorkUi
         _ => "todo"
     };
 
+    public static string TaskStatusColor(string status) => status switch
+    {
+        "InProgress" => "#355dff",
+        "Waiting" => "#D97706",
+        "Completed" => "#1d9e75",
+        "Cancelled" => "#dc2626",
+        _ => "#64748B"
+    };
+
     public static string PriorityKey(string priority) => priority switch
     {
         "Low" => "Work:Priority.Low",
@@ -48,7 +57,7 @@ internal static class WorkUi
     public static string ProjectBadgeDs(string status) => status switch
     {
         "Active" => "badge badge-info",
-        "Completed" => "badge badge-muted",
+        "Completed" => "badge badge-success",
         "Cancelled" => "badge badge-overdue",
         _ => "badge badge-muted"
     };
@@ -56,28 +65,15 @@ internal static class WorkUi
     public static string TaskBadgeDs(string status) => status switch
     {
         "InProgress" => "badge badge-info",
-        "Waiting" => "badge badge-warn",
-        "Completed" => "badge badge-muted",
-        "Cancelled" => "badge badge-overdue",
-        _ => "badge badge-warn"
+        "Waiting" => "badge badge-waiting",
+        "Completed" => "badge badge-success",
+        "Cancelled" => "badge badge-danger",
+        _ => "badge badge-muted"
     };
 
-    public static string ProjectBadgeClass(string status) => status switch
-    {
-        "Active" => "hcs-status-badge hcs-status-badge--info",
-        "Completed" => "hcs-status-badge hcs-status-badge--success",
-        "Cancelled" => "hcs-status-badge hcs-status-badge--danger",
-        _ => "hcs-status-badge hcs-status-badge--planning"
-    };
+    public static string ProjectBadgeClass(string status) => ProjectBadgeDs(status);
 
-    public static string TaskBadgeClass(string status) => status switch
-    {
-        "InProgress" => "hcs-status-badge hcs-status-badge--info",
-        "Waiting" => "hcs-status-badge hcs-status-badge--warning",
-        "Completed" => "hcs-status-badge hcs-status-badge--success",
-        "Cancelled" => "hcs-status-badge hcs-status-badge--danger",
-        _ => "hcs-status-badge hcs-status-badge--todo"
-    };
+    public static string TaskBadgeClass(string status) => TaskBadgeDs(status);
 
     public static string PriorityBadgeClass(string priority) => priority switch
     {

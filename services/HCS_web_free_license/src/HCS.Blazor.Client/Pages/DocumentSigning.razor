@@ -911,16 +911,11 @@
             _ => IsOverdue(item) ? "Overdue" : "InProgress"
         };
     }
-    private (string Css, string Text) StatusOf(SigningQueueItem item) => StatusFilterKey(item) switch
+    private (string Css, string Text) StatusOf(SigningQueueItem item)
     {
-        nameof(ApprovalTaskStatus.Approved) => ("badge hcs-status-badge--success", L["Work:ApprovalStatus.Approved"]),
-        nameof(ApprovalTaskStatus.Rejected) => ("badge hcs-status-badge--danger", L["Work:ApprovalStatus.Rejected"]),
-        nameof(ApprovalTaskStatus.Returned) => ("badge badge-warn", L["Work:ApprovalStatus.Returned"]),
-        nameof(ApprovalTaskStatus.Cancelled) or "Cancelled" => ("badge badge-muted", L["Work:ApprovalStatus.Cancelled"]),
-        "Completed" => ("badge hcs-status-badge--success", L["Work:Status.Completed"]),
-        "Overdue" => ("status-overdue", L["Work:Overdue"]),
-        _ => ("badge badge-info", L["Work:Status.InProgress"])
-    };
+        var style = SigningStatusDisplay.ForKey(StatusFilterKey(item));
+        return (style.Css, L[style.TextKey]);
+    }
     private string StatusClass(SigningQueueItem item) => StatusOf(item).Css;
     private string StatusText(SigningQueueItem item) => StatusOf(item).Text;
     private string ApprovalStatusText(ApprovalTaskStatus status) => L[$"Work:ApprovalStatus.{status}"].Value;

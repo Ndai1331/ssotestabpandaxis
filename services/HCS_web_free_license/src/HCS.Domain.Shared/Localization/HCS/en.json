@@ -179,6 +179,8 @@
     "Menu:Documents": "Documents",
     "Menu:DocumentList": "Document archive",
     "Menu:MyDocuments": "My documents",
+    "Work:SigningDocuments": "Documents for approval",
+    "Work:LoadMoreDocuments": "Load more",
     "Menu:DocumentsICreated": "Documents I created",
     "Menu:DocumentsSentToMe": "Documents sent to me",
     "Menu:DocumentSigning": "Signing queue",
