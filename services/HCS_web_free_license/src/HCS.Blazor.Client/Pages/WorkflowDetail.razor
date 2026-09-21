@@ -746,8 +746,9 @@
     }
     private Task<CatalogSelect2SearchResponse> SearchKindsAsync(string term, int page)
     {
-        var found = kinds.Where(x => string.IsNullOrWhiteSpace(term) || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
-        return Task.FromResult(CatalogSelect2Cache.Merge(kinds, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
+        var selectable = kinds.Where(x => x.IsActive || x.Id == form.KindId).ToList();
+        var found = selectable.Where(x => string.IsNullOrWhiteSpace(term) || x.Name.Contains(term, StringComparison.OrdinalIgnoreCase) || x.Code.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
+        return Task.FromResult(CatalogSelect2Cache.Merge(selectable, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
     }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {

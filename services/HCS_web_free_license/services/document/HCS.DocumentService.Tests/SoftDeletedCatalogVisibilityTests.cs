@@ -45,6 +45,10 @@ public sealed class SoftDeletedCatalogVisibilityTests
             activeSignature, inactiveSignature);
         await db.SaveChangesAsync();
 
+        var catalogKinds = await db.WorkflowKinds.OrderBy(x => x.Code).Select(x => x.Code).ToListAsync();
+        var selectableKinds = await db.WorkflowKinds.WhereActiveWorkflowKinds().Select(x => x.Code).ToListAsync();
+        var catalogDefinitions = await db.WorkflowDefinitions.WhereVisibleWorkflowDefinitions()
+            .Select(x => x.Code).OrderBy(x => x).ToListAsync();
         var visibleDefinitions = await db.WorkflowDefinitions
             .WhereActiveWorkflowDefinitions().Include(x => x.Steps).ToListAsync();
         var visibleTemplates = await db.WorkflowTemplates
@@ -52,6 +56,9 @@ public sealed class SoftDeletedCatalogVisibilityTests
         var visibleCredentials = await db.SigningCredentials.WhereVisibleSigningCredentials().ToListAsync();
         var visibleSignatures = await db.UserSignatures.WhereActiveUserSignatures().ToListAsync();
 
+        Assert.Equal(["active-kind", "inactive-kind"], catalogKinds);
+        Assert.Equal("active-kind", Assert.Single(selectableKinds));
+        Assert.Equal(["active-workflow", "inactive-workflow"], catalogDefinitions);
         Assert.Equal(activeDefinition.Id, Assert.Single(visibleDefinitions).Id);
         Assert.Single(visibleDefinitions[0].Steps);
         Assert.Equal(activeTemplate.Id, Assert.Single(visibleTemplates).Id);

@@ -83,4 +83,46 @@ public abstract class IdentityUserRoleAssignmentTests<TStartupModule> : HCSAppli
 
         (await _roleRepository.FindAsync(role.Id)).ShouldBeNull();
     }
+
+    [Fact]
+    public async Task Create_And_Update_Persist_Phone_Number()
+    {
+        var created = await _userAppService.CreateAsync(new IdentityUserCreateDto
+        {
+            UserName = "u" + Guid.NewGuid().ToString("N")[..16],
+            Email = $"{Guid.NewGuid():N}@example.com",
+            Password = "Test-password-42!",
+            PhoneNumber = " 0901234567 ",
+            RoleNames = []
+        });
+
+        created.PhoneNumber.ShouldBe("0901234567");
+
+        var updated = await _userAppService.UpdateAsync(created.Id, new IdentityUserUpdateDto
+        {
+            UserName = created.UserName,
+            Email = created.Email,
+            Name = created.Name,
+            Surname = created.Surname,
+            PhoneNumber = "0912345678",
+            IsActive = created.IsActive,
+            LockoutEnabled = created.LockoutEnabled,
+            ConcurrencyStamp = created.ConcurrencyStamp
+        });
+
+        updated.PhoneNumber.ShouldBe("0912345678");
+        (await _userAppService.GetAsync(created.Id)).PhoneNumber.ShouldBe("0912345678");
+
+        var cleared = await _userAppService.UpdateAsync(created.Id, new IdentityUserUpdateDto
+        {
+            UserName = created.UserName,
+            Email = created.Email,
+            PhoneNumber = " ",
+            IsActive = created.IsActive,
+            LockoutEnabled = created.LockoutEnabled,
+            ConcurrencyStamp = updated.ConcurrencyStamp
+        });
+
+        cleared.PhoneNumber.ShouldBeNullOrWhiteSpace();
+    }
 }

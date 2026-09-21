@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
+@using Volo.Abp.Identity
 @inject AccountProfileClient Account
 @inject NavigationManager Navigation
 
@@ -116,7 +117,9 @@
                                     </div>
                                     <div>
                                         <label class="form-label" for="account-phone">@L["Account:PhoneNumber"]</label>
-                                        <input id="account-phone" class="form-control" type="tel" @bind="form.PhoneNumber" autocomplete="tel" />
+                                        <input id="account-phone" class="form-control" type="tel" @bind="form.PhoneNumber"
+                                               maxlength="@IdentityUserConsts.MaxPhoneNumberLength"
+                                               placeholder="@L["Account:PhonePlaceholder"]" autocomplete="tel" />
                                     </div>
                                 </div>
                                 <div>
@@ -294,6 +297,12 @@
     private async Task SaveProfileAsync()
     {
         if (profile is null) return;
+        if ((form.PhoneNumber?.Trim().Length ?? 0) > IdentityUserConsts.MaxPhoneNumberLength)
+        {
+            await NotifyErrorAsync(L["Account:PhoneTooLong", IdentityUserConsts.MaxPhoneNumberLength]);
+            return;
+        }
+
         isSavingProfile = true;
         try
         {
@@ -306,6 +315,11 @@
                 PhoneNumber = NullIfEmpty(form.PhoneNumber),
                 ConcurrencyStamp = form.ConcurrencyStamp
             });
+            form.UserName = profile.UserName;
+            form.Email = profile.Email;
+            form.Name = profile.Name ?? "";
+            form.Surname = profile.Surname ?? "";
+            form.PhoneNumber = profile.PhoneNumber ?? "";
             form.ConcurrencyStamp = profile.ConcurrencyStamp;
             await NotifySuccessAsync(L["Catalog:Updated"]);
         }

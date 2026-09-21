@@ -116,7 +116,7 @@
 
 .hcs-app-shell .hcs-touch-target,
 .hcs-app-shell .btn,
-.hcs-app-shell button:not(.week-cell):not(.hcs-ws-dn):not(.tree-toggle):not(.icon-btn):not(.cal-type):not(.cal-event):not(.queue-tab):not(.doc-action):not(.doc-action-label):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear):not(.doc-title-open):not(.post-actions-meta-btn):not(.post-action):not(.comment-meta-btn):not(.comment-react-open):not(.react-choice):not(.hcs-ws-doc-name):not(.hcs-ws-proj-name):not(.hcs-ws-task-name):not(.hcs-ws-ev-name):not(.hcs-ws-project__task-name):not(.admin-role-option__select):not(.admin-role-option__more-btn),
+.hcs-app-shell button:not(.week-cell):not(.hcs-ws-dn):not(.tree-toggle):not(.icon-btn):not(.cal-type):not(.cal-event):not(.queue-tab):not(.doc-action):not(.doc-action-label):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear):not(.doc-title-open):not(.post-actions-meta-btn):not(.post-action):not(.comment-meta-btn):not(.comment-react-open):not(.react-choice):not(.hcs-ws-doc-name):not(.hcs-ws-proj-name):not(.hcs-ws-task-name):not(.hcs-ws-ev-name):not(.hcs-ws-project__task-name):not(.admin-role-option__select):not(.admin-role-option__more-btn):not(.hcs-settings-switch):not(.hcs-storage-switch):not(.hcs-storage-provider),
 .hcs-app-shell [role="button"]:not(.week-cell):not(.hcs-ws-dn):not(.icon-btn):not(.queue-tab):not(.send-doc-tab):not(.process-side-tab):not(.vb-tab):not(.select2-selection__clear):not(.doc-title-open):not(.post-actions-meta-btn):not(.post-action) {
     min-height: var(--hcs-touch-target);
 }

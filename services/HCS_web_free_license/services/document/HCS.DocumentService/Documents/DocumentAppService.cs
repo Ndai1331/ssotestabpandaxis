@@ -248,7 +248,7 @@ public sealed class DocumentAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        if (!submission) DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
+        if (!submission) DocumentAccess.RequirePermission(principal, DocumentPermissions.Delete);
         await using var transaction = submission && db.Database.IsRelational()
             ? await DocumentTransaction.BeginIfNeededAsync(db.Database, cancellationToken)
             : null;

@@ -104,6 +104,7 @@ public static class HCSPermissions
         public const string Update = Default + ".Update";
         public const string Assign = Default + ".Assign";
         public const string ManageFiles = Default + ".ManageFiles";
+        public const string Delete = Default + ".Delete";
         public const string WorkflowView = Default + ".Workflow.View";
         public const string WorkflowManage = Default + ".Workflow.Manage";
         public const string WorkflowStart = Default + ".Workflow.Start";
@@ -119,6 +120,7 @@ public static class HCSPermissions
             Update,
             Assign,
             ManageFiles,
+            Delete,
             WorkflowView,
             WorkflowManage,
             WorkflowStart,

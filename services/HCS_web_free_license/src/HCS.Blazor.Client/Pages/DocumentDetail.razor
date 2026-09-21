@@ -59,7 +59,7 @@
                                 }
                             </Authorized>
                         </AuthorizeView>
-                        @if (document is not null && SourceType is 0 or 1 && (IsPersonal || canUpdateDocument))
+                        @if (document is not null && SourceType is 0 or 1 && canDeleteDocument)
                         {
                             <button class="btn btn-ghost" type="button" @onclick="DeleteAsync" disabled="@isMutating">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
@@ -91,7 +91,7 @@
                             @L["Catalog:Create"]
                         </button>
                     }
-                    @if (!IsCreate && (IsPersonal || canUpdateDocument))
+                    @if (!IsCreate && canUpdateDocument)
                     {
                         <button class="btn btn-primary" type="submit" disabled="@isSaving">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
@@ -112,15 +112,6 @@
                     </button>
                     @if (!IsCreate)
                     {
-                        <button class="vb-tab @(activeTab == "assign" ? "is-active" : null)" type="button" role="tab"
-                                aria-selected="@(activeTab == "assign")" @onclick='() => activeTab = "assign"'>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 11a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M8 14a3 3 0 1 0-4-5 3 3 0 0 0 4 5z"/><path d="M20 20a5 5 0 0 0-8 0"/><path d="M12 20a5 5 0 0 0-8 0"/></svg>
-                            @L["Feature:Assign"]
-                            @if (VisibleAssignments.Count > 0)
-                            {
-                                <span class="vb-tab-count">@VisibleAssignments.Count</span>
-                            }
-                        </button>
                         <button class="vb-tab @(activeTab == "history" ? "is-active" : null)" type="button" role="tab"
                                 aria-selected="@(activeTab == "history")" @onclick='() => activeTab = "history"'>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -212,7 +203,7 @@
                                                     <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewFileAsync(file)">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                                                     </button>
-                                                    @if (SourceType is 0 or 1)
+                                                    @if (SourceType is 0 or 1 && canManageFiles)
                                                     {
                                                         <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteFileAsync(file.Id)">
                                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
@@ -232,48 +223,6 @@
 
                 @if (!IsCreate)
                 {
-                    <div class="vb-pane @(activeTab == "assign" ? "is-active" : null)" role="tabpanel" hidden="@(activeTab != "assign")">
-                        <div class="vb-assign">
-                            <AuthorizeView Policy="Documents.Assign">
-                                <Authorized>
-                                    <div class="vb-assign-row">
-                                        <div class="field">
-                                            <label class="field-label">@L["Chat:SelectContacts"]</label>
-                                            <UserSelect2 Value="assigneeId" ValueChanged="value => assigneeId = value"
-                                                         SelectedItem="@ContactItem(assigneeId)"
-                                                         Placeholder="@L["Chat:SelectContacts"]"
-                                                         SelectedText="@ContactName(assigneeId)"
-                                                         Search="SearchContactsAsync" />
-                                        </div>
-                                        <div class="field">
-                                            <label class="field-label" for="vb-reviewer">@L["Feature:Role"]</label>
-                                            <select class="select" id="vb-reviewer" @bind="responsibility">
-                                                <option value="reviewer">@L["Feature:Responsibility.Reviewer"]</option>
-                                            </select>
-                                        </div>
-                                        <button class="btn btn-primary" type="button" @onclick="AssignAsync">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                                            @L["Feature:Assign"]
-                                        </button>
-                                    </div>
-                                </Authorized>
-                            </AuthorizeView>
-                            @if (VisibleAssignments.Count > 0)
-                            {
-                                <ul class="vb-assignees">
-                                    @foreach (var assignment in VisibleAssignments)
-                                    {
-                                        <li class="vb-chip">@ContactName(assignment.AssigneeUserId) · @AssignmentRoleText(assignment.Responsibility)</li>
-                                    }
-                                </ul>
-                            }
-                            else
-                            {
-                                <p class="vb-empty-data">@L["Feature:NoAssignees"]</p>
-                            }
-                        </div>
-                    </div>
-
                     <div class="vb-pane @(activeTab == "history" ? "is-active" : null)" role="tabpanel" hidden="@(activeTab != "history")">
                         @if (document is null || document.History.Count == 0)
                         {
@@ -301,11 +250,11 @@
 
             <aside class="vb-aside" aria-label="@L["Feature:Files"]">
                 <label class="vb-drop vb-file-chip @(HasChosenFile ? "has-file" : null)">
-                    @if (IsCreate)
+                    @if (IsCreate && canManageFiles)
                     {
                         <InputFile OnChange="SelectPendingFileAsync" accept=".docx,.pdf" />
                     }
-                    else
+                    else if (canManageFiles)
                     {
                         <InputFile OnChange="UploadAsync" accept=".docx,.pdf" />
                     }
@@ -316,7 +265,10 @@
                         <strong>@L["Feature:Files"]</strong>
                         <span class="vb-file-chosen">@ChosenFileLabel</span>
                     </span>
-                    <span class="vb-file-cta">@L["Work:ChooseFile"]</span>
+                    @if (canManageFiles)
+                    {
+                        <span class="vb-file-cta">@L["Work:ChooseFile"]</span>
+                    }
                 </label>
                 <div class="vb-preview" aria-label="@L["Document:PreviewTitle"]">
                     @if (!string.IsNullOrWhiteSpace(pdfUrl))
@@ -373,14 +325,14 @@
     private readonly Dictionary<Guid, string> userNames = [];
     private SubmitWorkflowModal? submitModal;
     private SendDocumentModal? sendModal;
-    private Guid? assigneeId;
-    private string responsibility = "reviewer";
     private string? pdfUrl;
     private DocumentFileDto? previewFile;
     private bool isSaving;
     private bool isMutating;
     private bool canCreateArchive;
     private bool canUpdateDocument;
+    private bool canDeleteDocument;
+    private bool canManageFiles;
     private IBrowserFile? pendingFile;
     private string activeTab = "info";
     private bool IsCreate => DocumentId == Guid.Empty;
@@ -404,8 +356,11 @@
     protected override async Task OnParametersSetAsync()
     {
         await Features.EnsureLoadedAsync();
-        canCreateArchive = await AuthorizationService.IsGrantedAsync("Documents.Create");
-        canUpdateDocument = await AuthorizationService.IsGrantedAsync("Documents.Update");
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        canCreateArchive = (await AuthorizationService.AuthorizeAsync(user, null, "Documents.Create")).Succeeded;
+        canUpdateDocument = (await AuthorizationService.AuthorizeAsync(user, null, "Documents.Update")).Succeeded;
+        canDeleteDocument = (await AuthorizationService.AuthorizeAsync(user, null, "Documents.Delete")).Succeeded;
+        canManageFiles = (await AuthorizationService.AuthorizeAsync(user, null, "Documents.ManageFiles")).Succeeded;
         if (!IsCreate && SourceType == 2)
         {
             Navigation.NavigateTo($"/manage-documents?sourceType=2&preview={DocumentId:D}", replace: true);
@@ -469,6 +424,8 @@
             form.ConfidentialityId = document.ConfidentialityId;
             form.OrganizationUnitId = document.OrganizationUnitId;
             await LoadHistoryNamesAsync();
+            if (activeTab == "assign")
+                activeTab = "info";
             await LoadPreviewAsync(DocumentFilePick.PreferPdf(document.Files) ?? document.Files.LastOrDefault());
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
@@ -512,7 +469,7 @@
                 Navigation.NavigateTo(BackHref);
                 return;
             }
-            if (!IsPersonal && !canUpdateDocument)
+            if (!canUpdateDocument)
             {
                 await NotifyErrorAsync(L["Users:Forbidden"]);
                 return;
@@ -531,6 +488,7 @@
 
     private async Task SelectPendingFileAsync(InputFileChangeEventArgs args)
     {
+        if (!canManageFiles) return;
         pendingFile = args.File;
         previewFile = null;
         await RevokePdfAsync();
@@ -551,6 +509,7 @@
 
     private async Task UploadAsync(InputFileChangeEventArgs args)
     {
+        if (!canManageFiles) return;
         try
         {
             await Documents.UploadFileAsync(DocumentId, args.File);
@@ -562,6 +521,7 @@
 
     private async Task DeleteFileAsync(Guid fileId)
     {
+        if (!canManageFiles) return;
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value.Replace("{0}", L["Feature:Files"]))) return;
         try { await Documents.DeleteFileAsync(DocumentId, fileId); await ReloadExistingAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
@@ -587,42 +547,10 @@
         catch { pdfUrl = null; }
     }
 
-    private IReadOnlyList<DocumentAssignmentDto> VisibleAssignments =>
-        document?.Assignments
-            .Where(IsManualAssignment)
-            .OrderBy(x => x.AssignedAt)
-            .ToList()
-        ?? [];
-
-    private static bool IsManualAssignment(DocumentAssignmentDto assignment) =>
-        assignment.IsCurrent
-        && string.IsNullOrEmpty(assignment.StepCode)
-        && !string.Equals(assignment.Responsibility, "VIEW", StringComparison.OrdinalIgnoreCase);
-
     private string AssignmentRoleText(string responsibility) =>
         string.Equals(responsibility, "VIEW", StringComparison.OrdinalIgnoreCase) ? L["Work:StepType.VIEW"]
         : string.Equals(responsibility, "reviewer", StringComparison.OrdinalIgnoreCase) ? L["Feature:Responsibility.Reviewer"]
         : responsibility;
-
-    private async Task AssignAsync()
-    {
-        if (assigneeId is not { } userId)
-        {
-            await NotifyErrorAsync(L["Feature:AssignNeedPerson"]);
-            return;
-        }
-        try
-        {
-            var role = string.IsNullOrWhiteSpace(responsibility) ? "reviewer" : responsibility.Trim();
-            if (string.Equals(role, "VIEW", StringComparison.OrdinalIgnoreCase))
-                role = "reviewer";
-            document = await Documents.AssignAsync(DocumentId, new AssignDocumentRequest(userId, role));
-            assigneeId = null;
-            await LoadHistoryNamesAsync();
-            await NotifySuccessAsync(L["Feature:AssignmentAdded"]);
-        }
-        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
-    }
 
     private Task OpenSendAsync() =>
         document is null ? Task.CompletedTask : sendModal?.ShowAsync(document.Id, form.Title, form.Number) ?? Task.CompletedTask;
@@ -647,6 +575,7 @@
 
     private async Task DeleteAsync()
     {
+        if (!canDeleteDocument) return;
         if (document is null || isMutating) return;
         if (!await UiMessage.Confirm(string.Format(L["Feature:DeleteDocumentConfirm"], form.Title))) return;
         isMutating = true;
@@ -756,9 +685,6 @@
         return UnitText(userId);
     }
 
-    private string ContactName(Guid? id) => PersonName(id);
-    private CatalogSelect2Item? ContactItem(Guid? id) =>
-        id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
     private static string MasterText(IEnumerable<MasterDataCatalogDto> items, Guid? id) =>
         CatalogSelect2Cache.TextFor(items, id, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name));
     private string UnitText(Guid? id) =>
@@ -813,12 +739,6 @@
 
     private static Guid? LowestId(IEnumerable<MasterDataCatalogDto> items) =>
         items.OrderBy(x => x.SortOrder).ThenBy(x => x.Name).Select(x => (Guid?)x.Id).FirstOrDefault();
-
-    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
-    {
-        var found = await Chat.GetContactsAsync(term, 50);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
-    }
 
     private async Task RevokePdfAsync()
     {

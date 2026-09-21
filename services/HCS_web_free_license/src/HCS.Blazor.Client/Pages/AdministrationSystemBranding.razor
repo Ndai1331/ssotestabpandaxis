@@ -10,85 +10,83 @@
 
 <PageTitle>@L["Settings:SystemConfigTitle"] · HCS</PageTitle>
 
-<main class="hcs-admin-page hcs-system-branding-page" aria-labelledby="system-branding-title">
-    <header class="hcs-admin-heading hcs-system-branding-heading">
-        <div>
-            <p class="hcs-page-eyebrow">@L["Settings:SystemConfigEyebrow"]</p>
+<section class="page page-wf page-system-config" aria-labelledby="system-branding-title">
+    <div class="page-head">
+        <div class="page-system-config__intro">
             <h1 id="system-branding-title">@L["Settings:SystemConfigTitle"]</h1>
             <p>@L["Settings:SystemConfigDescription"]</p>
         </div>
-    </header>
+    </div>
 
-    <div class="hcs-system-config-tabs" role="tablist" aria-label="@L["Settings:SystemConfigTitle"]">
+    <div class="process-side-tabs" role="tablist" aria-label="@L["Settings:SystemConfigTitle"]">
         <button type="button"
-                class="@(IsActive("system") ? "is-active" : null)"
+                class="process-side-tab @(IsActive("system") ? "is-active" : null)"
                 role="tab"
                 aria-selected="@IsActive("system")"
+                aria-controls="system-config-panel"
                 @onclick='() => SelectTab("system")'>
-            <i class="fa fa-palette me-1" aria-hidden="true"></i>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"/></svg>
             @L["Settings:SystemConfigTabSystem"]
         </button>
         <button type="button"
-                class="@(IsActive("sso") ? "is-active" : null)"
+                class="process-side-tab @(IsActive("sso") ? "is-active" : null)"
                 role="tab"
                 aria-selected="@IsActive("sso")"
+                aria-controls="system-config-panel"
                 @onclick='() => SelectTab("sso")'>
-            <i class="fa fa-shield-halved me-1" aria-hidden="true"></i>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
             @L["Settings:SystemConfigTabSso"]
         </button>
         <button type="button"
-                class="@(IsActive("storage") ? "is-active" : null)"
+                class="process-side-tab @(IsActive("storage") ? "is-active" : null)"
                 role="tab"
                 aria-selected="@IsActive("storage")"
+                aria-controls="system-config-panel"
                 @onclick='() => SelectTab("storage")'>
-            <i class="fa fa-hard-drive me-1" aria-hidden="true"></i>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
             @L["Settings:SystemConfigTabStorage"]
         </button>
     </div>
 
-    @if (IsActive("system"))
-    {
-        <div class="hcs-system-config-tab-panels" role="tabpanel">
-            <Card Class="hcs-system-branding-page__card">
-                <CardBody>
-                    <SystemBrandingSettingsGroup />
-                </CardBody>
-            </Card>
-            <Card Class="hcs-system-branding-page__card">
-                <CardBody>
-                    <GeneralSettingsGroup />
-                </CardBody>
-            </Card>
-            <Card Class="hcs-system-branding-page__card">
-                <CardBody>
-                    <LegacySigningReportSettingsGroup />
-                </CardBody>
-            </Card>
-        </div>
-    }
-    else if (IsActive("sso"))
-    {
-        <div class="hcs-system-config-tab-panels" role="tabpanel">
-            <Card Class="hcs-system-branding-page__card">
-                <CardBody>
-                    <AuthenticationSettingsGroup />
-                </CardBody>
-            </Card>
-        </div>
-    }
-    else
-    {
-        <div class="hcs-system-config-tab-panels" role="tabpanel">
-            <Card Class="hcs-system-branding-page__card">
-                <CardBody>
-                    <StorageSettingsGroup />
-                </CardBody>
-            </Card>
-        </div>
-    }
-</main>
+    <div id="system-config-panel" class="page-system-config__block @(IsActive("system") ? null : "page-system-config__block--solo")" role="tabpanel">
+        @if (IsActive("system"))
+        {
+            <div class="page-system-config__section">
+                <SystemBrandingSettingsGroup @ref="brandingGroup" ShowActions="false" />
+            </div>
+            <div class="page-system-config__section">
+                <GeneralSettingsGroup @ref="generalGroup" ShowActions="false" />
+            </div>
+            <div class="page-system-config__section">
+                <LegacySigningReportSettingsGroup @ref="reportGroup" ShowActions="false" />
+            </div>
+            <footer class="page-system-config__footer">
+                <p class="page-system-config__status">@L["Settings:SystemConfigSaveHint"]</p>
+                <div class="page-actions">
+                    <button class="btn btn-primary" type="button" @onclick="SaveSystemAsync" disabled="@isSavingSystem">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h11l5 5v13H5z"/><path d="M16 3v6H8V3M8 21v-7h8v7"/></svg>
+                        @L["Settings:SystemConfigSave"]
+                    </button>
+                </div>
+            </footer>
+        }
+        else if (IsActive("sso"))
+        {
+            <AuthenticationSettingsGroup />
+        }
+        else
+        {
+            <StorageSettingsGroup />
+        }
+    </div>
+</section>
 
 @code {
+    private SystemBrandingSettingsGroup? brandingGroup;
+    private GeneralSettingsGroup? generalGroup;
+    private LegacySigningReportSettingsGroup? reportGroup;
+    private bool isSavingSystem;
+
     [SupplyParameterFromQuery(Name = "tab")]
     public string? Tab { get; set; }
 
@@ -113,5 +111,38 @@
             StringComparer.OrdinalIgnoreCase);
         query["tab"] = tab;
         Navigation.NavigateTo(QueryHelpers.AddQueryString(uri.AbsolutePath, query!), replace: true);
+    }
+
+    private async Task SaveSystemAsync()
+    {
+        if (isSavingSystem)
+        {
+            return;
+        }
+
+        isSavingSystem = true;
+        try
+        {
+            if (brandingGroup is not null && !await brandingGroup.TrySaveAsync())
+            {
+                return;
+            }
+
+            if (generalGroup is not null && !await generalGroup.TrySaveAsync())
+            {
+                return;
+            }
+
+            if (reportGroup is not null && !await reportGroup.TrySaveAsync())
+            {
+                return;
+            }
+
+            await NotifySuccessAsync(L["Settings:SystemConfigSaved"]);
+        }
+        finally
+        {
+            isSavingSystem = false;
+        }
     }
 }

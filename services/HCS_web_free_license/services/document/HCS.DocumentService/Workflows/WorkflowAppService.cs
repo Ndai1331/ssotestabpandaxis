@@ -20,7 +20,6 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         Require(DocumentPermissions.WorkflowView);
         var kinds = await db.WorkflowKinds.AsNoTracking()
-            .WhereActiveWorkflowKinds()
             .OrderBy(x => x.Name).ToListAsync(cancellationToken);
         return kinds.Select(MapKind).ToList();
     }
@@ -29,7 +28,6 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         Require(DocumentPermissions.WorkflowView);
         var kind = await db.WorkflowKinds.AsNoTracking()
-            .WhereActiveWorkflowKinds()
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         return kind is null ? null : MapKind(kind);
     }
@@ -70,7 +68,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         Require(DocumentPermissions.WorkflowView);
         var definitions = await db.WorkflowDefinitions.AsNoTracking()
-            .WhereActiveWorkflowDefinitions()
+            .WhereVisibleWorkflowDefinitions()
             .Include(x => x.Steps)
             .OrderBy(x => x.Name).ToListAsync(cancellationToken);
         return definitions.Select(MapDefinition).ToList();
@@ -80,7 +78,7 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     {
         Require(DocumentPermissions.WorkflowView);
         var definition = await db.WorkflowDefinitions.AsNoTracking()
-            .WhereActiveWorkflowDefinitions()
+            .WhereVisibleWorkflowDefinitions()
             .Include(x => x.Steps)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         return definition is null ? null : MapDefinition(definition);
@@ -415,12 +413,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var step = definition.Steps.SingleOrDefault(x => x.Code == task.StepCode)
             ?? throw new InvalidOperationException("Workflow step configuration is missing.");
         var isAssignee = task.AssigneeUserId is { } assigned && assigned == actor;
-        if (!isAssignee)
-        {
-            if (task.AssigneeUserId is { } && !DocumentAccess.IsElevated(principal))
-                throw new UnauthorizedAccessException("Only the assigned user can decide this step.");
-            DocumentAccess.RequirePermission(principal, step.RequiredPermission);
-        }
+        if (!isAssignee && task.AssigneeUserId is { } && !DocumentAccess.IsElevated(principal))
+            throw new UnauthorizedAccessException("Only the assigned user can decide this step.");
+        DocumentAccess.EnsureCanDecideStep(principal, step.Type == WorkflowStepTypes.Sign, step.RequiredPermission);
         if (input.Approve && !input.Return && step.Type == WorkflowStepTypes.Sign
             && (input.SigningAttemptId is not { } signingAttemptId
                 || input.SigningFileId is not { } signingFileId

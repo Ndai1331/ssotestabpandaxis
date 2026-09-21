@@ -37,7 +37,7 @@ public sealed class DocumentsController(
     [HttpPost("{id:guid}/activity"), Authorize(Policy = DocumentPermissions.View)]
     public Task<DocumentDto> RecordActivity(Guid id, DocumentActivityRequest input, CancellationToken cancellationToken) =>
         documents.RecordActivityAsync(id, input, cancellationToken);
-    [HttpDelete("{id:guid}"), Authorize(Policy = DocumentPermissions.Update)]
+    [HttpDelete("{id:guid}"), Authorize(Policy = DocumentPermissions.Delete)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await documents.DeleteAsync(id, cancellationToken);

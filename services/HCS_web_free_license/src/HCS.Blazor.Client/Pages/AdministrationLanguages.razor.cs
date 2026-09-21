@@ -1,27 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Blazorise;
-using Blazorise.DataGrid;
 using HCS.Blazor.Client.Services;
 using HCS.Localization;
 using HCS.Permissions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.JSInterop;
 
 namespace HCS.Blazor.Client.Pages;
 
-public partial class AdministrationLanguages : IDisposable
+public partial class AdministrationLanguages
 {
     private static readonly int[] PageSizeOptions = [10, 20, 50, 100];
 
     private readonly List<LanguageDto> rows = [];
-    private DataGrid<LanguageDto>? dataGrid;
     private Modal? editModal;
     private LanguageFormModel form = new();
     private string? filterText;
@@ -39,12 +34,13 @@ public partial class AdministrationLanguages : IDisposable
     private bool canManageTexts;
     private bool isEditingCurrentDefault;
     private Guid? editingId;
-    private Guid? actionMenuId;
     private int totalCount;
     private int pageSize = 20;
     private int currentPage = 1;
 
-    private IReadOnlyList<int> pageSizes => PageSizeOptions;
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < PageCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,36 +51,10 @@ public partial class AdministrationLanguages : IDisposable
         canUpdate = isAuthorized && (await AuthorizationService.AuthorizeAsync(user, null, HCSPermissions.Languages.Update)).Succeeded;
         canDelete = isAuthorized && (await AuthorizationService.AuthorizeAsync(user, null, HCSPermissions.Languages.Delete)).Succeeded;
         canManageTexts = isAuthorized && (await AuthorizationService.AuthorizeAsync(user, null, HCSPermissions.Languages.ManageTexts)).Succeeded;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && isAuthorized && dataGrid is not null)
+        if (isAuthorized)
         {
-            await dataGrid.Reload();
+            await LoadPageAsync(1, pageSize);
         }
-
-        if (actionMenuId is { } menuId)
-        {
-            try
-            {
-                await JsRuntime.InvokeVoidAsync("hcsChat.positionMenu", "language-row-menu", $"[data-lang-more='{menuId:D}']");
-            }
-            catch
-            {
-            }
-        }
-    }
-
-    public void Dispose()
-    {
-    }
-
-    private async Task OnDataGridReadAsync(DataGridReadDataEventArgs<LanguageDto> args)
-    {
-        currentPage = Math.Max(1, args.Page);
-        pageSize = Math.Clamp(args.PageSize, PageSizeOptions[0], PageSizeOptions[^1]);
-        await LoadPageAsync(currentPage, pageSize, args.CancellationToken);
     }
 
     private async Task LoadPageAsync(int page, int requestedPageSize, CancellationToken cancellationToken = default)
@@ -105,6 +75,8 @@ public partial class AdministrationLanguages : IDisposable
             rows.Clear();
             rows.AddRange(result.Items);
             totalCount = (int)Math.Min(result.TotalCount, int.MaxValue);
+            currentPage = page;
+            pageSize = requestedPageSize;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -120,25 +92,32 @@ public partial class AdministrationLanguages : IDisposable
         }
     }
 
-    private async Task SearchAsync()
+    private Task SearchAsync()
     {
         currentPage = 1;
-        if (dataGrid is null) { await LoadPageAsync(1, pageSize); return; }
-        await dataGrid.Paginate("1");
-        await dataGrid.Reload();
+        return LoadPageAsync(1, pageSize);
     }
 
-    private async Task ResetSearchAsync()
+    private Task ResetSearchAsync()
     {
         filterText = null;
         statusFilter = string.Empty;
-        await SearchAsync();
+        return SearchAsync();
     }
 
-    private async Task RefreshAsync()
+    private Task RefreshAsync() => LoadPageAsync(currentPage, pageSize);
+
+    private Task GoFirstPage() => LoadPageAsync(1, pageSize);
+    private Task GoPrevPage() => LoadPageAsync(Math.Max(1, currentPage - 1), pageSize);
+    private Task GoNextPage() => LoadPageAsync(Math.Min(PageCount, currentPage + 1), pageSize);
+    private Task GoLastPage() => LoadPageAsync(PageCount, pageSize);
+
+    private Task OnPageSizeChanged(ChangeEventArgs args)
     {
-        if (dataGrid is null) { await LoadPageAsync(currentPage, pageSize); return; }
-        await dataGrid.Reload();
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        return LoadPageAsync(1, pageSize);
     }
 
     private async Task OpenCreateModalAsync()
@@ -296,24 +275,6 @@ public partial class AdministrationLanguages : IDisposable
     {
         if (!canManageTexts) return;
         Navigation.NavigateTo($"/administration/language-texts?cultureName={Uri.EscapeDataString(language.CultureName)}");
-    }
-
-    private void CloseActionMenu() => actionMenuId = null;
-    private void ToggleActionMenu(Guid id) => actionMenuId = actionMenuId == id ? null : id;
-    private Task OpenEditFromMenuAsync(LanguageDto language)
-    {
-        CloseActionMenu();
-        return OpenEditModalAsync(language);
-    }
-    private void OpenTranslationsFromMenu(LanguageDto language)
-    {
-        CloseActionMenu();
-        OpenTranslations(language);
-    }
-    private Task DeleteFromMenuAsync(LanguageDto language)
-    {
-        CloseActionMenu();
-        return DeleteAsync(language);
     }
 
     private sealed class LanguageFormModel

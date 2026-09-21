@@ -53,7 +53,7 @@ public sealed class HCSMenuContributor : IMenuContributor
 
         var documents = Item("HCS.Documents", "Văn bản", icon: "fa fa-file-lines", order: 120);
         documents.AddItem(Item("HCS.Documents.Archive", "Quản lý tài liệu", "/manage-documents?sourceType=0", "fa fa-folder-open", 10)
-            .RequirePermissions(HCSPermissions.Documents.Create));
+            .RequirePermissions(HCSPermissions.Documents.View));
         documents.AddItem(Item("HCS.Documents.Personal", "Văn bản tôi tạo", "/manage-documents?sourceType=1", "fa fa-pen", 20)
             .RequirePermissions(HCSPermissions.Documents.View));
         documents.AddItem(Item("HCS.Documents.SentToMe", "Văn bản của tôi", "/manage-documents?sourceType=2", "fa fa-inbox", 30)

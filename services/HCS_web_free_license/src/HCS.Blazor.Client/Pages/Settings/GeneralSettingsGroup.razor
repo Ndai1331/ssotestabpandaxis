@@ -4,69 +4,69 @@
 @inject SystemFeatureSettingsClient SettingsClient
 @inject SystemFeatureState Features
 
-<section class="hcs-auth-settings" aria-labelledby="hcs-general-settings-title" aria-busy="@(isLoading || isSaving ? "true" : "false")">
-    <header class="hcs-auth-settings__header">
-        <div>
-            <p class="hcs-auth-settings__eyebrow">@L["Settings:GeneralEyebrow"]</p>
-            <h2 id="hcs-general-settings-title">@L["Settings:GeneralGroup"]</h2>
-            <p>@L["Settings:GeneralDescription"]</p>
-        </div>
-        <i class="fa fa-sliders hcs-auth-settings__icon" aria-hidden="true"></i>
-    </header>
+<section class="hcs-general-settings" aria-labelledby="hcs-general-settings-title" aria-busy="@(isLoading || isSaving ? "true" : "false")">
+    <h2 id="hcs-general-settings-title" class="sr-only">@L["Settings:GeneralGroup"]</h2>
 
     @if (isLoading)
     {
-        <div class="hcs-auth-settings__state" role="status" aria-live="polite">
-            <HcsLoadingIcon />
-            <span>@L["Settings:GeneralLoading"]</span>
-        </div>
+        <DocsEmpty Loading="true" Compact="true" Title="@L["Settings:GeneralLoading"]" />
     }
     else
     {
         @if (!string.IsNullOrWhiteSpace(errorMessage))
         {
-            <div class="hcs-auth-settings__error" role="alert">
+            <div class="hcs-settings-alert" role="alert">
                 <span>@errorMessage</span>
-                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isSaving">
+                <button class="btn btn-outline btn-sm" type="button" @onclick="LoadAsync" disabled="@isSaving">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
                     @L["Settings:BrandingRetry"]
-                </Button>
+                </button>
             </div>
         }
 
-        <div class="hcs-auth-settings__row">
-            <div>
-                <h3>@L["Settings:AllowSigningFromDocuments"]</h3>
-                <p id="hcs-allow-signing-from-documents-description">@L["Settings:AllowSigningFromDocumentsDescription"]</p>
+        <div class="hcs-settings-section">
+            <h3>@L["Settings:GeneralGroup"]</h3>
+            <p>@L["Settings:GeneralDescription"]</p>
+            <div class="hcs-settings-option">
+                <div>
+                    <h4>@L["Settings:AllowSigningFromDocuments"]</h4>
+                    <p id="hcs-allow-signing-from-documents-description">@L["Settings:AllowSigningFromDocumentsDescription"]</p>
+                </div>
+                <button type="button"
+                        class="hcs-settings-switch @(allowSigningFromDocuments ? "is-enabled" : null)"
+                        aria-pressed="@(allowSigningFromDocuments ? "true" : "false")"
+                        aria-describedby="hcs-allow-signing-from-documents-description"
+                        @onclick="ToggleAllowSigningFromDocuments"
+                        disabled="@isSaving">
+                    <span class="hcs-settings-switch__track" aria-hidden="true">
+                        <span class="hcs-settings-switch__thumb"></span>
+                    </span>
+                    <span>@(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsEnabled"] : L["Settings:AllowSigningFromDocumentsDisabled"])</span>
+                </button>
             </div>
-            <button type="button"
-                    class="hcs-auth-settings__switch @(allowSigningFromDocuments ? "is-enabled" : "is-disabled")"
-                    aria-pressed="@(allowSigningFromDocuments ? "true" : "false")"
-                    aria-describedby="hcs-allow-signing-from-documents-description"
-                    @onclick="ToggleAllowSigningFromDocuments"
-                    disabled="@isSaving">
-                <span class="hcs-auth-settings__switch-track" aria-hidden="true">
-                    <span class="hcs-auth-settings__switch-thumb"></span>
-                </span>
-                <span>@(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsEnabled"] : L["Settings:AllowSigningFromDocumentsDisabled"])</span>
-            </button>
         </div>
 
-        <div class="hcs-auth-settings__footer">
-            <span class="hcs-auth-settings__status" role="status" aria-live="polite">
-                @(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsStatusEnabled"] : L["Settings:AllowSigningFromDocumentsStatusDisabled"])
-            </span>
-            <Button Color="Color.Primary"
-                    Clicked="SaveAsync"
-                    Loading="@isSaving"
-                    Disabled="@(isSaving || !isDirty)">
-                <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
-                @L["Settings:GeneralSave"]
-            </Button>
-        </div>
+        @if (ShowActions)
+        {
+            <footer class="hcs-settings-footer">
+                <p class="hcs-settings-hint" role="status">
+                    @(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsStatusEnabled"] : L["Settings:AllowSigningFromDocumentsStatusDisabled"])
+                </p>
+                <div class="page-actions">
+                    <button class="btn btn-primary" type="button" @onclick="SaveAsync" disabled="@(isSaving || !isDirty)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h11l5 5v13H5z"/><path d="M16 3v6H8V3M8 21v-7h8v7"/></svg>
+                        @L["Settings:GeneralSave"]
+                    </button>
+                </div>
+            </footer>
+        }
     }
 </section>
 
 @code {
+    [Parameter]
+    public bool ShowActions { get; set; } = true;
+
     private bool isLoading = true;
     private bool isSaving;
     private bool isDirty;
@@ -106,11 +106,16 @@
         }
     }
 
-    private async Task SaveAsync()
+    internal async Task<bool> TrySaveAsync()
     {
-        if (isSaving || !isDirty)
+        if (isSaving)
         {
-            return;
+            return false;
+        }
+
+        if (!isDirty)
+        {
+            return true;
         }
 
         isSaving = true;
@@ -123,15 +128,24 @@
             });
             await Features.RefreshAsync();
             isDirty = false;
-            await NotifySuccessAsync(L["Settings:GeneralSaved"]);
+            return true;
         }
         catch (Exception exception)
         {
             errorMessage = MapBffError(exception, BffErrorKind.Save);
+            return false;
         }
         finally
         {
             isSaving = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (await TrySaveAsync() && ShowActions)
+        {
+            await NotifySuccessAsync(L["Settings:GeneralSaved"]);
         }
     }
 }

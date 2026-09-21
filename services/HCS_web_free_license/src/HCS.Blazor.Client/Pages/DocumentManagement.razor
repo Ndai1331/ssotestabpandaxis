@@ -206,7 +206,7 @@
                                                 </Authorized>
                                             </AuthorizeView>
                                             }
-                                            @if (IsPersonal)
+                                            @if (IsPersonal && canDeleteDocument)
                                             {
                                                 <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)" disabled="@IsMutating(item.Id)">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
@@ -214,7 +214,7 @@
                                             }
                                             else
                                             {
-                                                <AuthorizeView Policy="Documents.Update">
+                                                <AuthorizeView Policy="Documents.Delete">
                                                     <Authorized>
                                                         <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)" disabled="@IsMutating(item.Id)">
                                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
@@ -306,10 +306,11 @@
             return 0;
         }
     }
-    private bool canManageArchive;
+    private bool canCreateArchive;
+    private bool canDeleteDocument;
     private bool IsPersonal => SourceType == 1;
-    private bool CanCreate => IsPersonal || (canManageArchive && SourceType == 0);
-    private bool CanManage => IsPersonal || (canManageArchive && SourceType == 0);
+    private bool CanCreate => IsPersonal || (canCreateArchive && SourceType == 0);
+    private bool CanManage => IsPersonal || SourceType == 0;
     private bool IsInbox => SourceType == 2;
     private string PageTitle => SourceType switch
     {
@@ -332,9 +333,10 @@
     protected override async Task OnParametersSetAsync()
     {
         await Features.EnsureLoadedAsync();
-        // Use the same authenticated principal and policy as the archive menu.
         var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        canManageArchive = (await AuthorizationService.AuthorizeAsync(
+        canDeleteDocument = (await AuthorizationService.AuthorizeAsync(
+            authenticationState.User, null, HCSPermissions.Documents.Delete)).Succeeded;
+        canCreateArchive = (await AuthorizationService.AuthorizeAsync(
             authenticationState.User, null, HCSPermissions.Documents.Create)).Succeeded;
         await ReloadIfSourceChangedAsync(resetFilter: lastLoadedSource != int.MinValue);
     }
@@ -343,11 +345,6 @@
     private async Task ReloadIfSourceChangedAsync(bool resetFilter)
     {
         var source = SourceType;
-        if (source == 0 && !canManageArchive)
-        {
-            Navigation.NavigateTo("/manage-documents?sourceType=2", replace: true);
-            return;
-        }
         if (source == lastLoadedSource) return;
         if (resetFilter) ResetFilters();
         lastLoadedSource = source;
@@ -492,6 +489,7 @@
 
     private async Task DeleteAsync(DocumentDto item)
     {
+        if (!canDeleteDocument) return;
         if (IsMutating(item.Id)) return;
         if (!await UiMessageService.Confirm(string.Format(L["Feature:DeleteDocumentConfirm"], item.Title))) return;
         mutatingIds.Add(item.Id);

@@ -43,7 +43,35 @@ public sealed class IdentityAdminClientTests
         using var json = JsonDocument.Parse(handler.RequestBody!);
         Assert.Equal("new-user", json.RootElement.GetProperty("userName").GetString());
         Assert.Equal("Password123!", json.RootElement.GetProperty("password").GetString());
+        Assert.Equal("", json.RootElement.GetProperty("phoneNumber").GetString());
         Assert.Contains("operator", json.RootElement.GetProperty("roleNames").EnumerateArray().Select(item => item.GetString()));
+    }
+
+    [Fact]
+    public async Task Sends_user_phone_number_on_create_and_update()
+    {
+        var userId = Guid.NewGuid();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new { id = userId, userName = "existing", email = "existing@example.com", phoneNumber = "0912345678" })
+        });
+        var client = CreateClient(handler);
+        var form = new IdentityAdminUserForm
+        {
+            UserName = "existing",
+            Email = "existing@example.com",
+            PhoneNumber = " 0912345678 "
+        };
+
+        await client.CreateUserAsync(form);
+        using (var created = JsonDocument.Parse(handler.RequestBody!))
+        {
+            Assert.Equal("0912345678", created.RootElement.GetProperty("phoneNumber").GetString());
+        }
+
+        await client.UpdateUserAsync(userId, form, "stamp");
+        using var updated = JsonDocument.Parse(handler.RequestBody!);
+        Assert.Equal("0912345678", updated.RootElement.GetProperty("phoneNumber").GetString());
     }
 
     [Fact]

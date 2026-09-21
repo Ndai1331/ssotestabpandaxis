@@ -128,13 +128,9 @@
                     <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
                 </button>
                 <div class="hcs-nav-menu__panel" role="menu">
-                    <AuthorizeView Policy="Documents.Create">
-                        <Authorized>
-                            <NavLink href="/manage-documents?sourceType=0" @onclick="CloseMobileNav"><i class="fa fa-folder-open" aria-hidden="true"></i>@Localizer["Menu:DocumentList"]</NavLink>
-                        </Authorized>
-                    </AuthorizeView>
                     <AuthorizeView Policy="Documents.View">
                         <Authorized>
+                            <NavLink href="/manage-documents?sourceType=0" @onclick="CloseMobileNav"><i class="fa fa-folder-open" aria-hidden="true"></i>@Localizer["Menu:DocumentList"]</NavLink>
                             <NavLink href="/manage-documents?sourceType=1" @onclick="CloseMobileNav"><i class="fa fa-pen" aria-hidden="true"></i>@Localizer["Menu:DocumentsICreated"]</NavLink>
                             <NavLink href="/manage-documents?sourceType=2" @onclick="CloseMobileNav"><i class="fa fa-inbox" aria-hidden="true"></i>@Localizer["Menu:MyDocuments"]</NavLink>
                         </Authorized>

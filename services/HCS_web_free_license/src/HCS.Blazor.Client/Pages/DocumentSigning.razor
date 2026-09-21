@@ -8,6 +8,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime Js
 @inject Volo.Abp.AspNetCore.Components.Messages.IUiMessageService UiMessage
+@using HCS.Permissions
 @implements IAsyncDisposable
 
 <PageTitle>@L["Menu:DocumentSigning"] · HCS</PageTitle>
@@ -445,6 +446,8 @@
     private SigningQueueItem? infoItem;
     private SigningReportDto? report;
     private Guid? currentUserId, submitterId, departmentId;
+    private bool canDecideWorkflow;
+    private bool canExecuteSigning;
     private string currentUserDisplayName = "";
     private DateTime? fromDate, toDate;
     private string dateFilterField = "IncomingDate";
@@ -549,6 +552,10 @@
             state.User.FindFirst("name")?.Value,
             state.User.Identity?.Name,
             state.User.FindFirst("preferred_username")?.Value);
+        canDecideWorkflow = (await AuthorizationService.AuthorizeAsync(
+            state.User, null, HCSPermissions.Documents.WorkflowDecide)).Succeeded;
+        canExecuteSigning = (await AuthorizationService.AuthorizeAsync(
+            state.User, null, HCSPermissions.Documents.SigningExecute)).Succeeded;
 
         var contactsTask = LoadContactsAsync();
         var departmentsTask = LoadDepartmentsAsync();
@@ -964,7 +971,8 @@
         && IsActionStep(item)
         && item.Task.AssigneeUserId is { } assignee
         && currentUserId is { } userId
-        && assignee == userId;
+        && assignee == userId
+        && (IsSignStep(item) ? canExecuteSigning : canDecideWorkflow);
     private string ActionModalTitle(SigningQueueItem? item) =>
         IsSignStep(item) ? L["Menu:DocumentSigning"].Value : L["Feature:Approve"].Value;
     private string SignActionTitle(SigningQueueItem item) =>

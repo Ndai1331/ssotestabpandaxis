@@ -35,8 +35,8 @@ internal static class DocumentAccess
 
         return permission switch
         {
-            DocumentPermissions.View or DocumentPermissions.Create or DocumentPermissions.Update or
-                DocumentPermissions.ManageFiles or DocumentPermissions.WorkflowView or
+            DocumentPermissions.View or DocumentPermissions.Create or
+                DocumentPermissions.WorkflowView or
                 DocumentPermissions.SigningConfigure => principal.Identity?.IsAuthenticated == true,
             DocumentPermissions.Assign or DocumentPermissions.WorkflowStart or
                 DocumentPermissions.SigningReport => principal.IsInRole("lanhdao"),
@@ -67,6 +67,9 @@ internal static class DocumentAccess
             throw new UnauthorizedAccessException("Only the assigned user can act on this workflow step.");
     }
 
+    public static void EnsureCanDecideStep(ClaimsPrincipal principal, bool isSignStep, string requiredPermission) =>
+        RequirePermission(principal, isSignStep ? DocumentPermissions.SigningExecute : requiredPermission);
+
     public static bool IsCreator(DocumentAggregate document, Guid userId) =>
         document.History.Any(x => x.Action == CreatedAction && x.ActorUserId == userId);
 
@@ -78,7 +81,7 @@ internal static class DocumentAccess
         IQueryable<DocumentAggregate> query, int? sourceType, Guid userId, bool mine, ClaimsPrincipal principal) =>
         sourceType switch
         {
-            // Quản lý tài liệu: archive managers see the full list; employees do not.
+            // Quản lý tài liệu: Documents.View (Truy cập) sees the full archive; mutations stay on Create/Update/Delete.
             0 when CanBrowseArchive(principal) => query.Where(x => x.SourceType == DocumentSourceType.Archive),
             0 => query.Where(x => false),
             // Văn bản của tôi: only documents this user created.
@@ -100,6 +103,7 @@ internal static class DocumentAccess
 
     public static bool CanBrowseArchive(ClaimsPrincipal principal) =>
         IsElevated(principal)
+        || HasGrant(principal, DocumentPermissions.View)
         || HasGrant(principal, DocumentPermissions.Create)
         || HasGrant(principal, DocumentPermissions.Update);
 

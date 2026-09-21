@@ -15,6 +15,7 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         documents.AddPermission(HCSPermissions.Documents.View, L("Permission:Documents.View"));
         documents.AddPermission(HCSPermissions.Documents.Create, L("Permission:Documents.Create"));
         documents.AddPermission(HCSPermissions.Documents.Update, L("Permission:Documents.Update"));
+        documents.AddPermission(HCSPermissions.Documents.Delete, L("Permission:Documents.Delete"));
         documents.AddPermission(HCSPermissions.Documents.Assign, L("Permission:Documents.Assign"));
         documents.AddPermission(HCSPermissions.Documents.ManageFiles, L("Permission:Documents.ManageFiles"));
         documents.AddPermission(HCSPermissions.Documents.SigningExecute, L("Permission:Documents.Signing.Execute"));

@@ -13,6 +13,7 @@ namespace HCS.Identity;
 /// ABP Identity only assigns arbitrary roles when <c>CurrentUser.IsInRole("admin")</c>.
 /// HCS access tokens carry permission claims, not always <c>role</c>, so that check
 /// silently dropped selected roles while still returning HTTP 200.
+/// Phone numbers are normalized so administration can create, update, and clear them.
 /// </summary>
 [Dependency(ReplaceServices = true)]
 [ExposeServices(typeof(IIdentityUserAppService), typeof(IdentityUserAppService), typeof(HcsIdentityUserAppService))]
@@ -37,5 +38,16 @@ public class HcsIdentityUserAppService : IdentityUserAppService
         }
 
         return await PermissionChecker.IsGrantedAsync(IdentityPermissions.Users.ManageRoles);
+    }
+
+    protected override async Task UpdateUserByInput(IdentityUser user, IdentityUserCreateOrUpdateDtoBase input)
+    {
+        input.PhoneNumber = IdentityPhoneNumbers.Normalize(input.PhoneNumber);
+        await base.UpdateUserByInput(user, input);
+
+        if (!string.Equals(user.PhoneNumber, input.PhoneNumber, StringComparison.Ordinal))
+        {
+            (await UserManager.SetPhoneNumberAsync(user, input.PhoneNumber)).CheckErrors();
+        }
     }
 }

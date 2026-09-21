@@ -287,7 +287,7 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         surname = form.Surname.Trim(),
         name = form.Name.Trim(),
         email = form.Email.Trim(),
-        phoneNumber = NullIfWhiteSpace(form.PhoneNumber),
+        phoneNumber = form.PhoneNumber?.Trim() ?? string.Empty,
         isActive = form.IsActive,
         lockoutEnabled = form.LockoutEnabled,
         concurrencyStamp = string.IsNullOrWhiteSpace(concurrencyStamp) ? null : concurrencyStamp,

@@ -157,6 +157,7 @@ public sealed class HcsDocumentServiceModule : AbpModule
     private static string[] GetDocumentPermissions() =>
     [
         DocumentPermissions.View, DocumentPermissions.Create, DocumentPermissions.Update,
+        DocumentPermissions.Delete,
         DocumentPermissions.Assign, DocumentPermissions.ManageFiles, DocumentPermissions.WorkflowView,
         DocumentPermissions.WorkflowManage, DocumentPermissions.WorkflowStart,
         DocumentPermissions.WorkflowDecide, DocumentPermissions.SigningConfigure,

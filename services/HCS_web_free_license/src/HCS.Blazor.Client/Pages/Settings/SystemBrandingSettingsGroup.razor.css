@@ -152,10 +152,6 @@
 .hcs-branding-settings ::deep .hcs-branding-asset-card__actions { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .75rem; }
 .hcs-branding-settings ::deep .hcs-branding-asset-card__upload { cursor: pointer; }
 .hcs-branding-settings ::deep .hcs-branding-asset-card__input { height: 1px; opacity: 0; overflow: hidden; position: absolute; width: 1px; }
-.hcs-branding-settings ::deep .hcs-branding-asset-card__input:focus-visible + .hcs-branding-asset-card__remove { outline: 3px solid rgb(0 180 169 / 30%); outline-offset: 2px; }
-.hcs-branding-settings ::deep .hcs-branding-asset-card__remove { background: transparent; border: 0; color: #6b8493; cursor: pointer; font-size: .74rem; padding: .35rem 0; text-decoration: underline; }
-.hcs-branding-settings ::deep .hcs-branding-asset-card__remove:hover:not(:disabled) { color: #c0392b; }
-.hcs-branding-settings ::deep .hcs-branding-asset-card__remove:disabled { cursor: not-allowed; opacity: .45; }
 
 .hcs-branding-settings__preview-grid { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 1.25rem; }
 .hcs-branding-preview { background: #fff; border: 1px solid #dfebef; border-radius: 8px; min-width: 0; overflow: hidden; }

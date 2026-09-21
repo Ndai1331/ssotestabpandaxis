@@ -5,97 +5,101 @@
 @using HCS.Blazor.Client.Auditing
 @using HCS.Blazor.Client.Services
 
-<PageTitle>@L["Audit:Title"] · HCS</PageTitle>
+<PageTitle>@L["Menu:AuditLogs"] · HCS</PageTitle>
 
-<section class="hcs-audit-page" aria-labelledby="audit-title" aria-hidden="@(selected is not null || isLoadingDetail || detailError is not null ? "true" : null)" inert="@(selected is not null || isLoadingDetail || detailError is not null ? "true" : null)">
-    <header class="hcs-audit-header">
-        <div>
-            <p class="hcs-audit-eyebrow"><i class="fa fa-clipboard-list" aria-hidden="true"></i> @L["Audit:Eyebrow"]</p>
-            <h1 id="audit-title">@L["Audit:Title"]</h1>
-            <p class="hcs-audit-description">@L["Audit:Description"]</p>
-        </div>
-        <div class="hcs-audit-header-actions">
-            <span class="hcs-audit-total" aria-live="polite">@totalCount @L["Audit:Records"]</span>
-            <button class="hcs-audit-button hcs-audit-button--secondary" type="button" @onclick="ExportAsync" disabled="@(isLoading || rows.Count == 0)">
-                <i class="fa fa-file-csv" aria-hidden="true"></i> @L["Audit:ExportCsv"]
+<section class="page page-wf page-audit" aria-labelledby="audit-title" aria-hidden="@(selected is not null || isLoadingDetail || detailError is not null ? "true" : null)" inert="@(selected is not null || isLoadingDetail || detailError is not null ? "true" : null)">
+    <div class="page-head">
+        <h1 id="audit-title">@L["Menu:AuditLogs"]</h1>
+        <div class="page-actions">
+            <button class="btn btn-outline" type="button" @onclick="ExportAsync" disabled="@(isLoading || rows.Count == 0)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M5 21h14"/></svg>
+                @L["Audit:ExportCsv"]
             </button>
-            <button class="hcs-audit-button hcs-audit-button--secondary" type="button" @onclick="LoadAsync" disabled="@isLoading">
-                <i class="fa fa-refresh @(isLoading ? "fa-spin" : null)" aria-hidden="true"></i> @L["Catalog:Refresh"]
+            <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@isLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+                @L["Catalog:Refresh"]
             </button>
         </div>
-    </header>
+    </div>
 
-    <div class="hcs-audit-filter-card">
-        <div class="hcs-audit-filter-primary">
-            <label class="hcs-audit-search-label" for="audit-filter">@L["Audit:Keyword"]</label>
-            <div class="hcs-audit-search-wrap">
-                <i class="fa fa-search" aria-hidden="true"></i>
-                <input id="audit-filter" class="hcs-audit-input hcs-audit-input--search" @bind="filter" @bind:event="oninput" @onkeydown="OnKeywordKeyDown" placeholder="@L["Audit:KeywordPlaceholder"]" autocomplete="off" />
-            </div>
-            <button class="hcs-audit-button hcs-audit-button--primary" type="button" @onclick="SearchAsync" disabled="@isLoading">
-                <i class="fa fa-search" aria-hidden="true"></i> @L["Catalog:SearchButton"]
-            </button>
-            <button class="hcs-audit-button hcs-audit-button--secondary" type="button" @onclick="() => showFilters = !showFilters" aria-expanded="@showFilters" aria-controls="audit-advanced-filters">
-                <i class="fa fa-sliders" aria-hidden="true"></i> @L["Audit:AdvancedFilters"]
-                <i class="fa @(showFilters ? "fa-chevron-up" : "fa-chevron-down")" aria-hidden="true"></i>
-            </button>
-        </div>
+    <form class="docs-toolbar list-search" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+        <label class="sr-only" for="audit-filter">@L["Audit:Keyword"]</label>
+        <input id="audit-filter" class="input docs-search" @bind="filter" @bind:event="oninput" @onkeydown="OnKeywordKeyDown" placeholder="@L["Audit:KeywordPlaceholder"]" autocomplete="off" />
+        <button class="btn btn-primary" type="submit" disabled="@isLoading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            @L["Catalog:SearchButton"]
+        </button>
+        <button class="btn btn-outline @(showFilters ? "is-open" : null) @(IsAdvancedFiltered ? "is-filtered" : null)"
+                type="button" @onclick="ToggleFilters" aria-expanded="@showFilters" aria-controls="audit-advanced-filters">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16l-6 8v5l-4 1v-6z"/></svg>
+            @L["Audit:AdvancedFilters"]
+        </button>
         @if (showFilters)
         {
-            <div id="audit-advanced-filters" class="hcs-audit-filter-grid">
-                <div class="hcs-audit-field"><label for="audit-user">@L["Audit:User"]</label><input id="audit-user" class="hcs-audit-input" @bind="userName" /></div>
-                <div class="hcs-audit-field"><label for="audit-user-id">@L["Audit:UserId"]</label><input id="audit-user-id" class="hcs-audit-input" @bind="userId" /></div>
-                <div class="hcs-audit-field"><label for="audit-ip">@L["Audit:IpAddress"]</label><input id="audit-ip" class="hcs-audit-input" @bind="clientIpAddress" /></div>
-                <div class="hcs-audit-field"><label for="audit-method">@L["Audit:HttpMethod"]</label><select id="audit-method" class="hcs-audit-input" @bind="httpMethod"><option value="">@L["Catalog:AllStatuses"]</option><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></div>
-                <div class="hcs-audit-field"><label for="audit-status">@L["Audit:Status"]</label><select id="audit-status" class="hcs-audit-input" @bind="status"><option value="">@L["Catalog:AllStatuses"]</option><option value="200">200</option><option value="201">201</option><option value="400">400</option><option value="401">401</option><option value="403">403</option><option value="404">404</option><option value="500">500</option></select></div>
-                <div class="hcs-audit-field"><label for="audit-service">@L["Audit:Service"]</label><input id="audit-service" class="hcs-audit-input" @bind="sourceService" /></div>
-                <div class="hcs-audit-field"><label for="audit-application">@L["Audit:Application"]</label><input id="audit-application" class="hcs-audit-input" @bind="applicationName" /></div>
-                <div class="hcs-audit-field"><label for="audit-action">@L["Audit:Action"]</label><input id="audit-action" class="hcs-audit-input" @bind="action" /></div>
-                <div class="hcs-audit-field"><label for="audit-api">@L["Audit:Api"]</label><input id="audit-api" class="hcs-audit-input" @bind="url" /></div>
-                <div class="hcs-audit-field"><label for="audit-browser">@L["Audit:Browser"]</label><input id="audit-browser" class="hcs-audit-input" @bind="browserInfo" /></div>
-                <div class="hcs-audit-field"><label for="audit-correlation">@L["Audit:CorrelationId"]</label><input id="audit-correlation" class="hcs-audit-input" @bind="correlationId" /></div>
-                <div class="hcs-audit-field"><label for="audit-start">@L["Audit:From"]</label><input id="audit-start" type="datetime-local" class="hcs-audit-input" value="@startTime" @onchange="OnStartTimeChanged" /></div>
-                <div class="hcs-audit-field"><label for="audit-end">@L["Audit:ToExclusive"]</label><input id="audit-end" type="datetime-local" class="hcs-audit-input" value="@endTime" @onchange="OnEndTimeChanged" /></div>
-                <div class="hcs-audit-field"><label for="audit-exception">@L["Audit:Result"]</label><select id="audit-exception" class="hcs-audit-input" @bind="exceptionState"><option value="">@L["Catalog:AllStatuses"]</option><option value="true">@L["Audit:HasException"]</option><option value="false">@L["Audit:NoException"]</option></select></div>
-                <button class="hcs-audit-button hcs-audit-button--text" type="button" @onclick="ResetAsync" disabled="@isLoading">@L["Catalog:Reset"]</button>
-            </div>
+            <button class="btn btn-outline" type="button" @onclick="ResetAsync" disabled="@isLoading">@L["Catalog:Reset"]</button>
         }
-    </div>
+    </form>
+
+    @if (showFilters)
+    {
+        <div id="audit-advanced-filters" class="hcs-audit-filter-grid">
+            <div class="hcs-audit-field"><label for="audit-user">@L["Audit:User"]</label><input id="audit-user" class="input" @bind="userName" /></div>
+            <div class="hcs-audit-field"><label for="audit-user-id">@L["Audit:UserId"]</label><input id="audit-user-id" class="input" @bind="userId" /></div>
+            <div class="hcs-audit-field"><label for="audit-ip">@L["Audit:IpAddress"]</label><input id="audit-ip" class="input" @bind="clientIpAddress" /></div>
+            <div class="hcs-audit-field"><label for="audit-method">@L["Audit:HttpMethod"]</label><select id="audit-method" class="select input" @bind="httpMethod"><option value="">@L["Catalog:AllStatuses"]</option><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></div>
+            <div class="hcs-audit-field"><label for="audit-status">@L["Audit:Status"]</label><select id="audit-status" class="select input" @bind="status"><option value="">@L["Catalog:AllStatuses"]</option><option value="200">200</option><option value="201">201</option><option value="400">400</option><option value="401">401</option><option value="403">403</option><option value="404">404</option><option value="500">500</option></select></div>
+            <div class="hcs-audit-field"><label for="audit-service">@L["Audit:Service"]</label><input id="audit-service" class="input" @bind="sourceService" /></div>
+            <div class="hcs-audit-field"><label for="audit-application">@L["Audit:Application"]</label><input id="audit-application" class="input" @bind="applicationName" /></div>
+            <div class="hcs-audit-field"><label for="audit-action">@L["Audit:Action"]</label><input id="audit-action" class="input" @bind="action" /></div>
+            <div class="hcs-audit-field"><label for="audit-api">@L["Audit:Api"]</label><input id="audit-api" class="input" @bind="url" /></div>
+            <div class="hcs-audit-field"><label for="audit-browser">@L["Audit:Browser"]</label><input id="audit-browser" class="input" @bind="browserInfo" /></div>
+            <div class="hcs-audit-field"><label for="audit-correlation">@L["Audit:CorrelationId"]</label><input id="audit-correlation" class="input" @bind="correlationId" /></div>
+            <div class="hcs-audit-field"><label for="audit-start">@L["Audit:From"]</label><input id="audit-start" type="datetime-local" class="input" value="@startTime" @onchange="OnStartTimeChanged" /></div>
+            <div class="hcs-audit-field"><label for="audit-end">@L["Audit:ToExclusive"]</label><input id="audit-end" type="datetime-local" class="input" value="@endTime" @onchange="OnEndTimeChanged" /></div>
+            <div class="hcs-audit-field"><label for="audit-exception">@L["Audit:Result"]</label><select id="audit-exception" class="select input" @bind="exceptionState"><option value="">@L["Catalog:AllStatuses"]</option><option value="true">@L["Audit:HasException"]</option><option value="false">@L["Audit:NoException"]</option></select></div>
+        </div>
+    }
 
     @if (!string.IsNullOrWhiteSpace(errorMessage))
     {
-        <div class="hcs-audit-alert" role="alert"><i class="fa fa-circle-exclamation" aria-hidden="true"></i><span>@errorMessage</span><button class="hcs-audit-button hcs-audit-button--secondary" type="button" @onclick="LoadAsync">@L["Catalog:Retry"]</button></div>
+        <div class="hcs-admin-alert" role="alert"><span>@errorMessage</span><button class="btn btn-outline" type="button" @onclick="LoadAsync">@L["Catalog:Retry"]</button></div>
     }
 
-    <div class="hcs-audit-table-card">
+    <div class="docs-table-wrap">
         <div class="hcs-audit-table-meta"><span>@(lastUpdated.HasValue ? $"{L["Audit:UpdatedAt"]}: {lastUpdated.Value:dd/MM/yyyy HH:mm:ss}" : L["Audit:NotLoaded"])</span><span>@L["Audit:ProjectionNote"]</span></div>
-        <div class="hcs-audit-table-scroll">
-            <table class="hcs-audit-table">
-                <caption class="visually-hidden">@L["Audit:TableCaption"]</caption>
-                <thead><tr>
-                    <th scope="col">@L["Audit:ActionColumn"]</th>
-                    <th scope="col" aria-sort="@SortAria("HttpStatusCode")"><button type="button" class="hcs-audit-sort" @onclick="SortStatusAsync">@L["Audit:HttpRequest"] @SortMarker("HttpStatusCode")</button></th>
-                    <th scope="col" aria-sort="@SortAria("UserName")"><button type="button" class="hcs-audit-sort" @onclick="SortUserAsync">@L["Audit:User"] @SortMarker("UserName")</button></th>
-                    <th scope="col">@L["Audit:IpAddress"]</th>
-                    <th scope="col" aria-sort="@SortAria("ExecutionTime")"><button type="button" class="hcs-audit-sort" @onclick="SortTimeAsync">@L["Audit:Time"] @SortMarker("ExecutionTime")</button></th>
-                    <th scope="col" aria-sort="@SortAria("ExecutionDuration")"><button type="button" class="hcs-audit-sort" @onclick="SortDurationAsync">@L["Audit:Duration"] @SortMarker("ExecutionDuration")</button></th>
-                    <th scope="col">@L["Audit:Service"]</th><th scope="col">@L["Audit:Application"]</th><th scope="col">@L["Audit:CorrelationId"]</th>
-                </tr></thead>
-                <tbody>
-                @if (isLoading)
-                {
-                    <tr><td colspan="9" class="hcs-audit-state" role="status"><HcsLoadingIcon /> @L["Catalog:Loading"]</td></tr>
-                }
-                else if (rows.Count == 0)
-                {
-                    <tr><td colspan="9" class="hcs-audit-state"><i class="fa fa-magnifying-glass" aria-hidden="true"></i><strong>@L["Audit:EmptyTitle"]</strong><span>@L["Audit:EmptyDescription"]</span></td></tr>
-                }
-                else
-                {
+        <div class="docs-table-scroll hcs-audit-table-scroll">
+            @if (isLoading)
+            {
+                <DocsEmpty Loading="true" />
+            }
+            else if (rows.Count == 0)
+            {
+                <DocsEmpty Title="@L["Audit:EmptyTitle"]" Hint="@L["Audit:EmptyDescription"]" />
+            }
+            else
+            {
+                <table class="docs-table hcs-audit-table">
+                    <caption class="visually-hidden">@L["Audit:TableCaption"]</caption>
+                    <thead><tr>
+                        <th class="col-actions" scope="col">@L["Audit:ActionColumn"]</th>
+                        <th scope="col" aria-sort="@SortAria("HttpStatusCode")"><button type="button" class="hcs-audit-sort" @onclick="SortStatusAsync">@L["Audit:HttpRequest"] @SortMarker("HttpStatusCode")</button></th>
+                        <th scope="col" aria-sort="@SortAria("UserName")"><button type="button" class="hcs-audit-sort" @onclick="SortUserAsync">@L["Audit:User"] @SortMarker("UserName")</button></th>
+                        <th scope="col">@L["Audit:IpAddress"]</th>
+                        <th scope="col" aria-sort="@SortAria("ExecutionTime")"><button type="button" class="hcs-audit-sort" @onclick="SortTimeAsync">@L["Audit:Time"] @SortMarker("ExecutionTime")</button></th>
+                        <th scope="col" aria-sort="@SortAria("ExecutionDuration")"><button type="button" class="hcs-audit-sort" @onclick="SortDurationAsync">@L["Audit:Duration"] @SortMarker("ExecutionDuration")</button></th>
+                        <th scope="col">@L["Audit:Service"]</th><th scope="col">@L["Audit:Application"]</th><th scope="col">@L["Audit:CorrelationId"]</th>
+                    </tr></thead>
+                    <tbody>
                     @foreach (var row in rows)
                     {
                         <tr>
-                            <td><button class="hcs-audit-detail-button" type="button" @onclick="() => OpenDetailAsync(row)" aria-label="@L["Audit:OpenDetail"]"><i class="fa fa-eye" aria-hidden="true"></i></button></td>
+                            <td class="col-actions">
+                                <div class="doc-actions">
+                                    <button class="doc-action" type="button" @onclick="() => OpenDetailAsync(row)" aria-label="@L["Audit:OpenDetail"]" title="@L["Audit:OpenDetail"]">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                </div>
+                            </td>
                             <td>
                                 <div class="hcs-audit-request">
                                     <span class="hcs-audit-status @StatusClass(row.HttpStatusCode)">@row.HttpStatusCode</span>
@@ -113,22 +117,19 @@
                                 <span class="hcs-audit-correlation" title="@row.CorrelationId">@FirstValue(row.CorrelationId)</span>
                                 @if (row.HasException)
                                 {
-                                    <span class="hcs-audit-exception" title="@L["Audit:HasException"]"><i class="fa fa-triangle-exclamation" aria-hidden="true"></i><span class="visually-hidden"> @L["Audit:HasException"]</span></span>
+                                    <span class="hcs-audit-exception" title="@L["Audit:HasException"]">!</span>
                                 }
                             </td>
                         </tr>
                     }
-                }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            }
         </div>
-        <footer class="hcs-audit-pagination" aria-label="@L["Audit:Pagination"]">
-            <span>@(totalCount == 0 ? "0" : $"{((currentPage - 1) * pageSize) + 1}–{Math.Min(currentPage * pageSize, totalCount)}") / @totalCount</span>
-            <label for="audit-page-size">@L["Audit:PageSize"]</label><select id="audit-page-size" class="hcs-audit-page-size" value="@pageSize" @onchange="OnPageSizeChanged"><option value="20">20</option><option value="50">50</option><option value="100">100</option></select>
-            <button class="hcs-audit-page-button" type="button" @onclick="() => MovePageAsync(currentPage - 1)" disabled="@(isLoading || currentPage <= 1)" aria-label="@L["Work:Previous"]"><i class="fa fa-chevron-left" aria-hidden="true"></i></button>
-            <span>@currentPage / @totalPages</span>
-            <button class="hcs-audit-page-button" type="button" @onclick="() => MovePageAsync(currentPage + 1)" disabled="@(isLoading || currentPage >= totalPages)" aria-label="@L["Work:Next"]"><i class="fa fa-chevron-right" aria-hidden="true"></i></button>
-        </footer>
+        <HcsPager TotalCount="totalCount" PageSize="pageSize" PageSizeId="audit-page-size" PageSizes="PageSizeOptions"
+                  CanPrev="CanPrevPage" CanNext="CanNextPage" Disabled="@isLoading"
+                  FirstClicked="GoFirstPage" PrevClicked="GoPrevPage" NextClicked="GoNextPage" LastClicked="GoLastPage"
+                  PageSizeChanged="OnPageSizeChanged" />
     </div>
 </section>
 
@@ -138,12 +139,14 @@
             <section @ref="detailModal" class="hcs-audit-modal" role="dialog" aria-modal="true" aria-labelledby="audit-detail-title" tabindex="-1" @onclick:stopPropagation @onkeydown="HandleDialogKeyDown">
             <header class="hcs-audit-modal-header">
                 <h2 id="audit-detail-title">@L["Audit:DetailTitle"]</h2>
-                <button class="hcs-audit-close" type="button" @onclick="CloseDetail" aria-label="@L["Catalog:Close"]"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+                <button class="hcs-audit-close" type="button" @onclick="CloseDetail" aria-label="@L["Catalog:Close"]">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                </button>
             </header>
             @if (isLoadingDetail)
             { <div class="hcs-audit-state"><HcsLoadingIcon /> @L["Catalog:Loading"]</div> }
             else if (!string.IsNullOrWhiteSpace(detailError))
-            { <div class="hcs-audit-alert" role="alert">@detailError</div> }
+            { <div class="hcs-admin-alert" role="alert">@detailError</div> }
             else if (selected is not null)
             {
                 <div class="hcs-audit-modal-body">

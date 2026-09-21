@@ -42,12 +42,32 @@ public partial class AuditLogs : HCSComponentBase, IDisposable
     private string action = "";
     private string url = "";
     private string exceptionState = "";
+    private static readonly int[] PageSizeOptions = [10, 20, 50, 100];
     private long totalCount;
     private int currentPage = 1;
     private int pageSize = 20;
     private string sortField = "ExecutionTime";
     private bool sortDescending = true;
     private DateTimeOffset? lastUpdated;
+
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < PageCount;
+    private bool IsAdvancedFiltered =>
+        !string.IsNullOrWhiteSpace(userName)
+        || !string.IsNullOrWhiteSpace(userId)
+        || !string.IsNullOrWhiteSpace(startTime)
+        || !string.IsNullOrWhiteSpace(endTime)
+        || !string.IsNullOrWhiteSpace(status)
+        || !string.IsNullOrWhiteSpace(httpMethod)
+        || !string.IsNullOrWhiteSpace(clientIpAddress)
+        || !string.IsNullOrWhiteSpace(browserInfo)
+        || !string.IsNullOrWhiteSpace(sourceService)
+        || !string.IsNullOrWhiteSpace(applicationName)
+        || !string.IsNullOrWhiteSpace(correlationId)
+        || !string.IsNullOrWhiteSpace(action)
+        || !string.IsNullOrWhiteSpace(url)
+        || !string.IsNullOrWhiteSpace(exceptionState);
 
     [Inject] private AuditLogClient AuditClient { get; set; } = default!;
     [Inject] private IJSRuntime JsRuntime { get; set; } = default!;
@@ -120,7 +140,7 @@ public partial class AuditLogs : HCSComponentBase, IDisposable
     {
         if (int.TryParse(args.Value?.ToString(), out var requestedSize))
         {
-            pageSize = Math.Clamp(requestedSize, 20, 100);
+                pageSize = Math.Clamp(requestedSize, 10, 100);
             currentPage = 1;
             await LoadAsync();
         }
@@ -161,12 +181,19 @@ public partial class AuditLogs : HCSComponentBase, IDisposable
             ? sortDescending ? "descending" : "ascending"
             : "none";
 
+    private void ToggleFilters() => showFilters = !showFilters;
+
     private async Task MovePageAsync(int target)
     {
         if (isLoading || target < 1 || target > totalPages || target == currentPage) return;
         currentPage = target;
         await LoadAsync();
     }
+
+    private Task GoFirstPage() => MovePageAsync(1);
+    private Task GoPrevPage() => MovePageAsync(Math.Max(1, currentPage - 1));
+    private Task GoNextPage() => MovePageAsync(Math.Min(totalPages, currentPage + 1));
+    private Task GoLastPage() => MovePageAsync(totalPages);
 
     private async Task OpenDetailAsync(AuditLogDto row)
     {

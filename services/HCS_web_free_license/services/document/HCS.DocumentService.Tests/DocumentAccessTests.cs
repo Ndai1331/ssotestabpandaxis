@@ -1,11 +1,35 @@
 using System.Security.Claims;
 using HCS.DocumentService.Documents;
+using Volo.Abp.Authorization;
 using Xunit;
 
 namespace HCS.DocumentService.Tests;
 
 public sealed class DocumentAccessTests
 {
+    [Theory]
+    [InlineData(DocumentPermissions.Update)]
+    [InlineData(DocumentPermissions.Delete)]
+    [InlineData(DocumentPermissions.ManageFiles)]
+    public void Mutating_permissions_require_an_explicit_grant(string permission)
+    {
+        var user = Principal(Guid.NewGuid(), role: "nhanvien");
+        Assert.False(DocumentAccess.HasPermission(user, permission));
+        ((ClaimsIdentity)user.Identity!).AddClaim(new Claim("permission", permission));
+        Assert.True(DocumentAccess.HasPermission(user, permission));
+    }
+
+    [Fact]
+    public void Update_permission_does_not_grant_delete_or_file_management()
+    {
+        var user = Principal(Guid.NewGuid(), role: "nhanvien");
+        ((ClaimsIdentity)user.Identity!).AddClaim(new Claim("permission", DocumentPermissions.Update));
+        Assert.True(DocumentAccess.HasPermission(user, DocumentPermissions.Update));
+        Assert.False(DocumentAccess.HasPermission(user, DocumentPermissions.Delete));
+        Assert.False(DocumentAccess.HasPermission(user, DocumentPermissions.ManageFiles));
+        Assert.True(DocumentAccess.HasPermission(Principal(Guid.NewGuid(), role: "admin"), DocumentPermissions.Delete));
+    }
+
     [Fact]
     public void Workflow_assignee_can_act_without_catalog_permission()
     {
@@ -14,6 +38,27 @@ public sealed class DocumentAccessTests
 
         Assert.True(DocumentAccess.CanActOnWorkflowTask(principal, userId, userId));
         DocumentAccess.EnsureCanActOnWorkflowTask(principal, userId, userId);
+    }
+
+    [Fact]
+    public void Process_decision_requires_workflow_decide_even_for_assignees()
+    {
+        var employee = Principal(Guid.NewGuid(), role: "nhanvien");
+        Assert.Throws<AbpAuthorizationException>(() =>
+            DocumentAccess.EnsureCanDecideStep(employee, isSignStep: false, DocumentPermissions.WorkflowDecide));
+
+        ((ClaimsIdentity)employee.Identity!).AddClaim(new Claim("permission", DocumentPermissions.WorkflowDecide));
+        DocumentAccess.EnsureCanDecideStep(employee, isSignStep: false, DocumentPermissions.WorkflowDecide);
+    }
+
+    [Fact]
+    public void Sign_decision_requires_signing_execute_not_workflow_decide()
+    {
+        var employee = Principal(Guid.NewGuid(), role: "nhanvien");
+        ((ClaimsIdentity)employee.Identity!).AddClaim(new Claim("permission", DocumentPermissions.SigningExecute));
+        DocumentAccess.EnsureCanDecideStep(employee, isSignStep: true, DocumentPermissions.WorkflowDecide);
+        Assert.Throws<AbpAuthorizationException>(() =>
+            DocumentAccess.EnsureCanDecideStep(employee, isSignStep: false, DocumentPermissions.WorkflowDecide));
     }
 
     [Fact]

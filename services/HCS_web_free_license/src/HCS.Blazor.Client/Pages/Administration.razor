@@ -13,6 +13,7 @@
 @using Microsoft.Extensions.Localization
 @using Microsoft.JSInterop
 @using Volo.Abp.AspNetCore.Components.Messages
+@using Volo.Abp.Identity
 @inject IdentityAdminClient IdentityClient
 @inject OrganizationCatalogClient OrganizationClient
 @inject OrganizationUnitCatalogClient OrganizationUnits
@@ -102,6 +103,7 @@
                                 <th scope="col">@L["Account:UserName"]</th>
                                 <th scope="col">@L["FullName"]</th>
                                 <th scope="col">@L["Account:Email"]</th>
+                                <th scope="col">@L["Account:PhoneNumber"]</th>
                                 <th scope="col">@L["Menu:Roles"]</th>
                                 <th scope="col">@L["Catalog:Department"]</th>
                                 <th class="col-status" scope="col">@L["Catalog:Status"]</th>
@@ -135,6 +137,7 @@
                                 </td>
                                 <td>@FullName(user)</td>
                                 <td>@user.Email</td>
+                                <td>@(string.IsNullOrWhiteSpace(user.PhoneNumber) ? "—" : user.PhoneNumber)</td>
                                 <td>@RoleSummary(user.Id)</td>
                                 <td>
                                     <div>@DepartmentSummary(user.Id)</div>
@@ -207,8 +210,10 @@
                                 <HcsIsolatedTextInput @bind-Value="userForm.Email" Name="hcsUserEmail" InputType="email" />
                             </Field>
                             <Field>
-                                <FieldLabel>Số điện thoại</FieldLabel>
-                                <HcsIsolatedTextInput @bind-Value="userForm.PhoneNumber" Name="hcsUserPhone" InputType="tel" />
+                                <FieldLabel>@L["Account:PhoneNumber"]</FieldLabel>
+                                <HcsIsolatedTextInput @bind-Value="userForm.PhoneNumber" Name="hcsUserPhone" InputType="tel"
+                                                     MaxLength="@IdentityUserConsts.MaxPhoneNumberLength"
+                                                     Placeholder="@L["Account:PhonePlaceholder"]" />
                             </Field>
                             <Field>
                                 <FieldLabel>Chức vụ</FieldLabel>
@@ -709,6 +714,11 @@
         if (string.IsNullOrWhiteSpace(userForm.UserName)) return "Tên người dùng là bắt buộc.";
         if (!editingUserId.HasValue && string.IsNullOrWhiteSpace(userForm.Password)) return "Mật khẩu là bắt buộc khi tạo người dùng.";
         if (string.IsNullOrWhiteSpace(userForm.Email) || !userForm.Email.Contains('@')) return "Địa chỉ email không hợp lệ.";
+        if (userForm.PhoneNumber.Trim().Length > IdentityUserConsts.MaxPhoneNumberLength)
+        {
+            return L["Account:PhoneTooLong", IdentityUserConsts.MaxPhoneNumberLength];
+        }
+
         return null;
     }
 
@@ -759,6 +769,7 @@
             L["Account:UserName"].Value,
             L["FullName"].Value,
             L["Account:Email"].Value,
+            L["Account:PhoneNumber"].Value,
             L["Menu:Roles"].Value,
             L["Catalog:Department"].Value,
             L["Catalog:Status"].Value,
@@ -769,6 +780,7 @@
             user.UserName,
             FullName(user),
             user.Email,
+            user.PhoneNumber,
             RoleSummary(user.Id),
             DepartmentSummary(user.Id),
             user.IsActive ? L["Catalog:Active"].Value : L["Catalog:Inactive"].Value,

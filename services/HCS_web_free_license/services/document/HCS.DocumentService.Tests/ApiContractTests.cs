@@ -13,6 +13,17 @@ namespace HCS.DocumentService.Tests;
 
 public sealed class ApiContractTests
 {
+    [Theory]
+    [InlineData(nameof(DocumentsController.Delete), DocumentPermissions.Delete)]
+    [InlineData(nameof(DocumentsController.Upload), DocumentPermissions.ManageFiles)]
+    [InlineData(nameof(DocumentsController.DeleteFile), DocumentPermissions.ManageFiles)]
+    public void Document_mutations_enforce_their_own_permission(string method, string permission)
+    {
+        var policies = typeof(DocumentsController).GetMethod(method)!
+            .GetCustomAttributes<AuthorizeAttribute>().Select(attribute => attribute.Policy);
+        Assert.Contains(permission, policies);
+    }
+
     [Fact]
     public void Document_and_workflow_read_routes_are_authorized()
     {

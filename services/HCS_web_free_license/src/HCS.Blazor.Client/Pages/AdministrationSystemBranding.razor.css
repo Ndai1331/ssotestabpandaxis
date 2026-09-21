@@ -1,72 +1,268 @@
-.hcs-system-branding-page {
-    display: grid;
-    gap: 1.25rem;
-}
-
-.hcs-system-branding-heading h1 {
-    margin: 0;
-    color: var(--hcs-color-heading, var(--color-primary));
-    font-size: var(--hcs-font-size-title, clamp(1.25rem, 1.6vw, 1.6rem));
-    font-weight: 750;
-}
-
-.hcs-system-branding-heading p:not(.hcs-page-eyebrow) {
+.page-system-config__intro p {
+    color: var(--color-muted, #5b7484);
+    font-size: .9rem;
+    line-height: 1.5;
     margin: .35rem 0 0;
-    color: var(--hcs-color-muted, #70899a);
+    max-width: 42rem;
 }
 
-.hcs-page-eyebrow {
-    margin: 0 0 .3rem;
-    color: var(--hcs-color-accent, #0e8f8d);
-    font-size: .72rem;
-    font-weight: 800;
-    letter-spacing: .11em;
-    text-transform: uppercase;
+.page-system-config .process-side-tab svg {
+    flex-shrink: 0;
 }
 
-.hcs-system-config-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    border-bottom: 1px solid #e5edf2;
-}
-
-.hcs-system-config-tabs button {
-    align-items: center;
-    background: transparent;
-    border: 0;
-    border-bottom: 3px solid transparent;
-    color: #355770;
-    display: inline-flex;
-    font-weight: 650;
-    gap: .45rem;
-    padding: .45rem 0 .7rem;
-}
-
-.hcs-system-config-tabs button.is-active {
-    border-bottom-color: var(--hcs-color-primary, #00b4a9);
-    color: var(--hcs-color-primary, #007f7c);
-}
-
-.hcs-system-config-tab-panels {
+.page-system-config__block {
+    background: var(--color-white, #fff);
+    border-radius: var(--radius-xl, 16px);
+    box-shadow: var(--shadow-sm);
     display: grid;
-    gap: 1.25rem;
+    gap: 0;
+    min-width: 0;
+    padding: 1.25rem 1.35rem 1.35rem;
 }
 
-.hcs-system-branding-page__card {
-    border: 0;
-    border-radius: var(--card-radius, 16px);
-    box-shadow: 0 9px 28px rgb(21 59 85 / 7%);
+.page-system-config__section + .page-system-config__section {
+    border-top: 1px solid var(--color-gray-100, #e8eef3);
+    margin-top: 1.35rem;
+    padding-top: 1.35rem;
 }
 
-.hcs-system-branding-page__card ::deep .hcs-auth-settings__header,
-.hcs-system-branding-page__card ::deep .hcs-branding-settings__header {
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
+.page-system-config__block ::deep .hcs-branding-settings__eyebrow,
+.page-system-config__block ::deep .hcs-auth-settings__eyebrow,
+.page-system-config__block ::deep .hcs-branding-settings__icon,
+.page-system-config__block ::deep .hcs-auth-settings__icon {
+    display: none;
 }
 
-.hcs-system-branding-page__card ::deep .hcs-branding-settings__form-grid .field,
-.hcs-system-branding-page__card ::deep .hcs-branding-settings__form-grid .form-group {
+.page-system-config__block ::deep .hcs-branding-settings__header,
+.page-system-config__block ::deep .hcs-auth-settings__header,
+.page-system-config__block ::deep .hcs-sso-settings__header {
+    display: none;
+}
+
+.page-system-config__block ::deep .hcs-settings-section + .hcs-settings-section {
+    border-top: 1px solid var(--color-gray-100, #e8eef3);
+    margin-top: 1.15rem;
+    padding-top: 1.15rem;
+}
+
+.page-system-config__block ::deep .hcs-settings-section > h3 {
+    color: var(--color-primary, #193b57);
+    font-size: .95rem;
+    font-weight: 700;
+    margin: 0 0 .35rem;
+}
+
+.page-system-config__block ::deep .hcs-settings-section > p {
+    color: var(--color-muted, #5b7484);
+    font-size: .86rem;
+    line-height: 1.5;
+    margin: 0 0 .85rem;
+}
+
+.page-system-config__block ::deep .hcs-settings-section .hcs-branding-settings__assets,
+.page-system-config__block ::deep .hcs-settings-section .hcs-branding-settings__preview-grid,
+.page-system-config__block ::deep .hcs-settings-section .hcs-storage-settings__grid {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.page-system-config__block ::deep .hcs-settings-section .hcs-settings-option:last-child,
+.page-system-config__block ::deep .hcs-settings-section .hcs-auth-settings__add,
+.page-system-config__block ::deep .hcs-settings-section .hcs-storage-option:last-child,
+.page-system-config__block ::deep .hcs-settings-section .hcs-storage-providers {
+    margin-bottom: 0;
+}
+
+.page-system-config__block ::deep .hcs-storage-settings .field .input,
+.page-system-config__block ::deep .hcs-auth-settings .field .input,
+.page-system-config__block ::deep .hcs-auth-settings .field .select,
+.page-system-config__block ::deep .hcs-auth-settings__table .input,
+.page-system-config__block ::deep .hcs-auth-settings__table .select,
+.page-system-config__block ::deep .hcs-report-settings .field .input,
+.page-system-config__block ::deep .hcs-branding-settings .field .input {
+    width: 100%;
+}
+
+.page-system-config__block ::deep .hcs-storage-settings .field,
+.page-system-config__block ::deep .hcs-auth-settings .field,
+.page-system-config__block ::deep .hcs-report-settings .field,
+.page-system-config__block ::deep .hcs-branding-settings .field {
     min-width: 0;
     width: 100%;
+}
+
+.page-system-config__footer {
+    align-items: center;
+    border-top: 1px solid var(--color-gray-100, #e8eef3);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 1.25rem;
+    padding-top: 1.15rem;
+}
+
+.page-system-config__status {
+    color: var(--color-muted, #5b7484);
+    font-size: var(--font-size-sm, .8125rem);
+    line-height: 1.45;
+    margin: 0;
+    max-width: 32rem;
+}
+
+.page-system-config ::deep .hcs-settings-alert {
+    align-items: center;
+    background: #fff8ee;
+    border: 1px solid color-mix(in srgb, #d97706 28%, var(--color-gray-100, #e8eef3));
+    border-radius: var(--radius-xl, 16px);
+    color: #965216;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin: 0 0 1.15rem;
+    padding: .8rem 1rem;
+}
+
+.page-system-config ::deep .hcs-settings-option {
+    align-items: center;
+    background: var(--color-gray-50, #f8fafc);
+    border: 1px solid var(--color-gray-100, #f1f5f9);
+    border-radius: var(--radius-xl, 16px);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: .95rem 1.1rem;
+}
+
+.page-system-config ::deep .hcs-settings-option + .hcs-settings-option {
+    margin-top: .7rem;
+}
+
+.page-system-config ::deep .hcs-settings-option h4 {
+    color: var(--color-primary, #193b57);
+    font-size: .92rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.page-system-config ::deep .hcs-settings-option p {
+    color: var(--color-muted, #5b7484);
+    font-size: .82rem;
+    line-height: 1.45;
+    margin: .3rem 0 0;
+}
+
+.page-system-config ::deep .hcs-settings-switch {
+    align-items: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--color-gray-600, #475569);
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font: inherit;
+    gap: .6rem;
+    min-height: 2.5rem;
+    padding: .2rem;
+}
+
+.page-system-config ::deep .hcs-settings-switch:hover:not(:disabled) {
+    color: var(--color-primary, #193b57);
+}
+
+.page-system-config ::deep .hcs-settings-switch:focus-visible {
+    outline: 3px solid rgb(0 127 124 / 22%);
+    outline-offset: 3px;
+}
+
+.page-system-config ::deep .hcs-settings-switch:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+}
+
+.page-system-config ::deep .hcs-settings-switch__track {
+    background: var(--color-gray-300, #cbd5e1);
+    border-radius: 999px;
+    display: inline-flex;
+    height: 1.5rem;
+    padding: 3px;
+    transition: background-color .16s ease;
+    width: 2.75rem;
+}
+
+.page-system-config ::deep .hcs-settings-switch__thumb {
+    background: var(--color-white, #fff);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgb(15 23 42 / 18%);
+    height: 1.125rem;
+    transform: translateX(0);
+    transition: transform .16s ease;
+    width: 1.125rem;
+}
+
+.page-system-config ::deep .hcs-settings-switch.is-enabled {
+    color: var(--color-teal-600, #006866);
+    font-weight: 650;
+}
+
+.page-system-config ::deep .hcs-settings-switch.is-enabled .hcs-settings-switch__track {
+    background: var(--color-teal-500, #007f7c);
+}
+
+.page-system-config ::deep .hcs-settings-switch.is-enabled .hcs-settings-switch__thumb {
+    transform: translateX(1.25rem);
+}
+
+.page-system-config ::deep .hcs-settings-grid {
+    display: grid;
+    gap: 1rem 1.15rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.page-system-config ::deep .hcs-settings-grid .field--wide {
+    grid-column: 1 / -1;
+}
+
+.page-system-config ::deep .hcs-settings-option + .hcs-settings-grid,
+.page-system-config ::deep .hcs-settings-grid + .hcs-settings-follow-actions,
+.page-system-config ::deep .field + .hcs-auth-settings__table-wrap {
+    margin-top: 1rem;
+}
+
+.page-system-config ::deep .hcs-settings-hint {
+    color: var(--color-muted, #5b7484);
+    font-size: var(--font-size-sm, .8125rem);
+    line-height: 1.45;
+    margin: 0;
+}
+
+.page-system-config ::deep .hcs-settings-footer {
+    align-items: center;
+    border-top: 1px solid var(--color-gray-100, #e8eef3);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 1.25rem;
+    padding-top: 1.15rem;
+}
+
+.page-system-config ::deep .hcs-settings-footer .page-actions,
+.page-system-config ::deep .hcs-settings-follow-actions {
+    margin-left: auto;
+}
+
+.page-system-config ::deep .hcs-settings-follow-actions,
+.page-system-config ::deep .hcs-auth-settings__add {
+    margin-left: 0;
+}
+
+@media (max-width: 640px) {
+    .page-system-config__footer,
+    .page-system-config ::deep .hcs-settings-footer,
+    .page-system-config ::deep .hcs-settings-option,
+    .page-system-config ::deep .hcs-settings-grid {
+        align-items: stretch;
+        flex-direction: column;
+        grid-template-columns: 1fr;
+    }
 }

@@ -1,194 +1,196 @@
+@using HCS.Blazor.Client.Pages
 @using HCS.Blazor.Client.Settings
 @using HCS.Settings
 @inherits HCSComponentBase
 @inject AuthenticationSettingsClient SettingsClient
+@inject IdentityAdminClient IdentityClient
 
 <section class="hcs-auth-settings" aria-labelledby="hcs-sso-login-settings-title" aria-busy="@(isLoading || isBusy ? "true" : "false")">
-    <header class="hcs-auth-settings__header">
-        <div>
-            <p class="hcs-auth-settings__eyebrow">@L["Settings:SsoLoginEyebrow"]</p>
-            <h2 id="hcs-sso-login-settings-title">@L["Settings:SsoLoginGroup"]</h2>
-            <p>@L["Settings:SsoLoginDescription"]</p>
-        </div>
-        <i class="fa fa-shield-halved hcs-auth-settings__icon" aria-hidden="true"></i>
-    </header>
+    <h2 id="hcs-sso-login-settings-title" class="sr-only">@L["Settings:SsoLoginGroup"]</h2>
 
     @if (isLoading)
     {
-        <div class="hcs-auth-settings__state" role="status" aria-live="polite">
-            <HcsLoadingIcon />
-            <span>@L["Settings:SsoLoginLoading"]</span>
-        </div>
+        <DocsEmpty Loading="true" Compact="true" Title="@L["Settings:SsoLoginLoading"]" />
     }
     else
     {
         @if (!string.IsNullOrWhiteSpace(errorMessage))
         {
-            <div class="hcs-auth-settings__error" role="alert">
+            <div class="hcs-settings-alert" role="alert">
                 <span>@errorMessage</span>
-                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isBusy">
+                <button class="btn btn-outline btn-sm" type="button" @onclick="LoadAsync" disabled="@isBusy">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
                     @L["Settings:SsoLoginRetry"]
-                </Button>
+                </button>
             </div>
         }
 
-        <div class="hcs-auth-settings__row">
-            <div>
-                <h3>@L["Settings:SsoEnabled"]</h3>
-                <p id="hcs-sso-enabled-description">@L["Settings:SsoEnabledDescription"]</p>
-            </div>
-            <button type="button"
-                    class="hcs-auth-settings__switch @(enabled ? "is-enabled" : "is-disabled")"
-                    aria-pressed="@(enabled ? "true" : "false")"
-                    aria-describedby="hcs-sso-enabled-description"
-                    @onclick="ToggleEnabled"
-                    disabled="@isBusy">
-                <span class="hcs-auth-settings__switch-track" aria-hidden="true">
-                    <span class="hcs-auth-settings__switch-thumb"></span>
-                </span>
-                <span>@(enabled ? L["Settings:SsoEnabledOn"] : L["Settings:SsoEnabledOff"])</span>
-            </button>
+        <div class="hcs-settings-section">
+            <h3>@L["Settings:SsoSectionSignIn"]</h3>
+            <p>@L["Settings:SsoSectionSignInDescription"]</p>
+            @OptionRow(
+                L["Settings:SsoEnabled"],
+                L["Settings:SsoEnabledDescription"],
+                "hcs-sso-enabled-description",
+                enabled,
+                L["Settings:SsoEnabledOn"],
+                L["Settings:SsoEnabledOff"],
+                EventCallback.Factory.Create(this, ToggleEnabled))
+            @OptionRow(
+                L["Settings:SsoLoginButton"],
+                L["Settings:SsoLoginButtonDescription"],
+                "hcs-sso-login-settings-description",
+                showSsoLoginButton,
+                L["Settings:SsoLoginButtonEnabled"],
+                L["Settings:SsoLoginButtonDisabled"],
+                EventCallback.Factory.Create(this, ToggleSsoLoginButton))
         </div>
 
-        <div class="hcs-auth-settings__row">
-            <div>
-                <h3>@L["Settings:SsoLoginButton"]</h3>
-                <p id="hcs-sso-login-settings-description">@L["Settings:SsoLoginButtonDescription"]</p>
-            </div>
-            <button type="button"
-                    class="hcs-auth-settings__switch @(showSsoLoginButton ? "is-enabled" : "is-disabled")"
-                    aria-pressed="@(showSsoLoginButton ? "true" : "false")"
-                    aria-describedby="hcs-sso-login-settings-description"
-                    @onclick="ToggleSsoLoginButton"
-                    disabled="@isBusy">
-                <span class="hcs-auth-settings__switch-track" aria-hidden="true">
-                    <span class="hcs-auth-settings__switch-thumb"></span>
-                </span>
-                <span>@(showSsoLoginButton ? L["Settings:SsoLoginButtonEnabled"] : L["Settings:SsoLoginButtonDisabled"])</span>
-            </button>
-        </div>
-
-        <div class="hcs-auth-settings__form-grid">
-            <Field>
-                <FieldLabel>@L["Settings:SsoBaseUrl"]</FieldLabel>
-                <TextInput @bind-Value="baseUrl" placeholder="https://sso-hcs.htltech.vn" autocomplete="off" spellcheck="false" />
-                <FieldHelp>@L["Settings:SsoBaseUrlHint"]</FieldHelp>
-            </Field>
-            <Field>
-                <FieldLabel>@L["Settings:SsoRealm"]</FieldLabel>
-                <TextInput @bind-Value="realm" placeholder="@KeycloakSettingDefaults.Realm" autocomplete="off" />
-            </Field>
-            <Field>
-                <FieldLabel>@L["Settings:SsoClientId"]</FieldLabel>
-                <TextInput @bind-Value="clientId" placeholder="@KeycloakSettingDefaults.ClientId" autocomplete="off" />
-            </Field>
-            <Field>
-                <FieldLabel>@L["Settings:SsoClientSecret"]</FieldLabel>
-                <input class="form-control"
-                       type="password"
-                       @bind="clientSecret"
-                       autocomplete="new-password"
-                       placeholder="@(hasClientSecret ? L["Settings:SsoSecretConfigured"].Value : null)" />
-                <FieldHelp>@L["Settings:SsoSecretHint"]</FieldHelp>
-            </Field>
-            <Field>
-                <FieldLabel>@L["Settings:SsoAdminUser"]</FieldLabel>
-                <TextInput @bind-Value="adminUser" autocomplete="off" />
-                <FieldHelp>@L["Settings:SsoAdminUserHint"]</FieldHelp>
-            </Field>
-            <Field>
-                <FieldLabel>@L["Settings:SsoAdminSecret"]</FieldLabel>
-                <input class="form-control"
-                       type="password"
-                       @bind="adminSecret"
-                       autocomplete="new-password"
-                       placeholder="@(hasAdminSecret ? L["Settings:SsoSecretConfigured"].Value : null)" />
-            </Field>
-        </div>
-
-        <div class="hcs-auth-settings__row">
-            <div>
-                <h3>@L["Settings:SsoRequireHttps"]</h3>
-                <p id="hcs-sso-https-description">@L["Settings:SsoRequireHttpsDescription"]</p>
-            </div>
-            <button type="button"
-                    class="hcs-auth-settings__switch @(requireHttpsMetadata ? "is-enabled" : "is-disabled")"
-                    aria-pressed="@(requireHttpsMetadata ? "true" : "false")"
-                    aria-describedby="hcs-sso-https-description"
-                    @onclick="ToggleRequireHttps"
-                    disabled="@isBusy">
-                <span class="hcs-auth-settings__switch-track" aria-hidden="true">
-                    <span class="hcs-auth-settings__switch-thumb"></span>
-                </span>
-                <span>@(requireHttpsMetadata ? L["Settings:SsoRequireHttpsOn"] : L["Settings:SsoRequireHttpsOff"])</span>
-            </button>
-        </div>
-
-        <div class="hcs-auth-settings__mappings">
-            <div class="hcs-auth-settings__mappings-header">
-                <div>
-                    <h3>@L["Settings:SsoRoleMappings"]</h3>
-                    <p>@L["Settings:SsoRoleMappingsDescription"]</p>
+        <div class="hcs-settings-section">
+            <h3>@L["Settings:SsoSectionConnection"]</h3>
+            <div class="hcs-settings-grid">
+                <div class="field field--wide">
+                    <label class="field-label" for="sso-base-url">@L["Settings:SsoBaseUrl"]</label>
+                    <input id="sso-base-url" class="input" @bind="baseUrl" placeholder="https://sso-hcs.htltech.vn" autocomplete="off" spellcheck="false" disabled="@isBusy" />
+                    <p class="hcs-settings-hint">@L["Settings:SsoBaseUrlHint"]</p>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="sso-realm">@L["Settings:SsoRealm"]</label>
+                    <input id="sso-realm" class="input" @bind="realm" placeholder="@KeycloakSettingDefaults.Realm" autocomplete="off" disabled="@isBusy" />
+                    <p class="hcs-settings-hint">@L["Settings:SsoRealmHint"]</p>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="sso-client-id">@L["Settings:SsoClientId"]</label>
+                    <input id="sso-client-id" class="input" @bind="clientId" placeholder="@KeycloakSettingDefaults.ClientId" autocomplete="off" disabled="@isBusy" />
+                    <p class="hcs-settings-hint">@L["Settings:SsoClientIdHint"]</p>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="sso-client-secret">@L["Settings:SsoClientSecret"]</label>
+                    <input id="sso-client-secret"
+                           class="input"
+                           type="password"
+                           @bind="clientSecret"
+                           autocomplete="new-password"
+                           placeholder="@(hasClientSecret ? L["Settings:SsoSecretConfigured"].Value : null)"
+                           disabled="@isBusy" />
+                    <p class="hcs-settings-hint">@L["Settings:SsoSecretHint"]</p>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="sso-admin-user">@L["Settings:SsoAdminUser"]</label>
+                    <input id="sso-admin-user" class="input" @bind="adminUser" autocomplete="off" disabled="@isBusy" />
+                    <p class="hcs-settings-hint">@L["Settings:SsoAdminUserHint"]</p>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="sso-admin-secret">@L["Settings:SsoAdminSecret"]</label>
+                    <input id="sso-admin-secret"
+                           class="input"
+                           type="password"
+                           @bind="adminSecret"
+                           autocomplete="new-password"
+                           placeholder="@(hasAdminSecret ? L["Settings:SsoSecretConfigured"].Value : null)"
+                           disabled="@isBusy" />
+                    <p class="hcs-settings-hint">@L["Settings:SsoAdminSecretHint"]</p>
                 </div>
             </div>
-            <Field>
-                <FieldLabel>@L["Settings:SsoAppAccessGroup"]</FieldLabel>
-                <TextInput @bind-Value="appAccessGroup" placeholder="@KeycloakSettingDefaults.AppAccessGroup" autocomplete="off" />
-                <FieldHelp>@L["Settings:SsoAppAccessGroupHint"]</FieldHelp>
-            </Field>
-            <table class="hcs-auth-settings__table">
-                <thead>
-                    <tr>
-                        <th scope="col">@L["Settings:SsoMappingGroup"]</th>
-                        <th scope="col">@L["Settings:SsoMappingRole"]</th>
-                        <th scope="col"><span class="visually-hidden">@L["Settings:SsoMappingRemove"]</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (var index = 0; index < mappings.Count; index++)
-                    {
-                        var row = index;
-                        <tr>
-                            <td>
-                                <TextInput Value="@mappings[row].Group"
-                                           ValueChanged="value => SetMappingGroup(row, value)"
-                                           autocomplete="off" />
-                            </td>
-                            <td>
-                                <TextInput Value="@mappings[row].Role"
-                                           ValueChanged="value => SetMappingRole(row, value)"
-                                           autocomplete="off" />
-                            </td>
-                            <td>
-                                <Button Color="Color.Light" Size="Size.Small" Clicked="() => RemoveMapping(row)" Disabled="@isBusy">
-                                    @L["Settings:SsoMappingRemove"]
-                                </Button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-            <Button Color="Color.Light" Size="Size.Small" Clicked="AddMapping" Disabled="@isBusy">
-                @L["Settings:SsoMappingAdd"]
-            </Button>
         </div>
 
-        <div class="hcs-auth-settings__footer">
-            <span class="hcs-auth-settings__status" role="status" aria-live="polite">
+        <div class="hcs-settings-section">
+            <h3>@L["Settings:SsoSectionSecurity"]</h3>
+            @OptionRow(
+                L["Settings:SsoRequireHttps"],
+                L["Settings:SsoRequireHttpsDescription"],
+                "hcs-sso-https-description",
+                requireHttpsMetadata,
+                L["Settings:SsoRequireHttpsOn"],
+                L["Settings:SsoRequireHttpsOff"],
+                EventCallback.Factory.Create(this, ToggleRequireHttps))
+        </div>
+
+        <div class="hcs-settings-section">
+            <h3>@L["Settings:SsoRoleMappings"]</h3>
+            <p>@L["Settings:SsoRoleMappingsDescription"]</p>
+            <div class="field">
+                <label class="field-label" for="sso-app-access-group">@L["Settings:SsoAppAccessGroup"]</label>
+                <input id="sso-app-access-group" class="input" @bind="appAccessGroup" placeholder="@KeycloakSettingDefaults.AppAccessGroup" autocomplete="off" disabled="@isBusy" />
+                <p class="hcs-settings-hint">@L["Settings:SsoAppAccessGroupHint"]</p>
+            </div>
+            <div class="hcs-auth-settings__table-wrap">
+                <table class="hcs-auth-settings__table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@L["Settings:SsoMappingGroup"]</th>
+                            <th scope="col">@L["Settings:SsoMappingRole"]</th>
+                            <th scope="col"><span class="sr-only">@L["Settings:SsoMappingRemove"]</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var index = 0; index < mappings.Count; index++)
+                        {
+                            var row = index;
+                            <tr @key="@row">
+                                <td>
+                                    <input class="input"
+                                           value="@mappings[row].Group"
+                                           @oninput="e => SetMappingGroup(row, e.Value?.ToString() ?? string.Empty)"
+                                           placeholder="@L["Settings:SsoMappingGroupPlaceholder"]"
+                                           autocomplete="off"
+                                           disabled="@isBusy" />
+                                </td>
+                                <td>
+                                    <select class="select"
+                                            value="@RoleValue(row)"
+                                            @onchange="e => SetMappingRole(row, e.Value?.ToString())"
+                                            disabled="@isBusy"
+                                            aria-label="@L["Settings:SsoMappingRole"]">
+                                        <option value="">@L["Settings:SsoMappingRolePlaceholder"]</option>
+                                        @foreach (var role in roleOptions)
+                                        {
+                                            <option value="@role">@RoleLabel(role)</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="doc-actions">
+                                        <button class="doc-action is-danger"
+                                                type="button"
+                                                title="@L["Settings:SsoMappingRemove"]"
+                                                aria-label="@L["Settings:SsoMappingRemove"]"
+                                                @onclick="() => RemoveMapping(row)"
+                                                disabled="@isBusy">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="page-actions hcs-auth-settings__add">
+                <button class="btn btn-outline btn-sm" type="button" @onclick="AddMapping" disabled="@isBusy">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    @L["Settings:SsoMappingAdd"]
+                </button>
+            </div>
+        </div>
+
+        <footer class="hcs-settings-footer">
+            <p class="hcs-settings-hint" role="status" aria-live="polite">
                 @(enabled
                     ? (showSsoLoginButton ? L["Settings:SsoLoginStatusEnabled"] : L["Settings:SsoLoginStatusDisabled"])
                     : L["Settings:SsoEnabledStatusOff"])
-            </span>
-            <div class="hcs-auth-settings__actions">
-                <Button Color="Color.Light" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
+            </p>
+            <div class="page-actions">
+                <button class="btn btn-outline" type="button" @onclick="TestAsync" disabled="@isBusy">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 12A10 10 0 1 1 12 2"/><path d="M22 2v6h-6"/><path d="m8 12 2.5 2.5L16 9"/></svg>
                     @L["Settings:SsoTest"]
-                </Button>
-                <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isBusy" Disabled="@isBusy">
-                    <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
+                </button>
+                <button class="btn btn-primary" type="button" @onclick="SaveAsync" disabled="@isBusy">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h11l5 5v13H5z"/><path d="M16 3v6H8V3M8 21v-7h8v7"/></svg>
                     @L["Settings:SsoLoginSave"]
-                </Button>
+                </button>
             </div>
-        </div>
+        </footer>
     }
 </section>
 
@@ -208,9 +210,44 @@
     private string adminSecret = string.Empty;
     private string appAccessGroup = KeycloakSettingDefaults.AppAccessGroup;
     private List<KeycloakRoleMapping> mappings = [.. KeycloakSettingDefaults.RoleMappings];
+    private List<string> roleOptions = [.. DefaultRoleNames];
     private string? errorMessage;
 
+    private static readonly string[] DefaultRoleNames =
+        KeycloakSettingDefaults.RoleMappings
+            .Select(mapping => mapping.Role)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
     protected override Task OnInitializedAsync() => LoadAsync();
+
+    private RenderFragment OptionRow(
+        string title,
+        string description,
+        string describedBy,
+        bool isOn,
+        string onLabel,
+        string offLabel,
+        EventCallback clicked) => __builder =>
+    {
+        <div class="hcs-settings-option">
+            <div>
+                <h4>@title</h4>
+                <p id="@describedBy">@description</p>
+            </div>
+            <button type="button"
+                    class="hcs-settings-switch @(isOn ? "is-enabled" : null)"
+                    aria-pressed="@(isOn ? "true" : "false")"
+                    aria-describedby="@describedBy"
+                    disabled="@isBusy"
+                    @onclick="clicked">
+                <span class="hcs-settings-switch__track" aria-hidden="true">
+                    <span class="hcs-settings-switch__thumb"></span>
+                </span>
+                <span>@(isOn ? onLabel : offLabel)</span>
+            </button>
+        </div>
+    };
 
     private async Task LoadAsync()
     {
@@ -220,15 +257,87 @@
         {
             var settings = await SettingsClient.GetAsync();
             Apply(settings);
+            await LoadRoleOptionsAsync();
         }
         catch (Exception exception)
         {
             errorMessage = MapBffError(exception);
+            ApplyRoleOptions(DefaultRoleNames);
         }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private async Task LoadRoleOptionsAsync()
+    {
+        var names = new HashSet<string>(DefaultRoleNames, StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var result = await IdentityClient.GetRolesAsync(maxResultCount: 200);
+            foreach (var role in result.Items ?? [])
+            {
+                if (!string.IsNullOrWhiteSpace(role.Name))
+                {
+                    names.Add(role.Name.Trim());
+                }
+            }
+        }
+        catch
+        {
+            // Keep default HCS roles if identity lookup is unavailable.
+        }
+
+        ApplyRoleOptions(names);
+    }
+
+    private void ApplyRoleOptions(IEnumerable<string> names)
+    {
+        var options = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in names)
+        {
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                options.Add(name.Trim());
+            }
+        }
+
+        foreach (var mapping in mappings)
+        {
+            if (!string.IsNullOrWhiteSpace(mapping.Role))
+            {
+                options.Add(mapping.Role.Trim());
+            }
+        }
+
+        roleOptions = options
+            .OrderBy(name =>
+            {
+                var index = Array.FindIndex(
+                    DefaultRoleNames,
+                    role => string.Equals(role, name, StringComparison.OrdinalIgnoreCase));
+                return index >= 0 ? index : int.MaxValue;
+            })
+            .ThenBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private string RoleValue(int index) =>
+        index >= 0 && index < mappings.Count ? mappings[index].Role ?? string.Empty : string.Empty;
+
+    private string RoleLabel(string role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return L["Settings:SsoMappingRolePlaceholder"];
+        }
+
+        var key = $"Settings:SsoRole.{role}";
+        var localized = L[key];
+        return localized.ResourceNotFound || string.Equals(localized.Value, key, StringComparison.Ordinal)
+            ? role
+            : localized.Value;
     }
 
     private void Apply(AuthenticationSettingsDto settings)
@@ -300,11 +409,11 @@
         }
     }
 
-    private void SetMappingRole(int index, string value)
+    private void SetMappingRole(int index, string? value)
     {
         if (index >= 0 && index < mappings.Count)
         {
-            mappings[index].Role = value;
+            mappings[index].Role = value ?? string.Empty;
         }
     }
 

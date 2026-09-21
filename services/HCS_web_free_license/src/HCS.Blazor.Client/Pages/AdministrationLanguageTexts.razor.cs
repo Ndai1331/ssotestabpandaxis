@@ -4,12 +4,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Blazorise;
-using Blazorise.DataGrid;
 using HCS.Blazor.Client.Services;
 using HCS.Localization;
 using HCS.Permissions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 
 namespace HCS.Blazor.Client.Pages;
 
@@ -20,7 +19,6 @@ public partial class AdministrationLanguageTexts
 
     private static readonly int[] PageSizeOptions = [10, 20, 50, 100];
     private readonly List<LanguageTextDto> rows = [];
-    private DataGrid<LanguageTextDto>? dataGrid;
     private Modal? editModal;
     private LanguageTextFormModel form = new();
     private string selectedCultureName = string.Empty;
@@ -34,12 +32,13 @@ public partial class AdministrationLanguageTexts
     private bool isAuthorized;
     private bool canManageTexts;
     private Guid? editingId;
-    private Guid? actionMenuId;
     private int totalCount;
     private int pageSize = 20;
     private int currentPage = 1;
 
-    private IReadOnlyList<int> pageSizes => PageSizeOptions;
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
+    private bool CanPrevPage => currentPage > 1;
+    private bool CanNextPage => currentPage < PageCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -52,30 +51,15 @@ public partial class AdministrationLanguageTexts
         {
             await LanguageState.EnsureLoadedAsync();
             SelectInitialCulture();
+            if (!string.IsNullOrWhiteSpace(selectedCultureName))
+            {
+                await LoadPageAsync(1, pageSize);
+            }
         }
         catch (Exception exception)
         {
             errorMessage = MapBffError(exception);
             await ShowErrorAsync(errorMessage, BffErrorMapper.GetStatusCode(exception));
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && isAuthorized && !string.IsNullOrWhiteSpace(selectedCultureName) && dataGrid is not null)
-        {
-            await dataGrid.Reload();
-        }
-
-        if (actionMenuId is { } menuId)
-        {
-            try
-            {
-                await JsRuntime.InvokeVoidAsync("hcsChat.positionMenu", "language-text-row-menu", $"[data-lang-text-more='{menuId:D}']");
-            }
-            catch
-            {
-            }
         }
     }
 
@@ -86,22 +70,14 @@ public partial class AdministrationLanguageTexts
         selectedCultureName = requested?.CultureName ?? LanguageState.DefaultCultureName;
     }
 
-    private async Task OnCultureChangedAsync(string value)
+    private async Task OnCultureChangedAsync(ChangeEventArgs args)
     {
+        var value = args.Value?.ToString() ?? string.Empty;
         if (string.Equals(selectedCultureName, value, StringComparison.Ordinal)) return;
         selectedCultureName = value;
         currentPage = 1;
         rows.Clear();
-        if (dataGrid is null) return;
-        await dataGrid.Paginate("1");
-        await dataGrid.Reload();
-    }
-
-    private async Task OnDataGridReadAsync(DataGridReadDataEventArgs<LanguageTextDto> args)
-    {
-        currentPage = Math.Max(1, args.Page);
-        pageSize = Math.Clamp(args.PageSize, PageSizeOptions[0], PageSizeOptions[^1]);
-        await LoadPageAsync(currentPage, pageSize, args.CancellationToken);
+        await LoadPageAsync(1, pageSize);
     }
 
     private async Task LoadPageAsync(int page, int requestedPageSize, CancellationToken cancellationToken = default)
@@ -116,6 +92,8 @@ public partial class AdministrationLanguageTexts
             rows.Clear();
             rows.AddRange(result.Items);
             totalCount = (int)Math.Min(result.TotalCount, int.MaxValue);
+            currentPage = page;
+            pageSize = requestedPageSize;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -131,24 +109,31 @@ public partial class AdministrationLanguageTexts
         }
     }
 
-    private async Task SearchAsync()
+    private Task SearchAsync()
     {
         currentPage = 1;
-        if (dataGrid is null) { await LoadPageAsync(1, pageSize); return; }
-        await dataGrid.Paginate("1");
-        await dataGrid.Reload();
+        return LoadPageAsync(1, pageSize);
     }
 
-    private async Task ResetSearchAsync()
+    private Task ResetSearchAsync()
     {
         filterText = null;
-        await SearchAsync();
+        return SearchAsync();
     }
 
-    private async Task RefreshAsync()
+    private Task RefreshAsync() => LoadPageAsync(currentPage, pageSize);
+
+    private Task GoFirstPage() => LoadPageAsync(1, pageSize);
+    private Task GoPrevPage() => LoadPageAsync(Math.Max(1, currentPage - 1), pageSize);
+    private Task GoNextPage() => LoadPageAsync(Math.Min(PageCount, currentPage + 1), pageSize);
+    private Task GoLastPage() => LoadPageAsync(PageCount, pageSize);
+
+    private Task OnPageSizeChanged(ChangeEventArgs args)
     {
-        if (dataGrid is null) { await LoadPageAsync(currentPage, pageSize); return; }
-        await dataGrid.Reload();
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        return LoadPageAsync(1, pageSize);
     }
 
     private async Task OpenCreateModalAsync()
@@ -257,19 +242,6 @@ public partial class AdministrationLanguageTexts
             await ShowErrorAsync(errorMessage, BffErrorMapper.GetStatusCode(exception));
         }
     }
-
-    private Task OpenEditFromMenuAsync(LanguageTextDto text)
-    {
-        CloseActionMenu();
-        return OpenEditModalAsync(text);
-    }
-    private Task DeleteFromMenuAsync(LanguageTextDto text)
-    {
-        CloseActionMenu();
-        return DeleteAsync(text);
-    }
-    private void CloseActionMenu() => actionMenuId = null;
-    private void ToggleActionMenu(Guid id) => actionMenuId = actionMenuId == id ? null : id;
 
     private sealed class LanguageTextFormModel
     {

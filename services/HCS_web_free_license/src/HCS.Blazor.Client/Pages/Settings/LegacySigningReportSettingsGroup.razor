@@ -4,100 +4,106 @@
 @inject LegacySigningReportSettingsClient SettingsClient
 @inject SystemFeatureState Features
 
-<section class="hcs-branding-settings" aria-labelledby="hcs-legacy-sql-settings-title" aria-busy="@(isLoading || isBusy ? "true" : "false")">
-    <header class="hcs-branding-settings__header">
-        <div>
-            <p class="hcs-branding-settings__eyebrow">@L["Settings:LegacySqlEyebrow"]</p>
-            <h2 id="hcs-legacy-sql-settings-title">@L["Settings:LegacySqlGroup"]</h2>
-            <p>@L["Settings:LegacySqlDescription"]</p>
-        </div>
-        <i class="fa fa-chart-pie hcs-branding-settings__icon" aria-hidden="true"></i>
-    </header>
+<section class="hcs-report-settings" aria-labelledby="hcs-legacy-sql-settings-title" aria-busy="@(isLoading || isBusy ? "true" : "false")">
+    <h2 id="hcs-legacy-sql-settings-title" class="sr-only">@L["Settings:LegacySqlGroup"]</h2>
 
     @if (isLoading)
     {
-        <div class="hcs-branding-settings__state" role="status" aria-live="polite">
-            <HcsLoadingIcon />
-            <span>@L["Settings:LegacySqlLoading"]</span>
-        </div>
+        <DocsEmpty Loading="true" Compact="true" Title="@L["Settings:LegacySqlLoading"]" />
     }
     else
     {
         @if (!string.IsNullOrWhiteSpace(errorMessage))
         {
-            <div class="hcs-branding-settings__error" role="alert">
+            <div class="hcs-settings-alert" role="alert">
                 <span>@errorMessage</span>
-                <Button Color="Color.Light" Size="Size.Small" Clicked="LoadAsync" Disabled="@isBusy">
+                <button class="btn btn-outline btn-sm" type="button" @onclick="LoadAsync" disabled="@isBusy">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
                     @L["Settings:BrandingRetry"]
-                </Button>
+                </button>
             </div>
         }
 
-        <div class="hcs-branding-settings__sso">
-            <div>
-                <h3>@L["Settings:ProposalStatistics"]</h3>
-                <p id="hcs-proposal-statistics-description">@L["Settings:ProposalStatisticsDescription"]</p>
+        <div class="hcs-settings-section">
+            <h3>@L["Settings:LegacySqlGroup"]</h3>
+            <p>@L["Settings:LegacySqlDescription"]</p>
+            <div class="hcs-settings-option">
+                <div>
+                    <h4>@L["Settings:ProposalStatistics"]</h4>
+                    <p id="hcs-proposal-statistics-description">@L["Settings:ProposalStatisticsDescription"]</p>
+                </div>
+                <button type="button"
+                        class="hcs-settings-switch @(enabled ? "is-enabled" : null)"
+                        aria-pressed="@(enabled ? "true" : "false")"
+                        aria-describedby="hcs-proposal-statistics-description"
+                        @onclick="ToggleEnabled"
+                        disabled="@isBusy">
+                    <span class="hcs-settings-switch__track" aria-hidden="true">
+                        <span class="hcs-settings-switch__thumb"></span>
+                    </span>
+                    <span>@(enabled ? L["Settings:ProposalStatisticsEnabled"] : L["Settings:ProposalStatisticsDisabled"])</span>
+                </button>
             </div>
-            <button type="button"
-                    class="hcs-branding-settings__switch @(enabled ? "is-enabled" : "is-disabled")"
-                    aria-pressed="@(enabled ? "true" : "false")"
-                    aria-describedby="hcs-proposal-statistics-description"
-                    @onclick="ToggleEnabled"
-                    disabled="@isBusy">
-                <span class="hcs-branding-settings__switch-track" aria-hidden="true">
-                    <span class="hcs-branding-settings__switch-thumb"></span>
-                </span>
-                <span>@(enabled ? L["Settings:ProposalStatisticsEnabled"] : L["Settings:ProposalStatisticsDisabled"])</span>
-            </button>
-        </div>
 
-        @if (enabled)
-        {
-            <div class="hcs-branding-settings__form-grid">
-                <Field>
-                    <FieldLabel>@L["Settings:LegacySqlConnectionString"]</FieldLabel>
-                    <TextInput @bind-Value="connectionString"
+            @if (enabled)
+            {
+                <div class="hcs-settings-grid">
+                    <div class="field field--wide">
+                        <label class="field-label" for="legacy-sql-connection">@L["Settings:LegacySqlConnectionString"]</label>
+                        <input id="legacy-sql-connection"
+                               class="input"
+                               @bind="connectionString"
+                               @bind:after="MarkDirty"
                                placeholder="@SampleConnection"
                                autocomplete="off"
-                               spellcheck="false" />
-                    <FieldHelp>@L["Settings:LegacySqlConnectionHint"]</FieldHelp>
-                </Field>
-            </div>
-        }
-
-        <footer class="hcs-branding-settings__footer">
-            <span class="hcs-branding-settings__status" role="status" aria-live="polite">
-                @if (enabled)
-                {
-                    @(hasConnectionString ? L["Settings:LegacySqlConfigured"] : L["Settings:LegacySqlNotConfigured"])
-                }
-                else
-                {
-                    @L["Settings:ProposalStatisticsStatusDisabled"]
-                }
-            </span>
-            <div class="hcs-branding-settings__actions">
-                @if (enabled)
-                {
-                    <Button Color="Color.Light" Clicked="TestAsync" Loading="@isBusy" Disabled="@isBusy">
+                               spellcheck="false"
+                               disabled="@isBusy" />
+                        <p class="hcs-settings-hint">@L["Settings:LegacySqlConnectionHint"]</p>
+                    </div>
+                </div>
+                <div class="page-actions hcs-settings-follow-actions">
+                    <button class="btn btn-outline" type="button" @onclick="TestAsync" disabled="@isBusy">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M22 12A10 10 0 1 1 12 2"/><path d="M22 2v6h-6"/><path d="m8 12 2.5 2.5L16 9"/></svg>
                         @L["Settings:LegacySqlTest"]
-                    </Button>
-                }
-                <Button Color="Color.Primary" Clicked="SaveAsync" Loading="@isBusy" Disabled="@isBusy">
-                    <i class="fa fa-floppy-disk me-1" aria-hidden="true"></i>
-                    @L["Settings:LegacySqlSave"]
-                </Button>
-            </div>
-        </footer>
+                    </button>
+                </div>
+            }
+        </div>
+
+        @if (ShowActions)
+        {
+            <footer class="hcs-settings-footer">
+                <p class="hcs-settings-hint" role="status">
+                    @if (enabled)
+                    {
+                        @(hasConnectionString ? L["Settings:LegacySqlConfigured"] : L["Settings:LegacySqlNotConfigured"])
+                    }
+                    else
+                    {
+                        @L["Settings:ProposalStatisticsStatusDisabled"]
+                    }
+                </p>
+                <div class="page-actions">
+                    <button class="btn btn-primary" type="button" @onclick="SaveAsync" disabled="@isBusy">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h11l5 5v13H5z"/><path d="M16 3v6H8V3M8 21v-7h8v7"/></svg>
+                        @L["Settings:LegacySqlSave"]
+                    </button>
+                </div>
+            </footer>
+        }
     }
 </section>
 
 @code {
+    [Parameter]
+    public bool ShowActions { get; set; } = true;
+
     private const string SampleConnection =
         "Server=192.168.6.3,1433;Database=LVT_QLDH;User Id=sa;Password=***;Encrypt=False;TrustServerCertificate=True;Connection Timeout=30;";
 
     private bool isLoading = true;
     private bool isBusy;
+    private bool isDirty;
     private bool enabled = true;
     private bool hasConnectionString;
     private string connectionString = string.Empty;
@@ -115,6 +121,7 @@
             enabled = settings.Enabled;
             hasConnectionString = settings.HasConnectionString;
             connectionString = settings.ConnectionString ?? string.Empty;
+            isDirty = false;
             Features.Apply(new SystemFeatureSettingsDto
             {
                 AllowSigningFromDocuments = Features.AllowSigningFromDocuments,
@@ -136,13 +143,24 @@
         if (!isBusy)
         {
             enabled = !enabled;
+            isDirty = true;
             errorMessage = null;
         }
     }
 
+    private void MarkDirty()
+    {
+        isDirty = true;
+        errorMessage = null;
+    }
+
     private async Task TestAsync()
     {
-        if (isBusy) return;
+        if (isBusy)
+        {
+            return;
+        }
+
         isBusy = true;
         errorMessage = null;
         try
@@ -153,9 +171,13 @@
                 ConnectionString = connectionString
             });
             if (result.Success)
+            {
                 await NotifySuccessAsync(result.Message ?? L["Settings:LegacySqlTestOk"]);
+            }
             else
+            {
                 errorMessage = result.Message ?? L["Settings:LegacySqlTestFailed"];
+            }
         }
         catch (Exception exception)
         {
@@ -167,9 +189,18 @@
         }
     }
 
-    private async Task SaveAsync()
+    internal async Task<bool> TrySaveAsync()
     {
-        if (isBusy) return;
+        if (isBusy)
+        {
+            return false;
+        }
+
+        if (!isDirty)
+        {
+            return true;
+        }
+
         isBusy = true;
         errorMessage = null;
         try
@@ -180,20 +211,30 @@
                 ConnectionString = connectionString
             });
             hasConnectionString = !string.IsNullOrWhiteSpace(connectionString);
+            isDirty = false;
             Features.Apply(new SystemFeatureSettingsDto
             {
                 AllowSigningFromDocuments = Features.AllowSigningFromDocuments,
                 EnableProposalStatistics = enabled
             });
-            await NotifySuccessAsync(L["Settings:LegacySqlSaved"]);
+            return true;
         }
         catch (Exception exception)
         {
             errorMessage = MapBffError(exception, BffErrorKind.Save);
+            return false;
         }
         finally
         {
             isBusy = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (await TrySaveAsync() && ShowActions)
+        {
+            await NotifySuccessAsync(L["Settings:LegacySqlSaved"]);
         }
     }
 }

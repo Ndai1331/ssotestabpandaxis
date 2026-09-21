@@ -9,6 +9,7 @@ public static class DocumentPermissions
     public const string View = "Documents.View";
     public const string Create = "Documents.Create";
     public const string Update = "Documents.Update";
+    public const string Delete = "Documents.Delete";
     public const string Assign = "Documents.Assign";
     public const string ManageFiles = "Documents.ManageFiles";
     public const string WorkflowView = "Documents.Workflow.View";
