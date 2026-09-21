@@ -3,6 +3,7 @@
 @page "/identity/users-management"
 @attribute [Authorize(Roles = "admin")]
 @using System.Globalization
+@using System.Linq
 @using System.Net
 @using System.Threading
 @using HCS.Blazor.Client.Pages.Organization
@@ -190,8 +191,9 @@
                     <div class="hcs-user-tab-panel" hidden="@(activeUserTab != "info")" role="tabpanel">
                         <div class="hcs-user-form-grid">
                             <Field>
-                                <FieldLabel>Tên người dùng *</FieldLabel>
-                                <HcsIsolatedTextInput @bind-Value="userForm.UserName" Name="hcsUserUserName" ReadOnly="@editingUserId.HasValue" />
+                                <FieldLabel>@L["Account:UserName"] *</FieldLabel>
+                                <HcsIsolatedTextInput @bind-Value="userForm.UserName" Name="hcsUserUserName"
+                                                     MaxLength="@IdentityUserConsts.MaxUserNameLength" />
                             </Field>
                             <Field>
                                 <FieldLabel>Mật khẩu @(editingUserId.HasValue ? string.Empty : "*")</FieldLabel>
@@ -309,6 +311,7 @@
     private IdentityAdminUserForm userForm = new();
     private Guid? editingUserId;
     private string editingConcurrencyStamp = string.Empty;
+    private string originalUserName = string.Empty;
     private string? filterText;
     private string statusFilter = string.Empty;
     private string? errorMessage;
@@ -482,6 +485,7 @@
     {
         editingUserId = null;
         editingConcurrencyStamp = string.Empty;
+        originalUserName = string.Empty;
         userForm = new IdentityAdminUserForm();
         activeUserTab = "info";
         formErrorMessage = null;
@@ -501,6 +505,7 @@
 
         editingUserId = latest.Id;
         editingConcurrencyStamp = latest.ConcurrencyStamp;
+        originalUserName = latest.UserName;
         userForm = new IdentityAdminUserForm
         {
             UserName = latest.UserName,
@@ -553,6 +558,7 @@
     {
         if (userModal is not null) await userModal.Hide();
         editingUserId = null;
+        originalUserName = string.Empty;
         formErrorMessage = null;
     }
 
@@ -564,6 +570,14 @@
         {
             formErrorMessage = validationMessage;
             await UiMessageService.Warn(validationMessage);
+            return;
+        }
+
+        var nextUserName = userForm.UserName.Trim();
+        if (editingUserId.HasValue
+            && !string.Equals(nextUserName, originalUserName, StringComparison.Ordinal)
+            && !await UiMessageService.Confirm(string.Format(L["Users:UserNameChangeConfirm"].Value, originalUserName, nextUserName)))
+        {
             return;
         }
 
@@ -711,7 +725,13 @@
 
     private string? ValidateUserForm()
     {
-        if (string.IsNullOrWhiteSpace(userForm.UserName)) return "Tên người dùng là bắt buộc.";
+        if (string.IsNullOrWhiteSpace(userForm.UserName)) return L["Account:UserNameRequired"];
+        if (userForm.UserName.Trim().Any(char.IsWhiteSpace) || userForm.UserName.Trim().Length > IdentityUserConsts.MaxUserNameLength)
+        {
+            return userForm.UserName.Trim().Length > IdentityUserConsts.MaxUserNameLength
+                ? L["Account:UserNameTooLong", IdentityUserConsts.MaxUserNameLength]
+                : L["Account:UserNameInvalid"];
+        }
         if (!editingUserId.HasValue && string.IsNullOrWhiteSpace(userForm.Password)) return "Mật khẩu là bắt buộc khi tạo người dùng.";
         if (string.IsNullOrWhiteSpace(userForm.Email) || !userForm.Email.Contains('@')) return "Địa chỉ email không hợp lệ.";
         if (userForm.PhoneNumber.Trim().Length > IdentityUserConsts.MaxPhoneNumberLength)
@@ -873,17 +893,29 @@
     private static string FullName(IdentityAdminUserDto user) => string.Join(' ', new[] { user.Surname, user.Name }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim() is { Length: > 0 } fullName ? fullName : "—";
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture) ?? "—";
 
-    private string FriendlyApiError(IdentityAdminApiException exception, string fallbackKey) =>
-        exception.UserMessage
-        ?? exception.StatusCode switch
+    private string FriendlyApiError(IdentityAdminApiException exception, string fallbackKey)
     {
-        HttpStatusCode.BadRequest => L["Users:BadRequest"].Value,
-        HttpStatusCode.Unauthorized => L["Users:SessionExpired"].Value,
-        HttpStatusCode.Forbidden => L["Users:Forbidden"].Value,
-        HttpStatusCode.NotFound => L["Users:NotFound"].Value,
-        HttpStatusCode.Conflict => L["Users:Conflict"].Value,
-        _ => L[fallbackKey].Value
-    };
+        if (exception.IsDuplicateUserName)
+        {
+            return L["Account:UserNameTaken"].Value;
+        }
+
+        if (exception.IsInvalidUserName)
+        {
+            return L["Account:UserNameInvalid"].Value;
+        }
+
+        return exception.UserMessage
+        ?? exception.StatusCode switch
+        {
+            HttpStatusCode.BadRequest => L["Users:BadRequest"].Value,
+            HttpStatusCode.Unauthorized => L["Users:SessionExpired"].Value,
+            HttpStatusCode.Forbidden => L["Users:Forbidden"].Value,
+            HttpStatusCode.NotFound => L["Users:NotFound"].Value,
+            HttpStatusCode.Conflict => L["Users:Conflict"].Value,
+            _ => L[fallbackKey].Value
+        };
+    }
 
     private string FriendlyOuError(OrganizationUnitApiException exception, string fallbackKey) =>
         exception.StatusCode switch

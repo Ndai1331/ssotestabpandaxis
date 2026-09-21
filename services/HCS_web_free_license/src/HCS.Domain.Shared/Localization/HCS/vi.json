@@ -600,6 +600,7 @@
     "Users:CannotDeleteSelf": "Không thể xóa tài khoản đang đăng nhập.",
     "Users:DepartmentNote": "Có thể chọn nhiều khoa/phòng trên cây phòng ban.",
     "Users:DepartmentEmpty": "Chưa có phòng ban trong cây tổ chức.",
+    "Users:UserNameChangeConfirm": "Đổi tên đăng nhập từ “{0}” sang “{1}”? Người dùng sẽ dùng tên mới khi đăng nhập lần sau.",
     "Users:InfoTab": "Thông tin người dùng",
     "Users:RolesTab": "Vai trò",
     "Users:DepartmentTab": "Cây phòng ban",
@@ -807,6 +808,13 @@
     "Account:Surname": "Họ",
     "Account:Name": "Tên",
     "Account:UserName": "Tên đăng nhập",
+    "Account:UserNameHint": "Lần đăng nhập sau hãy dùng tên này. Chỉ gồm chữ, số và các ký tự - . _ @ +, không trùng người khác.",
+    "Account:UserNameChanged": "Đã đổi tên đăng nhập. Lần đăng nhập sau hãy dùng tên mới.",
+    "Account:UserNameTaken": "Tên đăng nhập này đã được sử dụng.",
+    "Account:UserNameInvalid": "Tên đăng nhập không hợp lệ. Không dùng khoảng trắng; chỉ gồm chữ, số và các ký tự - . _ @ +.",
+    "Account:UserNameRequired": "Hãy nhập tên đăng nhập.",
+    "Account:UserNameTooLong": "Tên đăng nhập không được vượt quá {0} ký tự.",
+    "Account:UserNameChangeConfirm": "Đổi tên đăng nhập từ “{0}” sang “{1}”? Lần đăng nhập sau hãy dùng tên mới.",
     "Account:PhoneNumber": "Số điện thoại",
     "Account:PhonePlaceholder": "0901234567",
     "Account:PhoneTooLong": "Số điện thoại không được vượt quá {0} ký tự.",
@@ -1821,6 +1829,8 @@
     "HCS:LanguageNotFound": "Không tìm thấy ngôn ngữ đã chọn hoặc ngôn ngữ chưa được bật.",
     "HCS:LanguageTextAlreadyExists": "Bản dịch tùy chỉnh cho mã và ngôn ngữ này đã tồn tại.",
     "HCS:ProposalStatisticsDisabled": "Báo cáo thống kê đề xuất hiện đang tắt.",
-    "HCS:RoleAssignedToUsers": "Không thể xóa vai trò vì đã được gán cho người dùng."
+    "HCS:RoleAssignedToUsers": "Không thể xóa vai trò vì đã được gán cho người dùng.",
+    "HCS:AccountUserNameTaken": "Tên đăng nhập này đã được sử dụng.",
+    "HCS:AccountUserNameInvalid": "Tên đăng nhập không hợp lệ. Không dùng khoảng trắng; chỉ gồm chữ, số và các ký tự - . _ @ +."
   }
 }

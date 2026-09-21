@@ -9,4 +9,6 @@ public static class HCSDomainErrorCodes
     public const string LanguageNotFound = "HCS:LanguageNotFound";
     public const string LanguageTextAlreadyExists = "HCS:LanguageTextAlreadyExists";
     public const string RoleAssignedToUsers = "HCS:RoleAssignedToUsers";
+    public const string AccountUserNameTaken = "HCS:AccountUserNameTaken";
+    public const string AccountUserNameInvalid = "HCS:AccountUserNameInvalid";
 }

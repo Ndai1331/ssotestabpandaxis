@@ -81,6 +81,24 @@ public sealed class KeycloakUserProvisionerTests
             () => provisioner.ProvisionAsync(principal, ["nhanvien"]));
     }
 
+    [Fact]
+    public async Task Linked_User_Is_Found_By_Subject_After_Hcs_UserName_Changes()
+    {
+        var store = new InMemoryIdentityStore();
+        var provisioner = new KeycloakUserProvisioner(store);
+        var principal = CreatePrincipal("kc-rename", "doctor", "doctor@benhvien.vn", emailVerified: true);
+
+        var firstId = await provisioner.ProvisionAsync(principal, ["bacsi"]);
+        store.Users[0] = store.Users[0] with { UserName = "renamed-hcs" };
+
+        var secondId = await provisioner.ProvisionAsync(principal, ["bacsi", "lanhdao"]);
+
+        Assert.Equal(firstId, secondId);
+        Assert.Single(store.Users);
+        Assert.Equal("renamed-hcs", store.Users[0].UserName);
+        Assert.Equal(["bacsi", "lanhdao"], store.Roles[firstId]);
+    }
+
     private static ClaimsPrincipal CreatePrincipal(
         string subject,
         string userName,

@@ -30,5 +30,11 @@ public class ChangeIdentityPasswordPolicySettingDefinitionProvider : SettingDefi
         {
             requireDigit.DefaultValue = false.ToString();
         }
+
+        var userNameUpdateEnabled = context.GetOrNull(IdentitySettingNames.User.IsUserNameUpdateEnabled);
+        if (userNameUpdateEnabled != null)
+        {
+            userNameUpdateEnabled.DefaultValue = true.ToString();
+        }
     }
 }

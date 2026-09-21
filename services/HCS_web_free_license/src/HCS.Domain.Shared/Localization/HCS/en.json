@@ -600,6 +600,7 @@
     "Users:CannotDeleteSelf": "You cannot delete the account you are signed in with.",
     "Users:DepartmentNote": "A user can belong to multiple departments on the organization tree.",
     "Users:DepartmentEmpty": "No departments are available in the organization tree.",
+    "Users:UserNameChangeConfirm": "Change username from “{0}” to “{1}”? The user will use the new name the next time they sign in.",
     "Users:InfoTab": "User details",
     "Users:RolesTab": "Roles",
     "Users:DepartmentTab": "Department tree",
@@ -807,6 +808,13 @@
     "Account:Surname": "Surname",
     "Account:Name": "Given name",
     "Account:UserName": "Username",
+    "Account:UserNameHint": "Use this name the next time you sign in. Letters, digits, and - . _ @ + only; it must be unique.",
+    "Account:UserNameChanged": "Username updated. Use the new name the next time you sign in.",
+    "Account:UserNameTaken": "This username is already taken.",
+    "Account:UserNameInvalid": "The username is invalid. Do not use spaces; only letters, digits, and - . _ @ + are allowed.",
+    "Account:UserNameRequired": "Enter a username.",
+    "Account:UserNameTooLong": "Username cannot exceed {0} characters.",
+    "Account:UserNameChangeConfirm": "Change username from “{0}” to “{1}”? Use the new name the next time you sign in.",
     "Account:PhoneNumber": "Phone number",
     "Account:PhonePlaceholder": "0901234567",
     "Account:PhoneTooLong": "Phone number cannot exceed {0} characters.",
@@ -1821,6 +1829,8 @@
     "HCS:LanguageNotFound": "The selected language was not found or is not enabled.",
     "HCS:LanguageTextAlreadyExists": "A custom translation for this code and language already exists.",
     "HCS:ProposalStatisticsDisabled": "The proposal statistics report is currently disabled.",
-    "HCS:RoleAssignedToUsers": "The role could not be deleted because it is assigned to users."
+    "HCS:RoleAssignedToUsers": "The role could not be deleted because it is assigned to users.",
+    "HCS:AccountUserNameTaken": "This username is already taken.",
+    "HCS:AccountUserNameInvalid": "The username is invalid. Do not use spaces; only letters, digits, and - . _ @ + are allowed."
   }
 }

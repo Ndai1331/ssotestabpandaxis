@@ -103,6 +103,48 @@ public sealed class IdentityAdminClientTests
     }
 
     [Fact]
+    public async Task Sends_updated_user_name_on_update()
+    {
+        var userId = Guid.NewGuid();
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new { id = userId, userName = "renamed-user", email = "existing@example.com" })
+        });
+        var client = CreateClient(handler);
+        var form = new IdentityAdminUserForm
+        {
+            UserName = " renamed-user ",
+            Email = "existing@example.com"
+        };
+
+        var updated = await client.UpdateUserAsync(userId, form, "stamp");
+
+        using var json = JsonDocument.Parse(handler.RequestBody!);
+        Assert.Equal("renamed-user", json.RootElement.GetProperty("userName").GetString());
+        Assert.Equal("renamed-user", updated.UserName);
+    }
+
+    [Fact]
+    public void Maps_duplicate_and_invalid_user_name_identity_errors()
+    {
+        var duplicate = new IdentityAdminApiException(
+            HttpStatusCode.BadRequest,
+            """{"error":{"code":"Volo.Abp.Identity:DuplicateUserName","message":"Username 'x' is already taken."}}""");
+        var invalid = new IdentityAdminApiException(
+            HttpStatusCode.BadRequest,
+            """{"error":{"code":"HCS:AccountUserNameInvalid","message":"The username is invalid."}}""");
+        var other = new IdentityAdminApiException(
+            HttpStatusCode.BadRequest,
+            """{"error":{"code":"Users:BadRequest","message":"Invalid data."}}""");
+
+        Assert.True(duplicate.IsDuplicateUserName);
+        Assert.False(duplicate.IsInvalidUserName);
+        Assert.True(invalid.IsInvalidUserName);
+        Assert.False(other.IsDuplicateUserName);
+        Assert.False(other.IsInvalidUserName);
+    }
+
+    [Fact]
     public async Task Reloads_user_when_update_response_body_is_empty()
     {
         var userId = Guid.NewGuid();

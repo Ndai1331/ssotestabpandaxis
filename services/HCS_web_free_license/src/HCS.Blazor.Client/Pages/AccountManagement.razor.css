@@ -311,6 +311,13 @@
     margin: .35rem 0 0;
 }
 
+.hcs-account-field-hint {
+    color: var(--account-muted);
+    font-size: .82rem;
+    line-height: 1.45;
+    margin: .35rem 0 0;
+}
+
 .hcs-account-form__actions {
     display: flex;
     justify-content: flex-end;

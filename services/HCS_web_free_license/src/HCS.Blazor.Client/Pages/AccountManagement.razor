@@ -5,6 +5,7 @@
 @using HCS.Blazor.Client.Components
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Forms
+@using System.Linq
 @using Microsoft.AspNetCore.Components.Web
 @using Volo.Abp.Identity
 @inject AccountProfileClient Account
@@ -113,7 +114,10 @@
                                 <div class="hcs-account-form__row">
                                     <div>
                                         <label class="form-label" for="account-username">@L["Account:UserName"]</label>
-                                        <input id="account-username" class="form-control" @bind="form.UserName" readonly autocomplete="username" />
+                                        <input id="account-username" class="form-control" @bind="form.UserName"
+                                               maxlength="@IdentityUserConsts.MaxUserNameLength"
+                                               autocomplete="username" />
+                                        <p class="hcs-account-field-hint">@L["Account:UserNameHint"]</p>
                                     </div>
                                     <div>
                                         <label class="form-label" for="account-phone">@L["Account:PhoneNumber"]</label>
@@ -297,9 +301,31 @@
     private async Task SaveProfileAsync()
     {
         if (profile is null) return;
+        var userName = form.UserName.Trim();
+        if (string.IsNullOrWhiteSpace(userName))
+        {
+            await NotifyErrorAsync(L["Account:UserNameRequired"]);
+            return;
+        }
+
+        if (userName.Any(char.IsWhiteSpace) || userName.Length > IdentityUserConsts.MaxUserNameLength)
+        {
+            await NotifyErrorAsync(userName.Length > IdentityUserConsts.MaxUserNameLength
+                ? L["Account:UserNameTooLong", IdentityUserConsts.MaxUserNameLength]
+                : L["Account:UserNameInvalid"]);
+            return;
+        }
+
         if ((form.PhoneNumber?.Trim().Length ?? 0) > IdentityUserConsts.MaxPhoneNumberLength)
         {
             await NotifyErrorAsync(L["Account:PhoneTooLong", IdentityUserConsts.MaxPhoneNumberLength]);
+            return;
+        }
+
+        var userNameChanged = !string.Equals(userName, profile.UserName, StringComparison.Ordinal);
+        if (userNameChanged &&
+            !await UiMessageService.Confirm(string.Format(L["Account:UserNameChangeConfirm"].Value, profile.UserName, userName)))
+        {
             return;
         }
 
@@ -308,7 +334,7 @@
         {
             profile = await Account.UpdateProfileAsync(new AccountProfileUpdateDto
             {
-                UserName = form.UserName,
+                UserName = userName,
                 Email = form.Email.Trim(),
                 Name = NullIfEmpty(form.Name),
                 Surname = NullIfEmpty(form.Surname),
@@ -321,7 +347,7 @@
             form.Surname = profile.Surname ?? "";
             form.PhoneNumber = profile.PhoneNumber ?? "";
             form.ConcurrencyStamp = profile.ConcurrencyStamp;
-            await NotifySuccessAsync(L["Catalog:Updated"]);
+            await NotifySuccessAsync(userNameChanged ? L["Account:UserNameChanged"] : L["Catalog:Updated"]);
         }
         catch (Exception ex)
         {

@@ -29,8 +29,22 @@ public class HcsProfileAppService : ProfileAppService
 
     public override async Task<ProfileDto> UpdateAsync(UpdateProfileDto input)
     {
+        input.UserName = IdentityUserNames.Normalize(input.UserName);
         input.PhoneNumber = IdentityPhoneNumbers.Normalize(input.PhoneNumber);
-        var profile = await base.UpdateAsync(input);
+        if (IdentityUserNames.HasInvalidFormat(input.UserName))
+        {
+            throw new BusinessException(HCSDomainErrorCodes.AccountUserNameInvalid);
+        }
+
+        ProfileDto profile;
+        try
+        {
+            profile = await base.UpdateAsync(input);
+        }
+        catch (AbpIdentityResultException exception)
+        {
+            throw IdentityUserNameErrors.MapOrOriginal(exception);
+        }
 
         var user = await UserManager.GetByIdAsync(CurrentUser.GetId());
         if (!string.Equals(user.PhoneNumber, input.PhoneNumber, StringComparison.Ordinal))

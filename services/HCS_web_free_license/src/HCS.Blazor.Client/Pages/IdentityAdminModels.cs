@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace HCS.Blazor.Client.Pages;
@@ -126,6 +127,20 @@ internal sealed class IdentityAdminApiException(System.Net.HttpStatusCode status
                 : text;
         }
     }
+
+    public bool IsDuplicateUserName =>
+        ContainsUserNameError("DuplicateUserName", HCS.HCSDomainErrorCodes.AccountUserNameTaken);
+
+    public bool IsInvalidUserName =>
+        ContainsUserNameError("InvalidUserName", HCS.HCSDomainErrorCodes.AccountUserNameInvalid);
+
+    private bool ContainsUserNameError(params string[] tokens) =>
+        tokens.Any(token => ContainsToken(ErrorCode, token)
+                            || ContainsToken(ResponseBody, token)
+                            || ContainsToken(UserMessage, token));
+
+    private static bool ContainsToken(string? value, string token) =>
+        !string.IsNullOrWhiteSpace(value) && value.Contains(token, StringComparison.OrdinalIgnoreCase);
 
     private string? ReadErrorProperty(string name)
     {
