@@ -128,11 +128,12 @@
             <div class="hcs-branding-settings__sso">
                 <div>
                     <h3>@L["Settings:StorageWithSsl"]</h3>
-                    <p>@L["Settings:StorageWithSslDescription"]</p>
+                    <p id="hcs-storage-ssl-description">@L["Settings:StorageWithSslDescription"]</p>
                 </div>
                 <button type="button"
                         class="hcs-branding-settings__switch @(withSsl ? "is-enabled" : "is-disabled")"
                         aria-pressed="@(withSsl ? "true" : "false")"
+                        aria-describedby="hcs-storage-ssl-description"
                         @onclick="() => withSsl = !withSsl"
                         disabled="@isBusy">
                     <span class="hcs-branding-settings__switch-track" aria-hidden="true">
@@ -144,11 +145,12 @@
             <div class="hcs-branding-settings__sso">
                 <div>
                     <h3>@L["Settings:StorageCreateBucket"]</h3>
-                    <p>@L["Settings:StorageCreateBucketDescription"]</p>
+                    <p id="hcs-storage-bucket-description">@L["Settings:StorageCreateBucketDescription"]</p>
                 </div>
                 <button type="button"
                         class="hcs-branding-settings__switch @(createBucketIfNotExists ? "is-enabled" : "is-disabled")"
                         aria-pressed="@(createBucketIfNotExists ? "true" : "false")"
+                        aria-describedby="hcs-storage-bucket-description"
                         @onclick="() => createBucketIfNotExists = !createBucketIfNotExists"
                         disabled="@isBusy">
                     <span class="hcs-branding-settings__switch-track" aria-hidden="true">
