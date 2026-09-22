@@ -98,6 +98,11 @@ public partial class OrganizationUnitCatalog : IDisposable
         return selectedNode is not null
             && OrganizationUnitTreeBuilder.Flatten(selectedNode.Children).Any(node => node.Id == candidate.Id);
     }
+
+    private static string MemberRolesText(HCS.OrganizationUnits.OrganizationUnitMemberDto member) =>
+        member.RoleNames is { Length: > 0 }
+            ? string.Join(", ", member.RoleNames)
+            : "—";
 }
 
 internal enum OrganizationUnitDialogMode

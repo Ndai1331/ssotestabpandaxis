@@ -83,17 +83,18 @@
                                         <tr>
                                             <th class="col-actions" scope="col">@L["OrganizationUnit:Actions"]</th>
                                             <th scope="col">@L["OrganizationUnit:UserName"]</th>
+                                            <th scope="col">@L["OrganizationUnit:Roles"]</th>
                                             <th scope="col">@L["OrganizationUnit:Email"]</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @if (isMembersLoading)
                                         {
-                                            <tr><td colspan="3"><DocsEmpty Loading="true" Compact="true" Title="@L["OrganizationUnit:Loading"]" /></td></tr>
+                                            <tr><td colspan="4"><DocsEmpty Loading="true" Compact="true" Title="@L["OrganizationUnit:Loading"]" /></td></tr>
                                         }
                                         else if (members.Count == 0)
                                         {
-                                            <tr><td colspan="3" class="admin-ou-table-empty">@L["OrganizationUnit:EmptyMembers"]</td></tr>
+                                            <tr><td colspan="4" class="admin-ou-table-empty">@L["OrganizationUnit:EmptyMembers"]</td></tr>
                                         }
                                         else
                                         {
@@ -120,6 +121,7 @@
                                                             <small class="admin-ou-username">@member.UserName</small>
                                                         }
                                                     </td>
+                                                    <td>@MemberRolesText(member)</td>
                                                     <td>@member.Email</td>
                                                 </tr>
                                             }

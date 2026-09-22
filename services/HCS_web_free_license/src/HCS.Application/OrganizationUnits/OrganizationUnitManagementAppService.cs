@@ -20,15 +20,18 @@ public partial class OrganizationUnitManagementAppService : HCSAppService, IOrga
     private readonly IOrganizationUnitRepository organizationUnitRepository;
     private readonly OrganizationUnitManager organizationUnitManager;
     private readonly IdentityUserManager identityUserManager;
+    private readonly IIdentityUserRepository identityUserRepository;
 
     public OrganizationUnitManagementAppService(
         IOrganizationUnitRepository organizationUnitRepository,
         OrganizationUnitManager organizationUnitManager,
-        IdentityUserManager identityUserManager)
+        IdentityUserManager identityUserManager,
+        IIdentityUserRepository identityUserRepository)
     {
         this.organizationUnitRepository = organizationUnitRepository;
         this.organizationUnitManager = organizationUnitManager;
         this.identityUserManager = identityUserManager;
+        this.identityUserRepository = identityUserRepository;
     }
 
     public async Task<List<OrganizationUnitDto>> GetListAsync()
@@ -62,7 +65,7 @@ public partial class OrganizationUnitManagementAppService : HCSAppService, IOrga
 
         return new PagedResultDto<OrganizationUnitMemberDto>(
             totalCount,
-            members.Select(Map).ToList());
+            await MapMembersAsync(members));
     }
     public async Task<PagedResultDto<OrganizationUnitMemberDto>> GetAvailableMembersAsync(
         Guid id,
@@ -87,8 +90,8 @@ public partial class OrganizationUnitManagementAppService : HCSAppService, IOrga
 
         return new PagedResultDto<OrganizationUnitMemberDto>(
             totalCount,
-            users.Select(Map).ToList());
-}
+            await MapMembersAsync(users));
+    }
     [Authorize(HCSOrganizationPermissions.Departments + HcsCrudPermissions.CreateSuffix)]
     public async Task<OrganizationUnitDto> CreateAsync(CreateOrganizationUnitInput input)
     {

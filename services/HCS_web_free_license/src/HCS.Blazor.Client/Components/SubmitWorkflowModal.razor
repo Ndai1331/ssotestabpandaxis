@@ -97,14 +97,19 @@
                             else if (CandidatesFor(step.Code).Count > 1)
                             {
                                 <Field Class="mb-0"><FieldLabel>@L["Work:ChooseSigner"] *</FieldLabel>
-                                    <Select TValue="Guid?" Value="SignerFor(step.Code)" ValueChanged="value => SetSigner(step.Code, value)">
-                                        <SelectItem TValue="Guid?" Value="null">@L["Work:ChooseSigner"]</SelectItem>
-                                        @foreach (var candidate in CandidatesFor(step.Code))
-                                        {
-                                            <SelectItem TValue="Guid?" Value="@candidate.UserId">@candidate.DisplayName</SelectItem>
-                                        }
-                                    </Select>
+                                    <UserSelect2 Value="SignerFor(step.Code)"
+                                                 ValueChanged="value => SetSigner(step.Code, value)"
+                                                 SelectedItem="@CandidateItem(step.Code, SignerFor(step.Code))"
+                                                 Placeholder="@L["Work:ChooseSigner"]"
+                                                 SelectedText="@CandidateName(step.Code, SignerFor(step.Code))"
+                                                 Search="(term, page) => SearchCandidatesAsync(step.Code, term, page)" />
                                 </Field>
+                            }
+                            else if (IsRoleAssigneeStep(step))
+                            {
+                                <Alert Color="Color.Warning" Visible="true" Class="mb-0">
+                                    <AlertDescription>@L["Document:NoAssigneeCandidates"]</AlertDescription>
+                                </Alert>
                             }
                             else if (step.AssigneeUserId is { } preset && SignerFor(step.Code) == preset)
                             {
@@ -369,8 +374,26 @@
     private string CandidateDisplayName(WorkflowAssigneeCandidateDto candidate) =>
         UserDisplayNames.FirstReal(candidate.DisplayName, ContactName(candidate.UserId), candidate.UserName)
         is { Length: > 0 } name ? name : L["Work:Assignee"].Value;
+    private string CandidateName(string stepCode, Guid? id) =>
+        id is not { } userId
+            ? ""
+            : CandidatesFor(stepCode).FirstOrDefault(x => x.UserId == userId) is { } candidate
+                ? CandidateDisplayName(candidate)
+                : ContactName(id);
+    private CatalogSelect2Item? CandidateItem(string stepCode, Guid? id)
+    {
+        if (id is not { } userId) return null;
+        if (CandidatesFor(stepCode).FirstOrDefault(x => x.UserId == userId) is { } candidate)
+        {
+            var text = CandidateDisplayName(candidate);
+            return new CatalogSelect2Item(userId.ToString("D"), text, candidate.UserName);
+        }
+        return ContactItem(id);
+    }
     private CatalogSelect2Item? ContactItem(Guid? id) =>
         id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
+    private static bool IsRoleAssigneeStep(WorkflowStepDto step) =>
+        string.Equals(step.AssigneeType, "RoleInSubmitterOu", StringComparison.OrdinalIgnoreCase);
     private Task<CatalogSelect2SearchResponse> SearchDocumentsAsync(string term, int page)
     {
         var found = documents.Where(x => string.IsNullOrWhiteSpace(term)
@@ -386,6 +409,18 @@
             || CatalogSelect2Text.NormalizeSearch(x.Name).Contains(query, StringComparison.Ordinal)
             || CatalogSelect2Text.NormalizeSearch(x.Code).Contains(query, StringComparison.Ordinal)).ToList();
         return Task.FromResult(CatalogSelect2Cache.Merge(available, found, x => x.Id, x => CatalogSelect2Text.CodeName(x.Code, x.Name), false));
+    }
+    private Task<CatalogSelect2SearchResponse> SearchCandidatesAsync(string stepCode, string term, int page)
+    {
+        var candidates = CandidatesFor(stepCode);
+        var query = CatalogSelect2Text.NormalizeSearch(term);
+        var found = candidates.Where(x => query.Length == 0
+            || CatalogSelect2Text.NormalizeSearch(CandidateDisplayName(x)).Contains(query, StringComparison.Ordinal)
+            || CatalogSelect2Text.NormalizeSearch(x.UserName).Contains(query, StringComparison.Ordinal)
+            || CatalogSelect2Text.NormalizeSearch(x.DisplayName).Contains(query, StringComparison.Ordinal)).ToList();
+        return Task.FromResult(new CatalogSelect2SearchResponse(
+            found.Select(x => new CatalogSelect2Item(x.UserId.ToString("D"), CandidateDisplayName(x), x.UserName)).ToList(),
+            false));
     }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {

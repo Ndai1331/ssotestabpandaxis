@@ -26,34 +26,24 @@ public sealed class WorkflowAssigneeCandidatesController(
         if (ids.Length == 0)
             return new Dictionary<Guid, IReadOnlyList<WorkflowAssigneeCandidateDto>>();
 
-        var submitter = await identityUsers.FindAsync(submitterUserId, includeDetails: true, cancellationToken: cancellationToken);
-        var submitterOuIds = submitter?.OrganizationUnits.Select(x => x.OrganizationUnitId).ToHashSet() ?? [];
+        var submitterOuSet = await LoadUserOuIdsAsync(submitterUserId, cancellationToken);
+        var ouPeerUserIds = submitterOuSet.Count == 0
+            ? null
+            : await LoadOuPeerUserIdsAsync(submitterOuSet, cancellationToken);
+
         var roleMemberships = await identityDb.Set<IdentityUserRole>().AsNoTracking()
             .Where(x => ids.Contains(x.RoleId))
             .Select(x => new { x.RoleId, x.UserId })
             .ToListAsync(cancellationToken);
+
+        if (ouPeerUserIds is not null)
+            roleMemberships = roleMemberships.Where(x => ouPeerUserIds.Contains(x.UserId)).ToList();
+
         var userIdsByRole = roleMemberships
             .GroupBy(x => x.RoleId)
             .ToDictionary(x => x.Key, x => x.Select(item => item.UserId).Distinct().Take(200).ToArray());
 
-        var allUserIds = userIdsByRole.Values.SelectMany(x => x).Distinct().ToArray();
-        var users = allUserIds.Length == 0
-            ? []
-            : await identityUsers.GetListByIdsAsync(allUserIds, includeDetails: true, cancellationToken: cancellationToken);
-        var usersById = users.Where(x => x.IsActive).ToDictionary(x => x.Id);
-
-        return ids.ToDictionary(roleId => roleId, roleId => (IReadOnlyList<WorkflowAssigneeCandidateDto>)
-            userIdsByRole.GetValueOrDefault(roleId, [])
-            .Where(userId => usersById.TryGetValue(userId, out var user) &&
-                (submitterOuIds.Count == 0 || user.OrganizationUnits.Any(ou => submitterOuIds.Contains(ou.OrganizationUnitId))))
-            .Select(userId =>
-            {
-                var user = usersById[userId];
-                return new WorkflowAssigneeCandidateDto(user.Id, DisplayName(user),
-                    user.OrganizationUnits.Select(x => x.OrganizationUnitId).FirstOrDefault(), user.UserName);
-            })
-            .DistinctBy(x => x.UserId)
-            .ToArray());
+        return await BuildCandidateGroupsAsync(ids, userIdsByRole, submitterOuSet, cancellationToken);
     }
 
     [HttpGet]
@@ -64,29 +54,8 @@ public sealed class WorkflowAssigneeCandidatesController(
         if (roleId == Guid.Empty || currentUser.Id is not { } submitterUserId)
             return [];
 
-        var candidates = await identityUsers.GetListAsync(
-            sorting: "UserName",
-            maxResultCount: 200,
-            roleId: roleId,
-            notActive: false,
-            includeDetails: true,
-            cancellationToken: cancellationToken);
-
-        var submitter = await identityUsers.FindAsync(submitterUserId, includeDetails: true, cancellationToken: cancellationToken);
-        var submitterOuIds = submitter?.OrganizationUnits.Select(x => x.OrganizationUnitId).ToHashSet() ?? [];
-        var scoped = submitterOuIds.Count == 0
-            ? candidates
-            : candidates.Where(user => user.OrganizationUnits.Any(ou => submitterOuIds.Contains(ou.OrganizationUnitId))).ToList();
-
-        return scoped
-            .Where(user => user.IsActive)
-            .Select(user => new WorkflowAssigneeCandidateDto(
-                user.Id,
-                DisplayName(user),
-                user.OrganizationUnits.Select(x => x.OrganizationUnitId).FirstOrDefault(),
-                user.UserName))
-            .DistinctBy(x => x.UserId)
-            .ToArray();
+        var groups = await GetRolesAsync([roleId], cancellationToken);
+        return groups.GetValueOrDefault(roleId) ?? [];
     }
 
     [HttpGet("lookup")]
@@ -119,15 +88,98 @@ public sealed class WorkflowAssigneeCandidatesController(
         if (!User.HasClaim("permission", HCSPermissions.Documents.WorkflowStart))
             return Forbid();
 
-        var user = await identityUsers.FindAsync(userId, includeDetails: true, cancellationToken: cancellationToken);
+        var user = await identityUsers.FindAsync(userId, includeDetails: false, cancellationToken: cancellationToken);
         if (user is null || !user.IsActive)
             return NotFound();
+
+        var ouId = await identityDb.Set<IdentityUserOrganizationUnit>().AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => (Guid?)x.OrganizationUnitId)
+            .FirstOrDefaultAsync(cancellationToken);
 
         return Ok(new WorkflowAssigneeCandidateDto(
             user.Id,
             DisplayName(user),
-            user.OrganizationUnits.Select(x => x.OrganizationUnitId).FirstOrDefault(),
+            ouId,
             user.UserName));
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowAssigneeCandidateDto>>> BuildCandidateGroupsAsync(
+        Guid[] roleIds,
+        IReadOnlyDictionary<Guid, Guid[]> userIdsByRole,
+        HashSet<Guid> submitterOuSet,
+        CancellationToken cancellationToken)
+    {
+        var allUserIds = userIdsByRole.Values.SelectMany(x => x).Distinct().ToArray();
+        var users = allUserIds.Length == 0
+            ? []
+            : await identityUsers.GetListByIdsAsync(allUserIds, includeDetails: false, cancellationToken: cancellationToken);
+        var usersById = users.Where(x => x.IsActive).ToDictionary(x => x.Id);
+        var primaryOuByUser = await LoadPrimaryOuByUserAsync(allUserIds, submitterOuSet, cancellationToken);
+
+        return roleIds.ToDictionary(roleId => roleId, roleId => (IReadOnlyList<WorkflowAssigneeCandidateDto>)
+            userIdsByRole.GetValueOrDefault(roleId, [])
+                .Where(usersById.ContainsKey)
+                .Select(userId =>
+                {
+                    var user = usersById[userId];
+                    return new WorkflowAssigneeCandidateDto(
+                        user.Id,
+                        DisplayName(user),
+                        primaryOuByUser.GetValueOrDefault(userId),
+                        user.UserName);
+                })
+                .DistinctBy(x => x.UserId)
+                .ToArray());
+    }
+
+    private async Task<HashSet<Guid>> LoadUserOuIdsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var ids = await identityDb.Set<IdentityUserOrganizationUnit>().AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => x.OrganizationUnitId)
+            .ToListAsync(cancellationToken);
+        return ids.ToHashSet();
+    }
+
+    private async Task<HashSet<Guid>> LoadOuPeerUserIdsAsync(
+        HashSet<Guid> organizationUnitIds,
+        CancellationToken cancellationToken)
+    {
+        var peers = await identityDb.Set<IdentityUserOrganizationUnit>().AsNoTracking()
+            .Where(x => organizationUnitIds.Contains(x.OrganizationUnitId))
+            .Select(x => x.UserId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        return peers.ToHashSet();
+    }
+
+    private async Task<Dictionary<Guid, Guid?>> LoadPrimaryOuByUserAsync(
+        Guid[] userIds,
+        HashSet<Guid> preferredOuIds,
+        CancellationToken cancellationToken)
+    {
+        if (userIds.Length == 0)
+            return [];
+
+        var rows = await identityDb.Set<IdentityUserOrganizationUnit>().AsNoTracking()
+            .Where(x => userIds.Contains(x.UserId))
+            .Select(x => new { x.UserId, x.OrganizationUnitId })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(x => x.UserId)
+            .ToDictionary(
+                group => group.Key,
+                group =>
+                {
+                    var shared = group
+                        .Select(x => x.OrganizationUnitId)
+                        .FirstOrDefault(id => preferredOuIds.Contains(id));
+                    if (shared != Guid.Empty)
+                        return (Guid?)shared;
+                    return group.Select(x => (Guid?)x.OrganizationUnitId).FirstOrDefault();
+                });
     }
 
     private static string DisplayName(IdentityUser user)
