@@ -117,13 +117,20 @@ public sealed class SigningKpiReportService(
 
         if (input.SourceYear is { } year)
         {
-            var start = new DateTime(year, 1, 1);
-            query = query.Where(x => x.CreationTime >= start && x.CreationTime < start.AddYears(1));
+            var start = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var end = start.AddYears(1);
+            query = query.Where(x => x.CreationTime >= start && x.CreationTime < end);
         }
         if (input.SubmittedFrom is { } from)
-            query = query.Where(x => x.CreationTime >= from);
+        {
+            var fromUtc = ToUtc(from);
+            query = query.Where(x => x.CreationTime >= fromUtc);
+        }
         if (input.SubmittedTo is { } to)
-            query = query.Where(x => x.CreationTime <= to);
+        {
+            var toUtc = ToUtc(to);
+            query = query.Where(x => x.CreationTime <= toUtc);
+        }
         query = query.OrderByDescending(x => x.CreationTime);
         if (maxRows is { } limit) query = query.Take(limit);
 
@@ -188,9 +195,20 @@ public sealed class SigningKpiReportService(
         if (input.SourceYear is < 2000 or > 2100)
             throw new ArgumentOutOfRangeException(nameof(input.SourceYear), "Source year must be between 2000 and 2100.");
         if (input.SubmittedFrom.HasValue && input.SubmittedTo.HasValue &&
-            input.SubmittedFrom > input.SubmittedTo)
+            ToUtc(input.SubmittedFrom.Value) > ToUtc(input.SubmittedTo.Value))
             throw new ArgumentException("SubmittedFrom must be earlier than SubmittedTo.");
     }
+
+    /// <summary>
+    /// Npgsql timestamptz rejects Unspecified/Local DateTime. Date pickers bind Unspecified;
+    /// treat that calendar value as UTC so the selected day does not shift.
+    /// </summary>
+    internal static DateTime ToUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
 }
 
 internal static class SigningKpiReportCalculator

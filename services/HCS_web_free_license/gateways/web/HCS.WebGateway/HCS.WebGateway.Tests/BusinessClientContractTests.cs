@@ -53,4 +53,20 @@ public sealed class BusinessClientContractTests
         Assert.DoesNotContain("sectorId=", actual);
         Assert.DoesNotContain("&to=", actual);
     }
+
+    [Fact]
+    public void Signing_kpi_uri_sends_filter_dates_as_utc()
+    {
+        var from = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
+        var to = new DateTime(2026, 9, 22, 23, 59, 59, DateTimeKind.Unspecified);
+        var expectedFrom = DateTime.SpecifyKind(from, DateTimeKind.Utc).ToString("O");
+        var expectedTo = DateTime.SpecifyKind(to, DateTimeKind.Utc).ToString("O");
+
+        var actual = DocumentClient.BuildSigningKpiUri("kpi", new SigningKpiQuery(null, from, to));
+
+        Assert.Contains($"submittedFrom={Uri.EscapeDataString(expectedFrom)}", actual);
+        Assert.Contains($"submittedTo={Uri.EscapeDataString(expectedTo)}", actual);
+        Assert.Contains("Z", expectedFrom);
+        Assert.Contains("Z", expectedTo);
+    }
 }

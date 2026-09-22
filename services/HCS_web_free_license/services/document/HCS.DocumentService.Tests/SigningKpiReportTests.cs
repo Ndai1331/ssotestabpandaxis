@@ -78,6 +78,23 @@ public sealed class SigningKpiReportTests
     }
 
     [Theory]
+    [InlineData(DateTimeKind.Utc)]
+    [InlineData(DateTimeKind.Local)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void Converts_filter_datetimes_to_utc_for_npgsql(DateTimeKind kind)
+    {
+        var source = new DateTime(2026, 1, 1, 0, 0, 0, kind);
+
+        var utc = SigningKpiReportService.ToUtc(source);
+
+        Assert.Equal(DateTimeKind.Utc, utc.Kind);
+        if (kind == DateTimeKind.Local)
+            Assert.Equal(source.ToUniversalTime(), utc);
+        else
+            Assert.Equal(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), utc);
+    }
+
+    [Theory]
     [InlineData(1, "NEW", "Mới")]
     [InlineData(2, "IN_PROGRESS", "Đang xử lý")]
     [InlineData(3, "COMPLETED", "Đã phê duyệt")]

@@ -440,9 +440,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
         var parameters = new List<string>();
         if (query.SourceYear is { } year) parameters.Add($"sourceYear={year}");
         if (query.SubmittedFrom is { } from)
-            parameters.Add($"submittedFrom={Uri.EscapeDataString(from.ToString("O"))}");
+            parameters.Add($"submittedFrom={Uri.EscapeDataString(ToUtcIso(from))}");
         if (query.SubmittedTo is { } to)
-            parameters.Add($"submittedTo={Uri.EscapeDataString(to.ToString("O"))}");
+            parameters.Add($"submittedTo={Uri.EscapeDataString(ToUtcIso(to))}");
         return parameters.Count == 0 ? $"/api/signing/{endpoint}" : $"/api/signing/{endpoint}?{string.Join('&', parameters)}";
     }
 
@@ -483,4 +483,15 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     }
 
     private HttpClient CreateClient() => httpClientFactory.CreateClient("HCS.Bff");
+
+    private static string ToUtcIso(DateTime value)
+    {
+        var utc = value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
+        return utc.ToString("O");
+    }
 }
