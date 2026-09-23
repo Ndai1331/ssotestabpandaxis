@@ -1,4 +1,5 @@
 using HCS.DocumentService.Integration;
+using Volo.Abp;
 
 namespace HCS.DocumentService.Documents;
 
@@ -55,7 +56,6 @@ public sealed class DocumentAggregate
 
     public void Update(string title, string? description, Guid? actorUserId, DateTime now)
     {
-        EnsureMutable();
         Title = Required(title, 256, nameof(title));
         Description = Trim(description, 2000);
         AddHistory("Updated", actorUserId, null, now);
@@ -63,19 +63,16 @@ public sealed class DocumentAggregate
 
     public void SetDocumentCode(string? documentCode)
     {
-        EnsureMutable();
         DocumentCode = Trim(documentCode, 64);
     }
 
     public void SetOrganizationUnit(Guid? organizationUnitId)
     {
-        EnsureMutable();
         OrganizationUnitId = organizationUnitId is { } id && id != Guid.Empty ? id : null;
     }
 
     public void Classify(Guid? documentTypeId, Guid? sectorId, Guid? urgencyId, Guid? confidentialityId, Guid? actorUserId, DateTime now)
     {
-        EnsureMutable();
         DocumentTypeId = documentTypeId;
         SectorId = sectorId;
         UrgencyId = urgencyId;
@@ -215,10 +212,12 @@ public sealed class DocumentAggregate
         AddHistory(canonical, actorUserId, Trim(detail, 2000), now);
     }
 
+    // Locks signed file content on an approved or archived submission.
+    // Workflow definition CRUD does not go through this aggregate.
     private void EnsureMutable()
     {
         if (Status is DocumentStatus.Approved or DocumentStatus.Archived)
-            throw new InvalidOperationException("Approved or archived documents are immutable.");
+            throw new BusinessException("Document:Immutable");
     }
 
     private void AddHistory(string action, Guid? actorUserId, string? detail, DateTime now) =>

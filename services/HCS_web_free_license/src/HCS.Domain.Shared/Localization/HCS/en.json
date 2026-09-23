@@ -1364,6 +1364,7 @@
     "Feature:RevokeSendDone": "Document send was revoked.",
     "Feature:DeleteDocumentConfirm": "Deleting '{0}' will also remove its send, related sent notifications, and related data. Continue?",
     "Feature:DeleteDocumentDone": "The document was deleted.",
+    "Document:Immutable": "Approved or archived documents cannot gain or lose files.",
     "Document:CannotDeleteWithRunningWorkflow": "This document cannot be deleted while a workflow is running.",
     "Document:CannotDeleteStartedSubmission": "Only a running submission with no signing or approval activity can be deleted. Please refresh the list.",
     "Document:DeleteSubmissionConfirm": "Delete submission '{0}'?",

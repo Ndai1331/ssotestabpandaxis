@@ -1,4 +1,5 @@
 using HCS.DocumentService.Documents;
+using Volo.Abp;
 
 namespace HCS.DocumentService.Tests;
 
@@ -8,7 +9,7 @@ public sealed class DocumentAggregateTests
     private static DocumentAggregate Create() => new(Guid.NewGuid(), "CV-001", "Công văn", null, Guid.NewGuid(), Now);
 
     [Fact]
-    public void Classification_is_stored_until_the_document_is_immutable()
+    public void Classification_stays_editable_after_approval_but_files_do_not()
     {
         var document = Create();
         var typeId = Guid.NewGuid();
@@ -18,7 +19,12 @@ public sealed class DocumentAggregateTests
         document.Submit(null, Now);
         document.StartReview(null, Now);
         document.CompleteReview(true, null, null, Now);
-        Assert.Throws<InvalidOperationException>(() => document.Classify(Guid.NewGuid(), null, null, null, null, Now));
+        var nextTypeId = Guid.NewGuid();
+        document.Classify(nextTypeId, null, null, null, null, Now);
+        Assert.Equal(nextTypeId, document.DocumentTypeId);
+        var error = Assert.Throws<BusinessException>(() => document.AddFile(
+            Guid.NewGuid(), "b.pdf", "application/pdf", 10, new string('b', 64), "documents/b", null, Now));
+        Assert.Equal("Document:Immutable", error.Code);
     }
 
     [Fact]
@@ -30,7 +36,7 @@ public sealed class DocumentAggregateTests
     }
 
     [Fact]
-    public void Duplicate_content_is_rejected_and_approved_document_is_immutable()
+    public void Duplicate_content_is_rejected_and_approved_files_stay_fixed()
     {
         var document = Create();
         var hash = new string('a', 64);
@@ -39,7 +45,11 @@ public sealed class DocumentAggregateTests
         document.Submit(null, Now);
         document.StartReview(null, Now);
         document.CompleteReview(true, null, null, Now);
-        Assert.Throws<InvalidOperationException>(() => document.Update("Changed", null, null, Now));
+        document.Update("Changed", null, null, Now);
+        Assert.Equal("Changed", document.Title);
+        var error = Assert.Throws<BusinessException>(() => document.AddFile(
+            Guid.NewGuid(), "b.pdf", "application/pdf", 10, new string('b', 64), "documents/b", null, Now));
+        Assert.Equal("Document:Immutable", error.Code);
     }
 
     [Fact]

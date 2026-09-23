@@ -203,7 +203,7 @@
                                                     <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewFileAsync(file)">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                                                     </button>
-                                                    @if (SourceType is 0 or 1 && canManageFiles)
+                                                    @if (SourceType is 0 or 1 && CanChangeFiles)
                                                     {
                                                         <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteFileAsync(file.Id)">
                                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
@@ -254,7 +254,7 @@
                     {
                         <InputFile OnChange="SelectPendingFileAsync" accept=".docx,.pdf" />
                     }
-                    else if (canManageFiles)
+                    else if (CanChangeFiles)
                     {
                         <InputFile OnChange="UploadAsync" accept=".docx,.pdf" />
                     }
@@ -265,7 +265,7 @@
                         <strong>@L["Feature:Files"]</strong>
                         <span class="vb-file-chosen">@ChosenFileLabel</span>
                     </span>
-                    @if (canManageFiles)
+                    @if (IsCreate ? canManageFiles : CanChangeFiles)
                     {
                         <span class="vb-file-cta">@L["Work:ChooseFile"]</span>
                     }
@@ -333,6 +333,7 @@
     private bool canUpdateDocument;
     private bool canDeleteDocument;
     private bool canManageFiles;
+    private bool CanChangeFiles => canManageFiles && document?.Status is not (DocumentStatus.Approved or DocumentStatus.Archived);
     private IBrowserFile? pendingFile;
     private DocumentFileDto? pendingPreviewFile;
     private string activeTab = "info";
@@ -538,7 +539,7 @@
 
     private async Task UploadAsync(InputFileChangeEventArgs args)
     {
-        if (!canManageFiles) return;
+        if (!CanChangeFiles) return;
         try
         {
             await Documents.UploadFileAsync(DocumentId, args.File);
@@ -550,7 +551,7 @@
 
     private async Task DeleteFileAsync(Guid fileId)
     {
-        if (!canManageFiles) return;
+        if (!CanChangeFiles) return;
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value.Replace("{0}", L["Feature:Files"]))) return;
         try { await Documents.DeleteFileAsync(DocumentId, fileId); await ReloadExistingAsync(); }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }

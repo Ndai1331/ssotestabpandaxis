@@ -1364,6 +1364,7 @@
     "Feature:RevokeSendDone": "Đã thu hồi gửi văn bản.",
     "Feature:DeleteDocumentConfirm": "Xóa văn bản '{0}' sẽ xóa phần đã gửi, thông báo đã gửi liên quan và các dữ liệu liên quan. Tiếp tục?",
     "Feature:DeleteDocumentDone": "Đã xóa văn bản.",
+    "Document:Immutable": "Văn bản đã duyệt hoặc đã lưu trữ không được thêm hoặc xóa tệp.",
     "Document:CannotDeleteWithRunningWorkflow": "Không thể xóa văn bản đang có quy trình đang chạy.",
     "Document:CannotDeleteStartedSubmission": "Chỉ có thể xóa phiếu đang thực hiện và chưa có thao tác ký hoặc phê duyệt. Vui lòng làm mới danh sách.",
     "Document:DeleteSubmissionConfirm": "Bạn có chắc muốn xóa phiếu trình ký '{0}'?",
