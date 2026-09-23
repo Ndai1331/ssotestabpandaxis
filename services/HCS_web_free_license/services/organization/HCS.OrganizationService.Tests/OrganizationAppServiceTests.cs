@@ -34,13 +34,44 @@ public sealed class OrganizationAppServiceTests : OrganizationTestBase
         var ct = TestContext.Current.CancellationToken;
         using var scope = ServiceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<OrganizationDbContext>();
-        var service = new OrganizationAppService(db, new TestGuidGenerator());
+        var service = new OrganizationAppService(db, new TestGuidGenerator())
+        {
+            UnitDepartmentLookup = new TestUnitDepartmentLookup(Guid.NewGuid())
+        };
         var exception = await Should.ThrowAsync<BusinessException>(() =>
             service.CreateUnitAsync(new UpsertUnitDto
             {
                 DepartmentId = Guid.NewGuid(), Code = "U1", Name = "Unit 1"
             }, ct));
         exception.Code.ShouldBe(OrganizationErrorCodes.InvalidDepartment);
+    }
+
+    [Fact]
+    public async Task Unit_can_reference_identity_department_without_legacy_department()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var scope = ServiceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OrganizationDbContext>();
+        var departmentId = Guid.NewGuid();
+        var service = new OrganizationAppService(db, new TestGuidGenerator())
+        {
+            UnitDepartmentLookup = new TestUnitDepartmentLookup(departmentId)
+        };
+        var unit = await service.CreateUnitAsync(new UpsertUnitDto
+        {
+            DepartmentId = departmentId, Code = "NEW-OU", Name = "Identity department unit"
+        }, ct);
+        unit.DepartmentId.ShouldBe(departmentId);
+        (await db.Departments.AnyAsync(x => x.Id == departmentId, ct)).ShouldBeFalse();
+
+        await Should.ThrowAsync<BusinessException>(() => service.UpdateUnitAsync(unit.Id,
+            new UpsertUnitDto { DepartmentId = Guid.NewGuid(), Code = "NEW-OU", Name = "Invalid" }, ct));
+    }
+
+    private sealed class TestUnitDepartmentLookup(Guid id) : IUnitDepartmentLookup
+    {
+        public Task<bool> ExistsAsync(Guid candidate, CancellationToken cancellationToken = default) =>
+            Task.FromResult(candidate == id);
     }
 
     [Fact]

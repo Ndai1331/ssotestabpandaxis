@@ -101,7 +101,7 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
         {
             b.Property(x => x.DepartmentId).IsRequired();
             b.HasIndex(x => x.DepartmentId);
-            b.HasOne<Department>().WithMany().HasForeignKey(x => x.DepartmentId).OnDelete(DeleteBehavior.Restrict);
+            // References Identity organization units, validated through the Platform API.
         });
         builder.Entity<Position>(b => b.Property(x => x.SignOrder).IsRequired());
         builder.Entity<MasterDataItem>(b =>

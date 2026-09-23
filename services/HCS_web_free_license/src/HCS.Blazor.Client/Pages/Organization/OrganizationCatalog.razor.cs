@@ -18,6 +18,7 @@ public partial class OrganizationCatalog : System.IDisposable
     private static readonly int[] PageSizeOptions = [10, 20, 50, 100];
 
     [Inject] private OrganizationCatalogClient CatalogClient { get; set; } = default!;
+    [Inject] private OrganizationUnitCatalogClient OrganizationUnits { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
 
     [Parameter, EditorRequired]

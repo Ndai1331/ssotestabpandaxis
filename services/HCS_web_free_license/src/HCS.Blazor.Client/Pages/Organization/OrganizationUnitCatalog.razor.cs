@@ -79,13 +79,30 @@ public partial class OrganizationUnitCatalog : IDisposable
         return Task.FromResult(new CatalogSelect2SearchResponse(items, false));
     }
 
-    private IEnumerable<OrganizationUnitTreeNode> MoveTargetOptions => allNodes
-        .Where(node => selectedNode is null || (node.Id != selectedNode.Id && !IsDescendant(node)))
-        .OrderBy(node => node.Code, StringComparer.Ordinal);
+    private OrganizationUnitTreeNode? ActionNode =>
+        actionUnitId is { } id ? allNodes.FirstOrDefault(node => node.Id == id) : null;
 
-    private IEnumerable<OrganizationUnitTreeNode> MoveAllTargetOptions => allNodes
-        .Where(node => selectedNode is null || node.Id != selectedNode.Id)
-        .OrderBy(node => node.Code, StringComparer.Ordinal);
+    private IEnumerable<OrganizationUnitTreeNode> MoveTargetOptions
+    {
+        get
+        {
+            var moving = ActionNode;
+            return allNodes
+                .Where(node => moving is null || (node.Id != moving.Id && !IsDescendantOf(moving, node)))
+                .OrderBy(node => node.Code, StringComparer.Ordinal);
+        }
+    }
+
+    private IEnumerable<OrganizationUnitTreeNode> MoveAllTargetOptions
+    {
+        get
+        {
+            var source = ActionNode;
+            return allNodes
+                .Where(node => source is null || node.Id != source.Id)
+                .OrderBy(node => node.Code, StringComparer.Ordinal);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -116,11 +133,8 @@ public partial class OrganizationUnitCatalog : IDisposable
         return (await AuthorizationService.AuthorizeAsync(user, null, permission)).Succeeded;
     }
 
-    private bool IsDescendant(OrganizationUnitTreeNode candidate)
-    {
-        return selectedNode is not null
-            && OrganizationUnitTreeBuilder.Flatten(selectedNode.Children).Any(node => node.Id == candidate.Id);
-    }
+    private static bool IsDescendantOf(OrganizationUnitTreeNode ancestor, OrganizationUnitTreeNode candidate) =>
+        OrganizationUnitTreeBuilder.Flatten(ancestor.Children).Any(node => node.Id == candidate.Id);
 
     private static string MemberRolesText(HCS.OrganizationUnits.OrganizationUnitMemberDto member) =>
         member.RoleNames is { Length: > 0 }

@@ -57,14 +57,14 @@ else if (detail is not null)
                             <span>@L["Event:Name"]</span>
                             <input class="input" @bind="eventForm.Name" disabled="@(!canManage)" />
                         </label>
-                        <label class="hcs-event-field">
+                        <div class="hcs-event-field">
                             <span>@L["Event:StartTime"]</span>
-                            <input class="input" type="datetime-local" @bind="eventForm.StartTime" disabled="@(!canManage)" />
-                        </label>
-                        <label class="hcs-event-field">
+                            <HcsDatePicker TValue="DateTime" @bind-Value="eventForm.StartTime" InputMode="DateInputMode.DateTime" ShowTodayButton="@canManage" ShowClearButton="@canManage" Disabled="@(!canManage)" />
+                        </div>
+                        <div class="hcs-event-field">
                             <span>@L["Event:EndTime"]</span>
-                            <input class="input" type="datetime-local" @bind="eventForm.EndTime" disabled="@(!canManage)" />
-                        </label>
+                            <HcsDatePicker TValue="DateTime" @bind-Value="eventForm.EndTime" InputMode="DateInputMode.DateTime" ShowTodayButton="@canManage" ShowClearButton="@canManage" Disabled="@(!canManage)" />
+                        </div>
                         <label class="hcs-event-field">
                             <span>@L["Event:Location"]</span>
                             <input class="input" @bind="eventForm.Location" disabled="@(!canManage)" />

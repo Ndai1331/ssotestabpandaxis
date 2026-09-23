@@ -193,7 +193,7 @@
             </ModalBody>
             <ModalFooter Class="hcs-catalog-modal__footer">
                 <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseMoveAllModalAsync">@L["Catalog:Cancel"]</Button>
-                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="MoveAllMembersAsync" Disabled="@isSaving">@L["OrganizationUnit:MoveAllMembers"]</Button>
+                <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="MoveAllMembersAsync" Disabled="@(isSaving || MoveAllTargetId is null)">@L["OrganizationUnit:MoveAllMembers"]</Button>
             </ModalFooter>
         </ModalContent>
     </Modal>

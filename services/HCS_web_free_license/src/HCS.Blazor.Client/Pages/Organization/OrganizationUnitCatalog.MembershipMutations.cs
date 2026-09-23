@@ -10,14 +10,13 @@ public partial class OrganizationUnitCatalog
     private async Task OpenMoveAllAsync(OrganizationUnitTreeNode node)
     {
         actionUnitId = node.Id;
-        var firstTarget = MoveAllTargetOptions.FirstOrDefault();
-        if (firstTarget is null)
+        if (!MoveAllTargetOptions.Any())
         {
             errorMessage = L["OrganizationUnit:NoMoveTarget"].Value;
             return;
         }
 
-        moveAllTargetValue = firstTarget.Id.ToString("D");
+        moveAllTargetValue = node.ParentId?.ToString("D") ?? string.Empty;
         if (moveAllModal is not null) await moveAllModal.Show();
     }
 

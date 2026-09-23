@@ -8,6 +8,20 @@ namespace HCS.WorkManagementService.Tests;
 
 public sealed class SecurityContractTests
 {
+    [Theory]
+    [InlineData(nameof(SurveysController.GetLocations))]
+    [InlineData(nameof(SurveysController.GetCriteria))]
+    public void Survey_catalog_reads_use_the_shared_policy_without_extra_permissions(string action)
+    {
+        var controller = typeof(SurveysController);
+        var policy = Assert.Single(controller.GetCustomAttributes(typeof(AuthorizeAttribute), true)
+            .Cast<AuthorizeAttribute>());
+        Assert.Equal(WorkPermissions.SurveyCatalogRead, policy.Policy);
+        var method = controller.GetMethod(action)!;
+        Assert.Empty(method.GetCustomAttributes(typeof(AuthorizeAttribute), true));
+        Assert.Empty(method.GetCustomAttributes(typeof(AllowAnonymousAttribute), true));
+    }
+
     [Fact]
     public void Survey_submission_ignores_a_caller_supplied_user_id()
     {
@@ -45,6 +59,7 @@ public sealed class SecurityContractTests
 
     [Theory]
     [InlineData(nameof(SurveysController.CreateCriteria))]
+    [InlineData(nameof(SurveysController.UploadCriteriaImage))]
     [InlineData(nameof(SurveysController.CreateLocation))]
     [InlineData(nameof(SurveysController.CreateSession))]
     [InlineData(nameof(SurveysController.UpdateCriteria))]
@@ -59,16 +74,26 @@ public sealed class SecurityContractTests
         var method = typeof(SurveysController).GetMethod(action)!;
         Assert.Contains(method.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>(),
             attribute => attribute.Policy == WorkPermissions.SurveyManagement);
+        Assert.DoesNotContain(typeof(SurveysController).GetCustomAttributes(typeof(AuthorizeAttribute), true)
+            .Cast<AuthorizeAttribute>(), attribute => attribute.Policy == WorkPermissions.Surveys);
     }
 
     [Theory]
     [InlineData(nameof(SurveysController.GetResults))]
     [InlineData(nameof(SurveysController.Submit))]
     [InlineData(nameof(SurveysController.GetFiles))]
-    public void Survey_participant_endpoints_inherit_the_survey_policy(string action)
+    [InlineData(nameof(SurveysController.GetSessions))]
+    [InlineData(nameof(SurveysController.Upload))]
+    [InlineData(nameof(SurveysController.Download))]
+    [InlineData(nameof(SurveysController.GetStatistics))]
+    [InlineData(nameof(SurveysController.GetResultSummaries))]
+    [InlineData(nameof(SurveysController.GetResultDetails))]
+    [InlineData(nameof(SurveysController.HandleResult))]
+    [InlineData(nameof(SurveysController.DeleteResult))]
+    public void Survey_participant_endpoints_require_the_survey_policy(string action)
     {
         Assert.NotNull(typeof(SurveysController).GetMethod(action));
-        Assert.Contains(typeof(SurveysController).GetCustomAttributes(typeof(AuthorizeAttribute), true)
+        Assert.Contains(typeof(SurveysController).GetMethod(action)!.GetCustomAttributes(typeof(AuthorizeAttribute), true)
                 .Cast<AuthorizeAttribute>(),
             attribute => attribute.Policy == WorkPermissions.Surveys);
     }

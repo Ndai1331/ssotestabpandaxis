@@ -50,6 +50,10 @@ public sealed class HCSOrganizationServiceHostModule : AbpModule
 
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        context.Services.AddHttpContextAccessor();
+        context.Services.AddHttpClient<Application.IUnitDepartmentLookup, HttpUnitDepartmentLookup>(client =>
+            client.BaseAddress = new Uri(context.Services.GetConfiguration()["Services:Platform:BaseUrl"]
+                ?? throw new InvalidOperationException("Services:Platform:BaseUrl is required.")));
         context.Services.AddAbpDbContext<OrganizationDbContext>();
         Configure<AbpDbContextOptions>(options =>
             options.Configure<OrganizationDbContext>(db => db.UseNpgsql()));

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HCS.WorkManagementService.Controllers;
 
-[ApiController, Authorize(Policy = WorkPermissions.Surveys), Route("api/surveys")]
+[ApiController, Authorize(Policy = WorkPermissions.SurveyCatalogRead), Route("api/surveys")]
 public sealed class SurveysController(SurveyAppService service, WorkAssetService assets) : ControllerBase
 {
     [AllowAnonymous]
@@ -100,7 +100,7 @@ public sealed class SurveysController(SurveyAppService service, WorkAssetService
         return NoContent();
     }
 
-    [HttpGet("sessions")]
+    [HttpGet("sessions"), Authorize(Policy = WorkPermissions.Surveys)]
     public Task<List<SurveySessionDto>> GetSessions(Guid? locationId, CancellationToken ct) => service.GetSessionsAsync(locationId, ct);
     [HttpPost("sessions"), Authorize(Policy = WorkPermissions.SurveyManagement)]
     public Task<SurveySessionDto> CreateSession(CreateSurveySessionDto input, CancellationToken ct) => service.CreateSessionAsync(input, ct);
@@ -117,21 +117,21 @@ public sealed class SurveysController(SurveyAppService service, WorkAssetService
         return NoContent();
     }
 
-    [HttpGet("sessions/{sessionId:guid}/results")]
+    [HttpGet("sessions/{sessionId:guid}/results"), Authorize(Policy = WorkPermissions.Surveys)]
     public Task<List<SurveyResultDto>> GetResults(Guid sessionId, CancellationToken ct) => service.GetResultsAsync(sessionId, ct);
-    [HttpPost("sessions/{sessionId:guid}/results")]
+    [HttpPost("sessions/{sessionId:guid}/results"), Authorize(Policy = WorkPermissions.Surveys)]
     public Task<SurveyResultDto> Submit(Guid sessionId, SubmitSurveyResultDto input, CancellationToken ct) =>
         service.SubmitAsync(sessionId, input, ct);
-    [HttpGet("sessions/{sessionId:guid}/files")]
+    [HttpGet("sessions/{sessionId:guid}/files"), Authorize(Policy = WorkPermissions.Surveys)]
     public Task<List<SurveyFileReferenceDto>> GetFiles(Guid sessionId, CancellationToken ct) =>
         service.GetSessionFilesAsync(sessionId, ct);
-    [HttpPost("sessions/{sessionId:guid}/files"), RequestSizeLimit(WorkAssetService.MaxFileSize)]
+    [HttpPost("sessions/{sessionId:guid}/files"), Authorize(Policy = WorkPermissions.Surveys), RequestSizeLimit(WorkAssetService.MaxFileSize)]
     public async Task<SurveyFileReferenceDto> Upload(Guid sessionId, IFormFile file, CancellationToken ct)
     {
         await using var stream = file.OpenReadStream();
         return await assets.SaveSurveyFileAsync(sessionId, stream, file.FileName, file.ContentType, file.Length, ct);
     }
-    [HttpGet("files/{fileId:guid}/content")]
+    [HttpGet("files/{fileId:guid}/content"), Authorize(Policy = WorkPermissions.Surveys)]
     public async Task<IActionResult> Download(Guid fileId, CancellationToken ct)
     {
         var result = await assets.GetSurveyFileAsync(fileId, ct);

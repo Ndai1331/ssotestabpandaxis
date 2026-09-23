@@ -184,6 +184,7 @@ services:
     build: { context: ., dockerfile: deploy/docker/Dockerfile, args: { PROJECT: services/organization/HCS.OrganizationService.Host/HCS.OrganizationService.Host.csproj, APP_DLL: HCS.OrganizationService.Host.dll } }
     environment:
       <<: *common-env
+      Services__Platform__BaseUrl: http://platform:8080/
       # Tokens are issued with the public issuer. Resolve discovery through Caddy
       # as well, so JWT issuer validation uses the same canonical address.
       AuthServer__Authority: https://auth.hcs.localhost

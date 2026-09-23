@@ -193,6 +193,7 @@ services:
     depends_on: { db-migrator: { condition: service_completed_successfully } }
     environment:
       <<: *common-env
+      Services__Platform__BaseUrl: http://platform:8080/
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "false"

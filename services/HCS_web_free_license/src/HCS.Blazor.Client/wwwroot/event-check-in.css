@@ -274,10 +274,12 @@
 .hcs-event-checkin__field textarea {
   background: var(--color-white);
   border: 1px solid var(--color-border, var(--color-gray-200));
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--input-radius, 16px);
+  box-sizing: border-box;
   color: var(--color-gray-800);
   font: inherit;
-  padding: .65rem .75rem;
+  height: var(--input-height, 40px);
+  padding: 0 .85rem;
   width: 100%;
 }
 
@@ -288,7 +290,10 @@
 }
 
 .hcs-event-checkin__field textarea {
+  border-radius: var(--input-radius-multiline, 16px);
+  height: auto;
   min-height: 5.5rem;
+  padding: .7rem .85rem;
   resize: vertical;
 }
 
@@ -300,12 +305,19 @@
 .hcs-event-checkin__actions .btn,
 .hcs-event-checkin__home {
   align-items: center;
+  appearance: none;
+  border: 1px solid transparent;
+  box-sizing: border-box;
   display: inline-flex;
   gap: .5rem;
   justify-content: center;
-  min-height: 40px;
+  min-height: var(--button-height, 40px);
   text-decoration: none;
-  width: 95%;
+  width: 100%;
+}
+
+.hcs-event-checkin__actions .btn-outline {
+  border-color: var(--color-primary);
 }
 
 .hcs-event-checkin__actions .btn:disabled {
@@ -335,7 +347,7 @@
 
 .hcs-event-checkin__actions .btn-danger {
   background: var(--color-danger, #DC2626);
-  border: 0;
+  border-color: transparent;
   color: #fff;
 }
 

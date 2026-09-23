@@ -58,6 +58,7 @@ public class HCSEntityFrameworkCoreModule : AbpModule
         context.Services.AddTransient<ILanguageTextRepository, EfCoreLanguageTextRepository>();
         context.Services.AddTransient<IAuditRecordProjectionRepository, EfCoreAuditRecordProjectionRepository>();
         context.Services.AddTransient<IIdentityUserRepository, HcsIdentityUserRepository>();
+        context.Services.AddTransient<IOrganizationUnitRepository, HcsOrganizationUnitRepository>();
 
         Configure<AbpDistributedEventBusOptions>(options =>
         {

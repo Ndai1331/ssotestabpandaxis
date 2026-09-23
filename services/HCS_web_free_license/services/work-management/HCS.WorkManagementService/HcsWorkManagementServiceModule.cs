@@ -70,6 +70,10 @@ public sealed class HcsWorkManagementServiceModule : AbpModule
                 options.AddPolicy(permission, policy => policy.RequireAssertion(context =>
                     WorkPermissionAccess.HasPermission(context.User, permission)));
             }
+            options.AddPolicy(WorkPermissions.SurveyCatalogRead, policy => policy.RequireAuthenticatedUser()
+                .RequireAssertion(context =>
+                    WorkPermissionAccess.HasPermission(context.User, WorkPermissions.Surveys)
+                    || WorkPermissionAccess.HasPermission(context.User, WorkPermissions.SurveyManagement)));
             options.AddPolicy(WorkPermissions.ProjectsRead, policy => policy.RequireAssertion(context =>
                 WorkPermissionAccess.CanReadWorkspaceResource(context.User, WorkPermissions.Projects)));
             options.AddPolicy(WorkPermissions.TasksRead, policy => policy.RequireAssertion(context =>

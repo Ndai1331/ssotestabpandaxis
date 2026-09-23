@@ -16,6 +16,7 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 {
     private readonly OrganizationDbContext _db;
     private readonly IGuidGenerator _guidGenerator;
+    public IUnitDepartmentLookup UnitDepartmentLookup { get; set; } = default!;
 
     public OrganizationAppService(OrganizationDbContext db, IGuidGenerator guidGenerator)
     {
@@ -59,7 +60,7 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     public virtual async Task<UnitDto> CreateUnitAsync(UpsertUnitDto input, CancellationToken ct = default)
     {
-        await EnsureDepartmentExistsAsync(input.DepartmentId, ct);
+        await EnsureUnitDepartmentExistsAsync(input.DepartmentId, ct);
         await EnsureUniqueCodeAsync(_db.Units, input.Code, null, ct);
         var entity = new Unit(_guidGenerator.Create(), input.DepartmentId, input.Code, input.Name, input.SortOrder, input.IsActive);
         _db.Units.Add(entity);
@@ -70,7 +71,9 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     public virtual async Task<UnitDto> UpdateUnitAsync(Guid id, UpsertUnitDto input, CancellationToken ct = default)
     {
         var entity = await _db.Units.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(Unit), id);
-        await EnsureDepartmentExistsAsync(input.DepartmentId, ct);
+        // Preserve legacy references until the user explicitly selects a new department.
+        if (entity.DepartmentId != input.DepartmentId)
+            await EnsureUnitDepartmentExistsAsync(input.DepartmentId, ct);
         await EnsureUniqueCodeAsync(_db.Units, input.Code, id, ct);
         entity.Update(input.DepartmentId, input.Code, input.Name, input.SortOrder, input.IsActive);
         await _db.SaveChangesAsync(ct);
@@ -78,6 +81,12 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     }
 
     public virtual Task DeleteUnitAsync(Guid id, CancellationToken ct = default) => DeleteAsync(_db.Units, id, ct);
+
+    private async Task EnsureUnitDepartmentExistsAsync(Guid id, CancellationToken ct)
+    {
+        if (!await UnitDepartmentLookup.ExistsAsync(id, ct))
+            throw new BusinessException(OrganizationErrorCodes.InvalidDepartment);
+    }
 
     public virtual async Task<PagedResultDto<PositionDto>> GetPositionsAsync(OrganizationListInput input, CancellationToken ct = default)
     {

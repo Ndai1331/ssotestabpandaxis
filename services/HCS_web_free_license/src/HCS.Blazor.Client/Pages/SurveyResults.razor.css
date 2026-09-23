@@ -76,8 +76,7 @@
     white-space: nowrap;
 }
 
-.hcs-survey-level--high,
-.hcs-survey-handling--done {
+.hcs-survey-level--high {
     background: #e7f6ee;
     color: #1f7a4d;
 }
@@ -95,6 +94,11 @@
 .hcs-survey-handling {
     background: #f3f6f8;
     color: #355770;
+}
+
+.hcs-survey-handling.hcs-survey-handling--done {
+    background: #e7f6ee;
+    color: #1f7a4d;
 }
 
 .hcs-survey-results__meta {

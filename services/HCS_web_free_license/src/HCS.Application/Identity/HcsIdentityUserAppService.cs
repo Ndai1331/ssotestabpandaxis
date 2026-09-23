@@ -75,6 +75,7 @@ public class HcsIdentityUserAppService : IdentityUserAppService
                 user.Email.ToLower().Contains(term) ||
                 (user.Name != null && user.Name.ToLower().Contains(term)) ||
                 (user.Surname != null && user.Surname.ToLower().Contains(term)) ||
+                ((user.Surname ?? string.Empty) + " " + (user.Name ?? string.Empty)).ToLower().Contains(term) ||
                 (user.PhoneNumber != null && (
                     user.PhoneNumber.ToLower().Contains(term) ||
                     (matchPhoneDigits && user.PhoneNumber.Contains(phoneTerm)))));

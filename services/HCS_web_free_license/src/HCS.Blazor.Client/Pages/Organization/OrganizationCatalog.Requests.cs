@@ -12,6 +12,11 @@ public partial class OrganizationCatalog
 
     private void OnDepartmentChanged(Guid? id) => form.DepartmentId = id?.ToString() ?? string.Empty;
 
+    private string DepartmentOptionText(DepartmentCatalogDto department) =>
+        Kind == OrganizationCatalogKind.Unit
+            ? department.Name
+            : CatalogSelect2Text.CodeName(department.Code, department.Name);
+
     private CatalogSelect2Item? DepartmentSelectItem(string value)
     {
         if (!Guid.TryParse(value, out var id))
@@ -20,7 +25,7 @@ public partial class OrganizationCatalog
         }
 
         return departmentOptions.FirstOrDefault(item => item.Id == id) is { } department
-            ? new CatalogSelect2Item(department.Id.ToString(), CatalogSelect2Text.CodeName(department.Code, department.Name))
+            ? new CatalogSelect2Item(department.Id.ToString(), DepartmentOptionText(department))
             : null;
     }
 
@@ -53,7 +58,7 @@ public partial class OrganizationCatalog
             options,
             item => item.Id,
             item => OrganizationUnitCatalogMapper.HierarchicalText(
-                item, byId, value => CatalogSelect2Text.CodeName(value.Code, value.Name)),
+                item, byId, DepartmentOptionText),
             more: false);
     }
 
@@ -133,6 +138,10 @@ public partial class OrganizationCatalog
         }
 
         var department = departmentOptions.FirstOrDefault(item => item.Id == relationId.Value);
+        if (department is not null && Kind == OrganizationCatalogKind.Unit)
+        {
+            return department.Name;
+        }
         return department is null ? relationId.Value.ToString() : $"{department.Code} — {department.Name}";
     }
 

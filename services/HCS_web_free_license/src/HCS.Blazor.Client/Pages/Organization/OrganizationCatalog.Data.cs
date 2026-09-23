@@ -103,7 +103,9 @@ public partial class OrganizationCatalog
     {
         try
         {
-            var options = await CatalogClient.GetDepartmentLookupAsync();
+            var options = Kind == OrganizationCatalogKind.Unit
+                ? await OrganizationUnits.GetDepartmentCatalogAsync()
+                : await CatalogClient.GetDepartmentLookupAsync();
             departmentOptions.Clear();
             departmentOptions.AddRange(options.OrderBy(item => item.SortOrder).ThenBy(item => item.Name));
         }

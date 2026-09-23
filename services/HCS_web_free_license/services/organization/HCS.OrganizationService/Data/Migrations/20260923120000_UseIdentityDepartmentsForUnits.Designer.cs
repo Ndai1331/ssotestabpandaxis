@@ -12,9 +12,10 @@ using Volo.Abp.EntityFrameworkCore;
 namespace HCS.OrganizationService.Data.Migrations
 {
     [DbContext(typeof(OrganizationDbContext))]
-    partial class OrganizationDbContextModelSnapshot : ModelSnapshot
+    [Microsoft.EntityFrameworkCore.Migrations.Migration("20260923120000_UseIdentityDepartmentsForUnits")]
+    partial class UseIdentityDepartmentsForUnits
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

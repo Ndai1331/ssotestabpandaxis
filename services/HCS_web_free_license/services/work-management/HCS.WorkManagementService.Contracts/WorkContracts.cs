@@ -8,6 +8,8 @@ public static class WorkPermissions
     public const string Events = "WorkManagement.Events";
     public const string Surveys = "WorkManagement.Surveys";
     public const string SurveyManagement = "WorkManagement.SurveyManagement";
+    // Composite API policy, not a separately assignable permission.
+    public const string SurveyCatalogRead = "WorkManagement.SurveyCatalog.Read";
     public const string Reports = "WorkManagement.Reports";
     public const string Dashboard = "WorkManagement.Dashboard";
     public const string EmployeeRatings = "WorkManagement.EmployeeRatings";
