@@ -195,7 +195,10 @@ body:has(.page-chat) {
   width: 100%;
 }
 
-.hcs-app-shell .page-chat .chat-list-tab.is-active {
+.hcs-app-shell .page-chat .chat-list-tab.is-active,
+.hcs-app-shell .page-chat .chat-list-tab.is-active:active,
+.hcs-app-shell .page-chat .chat-list-tab:active {
+  background: transparent !important;
   border-bottom-color: var(--color-primary, #007f7c) !important;
   color: var(--color-primary, #007f7c) !important;
 }
@@ -255,8 +258,23 @@ body:has(.page-chat) {
 }
 
 .hcs-app-shell .page-chat .chat-info-section-head .btn {
+  gap: 8px;
   min-height: 32px !important;
+  overflow: visible;
   padding: 0 10px !important;
+  white-space: nowrap;
+}
+
+.hcs-app-shell .page-chat .chat-info-section-head .btn::before {
+  content: none !important;
+  display: none !important;
+}
+
+.hcs-app-shell .page-chat .chat-info-section-head .btn svg {
+  display: block;
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
 }
 
 .hcs-app-shell .page-chat .chat-pin-info {
@@ -579,7 +597,8 @@ body:has(.page-chat) {
   padding: 0 14px !important;
 }
 
-.hcs-app-shell .page-social .social-pill.is-active {
+.hcs-app-shell .page-social .social-pill.is-active,
+.hcs-app-shell .page-social .social-pill.is-active:active {
   background: var(--color-primary);
   color: var(--color-white);
 }
@@ -864,7 +883,7 @@ body:has(.page-chat) {
 /* ——— Workspace dashboard (keep hcs-workspace layout, app control language) ——— */
 .hcs-app-shell .hcs-workspace a.hcs-ws-kpi,
 .hcs-app-shell .hcs-workspace .hcs-ws-kpi--static,
-.hcs-app-shell .hcs-workspace a.hcs-ws-notif-row,
+.hcs-app-shell .hcs-workspace a.hcs-ws-notif-item,
 .hcs-app-shell .hcs-workspace a.hcs-ws-proj-name,
 .hcs-app-shell .hcs-workspace a.hcs-ws-task-name,
 .hcs-app-shell .hcs-workspace button.hcs-ws-proj-name,
@@ -1016,9 +1035,30 @@ body:has(.page-chat) {
 .hcs-app-shell .page-wf .hcs-catalog-modal__footer .btn {
   border-radius: var(--button-radius, var(--radius-xl, 16px)) !important;
   font-weight: var(--font-weight-medium);
+  gap: 8px;
   height: 40px;
   min-height: 40px !important;
+  overflow: visible;
   padding: 0 16px !important;
+  white-space: nowrap;
+}
+
+.hcs-app-shell .page-wf .docs-toolbar .btn::before,
+.hcs-app-shell .page-wf .list-search .btn::before,
+.hcs-app-shell .page-wf .vb-assign .btn::before,
+.hcs-app-shell .page-wf .page-actions .btn::before {
+  content: none !important;
+  display: none !important;
+}
+
+.hcs-app-shell .page-wf .docs-toolbar .btn svg,
+.hcs-app-shell .page-wf .list-search .btn svg,
+.hcs-app-shell .page-wf .page-actions .btn svg,
+.hcs-app-shell .page-wf .vb-chrome .btn svg {
+  display: block;
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
 }
 
 .hcs-app-shell .page-wf .docs-table-wrap {
@@ -1062,6 +1102,80 @@ body:has(.page-chat) {
 }
 
 .hcs-app-shell .page-wf button.doc-action.is-danger:hover:not(:disabled) {
+  background: #FEF2F2 !important;
+}
+
+body:has(.hcs-app-shell) .hcs-catalog-modal .hcs-task-docs-toolbar,
+.hcs-app-shell .hcs-catalog-modal .hcs-task-docs-toolbar {
+  grid-template-columns: auto;
+}
+
+body:has(.hcs-app-shell) .hcs-catalog-modal .hcs-task-docs-toolbar .btn,
+.hcs-app-shell .hcs-catalog-modal .hcs-task-docs-toolbar .btn {
+  justify-self: start;
+  width: auto !important;
+}
+
+
+body:has(.hcs-app-shell) .hcs-catalog-modal .docs-toolbar.list-search .btn,
+body:has(.hcs-app-shell) .modal .hcs-catalog-modal .docs-toolbar.list-search .btn,
+.hcs-app-shell .hcs-catalog-modal .docs-toolbar.list-search .btn,
+.hcs-app-shell .modal .hcs-catalog-modal .docs-toolbar.list-search .btn {
+  align-items: center;
+  border-radius: var(--button-radius, var(--radius-xl, 16px)) !important;
+  display: inline-flex !important;
+  gap: 8px;
+  height: 40px;
+  min-height: 40px !important;
+  overflow: visible;
+  padding: 0 16px !important;
+  white-space: nowrap;
+}
+
+body:has(.hcs-app-shell) .hcs-catalog-modal .docs-toolbar.list-search .btn::before,
+body:has(.hcs-app-shell) .modal .hcs-catalog-modal .docs-toolbar.list-search .btn::before,
+.hcs-app-shell .hcs-catalog-modal .docs-toolbar.list-search .btn::before,
+.hcs-app-shell .modal .hcs-catalog-modal .docs-toolbar.list-search .btn::before {
+  content: none !important;
+  display: none !important;
+}
+
+body:has(.hcs-app-shell) .hcs-catalog-modal .docs-toolbar.list-search .btn svg,
+body:has(.hcs-app-shell) .hcs-catalog-modal button.doc-action svg,
+body:has(.hcs-app-shell) .modal .hcs-catalog-modal .btn svg,
+.hcs-app-shell .hcs-catalog-modal .docs-toolbar.list-search .btn svg,
+.hcs-app-shell .hcs-catalog-modal button.doc-action svg,
+.hcs-app-shell .modal .hcs-catalog-modal .btn svg {
+  display: block !important;
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
+}
+
+body:has(.hcs-app-shell) .hcs-catalog-modal button.doc-action,
+body:has(.hcs-app-shell) .hcs-catalog-modal a.doc-action,
+.hcs-app-shell .hcs-catalog-modal button.doc-action,
+.hcs-app-shell .hcs-catalog-modal a.doc-action {
+  background: var(--color-white) !important;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, var(--color-white)) !important;
+  border-radius: var(--radius-md, 8px) !important;
+  box-shadow: none !important;
+  color: var(--color-primary) !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  width: 36px !important;
+}
+
+body:has(.hcs-app-shell) .hcs-catalog-modal button.doc-action.is-danger,
+.hcs-app-shell .hcs-catalog-modal button.doc-action.is-danger {
+  border-color: #FECACA !important;
+  color: var(--color-danger) !important;
+}
+
+body:has(.hcs-app-shell) .hcs-catalog-modal button.doc-action.is-danger:hover:not(:disabled),
+.hcs-app-shell .hcs-catalog-modal button.doc-action.is-danger:hover:not(:disabled) {
   background: #FEF2F2 !important;
 }
 
@@ -1133,7 +1247,9 @@ body:has(.page-chat) {
   padding: 0 14px !important;
 }
 
-.hcs-app-shell .page-wf .vb-tab.is-active {
+.hcs-app-shell .page-wf .vb-tab.is-active,
+.hcs-app-shell .page-wf .vb-tab.is-active:active,
+.hcs-app-shell .page-wf .vb-tab:active {
   background: var(--color-primary-soft) !important;
   color: var(--color-primary) !important;
 }
@@ -1562,7 +1678,9 @@ body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__opt
   background: var(--color-gray-50, #F8FAFC) !important;
 }
 
-.hcs-app-shell .page-vb .docs-cat.is-active {
+.hcs-app-shell .page-vb .docs-cat.is-active,
+.hcs-app-shell .page-vb .docs-cat.is-active:active,
+.hcs-app-shell .page-vb .docs-cat:active {
   background: var(--color-primary-soft, #E0F7F5) !important;
   color: var(--color-primary, #00B4A9) !important;
   font-weight: var(--font-weight-semibold, 600);
@@ -1817,12 +1935,17 @@ body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__opt
 }
 
 .hcs-app-shell .page-sign .queue-tab:hover,
-.hcs-app-shell .page-wf .queue-tab:hover {
+.hcs-app-shell .page-wf .queue-tab:hover,
+.hcs-app-shell .page-sign .queue-tab:active:not(.is-active),
+.hcs-app-shell .page-wf .queue-tab:active:not(.is-active) {
   background: var(--color-primary-soft, #E0F7F5) !important;
+  color: var(--color-primary, #00B4A9) !important;
 }
 
 .hcs-app-shell .page-sign .queue-tab.is-active,
-.hcs-app-shell .page-wf .queue-tab.is-active {
+.hcs-app-shell .page-wf .queue-tab.is-active,
+.hcs-app-shell .page-sign .queue-tab.is-active:active,
+.hcs-app-shell .page-wf .queue-tab.is-active:active {
   background: var(--color-primary, #00B4A9) !important;
   color: var(--color-white, #fff) !important;
 }
@@ -2001,13 +2124,17 @@ body:has(.hcs-app-shell) .process-side-tab {
 }
 
 .hcs-app-shell .process-side-tab:hover,
-body:has(.hcs-app-shell) .process-side-tab:hover {
+body:has(.hcs-app-shell) .process-side-tab:hover,
+.hcs-app-shell .process-side-tab:active,
+body:has(.hcs-app-shell) .process-side-tab:active {
   background: transparent !important;
   color: var(--color-primary, #00B4A9) !important;
 }
 
 .hcs-app-shell .process-side-tab.is-active,
-body:has(.hcs-app-shell) .process-side-tab.is-active {
+body:has(.hcs-app-shell) .process-side-tab.is-active,
+.hcs-app-shell .process-side-tab.is-active:active,
+body:has(.hcs-app-shell) .process-side-tab.is-active:active {
   background: transparent !important;
   border-bottom-color: var(--color-primary, #00B4A9) !important;
   color: var(--color-primary, #00B4A9) !important;
@@ -2255,7 +2382,10 @@ body:has(.hcs-app-shell) .select2-dropdown {
 
 .hcs-app-shell :is(.docs-table, .queue-table, .b-table, .event-table, .task-tree, table) :is(button.doc-action, a.doc-action):hover:not(:disabled),
 .hcs-app-shell :is(.docs-table, .queue-table, .b-table, table) :is(button.doc-action-label, a.doc-action-label):hover:not(:disabled),
-.hcs-app-shell :is(.docs-table, .queue-table, .b-table, .event-table, table) :is(.hcs-action-button, .hcs-row-actions > .btn):hover:not(:disabled) {
+.hcs-app-shell :is(.docs-table, .queue-table, .b-table, .event-table, table) :is(.hcs-action-button, .hcs-row-actions > .btn):hover:not(:disabled),
+.hcs-app-shell :is(.docs-table, .queue-table, .b-table, .event-table, .task-tree, table) :is(button.doc-action, a.doc-action):active:not(:disabled),
+.hcs-app-shell :is(.docs-table, .queue-table, .b-table, table) :is(button.doc-action-label, a.doc-action-label):active:not(:disabled),
+.hcs-app-shell :is(.docs-table, .queue-table, .b-table, .event-table, table) :is(.hcs-action-button, .hcs-row-actions > .btn):active:not(:disabled) {
   background: var(--color-primary-soft, #E0F7F5) !important;
   color: var(--color-primary, #00B4A9) !important;
 }
@@ -2503,7 +2633,8 @@ body:has(.hcs-app-shell) select:not([multiple]):not([size]):not(.hcs-catalog-sel
   }
 }
 
-.hcs-app-shell :is(button.doc-action, a.doc-action):hover:not(:disabled) {
+.hcs-app-shell :is(button.doc-action, a.doc-action):hover:not(:disabled),
+.hcs-app-shell :is(button.doc-action, a.doc-action):active:not(:disabled) {
   background: var(--color-primary-soft, #E0F7F5) !important;
   border-color: var(--color-primary, #00B4A9) !important;
   color: var(--color-primary, #00B4A9) !important;

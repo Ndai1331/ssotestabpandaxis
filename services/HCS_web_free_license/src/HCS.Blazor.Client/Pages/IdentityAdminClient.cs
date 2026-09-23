@@ -25,9 +25,10 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         string? filter,
         int skipCount,
         int maxResultCount,
+        bool? notActive = null,
         CancellationToken cancellationToken = default) =>
         GetAsync<IdentityAdminPagedResult<IdentityAdminUserDto>>(
-            BuildQuery("api/identity/users", filter, skipCount, maxResultCount), cancellationToken);
+            BuildQuery("api/identity/users", filter, skipCount, maxResultCount, notActive), cancellationToken);
 
     public Task<IdentityAdminPagedResult<IdentityAdminRoleDto>> GetRolesAsync(
         string? filter = null,
@@ -242,12 +243,17 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
 
     private HttpClient CreateClient() => httpClientFactory.CreateClient("HCS.Bff");
 
-    internal static string BuildQuery(string endpoint, string? filter, int skipCount, int maxResultCount)
+    internal static string BuildQuery(string endpoint, string? filter, int skipCount, int maxResultCount, bool? notActive = null)
     {
         var query = new StringBuilder(endpoint).Append('?');
         if (!string.IsNullOrWhiteSpace(filter))
         {
             query.Append("filter=").Append(Uri.EscapeDataString(SearchText.Normalize(filter))).Append('&');
+        }
+
+        if (notActive.HasValue)
+        {
+            query.Append("notActive=").Append(notActive.Value ? "true" : "false").Append('&');
         }
 
         query.Append("skipCount=").Append(Math.Max(0, skipCount))

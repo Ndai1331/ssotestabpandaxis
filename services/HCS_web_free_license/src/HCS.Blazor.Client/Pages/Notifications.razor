@@ -11,7 +11,7 @@
     <div class="page-head">
         <h1 id="notifications-title">@L["Notifications:Title"]</h1>
         <div class="page-actions">
-            <button class="btn btn-outline" type="button" @onclick="MarkAllReadAsync" disabled="@(!allItems.Any(x => !x.IsRead) || isLoading)">
+            <button class="btn btn-outline" type="button" @onclick="MarkAllReadAsync" disabled="@isLoading">
                 @L["Notifications:MarkAllAsRead"]
             </button>
             <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@isLoading">
@@ -116,8 +116,6 @@
 </section>
 
 @code {
-    private static readonly int[] pageSizes = [10, 20, 50, 100];
-    private readonly List<NotificationDto> allItems = [];
     private readonly List<NotificationDto> pageItems = [];
     private string filter = "", statusFilter = "";
     private bool isLoading, showFilters;
@@ -126,6 +124,12 @@
     private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
     private bool CanPrev => currentPage > 1;
     private bool CanNext => currentPage < PageCount;
+    private bool? ReadFilter => statusFilter switch
+    {
+        "unread" => false,
+        "read" => true,
+        _ => null
+    };
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -134,21 +138,26 @@
         isLoading = true;
         try
         {
-            allItems.Clear();
-            const int batch = 100;
-            for (var skip = 0; ; skip += batch)
+            var skip = (Math.Max(1, currentPage) - 1) * pageSize;
+            var itemsTask = Chat.GetNotificationsAsync(
+                unreadOnly: false,
+                skip: skip,
+                take: pageSize,
+                filter: filter,
+                isRead: ReadFilter);
+            var countTask = Chat.GetNotificationCountAsync(unreadOnly: false, filter: filter, isRead: ReadFilter);
+            await Task.WhenAll(itemsTask, countTask);
+            pageItems.Clear();
+            pageItems.AddRange(ChatNotificationGrouping.CollapseUnread(await itemsTask));
+            totalCount = await countTask;
+            var pages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            if (currentPage > pages)
             {
-                var items = await Chat.GetNotificationsAsync(unreadOnly: false, skip: skip, take: batch);
-                if (items.Count == 0) break;
-                allItems.AddRange(items);
-                if (items.Count < batch) break;
+                currentPage = pages;
             }
-
-            ApplyPage();
         }
         catch (Exception ex)
         {
-            allItems.Clear();
             pageItems.Clear();
             totalCount = 0;
             await NotifyErrorAsync(ex);
@@ -159,39 +168,10 @@
         }
     }
 
-    private void ApplyPage()
-    {
-        var filtered = allItems
-            .Where(Matches)
-            .OrderByDescending(x => x.CreatedAt)
-            .ThenByDescending(x => x.Id)
-            .ToList();
-        totalCount = filtered.Count;
-        if (currentPage > PageCount) currentPage = PageCount;
-        pageItems.Clear();
-        pageItems.AddRange(filtered.Skip((currentPage - 1) * pageSize).Take(pageSize));
-    }
-
-    private bool Matches(NotificationDto item)
-    {
-        if (statusFilter == "unread" && item.IsRead) return false;
-        if (statusFilter == "read" && !item.IsRead) return false;
-        if (string.IsNullOrWhiteSpace(filter)) return true;
-
-        var term = SearchText.Normalize(filter);
-        var title = NotificationText.Localize(L, item.Title);
-        var body = NotificationText.Localize(L, item.Body);
-        return title.Contains(term, StringComparison.OrdinalIgnoreCase)
-            || body.Contains(term, StringComparison.OrdinalIgnoreCase)
-            || item.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
-            || item.Body.Contains(term, StringComparison.OrdinalIgnoreCase);
-    }
-
     private Task SearchAsync()
     {
         currentPage = 1;
-        ApplyPage();
-        return Task.CompletedTask;
+        return LoadAsync();
     }
 
     private Task ResetSearchAsync()
@@ -199,8 +179,7 @@
         filter = statusFilter = "";
         showFilters = false;
         currentPage = 1;
-        ApplyPage();
-        return Task.CompletedTask;
+        return LoadAsync();
     }
 
     private Task FilterAll()
@@ -208,8 +187,7 @@
         statusFilter = "";
         showFilters = false;
         currentPage = 1;
-        ApplyPage();
-        return Task.CompletedTask;
+        return LoadAsync();
     }
 
     private Task SetStatus(string value)
@@ -217,21 +195,19 @@
         statusFilter = value;
         showFilters = false;
         currentPage = 1;
-        ApplyPage();
-        return Task.CompletedTask;
+        return LoadAsync();
     }
 
-    private Task GoFirst() { currentPage = 1; ApplyPage(); return Task.CompletedTask; }
-    private Task GoPrev() { currentPage = Math.Max(1, currentPage - 1); ApplyPage(); return Task.CompletedTask; }
-    private Task GoNext() { currentPage = Math.Min(PageCount, currentPage + 1); ApplyPage(); return Task.CompletedTask; }
-    private Task GoLast() { currentPage = PageCount; ApplyPage(); return Task.CompletedTask; }
+    private Task GoFirst() { currentPage = 1; return LoadAsync(); }
+    private Task GoPrev() { currentPage = Math.Max(1, currentPage - 1); return LoadAsync(); }
+    private Task GoNext() { currentPage = Math.Min(PageCount, currentPage + 1); return LoadAsync(); }
+    private Task GoLast() { currentPage = PageCount; return LoadAsync(); }
     private Task OnPageSizeChanged(ChangeEventArgs args)
     {
         if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
         pageSize = Math.Clamp(size, 10, 100);
         currentPage = 1;
-        ApplyPage();
-        return Task.CompletedTask;
+        return LoadAsync();
     }
 
     private async Task OpenAsync(NotificationDto item)

@@ -11,6 +11,7 @@
 @using HCS.Localization
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.Localization
 @using Microsoft.JSInterop
 @using Volo.Abp.AspNetCore.Components.Messages
@@ -21,6 +22,8 @@
 @inject IUiMessageService UiMessageService
 @inject IStringLocalizer<HCSResource> L
 @inject IJSRuntime JsRuntime
+@inject IConfiguration Configuration
+@inject NavigationManager Navigation
 @inject Volo.Abp.Users.ICurrentUser CurrentUser
 
 <PageTitle>@L["Menu:Users"] · HCS</PageTitle>
@@ -343,12 +346,15 @@
         try
         {
             var skip = (Math.Max(1, currentPage) - 1) * pageSize;
-            var result = await IdentityClient.GetUsersAsync(filterText, skip, pageSize);
-            var loadedUsers = result.Items.AsEnumerable();
-            if (statusFilter == "active") loadedUsers = loadedUsers.Where(user => user.IsActive);
-            if (statusFilter == "inactive") loadedUsers = loadedUsers.Where(user => !user.IsActive);
+            bool? notActive = statusFilter switch
+            {
+                "active" => false,
+                "inactive" => true,
+                _ => null
+            };
+            var result = await IdentityClient.GetUsersAsync(filterText, skip, pageSize, notActive);
             users.Clear();
-            users.AddRange(loadedUsers);
+            users.AddRange(result.Items);
             totalUsers = Math.Min(int.MaxValue, (int)result.TotalCount);
             currentPage = Math.Clamp(currentPage, 1, PageCount);
             SyncSelection();
@@ -358,6 +364,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             errorMessage = FriendlyApiError(exception, "Users:LoadError");
             canRetry = true;
         }
@@ -544,10 +555,20 @@
         }
         catch (IdentityAdminApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             formErrorMessage = FriendlyApiError(exception, "Users:LoadError");
         }
         catch (OrganizationUnitApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             formErrorMessage = FriendlyOuError(exception, "Users:LoadError");
         }
 
@@ -603,6 +624,11 @@
             }
             catch (IdentityAdminApiException exception)
             {
+                if (RedirectIfUnauthorized(exception))
+                {
+                    return;
+                }
+
                 secondaryError = FriendlyApiError(exception, "Users:SaveError");
             }
 
@@ -613,10 +639,20 @@
             }
             catch (OrganizationUnitApiException exception)
             {
+                if (RedirectIfUnauthorized(exception))
+                {
+                    return;
+                }
+
                 secondaryError ??= FriendlyOuError(exception, "Users:SaveError");
             }
             catch (IdentityAdminApiException exception)
             {
+                if (RedirectIfUnauthorized(exception))
+                {
+                    return;
+                }
+
                 secondaryError ??= FriendlyApiError(exception, "Users:SaveError");
             }
 
@@ -634,6 +670,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             formErrorMessage = FriendlyApiError(exception, "Users:SaveError");
             await UiMessageService.Error(formErrorMessage);
         }
@@ -699,6 +740,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             errorMessage = FriendlyApiError(exception, "Users:DeleteError");
             await UiMessageService.Error(errorMessage);
         }
@@ -844,6 +890,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             errorMessage = FriendlyApiError(exception, "Users:DeleteError");
             await UiMessageService.Error(errorMessage);
         }
@@ -892,6 +943,23 @@
         : positionId.ToString("D");
     private static string FullName(IdentityAdminUserDto user) => string.Join(' ', new[] { user.Surname, user.Name }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim() is { Length: > 0 } fullName ? fullName : "—";
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture) ?? "—";
+
+    private bool RedirectIfUnauthorized(IdentityAdminApiException exception) =>
+        RedirectIfUnauthorized(exception.StatusCode);
+
+    private bool RedirectIfUnauthorized(OrganizationUnitApiException exception) =>
+        RedirectIfUnauthorized(exception.StatusCode);
+
+    private bool RedirectIfUnauthorized(HttpStatusCode statusCode)
+    {
+        if (statusCode != HttpStatusCode.Unauthorized)
+        {
+            return false;
+        }
+
+        BffLoginUrlBuilder.Redirect(Navigation, Configuration);
+        return true;
+    }
 
     private string FriendlyApiError(IdentityAdminApiException exception, string fallbackKey)
     {

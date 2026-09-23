@@ -217,8 +217,11 @@
         isLoading = true;
         try
         {
-            sessions.Clear(); sessions.AddRange(await Work.GetSessionsAsync());
-            locations.Clear(); locations.AddRange(await Work.GetLocationsAsync());
+            var sessionsTask = Work.GetSessionsAsync();
+            var locationsTask = Work.GetLocationsAsync();
+            await Task.WhenAll(sessionsTask, locationsTask);
+            sessions.Clear(); sessions.AddRange(await sessionsTask);
+            locations.Clear(); locations.AddRange(await locationsTask);
             ApplyPage();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }

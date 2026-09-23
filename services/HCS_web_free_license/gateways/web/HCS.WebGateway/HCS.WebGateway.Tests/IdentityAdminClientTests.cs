@@ -19,6 +19,14 @@ public sealed class IdentityAdminClientTests
     }
 
     [Fact]
+    public void Builds_identity_query_with_not_active_filter()
+    {
+        var actual = IdentityAdminClient.BuildQuery("api/identity/users", null, 20, 20, notActive: false);
+
+        Assert.Equal("api/identity/users?notActive=false&skipCount=20&maxResultCount=20", actual);
+    }
+
+    [Fact]
     public async Task Sends_create_user_with_the_community_identity_contract()
     {
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)

@@ -246,7 +246,7 @@ public partial class ChatWorkspace
             }
 
             CloseForward();
-            await LoadConversationsAsync();
+            await PatchConversationFromMessageAsync(sent);
         }
         catch (Exception exception)
         {
@@ -270,7 +270,7 @@ public partial class ChatWorkspace
         {
             await Client.DeleteMessageAsync(message.Id);
             MarkDeleted(message.Id);
-            await LoadConversationsAsync();
+            PatchConversationAfterDelete(message.ConversationId);
         }
         catch (Exception exception)
         {
@@ -335,7 +335,7 @@ public partial class ChatWorkspace
             selected = await Client.GetConversationAsync(selected.Id);
             permissions = await Client.GetPermissionsAsync(selected.Id);
             await ResolveUserNamesAsync(selected.Members.Select(member => member.UserId));
-            await LoadConversationsAsync();
+            PatchConversation(selected);
         }
         catch (Exception exception)
         {
@@ -358,6 +358,7 @@ public partial class ChatWorkspace
             }
 
             await ResolveUserNamesAsync(MessageUserIds(message));
+            await PatchConversationFromMessageAsync(message);
             StateHasChanged();
         });
     }
@@ -371,8 +372,26 @@ public partial class ChatWorkspace
                 MarkDeleted(messageId);
             }
 
+            PatchConversationAfterDelete(conversationId);
             StateHasChanged();
             return Task.CompletedTask;
+        });
+    }
+
+    private void PatchConversationAfterDelete(Guid conversationId)
+    {
+        var existing = conversations.FirstOrDefault(item => item.Id == conversationId);
+        if (existing is null)
+            return;
+
+        if (selected?.Id != conversationId)
+            return;
+
+        var last = messages.LastOrDefault(item => !item.IsDeleted);
+        PatchConversation(existing with
+        {
+            LastMessage = last is null ? null : LastMessagePreview(last),
+            LastMessageAt = last?.CreatedAt ?? existing.LastMessageAt
         });
     }
 

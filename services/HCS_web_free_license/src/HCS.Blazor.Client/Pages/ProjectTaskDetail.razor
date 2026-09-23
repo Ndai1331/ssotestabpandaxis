@@ -2,7 +2,6 @@
 @attribute [Authorize(Policy = "WorkManagement.ProjectTasks")]
 @inherits HCSComponentBase
 @inject WorkManagementClient Work
-@inject DocumentClient Documents
 @inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
@@ -107,7 +106,7 @@
                                 </Field>
                                 <Field>
                                     <FieldLabel>@L["Catalog:Status"]</FieldLabel>
-                                    <Select TValue="string" SelectedValue="@form.Status" SelectedValueChanged="OnStatusChanged">
+                                    <Select TValue="string" Value="@form.Status" ValueChanged="OnStatusChanged">
                                         @foreach (var value in WorkUi.TaskStatuses)
                                         {
                                             <SelectItem Value="@value">@L[WorkUi.TaskStatusKey(value)]</SelectItem>
@@ -138,9 +137,17 @@
                                                  SelectedText="@Name(assigneeId)"
                                                  Search="SearchContactsAsync" />
                                 </div>
+                                <div class="pj-role-pick">
+                                    <label class="sr-only" for="hcs-task-detail-role">@L["Feature:Role"]</label>
+                                    <select id="hcs-task-detail-role" class="select" @bind="assignmentType">
+                                        <option value="Member">@L["Work:ProjectRole.Member"]</option>
+                                        <option value="Supervisor">@L["Work:ProjectRole.Supervisor"]</option>
+                                        <option value="Manager">@L["Work:ProjectRole.Manager"]</option>
+                                    </select>
+                                </div>
                                 <button class="btn btn-primary" type="button" @onclick="AddAssignmentAsync">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                                    @L["Feature:Assign"]
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
+                                    @L["Feature:AddMember"]
                                 </button>
                             </div>
                         }
@@ -157,7 +164,6 @@
                                         <span class="kb-avatar" aria-hidden="true">@Initial(Name(assignment.UserId))</span>
                                         <span class="hcs-member-list__meta">
                                             <strong class="hcs-member-list__name">@Name(assignment.UserId)</strong>
-                                            <span class="hcs-member-list__sep" aria-hidden="true">·</span>
                                             <span class="hcs-member-list__role">@AssignmentTypeLabel(assignment.AssignmentType)</span>
                                         </span>
                                         @if (detail.Task.CanManageAssignments)
@@ -173,38 +179,10 @@
                     </div>
 
                     <div class="vb-pane @(activeTab == "documents" ? "is-active" : null)" role="tabpanel">
-                        <div class="docs-toolbar list-search">
-                            <div class="list-search-select">
-                                <label class="sr-only">@L["Menu:Documents"]</label>
-                                <CatalogSelect2 Value="documentId"
-                                                ValueChanged="value => documentId = value"
-                                                Placeholder="@L["Feature:ChooseDocument"]"
-                                                SelectedText="@DocumentName(documentId)"
-                                                Search="SearchDocumentsAsync" />
-                            </div>
-                            <button class="btn btn-primary" type="button" @onclick="AddDocumentAsync">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                                @L["Feature:AttachDocument"]
-                            </button>
-                        </div>
-                        @if (detail.Documents.Count == 0)
-                        {
-                            <DocsEmpty Compact="true" Title="@L["Work:NoDocuments"]" />
-                        }
-                        else
-                        {
-                            <ul class="hcs-member-list">
-                                @foreach (var reference in detail.Documents)
-                                {
-                                    <li class="hcs-member-list__item">
-                                        <a class="hcs-member-list__name hcs-member-list__link" href="@($"/document-detail/{reference.DocumentId}")">@(reference.DocumentCode ?? reference.DocumentId.ToString("N")[..8])</a>
-                                        <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => RemoveDocumentAsync(reference)">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
-                                        </button>
-                                    </li>
-                                }
-                            </ul>
-                        }
+                        <TaskDocumentsPane TaskId="TaskId"
+                                           References="detail.Documents"
+                                           CanManage="true"
+                                           OnChanged="ReloadTaskDocumentsAsync" />
                     </div>
                 </div>
             </div>
@@ -216,11 +194,11 @@
     private ProjectTaskDetailDto? detail;
     private readonly List<HCS.CollaborationService.Contracts.ChatContactDto> contacts = [];
     private readonly List<ProjectTaskDto> siblingTasks = [];
-    private readonly List<DocumentDto> documents = [];
     private readonly TaskEditForm form = new();
     private string projectName = "";
     private string activeTab = "info";
-    private Guid? assigneeId, documentId;
+    private Guid? assigneeId;
+    private string assignmentType = "Member";
     private bool isLoading, isSaving;
     private string ParentTaskLabel =>
         form.ParentTaskId is { } parentId
@@ -234,18 +212,20 @@
         {
             detail = await Work.GetTaskAsync(TaskId);
             BindForm(detail.Task);
-            await LoadProjectContextAsync(detail.Task.ProjectId);
-            try
+            async Task LoadContactsSafeAsync()
             {
-                if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+                try
+                {
+                    if (contacts.Count == 0)
+                        contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+                }
+                catch { }
             }
-            catch { }
+
+            await Task.WhenAll(
+                LoadProjectContextAsync(detail.Task.ProjectId),
+                LoadContactsSafeAsync());
             await ChatContactDirectory.EnsureAsync(Chat, contacts, detail.Assignments.Select(x => x.UserId), CurrentUser);
-            if (documents.Count == 0)
-            {
-                var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100));
-                documents.AddRange(page.Items);
-            }
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
@@ -314,7 +294,7 @@
         if (detail?.Task.CanManageAssignments != true || assigneeId is not { } userId) return;
         try
         {
-            await Work.AddAssignmentAsync(TaskId, new AddTaskAssignmentRequest(userId, "Assignee"));
+            await Work.AddAssignmentAsync(TaskId, new AddTaskAssignmentRequest(userId, assignmentType));
             detail = await Work.GetTaskAsync(TaskId);
             await ChatContactDirectory.EnsureAsync(Chat, contacts, detail.Assignments.Select(x => x.UserId), CurrentUser);
             await NotifySuccessAsync(L["Catalog:Updated"]);
@@ -324,7 +304,7 @@
     private async Task RemoveAssignmentAsync(TaskAssignmentDto assignment)
     {
         if (detail?.Task.CanManageAssignments != true) return;
-        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
+        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation", Name(assignment.UserId)].Value)) return;
         try
         {
             await Work.RemoveAssignmentAsync(TaskId, assignment.Id);
@@ -333,34 +313,18 @@
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
     }
-    private async Task AddDocumentAsync()
+    private async Task ReloadTaskDocumentsAsync()
     {
-        if (documentId is not { } id) return;
-        var document = documents.FirstOrDefault(x => x.Id == id);
-        try
-        {
-            await Work.AddTaskDocumentAsync(TaskId, new AddTaskDocumentRequest(id, document?.Number));
-            detail = await Work.GetTaskAsync(TaskId);
-            await NotifySuccessAsync(L["Catalog:Updated"]);
-        }
-        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        detail = await Work.GetTaskAsync(TaskId);
     }
-    private async Task RemoveDocumentAsync(TaskDocumentReferenceDto reference)
-    {
-        if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation"].Value)) return;
-        try
-        {
-            await Work.RemoveTaskDocumentAsync(TaskId, reference.Id);
-            detail = await Work.GetTaskAsync(TaskId);
-            await NotifySuccessAsync(L["Catalog:Deleted"]);
-        }
-        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
-    }
+
     private string Name(Guid? id) => ChatContactDirectory.Name(contacts, id);
-    private string DocumentName(Guid? id) => id is null ? "" : documents.FirstOrDefault(x => x.Id == id) is { } d ? $"{d.Number} · {d.Title}" : "";
     private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[..1];
     private string AssignmentTypeLabel(string type) => type switch
     {
+        "Manager" => L["Work:ProjectRole.Manager"],
+        "Supervisor" => L["Work:ProjectRole.Supervisor"],
+        "Member" => L["Work:ProjectRole.Member"],
         "Assignee" => L["Work:Assignee"],
         _ => type
     };
@@ -369,13 +333,6 @@
     {
         var found = ChatContactDirectory.WithCurrentUser(await Chat.GetContactsAsync(term, 50), contacts, CurrentUser, term);
         return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
-    }
-    private Task<CatalogSelect2SearchResponse> SearchDocumentsAsync(string term, int page)
-    {
-        var found = documents.Where(x => string.IsNullOrWhiteSpace(term)
-            || x.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
-            || x.Number.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
-        return Task.FromResult(CatalogSelect2Cache.Merge(documents, found, x => x.Id, x => $"{x.Number} · {x.Title}", false));
     }
 
     private sealed class TaskEditForm

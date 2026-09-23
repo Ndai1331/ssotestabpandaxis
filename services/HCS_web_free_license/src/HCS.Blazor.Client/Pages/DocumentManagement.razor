@@ -358,14 +358,21 @@
         if (catalogsLoaded) return;
         catalogsLoaded = true;
         var query = new OrganizationCatalogQuery(null, true, 0, 100);
-        try
+        async Task<IReadOnlyList<MasterDataCatalogDto>> LoadMasterAsync(string type)
         {
-            documentTypes.AddRange((await Catalog.GetMasterDataAsync("DocumentType", query)).Items);
-            sectors.AddRange((await Catalog.GetMasterDataAsync("Sector", query)).Items);
-            urgencies.AddRange((await Catalog.GetMasterDataAsync("UrgencyLevel", query)).Items);
-            confidentialities.AddRange((await Catalog.GetMasterDataAsync("ConfidentialityLevel", query)).Items);
+            try { return (await Catalog.GetMasterDataAsync(type, query)).Items; }
+            catch { return []; }
         }
-        catch { /* catalog permission is optional */ }
+
+        var typesTask = LoadMasterAsync("DocumentType");
+        var sectorsTask = LoadMasterAsync("Sector");
+        var urgenciesTask = LoadMasterAsync("UrgencyLevel");
+        var confidentialitiesTask = LoadMasterAsync("ConfidentialityLevel");
+        await Task.WhenAll(typesTask, sectorsTask, urgenciesTask, confidentialitiesTask);
+        documentTypes.AddRange(await typesTask);
+        sectors.AddRange(await sectorsTask);
+        urgencies.AddRange(await urgenciesTask);
+        confidentialities.AddRange(await confidentialitiesTask);
     }
 
     private void ToggleSearch()

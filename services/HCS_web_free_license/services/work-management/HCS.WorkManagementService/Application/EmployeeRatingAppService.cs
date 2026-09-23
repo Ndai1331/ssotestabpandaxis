@@ -102,9 +102,24 @@ public sealed class EmployeeRatingAppService(
 
     public async Task<PagedWorkDto<EmployeeRatingSummaryDto>> GetSummariesAsync(
         DateTime? from, DateTime? to, int skip, int take, Guid? userId = null,
+        Guid[]? userIds = null,
         CancellationToken cancellationToken = default)
     {
         var query = ApplyRange(db.EmployeeRatings.AsNoTracking(), from, to);
+        if (userIds is { Length: > 0 })
+        {
+            var ids = userIds.Where(id => id != Guid.Empty).Distinct().Take(100).ToArray();
+            query = query.Where(x => ids.Contains(x.TargetUserId));
+            var scopedRows = await query.Select(x => new RatingRow(x.TargetUserId, x.VoterUserId,
+                    x.Score, x.EvaluationDate, x.CreationTime)).ToListAsync(cancellationToken);
+            var scoped = BuildSummaries(scopedRows, currentUser.Id, clock.Today())
+                .ToDictionary(x => x.TargetUserId);
+            var ordered = ids.Select(id => scoped.TryGetValue(id, out var summary)
+                ? summary
+                : EmptySummary(id)).ToArray();
+            return new(ordered.Length, ordered);
+        }
+
         if (userId.HasValue)
             query = query.Where(x => x.TargetUserId == userId.Value);
         var rows = await query.Select(x => new RatingRow(x.TargetUserId, x.VoterUserId,
@@ -155,6 +170,9 @@ public sealed class EmployeeRatingAppService(
 
     private static DateTime ToUtc(DateTime value) => value.Kind == DateTimeKind.Utc
         ? value : value.ToUniversalTime();
+
+    private static EmployeeRatingSummaryDto EmptySummary(Guid userId) =>
+        new(userId, 0, 0, Enumerable.Range(1, 5).ToDictionary(score => score, _ => 0));
 
     private static IReadOnlyList<EmployeeRatingSummaryDto> BuildSummaries(
         IReadOnlyList<RatingRow> rows, Guid? voterUserId, DateOnly today)

@@ -88,9 +88,31 @@ public sealed record SigningQueueDocumentDto(Guid Id, string Number, string Titl
 public sealed record SigningQueueItemDto(SigningQueueDocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance,
     WorkflowDefinitionDto Definition, bool CanDelete = false);
 
+public sealed class GetSigningQueueInput
+{
+    public int Skip { get; set; }
+    public int Take { get; set; }
+    public DateTime? From { get; set; }
+    public DateTime? ToExclusive { get; set; }
+    public string? DateField { get; set; }
+    public string? Inbox { get; set; }
+    public string? Search { get; set; }
+    public string? Status { get; set; }
+    public Guid? SubmitterId { get; set; }
+    public Guid[]? FromUserIds { get; set; }
+}
+
+public sealed record PagedSigningQueueDto(
+    int TotalCount,
+    int CountAll,
+    int CountToMe,
+    int CountByMe,
+    IReadOnlyList<SigningQueueItemDto> Items);
+
 public interface ISigningAppService
 {
-    Task<IReadOnlyList<SigningQueueItemDto>> GetQueueAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SigningQueueItemDto>> GetQueueAsync(GetSigningQueueInput? input = null, CancellationToken cancellationToken = default);
+    Task<PagedSigningQueueDto> GetQueuePageAsync(GetSigningQueueInput? input = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SigningProviderDefinitionDto>> GetProviderDefinitionsAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SigningCredentialDto>> GetCredentialsAsync(Guid? userId = null, CancellationToken cancellationToken = default);
     Task<SigningCredentialDto> ConfigureCredentialAsync(ConfigureSigningCredentialRequest input, Guid? userId = null, CancellationToken cancellationToken = default);

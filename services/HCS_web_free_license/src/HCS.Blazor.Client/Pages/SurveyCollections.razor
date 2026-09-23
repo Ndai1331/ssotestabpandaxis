@@ -130,8 +130,11 @@
 
         try
         {
-            location = await Work.GetPublicLocationAsync(SurveyLocationId);
-            criteria.AddRange(await Work.GetPublicCriteriaAsync(SurveyLocationId));
+            var locationTask = Work.GetPublicLocationAsync(SurveyLocationId);
+            var criteriaTask = Work.GetPublicCriteriaAsync(SurveyLocationId);
+            await Task.WhenAll(locationTask, criteriaTask);
+            location = await locationTask;
+            criteria.AddRange(await criteriaTask);
             foreach (var item in criteria) scores[item.Id] = WorkUi.MaxStars;
         }
         catch (Exception ex)

@@ -334,6 +334,7 @@
     private bool canDeleteDocument;
     private bool canManageFiles;
     private IBrowserFile? pendingFile;
+    private DocumentFileDto? pendingPreviewFile;
     private string activeTab = "info";
     private bool IsCreate => DocumentId == Guid.Empty;
     private int SourceType => SourceTypeQuery is >= 0 and <= 2 ? SourceTypeQuery.Value : 0;
@@ -355,12 +356,19 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        await Features.EnsureLoadedAsync();
-        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        canCreateArchive = (await AuthorizationService.AuthorizeAsync(user, null, "Documents.Create")).Succeeded;
-        canUpdateDocument = (await AuthorizationService.AuthorizeAsync(user, null, "Documents.Update")).Succeeded;
-        canDeleteDocument = (await AuthorizationService.AuthorizeAsync(user, null, "Documents.Delete")).Succeeded;
-        canManageFiles = (await AuthorizationService.AuthorizeAsync(user, null, "Documents.ManageFiles")).Succeeded;
+        var featuresTask = Features.EnsureLoadedAsync();
+        var authStateTask = AuthenticationStateProvider.GetAuthenticationStateAsync();
+        await Task.WhenAll(featuresTask, authStateTask);
+        var user = (await authStateTask).User;
+        var createTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.Create");
+        var updateTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.Update");
+        var deleteTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.Delete");
+        var filesTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.ManageFiles");
+        await Task.WhenAll(createTask, updateTask, deleteTask, filesTask);
+        canCreateArchive = (await createTask).Succeeded;
+        canUpdateDocument = (await updateTask).Succeeded;
+        canDeleteDocument = (await deleteTask).Succeeded;
+        canManageFiles = (await filesTask).Succeeded;
         if (!IsCreate && SourceType == 2)
         {
             Navigation.NavigateTo($"/manage-documents?sourceType=2&preview={DocumentId:D}", replace: true);
@@ -373,6 +381,7 @@
             form.Reset();
             pendingFile = null;
             previewFile = null;
+            pendingPreviewFile = null;
             activeTab = "info";
             ApplyCreateDefaults();
             await RevokePdfAsync();
@@ -381,31 +390,51 @@
         await ReloadExistingAsync();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (pendingPreviewFile is null)
+            return;
+        var file = pendingPreviewFile;
+        pendingPreviewFile = null;
+        await LoadPreviewAsync(file);
+        StateHasChanged();
+    }
+
     private async Task LoadLookupsAsync()
     {
-        if (documentTypes.Count == 0)
+        var query = new OrganizationCatalogQuery(null, true, 0, 100);
+        async Task<IReadOnlyList<MasterDataCatalogDto>> LoadMasterAsync(string type)
         {
-            try
-            {
-                var query = new OrganizationCatalogQuery(null, true, 0, 100);
-                documentTypes.AddRange((await Catalog.GetMasterDataAsync("DocumentType", query)).Items);
-                sectors.AddRange((await Catalog.GetMasterDataAsync("Sector", query)).Items);
-                urgencies.AddRange((await Catalog.GetMasterDataAsync("UrgencyLevel", query)).Items);
-                confidentialities.AddRange((await Catalog.GetMasterDataAsync("ConfidentialityLevel", query)).Items);
-            }
-            catch { /* catalog permission is optional */ }
+            try { return (await Catalog.GetMasterDataAsync(type, query)).Items; }
+            catch { return []; }
         }
-        if (units.Count == 0)
+
+        async Task<IReadOnlyList<UnitCatalogDto>> LoadUnitsAsync()
         {
-            try { units.AddRange(await Catalog.GetUnitLookupAsync()); }
-            catch { /* units optional on create */ }
+            try { return await Catalog.GetUnitLookupAsync(); }
+            catch { return []; }
         }
+
+        async Task<IReadOnlyList<ChatContactDto>> LoadContactsAsync()
+        {
+            try { return await Chat.GetContactsAsync(null, 50); }
+            catch { return []; }
+        }
+
+        var typesTask = documentTypes.Count == 0 ? LoadMasterAsync("DocumentType") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
+        var sectorsTask = sectors.Count == 0 ? LoadMasterAsync("Sector") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
+        var urgenciesTask = urgencies.Count == 0 ? LoadMasterAsync("UrgencyLevel") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
+        var confidentialitiesTask = confidentialities.Count == 0 ? LoadMasterAsync("ConfidentialityLevel") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
+        var unitsTask = units.Count == 0 ? LoadUnitsAsync() : Task.FromResult<IReadOnlyList<UnitCatalogDto>>([]);
+        var contactsTask = contacts.Count == 0 ? LoadContactsAsync() : Task.FromResult<IReadOnlyList<ChatContactDto>>([]);
+        await Task.WhenAll(typesTask, sectorsTask, urgenciesTask, confidentialitiesTask, unitsTask, contactsTask);
+        documentTypes.AddRange(await typesTask);
+        sectors.AddRange(await sectorsTask);
+        urgencies.AddRange(await urgenciesTask);
+        confidentialities.AddRange(await confidentialitiesTask);
+        units.AddRange(await unitsTask);
+        contacts.AddRange(await contactsTask);
         ApplyCreateDefaults();
-        if (contacts.Count == 0)
-        {
-            try { contacts.AddRange(await Chat.GetContactsAsync(null, 50)); }
-            catch { /* contacts optional on create */ }
-        }
     }
 
     private async Task ReloadExistingAsync()
@@ -426,7 +455,7 @@
             await LoadHistoryNamesAsync();
             if (activeTab == "assign")
                 activeTab = "info";
-            await LoadPreviewAsync(DocumentFilePick.PreferPdf(document.Files) ?? document.Files.LastOrDefault());
+            pendingPreviewFile = DocumentFilePick.PreferPdf(document.Files) ?? document.Files.LastOrDefault();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }

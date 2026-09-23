@@ -232,10 +232,11 @@
         isLoading = true;
         try
         {
-            var projectPage = await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100));
-            projects.Clear(); projects.AddRange(projectPage.Items);
-            var taskPage = await Work.GetTasksAsync(projectFilter, new WorkListQuery(filter, string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter, 0, 100));
-            tasks.Clear(); tasks.AddRange(taskPage.Items);
+            var projectTask = Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100));
+            var taskTask = Work.GetTasksAsync(projectFilter, new WorkListQuery(filter, string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter, 0, 100));
+            await Task.WhenAll(projectTask, taskTask);
+            projects.Clear(); projects.AddRange((await projectTask).Items);
+            tasks.Clear(); tasks.AddRange((await taskTask).Items);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }

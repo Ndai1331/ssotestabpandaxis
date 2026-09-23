@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -301,30 +302,21 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
 
     public Task<PagedWorkResponse<EmployeeRatingSummaryDto>> GetEmployeeRatingSummariesAsync(
         int skip = 0, int take = MaxPageSize, DateTime? from = null, DateTime? to = null,
-        Guid? userId = null, CancellationToken cancellationToken = default)
+        Guid? userId = null, IReadOnlyList<Guid>? userIds = null,
+        CancellationToken cancellationToken = default)
     {
         var uri = BuildDateRangeUri(
             $"/api/employee-ratings/summary?skip={Math.Max(0, skip)}&take={Math.Clamp(take, 1, MaxPageSize)}",
             from, to);
         if (userId.HasValue)
             uri += $"&userId={userId.Value:D}";
-        return GetAsync<PagedWorkResponse<EmployeeRatingSummaryDto>>(uri, cancellationToken);
-    }
-
-    public async Task<List<EmployeeRatingSummaryDto>> GetAllEmployeeRatingSummariesAsync(
-        DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
-    {
-        var all = new List<EmployeeRatingSummaryDto>();
-        var skip = 0;
-        while (true)
+        if (userIds is { Count: > 0 })
         {
-            var page = await GetEmployeeRatingSummariesAsync(skip, MaxPageSize, from, to,
-                cancellationToken: cancellationToken);
-            all.AddRange(page.Items);
-            skip += page.Items.Count;
-            if (page.Items.Count == 0 || skip >= page.TotalCount) break;
+            foreach (var id in userIds.Where(value => value != Guid.Empty).Distinct().Take(100))
+                uri += $"&userIds={id:D}";
         }
-        return all;
+
+        return GetAsync<PagedWorkResponse<EmployeeRatingSummaryDto>>(uri, cancellationToken);
     }
 
     public Task<EmployeeRatingDto> SubmitEmployeeRatingAsync(SubmitEmployeeRatingRequest request,

@@ -272,15 +272,15 @@
 
     private async Task LoadRoleOptionsAsync()
     {
-        var names = new HashSet<string>(DefaultRoleNames, StringComparer.OrdinalIgnoreCase);
+        var identityNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var result = await IdentityClient.GetRolesAsync(maxResultCount: 200);
+            var result = await IdentityClient.GetRolesAsync(maxResultCount: 100);
             foreach (var role in result.Items ?? [])
             {
                 if (!string.IsNullOrWhiteSpace(role.Name))
                 {
-                    names.Add(role.Name.Trim());
+                    identityNames.Add(role.Name.Trim());
                 }
             }
         }
@@ -289,29 +289,41 @@
             // Keep default HCS roles if identity lookup is unavailable.
         }
 
-        ApplyRoleOptions(names);
+        ApplyRoleOptions(identityNames);
     }
 
-    private void ApplyRoleOptions(IEnumerable<string> names)
+    private void ApplyRoleOptions(IEnumerable<string> identityNames)
     {
-        var options = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var name in names)
+        var identity = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in identityNames)
         {
             if (!string.IsNullOrWhiteSpace(name))
             {
-                options.Add(name.Trim());
+                identity.Add(name.Trim());
             }
+        }
+
+        var candidates = new HashSet<string>(identity, StringComparer.OrdinalIgnoreCase);
+        foreach (var name in DefaultRoleNames)
+        {
+            candidates.Add(name);
         }
 
         foreach (var mapping in mappings)
         {
             if (!string.IsNullOrWhiteSpace(mapping.Role))
             {
-                options.Add(mapping.Role.Trim());
+                candidates.Add(mapping.Role.Trim());
             }
         }
 
-        roleOptions = options
+        roleOptions = candidates
+            .Select(name => (Name: name, Label: RoleLabel(name), Identity: identity.Contains(name)))
+            .GroupBy(item => item.Label.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(group => group
+                .OrderBy(item => RoleOptionRank(item.Name, item.Identity))
+                .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                .First().Name)
             .OrderBy(name =>
             {
                 var index = Array.FindIndex(
@@ -319,8 +331,20 @@
                     role => string.Equals(role, name, StringComparison.OrdinalIgnoreCase));
                 return index >= 0 ? index : int.MaxValue;
             })
-            .ThenBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(name => RoleLabel(name), StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static int RoleOptionRank(string name, bool fromIdentity)
+    {
+        var isDefault = Array.Exists(
+            DefaultRoleNames,
+            role => string.Equals(role, name, StringComparison.OrdinalIgnoreCase));
+        if (fromIdentity && isDefault)
+            return 0;
+        if (fromIdentity)
+            return 1;
+        return isDefault ? 2 : 3;
     }
 
     private string RoleValue(int index) =>

@@ -316,10 +316,13 @@
         isLoading = true;
         try
         {
-            var page = await Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 3));
-            documents.Clear(); documents.AddRange(page.Items);
-            definitions.Clear(); definitions.AddRange(await Documents.GetDefinitionsAsync());
-            instances.Clear(); instances.AddRange(await Documents.GetInstancesAsync());
+            var documentsTask = Documents.GetDocumentsAsync(new DocumentListQuery(null, null, false, 0, 100, 3));
+            var definitionsTask = Documents.GetDefinitionsAsync();
+            var instancesTask = Documents.GetInstancesAsync();
+            await Task.WhenAll(documentsTask, definitionsTask, instancesTask);
+            documents.Clear(); documents.AddRange((await documentsTask).Items);
+            definitions.Clear(); definitions.AddRange(await definitionsTask);
+            instances.Clear(); instances.AddRange(await instancesTask);
             loaded = true;
             await LoadSelectedAsync();
             ApplyPage();

@@ -219,14 +219,21 @@
     font-weight: 700;
 }
 
-.admin-permission-groups button.is-active {
+.admin-permission-groups button.is-active,
+.admin-permission-groups button.is-active:active {
     border-color: var(--color-primary);
     background: var(--color-primary);
     color: #fff;
     font-weight: 750;
 }
 
-.admin-permission-groups button.is-active small {
+.admin-permission-groups button:active:not(.is-active) {
+    background: var(--color-primary-soft, #e0f7f5);
+    color: var(--color-primary);
+}
+
+.admin-permission-groups button.is-active small,
+.admin-permission-groups button.is-active:active small {
     color: rgb(255 255 255 / 80%);
 }
 

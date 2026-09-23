@@ -241,21 +241,21 @@
         profileLoadFailed = false;
         try
         {
-            profile = await Account.GetProfileAsync();
+            var profileTask = Account.GetProfileAsync();
+            async Task LoadAvatarSafeAsync()
+            {
+                try { await ReloadAvatarAsync(); }
+                catch { avatarDataUrl = null; }
+            }
+
+            await Task.WhenAll(profileTask, LoadAvatarSafeAsync());
+            profile = await profileTask;
             form.UserName = profile.UserName;
             form.Email = profile.Email;
             form.Name = profile.Name ?? "";
             form.Surname = profile.Surname ?? "";
             form.PhoneNumber = profile.PhoneNumber ?? "";
             form.ConcurrencyStamp = profile.ConcurrencyStamp;
-            try
-            {
-                await ReloadAvatarAsync();
-            }
-            catch
-            {
-                avatarDataUrl = null;
-            }
         }
         catch (Exception ex)
         {

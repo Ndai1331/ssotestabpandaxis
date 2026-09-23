@@ -30,8 +30,9 @@ public sealed class EmployeeRatingsController(EmployeeRatingAppService service) 
         [FromQuery] DateTime? from, [FromQuery] DateTime? to,
         [FromQuery] int skip = 0, [FromQuery] int take = 100,
         [FromQuery] Guid? userId = null,
+        [FromQuery] Guid[]? userIds = null,
         CancellationToken cancellationToken = default) =>
-        service.GetSummariesAsync(from, to, skip, take, userId, cancellationToken);
+        service.GetSummariesAsync(from, to, skip, take, userId, userIds, cancellationToken);
 
     [HttpGet("{userId:guid}/detail")]
     [Authorize(Policy = WorkPermissions.EmployeeRatingsManagement)]

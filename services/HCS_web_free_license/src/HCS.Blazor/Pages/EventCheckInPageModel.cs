@@ -36,7 +36,7 @@ public abstract class EventCheckInPageModel : PageModel
 
     public string T(string key) => localizer[key].Value;
 
-    public string FormatTime(DateTime value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    public string FormatTime(DateTime value) => WorkUi.FormatDisplayTime(value);
 
     public string StatusLabel(string value) => value switch
     {

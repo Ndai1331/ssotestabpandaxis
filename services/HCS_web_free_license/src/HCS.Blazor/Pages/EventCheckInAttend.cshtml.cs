@@ -51,7 +51,7 @@ public sealed class EventCheckInAttendModel(
         if (Event is null) return "";
         if (IsCheckedIn)
         {
-            var time = Event.CheckedInAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+            var time = Event.CheckedInAt is { } checkedIn ? FormatTime(checkedIn) : null;
             return string.IsNullOrWhiteSpace(time)
                 ? T("Event:CheckInSuccess")
                 : $"{T("Event:CheckInSuccess")} · {time}";

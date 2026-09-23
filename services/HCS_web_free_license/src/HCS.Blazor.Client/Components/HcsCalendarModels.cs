@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using HCS.Blazor.Client.Work;
 
@@ -35,20 +36,22 @@ public static class CalendarEventDisplay
     public static HcsCalendarJsEvent ToJs(CalendarEventDto item)
     {
         var (kind, accent, background, text) = Style(item);
-        var startLocal = item.StartTime.ToLocalTime();
-        var endLocal = item.EndTime.ToLocalTime();
+        // Match the date pickers' clock time. Omit the offset so FullCalendar
+        // does not shift the value again in the browser's timezone.
+        var startLocal = DateTime.SpecifyKind(item.StartTime, DateTimeKind.Unspecified);
+        var endLocal = DateTime.SpecifyKind(item.EndTime, DateTimeKind.Unspecified);
         string start;
         string end;
         if (item.AllDay)
         {
-            start = startLocal.ToString("yyyy-MM-dd");
+            start = startLocal.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var lastInclusive = endLocal.Date < startLocal.Date ? startLocal.Date : endLocal.Date;
-            end = lastInclusive.AddDays(1).ToString("yyyy-MM-dd");
+            end = lastInclusive.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         }
         else
         {
-            start = startLocal.ToString("o");
-            end = endLocal.ToString("o");
+            start = startLocal.ToString("o", CultureInfo.InvariantCulture);
+            end = endLocal.ToString("o", CultureInfo.InvariantCulture);
         }
 
         return new HcsCalendarJsEvent

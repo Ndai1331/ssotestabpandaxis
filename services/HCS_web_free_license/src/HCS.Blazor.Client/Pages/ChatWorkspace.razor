@@ -456,7 +456,7 @@
                             @if (CanManageGroupMembers)
                             {
                                 <button class="btn btn-ghost btn-sm" type="button" @onclick="OpenAddMembersAsync">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
                                     @T("Chat:AddMembers")
                                 </button>
                             }
@@ -738,7 +738,7 @@
                         }
                         else
                         {
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
                         }
                         <span class="btn-label">@T("Chat:AddMembers")</span>
                     </button>
@@ -911,7 +911,6 @@
             currentUserId = userId;
         }
 
-        Realtime.Changed += HandleRealtimeChangeAsync;
         Realtime.MessageReceived += HandleMessageReceivedAsync;
         Realtime.MessageDeleted += HandleMessageDeletedAsync;
         Realtime.PresenceChanged += HandlePresenceChangedAsync;
@@ -928,12 +927,13 @@
             realtimeUnavailable = true;
         }
 
-        await LoadContactsAsync();
+        await Task.WhenAll(LoadContactsAsync(), LoadConversationsAsync());
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await LoadConversationsAsync();
+        if (conversations.Count == 0)
+            await LoadConversationsAsync();
         if (RedirectToConversationId is { } redirectId && conversations.FirstOrDefault(item => item.Id == redirectId) is { } target)
         {
             await SelectAsync(target);
@@ -1078,14 +1078,26 @@
 
         try
         {
-            selected = await Client.GetConversationAsync(value.Id);
-            permissions = await Client.GetPermissionsAsync(value.Id);
+            var conversationId = value.Id;
+            async Task MarkReadSafeAsync()
+            {
+                try { await Client.MarkReadAsync(conversationId); }
+                catch { }
+            }
+
+            var conversationTask = Client.GetConversationAsync(conversationId);
+            var permissionsTask = Client.GetPermissionsAsync(conversationId);
+            var messagesTask = LoadMessagesAsync(reset: true, manageLoading: false);
+            var pinnedTask = LoadPinnedMessagesAsync();
+            var markReadTask = MarkReadSafeAsync();
+            await Task.WhenAll(conversationTask, permissionsTask, messagesTask, pinnedTask, markReadTask);
+            selected = await conversationTask;
+            if (selected.UnreadCount != 0)
+                selected = selected with { UnreadCount = 0 };
+            permissions = await permissionsTask;
             renameText = selected.Name ?? string.Empty;
             await ResolveUserNamesAsync(selected.Members.Select(member => member.UserId));
-            await LoadMessagesAsync(reset: true);
-            await LoadPinnedMessagesAsync();
-            await Client.MarkReadAsync(value.Id);
-            await LoadConversationsAsync();
+            PatchConversation(selected);
         }
         catch (Exception exception)
         {
@@ -1097,15 +1109,86 @@
         }
     }
 
-    private async Task LoadMessagesAsync(bool reset)
+    private void PatchConversation(ConversationDto updated)
+    {
+        var list = conversations.ToList();
+        var index = list.FindIndex(item => item.Id == updated.Id);
+        if (index >= 0)
+            list[index] = updated;
+        else
+            list.Insert(0, updated);
+        conversations = list;
+    }
+
+    private void RemoveConversation(Guid conversationId) =>
+        conversations = conversations.Where(item => item.Id != conversationId).ToList();
+
+    private async Task RefreshConversationRowAsync(Guid conversationId)
+    {
+        try
+        {
+            var updated = await Client.GetConversationAsync(conversationId);
+            if (selected?.Id == conversationId)
+            {
+                selected = updated with { UnreadCount = 0 };
+                PatchConversation(selected);
+            }
+            else
+            {
+                PatchConversation(updated);
+            }
+
+            await ResolveUserNamesAsync(updated.Members.Select(member => member.UserId));
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private async Task PatchConversationFromMessageAsync(ChatMessageDto message)
+    {
+        var existing = conversations.FirstOrDefault(item => item.Id == message.ConversationId);
+        if (existing is null)
+        {
+            await RefreshConversationRowAsync(message.ConversationId);
+            return;
+        }
+
+        var unread = existing.UnreadCount;
+        if (selected?.Id == message.ConversationId)
+            unread = 0;
+        else if (message.SenderUserId != currentUserId)
+            unread += 1;
+
+        PatchConversation(existing with
+        {
+            LastMessage = LastMessagePreview(message),
+            LastMessageAt = message.CreatedAt,
+            UnreadCount = unread
+        });
+    }
+
+    private static string LastMessagePreview(ChatMessageDto message)
+    {
+        if (message.IsDeleted)
+            return string.Empty;
+        if (!string.IsNullOrWhiteSpace(message.Text))
+            return message.Text.Length <= 512 ? message.Text : message.Text[..512];
+        return message.Attachments.FirstOrDefault()?.FileName ?? string.Empty;
+    }
+
+    private async Task LoadMessagesAsync(bool reset, bool manageLoading = true)
     {
         if (selected is null)
         {
             return;
         }
 
-        isLoadingMessages = true;
-        messageError = null;
+        if (manageLoading)
+        {
+            isLoadingMessages = true;
+            messageError = null;
+        }
         try
         {
             var skip = reset ? 0 : messageSkip;
@@ -1131,7 +1214,8 @@
         }
         finally
         {
-            isLoadingMessages = false;
+            if (manageLoading)
+                isLoadingMessages = false;
         }
     }
 
@@ -1170,7 +1254,7 @@
             replyingTo = null;
             scrollToBottomAfterRender = true;
             await Client.MarkReadAsync(selected.Id);
-            await LoadConversationsAsync();
+            await PatchConversationFromMessageAsync(sent);
         }
         catch (CollaborationApiException exception) when (exception.StatusCode == HttpStatusCode.RequestEntityTooLarge)
         {
@@ -1210,7 +1294,7 @@
             leftTab = LeftTab.Conversations;
             selectedContactIds.Clear();
             groupName = string.Empty;
-            await LoadConversationsAsync();
+            PatchConversation(created);
             await SelectAsync(created);
         }
         catch (Exception exception)
@@ -1233,8 +1317,7 @@
         try
         {
             await Client.SetConversationPinnedAsync(selected.Id, !selected.IsPinned);
-            await LoadConversationsAsync();
-            selected = conversations.FirstOrDefault(item => item.Id == selected.Id) ?? selected;
+            await RefreshConversationRowAsync(selected.Id);
         }
         catch (Exception exception)
         {
@@ -1253,8 +1336,7 @@
         try
         {
             await Client.RenameConversationAsync(selected.Id, renameText.Trim());
-            await LoadConversationsAsync();
-            selected = conversations.FirstOrDefault(item => item.Id == selected.Id) ?? selected;
+            await RefreshConversationRowAsync(selected.Id);
             isEditingName = false;
         }
         catch (Exception exception)
@@ -1284,7 +1366,7 @@
             selected = await Client.GetConversationAsync(selected.Id);
             permissions = await Client.GetPermissionsAsync(selected.Id);
             await ResolveUserNamesAsync(selected.Members.Select(member => member.UserId));
-            await LoadConversationsAsync();
+            PatchConversation(selected);
         }
         catch (Exception exception)
         {
@@ -1336,14 +1418,15 @@
         isLeaving = true;
         try
         {
-            await Client.LeaveAsync(selected.Id, successorAdminId);
+            var leftId = selected.Id;
+            await Client.LeaveAsync(leftId, successorAdminId);
             selected = null;
             permissions = null;
             messages.Clear();
             Realtime.ActiveConversationId = null;
             showTransferAdmin = false;
             transferAdminTo = null;
-            await LoadConversationsAsync();
+            RemoveConversation(leftId);
             ShowList();
         }
         catch (Exception exception)
@@ -1591,15 +1674,6 @@
 
     private static DateTime ToLocal(DateTime value) =>
         value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : DateTime.SpecifyKind(value, DateTimeKind.Utc).ToLocalTime();
-
-    private async Task HandleRealtimeChangeAsync()
-    {
-        await InvokeAsync(async () =>
-        {
-            await LoadConversationsAsync();
-            StateHasChanged();
-        });
-    }
 
     private async Task HandleRealtimeStatusAsync(HubConnectionState state)
     {
@@ -1961,7 +2035,6 @@
         contactSearchCts?.Dispose();
         memberSearchCts?.Cancel();
         memberSearchCts?.Dispose();
-        Realtime.Changed -= HandleRealtimeChangeAsync;
         Realtime.MessageReceived -= HandleMessageReceivedAsync;
         Realtime.MessageDeleted -= HandleMessageDeletedAsync;
         Realtime.PresenceChanged -= HandlePresenceChangedAsync;

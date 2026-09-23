@@ -91,6 +91,15 @@ public static class NotificationText
         return "doc";
     }
 
+    public static string IconClass(string kind) => kind switch
+    {
+        "sign" => "fa-signature",
+        "chat" => "fa-comments",
+        "event" => "fa-calendar-check",
+        "social" => "fa-users",
+        _ => "fa-file-lines"
+    };
+
     public static string FormatLocal(DateTime value, string format)
     {
         if (value.Year < 2000) return "—";

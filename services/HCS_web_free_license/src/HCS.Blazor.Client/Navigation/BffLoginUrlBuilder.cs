@@ -1,10 +1,14 @@
 using System;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
 
 namespace HCS.Blazor.Client.Navigation;
 
 internal static class BffLoginUrlBuilder
 {
+    public static void Redirect(NavigationManager navigation, IConfiguration configuration) =>
+        navigation.NavigateTo(Build(configuration, navigation.Uri), forceLoad: true);
+
     public static string Build(IConfiguration configuration, string returnUrl)
     {
         var configuredOrigin = configuration["Bff:PublicOrigin"];

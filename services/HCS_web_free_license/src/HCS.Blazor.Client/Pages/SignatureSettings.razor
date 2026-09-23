@@ -170,10 +170,13 @@
         loadFailed = false;
         try
         {
+            var credentialsTask = Documents.GetCredentialsAsync();
+            var definitionsTask = Documents.GetSigningProviderDefinitionsAsync();
+            await Task.WhenAll(credentialsTask, definitionsTask);
             credentials.Clear();
-            credentials.AddRange(await Documents.GetCredentialsAsync());
+            credentials.AddRange(await credentialsTask);
             providerDefinitions.Clear();
-            providerDefinitions.AddRange(await Documents.GetSigningProviderDefinitionsAsync());
+            providerDefinitions.AddRange(await definitionsTask);
         }
         catch (Exception ex)
         {

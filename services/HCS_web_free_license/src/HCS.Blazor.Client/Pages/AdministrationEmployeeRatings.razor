@@ -21,21 +21,22 @@
             <div class="hcs-rating-toolbar__fields">
                 <div>
                     <label class="form-label" for="management-rating-search">@L["EmployeeRatings:Search"]</label>
-                    <input id="management-rating-search" class="form-control" type="search" @bind="searchText" @bind:event="oninput" placeholder="@L["EmployeeRatings:SearchPlaceholder"]" />
+                    <input id="management-rating-search" class="form-control" type="search" value="@searchText"
+                           @oninput="OnSearchInput" placeholder="@L["EmployeeRatings:SearchPlaceholder"]" />
                 </div>
                 <div>
                     <label class="form-label" for="management-rating-department">@L["EmployeeRatings:Department"]</label>
-                    <select id="management-rating-department" class="form-select" @bind="selectedDepartment">
+                    <select id="management-rating-department" class="form-select" @bind="selectedDepartmentId" @bind:after="OnDepartmentChanged">
                         <option value="">@L["EmployeeRatings:AllDepartments"]</option>
-                        @foreach (var department in DepartmentNames)
+                        @foreach (var department in departments)
                         {
-                            <option value="@department">@department</option>
+                            <option value="@department.Id">@department.Name</option>
                         }
                     </select>
                 </div>
                 <div>
                     <label class="form-label" for="management-rating-sort">@L["EmployeeRatings:Sort"]</label>
-                    <select id="management-rating-sort" class="form-select" @bind="sortOrder">
+                    <select id="management-rating-sort" class="form-select" @bind="sortOrder" @bind:after="ApplySort">
                         <option value="desc">@L["EmployeeRatings:SortHighToLow"]</option>
                         <option value="asc">@L["EmployeeRatings:SortLowToHigh"]</option>
                     </select>
@@ -56,7 +57,7 @@
     {
         <div class="card hcs-rating-table-card">
             <div class="card-body p-0">
-                @if (!FilteredPeople.Any())
+                @if (people.Count == 0)
                 {
                     <DocsEmpty Title="@L["EmployeeRatings:EmptyTitle"]" Hint="@L["EmployeeRatings:Empty"]" />
                 }
@@ -67,7 +68,7 @@
                             <caption class="visually-hidden">@L["Menu:EmployeeRatingResults"]</caption>
                             <thead><tr><th>@L["EmployeeRatings:Employee"]</th><th>@L["EmployeeRatings:Department"]</th><th>@L["EmployeeRatings:Average"]</th><th>@L["EmployeeRatings:Reviews"]</th><th class="text-end">@L["EmployeeRatings:Action"]</th></tr></thead>
                             <tbody>
-                                @foreach (var person in FilteredPeople)
+                                @foreach (var person in people)
                                 {
                                     <tr>
                                         <td data-label="@L["EmployeeRatings:Employee"]"><div class="hcs-rating-table-person"><span class="hcs-rating-avatar hcs-rating-avatar--small">@person.Initials</span><strong>@person.User.DisplayName</strong></div></td>
@@ -80,6 +81,10 @@
                             </tbody>
                         </table>
                     </div>
+                    <HcsPager TotalCount="totalCount" PageSize="pageSize" PageSizeId="management-ratings-page-size"
+                              CanPrev="CanPrev" CanNext="CanNext" Disabled="@isLoading"
+                              FirstClicked="GoFirst" PrevClicked="GoPrev" NextClicked="GoNext" LastClicked="GoLast"
+                              PageSizeChanged="OnPageSizeChanged" />
                 }
             </div>
         </div>
@@ -88,26 +93,38 @@
 
 @code {
     private readonly List<EmployeeRatingPerson> people = [];
+    private IReadOnlyList<DepartmentCatalogDto> departments = [];
     private string searchText = string.Empty;
-    private string selectedDepartment = string.Empty;
+    private string selectedDepartmentId = string.Empty;
     private string sortOrder = "desc";
     private bool isLoading = true;
     private bool hasError;
+    private long totalCount;
+    private int pageSize = 20;
+    private int currentPage = 1;
+    private CancellationTokenSource? searchCts;
 
-    private IEnumerable<EmployeeRatingPerson> FilteredPeople => people
-        .Where(person => string.IsNullOrWhiteSpace(searchText)
-            || person.User.DisplayName.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase)
-            || person.User.UserName.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase))
-        .Where(person => string.IsNullOrWhiteSpace(selectedDepartment)
-            || string.Equals(person.DepartmentName, selectedDepartment, StringComparison.Ordinal))
-        .OrderByDescending(person => sortOrder == "desc" ? person.Summary.AverageScore : -person.Summary.AverageScore)
-        .ThenBy(person => person.User.DisplayName);
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
+    private bool CanPrev => currentPage > 1;
+    private bool CanNext => currentPage < PageCount;
+    private Guid? SelectedUnitId => Guid.TryParse(selectedDepartmentId, out var id) ? id : null;
 
-    private IEnumerable<string> DepartmentNames => people.Select(x => x.DepartmentName)
-        .Where(x => !string.IsNullOrWhiteSpace(x))
-        .Distinct(StringComparer.Ordinal).OrderBy(x => x);
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            departments = (await Directory.GetDepartmentsAsync())
+                .Where(department => department.IsActive)
+                .OrderBy(department => department.Name)
+                .ToList();
+        }
+        catch (Exception exception)
+        {
+            await NotifyErrorAsync(exception);
+        }
 
-    protected override Task OnInitializedAsync() => LoadAsync();
+        await LoadAsync();
+    }
 
     private async Task LoadAsync()
     {
@@ -115,16 +132,24 @@
         hasError = false;
         try
         {
-            var loadedPeople = await Directory.GetPeopleAsync();
-            var summaries = await Work.GetAllEmployeeRatingSummariesAsync();
-            var summaryMap = summaries.ToDictionary(x => x.TargetUserId);
-            people.Clear();
-            foreach (var person in loadedPeople)
+            var skip = (Math.Max(1, currentPage) - 1) * pageSize;
+            var page = await Directory.GetPeoplePageAsync(searchText, skip, pageSize, organizationUnitId: SelectedUnitId);
+            var ids = page.People.Select(person => person.User.UserId).ToArray();
+            if (ids.Length > 0)
             {
-                if (summaryMap.TryGetValue(person.User.UserId, out var summary))
-                    person.Summary = summary;
-                people.Add(person);
+                var summaries = await Work.GetEmployeeRatingSummariesAsync(0, ids.Length, userIds: ids);
+                var map = summaries.Items.ToDictionary(item => item.TargetUserId);
+                foreach (var person in page.People)
+                    person.Summary = map.TryGetValue(person.User.UserId, out var summary)
+                        ? summary
+                        : EmployeeRatingPerson.EmptySummary(person.User.UserId);
             }
+
+            people.Clear();
+            people.AddRange(page.People);
+            totalCount = page.TotalCount;
+            currentPage = Math.Clamp(currentPage, 1, PageCount);
+            ApplySort();
         }
         catch (Exception exception)
         {
@@ -135,5 +160,56 @@
         {
             isLoading = false;
         }
+    }
+
+    private void ApplySort()
+    {
+        var ordered = sortOrder == "asc"
+            ? people.OrderBy(person => person.Summary.AverageScore).ThenBy(person => person.User.DisplayName)
+            : people.OrderByDescending(person => person.Summary.AverageScore).ThenBy(person => person.User.DisplayName);
+        var snapshot = ordered.ToList();
+        people.Clear();
+        people.AddRange(snapshot);
+    }
+
+    private Task OnSearchInput(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        return QueueSearchAsync();
+    }
+
+    private async Task QueueSearchAsync()
+    {
+        searchCts?.Cancel();
+        searchCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        searchCts = cts;
+        try
+        {
+            await Task.Delay(300, cts.Token);
+            currentPage = 1;
+            await LoadAsync();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private Task OnDepartmentChanged()
+    {
+        currentPage = 1;
+        return LoadAsync();
+    }
+
+    private Task GoFirst() { currentPage = 1; return LoadAsync(); }
+    private Task GoPrev() { if (!CanPrev) return Task.CompletedTask; currentPage--; return LoadAsync(); }
+    private Task GoNext() { if (!CanNext) return Task.CompletedTask; currentPage++; return LoadAsync(); }
+    private Task GoLast() { currentPage = PageCount; return LoadAsync(); }
+    private Task OnPageSizeChanged(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
+        pageSize = Math.Clamp(size, 10, 100);
+        currentPage = 1;
+        return LoadAsync();
     }
 }

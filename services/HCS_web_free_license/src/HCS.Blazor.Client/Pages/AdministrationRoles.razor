@@ -5,11 +5,13 @@
 @using System.Net
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Configuration
 @using Microsoft.Extensions.Localization
 @using Volo.Abp.AspNetCore.Components.Messages
 @inject IdentityAdminClient IdentityClient
 @inject IUiMessageService UiMessageService
 @inject IStringLocalizer<HCSResource> L
+@inject IConfiguration Configuration
 @inject NavigationManager Navigation
 
 <PageTitle>@L["Roles:Title"] · HCS</PageTitle>
@@ -35,14 +37,7 @@
             {
                 <div class="hcs-admin-alert" role="alert">
                     <span>@errorMessage</span>
-                    @if (sessionExpired)
-                    {
-                        <button class="btn btn-primary" type="button" @onclick="NavigateToLogin">@L["Roles:LoginAgain"]</button>
-                    }
-                    else
-                    {
-                        <button class="btn btn-outline" type="button" @onclick="LoadRolesAsync">@L["Roles:Retry"]</button>
-                    }
+                    <button class="btn btn-outline" type="button" @onclick="LoadRolesAsync">@L["Roles:Retry"]</button>
                 </div>
             }
 
@@ -123,14 +118,7 @@
                             {
                                 <div class="hcs-admin-alert" role="alert">
                                     <span>@permissionErrorMessage</span>
-                                    @if (permissionSessionExpired)
-                                    {
-                                        <button class="btn btn-primary" type="button" @onclick="NavigateToLogin">@L["Roles:LoginAgain"]</button>
-                                    }
-                                    else
-                                    {
-                                        <button class="btn btn-outline" type="button" @onclick="@(() => LoadPermissionsAsync(selectedRoleName!))">@L["Roles:Retry"]</button>
-                                    }
+                                    <button class="btn btn-outline" type="button" @onclick="@(() => LoadPermissionsAsync(selectedRoleName!))">@L["Roles:Retry"]</button>
                                 </div>
                             }
                             else
@@ -339,8 +327,6 @@
     private string? errorMessage;
     private string? permissionErrorMessage;
     private string? roleFormErrorMessage;
-    private bool sessionExpired;
-    private bool permissionSessionExpired;
     private bool isLoading;
     private bool isLoadingPermissions;
     private bool isSavingRole;
@@ -398,7 +384,6 @@
     {
         isLoading = true;
         errorMessage = null;
-        sessionExpired = false;
         try
         {
             var result = await IdentityClient.GetRolesAsync(maxResultCount: 100);
@@ -417,7 +402,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
-            sessionExpired = exception.StatusCode == HttpStatusCode.Unauthorized;
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             errorMessage = FriendlyApiError(exception, "Roles:LoadError");
         }
         catch (Exception)
@@ -438,7 +427,6 @@
         selectedPermissionGroup = null;
         permissionFilter = null;
         permissionErrorMessage = null;
-        permissionSessionExpired = false;
         isLoadingPermissions = true;
         permissionGroups.Clear();
         try
@@ -450,7 +438,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
-            permissionSessionExpired = exception.StatusCode == HttpStatusCode.Unauthorized;
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             permissionErrorMessage = FriendlyApiError(exception, "Roles:PermissionsLoadError");
         }
         catch (Exception)
@@ -590,6 +582,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             permissionErrorMessage = FriendlyApiError(exception, "Roles:SaveError");
             await UiMessageService.Error(permissionErrorMessage);
         }
@@ -688,6 +685,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             roleFormErrorMessage = FriendlyApiError(exception, "Roles:CreateError");
             await UiMessageService.Error(roleFormErrorMessage);
         }
@@ -733,6 +735,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             roleFormErrorMessage = FriendlyApiError(exception, "Roles:UpdateError");
             await UiMessageService.Error(roleFormErrorMessage);
         }
@@ -774,7 +781,11 @@
         }
         catch (IdentityAdminApiException exception)
         {
-            sessionExpired = exception.StatusCode == HttpStatusCode.Unauthorized;
+            if (RedirectIfUnauthorized(exception))
+            {
+                return;
+            }
+
             errorMessage = FriendlyApiError(exception, "Roles:DeleteError", "Roles:DeleteConflict");
             await UiMessageService.Error(errorMessage);
         }
@@ -844,7 +855,16 @@
             : normalized;
     }
 
-    private void NavigateToLogin() => Navigation.NavigateTo("/login", forceLoad: true);
+    private bool RedirectIfUnauthorized(IdentityAdminApiException exception)
+    {
+        if (exception.StatusCode != HttpStatusCode.Unauthorized)
+        {
+            return false;
+        }
+
+        BffLoginUrlBuilder.Redirect(Navigation, Configuration);
+        return true;
+    }
 
     private string FriendlyApiError(IdentityAdminApiException exception, string fallbackKey, string? conflictKey = null)
     {

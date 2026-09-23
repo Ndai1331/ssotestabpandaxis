@@ -243,8 +243,10 @@
     {
         try
         {
-            locations.AddRange(await Work.GetLocationsAsync());
-            await LoadAsync();
+            var locationsTask = Work.GetLocationsAsync();
+            var dataTask = LoadAsync();
+            await Task.WhenAll(locationsTask, dataTask);
+            locations.AddRange(await locationsTask);
         }
         catch (Exception ex)
         {
@@ -285,8 +287,11 @@
         isLoading = true;
         try
         {
-            statistics = await Work.GetSurveyStatisticsAsync(SelectedLocation);
-            summaries = await Work.GetSurveyResultSummariesAsync(SelectedLocation, page * PageSize, PageSize);
+            var statisticsTask = Work.GetSurveyStatisticsAsync(SelectedLocation);
+            var summariesTask = Work.GetSurveyResultSummariesAsync(SelectedLocation, page * PageSize, PageSize);
+            await Task.WhenAll(statisticsTask, summariesTask);
+            statistics = await statisticsTask;
+            summaries = await summariesTask;
         }
         catch (Exception ex)
         {

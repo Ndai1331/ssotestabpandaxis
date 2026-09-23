@@ -207,9 +207,15 @@
         isLoading = true;
         try
         {
+            var criteriaTask = Work.GetCriteriaAsync();
+            Task<List<SurveyLocationDto>> locationsTask = locations.Count == 0
+                ? Work.GetLocationsAsync()
+                : Task.FromResult(locations);
+            await Task.WhenAll(criteriaTask, locationsTask);
             allItems.Clear();
-            allItems.AddRange(await Work.GetCriteriaAsync());
-            if (locations.Count == 0) locations.AddRange(await Work.GetLocationsAsync());
+            allItems.AddRange(await criteriaTask);
+            if (locations.Count == 0)
+                locations.AddRange(await locationsTask);
             Cache.Set(true, allItems.Select(x => new SurveyCatalogItem(x.Id, x.Code, x.Name, x.SortOrder, x.IsActive)).ToList());
             ApplyPage();
         }

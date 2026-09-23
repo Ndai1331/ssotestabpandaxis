@@ -8,8 +8,18 @@ namespace HCS.DocumentService.Controllers;
 public sealed class SigningController(ISigningAppService signing, ISigningKpiReportService signingKpi) : ControllerBase
 {
     [HttpGet("queue")]
-    public Task<IReadOnlyList<SigningQueueItemDto>> GetQueue(CancellationToken cancellationToken) =>
-        signing.GetQueueAsync(cancellationToken);
+    public async Task<IReadOnlyList<SigningQueueItemDto>> GetQueue([FromQuery] GetSigningQueueInput input, CancellationToken cancellationToken)
+    {
+        input.Take = input.Take <= 0 ? 200 : input.Take;
+        return (await signing.GetQueuePageAsync(input, cancellationToken)).Items;
+    }
+
+    [HttpGet("queue-page")]
+    public Task<PagedSigningQueueDto> GetQueuePage([FromQuery] GetSigningQueueInput input, CancellationToken cancellationToken)
+    {
+        input.Take = input.Take <= 0 ? 20 : input.Take;
+        return signing.GetQueuePageAsync(input, cancellationToken);
+    }
 
     [HttpGet("provider-definitions")]
     public Task<IReadOnlyList<SigningProviderDefinitionDto>> GetProviderDefinitions(CancellationToken cancellationToken) =>

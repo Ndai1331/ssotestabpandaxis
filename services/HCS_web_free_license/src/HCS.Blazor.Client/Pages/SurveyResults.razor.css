@@ -21,8 +21,11 @@
     font-size: .95rem;
 }
 
-.hcs-survey-tabs button.is-active {
+.hcs-survey-tabs button.is-active,
+.hcs-survey-tabs button.is-active:active,
+.hcs-survey-tabs button:active {
     border-bottom-color: #d4356b;
+    background: transparent;
     color: #d4356b;
 }
 
@@ -118,8 +121,11 @@
     grid-column: 1 / -1;
 }
 
-.hcs-survey-tabs button.is-active {
+.hcs-survey-tabs button.is-active,
+.hcs-survey-tabs button.is-active:active,
+.hcs-survey-tabs button:active {
     border-bottom-color: #d4356b;
+    background: transparent;
     color: #d4356b;
 }
 

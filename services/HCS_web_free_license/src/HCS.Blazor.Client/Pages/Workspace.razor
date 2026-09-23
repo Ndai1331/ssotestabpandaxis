@@ -110,6 +110,9 @@
                         <div class="hcs-ws-card-sub">@notifications.Count(x => !x.IsRead) @L["Work:Unread"]</div>
                     </div>
                 </div>
+                <button type="button" class="hcs-ws-notif-mark-all" @onclick="MarkAllWorkspaceNotificationsAsync" disabled="@(!notifications.Any(x => !x.IsRead))">
+                    @L["Notifications:MarkAllAsRead"]
+                </button>
             </header>
             <div class="hcs-ws-card-body">
                 @if (notifications.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoRecentNotifications"]</div> }
@@ -118,17 +121,24 @@
                     <div class="hcs-ws-notif">
                         @foreach (var item in notifications)
                         {
-                            <a class="hcs-ws-notif-row text-decoration-none @(item.IsRead ? null : "is-unread")" href="@NotificationText.ResolveLink(item)">
-                                <span class="@(item.IsRead ? null : "hcs-ws-ndot")" aria-hidden="true"></span>
-                                <div class="hcs-ws-notif-content">
-                                    <div class="hcs-ws-n-title">@NotificationText.Localize(L, item.Title)</div>
-                                    <div class="hcs-ws-n-detail">@NotificationText.Localize(L, item.Body)</div>
-                                </div>
-                                <time class="hcs-ws-n-time" datetime="@item.CreatedAt.ToUniversalTime().ToString("O")">@NotificationText.FormatLocal(item.CreatedAt, "dd/MM HH:mm")</time>
+                            var kind = NotificationText.ResolveKind(item);
+                            <a class="hcs-ws-notif-item text-decoration-none @(item.IsRead ? null : "is-unread")"
+                               href="@NotificationText.ResolveLink(item)"
+                               @onclick="() => OpenWorkspaceNotificationAsync(item)"
+                               @onclick:preventDefault>
+                                <span class="hcs-ws-notif-ico is-@kind" aria-hidden="true">
+                                    <i class="fa @NotificationText.IconClass(kind)"></i>
+                                </span>
+                                <span class="hcs-ws-notif-copy">
+                                    <strong>@NotificationText.Localize(L, item.Title)</strong>
+                                    <p>@NotificationText.Localize(L, item.Body)</p>
+                                    <time datetime="@item.CreatedAt.ToUniversalTime().ToString("O")">@NotificationText.FormatLocal(item.CreatedAt, "dd/MM HH:mm")</time>
+                                </span>
                             </a>
                         }
                     </div>
                 }
+                <a class="hcs-ws-notif-all" href="/notifications">@L["Notifications:ViewAll"]</a>
             </div>
         </article>
     </div>
@@ -228,8 +238,8 @@
                 @if (projects.Count == 0) { <div class="hcs-ws-empty">@L["Work:NoProjectsFound"]</div> }
                 else
                 {
-                    <div class="hcs-ws-proj">
-                        @foreach (var project in projects.Take(5))
+                    <div class="hcs-ws-proj hcs-ws-list-expandable">
+                        @foreach (var project in projects.Take(projectVisibleCount))
                         {
                             var progress = WorkUi.ProjectProgress(project.Status);
                             <div class="hcs-ws-proj-row">
@@ -253,6 +263,12 @@
                             </div>
                         }
                     </div>
+                    @if (projectVisibleCount < projects.Count)
+                    {
+                        <div class="hcs-ws-signing-more">
+                            <button type="button" class="btn btn-outline btn-sm" @onclick="() => projectVisibleCount += 6">@L["Work:LoadMoreDocuments"]</button>
+                        </div>
+                    }
                 }
             </div>
         </article>
@@ -291,8 +307,8 @@
                 @if (myTasks.Count == 0) { <div class="hcs-ws-empty">@L["Feature:NoTasks"]</div> }
                 else
                 {
-                    <div class="hcs-ws-task">
-                        @foreach (var task in myTasks.Take(6))
+                    <div class="hcs-ws-task hcs-ws-list-expandable">
+                        @foreach (var task in myTasks.Take(taskVisibleCount))
                         {
                             <div class="hcs-ws-task-row">
                                 <button type="button" class="hcs-ws-task-name" @onclick="() => OpenTaskDetailModalAsync(task.Id)">@task.Title</button>
@@ -303,6 +319,12 @@
                             </div>
                         }
                     </div>
+                    @if (taskVisibleCount < myTasks.Count)
+                    {
+                        <div class="hcs-ws-signing-more">
+                            <button type="button" class="btn btn-outline btn-sm" @onclick="() => taskVisibleCount += 6">@L["Work:LoadMoreDocuments"]</button>
+                        </div>
+                    }
                 }
             </div>
         </article>
@@ -509,6 +531,8 @@
     private List<WorkflowInstanceDto> receivedWorkflows => workflows.Where(IsReceivedByMe).ToList();
     private string signingTab = "all";
     private int signingVisibleCount = 6;
+    private int projectVisibleCount = 6;
+    private int taskVisibleCount = 6;
     private IReadOnlyList<(string Key, string Label, int Count)> SigningTabs =>
     [
         ("all", "All", workflows.Count),
@@ -811,38 +835,51 @@
             workflows.Clear();
             notifications.Clear();
             signingVisibleCount = 6;
-            await LoadWorkspaceWidgetAsync(async () =>
-            {
-                events.AddRange((await Work.GetCalendarAsync(from, to)).Where(x => x.StartTime.ToLocalTime() >= from && x.StartTime.ToLocalTime() <= to));
-            }, generation);
-            await LoadWorkspaceWidgetAsync(async () =>
-            {
-                projects.AddRange((await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100))).Items
-                    .Where(x => x.EndDate >= from && x.StartDate <= to));
-            }, generation);
-            await LoadWorkspaceWidgetAsync(async () =>
-            {
-                tasks.AddRange((await Work.GetTasksAsync(null, new WorkListQuery(null, null, 0, 100))).Items
-                    .Where(x => x.DueDate >= from && x.StartDate <= to));
-            }, generation);
-            await LoadWorkspaceWidgetAsync(async () =>
-            {
-                var queue = await Documents.GetSigningQueueAsync();
-                foreach (var item in queue.Where(item => InRange(item.Document.CreationTime, from, to)))
+            projectVisibleCount = 6;
+            taskVisibleCount = 6;
+            await Task.WhenAll(
+                LoadWorkspaceWidgetAsync(async () =>
                 {
-                    signingQueue[item.Instance.Id] = item;
-                    workflowDocuments[item.Document.Id] = item.Document;
-                }
-                workflows.AddRange(signingQueue.Values.Select(item => item.Instance));
-                myDocumentCount = workflows.Count;
-            }, generation);
-            await LoadWorkspaceWidgetAsync(async () =>
-            {
-                notifications.AddRange((await Chat.GetNotificationsAsync(
-                    from: from, toExclusive: toDate.Date.AddDays(1)))
-                    .OrderByDescending(x => x.CreatedAt)
-                    .ThenByDescending(x => x.Id));
-            }, generation);
+                    events.AddRange((await Work.GetCalendarAsync(from, to)).Where(x => x.StartTime.ToLocalTime() >= from && x.StartTime.ToLocalTime() <= to));
+                    await NotifyWidgetRenderedAsync(generation);
+                }, generation),
+                LoadWorkspaceWidgetAsync(async () =>
+                {
+                    projects.AddRange((await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100))).Items
+                        .Where(x => x.EndDate >= from && x.StartDate <= to));
+                    await NotifyWidgetRenderedAsync(generation);
+                }, generation),
+                LoadWorkspaceWidgetAsync(async () =>
+                {
+                    tasks.AddRange((await Work.GetTasksAsync(null, new WorkListQuery(null, null, 0, 100))).Items
+                        .Where(x => x.DueDate >= from && x.StartDate <= to));
+                    await NotifyWidgetRenderedAsync(generation);
+                }, generation),
+                LoadWorkspaceWidgetAsync(async () =>
+                {
+                    var page = await Documents.GetSigningQueuePageAsync(new SigningQueueQuery(
+                        Skip: 0,
+                        Take: 50,
+                        From: from,
+                        ToExclusive: toDate.Date.AddDays(1)));
+                    foreach (var item in page.Items)
+                    {
+                        signingQueue[item.Instance.Id] = item;
+                        workflowDocuments[item.Document.Id] = item.Document;
+                    }
+                    workflows.AddRange(signingQueue.Values.Select(item => item.Instance));
+                    myDocumentCount = workflows.Count;
+                    await NotifyWidgetRenderedAsync(generation);
+                }, generation),
+                LoadWorkspaceWidgetAsync(async () =>
+                {
+                    notifications.AddRange(ChatNotificationGrouping.CollapseUnread(
+                        (await Chat.GetNotificationsAsync(
+                            from: from, toExclusive: toDate.Date.AddDays(1)))
+                        .OrderByDescending(x => x.CreatedAt)
+                        .ThenByDescending(x => x.Id)));
+                    await NotifyWidgetRenderedAsync(generation);
+                }, generation));
             if (generation != loadGeneration)
                 return;
             if (!visibleDays.Contains(selectedDay.Date))
@@ -857,6 +894,43 @@
         {
             if (generation == loadGeneration)
                 isLoading = false;
+        }
+    }
+
+    private async Task OpenWorkspaceNotificationAsync(NotificationDto item)
+    {
+        var link = NotificationText.ResolveLink(item);
+        try { await Chat.MarkNotificationReadAsync(item.Id); }
+        catch { /* still open the destination */ }
+        MarkWorkspaceNotificationRead(item);
+        LoginNavigation.NavigateTo(link);
+    }
+
+    private async Task MarkAllWorkspaceNotificationsAsync()
+    {
+        try { await Chat.MarkAllNotificationsReadAsync(); }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex);
+            return;
+        }
+
+        for (var i = 0; i < notifications.Count; i++)
+            notifications[i] = notifications[i] with { IsRead = true };
+    }
+
+    private void MarkWorkspaceNotificationRead(NotificationDto item)
+    {
+        var conversation = ChatNotificationRules.ConversationKey(item.Link);
+        for (var i = 0; i < notifications.Count; i++)
+        {
+            var current = notifications[i];
+            if (current.Id == item.Id
+                || (ChatNotificationRules.IsChatLink(item.Link)
+                    && ChatNotificationRules.ConversationKey(current.Link) == conversation))
+            {
+                notifications[i] = current with { IsRead = true };
+            }
         }
     }
 
@@ -888,6 +962,9 @@
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
     }
+
+    private Task NotifyWidgetRenderedAsync(int generation) =>
+        generation == loadGeneration ? InvokeAsync(StateHasChanged) : Task.CompletedTask;
 
     private async Task NotifyWorkspaceErrorAsync(Exception ex)
     {

@@ -226,9 +226,13 @@
         isLoading = true;
         try
         {
-            definitions.Clear(); definitions.AddRange(await Documents.GetDefinitionsAsync());
-            templates.Clear(); templates.AddRange(await Documents.GetTemplatesAsync());
-            kinds.Clear(); kinds.AddRange(await Documents.GetKindsAsync());
+            var definitionsTask = Documents.GetDefinitionsAsync();
+            var templatesTask = Documents.GetTemplatesAsync();
+            var kindsTask = Documents.GetKindsAsync();
+            await Task.WhenAll(definitionsTask, templatesTask, kindsTask);
+            definitions.Clear(); definitions.AddRange(await definitionsTask);
+            templates.Clear(); templates.AddRange(await templatesTask);
+            kinds.Clear(); kinds.AddRange(await kindsTask);
             ApplyPage();
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }

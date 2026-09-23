@@ -24,7 +24,7 @@ public sealed record ProjectTaskDetailDto(
 public sealed record CreateProjectRequest(
     string Code, string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record UpdateProjectRequest(
-    string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status);
+    string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record AddProjectMemberRequest(Guid UserId, string Role);
 public sealed record CreateProjectTaskRequest(
     Guid ProjectId, Guid? ParentTaskId, string Code, string Title, string? Description,

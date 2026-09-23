@@ -16,7 +16,7 @@
     <div class="page-head">
         <h1 id="sign-queue-title">@L["Feature:SigningQueue"]</h1>
         <div class="page-actions">
-            <button class="btn btn-outline" type="button" @onclick="ExportAsync" disabled="@(VisibleQueue.Count == 0)">
+            <button class="btn btn-outline" type="button" @onclick="ExportAsync" disabled="@(totalCount == 0)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>
                 @L["Catalog:Export"]
             </button>
@@ -158,7 +158,7 @@
                 </table>
             }
             </div>
-            <HcsPager TotalCount="VisibleQueue.Count" PageSize="pageSize" PageSizeId="sign-page-size"
+            <HcsPager TotalCount="totalCount" PageSize="pageSize" PageSizeId="sign-page-size"
                       CanPrev="CanPrevPage" CanNext="CanNextPage" Disabled="@isLoading"
                       FirstClicked="GoFirstPage" PrevClicked="GoPrevPage" NextClicked="GoNextPage" LastClicked="GoLastPage"
                       PageSizeChanged="OnPageSizeChanged" />
@@ -468,14 +468,10 @@
     private readonly Dictionary<Guid, string> departmentNamesById = [];
     private bool signatureOptionsLoadFailed, credentialsLoadFailed, isLoadingSigningOptions;
 
-    private int CountAll => queue.Count;
-    private int CountToMe => queue.Count(IsSentToMe);
-    private bool IsSentToMe(SigningQueueItem item) => currentUserId is { } me
-        && item.Instance.Tasks.Any(task => (task.AssigneeUserId == me || task.DecidedBy == me)
-            && item.Definition.Steps.Any(step =>
-                string.Equals(step.Code, task.StepCode, StringComparison.OrdinalIgnoreCase)
-                && step.Type is "PROCESS" or "SIGN"));
-    private int CountByMe => currentUserId is not null ? queue.Count(IsSentBy) : 0;
+    private int totalCount, countAll, countToMe, countByMe;
+    private int CountAll => countAll;
+    private int CountToMe => countToMe;
+    private int CountByMe => countByMe;
 
     private string SignatureTypeLabel(UserSignatureType type) => type switch
     {
@@ -502,46 +498,23 @@
         || toDate is not null
         || dateFilterField != "IncomingDate";
 
-    private List<SigningQueueItem> VisibleQueue =>
-        queue.Where(MatchesFilters).ToList();
+    private List<SigningQueueItem> VisibleQueue => queue;
 
-    private bool MatchesFilters(SigningQueueItem item)
-    {
-        if (!string.IsNullOrWhiteSpace(search)
-            && !item.Document.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
-            && !item.Document.Number.Contains(search, StringComparison.OrdinalIgnoreCase))
-            return false;
-        if (!string.IsNullOrWhiteSpace(statusFilter) && StatusFilterKey(item) != statusFilter)
-            return false;
-        var when = DateOf(item);
-        if (fromDate is { } fromValue && (when is not { } fromWhen || fromWhen < fromValue.ToUniversalTime()))
-            return false;
-        if (toDate is { } toValue && (when is not { } toWhen || toWhen > toValue.ToUniversalTime().AddDays(1)))
-            return false;
-        if (submitterId is { } user && !IsSubmittedBy(item, user))
-            return false;
-        if (departmentId is { } dept && DepartmentId(item) != dept)
-            return false;
-        if (inboxFilter == "toMe" && !IsSentToMe(item))
-            return false;
-        return inboxFilter != "byMe" || IsSentBy(item);
-    }
+    private List<SigningQueueItem> PageItems => queue;
 
-    private List<SigningQueueItem> PageItems =>
-        VisibleQueue.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
-
-    private int PageCount => Math.Max(1, (int)Math.Ceiling(VisibleQueue.Count / (double)pageSize));
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
     private bool CanPrevPage => currentPage > 1;
     private bool CanNextPage => currentPage < PageCount;
-    private void GoFirstPage() => currentPage = 1;
-    private void GoPrevPage() => currentPage = Math.Max(1, currentPage - 1);
-    private void GoNextPage() => currentPage = Math.Min(PageCount, currentPage + 1);
-    private void GoLastPage() => currentPage = PageCount;
-    private void OnPageSizeChanged(ChangeEventArgs args)
+    private Task GoFirstPage() { currentPage = 1; return LoadAsync(); }
+    private Task GoPrevPage() { currentPage = Math.Max(1, currentPage - 1); return LoadAsync(); }
+    private Task GoNextPage() { currentPage = Math.Min(PageCount, currentPage + 1); return LoadAsync(); }
+    private Task GoLastPage() { currentPage = PageCount; return LoadAsync(); }
+    private Task OnPageSizeChanged(ChangeEventArgs args)
     {
-        if (!int.TryParse(args.Value?.ToString(), out var size)) return;
+        if (!int.TryParse(args.Value?.ToString(), out var size)) return Task.CompletedTask;
         pageSize = Math.Clamp(size, 10, 100);
         currentPage = 1;
+        return LoadAsync();
     }
 
     protected override async Task OnInitializedAsync()
@@ -581,25 +554,36 @@
         credentialsLoadFailed = false;
         try
         {
-            var loadedCredentials = await Documents.GetCredentialsAsync();
-            signingCredentials.Clear();
-            signingCredentials.AddRange(loadedCredentials);
-        }
-        catch { credentialsLoadFailed = true; }
+            async Task LoadCredentialsSafeAsync()
+            {
+                try
+                {
+                    var loadedCredentials = await Documents.GetCredentialsAsync();
+                    signingCredentials.Clear();
+                    signingCredentials.AddRange(loadedCredentials);
+                }
+                catch { credentialsLoadFailed = true; }
+            }
 
-        try
-        {
-            var loadedSignatures = await Documents.GetSignaturesAsync();
-            signatures.Clear();
-            signatures.AddRange(loadedSignatures);
+            async Task LoadSignaturesSafeAsync()
+            {
+                try
+                {
+                    var loadedSignatures = await Documents.GetSignaturesAsync();
+                    signatures.Clear();
+                    signatures.AddRange(loadedSignatures);
+                }
+                catch { signatureOptionsLoadFailed = true; }
+            }
+
+            await Task.WhenAll(LoadCredentialsSafeAsync(), LoadSignaturesSafeAsync());
         }
-        catch { signatureOptionsLoadFailed = true; }
         finally { isLoadingSigningOptions = false; }
 
         if (selected is not null) SelectDefaultSignatureForSelectedKind();
     }
 
-    private void ApplyFilter() { search = SearchText.Normalize(filter); currentPage = 1; }
+    private void ApplyFilter() { search = SearchText.Normalize(filter); currentPage = 1; _ = LoadAsync(); }
     private void ToggleSearch()
     {
         showSearch = !showSearch;
@@ -618,6 +602,7 @@
         dateFilterField = "IncomingDate";
         showFilters = false;
         currentPage = 1;
+        _ = LoadAsync();
     }
     private void OnStatusFilterChanged(string value) => statusFilter = value ?? "";
     private void OnDateFilterFieldChanged(string value) => dateFilterField = string.IsNullOrWhiteSpace(value) ? "IncomingDate" : value;
@@ -625,9 +610,7 @@
     private void OnDepartmentChanged(Guid? value) => departmentId = value;
     private void OnFromDateChanged(DateTime? value) => fromDate = value;
     private void OnToDateChanged(DateTime? value) => toDate = value;
-    private DateTime? DateOf(SigningQueueItem item) =>
-        dateFilterField == "WorkflowDeadline" ? item.Task.DueAt : item.Document.CreationTime;
-    private void SetInbox(string value) { inboxFilter = value; currentPage = 1; }
+    private void SetInbox(string value) { inboxFilter = value; currentPage = 1; _ = LoadAsync(); }
     private Task OpenSubmit() => submitModal?.ShowAsync() ?? Task.CompletedTask;
     private Task PreviewAsync(SigningQueueItem item)
     {
@@ -690,9 +673,36 @@
         isLoading = true;
         try
         {
-            var items = await Documents.GetSigningQueueAsync();
+            Guid[]? fromUserIds = null;
+            if (departmentId is { } department)
+            {
+                var members = await OrganizationUnits.GetMembersLookupAsync(department);
+                fromUserIds = members.Select(member => member.UserId).Distinct().ToArray();
+            }
+
+            var page = await Documents.GetSigningQueuePageAsync(new SigningQueueQuery(
+                Skip: (Math.Max(1, currentPage) - 1) * pageSize,
+                Take: pageSize,
+                From: fromDate?.ToUniversalTime(),
+                ToExclusive: toDate is { } until ? until.Date.AddDays(1).ToUniversalTime() : null,
+                DateField: dateFilterField,
+                Inbox: inboxFilter,
+                Search: search,
+                Status: statusFilter,
+                SubmitterId: submitterId,
+                FromUserIds: fromUserIds));
             queue.Clear();
-            queue.AddRange(items.Select(item => new SigningQueueItem(ToDocumentDto(item.Document), item.Task, item.Instance, item.Definition, item.CanDelete)));
+            queue.AddRange(page.Items.Select(item => new SigningQueueItem(ToDocumentDto(item.Document), item.Task, item.Instance, item.Definition, item.CanDelete)));
+            totalCount = page.TotalCount;
+            countAll = page.CountAll;
+            countToMe = page.CountToMe;
+            countByMe = page.CountByMe;
+            var pageCount = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            if (currentPage > pageCount)
+            {
+                currentPage = pageCount;
+            }
+
             await LoadUserLookupsAsync();
             if (RelatedId is { } related && queue.FirstOrDefault(x => x.Document.Id == related) is { } match)
                 await OpenSign(match);
@@ -1024,9 +1034,37 @@
     {
         try
         {
+            Guid[]? fromUserIds = null;
+            if (departmentId is { } department)
+            {
+                var members = await OrganizationUnits.GetMembersLookupAsync(department);
+                fromUserIds = members.Select(member => member.UserId).Distinct().ToArray();
+            }
+
+            var exported = new List<SigningQueueItem>();
+            var skip = 0;
+            const int take = 100;
+            while (exported.Count < 5_000)
+            {
+                var page = await Documents.GetSigningQueuePageAsync(new SigningQueueQuery(
+                    Skip: skip,
+                    Take: take,
+                    From: fromDate?.ToUniversalTime(),
+                    ToExclusive: toDate is { } until ? until.Date.AddDays(1).ToUniversalTime() : null,
+                    DateField: dateFilterField,
+                    Inbox: inboxFilter,
+                    Search: search,
+                    Status: statusFilter,
+                    SubmitterId: submitterId,
+                    FromUserIds: fromUserIds));
+                exported.AddRange(page.Items.Select(item => new SigningQueueItem(ToDocumentDto(item.Document), item.Task, item.Instance, item.Definition, item.CanDelete)));
+                skip += page.Items.Count;
+                if (page.Items.Count == 0 || skip >= page.TotalCount) break;
+            }
+
             await CsvDownload.DownloadAsync(Js, "document-signing.csv",
                 [L["Feature:DocumentNumber"], L["Feature:DocumentTitleField"], L["Work:FilterSubmitter"], L["Work:FilterDepartment"], L["Catalog:Status"], L["Work:CurrentStep"], L["Work:ReceivedDate"]],
-                VisibleQueue.Select(item => (IReadOnlyList<string>)[
+                exported.Select(item => (IReadOnlyList<string>)[
                     item.Document.Number,
                     item.Document.Title,
                     SubmitterName(item),

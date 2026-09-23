@@ -166,6 +166,16 @@ body:has(.hcs-app-shell) .hcs-language-modal__footer .btn-primary,
   color: var(--color-primary-foreground, var(--color-white)) !important;
 }
 
+body:has(.hcs-app-shell) .modal-footer :is(.btn-primary, .hcs-catalog-save, .hcs-modal-save):is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn-primary:is(:active, .active):not(:disabled),
+.hcs-app-shell .chat-dialog-foot .btn-primary:is(:active, .active):not(:disabled),
+.hcs-app-shell .process-dialog-foot .btn-primary:is(:active, .active):not(:disabled),
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn-primary:is(:active, .active):not(:disabled) {
+  background: var(--color-primary-hover, var(--hcs-color-primary-strong, #007F7C)) !important;
+  border-color: var(--color-primary-hover, var(--hcs-color-primary-strong, #007F7C)) !important;
+  color: var(--color-primary-foreground, var(--color-white)) !important;
+}
+
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-secondary,
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-light,
 body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline,
@@ -216,6 +226,26 @@ body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary:hover:no
 .hcs-app-shell .process-dialog-foot .btn.btn-outline:hover:not(:disabled),
 .hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-light:hover:not(:disabled),
 .hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-white)) !important;
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger) !important;
+}
+
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-secondary:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-light:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-secondary:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-light:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .modal-footer .btn.btn-outline-primary:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-cancel:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-catalog-close:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-modal-cancel:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-light:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn.btn-secondary:is(:active, .active):not(:disabled),
+.hcs-app-shell .chat-dialog-foot .btn.btn-outline:is(:active, .active):not(:disabled),
+.hcs-app-shell .process-dialog-foot .btn.btn-outline:is(:active, .active):not(:disabled),
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-light:is(:active, .active):not(:disabled),
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn.btn-secondary:is(:active, .active):not(:disabled) {
   background: color-mix(in srgb, var(--color-danger) 8%, var(--color-white)) !important;
   border-color: var(--color-danger) !important;
   color: var(--color-danger) !important;

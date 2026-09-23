@@ -312,13 +312,20 @@
     private Modal? stepModal;
     private string activeTab = "info";
     private string? pdfUrl;
-    private bool isSaving, loaded, isNewStep;
+    private bool isSaving, loaded, isNewStep, pendingPdf;
     private Guid? loadedDefinitionId;
     private ElementReference templateFormPane;
     private ElementReference templatePdfPane;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (pendingPdf)
+        {
+            pendingPdf = false;
+            await LoadPdfAsync();
+            StateHasChanged();
+        }
+
         if (Id is null) return;
         try { await Js.InvokeVoidAsync("hcsMatchBlockHeight.attach", templateFormPane, templatePdfPane); }
         catch (JSDisconnectedException) { }
@@ -329,18 +336,36 @@
     {
         try
         {
-            try
+            async Task<IReadOnlyList<ChatContactDto>> LoadContactsSafeAsync()
             {
-                if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+                try { return await Chat.GetContactsAsync(null, 50); }
+                catch { return []; }
             }
-            catch { }
-            if (kinds.Count == 0) kinds.AddRange(await Documents.GetKindsAsync());
-            if (roles.Count == 0) roles.AddRange(await LoadRolesAsync());
+
+            async Task<IReadOnlyList<DepartmentCatalogDto>> LoadDepartmentsSafeAsync()
+            {
+                try { return await OrganizationUnits.GetDepartmentCatalogAsync(); }
+                catch { return []; }
+            }
+
+            var contactsTask = contacts.Count == 0
+                ? LoadContactsSafeAsync()
+                : Task.FromResult<IReadOnlyList<ChatContactDto>>([]);
+            var kindsTask = kinds.Count == 0
+                ? Documents.GetKindsAsync()
+                : Task.FromResult(new List<WorkflowKindDto>());
+            var rolesTask = roles.Count == 0
+                ? LoadRolesAsync()
+                : Task.FromResult<IReadOnlyList<IdentityAdminRoleDto>>([]);
+            var departmentsTask = departmentTree.Count == 0
+                ? LoadDepartmentsSafeAsync()
+                : Task.FromResult<IReadOnlyList<DepartmentCatalogDto>>([]);
+            await Task.WhenAll(contactsTask, kindsTask, rolesTask, departmentsTask);
+            contacts.AddRange(await contactsTask);
+            kinds.AddRange(await kindsTask);
+            roles.AddRange(await rolesTask);
             if (departmentTree.Count == 0)
-            {
-                var departments = await OrganizationUnits.GetDepartmentCatalogAsync();
-                departmentTree = DepartmentTreeSelectHelper.Build(departments);
-            }
+                departmentTree = DepartmentTreeSelectHelper.Build(await departmentsTask);
             if (Id is { } id)
             {
                 if (loaded && loadedDefinitionId == id)
@@ -354,6 +379,7 @@
                 form.Reset();
                 template = null;
                 templateForm.Reset();
+                pendingPdf = false;
                 await RevokePdfAsync();
             }
             loaded = true;
@@ -413,7 +439,10 @@
     }
     private async Task LoadDefinitionAsync(Guid id)
     {
-        var definition = await Documents.GetDefinitionAsync(id);
+        var definitionTask = Documents.GetDefinitionAsync(id);
+        var templatesTask = Documents.GetTemplatesAsync();
+        await Task.WhenAll(definitionTask, templatesTask);
+        var definition = await definitionTask;
         form.Code = definition.Code;
         form.Name = definition.Name;
         form.KindId = definition.KindId;
@@ -428,10 +457,10 @@
             contacts,
             form.Steps.SelectMany(step => step.UserIds.Append(step.AssigneeUserId ?? Guid.Empty)),
             CurrentUser);
-        var templates = await Documents.GetTemplatesAsync();
+        var templates = await templatesTask;
         template = templates.Where(x => x.DefinitionId == id).OrderByDescending(x => x.IsActive).ThenByDescending(x => x.Version).FirstOrDefault();
         BindTemplateForm();
-        await LoadPdfAsync();
+        pendingPdf = true;
     }
     private UpdateWorkflowDefinitionRequest DefinitionRequest() =>
         new(form.Name.Trim(), MapSteps(), form.KindId, form.Description, form.IsActive, form.SignMode);

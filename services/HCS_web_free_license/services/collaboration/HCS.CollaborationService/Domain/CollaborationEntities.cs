@@ -158,6 +158,11 @@ public sealed class Notification : CreationAuditedAggregateRoot<Guid>
     }
     public void MarkDelivered() => Status = NotificationStatus.Delivered;
     public void MarkFailed() => Status = NotificationStatus.Failed;
+    public void RefreshUnread(string body, DateTime at)
+    {
+        Body = Check.NotNullOrWhiteSpace(body, nameof(body), 2000);
+        CreationTime = NotificationTimes.ToUtc(at);
+    }
 }
 
 public sealed class NotificationReceiver : CreationAuditedEntity<Guid>
@@ -174,6 +179,13 @@ public sealed class NotificationReceiver : CreationAuditedEntity<Guid>
         CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
     }
     public void MarkRead(DateTime at) { IsRead = true; ReadAt = at; }
+    public void MarkUnread(DateTime at)
+    {
+        IsRead = false;
+        ReadAt = null;
+        CreationTime = NotificationTimes.ToUtc(at);
+    }
+    public void Touch(DateTime at) => CreationTime = NotificationTimes.ToUtc(at);
 }
 
 internal static class NotificationTimes

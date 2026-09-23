@@ -171,18 +171,30 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
         int take = 20,
         CancellationToken cancellationToken = default,
         DateTime? from = null,
-        DateTime? toExclusive = null) =>
+        DateTime? toExclusive = null,
+        string? filter = null,
+        bool? isRead = null) =>
         GetAsync<IReadOnlyList<NotificationDto>>(
             $"api/notifications?unreadOnly={unreadOnly}&skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 100)}"
                 + (from.HasValue ? $"&from={Uri.EscapeDataString(from.Value.ToUniversalTime().ToString("O"))}" : "")
-                + (toExclusive.HasValue ? $"&toExclusive={Uri.EscapeDataString(toExclusive.Value.ToUniversalTime().ToString("O"))}" : ""),
+                + (toExclusive.HasValue ? $"&toExclusive={Uri.EscapeDataString(toExclusive.Value.ToUniversalTime().ToString("O"))}" : "")
+                + (string.IsNullOrWhiteSpace(filter) ? "" : $"&filter={Uri.EscapeDataString(SearchText.Normalize(filter))}")
+                + (isRead.HasValue ? $"&isRead={isRead.Value.ToString().ToLowerInvariant()}" : ""),
             cancellationToken);
 
     public Task<int> GetNotificationUnreadCountAsync(CancellationToken cancellationToken = default) =>
         GetAsync<int>("api/notifications/unread-count", cancellationToken);
 
-    public Task<int> GetNotificationCountAsync(bool unreadOnly = false, CancellationToken cancellationToken = default) =>
-        GetAsync<int>($"api/notifications/count?unreadOnly={unreadOnly}", cancellationToken);
+    public Task<int> GetNotificationCountAsync(
+        bool unreadOnly = false,
+        CancellationToken cancellationToken = default,
+        string? filter = null,
+        bool? isRead = null) =>
+        GetAsync<int>(
+            $"api/notifications/count?unreadOnly={unreadOnly}"
+                + (string.IsNullOrWhiteSpace(filter) ? "" : $"&filter={Uri.EscapeDataString(SearchText.Normalize(filter))}")
+                + (isRead.HasValue ? $"&isRead={isRead.Value.ToString().ToLowerInvariant()}" : ""),
+            cancellationToken);
 
     public Task MarkNotificationReadAsync(Guid notificationId, CancellationToken cancellationToken = default) =>
         SendNoContentAsync(HttpMethod.Post, $"api/notifications/{notificationId:D}/read", cancellationToken: cancellationToken);

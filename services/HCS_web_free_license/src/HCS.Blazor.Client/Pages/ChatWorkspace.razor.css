@@ -71,7 +71,10 @@
     padding: 0 !important;
 }
 
-.hcs-chat-page ::deep .chat-list-tab.is-active {
+.hcs-chat-page ::deep .chat-list-tab.is-active,
+.hcs-chat-page ::deep .chat-list-tab.is-active:active,
+.hcs-chat-page ::deep .chat-list-tab:active {
+    background: transparent !important;
     border-bottom-color: var(--color-primary, #007f7c) !important;
     color: var(--color-primary, #007f7c) !important;
 }

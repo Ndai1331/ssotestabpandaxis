@@ -115,7 +115,7 @@
                                         </select>
                                     </div>
                                     <button class="btn btn-primary" type="button" @onclick="AddMemberAsync">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg>
                                         @L["Feature:AddMember"]
                                     </button>
                                 }
@@ -216,18 +216,34 @@
         isLoading = true;
         try
         {
-            try
+            async Task<IReadOnlyList<HCS.CollaborationService.Contracts.ChatContactDto>> LoadContactsSafeAsync()
             {
-                if (contacts.Count == 0) contacts.AddRange(await Chat.GetContactsAsync(null, 50));
+                try { return await Chat.GetContactsAsync(null, 50); }
+                catch { return []; }
             }
-            catch { }
-            if (departments.Count == 0)
+
+            async Task<IReadOnlyList<DepartmentCatalogDto>> LoadDepartmentsSafeAsync()
             {
-                try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
+                try { return await OrganizationUnits.GetDepartmentCatalogAsync(); }
+                catch { return []; }
             }
-            if (ProjectId is { } id)
+
+            async Task<ProjectDetailDto?> LoadProjectSafeAsync() =>
+                ProjectId is { } id ? await Work.GetProjectAsync(id) : null;
+
+            var contactsTask = contacts.Count == 0
+                ? LoadContactsSafeAsync()
+                : Task.FromResult<IReadOnlyList<HCS.CollaborationService.Contracts.ChatContactDto>>([]);
+            var departmentsTask = departments.Count == 0
+                ? LoadDepartmentsSafeAsync()
+                : Task.FromResult<IReadOnlyList<DepartmentCatalogDto>>([]);
+            var projectTask = LoadProjectSafeAsync();
+            await Task.WhenAll(contactsTask, departmentsTask, projectTask);
+            contacts.AddRange(await contactsTask);
+            departments.AddRange(await departmentsTask);
+            detail = await projectTask;
+            if (detail is not null)
             {
-                detail = await Work.GetProjectAsync(id);
                 BindProjectForm(detail.Project);
                 await ChatContactDirectory.EnsureAsync(Chat, contacts, detail.Members.Select(x => x.UserId), CurrentUser);
             }
@@ -272,7 +288,7 @@
         try
         {
             await Work.UpdateProjectAsync(projectId, new UpdateProjectRequest(
-                projectForm.Name.Trim(), Blank(projectForm.Description), projectForm.StartDate, projectForm.EndDate, projectForm.Status));
+                projectForm.Name.Trim(), Blank(projectForm.Description), projectForm.StartDate, projectForm.EndDate, projectForm.Status, projectForm.OwnerDepartmentId));
             await NotifySuccessAsync(L["Catalog:Updated"]);
             Navigation.NavigateTo("/projects");
         }

@@ -1060,11 +1060,14 @@
         }
         currentDisplayName = authenticationState.User.FindFirst("name")?.Value
             ?? authenticationState.User.Identity?.Name ?? L["Auth:UserFallback"].Value;
-        canChat = await HasPermissionAsync(CollaborationPermissions.Chat);
-        canRate = await HasPermissionAsync("WorkManagement.EmployeeRatings");
-        canReadRatings = canRate
-            || await HasPermissionAsync("WorkManagement.EmployeeRatings.Management")
-            || await HasPermissionAsync("WorkManagement.EmployeeRatings.Dashboard");
+        var chatTask = HasPermissionAsync(CollaborationPermissions.Chat);
+        var rateTask = HasPermissionAsync("WorkManagement.EmployeeRatings");
+        var managementTask = HasPermissionAsync("WorkManagement.EmployeeRatings.Management");
+        var dashboardTask = HasPermissionAsync("WorkManagement.EmployeeRatings.Dashboard");
+        await Task.WhenAll(chatTask, rateTask, managementTask, dashboardTask);
+        canChat = await chatTask;
+        canRate = await rateTask;
+        canReadRatings = canRate || await managementTask || await dashboardTask;
         await ReloadForCurrentRouteAsync();
     }
 
@@ -1118,36 +1121,27 @@
         routeLoaded = false;
         try
         {
-            await LoadPersonalAvatarAsync();
             var authorUserId = isOtherProfile ? profileUserId : null;
-            var result = isProfile
-                    ? await Social.GetProfilePostsAsync(visibility: visibilityFilter, keyword: keywordFilter,
+            var avatarTask = LoadPersonalAvatarAsync();
+            var postsTask = isProfile
+                ? Social.GetProfilePostsAsync(visibility: visibilityFilter, keyword: keywordFilter,
                     hashtag: hashtagFilter, postId: selectedPostId, authorUserId: authorUserId)
-                : await Social.GetFeedAsync(keyword: keywordFilter, hashtag: hashtagFilter, postId: selectedPostId);
+                : Social.GetFeedAsync(keyword: keywordFilter, hashtag: hashtagFilter, postId: selectedPostId);
+            var profileTask = LoadProfileSafeAsync();
+            var discoverTask = LoadDiscoverAsync();
+            await Task.WhenAll(avatarTask, postsTask, profileTask, discoverTask);
+            var result = await postsTask;
             posts.Clear();
             posts.AddRange(result.Items);
             totalCount = result.TotalCount;
             ratingSummary = null;
             ratingHoverScore = null;
+            myProfile = await profileTask;
             if (isProfile)
-            {
-                try
-                {
-                    myProfile = isOtherProfile && profileUserId is { } otherId
-                        ? await Social.GetProfileAsync(otherId)
-                        : await Social.GetMyProfileAsync();
-                }
-                catch { myProfile = null; }
                 await LoadRatingSummaryAsync();
-            }
-            else
-            {
-                myProfile = null;
-            }
             commentsByPost.Clear();
             commentTotalCounts.Clear();
             expandedPostIds.Clear();
-            await LoadDiscoverAsync();
             routeLoaded = true;
         }
         catch
@@ -1342,16 +1336,45 @@
 
     private bool IsOwnComment(SocialCommentDto comment) => currentUserId == comment.AuthorUserId;
 
+    private async Task<SocialPersonDto?> LoadProfileSafeAsync()
+    {
+        if (!isProfile)
+            return null;
+        try
+        {
+            return isOtherProfile && profileUserId is { } otherId
+                ? await Social.GetProfileAsync(otherId)
+                : await Social.GetMyProfileAsync();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private async Task LoadDiscoverAsync()
     {
         topTags.Clear();
         topAuthors.Clear();
         var tagsFailed = false;
         var authorsFailed = false;
-        try { topTags.AddRange(await Social.GetTopTagsAsync()); }
-        catch { tagsFailed = true; }
-        try { topAuthors.AddRange(await Social.GetTopAuthorsAsync()); }
-        catch { authorsFailed = true; }
+        async Task<IReadOnlyList<SocialTagStatDto>> LoadTagsSafeAsync()
+        {
+            try { return await Social.GetTopTagsAsync(); }
+            catch { tagsFailed = true; return []; }
+        }
+
+        async Task<IReadOnlyList<SocialTopAuthorDto>> LoadAuthorsSafeAsync()
+        {
+            try { return await Social.GetTopAuthorsAsync(); }
+            catch { authorsFailed = true; return []; }
+        }
+
+        var tagsTask = LoadTagsSafeAsync();
+        var authorsTask = LoadAuthorsSafeAsync();
+        await Task.WhenAll(tagsTask, authorsTask);
+        topTags.AddRange(await tagsTask);
+        topAuthors.AddRange(await authorsTask);
 
         if ((tagsFailed && topTags.Count == 0) || (authorsFailed && topAuthors.Count == 0))
             await FillDiscoverFromPublicFeedAsync(fillTags: tagsFailed, fillAuthors: authorsFailed);

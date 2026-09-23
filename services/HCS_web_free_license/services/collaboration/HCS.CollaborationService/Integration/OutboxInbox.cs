@@ -174,16 +174,10 @@ public sealed class WorkSubjectAccessChangedHandler(CollaborationDbContext db, I
 public sealed class ChatMessageSentNotificationHandler(CollaborationDbContext db, IGuidGenerator guidGenerator)
     : IDistributedEventHandler<ChatMessageSentEto>, ITransientDependency
 {
-    public Task HandleEventAsync(ChatMessageSentEto eventData)
-    {
-        var senderName = UserDisplayNames.FirstReal(eventData.SenderDisplayName);
-        var body = string.IsNullOrWhiteSpace(senderName)
-            ? NotificationLocalization.ChatBodyUnknown
-            : NotificationLocalization.Encode(NotificationLocalization.ChatBody, senderName);
-        return NotificationFanout.UpsertAsync(db, guidGenerator, eventData.EventId, eventData.OccurredAtUtc,
-            nameof(ChatMessageSentEto), eventData.RecipientUserIds, NotificationLocalization.ChatTitle, body,
-            $"/chat/{eventData.ConversationId}");
-    }
+    public Task HandleEventAsync(ChatMessageSentEto eventData) =>
+        NotificationFanout.UpsertChatAsync(db, guidGenerator, eventData.EventId, eventData.OccurredAtUtc,
+            eventData.ConversationId, eventData.RecipientUserIds,
+            UserDisplayNames.FirstReal(eventData.SenderDisplayName));
 }
 
 public sealed class ProjectTaskChangedNotificationHandler(CollaborationDbContext db, IGuidGenerator guidGenerator)
@@ -237,5 +231,110 @@ internal static class NotificationFanout
         }
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException exception) when (PostgresErrors.IsInboxDuplicate(exception)) { db.ChangeTracker.Clear(); }
+    }
+
+    public static async Task UpsertChatAsync(CollaborationDbContext db, IGuidGenerator guids, Guid eventId,
+        DateTimeOffset occurredAtUtc, Guid conversationId, IEnumerable<Guid> recipients, string senderName)
+    {
+        if (await db.InboxMessages.AnyAsync(x => x.Id == eventId)) return;
+        var userIds = recipients.Where(id => id != Guid.Empty).Distinct().Take(MaxRecipients + 1).ToArray();
+        if (userIds.Length > MaxRecipients) throw new BusinessException("Collaboration:TooManyNotificationRecipients");
+        var at = occurredAtUtc.UtcDateTime;
+        var link = ChatNotificationRules.ConversationLink(conversationId);
+        var aliases = ChatNotificationRules.LinkAliases(link);
+        db.InboxMessages.Add(new InboxMessage(eventId, nameof(ChatMessageSentEto), at));
+        foreach (var userId in userIds)
+        {
+            await CoalesceUnreadChatAsync(db, guids, userId, senderName, link, aliases, at);
+        }
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException exception) when (PostgresErrors.IsInboxDuplicate(exception)) { db.ChangeTracker.Clear(); }
+    }
+
+    private static async Task CoalesceUnreadChatAsync(CollaborationDbContext db, IGuidGenerator guidGenerator,
+        Guid userId, string senderName, string link, string[] aliases, DateTime at)
+    {
+        var rows = await (
+            from receiver in db.NotificationReceivers
+            join notification in db.Notifications on receiver.NotificationId equals notification.Id
+            where receiver.UserId == userId && notification.Link != null
+                && aliases.Contains(notification.Link)
+            orderby receiver.CreationTime descending, notification.Id descending
+            select new { Receiver = receiver, Notification = notification }
+        ).ToListAsync();
+
+        var unread = rows.Where(x => !x.Receiver.IsRead).ToList();
+        var keep = unread.Count > 0 ? unread[0] : rows.FirstOrDefault();
+        var unreadCount = unread.Sum(x => NotificationLocalization.ChatCount(x.Notification.Body));
+        var body = ChatBody(keep is null || keep.Receiver.IsRead ? 1 : unreadCount + 1, senderName,
+            unread.Select(x => x.Notification.Body).Concat(rows.Select(x => x.Notification.Body)));
+        if (keep is null)
+        {
+            AddPersonalChat(db, guidGenerator, userId, body, link, at);
+            return;
+        }
+
+        var extras = rows.Where(x => x.Receiver.Id != keep.Receiver.Id).ToList();
+        var sharedKeep = await db.NotificationReceivers.CountAsync(x =>
+            x.NotificationId == keep.Notification.Id && x.UserId != userId);
+        if (sharedKeep > 0)
+        {
+            if (!keep.Receiver.IsRead)
+            {
+                keep.Receiver.MarkRead(at);
+            }
+
+            AddPersonalChat(db, guidGenerator, userId, body, link, at);
+        }
+        else
+        {
+            keep.Notification.RefreshUnread(body, at);
+            if (keep.Receiver.IsRead)
+            {
+                keep.Receiver.MarkUnread(at);
+            }
+            else
+            {
+                keep.Receiver.Touch(at);
+            }
+
+            db.PushDeliveries.Add(new PushDelivery(guidGenerator.Create(), userId,
+                NotificationLocalization.ChatTitle, body, link, at));
+        }
+
+        foreach (var extra in extras)
+        {
+            var shared = await db.NotificationReceivers.CountAsync(x =>
+                x.NotificationId == extra.Notification.Id && x.UserId != userId);
+            if (shared > 0)
+            {
+                extra.Receiver.MarkRead(at);
+                continue;
+            }
+
+            db.NotificationReceivers.Remove(extra.Receiver);
+            db.Notifications.Remove(extra.Notification);
+        }
+    }
+
+    private static void AddPersonalChat(CollaborationDbContext db, IGuidGenerator guidGenerator,
+        Guid userId, string body, string link, DateTime at)
+    {
+        var id = guidGenerator.Create();
+        db.Notifications.Add(new Notification(id, NotificationLocalization.ChatTitle, body, link, at));
+        db.NotificationReceivers.Add(new NotificationReceiver(guidGenerator.Create(), id, userId, at));
+        db.PushDeliveries.Add(new PushDelivery(guidGenerator.Create(), userId,
+            NotificationLocalization.ChatTitle, body, link, at));
+    }
+
+    private static string ChatBody(int count, string senderName, IEnumerable<string> existingBodies)
+    {
+        var name = UserDisplayNames.FirstReal(senderName,
+            existingBodies.Select(NotificationLocalization.ChatSender).FirstOrDefault(value =>
+                !string.IsNullOrWhiteSpace(value)));
+        return string.IsNullOrWhiteSpace(name)
+            ? NotificationLocalization.ChatBodyUnknown
+            : NotificationLocalization.EncodeChat(count, name);
     }
 }

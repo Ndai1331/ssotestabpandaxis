@@ -11,14 +11,15 @@ public sealed class NotificationController(NotificationAppService app) : AbpCont
 {
     [HttpGet]
     public Task<IReadOnlyList<NotificationDto>> GetMine([FromQuery] bool unreadOnly = false, [FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default,
-        [FromQuery] DateTime? from = null, [FromQuery] DateTime? toExclusive = null) =>
-        app.GetMineAsync(unreadOnly, skip, take, ct, from, toExclusive);
+        [FromQuery] DateTime? from = null, [FromQuery] DateTime? toExclusive = null, [FromQuery] string? filter = null, [FromQuery] bool? isRead = null) =>
+        app.GetMineAsync(unreadOnly, skip, take, ct, from, toExclusive, filter, isRead);
 
     [HttpGet("unread-count")]
     public Task<int> UnreadCount(CancellationToken ct) => app.CountUnreadAsync(ct);
     [HttpGet("count")]
-    public Task<int> CountMine([FromQuery] bool unreadOnly = false, CancellationToken ct = default) =>
-        app.CountMineAsync(unreadOnly, ct);
+    public Task<int> CountMine([FromQuery] bool unreadOnly = false, CancellationToken ct = default,
+        [FromQuery] DateTime? from = null, [FromQuery] DateTime? toExclusive = null, [FromQuery] string? filter = null, [FromQuery] bool? isRead = null) =>
+        app.CountMineAsync(unreadOnly, ct, from, toExclusive, filter, isRead);
     [HttpPost, Authorize(Policy = CollaborationPermissions.Administration)]
     public Task Create(CreateNotificationInput input, CancellationToken ct) => app.CreateAsync(input, ct);
     [HttpPost("read-all")]

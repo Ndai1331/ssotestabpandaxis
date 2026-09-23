@@ -81,7 +81,7 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         await access.DemandProjectOwnerAsync(id, ct);
         var project = await db.Projects.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new EntityNotFoundException(typeof(Project), id);
-        project.Change(input.Name, input.Description, input.StartDate, input.EndDate, input.Status);
+        project.Change(input.Name, input.Description, input.StartDate, input.EndDate, input.Status, input.OwnerDepartmentId);
         await WorkCalendarLinker.SyncProjectAsync(db, project, ct);
         AddEvent(new ProjectChangedEto(Guid.NewGuid(), DateTime.UtcNow, project.Id, "Updated", project.Status));
         await db.SaveChangesAsync(ct);

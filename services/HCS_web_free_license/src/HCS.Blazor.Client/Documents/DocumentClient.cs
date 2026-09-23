@@ -16,6 +16,7 @@ namespace HCS.Blazor.Client.Documents;
 public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 {
     public const int MaxPageSize = 100;
+    public const long MaxUploadBytes = 50 * 1024 * 1024;
     private const int WorkflowUserLookupBatchSize = 200;
     private const int MaxWorkflowUserLookupIds = 1_000;
     private const int MaxCachedWorkflowUsers = 2_000;
@@ -28,8 +29,14 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<PagedDocumentsResponse> GetDocumentsAsync(DocumentListQuery query, CancellationToken cancellationToken = default) =>
         GetAsync<PagedDocumentsResponse>(BuildListUri(query), cancellationToken);
 
-    public Task<List<SigningQueueItemDto>> GetSigningQueueAsync(CancellationToken cancellationToken = default) =>
-        GetAsync<List<SigningQueueItemDto>>("/api/signing/queue", cancellationToken);
+    public async Task<List<SigningQueueItemDto>> GetSigningQueueAsync(CancellationToken cancellationToken = default)
+    {
+        var page = await GetSigningQueuePageAsync(new SigningQueueQuery(Take: 200), cancellationToken);
+        return page.Items;
+    }
+
+    public Task<PagedSigningQueueDto> GetSigningQueuePageAsync(SigningQueueQuery? query = null, CancellationToken cancellationToken = default) =>
+        GetAsync<PagedSigningQueueDto>(BuildSigningQueueUri(query ?? new SigningQueueQuery()), cancellationToken);
 
     public Task<DocumentDto> GetDocumentAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<DocumentDto>($"/api/documents/{id:D}", cancellationToken);
@@ -92,7 +99,7 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public async Task<DocumentFileDto> UploadFileAsync(Guid documentId, IBrowserFile file, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
-        await using var stream = file.OpenReadStream(50 * 1024 * 1024, cancellationToken);
+        await using var stream = file.OpenReadStream(MaxUploadBytes, cancellationToken);
         using var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
@@ -145,7 +152,7 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public async Task<WorkflowTemplateDto> UploadTemplateFileAsync(Guid templateId, string kind, IBrowserFile file, CancellationToken cancellationToken = default)
     {
         using var content = new MultipartFormDataContent();
-        await using var stream = file.OpenReadStream(50 * 1024 * 1024, cancellationToken);
+        await using var stream = file.OpenReadStream(MaxUploadBytes, cancellationToken);
         using var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
@@ -404,6 +411,36 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     private static void AddOptional(MultipartFormDataContent content, string name, string? value)
     {
         if (!string.IsNullOrWhiteSpace(value)) content.Add(new StringContent(value), name);
+    }
+
+    internal static string BuildSigningQueueUri(SigningQueueQuery query)
+    {
+        var parameters = new List<string>
+        {
+            $"skip={Math.Max(0, query.Skip)}",
+            $"take={Math.Clamp(query.Take, 1, 200)}"
+        };
+        if (query.From is { } from)
+            parameters.Add($"from={Uri.EscapeDataString(from.ToUniversalTime().ToString("O"))}");
+        if (query.ToExclusive is { } toExclusive)
+            parameters.Add($"toExclusive={Uri.EscapeDataString(toExclusive.ToUniversalTime().ToString("O"))}");
+        if (!string.IsNullOrWhiteSpace(query.DateField))
+            parameters.Add($"dateField={Uri.EscapeDataString(query.DateField.Trim())}");
+        if (!string.IsNullOrWhiteSpace(query.Inbox))
+            parameters.Add($"inbox={Uri.EscapeDataString(query.Inbox.Trim())}");
+        if (!string.IsNullOrWhiteSpace(query.Search))
+            parameters.Add($"search={Uri.EscapeDataString(SearchText.Normalize(query.Search))}");
+        if (!string.IsNullOrWhiteSpace(query.Status))
+            parameters.Add($"status={Uri.EscapeDataString(query.Status.Trim())}");
+        if (query.SubmitterId is { } submitterId)
+            parameters.Add($"submitterId={submitterId:D}");
+        if (query.FromUserIds is { Count: > 0 } fromUserIds)
+        {
+            foreach (var id in fromUserIds.Where(value => value != Guid.Empty).Distinct().Take(200))
+                parameters.Add($"fromUserIds={id:D}");
+        }
+
+        return "/api/signing/queue-page?" + string.Join('&', parameters);
     }
 
     internal static string BuildListUri(DocumentListQuery query)

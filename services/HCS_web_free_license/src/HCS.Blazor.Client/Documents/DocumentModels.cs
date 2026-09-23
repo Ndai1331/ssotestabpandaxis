@@ -81,6 +81,19 @@ public sealed record SigningQueueDocumentDto(Guid Id, string Number, string Titl
     Guid? FromUserId = null, string? DocumentCode = null);
 public sealed record SigningQueueItemDto(SigningQueueDocumentDto Document, ApprovalTaskDto Task, WorkflowInstanceDto Instance,
     WorkflowDefinitionDto Definition, bool CanDelete = false);
+public sealed record PagedSigningQueueDto(
+    int TotalCount, int CountAll, int CountToMe, int CountByMe, List<SigningQueueItemDto> Items);
+public sealed record SigningQueueQuery(
+    int Skip = 0,
+    int Take = 20,
+    DateTime? From = null,
+    DateTime? ToExclusive = null,
+    string? DateField = null,
+    string? Inbox = null,
+    string? Search = null,
+    string? Status = null,
+    Guid? SubmitterId = null,
+    IReadOnlyList<Guid>? FromUserIds = null);
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, List<Guid> DepartmentIds, List<Guid> UserIds);
 public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null,

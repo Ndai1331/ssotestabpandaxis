@@ -39,7 +39,7 @@
         <div class="hcs-rating-kpi-grid mb-4">
             <div class="card hcs-rating-kpi"><div class="card-body"><span>@L["EmployeeRatings:EvaluatedEmployees"]</span><strong>@dashboard.EvaluatedEmployeeCount</strong></div></div>
             <div class="card hcs-rating-kpi"><div class="card-body"><span>@L["EmployeeRatings:CompanyAverage"]</span><strong><i class="fa fa-star" aria-hidden="true"></i> @dashboard.CompanyAverageScore.ToString("0.0")/5</strong></div></div>
-            <div class="card hcs-rating-kpi"><div class="card-body"><span>@L["EmployeeRatings:CompletionRate"]</span><strong>@CompletionRate.ToString("0.#")%</strong><small>@dashboard.DistinctVoterCount / @people.Count @L["EmployeeRatings:Voters"]</small></div></div>
+            <div class="card hcs-rating-kpi"><div class="card-body"><span>@L["EmployeeRatings:CompletionRate"]</span><strong>@CompletionRate.ToString("0.#")%</strong><small>@dashboard.DistinctVoterCount / @directoryTotal @L["EmployeeRatings:Voters"]</small></div></div>
         </div>
 
         <div class="hcs-rating-dashboard-grid">
@@ -96,6 +96,7 @@
     private string period = "quarter";
     private bool isLoading = true;
     private bool hasError;
+    private long directoryTotal;
 
     private List<(string Name, decimal Score)> TopRated { get; set; } = [];
     private List<(string Name, decimal Score)> DepartmentRows { get; set; } = [];
@@ -106,7 +107,7 @@
     private List<double> DepartmentData => DepartmentRows.Select(x => (double)x.Score).ToList();
     private List<string> DistributionLabels => DistributionRows.Select(x => x.Label).ToList();
     private List<double> DistributionData => DistributionRows.Select(x => (double)x.Count).ToList();
-    private double CompletionRate => people.Count == 0 ? 0 : dashboard!.DistinctVoterCount * 100d / people.Count;
+    private double CompletionRate => directoryTotal == 0 ? 0 : dashboard!.DistinctVoterCount * 100d / directoryTotal;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -117,12 +118,14 @@
         try
         {
             var range = GetRange();
-            var peopleTask = Directory.GetPeopleAsync();
+            var countTask = Directory.GetPeoplePageAsync(null, 0, 1);
             var dashboardTask = Work.GetEmployeeRatingDashboardAsync(range.From, range.To);
-            await Task.WhenAll(peopleTask, dashboardTask);
-            people.Clear();
-            people.AddRange(await peopleTask);
+            await Task.WhenAll(countTask, dashboardTask);
             dashboard = await dashboardTask;
+            directoryTotal = (await countTask).TotalCount;
+            var ids = dashboard.EmployeeSummaries.Select(item => item.TargetUserId);
+            people.Clear();
+            people.AddRange(await Directory.GetPeopleByIdsAsync(ids));
             BuildCharts();
         }
         catch (Exception exception)
@@ -146,7 +149,11 @@
 
         DepartmentRows = dashboard.EmployeeSummaries
             .Where(x => names.ContainsKey(x.TargetUserId))
-            .GroupBy(x => people.Single(person => person.User.UserId == x.TargetUserId).DepartmentName)
+            .GroupBy(x =>
+            {
+                var department = people.First(person => person.User.UserId == x.TargetUserId).DepartmentName;
+                return string.IsNullOrWhiteSpace(department) ? L["EmployeeRatings:NoDepartment"].Value : department;
+            })
             .Select(group =>
             {
                 var reviews = group.Sum(x => x.ReviewCount);

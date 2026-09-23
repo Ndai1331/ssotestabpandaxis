@@ -23,37 +23,42 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
         .HasClaim("permission", CollaborationPermissions.Notifications) == true;
 
     public async Task<IReadOnlyList<NotificationDto>> GetMineAsync(bool unreadOnly, int skip, int take, CancellationToken ct = default,
-        DateTime? createdFrom = null, DateTime? toExclusive = null)
+        DateTime? createdFrom = null, DateTime? toExclusive = null, string? filter = null, bool? isRead = null)
     {
-        var me = UserId;
         take = Math.Clamp(take, 1, 100);
-        var socialOnly = !CanReadGeneralNotifications;
-        // Prefer receiver time; fall back to notification when legacy rows left CreationTime at default.
-        var epoch = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        var query = from receiver in db.NotificationReceivers.AsNoTracking()
-                    join notification in db.Notifications.AsNoTracking() on receiver.NotificationId equals notification.Id
-                    where receiver.UserId == me && (!unreadOnly || !receiver.IsRead)
-                    let createdAt = receiver.CreationTime >= epoch ? receiver.CreationTime
-                        : notification.CreationTime >= epoch ? notification.CreationTime
-                        : receiver.CreationTime
-                    where !socialOnly || SocialNotificationKinds.TitleKeys.Contains(notification.Title)
-                    where (!createdFrom.HasValue || createdAt >= createdFrom.Value)
-                        && (!toExclusive.HasValue || createdAt < toExclusive.Value)
-                    orderby createdAt descending, notification.Id descending
-                    select new NotificationDto(notification.Id, receiver.UserId, notification.Title, notification.Body,
-                        notification.Link, receiver.IsRead, createdAt);
-        return await query.Skip(Math.Max(skip, 0)).Take(take).ToListAsync(ct);
+        var items = await QueryMine(unreadOnly, createdFrom, toExclusive, filter, isRead)
+            .Skip(Math.Max(skip, 0)).Take(take).ToListAsync(ct);
+        return ChatNotificationGrouping.CollapseUnread(items);
     }
 
-    public Task<int> CountMineAsync(bool unreadOnly, CancellationToken ct = default)
+    public async Task<int> CountMineAsync(bool unreadOnly, CancellationToken ct = default,
+        DateTime? createdFrom = null, DateTime? toExclusive = null, string? filter = null, bool? isRead = null)
     {
         var me = UserId;
+        if (unreadOnly)
+        {
+            isRead = false;
+        }
+
         var socialOnly = !CanReadGeneralNotifications;
-        return db.NotificationReceivers.AsNoTracking()
-            .Where(x => x.UserId == me && (!unreadOnly || !x.IsRead))
-            .Where(x => !socialOnly || db.Notifications.Any(notification =>
-                notification.Id == x.NotificationId && SocialNotificationKinds.TitleKeys.Contains(notification.Title)))
-            .CountAsync(ct);
+        var epoch = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var term = string.IsNullOrWhiteSpace(filter) ? null : filter.Trim().ToLower();
+        var rows = await (
+            from receiver in db.NotificationReceivers.AsNoTracking()
+            join notification in db.Notifications.AsNoTracking() on receiver.NotificationId equals notification.Id
+            where receiver.UserId == me && (!isRead.HasValue || receiver.IsRead == isRead.Value)
+            let createdAt = receiver.CreationTime >= epoch ? receiver.CreationTime
+                : notification.CreationTime >= epoch ? notification.CreationTime
+                : receiver.CreationTime
+            where !socialOnly || SocialNotificationKinds.TitleKeys.Contains(notification.Title)
+            where (!createdFrom.HasValue || createdAt >= createdFrom.Value)
+                && (!toExclusive.HasValue || createdAt < toExclusive.Value)
+            where term == null
+                || notification.Title.ToLower().Contains(term)
+                || notification.Body.ToLower().Contains(term)
+            select new { receiver.IsRead, Link = (string?)notification.Link }
+        ).ToListAsync(ct);
+        return ChatNotificationGrouping.CountCollapsed(rows.Select(x => (x.IsRead, (string?)x.Link)));
     }
 
     public Task<int> CountUnreadAsync(CancellationToken ct = default) => CountMineAsync(unreadOnly: true, ct);
@@ -84,7 +89,25 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
             && (!socialOnly || db.Notifications.Any(notification =>
                 notification.Id == x.NotificationId && SocialNotificationKinds.TitleKeys.Contains(notification.Title))), ct)
             ?? throw new BusinessException("Collaboration:NotificationNotFound");
-        receiver.MarkRead(clock.Now.ToUniversalTime()); await db.SaveChangesAsync(ct);
+        var now = clock.Now.ToUniversalTime();
+        receiver.MarkRead(now);
+        var notification = await db.Notifications.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == notificationId, ct);
+        if (ChatNotificationRules.IsChatLink(notification?.Link))
+        {
+            var aliases = ChatNotificationRules.LinkAliases(notification!.Link);
+            var siblings = await (
+                from other in db.NotificationReceivers
+                join item in db.Notifications on other.NotificationId equals item.Id
+                where other.UserId == me && !other.IsRead && item.Link != null && aliases.Contains(item.Link)
+                select other).ToListAsync(ct);
+            foreach (var sibling in siblings)
+            {
+                sibling.MarkRead(now);
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task MarkAllReadAsync(CancellationToken ct = default)
@@ -108,5 +131,34 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
         if (existing is null) db.PushDeviceTokens.Add(new PushDeviceToken(guidGenerator.Create(), me, input.Token, input.Platform));
         else existing.AssignTo(me, input.Platform);
         await db.SaveChangesAsync(ct);
+    }
+
+    private IQueryable<NotificationDto> QueryMine(bool unreadOnly, DateTime? createdFrom, DateTime? toExclusive,
+        string? filter, bool? isRead)
+    {
+        var me = UserId;
+        if (unreadOnly)
+        {
+            isRead = false;
+        }
+
+        var socialOnly = !CanReadGeneralNotifications;
+        var epoch = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var term = string.IsNullOrWhiteSpace(filter) ? null : filter.Trim().ToLower();
+        return from receiver in db.NotificationReceivers.AsNoTracking()
+               join notification in db.Notifications.AsNoTracking() on receiver.NotificationId equals notification.Id
+               where receiver.UserId == me && (!isRead.HasValue || receiver.IsRead == isRead.Value)
+               let createdAt = receiver.CreationTime >= epoch ? receiver.CreationTime
+                   : notification.CreationTime >= epoch ? notification.CreationTime
+                   : receiver.CreationTime
+               where !socialOnly || SocialNotificationKinds.TitleKeys.Contains(notification.Title)
+               where (!createdFrom.HasValue || createdAt >= createdFrom.Value)
+                   && (!toExclusive.HasValue || createdAt < toExclusive.Value)
+               where term == null
+                   || notification.Title.ToLower().Contains(term)
+                   || notification.Body.ToLower().Contains(term)
+               orderby createdAt descending, notification.Id descending
+               select new NotificationDto(notification.Id, receiver.UserId, notification.Title, notification.Body,
+                   notification.Link, receiver.IsRead, createdAt);
     }
 }

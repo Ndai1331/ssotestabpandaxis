@@ -48,24 +48,13 @@ public abstract class HCSComponentBase : AbpComponentBase
             return;
         }
 
-        if (statusCode != HttpStatusCode.Unauthorized)
+        if (statusCode == HttpStatusCode.Unauthorized)
         {
-            await UiMessageService.Error(message);
+            BffLoginUrlBuilder.Redirect(LoginNavigation, Configuration);
             return;
         }
 
-        var loginRequested = await UiMessageService.Confirm(message, options: options =>
-        {
-            options.CancelButtonText = L["Catalog:Close"].Value;
-            options.ConfirmButtonText = L["Auth:LoginAgain"].Value;
-        });
-
-        if (loginRequested)
-        {
-            LoginNavigation.NavigateTo(
-                BffLoginUrlBuilder.Build(Configuration, LoginNavigation.Uri),
-                forceLoad: true);
-        }
+        await UiMessageService.Error(message);
     }
 
     protected async Task<bool> IsBrowserSessionActiveAsync()

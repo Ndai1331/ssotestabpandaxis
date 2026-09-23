@@ -242,9 +242,12 @@
     color: var(--account-primary);
 }
 
-.hcs-account-tab.is-active {
+.hcs-account-tab.is-active,
+.hcs-account-tab.is-active:active,
+.hcs-account-tab:active {
     border-bottom-color: var(--account-primary);
     color: var(--account-primary);
+    background: transparent;
 }
 
 .hcs-account-panel {

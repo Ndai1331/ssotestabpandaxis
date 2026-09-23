@@ -168,9 +168,11 @@ body:has(.hcs-app-shell) .hcs-app-shell__notifications .modal-dialog {
 }
 
 .hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn-primary:hover,
-.hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn-primary:focus-visible {
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn-primary:focus-visible,
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer .btn-primary:is(:active, .active):not(:disabled) {
   background: var(--color-primary-hover) !important;
   border-color: var(--color-primary-hover) !important;
+  color: var(--color-primary-foreground) !important;
 }
 
 .hcs-app-shell .hcs-app-shell__notifications .modal-footer :is(.btn-secondary, .btn-light, .btn-outline, .btn-outline-secondary, .btn-outline-primary) {
@@ -180,7 +182,8 @@ body:has(.hcs-app-shell) .hcs-app-shell__notifications .modal-dialog {
   color: var(--color-danger) !important;
 }
 
-.hcs-app-shell .hcs-app-shell__notifications .modal-footer :is(.btn-secondary, .btn-light, .btn-outline, .btn-outline-secondary, .btn-outline-primary):hover:not(:disabled) {
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer :is(.btn-secondary, .btn-light, .btn-outline, .btn-outline-secondary, .btn-outline-primary):hover:not(:disabled),
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer :is(.btn-secondary, .btn-light, .btn-outline, .btn-outline-secondary, .btn-outline-primary):is(:active, .active):not(:disabled) {
   background: color-mix(in srgb, var(--color-danger) 8%, var(--color-white)) !important;
   border-color: var(--color-danger) !important;
   color: var(--color-danger) !important;
@@ -332,7 +335,9 @@ body:has(.hcs-app-shell) .pager button,
 }
 
 body:has(.hcs-app-shell) .pager button:hover:not(:disabled),
-.hcs-app-shell .pager button:hover:not(:disabled) {
+.hcs-app-shell .pager button:hover:not(:disabled),
+body:has(.hcs-app-shell) .pager button:active:not(:disabled),
+.hcs-app-shell .pager button:active:not(:disabled) {
   background: var(--color-primary-soft, #E0F7F5) !important;
   color: var(--color-primary, #00B4A9) !important;
 }
@@ -384,4 +389,110 @@ body:has(.hcs-app-shell) :is(.form-select, select.select):is(:focus, :focus-visi
   body:has(.hcs-app-shell) :is(select, .form-select)::picker(select) {
     border-color: var(--input-border, var(--hcs-input-border, #D7E2E6)) !important;
   }
+}
+
+/* Pressed/selected contrast: label and icon must not match the fill. */
+body:has(.hcs-app-shell) :is(.btn-primary, .hcs-catalog-save, .hcs-modal-save, .btn-success):is(:active, .active, .show):not(:disabled),
+.hcs-app-shell :is(.btn-primary, .hcs-catalog-save, .hcs-modal-save, .btn-success):is(:active, .active, .show):not(:disabled),
+body:has(.hcs-app-shell) .btn-check:checked + :is(.btn-primary, .btn-success) {
+  background-color: var(--hcs-color-primary-strong, var(--color-primary-hover, #007F7C)) !important;
+  border-color: var(--hcs-color-primary-strong, var(--color-primary-hover, #007F7C)) !important;
+  color: #fff !important;
+}
+
+body:has(.hcs-app-shell) .btn-secondary:is(:active, .active, .show):not(:disabled):not(.hcs-catalog-cancel):not(.hcs-modal-cancel):not(.hcs-catalog-close),
+.hcs-app-shell .btn-secondary:is(:active, .active, .show):not(:disabled):not(.hcs-catalog-cancel):not(.hcs-modal-cancel):not(.hcs-catalog-close) {
+  background-color: var(--hcs-color-primary-strong, var(--color-primary-hover, #007F7C)) !important;
+  border-color: var(--hcs-color-primary-strong, var(--color-primary-hover, #007F7C)) !important;
+  color: #fff !important;
+}
+
+body:has(.hcs-app-shell) :is(.btn-outline-primary, .btn-outline, .btn-outline-secondary, .btn-ghost, .hcs-catalog-cancel, .hcs-modal-cancel, .hcs-catalog-close, .hcs-catalog-export):is(:active, .active, .show):not(:disabled),
+.hcs-app-shell :is(.btn-outline-primary, .btn-outline, .btn-outline-secondary, .btn-ghost, .hcs-catalog-cancel, .hcs-modal-cancel, .hcs-catalog-close, .hcs-catalog-export):is(:active, .active, .show):not(:disabled),
+body:has(.hcs-app-shell) .btn-check:checked + :is(.btn-outline-primary, .btn-outline, .btn-outline-secondary),
+.hcs-app-shell .page-actions .btn:is(.is-open, [aria-expanded="true"]):is(:active, .active) {
+  background-color: var(--hcs-color-primary-soft, var(--color-primary-soft, #E0F7F5)) !important;
+  border-color: var(--hcs-color-primary, var(--color-primary, #00B4A9)) !important;
+  color: var(--hcs-color-primary-strong, var(--color-primary, #007F7C)) !important;
+}
+
+body:has(.hcs-app-shell) .modal .modal-footer .btn:is(.btn-secondary, .btn-light, .btn-outline, .btn-outline-secondary, .btn-outline-light, .btn-outline-primary, .hcs-catalog-cancel, .hcs-catalog-close, .hcs-modal-cancel):is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .hcs-language-modal__footer .btn:is(.btn-secondary, .btn-light):is(:active, .active):not(:disabled),
+.hcs-app-shell .hcs-app-shell__notifications .modal-footer :is(.btn-secondary, .btn-light, .btn-outline, .btn-outline-secondary, .btn-outline-primary):is(:active, .active):not(:disabled),
+.hcs-app-shell .chat-dialog-foot .btn:is(.btn-outline, .btn-light, .btn-secondary):is(:active, .active):not(:disabled),
+.hcs-app-shell .process-dialog-foot .btn:is(.btn-outline, .btn-light, .btn-secondary):is(:active, .active):not(:disabled),
+.hcs-app-shell .hcs-public-survey__dialog-footer .btn:is(.btn-light, .btn-secondary):is(:active, .active):not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger, #e11d48) 8%, var(--color-white, #fff)) !important;
+  border-color: var(--color-danger, #e11d48) !important;
+  color: var(--color-danger, #e11d48) !important;
+}
+
+body:has(.hcs-app-shell) :is(.btn-outline-danger, .btn-danger.hcs-catalog-cancel):is(:active, .active):not(:disabled),
+.hcs-app-shell :is(button.doc-action, a.doc-action, .hcs-action-button, .hcs-row-actions > .btn):is(.is-danger, .btn-outline-danger, .btn-danger):active:not(:disabled) {
+  background: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: var(--color-danger, #e11d48) !important;
+}
+
+body:has(.hcs-app-shell) :is(button.doc-action, a.doc-action):active:not(:disabled):not(.is-danger),
+.hcs-app-shell :is(button.doc-action, a.doc-action, .hcs-action-button, .hcs-row-actions > .btn):active:not(:disabled):not(.is-danger):not(.btn-outline-danger):not(.btn-danger) {
+  background: var(--color-primary-soft, #E0F7F5) !important;
+  border-color: var(--color-primary, #00B4A9) !important;
+  color: var(--color-primary, #00B4A9) !important;
+}
+
+body:has(.hcs-app-shell) :is(.queue-tab, .social-pill, .hcs-signing-tab, .hcs-ws-signing-tab, .cal-view-btn, .hcs-rating-subnav__link, .admin-permission-groups button).is-active,
+body:has(.hcs-app-shell) :is(.queue-tab, .social-pill, .hcs-signing-tab, .hcs-ws-signing-tab, .cal-view-btn, .hcs-rating-subnav__link, .admin-permission-groups button).is-active:active,
+body:has(.hcs-app-shell) .hcs-signing-tab--active,
+body:has(.hcs-app-shell) .hcs-signing-tab--active:active {
+  background: var(--color-primary, #00B4A9) !important;
+  border-color: var(--color-primary, #00B4A9) !important;
+  color: #fff !important;
+}
+
+body:has(.hcs-app-shell) :is(.queue-tab, .social-pill, .hcs-signing-tab, .hcs-ws-signing-tab, .cal-view-btn, .hcs-rating-subnav__link, .admin-permission-groups button):active:not(.is-active):not(.hcs-signing-tab--active) {
+  background: var(--color-primary-soft, #E0F7F5) !important;
+  color: var(--color-primary, #00B4A9) !important;
+}
+
+body:has(.hcs-app-shell) :is(.queue-tab, .social-pill, .hcs-signing-tab, .hcs-ws-signing-tab, .hcs-rating-subnav__link, .admin-permission-groups button).is-active .count,
+body:has(.hcs-app-shell) .hcs-signing-tab--active .hcs-signing-count {
+  color: #fff !important;
+}
+
+body:has(.hcs-app-shell) :is(.vb-tab, .docs-cat, .filter-menu button):is(:active, .is-active) {
+  background: var(--color-primary-soft, #E0F7F5) !important;
+  color: var(--color-primary, #00B4A9) !important;
+}
+
+body:has(.hcs-app-shell) .send-doc-tab.is-on,
+body:has(.hcs-app-shell) .send-doc-tab.is-on:active {
+  background: var(--color-white, #fff) !important;
+  color: var(--color-primary, #00B4A9) !important;
+}
+
+body:has(.hcs-app-shell) .modal .modal-footer .btn.hcs-decision-secondary:is(:active, .active):not(:disabled),
+body:has(.hcs-app-shell) .modal .btn.hcs-decision-secondary:is(:active, .active):not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary, #00B4A9) 8%, #fff) !important;
+  border-color: var(--color-primary, #00B4A9) !important;
+  color: var(--color-primary, #007F7C) !important;
+}
+
+body:has(.hcs-app-shell) :is(.process-side-tab, .hcs-account-tab, .chat-list-tab, .chat-media-tab, .hcs-survey-tabs button, .hcs-user-tabs button, .hcs-chat__tabs button, .nav-tabs .nav-link):is(:active, .is-active, .active) {
+  background: transparent !important;
+  color: var(--color-primary, #00B4A9) !important;
+}
+
+body:has(.hcs-app-shell) .hcs-survey-tabs button:is(:active, .is-active) {
+  color: #d4356b !important;
+}
+
+body:has(.hcs-app-shell) .nav-pills .nav-link.active,
+body:has(.hcs-app-shell) .nav-pills .nav-link.active:active {
+  background: var(--color-primary, #00B4A9) !important;
+  color: #fff !important;
+}
+
+body:has(.hcs-app-shell) :is(.btn, .queue-tab, .social-pill, .vb-tab, .process-side-tab, .hcs-signing-tab, .hcs-ws-signing-tab, .cal-view-btn, .hcs-account-tab, .chat-list-tab, .doc-action, .hcs-action-button):is(:active, .active, .is-active) :is(svg, i, .b-icon) {
+  color: inherit !important;
 }

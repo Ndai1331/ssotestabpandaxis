@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Http;
@@ -10,23 +11,39 @@ using HCS.Blazor.Client.Services;
 namespace HCS.Blazor.Client.Work;
 
 public sealed record EmployeeDirectoryUserDto(Guid UserId, string UserName, string DisplayName, string? AvatarUrl);
-public sealed record EmployeeDirectoryPageResponse(List<EmployeeDirectoryUserDto> Items, bool HasMore);
+public sealed record EmployeeDirectoryPageResponse(List<EmployeeDirectoryUserDto> Items, long TotalCount, bool HasMore);
 
 public sealed class EmployeeRatingDirectoryClient(IHttpClientFactory httpClientFactory)
 {
-    public async Task<List<EmployeeDirectoryUserDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<EmployeeDirectoryPageResponse> GetPageAsync(
+        string? filter = null,
+        int skipCount = 0,
+        int maxResultCount = 20,
+        CancellationToken cancellationToken = default)
     {
-        var all = new List<EmployeeDirectoryUserDto>();
-        var skip = 0;
-        while (true)
+        var skip = Math.Max(0, skipCount);
+        var take = Math.Clamp(maxResultCount, 1, 100);
+        var uri = $"/api/identity/employee-directory?skipCount={skip}&maxResultCount={take}";
+        if (!string.IsNullOrWhiteSpace(filter))
+            uri += $"&filter={Uri.EscapeDataString(SearchText.Normalize(filter))}";
+        return GetAsync<EmployeeDirectoryPageResponse>(uri, cancellationToken);
+    }
+
+    public Task<EmployeeDirectoryUserDto> GetAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        GetAsync<EmployeeDirectoryUserDto>($"/api/identity/employee-directory/{userId:D}", cancellationToken);
+
+    public Task<EmployeeDirectoryPageResponse> GetByIdsAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = userIds.Where(id => id != Guid.Empty).Distinct().Take(200).ToArray();
+        if (ids.Length == 0)
         {
-            var page = await GetAsync<EmployeeDirectoryPageResponse>(
-                $"/api/identity/employee-directory?skipCount={skip}&maxResultCount=100", cancellationToken);
-            all.AddRange(page.Items);
-            skip += page.Items.Count;
-            if (!page.HasMore || page.Items.Count == 0) break;
+            return Task.FromResult(new EmployeeDirectoryPageResponse([], 0, false));
         }
-        return all;
+
+        var query = string.Join("&", ids.Select(id => $"userIds={id:D}"));
+        return GetAsync<EmployeeDirectoryPageResponse>($"/api/identity/employee-directory?{query}", cancellationToken);
     }
 
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)

@@ -447,15 +447,13 @@ else if (detail is not null)
             detail = await Work.GetEventAsync(Id);
             eventForm.Load(detail);
             qrCodeDataUrl = null;
-            try
+            async Task LoadQrSafeAsync()
             {
-                qrCodeDataUrl = await Work.GetEventQrCodeDataUrlAsync(Id);
+                try { qrCodeDataUrl = await Work.GetEventQrCodeDataUrlAsync(Id); }
+                catch (Exception ex) { await NotifyErrorAsync(ex); }
             }
-            catch (Exception ex)
-            {
-                await NotifyErrorAsync(ex);
-            }
-            await LoadAttendeesAsync();
+
+            await Task.WhenAll(LoadQrSafeAsync(), LoadAttendeesAsync());
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }

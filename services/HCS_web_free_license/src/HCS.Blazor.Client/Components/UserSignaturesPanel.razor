@@ -239,8 +239,11 @@
             items.Clear();
             providerCredentials.Clear();
             previews.Clear();
-            providerCredentials.AddRange(await Documents.GetCredentialsAsync(UserId));
-            items.AddRange(await Documents.GetSignaturesAsync(UserId));
+            var credentialsTask = Documents.GetCredentialsAsync(UserId);
+            var signaturesTask = Documents.GetSignaturesAsync(UserId);
+            await Task.WhenAll(credentialsTask, signaturesTask);
+            providerCredentials.AddRange(await credentialsTask);
+            items.AddRange(await signaturesTask);
             foreach (var item in items)
             {
                 try

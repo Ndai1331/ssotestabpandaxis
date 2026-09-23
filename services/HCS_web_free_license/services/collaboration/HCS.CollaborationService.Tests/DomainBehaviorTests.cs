@@ -67,6 +67,94 @@ public sealed class DomainBehaviorTests
         ChatNotificationRules.IsChatLink("/chat").ShouldBeTrue();
         ChatNotificationRules.IsChatLink("/document-signing").ShouldBeFalse();
         ChatNotificationRules.IsChatLink(null).ShouldBeFalse();
+        ChatNotificationRules.TryGetConversationId("/chat/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", out var conversationId)
+            .ShouldBeTrue();
+        conversationId.ShouldBe(Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+        ChatNotificationRules.ConversationKey("/chat1/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+            .ShouldBe(conversationId.ToString("N"));
+    }
+
+    [Fact]
+    public void Unread_chat_notifications_from_the_same_conversation_collapse_to_one_row()
+    {
+        var conversationId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var userId = Guid.NewGuid();
+        var first = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.ChatTitle,
+            NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Tran Viet Hung"),
+            ChatNotificationRules.ConversationLink(conversationId), false, new DateTime(2026, 9, 22, 8, 9, 0, DateTimeKind.Utc));
+        var second = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.ChatTitle,
+            NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Tran Viet Hung"),
+            $"/chat1/{conversationId:D}", false, new DateTime(2026, 9, 14, 5, 22, 0, DateTimeKind.Utc));
+        var third = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.ChatTitle,
+            NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Tran Viet Hung"),
+            ChatNotificationRules.ConversationLink(conversationId), false, new DateTime(2026, 9, 14, 5, 21, 0, DateTimeKind.Utc));
+        var document = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.DocumentSentTitle,
+            NotificationLocalization.Encode(NotificationLocalization.DocumentSentBody, "Test"),
+            "/manage-documents", false, new DateTime(2026, 9, 13, 2, 25, 0, DateTimeKind.Utc));
+
+        var collapsed = ChatNotificationGrouping.CollapseUnread([first, second, third, document]);
+        collapsed.Count.ShouldBe(2);
+        var chat = collapsed.Single(item => ChatNotificationRules.IsChatLink(item.Link));
+        chat.Id.ShouldBe(first.Id);
+        NotificationLocalization.ChatCount(chat.Body).ShouldBe(3);
+        NotificationLocalization.Format(chat.Body, "vi").ShouldBe("3 tin nhắn mới từ Tran Viet Hung");
+        NotificationLocalization.Format(chat.Body, "en").ShouldBe("3 new messages from Tran Viet Hung");
+        collapsed.ShouldContain(document);
+        ChatNotificationGrouping.CountCollapsed(
+            [
+                (false, first.Link),
+                (false, second.Link),
+                (false, third.Link),
+                (false, document.Link)
+            ]).ShouldBe(2);
+        ChatNotificationGrouping.CountCollapsed(
+            [
+                (true, first.Link),
+                (true, second.Link),
+                (true, third.Link),
+                (true, document.Link)
+            ]).ShouldBe(2);
+    }
+
+    [Fact]
+    public void Read_chat_notifications_from_the_same_conversation_collapse_to_one_row()
+    {
+        var conversationId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var userId = Guid.NewGuid();
+        var first = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.ChatTitle,
+            NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Tran Viet Hung"),
+            ChatNotificationRules.ConversationLink(conversationId), true, new DateTime(2026, 9, 22, 2, 17, 9, DateTimeKind.Utc));
+        var second = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.ChatTitle,
+            NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Tran Viet Hung"),
+            ChatNotificationRules.ConversationLink(conversationId), true, new DateTime(2026, 9, 22, 2, 12, 23, DateTimeKind.Utc));
+        var third = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.ChatTitle,
+            NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Tran Viet Hung"),
+            ChatNotificationRules.ConversationLink(conversationId), true, new DateTime(2026, 9, 22, 2, 12, 20, DateTimeKind.Utc));
+
+        var collapsed = ChatNotificationGrouping.CollapseUnread([first, second, third]);
+        collapsed.Count.ShouldBe(1);
+        collapsed[0].Id.ShouldBe(first.Id);
+        collapsed[0].IsRead.ShouldBeTrue();
+        NotificationLocalization.Format(collapsed[0].Body, "vi").ShouldBe("1 tin nhắn mới từ Tran Viet Hung");
+    }
+
+    [Fact]
+    public void Mixed_read_and_unread_chat_from_the_same_conversation_stay_one_unread_row()
+    {
+        var conversationId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var userId = Guid.NewGuid();
+        var unread = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.ChatTitle,
+            NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Tran Viet Hung"),
+            ChatNotificationRules.ConversationLink(conversationId), false, new DateTime(2026, 9, 22, 3, 0, 0, DateTimeKind.Utc));
+        var read = new NotificationDto(Guid.NewGuid(), userId, NotificationLocalization.ChatTitle,
+            NotificationLocalization.EncodeChat(2, "Tran Viet Hung"),
+            ChatNotificationRules.ConversationLink(conversationId), true, new DateTime(2026, 9, 22, 2, 0, 0, DateTimeKind.Utc));
+
+        var collapsed = ChatNotificationGrouping.CollapseUnread([unread, read]);
+        collapsed.Count.ShouldBe(1);
+        collapsed[0].Id.ShouldBe(unread.Id);
+        collapsed[0].IsRead.ShouldBeFalse();
+        NotificationLocalization.ChatCount(collapsed[0].Body).ShouldBe(1);
     }
 
     [Fact]
@@ -147,8 +235,35 @@ public sealed class DomainBehaviorTests
         var body = NotificationLocalization.Encode(NotificationLocalization.ChatBody, "Nguyễn Văn A");
         NotificationLocalization.Format(body, "vi").ShouldBe("1 tin nhắn mới từ Nguyễn Văn A");
         NotificationLocalization.Format(body, "en").ShouldBe("1 new message from Nguyễn Văn A");
+        var many = NotificationLocalization.EncodeChat(3, "Nguyễn Văn A");
+        NotificationLocalization.ChatCount(many).ShouldBe(3);
+        NotificationLocalization.ChatSender(many).ShouldBe("Nguyễn Văn A");
+        NotificationLocalization.Format(many, "vi").ShouldBe("3 tin nhắn mới từ Nguyễn Văn A");
+        NotificationLocalization.Format(many, "en").ShouldBe("3 new messages from Nguyễn Văn A");
         NotificationLocalization.Format(NotificationLocalization.ChatTitle, "en").ShouldBe("You have a new message");
         NotificationLocalization.Format("Bạn có tin nhắn mới", "en").ShouldBe("Bạn có tin nhắn mới");
+    }
+
+    [Fact]
+    public void Chat_notification_can_refresh_unread_count_and_timestamp()
+    {
+        var at = new DateTime(2026, 9, 22, 8, 9, 0, DateTimeKind.Utc);
+        var notification = new Notification(Guid.NewGuid(), NotificationLocalization.ChatTitle,
+            NotificationLocalization.EncodeChat(1, "Tran Viet Hung"), "/chat", at);
+        var later = at.AddMinutes(10);
+        notification.RefreshUnread(NotificationLocalization.EncodeChat(3, "Tran Viet Hung"), later);
+        NotificationLocalization.ChatCount(notification.Body).ShouldBe(3);
+        notification.CreationTime.ShouldBe(later);
+
+        var receiver = new NotificationReceiver(Guid.NewGuid(), notification.Id, Guid.NewGuid(), at);
+        receiver.Touch(later);
+        receiver.CreationTime.ShouldBe(later);
+        receiver.MarkRead(later);
+        receiver.IsRead.ShouldBeTrue();
+        receiver.MarkUnread(later.AddMinutes(1));
+        receiver.IsRead.ShouldBeFalse();
+        receiver.ReadAt.ShouldBeNull();
+        receiver.CreationTime.ShouldBe(later.AddMinutes(1));
     }
 
     [Fact]

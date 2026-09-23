@@ -525,7 +525,8 @@
   color: var(--color-gray-700);
 }
 
-.social-pill.is-active {
+.social-pill.is-active,
+.social-pill.is-active:active {
   background: var(--color-primary);
   color: var(--color-white);
 }
@@ -533,6 +534,11 @@
 .social-pill.is-active:hover {
   background: var(--color-primary-hover);
   color: var(--color-white);
+}
+
+.social-pill:active:not(.is-active) {
+  background: var(--color-gray-50);
+  color: var(--color-gray-700);
 }
 
 .social-pill svg {

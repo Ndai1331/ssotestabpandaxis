@@ -308,6 +308,14 @@
   width: 95%;
 }
 
+.hcs-event-checkin__actions .btn:disabled {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-500);
+  cursor: default;
+  opacity: 1;
+}
+
 .hcs-event-checkin__home {
   margin-top: .65rem;
 }

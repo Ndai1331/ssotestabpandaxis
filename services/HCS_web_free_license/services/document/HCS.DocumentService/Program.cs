@@ -7,6 +7,10 @@ Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.Limits.MaxRequestBodySize = 64 * 1024 * 1024;
+    });
     builder.Host.AddAppSettingsSecretsJson().UseAutofac().UseSerilog((context, services, logger) =>
         logger.ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)

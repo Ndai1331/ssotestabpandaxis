@@ -103,6 +103,131 @@ public static class ChatNotificationRules
         && (link.Equals("/chat", StringComparison.OrdinalIgnoreCase)
             || link.StartsWith("/chat/", StringComparison.OrdinalIgnoreCase)
             || link.StartsWith("/chat1/", StringComparison.OrdinalIgnoreCase));
+
+    public static string ConversationLink(Guid conversationId) => $"/chat/{conversationId:D}";
+
+    public static bool TryGetConversationId(string? link, out Guid conversationId)
+    {
+        conversationId = default;
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return false;
+        }
+
+        var value = link.Trim();
+        foreach (var prefix in new[] { "/chat/", "/chat1/" })
+        {
+            if (!value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var rest = value[prefix.Length..];
+            var end = rest.IndexOfAny(['/', '?', '#']);
+            if (end >= 0)
+            {
+                rest = rest[..end];
+            }
+
+            return Guid.TryParse(rest, out conversationId);
+        }
+
+        return false;
+    }
+
+    public static string ConversationKey(string? link) =>
+        TryGetConversationId(link, out var conversationId)
+            ? conversationId.ToString("N")
+            : (link ?? string.Empty).Trim().ToLowerInvariant();
+
+    public static string[] LinkAliases(string? link)
+    {
+        if (!TryGetConversationId(link, out var conversationId))
+        {
+            return string.IsNullOrWhiteSpace(link) ? [] : [link];
+        }
+
+        return
+        [
+            $"/chat/{conversationId:D}",
+            $"/chat/{conversationId:N}",
+            $"/chat1/{conversationId:D}",
+            $"/chat1/{conversationId:N}"
+        ];
+    }
+}
+
+public static class ChatNotificationGrouping
+{
+    public static IReadOnlyList<NotificationDto> CollapseUnread(IEnumerable<NotificationDto> items)
+    {
+        var result = new List<NotificationDto>();
+        var indexByKey = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var item in items)
+        {
+            if (!ChatNotificationRules.IsChatLink(item.Link))
+            {
+                result.Add(item);
+                continue;
+            }
+
+            var key = ChatNotificationRules.ConversationKey(item.Link);
+            if (indexByKey.TryGetValue(key, out var index))
+            {
+                result[index] = MergeChat(result[index], item);
+                continue;
+            }
+
+            indexByKey[key] = result.Count;
+            result.Add(item);
+        }
+
+        return result;
+    }
+
+    public static int CountCollapsed(IEnumerable<(bool IsRead, string? Link)> rows)
+    {
+        var chat = new HashSet<string>(StringComparer.Ordinal);
+        var rest = 0;
+        foreach (var (_, link) in rows)
+        {
+            if (ChatNotificationRules.IsChatLink(link))
+            {
+                chat.Add(ChatNotificationRules.ConversationKey(link));
+                continue;
+            }
+
+            rest++;
+        }
+
+        return chat.Count + rest;
+    }
+
+    private static NotificationDto MergeChat(NotificationDto left, NotificationDto right)
+    {
+        var latest = IsNewer(right, left) ? right : left;
+        var unreadCount = UnreadChatCount(left) + UnreadChatCount(right);
+        var isRead = unreadCount == 0;
+        if (isRead)
+        {
+            return latest with { IsRead = true };
+        }
+
+        var sender = UserDisplayNames.FirstReal(
+            NotificationLocalization.ChatSender(left.Body),
+            NotificationLocalization.ChatSender(right.Body));
+        var body = string.IsNullOrWhiteSpace(sender)
+            ? NotificationLocalization.ChatBodyUnknown
+            : NotificationLocalization.EncodeChat(unreadCount, sender);
+        return latest with { IsRead = false, Body = body };
+    }
+
+    private static int UnreadChatCount(NotificationDto item) =>
+        item.IsRead ? 0 : NotificationLocalization.ChatCount(item.Body);
+
+    private static bool IsNewer(NotificationDto candidate, NotificationDto current) =>
+        candidate.CreatedAt > current.CreatedAt
+        || (candidate.CreatedAt == current.CreatedAt && candidate.Id.CompareTo(current.Id) > 0);
 }
 
 public static class ChatContactLookup
@@ -183,6 +308,7 @@ public static class NotificationLocalization
 {
     public const string ChatTitle = "Notification:ChatNewMessage";
     public const string ChatBody = "Notification:ChatNewMessageBody";
+    public const string ChatBodyMany = "Notification:ChatNewMessageBodyMany";
     public const string ChatBodyUnknown = "Notification:ChatNewMessageBodyUnknown";
     public const string TaskAssignedTitle = "Notification:TaskAssigned";
     public const string TaskAssignedBody = "Notification:TaskAssignedBody";
@@ -207,6 +333,56 @@ public static class NotificationLocalization
 
     public static string Encode(string key, params string[] args) =>
         args.Length == 0 ? key : string.Join(Separator, new[] { key }.Concat(args));
+
+    public static string EncodeChat(int count, string senderName)
+    {
+        var name = senderName.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return ChatBodyUnknown;
+        }
+
+        return count <= 1
+            ? Encode(ChatBody, name)
+            : Encode(ChatBodyMany, Math.Max(2, count).ToString(), name);
+    }
+
+    public static int ChatCount(string stored)
+    {
+        if (string.IsNullOrWhiteSpace(stored))
+        {
+            return 1;
+        }
+
+        var parts = stored.Split(Separator);
+        if (parts[0] == ChatBodyMany && parts.Length >= 2 && int.TryParse(parts[1], out var many) && many > 0)
+        {
+            return many;
+        }
+
+        return 1;
+    }
+
+    public static string ChatSender(string stored)
+    {
+        if (string.IsNullOrWhiteSpace(stored))
+        {
+            return string.Empty;
+        }
+
+        var parts = stored.Split(Separator);
+        if (parts[0] == ChatBodyMany && parts.Length >= 3)
+        {
+            return parts[2];
+        }
+
+        if (parts[0] == ChatBody && parts.Length >= 2)
+        {
+            return parts[1];
+        }
+
+        return string.Empty;
+    }
 
     public static string Format(
         string stored,
@@ -240,6 +416,8 @@ public static class NotificationLocalization
         (ChatTitle, false) => "You have a new message",
         (ChatBody, true) => "1 tin nhắn mới từ {0}",
         (ChatBody, false) => "1 new message from {0}",
+        (ChatBodyMany, true) => "{0} tin nhắn mới từ {1}",
+        (ChatBodyMany, false) => "{0} new messages from {1}",
         (ChatBodyUnknown, true) => "Bạn có tin nhắn mới",
         (ChatBodyUnknown, false) => "You have a new message",
         (TaskAssignedTitle, true) => "Có công việc mới",

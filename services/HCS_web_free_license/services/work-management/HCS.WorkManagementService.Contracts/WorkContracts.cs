@@ -33,7 +33,7 @@ public sealed record ProjectDetailDto(ProjectDto Project, IReadOnlyList<ProjectM
     IReadOnlyList<ProjectTaskDto> Tasks);
 public sealed record CreateProjectDto(string Code, string Name, string? Description, DateTime StartDate,
     DateTime EndDate, string Status, Guid? OwnerDepartmentId);
-public sealed record UpdateProjectDto(string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status);
+public sealed record UpdateProjectDto(string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record ProjectMemberDto(Guid Id, Guid ProjectId, Guid UserId, string Role, bool IsActive);
 public sealed record AddProjectMemberDto(Guid UserId, string Role);
 

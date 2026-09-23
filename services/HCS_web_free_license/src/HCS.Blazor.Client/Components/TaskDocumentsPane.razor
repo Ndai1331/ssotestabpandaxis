@@ -1,0 +1,178 @@
+@inherits HCSComponentBase
+@using System.IO
+@inject WorkManagementClient Work
+@inject DocumentClient Documents
+@inject IUiMessageService UiMessage
+
+<div class="hcs-task-docs">
+    @if (CanManage && ShowUpload)
+    {
+        <div class="docs-toolbar list-search hcs-task-docs-toolbar">
+            <label class="btn btn-primary mb-0" for="@inputId">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.44 11.05 12 20.5a6 6 0 0 1-8.49-8.49l9.9-9.9a4 4 0 0 1 5.66 5.66l-9.9 9.9a2 2 0 1 1-2.83-2.83l8.49-8.48"/></svg>
+                @L["Work:TaskUploadFile"]
+            </label>
+            <InputFile id="@inputId" class="visually-hidden" multiple OnChange="OnFilesSelectedAsync" />
+            <span class="hcs-task-docs-hint">@L["Work:TaskFileMaxSizeHint"]</span>
+        </div>
+    }
+    @if (References.Count == 0)
+    {
+        <DocsEmpty Compact="true" Title="@L["Work:NoDocuments"]" />
+    }
+    else
+    {
+        <ul class="hcs-member-list">
+            @foreach (var reference in References)
+            {
+                var document = DocumentOf(reference.DocumentId);
+                var file = PrimaryFile(document);
+                <li @key="reference.Id" class="hcs-member-list__item">
+                    <span class="hcs-member-list__meta">
+                        <button class="hcs-member-list__name hcs-member-list__link hcs-task-docs__name" type="button" @onclick="() => PreviewAsync(reference.DocumentId)">
+                            @DisplayName(reference, document, file)
+                        </button>
+                        @if (!string.IsNullOrWhiteSpace(DisplayMeta(reference, document, file)))
+                        {
+                            <span class="hcs-member-list__role">@DisplayMeta(reference, document, file)</span>
+                        }
+                    </span>
+                    <div class="hcs-row-actions">
+                        <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewAsync(reference.DocumentId)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                        @if (CanManage)
+                        {
+                            <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" disabled="@busy" @onclick="() => RemoveAsync(reference)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+                            </button>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+<DocumentPdfPreviewModal @ref="previewModal" />
+
+@code {
+    [Parameter] public Guid TaskId { get; set; }
+    [Parameter] public IReadOnlyList<TaskDocumentReferenceDto> References { get; set; } = [];
+    [Parameter] public bool CanManage { get; set; } = true;
+    [Parameter] public bool ShowUpload { get; set; } = true;
+    [Parameter] public EventCallback OnChanged { get; set; }
+    [Parameter] public EventCallback<Guid> OnPreview { get; set; }
+
+    private readonly string inputId = "hcs-task-docs-" + Guid.NewGuid().ToString("N");
+    private readonly Dictionary<Guid, DocumentDto?> cache = [];
+    private DocumentPdfPreviewModal? previewModal;
+    private bool busy;
+
+    protected override Task OnParametersSetAsync() => EnsureCacheAsync();
+
+    public static async Task AttachExistingAsync(DocumentClient documents, WorkManagementClient work, Guid taskId, Guid documentId)
+    {
+        string? code = null;
+        try
+        {
+            var document = await documents.GetDocumentAsync(documentId);
+            code = document.Number;
+        }
+        catch { }
+        await work.AddTaskDocumentAsync(taskId, new AddTaskDocumentRequest(documentId, code));
+    }
+
+    private async Task EnsureCacheAsync()
+    {
+        foreach (var id in References.Select(x => x.DocumentId).Distinct())
+        {
+            if (cache.ContainsKey(id)) continue;
+            try { cache[id] = await Documents.GetDocumentAsync(id); }
+            catch { cache[id] = null; }
+        }
+    }
+
+    private async Task OnFilesSelectedAsync(InputFileChangeEventArgs args)
+    {
+        if (!CanManage || !ShowUpload || TaskId == Guid.Empty || busy) return;
+        busy = true;
+        try
+        {
+            foreach (var file in args.GetMultipleFiles(10))
+            {
+                if (file.Size > DocumentClient.MaxUploadBytes)
+                {
+                    await NotifyErrorAsync(L["Work:TaskFileTooLarge"]);
+                    return;
+                }
+                await UploadOneAsync(file);
+            }
+            await NotifySuccessAsync(L["Catalog:Updated"]);
+            await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
+        finally { busy = false; }
+    }
+
+    private async Task UploadOneAsync(IBrowserFile file)
+    {
+        var title = Path.GetFileNameWithoutExtension(file.Name);
+        if (string.IsNullOrWhiteSpace(title)) title = file.Name;
+        var created = await Documents.CreateDocumentAsync(new CreateDocumentRequest(
+            null, title.Trim(), null, null, null, null, null, DocumentSourceType.Personal));
+        try
+        {
+            await Documents.UploadFileAsync(created.Id, file);
+        }
+        catch
+        {
+            try { await Documents.DeleteDocumentAsync(created.Id); } catch { }
+            throw;
+        }
+        cache[created.Id] = await Documents.GetDocumentAsync(created.Id);
+        await Work.AddTaskDocumentAsync(TaskId, new AddTaskDocumentRequest(created.Id, created.Number));
+    }
+
+    private async Task RemoveAsync(TaskDocumentReferenceDto reference)
+    {
+        if (!CanManage || busy) return;
+        var document = DocumentOf(reference.DocumentId);
+        var name = DisplayName(reference, document, PrimaryFile(document));
+        if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], name))) return;
+        busy = true;
+        try
+        {
+            await Work.RemoveTaskDocumentAsync(TaskId, reference.Id);
+            await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Delete); }
+        finally { busy = false; }
+    }
+
+    private Task PreviewAsync(Guid documentId)
+    {
+        if (OnPreview.HasDelegate) return OnPreview.InvokeAsync(documentId);
+        var document = DocumentOf(documentId);
+        return previewModal?.ShowAsync(documentId, document?.Files ?? [], document?.Title, showHistory: true)
+            ?? Task.CompletedTask;
+    }
+
+    private DocumentDto? DocumentOf(Guid id) => cache.GetValueOrDefault(id);
+    private static DocumentFileDto? PrimaryFile(DocumentDto? document) =>
+        document is null ? null : DocumentFilePick.PreferPdf(document.Files) ?? document.Files.FirstOrDefault();
+
+    private static string DisplayName(TaskDocumentReferenceDto reference, DocumentDto? document, DocumentFileDto? file)
+    {
+        if (!string.IsNullOrWhiteSpace(file?.FileName)) return file.FileName;
+        if (document is not null) return string.IsNullOrWhiteSpace(document.Title) ? document.Number : document.Title;
+        return string.IsNullOrWhiteSpace(reference.DocumentCode) ? reference.DocumentId.ToString("N")[..8] : reference.DocumentCode;
+    }
+
+    private string DisplayMeta(TaskDocumentReferenceDto reference, DocumentDto? document, DocumentFileDto? file)
+    {
+        if (document is null) return reference.DocumentCode ?? "";
+        if (!string.IsNullOrWhiteSpace(file?.FileName))
+            return string.IsNullOrWhiteSpace(document.Number) ? document.Title : $"{document.Number} · {document.Title}";
+        return document.Number;
+    }
+}

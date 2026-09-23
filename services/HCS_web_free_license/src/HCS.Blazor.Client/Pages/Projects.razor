@@ -205,8 +205,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
-        await LoadAsync();
+        async Task LoadDepartmentsSafeAsync()
+        {
+            try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
+        }
+
+        await Task.WhenAll(LoadDepartmentsSafeAsync(), LoadAsync());
     }
 
     private void ToggleSearch()
@@ -327,7 +331,7 @@
         try
         {
             if (editingId is { } id)
-                await Work.UpdateProjectAsync(id, new UpdateProjectRequest(form.Name.Trim(), Blank(form.Description), form.StartDate, form.EndDate, form.Status));
+                await Work.UpdateProjectAsync(id, new UpdateProjectRequest(form.Name.Trim(), Blank(form.Description), form.StartDate, form.EndDate, form.Status, form.OwnerDepartmentId));
             else
                 await Work.CreateProjectAsync(new CreateProjectRequest(form.Code.Trim(), form.Name.Trim(), Blank(form.Description), form.StartDate, form.EndDate, form.Status, form.OwnerDepartmentId));
             await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);

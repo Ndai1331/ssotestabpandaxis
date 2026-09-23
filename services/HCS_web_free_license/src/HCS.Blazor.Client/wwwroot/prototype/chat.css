@@ -270,9 +270,12 @@
   color: var(--color-primary);
 }
 
-.chat-media-tab.is-active {
+.chat-media-tab.is-active,
+.chat-media-tab.is-active:active,
+.chat-media-tab:active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
+  background: transparent;
 }
 
 .chat-media-grid {
@@ -442,9 +445,12 @@
   flex-shrink: 0;
 }
 
-.chat-list-tab.is-active {
+.chat-list-tab.is-active,
+.chat-list-tab.is-active:active,
+.chat-list-tab:active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
+  background: transparent;
 }
 
 .chat-list-body {

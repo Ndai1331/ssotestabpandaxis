@@ -294,13 +294,6 @@
                         <Authorized><NavLink href="/communes" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:Communes"]</NavLink></Authorized>
                     </AuthorizeView>
                     }
-                    <AuthorizeView Policy="WorkManagement.SurveyManagement" Context="surveyCatalog">
-                        <Authorized>
-                            <p class="hcs-nav-menu__label">@Localizer["Menu:SurveyCatalogs"]</p>
-                            <NavLink href="/survey-locations" @onclick="CloseMobileNav"><i class="fa fa-location-dot" aria-hidden="true"></i>@Localizer["Menu:SurveyLocations"]</NavLink>
-                            <NavLink href="/survey-criterias" @onclick="CloseMobileNav"><i class="fa fa-list-ol" aria-hidden="true"></i>@Localizer["Menu:SurveyCriterias"]</NavLink>
-                        </Authorized>
-                    </AuthorizeView>
                     @if (HasReportsNavigation(catalogAuth.User, Features.EnableProposalStatistics))
                     {
                             <p class="hcs-nav-menu__label">@Localizer["Menu:Reports"]</p>
@@ -486,7 +479,6 @@
             HCSCatalogPermissions.Countries,
             HCSCatalogPermissions.Provinces,
             HCSCatalogPermissions.Communes,
-            HCSPermissions.WorkManagement.SurveyManagement,
             HCSPermissions.WorkManagement.Reports)
         || (enableProposalStatistics && HasPermission(user, HCSPermissions.Documents.SigningReport));
 
@@ -540,8 +532,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Branding.EnsureLoadedAsync();
-        await Features.EnsureLoadedAsync();
+        await Task.WhenAll(Branding.EnsureLoadedAsync(), Features.EnsureLoadedAsync());
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

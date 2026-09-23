@@ -10,7 +10,7 @@ using Volo.Abp.Users;
 namespace HCS.PlatformService.Controllers;
 
 public sealed record EmployeeDirectoryUserDto(Guid UserId, string UserName, string DisplayName, string? AvatarUrl);
-public sealed record EmployeeDirectoryPageDto(IReadOnlyList<EmployeeDirectoryUserDto> Items, bool HasMore);
+public sealed record EmployeeDirectoryPageDto(IReadOnlyList<EmployeeDirectoryUserDto> Items, long TotalCount, bool HasMore);
 
 [ApiController]
 [Authorize]
@@ -23,20 +23,35 @@ public sealed class EmployeeDirectoryController(
     public async Task<ActionResult<EmployeeDirectoryPageDto>> List(
         [FromQuery] string? filter = null,
         [FromQuery] int skipCount = 0,
-        [FromQuery] int maxResultCount = 100,
+        [FromQuery] int maxResultCount = 20,
+        [FromQuery] Guid[]? userIds = null,
         CancellationToken cancellationToken = default)
     {
         if (!CanReadDirectory()) return Forbid();
-        var max = Math.Clamp(maxResultCount, 1, 500);
-        var users = await identityUsers.GetListAsync(
-            sorting: "UserName",
-            skipCount: Math.Max(0, skipCount),
-            maxResultCount: max,
-            filter: string.IsNullOrWhiteSpace(filter) ? null : filter.Trim(),
+        if (userIds is { Length: > 0 })
+        {
+            var ids = userIds.Where(id => id != Guid.Empty).Distinct().Take(200).ToArray();
+            var found = await identityUsers.GetListByIdsAsync(ids, includeDetails: false, cancellationToken);
+            var mapped = await MapUsersAsync(found.Where(x => x.IsActive), cancellationToken);
+            return Ok(new EmployeeDirectoryPageDto(mapped, mapped.Count, false));
+        }
+
+        var max = Math.Clamp(maxResultCount, 1, 100);
+        var skip = Math.Max(0, skipCount);
+        var trimmed = string.IsNullOrWhiteSpace(filter) ? null : filter.Trim();
+        var total = await identityUsers.GetCountAsync(
+            filter: trimmed,
             notActive: false,
             cancellationToken: cancellationToken);
-        return Ok(new EmployeeDirectoryPageDto(await MapUsersAsync(users.Where(x => x.IsActive), cancellationToken),
-            users.Count >= max));
+        var users = await identityUsers.GetListAsync(
+            sorting: "UserName",
+            skipCount: skip,
+            maxResultCount: max,
+            filter: trimmed,
+            notActive: false,
+            cancellationToken: cancellationToken);
+        var items = await MapUsersAsync(users, cancellationToken);
+        return Ok(new EmployeeDirectoryPageDto(items, total, skip + items.Count < total));
     }
 
     [HttpGet("{userId:guid}")]

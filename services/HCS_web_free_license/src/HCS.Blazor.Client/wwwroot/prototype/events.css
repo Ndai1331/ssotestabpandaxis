@@ -823,9 +823,16 @@ a.event-name:hover {
   text-align: center;
 }
 
-.cal-view-btn.is-active {
+.cal-view-btn.is-active,
+.cal-view-btn.is-active:active {
   background: var(--color-primary);
   color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+.cal-view-btn:active:not(.is-active) {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   border-color: var(--color-primary);
 }
 

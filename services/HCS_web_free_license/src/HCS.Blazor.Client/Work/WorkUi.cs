@@ -103,9 +103,22 @@ internal static class WorkUi
     public static decimal StarsToScore(int stars) => stars * 20m;
 
     public static string FormatRange(DateTime start, DateTime end) =>
-        $"{start.ToLocalTime():dd/MM/yyyy HH:mm} - {end.ToLocalTime():dd/MM/yyyy HH:mm}";
+        $"{FormatDay(start)} - {FormatDay(end)}";
 
-    public static string FormatDay(DateTime value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+    // Match the task modal/detail date pickers, which bind the task's clock time directly.
+    public static string FormatDay(DateTime value) => value.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Public check-in pages render on the Blazor host (Docker UTC). Convert the stored UTC
+    /// instant to Vietnam wall-clock so guests see the same time as Event details in the browser.
+    /// </summary>
+    public static string FormatDisplayTime(DateTime value, TimeZoneInfo? timeZone = null)
+    {
+        var local = UtcToFormTime(AsUtc(value), timeZone ?? VietnamTimeZone);
+        return local.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+    }
+
+    internal static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
 
     /// <summary>
     /// Date pickers bind Unspecified wall-clock. Convert to UTC in the browser timezone
@@ -140,5 +153,24 @@ internal static class WorkUi
         taskId = default;
         return string.Equals(relatedType, "TASK", StringComparison.OrdinalIgnoreCase)
             && Guid.TryParse(relatedId, out taskId);
+    }
+
+    private static DateTime AsUtc(DateTime value) => value.Kind switch
+    {
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+    };
+
+    private static TimeZoneInfo ResolveVietnamTimeZone()
+    {
+        foreach (var id in new[] { "SE Asia Standard Time", "Asia/Ho_Chi_Minh" })
+        {
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+            catch (TimeZoneNotFoundException) { }
+            catch (InvalidTimeZoneException) { }
+        }
+
+        return TimeZoneInfo.CreateCustomTimeZone("ICT", TimeSpan.FromHours(7), "ICT", "ICT");
     }
 }

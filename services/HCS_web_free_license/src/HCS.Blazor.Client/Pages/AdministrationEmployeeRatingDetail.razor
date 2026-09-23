@@ -97,8 +97,13 @@
         hasError = false;
         try
         {
-            var loadedPeople = await Directory.GetPeopleAsync();
-            person = loadedPeople.SingleOrDefault(x => x.User.UserId == UserId);
+            person = await Directory.GetPersonAsync(UserId);
+            if (person is null)
+            {
+                hasError = true;
+                return;
+            }
+
             detail = await Work.GetEmployeeRatingDetailAsync(UserId, period);
         }
         catch (Exception exception)

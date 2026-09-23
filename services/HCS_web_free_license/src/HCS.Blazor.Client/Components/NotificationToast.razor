@@ -71,7 +71,7 @@
                        href="@NotificationText.ResolveLink(item)"
                        @onclick="() => OpenNotificationAsync(item)" @onclick:preventDefault>
                         <span class="hcs-notification-panel__ico is-@kind" aria-hidden="true">
-                            <i class="fa @IconFor(kind)"></i>
+                            <i class="fa @NotificationText.IconClass(kind)"></i>
                         </span>
                         <span class="hcs-notification-panel__copy">
                             <strong>@NotificationText.Localize(L, item.Title)</strong>
@@ -173,6 +173,7 @@
             if (disposed)
                 return;
             var toast = new ChatIncomingToast(Guid.NewGuid(), message);
+            chatToasts.RemoveAll(item => item.Message.ConversationId == message.ConversationId);
             chatToasts.Insert(0, toast);
             if (chatToasts.Count > 4)
             {
@@ -182,6 +183,10 @@
             StateHasChanged();
             _ = AutoDismissChatAsync(toast.Id);
             _ = RefreshChatUnreadAsync(lifecycleCts?.Token ?? CancellationToken.None);
+            if (panelOpen)
+            {
+                _ = RefreshAsync(showToasts: false, loadItems: true, cancellationToken: lifecycleCts?.Token ?? CancellationToken.None);
+            }
         });
     }
 
@@ -197,14 +202,18 @@
 
             recent.RemoveAll(item => item.Id == notification.Id);
             recent.Insert(0, notification);
-            if (recent.Count > 8)
-                recent.RemoveRange(8, recent.Count - 8);
+            var collapsed = ChatNotificationGrouping.CollapseUnread(recent).Take(8).ToList();
+            recent.Clear();
+            recent.AddRange(collapsed);
 
             unreadCount++;
             await UnreadCountChanged.InvokeAsync(unreadCount);
-            toasts.Insert(0, notification);
-            if (toasts.Count > 5)
-                toasts.RemoveRange(5, toasts.Count - 5);
+            if (!ChatNotificationRules.IsChatLink(notification.Link))
+            {
+                toasts.Insert(0, notification);
+                if (toasts.Count > 5)
+                    toasts.RemoveRange(5, toasts.Count - 5);
+            }
 
             StateHasChanged();
             _ = AutoDismissAsync(notification.Id);
@@ -257,7 +266,8 @@
                 if (shouldLoadItems)
                 {
                     recent.Clear();
-                    recent.AddRange(items.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(8));
+                    recent.AddRange(ChatNotificationGrouping.CollapseUnread(
+                        items.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)).Take(8));
                 }
 
                 if (nextCount != unreadCount)
@@ -425,15 +435,6 @@
 
     private static string FormatClock(DateTime value) =>
         value.Year < 2 ? string.Empty : value.ToLocalTime().ToString("HH:mm");
-
-    private static string IconFor(string kind) => kind switch
-    {
-        "sign" => "fa-signature",
-        "chat" => "fa-comments",
-        "event" => "fa-calendar-check",
-        "social" => "fa-users",
-        _ => "fa-file-lines"
-    };
 
     public async ValueTask DisposeAsync()
     {

@@ -19,7 +19,6 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
     private readonly SemaphoreSlim startLock = new(1, 1);
     private HubConnection? connection;
 
-    public event Func<Task>? Changed;
     public event Func<ChatMessageDto, Task>? MessageReceived;
     public event Func<Guid, Guid, Task>? MessageDeleted;
     public event Func<NotificationDto, Task>? NotificationReceived;
@@ -135,8 +134,6 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
                 await handler(message);
             }
         }
-
-        await NotifyChangedAsync();
     }
 
     private async Task NotifyDeletedAsync(ChatDeletedPayload payload)
@@ -149,8 +146,6 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
                 await handler(payload.ConversationId, payload.MessageId);
             }
         }
-
-        await NotifyChangedAsync();
     }
 
     private async Task NotifyNotificationAsync(NotificationDto notification)
@@ -163,8 +158,6 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
                 await handler(notification);
             }
         }
-
-        await NotifyChangedAsync();
     }
 
     private async Task NotifyPresenceChangedAsync(PresenceChangedDto change)
@@ -192,20 +185,6 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
         foreach (var handler in handlers.GetInvocationList().Cast<Func<IReadOnlyList<Guid>, Task>>())
         {
             await handler(userIds);
-        }
-    }
-
-    private async Task NotifyChangedAsync()
-    {
-        var handlers = Changed;
-        if (handlers is null)
-        {
-            return;
-        }
-
-        foreach (var handler in handlers.GetInvocationList().Cast<Func<Task>>())
-        {
-            await handler();
         }
     }
 

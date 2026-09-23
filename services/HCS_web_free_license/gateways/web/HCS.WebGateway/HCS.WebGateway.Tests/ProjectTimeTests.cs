@@ -44,4 +44,13 @@ public sealed class ProjectTimeTests
         Assert.Equal(end.Ticks, WorkUi.UtcToFormTime(utcEnd, zone).Ticks);
         Assert.Equal(utcEnd, WorkUi.FormTimeToUtc(WorkUi.UtcToFormTime(utcEnd, zone), zone));
     }
+
+    [Fact]
+    public void Check_in_page_shows_vietnam_wall_clock_not_container_utc()
+    {
+        var utc = new DateTime(2026, 9, 22, 14, 1, 0, DateTimeKind.Utc);
+        Assert.Equal("22/09/2026 21:01", WorkUi.FormatDisplayTime(utc));
+        Assert.Equal("22/09/2026 21:01",
+            WorkUi.FormatDisplayTime(DateTime.SpecifyKind(utc, DateTimeKind.Unspecified)));
+    }
 }
