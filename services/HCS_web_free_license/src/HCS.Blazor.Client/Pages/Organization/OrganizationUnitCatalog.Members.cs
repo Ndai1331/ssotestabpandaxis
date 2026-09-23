@@ -1,5 +1,7 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
+using HCS.Blazor.Client.Components;
 
 namespace HCS.Blazor.Client.Pages.Organization;
 
@@ -38,45 +40,42 @@ public partial class OrganizationUnitCatalog
             return;
         }
 
-        availableMemberFilter = string.Empty;
-        selectedAvailableMemberValue = string.Empty;
-        availableMemberPage = 1;
-        await LoadAvailableMembersAsync();
+        selectedAvailableMemberId = null;
+        availableMembers.Clear();
         if (memberModal is not null)
         {
             await memberModal.Show();
         }
     }
 
-    private Task SearchAvailableMembersAsync()
-    {
-        availableMemberPage = 1;
-        return LoadAvailableMembersAsync();
-    }
+    private string SelectedAvailableMemberText => availableMembers.FirstOrDefault(x => x.Id == selectedAvailableMemberId) is { } member
+        ? $"{member.FullName} ({member.UserName})" : "";
 
-    private async Task LoadAvailableMembersAsync()
+    private async Task<CatalogSelect2SearchResponse> SearchAvailableMembersAsync(string term, int page)
     {
         if (selectedNode is null)
         {
-            return;
+            return new([], false);
         }
 
         try
         {
+            var skip = Math.Max(page - 1, 0) * MemberPageSize;
             var result = await CatalogClient.GetAvailableMembersAsync(
                 selectedNode.Id,
-                availableMemberFilter,
-                (availableMemberPage - 1) * 100,
-                100);
-            availableMembers.Clear();
-            availableMembers.AddRange(result.Items);
+                term,
+                skip,
+                MemberPageSize);
+            return CatalogSelect2Cache.Merge(availableMembers, result.Items, x => x.Id,
+                x => $"{x.FullName} ({x.UserName})", skip + result.Items.Count < result.TotalCount);
         }
         catch (Exception exception)
         {
             errorMessage = exception is OrganizationUnitApiException
                 ? L["OrganizationUnit:LoadError"].Value
                 : L["OrganizationUnit:NetworkError"].Value;
-            availableMembers.Clear();
+            await NotifyErrorAsync(errorMessage);
+            return new([], false);
         }
     }
 }

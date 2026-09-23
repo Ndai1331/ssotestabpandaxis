@@ -25,8 +25,8 @@ internal sealed class IdentityAdminUserDto
     public bool IsLockedOut { get; set; }
     public bool TwoFactorEnabled { get; set; }
     public int AccessFailedCount { get; set; }
-    public DateTimeOffset? CreationTime { get; set; }
-    public DateTimeOffset? LastModificationTime { get; set; }
+    public DateTime? CreationTime { get; set; }
+    public DateTime? LastModificationTime { get; set; }
     public string ConcurrencyStamp { get; set; } = string.Empty;
 }
 

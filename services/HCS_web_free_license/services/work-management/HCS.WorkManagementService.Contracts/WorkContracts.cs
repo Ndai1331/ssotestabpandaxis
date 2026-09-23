@@ -46,7 +46,8 @@ public sealed record UpdateProjectTaskDto(string Title, string? Description, Dat
     string Priority, string Status, int ProgressPercent);
 public sealed record TaskAssignmentDto(Guid Id, Guid ProjectTaskId, Guid UserId, string AssignmentType);
 public sealed record AddTaskAssignmentDto(Guid UserId, string AssignmentType);
-public sealed record TaskDocumentReferenceDto(Guid Id, Guid ProjectTaskId, Guid DocumentId, string? DocumentCode);
+public sealed record TaskDocumentReferenceDto(Guid Id, Guid ProjectTaskId, Guid DocumentId, string? DocumentCode,
+    Guid? AddedByUserId = null, bool CanDelete = false);
 public sealed record AddTaskDocumentReferenceDto(Guid DocumentId, string? DocumentCode);
 public sealed record ProjectTaskDetailDto(ProjectTaskDto Task, IReadOnlyList<TaskAssignmentDto> Assignments,
     IReadOnlyList<TaskDocumentReferenceDto> Documents);

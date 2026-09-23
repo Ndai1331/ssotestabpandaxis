@@ -3,10 +3,10 @@
 
 <div class="pager" aria-label="@L["Catalog:PageSize"]">
     <span class="pager-total">@L["Catalog:PagerTotal", TotalCount]</span>
-    <button type="button" disabled="@(!CanPrev || Disabled)" @onclick="FirstClicked">@L["Catalog:PagerFirst"]</button>
-    <button type="button" disabled="@(!CanPrev || Disabled)" @onclick="PrevClicked">@L["Catalog:PagerPrev"]</button>
-    <button type="button" disabled="@(!CanNext || Disabled)" @onclick="NextClicked">@L["Catalog:PagerNext"]</button>
-    <button type="button" disabled="@(!CanNext || Disabled)" @onclick="LastClicked">@L["Catalog:PagerLast"]</button>
+    <button type="button" disabled="@(!CanPrev || Disabled)" @onclick="InvokeFirstAsync">@L["Catalog:PagerFirst"]</button>
+    <button type="button" disabled="@(!CanPrev || Disabled)" @onclick="InvokePrevAsync">@L["Catalog:PagerPrev"]</button>
+    <button type="button" disabled="@(!CanNext || Disabled)" @onclick="InvokeNextAsync">@L["Catalog:PagerNext"]</button>
+    <button type="button" disabled="@(!CanNext || Disabled)" @onclick="InvokeLastAsync">@L["Catalog:PagerLast"]</button>
     <label class="sr-only" for="@PageSizeId">@L["Catalog:PageSize"]</label>
     <select id="@PageSizeId" aria-label="@L["Catalog:PageSize"]" value="@PageSize" disabled="@Disabled" @onchange="PageSizeChanged">
         @foreach (var size in Sizes)
@@ -33,4 +33,9 @@
     [Parameter] public EventCallback<ChangeEventArgs> PageSizeChanged { get; set; }
 
     private IReadOnlyList<int> Sizes => PageSizes is { Count: > 0 } sizes ? sizes : DefaultSizes;
+
+    private Task InvokeFirstAsync() => FirstClicked.InvokeAsync();
+    private Task InvokePrevAsync() => PrevClicked.InvokeAsync();
+    private Task InvokeNextAsync() => NextClicked.InvokeAsync();
+    private Task InvokeLastAsync() => LastClicked.InvokeAsync();
 }

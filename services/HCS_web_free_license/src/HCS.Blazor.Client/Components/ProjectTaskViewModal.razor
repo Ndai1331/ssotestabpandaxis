@@ -95,7 +95,7 @@
                                                 <strong class="hcs-member-list__name">@Name(assignment.UserId)</strong>
                                                 <span class="hcs-member-list__role">@AssignmentTypeLabel(assignment.AssignmentType)</span>
                                             </span>
-                                            @if (detail.Task.CanManageAssignments)
+                                            @if (detail.Task.CanManageAssignments && CurrentUser.Id != assignment.UserId)
                                             {
                                                 <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => RemoveAssignmentAsync(assignment)">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
@@ -231,7 +231,7 @@
 
     private async Task RemoveAssignmentAsync(TaskAssignmentDto assignment)
     {
-        if (detail is null || !detail.Task.CanManageAssignments) return;
+        if (detail is null || !detail.Task.CanManageAssignments || CurrentUser.Id == assignment.UserId) return;
         if (!await UiMessage.Confirm(L["Catalog:DeleteConfirmation", Name(assignment.UserId)].Value)) return;
         try
         {

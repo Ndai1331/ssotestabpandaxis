@@ -25,13 +25,22 @@ public sealed class UserAvatarAppService(
 
     public async Task<UserAvatarContent> GetAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {
+        var meta = await GetMetaAsync(userId, cancellationToken);
+        var stream = await OpenBlobAsync(meta.BlobName, cancellationToken);
+        return new UserAvatarContent(stream, meta.ContentType, meta.FileName, meta.LastModificationTime);
+    }
+
+    public async Task<UserAvatarMeta> GetMetaAsync(Guid? userId = null, CancellationToken cancellationToken = default)
+    {
         var targetUserId = ResolveTargetUser(userId);
         var avatar = await db.UserAvatars.AsNoTracking()
             .SingleOrDefaultAsync(x => x.UserId == targetUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Avatar not found.");
-        var stream = await blobs.GetAsync(avatar.BlobName, cancellationToken);
-        return new UserAvatarContent(stream, avatar.ContentType, avatar.FileName, avatar.LastModificationTime);
+        return new UserAvatarMeta(avatar.ContentType, avatar.FileName, avatar.BlobName, avatar.Size, avatar.LastModificationTime);
     }
+
+    public Task<Stream> OpenBlobAsync(string blobName, CancellationToken cancellationToken = default) =>
+        blobs.GetAsync(blobName, cancellationToken);
 
     public async Task UploadAsync(string fileName, string contentType, Stream content, long size, CancellationToken cancellationToken = default)
     {
@@ -108,3 +117,5 @@ public sealed class UserAvatarAppService(
 }
 
 public sealed record UserAvatarContent(Stream Content, string ContentType, string FileName, DateTime LastModificationTime);
+
+public sealed record UserAvatarMeta(string ContentType, string FileName, string BlobName, long Size, DateTime LastModificationTime);

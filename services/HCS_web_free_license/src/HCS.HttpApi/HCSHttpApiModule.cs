@@ -1,5 +1,7 @@
 ﻿using Localization.Resources.AbpUi;
+using HCS.Filters;
 using HCS.Localization;
+using Microsoft.AspNetCore.Mvc;
 using Volo.Abp.Account;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.FeatureManagement;
@@ -22,6 +24,7 @@ public class HCSHttpApiModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<MvcOptions>(options => options.Filters.Add<IdentityUserListNotActiveFilter>());
         ConfigureLocalization();
     }
 

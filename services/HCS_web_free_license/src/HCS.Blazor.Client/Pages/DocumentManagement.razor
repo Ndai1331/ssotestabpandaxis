@@ -56,14 +56,28 @@
                             </select>
                         </div>
                         <div class="filter-menu-field">
-                            <label class="field-label" for="docs-sector-filter">@L["Menu:Sectors"]</label>
-                            <select class="select input" id="docs-sector-filter" @bind="sectorFilter">
-                                <option value="">@L["Catalog:AllStatuses"]</option>
-                                @foreach (var item in sectors)
-                                {
-                                    <option value="@item.Id">@item.Name</option>
-                                }
-                            </select>
+                            @if (UseSectorNav)
+                            {
+                                <label class="field-label" for="docs-type-filter">@L["Menu:DocumentTypes"]</label>
+                                <select class="select input" id="docs-type-filter" @bind="documentTypeFilter">
+                                    <option value="">@L["Catalog:AllStatuses"]</option>
+                                    @foreach (var item in documentTypes)
+                                    {
+                                        <option value="@item.Id">@item.Name</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <label class="field-label" for="docs-sector-filter">@L["Menu:Sectors"]</label>
+                                <select class="select input" id="docs-sector-filter" @bind="sectorFilter">
+                                    <option value="">@L["Catalog:AllStatuses"]</option>
+                                    @foreach (var item in sectors)
+                                    {
+                                        <option value="@item.Id">@item.Name</option>
+                                    }
+                                </select>
+                            }
                         </div>
                     </div>
                     <div class="vb-field-row">
@@ -108,14 +122,14 @@
     </div>
 
     <div class="docs-layout">
-        <aside class="docs-side" aria-label="@L["Menu:DocumentTypes"]">
-            <button class="docs-cat @(selectedTypeId is null ? "is-active" : null)" type="button" @onclick="() => SelectType(null)">
+        <aside class="docs-side" aria-label="@(UseSectorNav ? L["Menu:Sectors"] : L["Menu:DocumentTypes"])">
+            <button class="docs-cat @(selectedNavId is null ? "is-active" : null)" type="button" @onclick="() => SelectNav(null)">
                 @L["Catalog:AllStatuses"]
             </button>
-            @foreach (var type in documentTypes)
+            @foreach (var item in NavCatalog)
             {
-                <button class="docs-cat @(selectedTypeId == type.Id ? "is-active" : null)" type="button" @onclick="() => SelectType(type.Id)">
-                    @type.Name
+                <button class="docs-cat @(selectedNavId == item.Id ? "is-active" : null)" type="button" @onclick="() => SelectNav(item.Id)">
+                    @item.Name
                 </button>
             }
         </aside>
@@ -288,8 +302,8 @@
     private SubmitWorkflowModal? submitModal;
     private SendDocumentModal? sendModal;
     private DocumentDto? previewing;
-    private Guid? selectedTypeId;
-    private string filter = "", statusFilter = "", sectorFilter = "", urgencyFilter = "", confidentialityFilter = "";
+    private Guid? selectedNavId;
+    private string filter = "", statusFilter = "", documentTypeFilter = "", sectorFilter = "", urgencyFilter = "", confidentialityFilter = "";
     private DateTime? fromDate, toDate;
     private bool showFilters, showSearch, catalogsLoaded, isLoading;
     private int lastLoadedSource = int.MinValue;
@@ -312,6 +326,8 @@
     private bool CanCreate => IsPersonal || (canCreateArchive && SourceType == 0);
     private bool CanManage => IsPersonal || SourceType == 0;
     private bool IsInbox => SourceType == 2;
+    private bool UseSectorNav => SourceType is 0 or 1;
+    private IReadOnlyList<MasterDataCatalogDto> NavCatalog => UseSectorNav ? sectors : documentTypes;
     private string PageTitle => SourceType switch
     {
         1 => L["Menu:DocumentsICreated"],
@@ -321,7 +337,7 @@
     private bool IsSearchFiltered => !string.IsNullOrWhiteSpace(filter);
     private bool IsAdvancedFiltered =>
         !string.IsNullOrWhiteSpace(statusFilter)
-        || !string.IsNullOrWhiteSpace(sectorFilter)
+        || (UseSectorNav ? !string.IsNullOrWhiteSpace(documentTypeFilter) : !string.IsNullOrWhiteSpace(sectorFilter))
         || !string.IsNullOrWhiteSpace(urgencyFilter)
         || !string.IsNullOrWhiteSpace(confidentialityFilter)
         || fromDate is not null
@@ -389,11 +405,11 @@
     private Task ResetSearchAsync() { ResetFilters(); showFilters = false; currentPage = 1; return LoadAsync(); }
     private void ResetFilters()
     {
-        filter = statusFilter = sectorFilter = urgencyFilter = confidentialityFilter = "";
+        filter = statusFilter = documentTypeFilter = sectorFilter = urgencyFilter = confidentialityFilter = "";
         fromDate = toDate = null;
-        selectedTypeId = null;
+        selectedNavId = null;
     }
-    private Task SelectType(Guid? id) { selectedTypeId = id; currentPage = 1; return LoadAsync(); }
+    private Task SelectNav(Guid? id) { selectedNavId = id; currentPage = 1; return LoadAsync(); }
 
     private Task GoFirst() { currentPage = 1; return LoadAsync(); }
     private Task GoPrev() { currentPage = Math.Max(1, currentPage - 1); return LoadAsync(); }
@@ -417,7 +433,9 @@
             DocumentStatus? status = Enum.TryParse<DocumentStatus>(statusFilter, out var parsed) ? parsed : null;
             var page = await Documents.GetDocumentsAsync(new DocumentListQuery(
                 search, status?.ToString(), SourceType == 1, (currentPage - 1) * pageSize, pageSize, SourceType,
-                selectedTypeId, ParseGuid(sectorFilter), ParseGuid(urgencyFilter), ParseGuid(confidentialityFilter),
+                UseSectorNav ? ParseGuid(documentTypeFilter) : selectedNavId,
+                UseSectorNav ? selectedNavId : ParseGuid(sectorFilter),
+                ParseGuid(urgencyFilter), ParseGuid(confidentialityFilter),
                 fromDate, toDate));
             if (generation != loadGeneration) return;
             items.Clear(); items.AddRange(page.Items);

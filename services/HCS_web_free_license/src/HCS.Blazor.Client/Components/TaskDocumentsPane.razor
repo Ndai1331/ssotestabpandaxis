@@ -16,14 +16,14 @@
             <span class="hcs-task-docs-hint">@L["Work:TaskFileMaxSizeHint"]</span>
         </div>
     }
-    @if (References.Count == 0)
+    @if (snapshot.Length == 0)
     {
         <DocsEmpty Compact="true" Title="@L["Work:NoDocuments"]" />
     }
     else
     {
         <ul class="hcs-member-list">
-            @foreach (var reference in References)
+            @foreach (var reference in snapshot)
             {
                 var document = DocumentOf(reference.DocumentId);
                 var file = PrimaryFile(document);
@@ -41,7 +41,7 @@
                         <button class="doc-action" type="button" title="@L["Work:PdfPreview"]" aria-label="@L["Work:PdfPreview"]" @onclick="() => PreviewAsync(reference.DocumentId)">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
-                        @if (CanManage)
+                        @if (reference.CanDelete)
                         {
                             <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" disabled="@busy" @onclick="() => RemoveAsync(reference)">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
@@ -65,10 +65,17 @@
 
     private readonly string inputId = "hcs-task-docs-" + Guid.NewGuid().ToString("N");
     private readonly Dictionary<Guid, DocumentDto?> cache = [];
+    private TaskDocumentReferenceDto[] snapshot = [];
     private DocumentPdfPreviewModal? previewModal;
     private bool busy;
+    private int cacheVersion;
 
-    protected override Task OnParametersSetAsync() => EnsureCacheAsync();
+    protected override Task OnParametersSetAsync()
+    {
+        var items = References.Count == 0 ? Array.Empty<TaskDocumentReferenceDto>() : [.. References];
+        snapshot = items;
+        return EnsureCacheAsync(items);
+    }
 
     public static async Task AttachExistingAsync(DocumentClient documents, WorkManagementClient work, Guid taskId, Guid documentId)
     {
@@ -82,13 +89,18 @@
         await work.AddTaskDocumentAsync(taskId, new AddTaskDocumentRequest(documentId, code));
     }
 
-    private async Task EnsureCacheAsync()
+    private async Task EnsureCacheAsync(TaskDocumentReferenceDto[] items)
     {
-        foreach (var id in References.Select(x => x.DocumentId).Distinct())
+        var version = ++cacheVersion;
+        var ids = items.Select(x => x.DocumentId).Distinct().ToArray();
+        foreach (var id in ids)
         {
             if (cache.ContainsKey(id)) continue;
-            try { cache[id] = await Documents.GetDocumentAsync(id); }
-            catch { cache[id] = null; }
+            DocumentDto? document = null;
+            try { document = await Documents.GetDocumentAsync(id); }
+            catch { }
+            if (version != cacheVersion) return;
+            cache[id] = document;
         }
     }
 
@@ -135,7 +147,7 @@
 
     private async Task RemoveAsync(TaskDocumentReferenceDto reference)
     {
-        if (!CanManage || busy) return;
+        if (!reference.CanDelete || busy) return;
         var document = DocumentOf(reference.DocumentId);
         var name = DisplayName(reference, document, PrimaryFile(document));
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], name))) return;
@@ -171,8 +183,12 @@
     private string DisplayMeta(TaskDocumentReferenceDto reference, DocumentDto? document, DocumentFileDto? file)
     {
         if (document is null) return reference.DocumentCode ?? "";
+        var name = DisplayName(reference, document, file);
+        string? meta;
         if (!string.IsNullOrWhiteSpace(file?.FileName))
-            return string.IsNullOrWhiteSpace(document.Number) ? document.Title : $"{document.Number} · {document.Title}";
-        return document.Number;
+            meta = string.IsNullOrWhiteSpace(document.Number) ? document.Title : document.Number;
+        else
+            meta = document.Number;
+        return string.Equals(meta, name, StringComparison.OrdinalIgnoreCase) ? "" : meta ?? "";
     }
 }

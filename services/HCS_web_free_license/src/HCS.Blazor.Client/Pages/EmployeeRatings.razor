@@ -24,14 +24,13 @@
                    placeholder="@L["EmployeeRatings:SearchPlaceholder"]" value="@searchText"
                    @oninput="OnSearchInput" />
         </div>
-        <label class="visually-hidden" for="employee-rating-department">@L["EmployeeRatings:Department"]</label>
-        <select id="employee-rating-department" class="form-select" @bind="selectedDepartmentId" @bind:after="OnDepartmentChanged">
-            <option value="">@L["EmployeeRatings:AllDepartments"]</option>
-            @foreach (var department in departments)
-            {
-                <option value="@department.Id">@department.Name</option>
-            }
-        </select>
+        <div class="hcs-rating-filters__department" role="group" aria-label="@L["EmployeeRatings:Department"]">
+            <CatalogSelect2 Value="selectedDepartmentId"
+                            ValueChanged="OnDepartmentChanged"
+                            Placeholder="@L["EmployeeRatings:AllDepartments"]"
+                            SelectedText="@DepartmentText"
+                            Search="SearchDepartmentsAsync" />
+        </div>
     </div>
 
     @if (!isLoading && !hasError)
@@ -148,9 +147,9 @@
 
 @code {
     private readonly List<EmployeeRatingPerson> people = [];
-    private IReadOnlyList<DepartmentCatalogDto> departments = [];
+    private readonly List<DepartmentCatalogDto> departments = [];
     private string searchText = string.Empty;
-    private string selectedDepartmentId = string.Empty;
+    private Guid? selectedDepartmentId;
     private bool isLoading = true;
     private bool hasError;
     private Guid currentUserId;
@@ -162,17 +161,17 @@
     private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)Math.Max(pageSize, 1)));
     private bool CanPrev => currentPage > 1;
     private bool CanNext => currentPage < PageCount;
-    private Guid? SelectedUnitId => Guid.TryParse(selectedDepartmentId, out var id) ? id : null;
+    private Guid? SelectedUnitId => selectedDepartmentId;
+    private string DepartmentText => departments.FirstOrDefault(x => x.Id == selectedDepartmentId)?.Name ?? "";
     private int PendingTodayCount => people.Count(person => !person.Summary.MyTodayScore.HasValue);
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            departments = (await Directory.GetDepartmentsAsync())
+            departments.AddRange((await Directory.GetDepartmentsAsync())
                 .Where(department => department.IsActive)
-                .OrderBy(department => department.Name)
-                .ToList();
+                .ToList());
         }
         catch (Exception exception)
         {
@@ -289,8 +288,16 @@
         }
     }
 
-    private Task OnDepartmentChanged()
+    private Task<CatalogSelect2SearchResponse> SearchDepartmentsAsync(string term, int page)
     {
+        var found = OrganizationUnitCatalogMapper.FilterTree(departments, term);
+        return Task.FromResult(CatalogSelect2Cache.Merge(departments, found, x => x.Id,
+            OrganizationUnitCatalogMapper.OptionText(departments), false));
+    }
+
+    private Task OnDepartmentChanged(Guid? value)
+    {
+        selectedDepartmentId = value;
         currentPage = 1;
         return LoadAsync();
     }

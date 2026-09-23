@@ -74,6 +74,27 @@ public sealed class WorkAccessScopeTests
     }
 
     [Fact]
+    public void Assigned_user_cannot_remove_themselves()
+    {
+        var me = Guid.NewGuid();
+        Assert.False(WorkAccessQueries.CanRemoveParticipant(me, me));
+        Assert.True(WorkAccessQueries.CanRemoveParticipant(Guid.NewGuid(), me));
+    }
+
+    [Fact]
+    public void Only_the_user_who_added_a_task_file_can_delete_it()
+    {
+        var adder = Guid.NewGuid();
+        var other = Guid.NewGuid();
+        var creator = Guid.NewGuid();
+        Assert.True(WorkAccessQueries.CanDeleteDocument(adder, adder, false, creator, creator));
+        Assert.False(WorkAccessQueries.CanDeleteDocument(adder, other, false, creator, creator));
+        Assert.True(WorkAccessQueries.CanDeleteDocument(adder, other, true, creator, creator));
+        Assert.True(WorkAccessQueries.CanDeleteDocument(null, creator, false, creator, creator));
+        Assert.False(WorkAccessQueries.CanDeleteDocument(null, other, false, creator, creator));
+    }
+
+    [Fact]
     public void New_task_records_the_current_user_as_creator()
     {
         var userId = Guid.NewGuid();

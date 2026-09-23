@@ -754,10 +754,15 @@ namespace HCS.WorkManagementService.Migrations
                     b.Property<Guid>("DocumentId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AddedByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ProjectTaskId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AddedByUserId");
 
                     b.HasIndex("DocumentId");
 

@@ -49,31 +49,7 @@
 
             <div class="hcs-header__actions" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">
                 <CultureSelector />
-                <div class="hcs-top-pop">
-                    <button class="hcs-icon-button" type="button" data-hcs-notification-trigger="true" aria-label='@Localizer["Notifications:Title"]' @onclick="ToggleNotificationsAsync">
-                        <i class="fa fa-bell" aria-hidden="true"></i>
-                        @if (unreadNotifications > 0)
-                        {
-                            <span class="hcs-icon-badge">@unreadNotifications</span>
-                        }
-                    </button>
-                    <AuthorizeView Policy="Collaboration.Notifications">
-                        <Authorized>
-                            <NotificationToast @ref="notificationToast" UnreadCountChanged="OnUnreadChanged" ChatUnreadCountChanged="OnChatUnreadChanged" />
-                        </Authorized>
-                    </AuthorizeView>
-                </div>
-                <AuthorizeView Policy="Collaboration.Chat">
-                    <Authorized>
-                        <a class="hcs-icon-button hcs-icon-link" href="/chat" aria-label='@Localizer["Chat:HeaderShortcut"]'>
-                            <i class="fa fa-comments" aria-hidden="true"></i>
-                            @if (unreadChat > 0)
-                            {
-                                <span class="hcs-icon-badge">@unreadChat</span>
-                            }
-                        </a>
-                    </Authorized>
-                </AuthorizeView>
+                <HcsHeaderAlerts />
                 <AuthorizeView Context="authenticationState">
                     <Authorized>
                         <details class="hcs-user-menu" open="@userMenuOpen">
@@ -424,10 +400,7 @@
                 <a class="@BottomNavClass("chat")" href="/chat" aria-current="@(IsBottomNavActive("chat") ? "page" : null)">
                     <i class="fa fa-comments" aria-hidden="true"></i>
                     <span>@Localizer["Menu:BottomChat"]</span>
-                    @if (unreadChat > 0)
-                    {
-                        <span class="hcs-icon-badge">@unreadChat</span>
-                    }
+                    <HcsChatUnreadBadge />
                 </a>
             </Authorized>
         </AuthorizeView>
@@ -453,9 +426,6 @@
     private string? expandedSection;
     private bool isLoggingOut;
     private string? logoutError;
-    private NotificationToast? notificationToast;
-    private int unreadNotifications;
-    private int unreadChat;
     private string? avatarDataUrl;
 
     private static bool CanOpenDocumentsNavigation(System.Security.Claims.ClaimsPrincipal user) =>
@@ -532,15 +502,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(Branding.EnsureLoadedAsync(), Features.EnsureLoadedAsync());
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await ReloadAvatarQuietAsync();
-        }
+        await Task.WhenAll(Branding.EnsureLoadedAsync(), Features.EnsureLoadedAsync(), ReloadAvatarQuietAsync());
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
@@ -549,7 +511,6 @@
         var wasMobileNavOpen = mobileNavOpen;
         mobileNavOpen = false;
         expandedSection = null;
-        _ = ReloadAvatarQuietAsync();
         _ = InvokeAsync(async () =>
         {
             if (wasMobileNavOpen)
@@ -570,7 +531,13 @@
         try
         {
             var content = await Account.TryGetAvatarAsync();
-            avatarDataUrl = content?.ToDataUrl();
+            var next = content?.ToDataUrl();
+            if (string.Equals(next, avatarDataUrl, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            avatarDataUrl = next;
             await InvokeAsync(StateHasChanged);
         }
         catch
@@ -646,19 +613,6 @@
         {
             expandedSection = null;
         }
-    }
-
-    private Task ToggleNotificationsAsync() => notificationToast?.TogglePanelAsync() ?? Task.CompletedTask;
-    private void OnUnreadChanged(int count)
-    {
-        unreadNotifications = count;
-        _ = InvokeAsync(StateHasChanged);
-    }
-
-    private void OnChatUnreadChanged(int count)
-    {
-        unreadChat = count;
-        _ = InvokeAsync(StateHasChanged);
     }
 
     private void ToggleMobileNav()

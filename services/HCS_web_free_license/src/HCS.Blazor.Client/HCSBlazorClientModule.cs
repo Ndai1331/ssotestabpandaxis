@@ -169,6 +169,7 @@ public class HCSBlazorClientModule : AbpModule
             : new Uri(new Uri(environment.BaseAddress), configuredGatewayUrl.EnsureEndsWith('/'));
         context.Services.AddSingleton(new ChatRealtimeConnection(gatewayBaseAddress));
         context.Services.AddSingleton<HcsBusyTracker>();
+        context.Services.AddSingleton<NotificationBadgeState>();
         context.Services.AddTransient(_ => new BffHttpMessageHandler(gatewayBaseAddress));
         context.Services.AddTransient<CultureHttpMessageHandler>();
         context.Services.AddTransient<BusyHttpMessageHandler>();

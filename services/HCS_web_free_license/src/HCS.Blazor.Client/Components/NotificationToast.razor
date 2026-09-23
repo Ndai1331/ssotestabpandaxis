@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 @inject CollaborationClient Chat
 @inject ChatRealtimeConnection Realtime
+@inject NotificationBadgeState Badges
 @inject NavigationManager Navigation
 @inject IJSRuntime Js
 @using HCS.Blazor.Client.Collaboration
@@ -89,9 +90,6 @@
 }
 
 @code {
-    [Parameter] public EventCallback<int> UnreadCountChanged { get; set; }
-    [Parameter] public EventCallback<int> ChatUnreadCountChanged { get; set; }
-
     private readonly List<NotificationDto> toasts = [];
     private readonly List<NotificationDto> recent = [];
     private readonly List<ChatIncomingToast> chatToasts = [];
@@ -195,7 +193,7 @@
         if (disposed)
             return;
 
-        await InvokeAsync(async () =>
+        await InvokeAsync(() =>
         {
             if (disposed || !TryRemember(notification.Id))
                 return;
@@ -207,7 +205,7 @@
             recent.AddRange(collapsed);
 
             unreadCount++;
-            await UnreadCountChanged.InvokeAsync(unreadCount);
+            Badges.SetUnreadNotifications(unreadCount);
             if (!ChatNotificationRules.IsChatLink(notification.Link))
             {
                 toasts.Insert(0, notification);
@@ -259,10 +257,11 @@
                     cancellationToken: cancellationToken);
 
             var nextChatUnreadCount = await GetChatUnreadCountAsync(cancellationToken);
-            await InvokeAsync(async () =>
+            await InvokeAsync(() =>
             {
                 if (disposed)
                     return;
+                var visualChanged = shouldLoadItems;
                 if (shouldLoadItems)
                 {
                     recent.Clear();
@@ -273,13 +272,13 @@
                 if (nextCount != unreadCount)
                 {
                     unreadCount = nextCount;
-                    await UnreadCountChanged.InvokeAsync(unreadCount);
+                    Badges.SetUnreadNotifications(unreadCount);
                 }
 
                 if (nextChatUnreadCount != chatUnreadCount)
                 {
                     chatUnreadCount = nextChatUnreadCount;
-                    await ChatUnreadCountChanged.InvokeAsync(chatUnreadCount);
+                    Badges.SetUnreadChat(chatUnreadCount);
                 }
 
                 if (showToasts)
@@ -290,12 +289,14 @@
                         // SignalR already surfaces incoming chat; skip the persisted duplicate popup.
                         if (ChatNotificationRules.IsChatLink(item.Link)) continue;
                         toasts.Insert(0, item);
+                        visualChanged = true;
                         _ = AutoDismissAsync(item.Id);
                     }
                     if (toasts.Count > 5) toasts.RemoveRange(5, toasts.Count - 5);
                 }
 
-                StateHasChanged();
+                if (visualChanged)
+                    StateHasChanged();
             });
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
@@ -313,13 +314,12 @@
         try { nextCount = await GetChatUnreadCountAsync(cancellationToken); }
         catch { return; }
 
-        await InvokeAsync(async () =>
+        await InvokeAsync(() =>
         {
             if (disposed || nextCount == chatUnreadCount)
                 return;
             chatUnreadCount = nextCount;
-            await ChatUnreadCountChanged.InvokeAsync(chatUnreadCount);
-            StateHasChanged();
+            Badges.SetUnreadChat(chatUnreadCount);
         });
     }
 
@@ -350,14 +350,14 @@
         if (disposed)
             return;
         try { await Chat.MarkNotificationReadAsync(item.Id); } catch { }
-        await InvokeAsync(async () =>
+        await InvokeAsync(() =>
         {
             if (disposed)
                 return;
             toasts.RemoveAll(x => x.Id == item.Id);
             recent.RemoveAll(x => x.Id == item.Id);
             unreadCount = Math.Max(0, unreadCount - 1);
-            await UnreadCountChanged.InvokeAsync(unreadCount);
+            Badges.SetUnreadNotifications(unreadCount);
             panelOpen = false;
             StateHasChanged();
         });
@@ -384,14 +384,14 @@
     private async Task MarkAllReadAsync()
     {
         try { await Chat.MarkAllNotificationsReadAsync(); } catch { return; }
-        await InvokeAsync(async () =>
+        await InvokeAsync(() =>
         {
             if (disposed)
                 return;
             toasts.Clear();
             recent.Clear();
             unreadCount = 0;
-            await UnreadCountChanged.InvokeAsync(unreadCount);
+            Badges.SetUnreadNotifications(unreadCount);
             StateHasChanged();
             _ = RefreshAsync(showToasts: false, loadItems: true, cancellationToken: CancellationToken.None);
         });

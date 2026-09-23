@@ -692,6 +692,7 @@ body:has(.hcs-app-shell) .datepicker-day-outside:not(.datepicker-day-selected) {
 .hcs-rating-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--hcs-space-2); margin-bottom: var(--hcs-space-4); padding: .75rem; border: 1px solid var(--hcs-color-border); border-radius: var(--hcs-radius-lg); background: var(--hcs-color-surface); box-shadow: var(--hcs-shadow-sm); }
 .hcs-rating-filters__search { display: flex; flex: 1 1 16rem; align-items: center; gap: .65rem; min-width: min(100%, 16rem); padding: 0 .85rem; border: 1px solid var(--hcs-color-border); border-radius: 999px; background: var(--hcs-color-surface-muted, #f6f8f8); }
 .hcs-rating-filters__search i { color: var(--hcs-color-muted); }
+.hcs-rating-filters__department { flex: 0 1 20rem; min-width: 0; width: 100%; }
 .hcs-rating-filters__search .form-control { flex: 1; min-width: 0; height: 2.5rem; border: 0; background: transparent; box-shadow: none; }
 .hcs-rating-filters .form-select { width: auto; min-width: 12rem; height: 2.5rem; border-radius: 999px; }
 .hcs-rating-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--hcs-space-3); margin-bottom: var(--hcs-space-4); }
@@ -760,6 +761,7 @@ body:has(.hcs-app-shell) .datepicker-day-outside:not(.datepicker-day-selected) {
     .hcs-rating-page { padding-top: var(--hcs-space-4); }
     .hcs-rating-page__header { align-items: stretch; flex-direction: column; }
     .hcs-rating-filters { flex-direction: column; align-items: stretch; }
+    .hcs-rating-filters__department { flex-basis: auto; }
     .hcs-rating-filters .form-select { width: 100%; min-width: 0; }
     .hcs-rating-stats, .hcs-rating-toolbar__fields, .hcs-rating-kpi-grid, .hcs-rating-detail-grid, .hcs-rating-dashboard-grid { grid-template-columns: 1fr; }
     .hcs-rating-panel--wide { grid-column: auto; }

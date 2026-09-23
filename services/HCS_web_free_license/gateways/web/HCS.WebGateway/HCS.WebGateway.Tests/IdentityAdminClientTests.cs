@@ -15,7 +15,7 @@ public sealed class IdentityAdminClientTests
     {
         var actual = IdentityAdminClient.BuildQuery("api/identity/users", "  admin@example.com  ", -20, 500);
 
-        Assert.Equal("api/identity/users?filter=admin%40example.com&skipCount=0&maxResultCount=100", actual);
+        Assert.Equal("api/identity/users?filter=admin%40example.com&skipCount=0&maxResultCount=100&sorting=creationTime%20desc", actual);
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public sealed class IdentityAdminClientTests
     {
         var actual = IdentityAdminClient.BuildQuery("api/identity/users", null, 20, 20, notActive: false);
 
-        Assert.Equal("api/identity/users?notActive=false&skipCount=20&maxResultCount=20", actual);
+        Assert.Equal("api/identity/users?notActive=false&skipCount=20&maxResultCount=20&sorting=creationTime%20desc", actual);
     }
 
     [Fact]

@@ -1283,6 +1283,56 @@ body:has(.hcs-app-shell) .hcs-catalog-modal button.doc-action.is-danger:hover:no
   white-space: normal;
 }
 
+.hcs-app-shell .page-pj .docs-table .col-code,
+.hcs-app-shell .page-pj .docs-table .pj-code-cell {
+  min-width: 9.5rem;
+  max-width: 16rem;
+  white-space: nowrap;
+}
+
+.hcs-app-shell .page-pj .docs-table .col-project,
+.hcs-app-shell .page-pj .docs-table td:has(.pj-name) {
+  max-width: none;
+  min-width: 22rem;
+  width: 42%;
+}
+
+.hcs-app-shell .page-pj .docs-table .col-dates,
+.hcs-app-shell .page-pj .docs-table .pj-dates {
+  min-width: 10.5rem;
+  white-space: nowrap;
+}
+
+.hcs-app-shell .page-pj .docs-table .col-count {
+  text-align: right;
+  white-space: nowrap;
+  width: 1%;
+}
+
+.hcs-app-shell .page-pj .docs-table .col-status {
+  width: auto;
+  white-space: nowrap;
+}
+
+.hcs-app-shell .page-pj .pj-name {
+  max-width: none;
+}
+
+.hcs-app-shell .page-pj .pj-name a {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.hcs-app-shell .page-pj .pj-code {
+  max-width: 16rem;
+}
+
 .hcs-app-shell .page-pj .docs-table td:has(.doc-actions) {
   min-width: 11rem;
   width: auto;

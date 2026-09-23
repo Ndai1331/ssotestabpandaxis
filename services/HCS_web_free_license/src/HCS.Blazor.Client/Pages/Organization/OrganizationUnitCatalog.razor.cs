@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Blazorise;
+using HCS.Blazor.Client.Components;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -31,10 +32,9 @@ public partial class OrganizationUnitCatalog : IDisposable
     private Guid? actionUnitId;
     private Guid? openMenuId;
     private string memberFilter = string.Empty;
-    private string availableMemberFilter = string.Empty;
     private string moveTargetValue = string.Empty;
     private string moveAllTargetValue = string.Empty;
-    private string selectedAvailableMemberValue = string.Empty;
+    private Guid? selectedAvailableMemberId;
     private string? errorMessage;
     private bool isAuthorized;
     private bool canCreate;
@@ -45,7 +45,6 @@ public partial class OrganizationUnitCatalog : IDisposable
     private bool isSaving;
     private bool hasLoaded;
     private int currentMemberPage = 1;
-    private int availableMemberPage = 1;
     private long totalMembers;
 
     private Guid? selectedId => selectedNode?.Id;
@@ -55,6 +54,30 @@ public partial class OrganizationUnitCatalog : IDisposable
         : L["OrganizationUnit:AddSubUnit"].Value;
 
     private IEnumerable<OrganizationUnitTreeNode> allNodes => OrganizationUnitTreeBuilder.Flatten(rootNodes);
+
+    private Guid? MoveTargetId => Guid.TryParse(moveTargetValue, out var id) ? id : null;
+    private void OnMoveTargetChanged(Guid? value) => moveTargetValue = value?.ToString("D") ?? string.Empty;
+    private void OnMoveAllTargetChanged(Guid? value) => moveAllTargetValue = value?.ToString("D") ?? string.Empty;
+    private Guid? MoveAllTargetId => Guid.TryParse(moveAllTargetValue, out var id) ? id : null;
+    private string MoveTargetText(Guid? id) => allNodes.FirstOrDefault(node => node.Id == id)?.DisplayName ?? "";
+
+    private Task<CatalogSelect2SearchResponse> SearchMoveTargetsAsync(string term, int page) =>
+        SearchMoveTargetsAsync(MoveTargetOptions, term);
+
+    private Task<CatalogSelect2SearchResponse> SearchMoveAllTargetsAsync(string term, int page) =>
+        SearchMoveTargetsAsync(MoveAllTargetOptions, term);
+
+    private static Task<CatalogSelect2SearchResponse> SearchMoveTargetsAsync(
+        IEnumerable<OrganizationUnitTreeNode> options, string term)
+    {
+        var query = CatalogSelect2Text.NormalizeSearch(term);
+        var items = options.Where(node => query.Length == 0
+                || CatalogSelect2Text.NormalizeSearch(node.DisplayName).Contains(query, StringComparison.Ordinal)
+                || CatalogSelect2Text.NormalizeSearch(node.Code).Contains(query, StringComparison.Ordinal))
+            .Select(node => new CatalogSelect2Item(node.Id.ToString("D"), node.DisplayName))
+            .ToList();
+        return Task.FromResult(new CatalogSelect2SearchResponse(items, false));
+    }
 
     private IEnumerable<OrganizationUnitTreeNode> MoveTargetOptions => allNodes
         .Where(node => selectedNode is null || (node.Id != selectedNode.Id && !IsDescendant(node)))

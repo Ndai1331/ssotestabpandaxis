@@ -140,6 +140,8 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         await access.DemandProjectOwnerAsync(projectId, ct);
         var member = await db.ProjectMembers.SingleOrDefaultAsync(x => x.Id == memberId && x.ProjectId == projectId, ct)
             ?? throw new EntityNotFoundException(typeof(ProjectMember), memberId);
+        if (!WorkAccessQueries.CanRemoveParticipant(member.UserId, access.UserId))
+            throw new BusinessException("Work:CannotRemoveSelf");
         db.ProjectMembers.Remove(member);
         var users = (await AuthorizedUsers(projectId, ct)).Where(x => x != member.UserId).ToList();
         users.Add(await OwnerUserId(projectId, ct));
@@ -215,10 +217,10 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
             ?? throw new EntityNotFoundException(typeof(ProjectTask), id);
         var assignments = await db.ProjectTaskAssignments.AsNoTracking().Where(x => x.ProjectTaskId == id)
             .Select(x => new TaskAssignmentDto(x.Id, x.ProjectTaskId, x.UserId, x.AssignmentType)).ToListAsync(ct);
-        var documents = await db.ProjectTaskDocuments.AsNoTracking().Where(x => x.ProjectTaskId == id)
-            .Select(x => new TaskDocumentReferenceDto(x.Id, x.ProjectTaskId, x.DocumentId, x.DocumentCode)).ToListAsync(ct);
+        var documentRows = await db.ProjectTaskDocuments.AsNoTracking().Where(x => x.ProjectTaskId == id).ToListAsync(ct);
         var canCreate = await access.CreatableProjectIdsAsync([task.ProjectId], ct);
         var owner = await OwnerUserId(task.ProjectId, ct);
+        var documents = documentRows.Select(x => MapDocument(x, task.CreatorId, owner)).ToList();
         return new(Map(task, canCreate.Contains(task.ProjectId), owner), assignments, documents);
     }
 
@@ -289,9 +291,10 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         if (!await db.ProjectTasks.AnyAsync(x => x.Id == taskId, ct)) throw new EntityNotFoundException(typeof(ProjectTask), taskId);
         if (await db.ProjectTaskDocuments.AnyAsync(x => x.ProjectTaskId == taskId && x.DocumentId == input.DocumentId, ct))
             throw new BusinessException("Work:DuplicateTaskDocument");
-        var reference = new ProjectTaskDocument(Guid.NewGuid(), taskId, input.DocumentId, input.DocumentCode);
+        var task = await db.ProjectTasks.AsNoTracking().SingleAsync(x => x.Id == taskId, ct);
+        var reference = new ProjectTaskDocument(Guid.NewGuid(), taskId, input.DocumentId, input.DocumentCode, access.UserId);
         db.ProjectTaskDocuments.Add(reference); await db.SaveChangesAsync(ct);
-        return new(reference.Id, reference.ProjectTaskId, reference.DocumentId, reference.DocumentCode);
+        return MapDocument(reference, task.CreatorId, await OwnerUserId(task.ProjectId, ct));
     }
 
     public async Task RemoveAssignmentAsync(Guid taskId, Guid assignmentId, CancellationToken ct)
@@ -299,6 +302,8 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         await access.DemandTaskOwnerAsync(taskId, ct);
         var assignment = await db.ProjectTaskAssignments.SingleOrDefaultAsync(x => x.Id == assignmentId && x.ProjectTaskId == taskId, ct)
             ?? throw new EntityNotFoundException(typeof(ProjectTaskAssignment), assignmentId);
+        if (!WorkAccessQueries.CanRemoveParticipant(assignment.UserId, access.UserId))
+            throw new BusinessException("Work:CannotRemoveSelf");
         var task = await db.ProjectTasks.SingleAsync(x => x.Id == taskId, ct);
         db.ProjectTaskAssignments.Remove(assignment);
         AddEvent(task, "AssignmentChanged", [assignment.UserId]);
@@ -314,6 +319,10 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         await access.DemandTaskMemberAsync(taskId, ct);
         var reference = await db.ProjectTaskDocuments.SingleOrDefaultAsync(x => x.Id == referenceId && x.ProjectTaskId == taskId, ct)
             ?? throw new EntityNotFoundException(typeof(ProjectTaskDocument), referenceId);
+        var task = await db.ProjectTasks.AsNoTracking().SingleAsync(x => x.Id == taskId, ct);
+        if (!WorkAccessQueries.CanDeleteDocument(reference.AddedByUserId, access.UserId, access.IsAdministrator,
+                task.CreatorId, await OwnerUserId(task.ProjectId, ct)))
+            throw new BusinessException("Work:CannotDeleteOthersDocument");
         db.ProjectTaskDocuments.Remove(reference);
         await db.SaveChangesAsync(ct);
     }
@@ -345,6 +354,9 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         return new(x.Id, x.ProjectId, x.ParentTaskId, x.Code, x.Title, x.Description, x.StartDate, x.DueDate,
             x.Priority, x.Status, x.ProgressPercent, x.CreatorId, canDelete, canDelete, canCreateChild);
     }
+    private TaskDocumentReferenceDto MapDocument(ProjectTaskDocument x, Guid? creatorId, Guid projectOwnerUserId) =>
+        new(x.Id, x.ProjectTaskId, x.DocumentId, x.DocumentCode, x.AddedByUserId,
+            WorkAccessQueries.CanDeleteDocument(x.AddedByUserId, access.UserId, access.IsAdministrator, creatorId, projectOwnerUserId));
     private static string Correlation() => System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
 }
 

@@ -165,13 +165,11 @@
             <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["OrganizationUnit:Move"]</ModalTitle><CloseButton Clicked="CloseMoveModalAsync" /></ModalHeader>
             <ModalBody Class="hcs-catalog-modal__body">
                 <Field><FieldLabel>@L["OrganizationUnit:Parent"]</FieldLabel>
-                    <select class="form-select" @bind="moveTargetValue">
-                        <option value="">@L["OrganizationUnit:Root"]</option>
-                        @foreach (var target in MoveTargetOptions)
-                        {
-                            <option value="@target.Id.ToString("D")">@target.DisplayName</option>
-                        }
-                    </select>
+                    <CatalogSelect2 @key="actionUnitId" Value="MoveTargetId"
+                                    ValueChanged="OnMoveTargetChanged"
+                                    Placeholder="@L["OrganizationUnit:Root"]"
+                                    SelectedText="@MoveTargetText(MoveTargetId)"
+                                    Search="SearchMoveTargetsAsync" />
                 </Field>
             </ModalBody>
             <ModalFooter Class="hcs-catalog-modal__footer">
@@ -186,12 +184,11 @@
             <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["OrganizationUnit:MoveAllMembers"]</ModalTitle><CloseButton Clicked="CloseMoveAllModalAsync" /></ModalHeader>
             <ModalBody Class="hcs-catalog-modal__body">
                 <Field><FieldLabel>@L["OrganizationUnit:Target"]</FieldLabel>
-                    <select class="form-select" @bind="moveAllTargetValue">
-                        @foreach (var target in MoveAllTargetOptions)
-                        {
-                            <option value="@target.Id.ToString("D")">@target.DisplayName</option>
-                        }
-                    </select>
+                    <CatalogSelect2 @key="actionUnitId" Value="MoveAllTargetId"
+                                    ValueChanged="OnMoveAllTargetChanged"
+                                    Placeholder="@L["OrganizationUnit:Target"]"
+                                    SelectedText="@MoveTargetText(MoveAllTargetId)"
+                                    Search="SearchMoveAllTargetsAsync" />
                 </Field>
             </ModalBody>
             <ModalFooter Class="hcs-catalog-modal__footer">
@@ -205,18 +202,11 @@
         <ModalContent Centered Class="hcs-catalog-modal">
             <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["OrganizationUnit:AddMember"]</ModalTitle><CloseButton Clicked="CloseMemberModalAsync" /></ModalHeader>
             <ModalBody Class="hcs-catalog-modal__body">
-                <form class="docs-toolbar admin-ou-search" @onsubmit="SearchAvailableMembersAsync" @onsubmit:preventDefault>
-                    <input class="input docs-search" type="search" @bind="availableMemberFilter" @bind:event="oninput"
-                           placeholder="@L["OrganizationUnit:SearchPlaceholder"]" autocomplete="off" />
-                    <button class="btn btn-primary" type="submit">@L["OrganizationUnit:Search"]</button>
-                </form>
-                <select class="form-select" @bind="selectedAvailableMemberValue">
-                    <option value="">@L["OrganizationUnit:ChooseMember"]</option>
-                    @foreach (var member in availableMembers)
-                    {
-                        <option value="@member.Id.ToString("D")">@member.FullName (@member.UserName)</option>
-                    }
-                </select>
+                <CatalogSelect2 @key="selectedId" Value="selectedAvailableMemberId"
+                                ValueChanged="value => selectedAvailableMemberId = value"
+                                Placeholder="@L["OrganizationUnit:ChooseMember"]"
+                                SelectedText="@SelectedAvailableMemberText"
+                                Search="SearchAvailableMembersAsync" />
             </ModalBody>
             <ModalFooter Class="hcs-catalog-modal__footer">
                 <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseMemberModalAsync">@L["Catalog:Cancel"]</Button>

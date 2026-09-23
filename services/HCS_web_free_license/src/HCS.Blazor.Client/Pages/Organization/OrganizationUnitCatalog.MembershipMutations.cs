@@ -46,7 +46,7 @@ public partial class OrganizationUnitCatalog
 
     private async Task AddMemberAsync()
     {
-        if (selectedNode is null || !Guid.TryParse(selectedAvailableMemberValue, out var userId)) return;
+        if (selectedNode is null || selectedAvailableMemberId is not { } userId) return;
         isSaving = true;
         try
         {

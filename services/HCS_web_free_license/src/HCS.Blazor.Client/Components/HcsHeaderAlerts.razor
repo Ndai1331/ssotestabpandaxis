@@ -1,0 +1,43 @@
+@namespace HCS.Blazor.Client.Components
+@using System
+@inherits HCSComponentBase
+@inject NotificationBadgeState Badges
+@implements IDisposable
+
+<div class="hcs-top-pop">
+    <button class="hcs-icon-button" type="button" data-hcs-notification-trigger="true" aria-label="@L["Notifications:Title"]" @onclick="ToggleNotificationsAsync">
+        <i class="fa fa-bell" aria-hidden="true"></i>
+        @if (Badges.UnreadNotifications > 0)
+        {
+            <span class="hcs-icon-badge">@Badges.UnreadNotifications</span>
+        }
+    </button>
+    <AuthorizeView Policy="Collaboration.Notifications">
+        <Authorized>
+            <NotificationToast @ref="notificationToast" />
+        </Authorized>
+    </AuthorizeView>
+</div>
+<AuthorizeView Policy="Collaboration.Chat">
+    <Authorized>
+        <a class="hcs-icon-button hcs-icon-link" href="/chat" aria-label="@L["Chat:HeaderShortcut"]">
+            <i class="fa fa-comments" aria-hidden="true"></i>
+            @if (Badges.UnreadChat > 0)
+            {
+                <span class="hcs-icon-badge">@Badges.UnreadChat</span>
+            }
+        </a>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private NotificationToast? notificationToast;
+
+    protected override void OnInitialized() => Badges.Changed += OnBadgesChanged;
+
+    public void Dispose() => Badges.Changed -= OnBadgesChanged;
+
+    private void OnBadgesChanged(object? sender, EventArgs args) => _ = InvokeAsync(StateHasChanged);
+
+    private Task ToggleNotificationsAsync() => notificationToast?.TogglePanelAsync() ?? Task.CompletedTask;
+}

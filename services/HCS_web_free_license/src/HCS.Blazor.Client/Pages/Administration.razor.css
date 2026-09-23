@@ -18,11 +18,16 @@
 }
 
 .page-admin-users .docs-table-wrap {
+    display: flex;
+    flex-direction: column;
+    height: min(70vh, 42rem);
     max-height: min(70vh, 42rem);
     overflow: hidden;
 }
 
 .page-admin-users .docs-table-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow: auto;
 }
 

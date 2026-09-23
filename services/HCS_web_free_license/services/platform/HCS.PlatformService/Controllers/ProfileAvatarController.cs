@@ -2,6 +2,7 @@ using HCS.Identity;
 using HCS.PlatformService.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 
 namespace HCS.PlatformService.Controllers;
 
@@ -41,8 +42,34 @@ public sealed class ProfileAvatarController(UserAvatarAppService avatars) : Cont
     {
         try
         {
-            var result = await avatars.GetAsync(userId, cancellationToken);
-            return File(result.Content, result.ContentType, result.FileName, enableRangeProcessing: true);
+            var meta = await avatars.GetMetaAsync(userId, cancellationToken);
+            var etag = new EntityTagHeaderValue($"\"{meta.LastModificationTime.Ticks:x}-{meta.Size:x}\"");
+            var responseHeaders = Response.GetTypedHeaders();
+            responseHeaders.CacheControl = new CacheControlHeaderValue
+            {
+                Private = true,
+                MaxAge = TimeSpan.Zero,
+                MustRevalidate = true
+            };
+            responseHeaders.ETag = etag;
+
+            var ifNoneMatch = Request.GetTypedHeaders().IfNoneMatch;
+            if (ifNoneMatch is { Count: > 0 }
+                && ifNoneMatch.Any(candidate =>
+                    candidate.Equals(EntityTagHeaderValue.Any)
+                    || candidate.Compare(etag, useStrongComparison: true)))
+            {
+                return StatusCode(StatusCodes.Status304NotModified);
+            }
+
+            var content = await avatars.OpenBlobAsync(meta.BlobName, cancellationToken);
+            return File(
+                content,
+                meta.ContentType,
+                meta.FileName,
+                lastModified: new DateTimeOffset(DateTime.SpecifyKind(meta.LastModificationTime, DateTimeKind.Utc)),
+                entityTag: etag,
+                enableRangeProcessing: true);
         }
         catch (KeyNotFoundException)
         {

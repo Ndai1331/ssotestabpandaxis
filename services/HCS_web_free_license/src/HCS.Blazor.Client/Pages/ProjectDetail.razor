@@ -137,7 +137,7 @@
                                                 <strong class="hcs-member-list__name">@Name(member.UserId)</strong>
                                                 <span class="hcs-member-list__role">@ProjectRoleLabel(member.Role)</span>
                                             </span>
-                                            @if (CanManageProject)
+                                            @if (CanManageProject && CurrentUser.Id != member.UserId)
                                             {
                                                 <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => RemoveMemberAsync(member)">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
@@ -311,7 +311,7 @@
 
     private async Task RemoveMemberAsync(ProjectMemberDto member)
     {
-        if (!CanManageProject || ProjectId is not { } projectId) return;
+        if (!CanManageProject || ProjectId is not { } projectId || CurrentUser.Id == member.UserId) return;
         if (!await UiMessage.Confirm(string.Format(L["Catalog:DeleteConfirmation"], Name(member.UserId)))) return;
         try
         {

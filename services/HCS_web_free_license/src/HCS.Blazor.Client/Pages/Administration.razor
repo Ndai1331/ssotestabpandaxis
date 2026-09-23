@@ -331,6 +331,7 @@
     private int PageCount => Math.Max(1, (int)Math.Ceiling(totalUsers / (double)Math.Max(pageSize, 1)));
     private bool CanPrevPage => currentPage > 1;
     private bool CanNextPage => currentPage < PageCount;
+    private int loadGeneration;
 
     protected override async Task OnInitializedAsync()
     {
@@ -340,12 +341,14 @@
 
     private async Task LoadUsersAsync()
     {
+        var generation = ++loadGeneration;
         isLoadingUsers = true;
         errorMessage = null;
         canRetry = false;
         try
         {
-            var skip = (Math.Max(1, currentPage) - 1) * pageSize;
+            var requestedPage = Math.Max(1, currentPage);
+            var skip = (requestedPage - 1) * pageSize;
             bool? notActive = statusFilter switch
             {
                 "active" => false,
@@ -353,17 +356,47 @@
                 _ => null
             };
             var result = await IdentityClient.GetUsersAsync(filterText, skip, pageSize, notActive);
+            if (generation != loadGeneration)
+            {
+                return;
+            }
+
             users.Clear();
-            users.AddRange(result.Items);
+            users.AddRange(result.Items ?? []);
             totalUsers = Math.Min(int.MaxValue, (int)result.TotalCount);
-            currentPage = Math.Clamp(currentPage, 1, PageCount);
+            var pageCount = PageCount;
+            if (totalUsers > 0 && skip >= totalUsers)
+            {
+                currentPage = pageCount;
+                await LoadUsersAsync();
+                return;
+            }
+
+            currentPage = Math.Clamp(requestedPage, 1, pageCount);
             SyncSelection();
-            await Task.WhenAll(
-                LoadUserRoleSummariesAsync(users, CancellationToken.None),
-                LoadUserOrganizationSummariesAsync(users, CancellationToken.None));
+            try
+            {
+                await Task.WhenAll(
+                    LoadUserRoleSummariesAsync(users, CancellationToken.None),
+                    LoadUserOrganizationSummariesAsync(users, CancellationToken.None));
+            }
+            catch (Exception)
+            {
+                foreach (var user in users)
+                {
+                    userRoleNames.TryAdd(user.Id, "—");
+                    userDepartmentNames.TryAdd(user.Id, "—");
+                    userPositionNames.TryAdd(user.Id, "—");
+                }
+            }
         }
         catch (IdentityAdminApiException exception)
         {
+            if (generation != loadGeneration)
+            {
+                return;
+            }
+
             if (RedirectIfUnauthorized(exception))
             {
                 return;
@@ -374,12 +407,20 @@
         }
         catch (Exception)
         {
+            if (generation != loadGeneration)
+            {
+                return;
+            }
+
             errorMessage = L["Users:LoadError"].Value;
             canRetry = true;
         }
         finally
         {
-            isLoadingUsers = false;
+            if (generation == loadGeneration)
+            {
+                isLoadingUsers = false;
+            }
         }
     }
 
@@ -520,10 +561,10 @@
         userForm = new IdentityAdminUserForm
         {
             UserName = latest.UserName,
-            Surname = latest.Surname,
-            Name = latest.Name,
+            Surname = latest.Surname ?? string.Empty,
+            Name = latest.Name ?? string.Empty,
             Email = latest.Email,
-            PhoneNumber = latest.PhoneNumber,
+            PhoneNumber = latest.PhoneNumber ?? string.Empty,
             IsActive = latest.IsActive,
             LockoutEnabled = latest.LockoutEnabled,
             EmailConfirmed = latest.EmailConfirmed
@@ -780,7 +821,7 @@
         }
         if (!editingUserId.HasValue && string.IsNullOrWhiteSpace(userForm.Password)) return "Mật khẩu là bắt buộc khi tạo người dùng.";
         if (string.IsNullOrWhiteSpace(userForm.Email) || !userForm.Email.Contains('@')) return "Địa chỉ email không hợp lệ.";
-        if (userForm.PhoneNumber.Trim().Length > IdentityUserConsts.MaxPhoneNumberLength)
+        if ((userForm.PhoneNumber?.Trim().Length ?? 0) > IdentityUserConsts.MaxPhoneNumberLength)
         {
             return L["Account:PhoneTooLong", IdentityUserConsts.MaxPhoneNumberLength];
         }
@@ -942,7 +983,18 @@
         ? $"{position.Code} — {position.Name}"
         : positionId.ToString("D");
     private static string FullName(IdentityAdminUserDto user) => string.Join(' ', new[] { user.Surname, user.Name }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim() is { Length: > 0 } fullName ? fullName : "—";
-    private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture) ?? "—";
+    private static string FormatDate(DateTime? value)
+    {
+        if (value is null)
+        {
+            return "—";
+        }
+
+        var utc = value.Value.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc)
+            : value.Value.ToUniversalTime();
+        return utc.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+    }
 
     private bool RedirectIfUnauthorized(IdentityAdminApiException exception) =>
         RedirectIfUnauthorized(exception.StatusCode);

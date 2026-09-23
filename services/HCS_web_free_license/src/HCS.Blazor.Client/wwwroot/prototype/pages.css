@@ -2106,6 +2106,20 @@ body.modal-open {
   min-width: 0;
 }
 
+.pj-code {
+  color: var(--color-gray-800);
+  display: inline-block;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pj-name a {
   color: var(--color-primary);
   display: block;

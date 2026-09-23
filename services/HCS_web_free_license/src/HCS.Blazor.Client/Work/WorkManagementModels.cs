@@ -17,7 +17,8 @@ public sealed record ProjectTaskDto(
     Guid? CreatorId = null, bool CanDelete = false, bool CanManageAssignments = false, bool CanCreateChild = false);
 public sealed record ProjectDetailDto(ProjectDto Project, List<ProjectMemberDto> Members, List<ProjectTaskDto> Tasks);
 public sealed record TaskAssignmentDto(Guid Id, Guid ProjectTaskId, Guid UserId, string AssignmentType);
-public sealed record TaskDocumentReferenceDto(Guid Id, Guid ProjectTaskId, Guid DocumentId, string? DocumentCode);
+public sealed record TaskDocumentReferenceDto(Guid Id, Guid ProjectTaskId, Guid DocumentId, string? DocumentCode,
+    Guid? AddedByUserId = null, bool CanDelete = false);
 public sealed record ProjectTaskDetailDto(
     ProjectTaskDto Task, List<TaskAssignmentDto> Assignments, List<TaskDocumentReferenceDto> Documents);
 

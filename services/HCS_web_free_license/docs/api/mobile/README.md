@@ -10,6 +10,8 @@ Cập nhật theo mã nguồn ngày 2026-09-21.
 2. Mở file module tương ứng màn hình. Mỗi file có bảng **page Web → API**.
 3. Lookup dùng chung (phòng ban, danh mục, contacts) nằm ở [11-lookups.md](11-lookups.md); các module khác chỉ cross-link.
 
+Catalog JSON (import Postman / codegen): [`hcs-mobile-api.json`](hcs-mobile-api.json).
+
 Base URL mobile = **Gateway**. Không gọi port nội bộ `44411`–`44415`.
 
 | Môi trường | Auth Server | Gateway / API |

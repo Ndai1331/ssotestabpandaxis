@@ -105,6 +105,9 @@ internal static class WorkUi
     public static string FormatRange(DateTime start, DateTime end) =>
         $"{FormatDay(start)} - {FormatDay(end)}";
 
+    public static string FormatRangeDays(DateTime start, DateTime end) =>
+        $"{start.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} – {end.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}";
+
     // Match the task modal/detail date pickers, which bind the task's clock time directly.
     public static string FormatDay(DateTime value) => value.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 

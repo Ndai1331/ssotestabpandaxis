@@ -566,7 +566,7 @@
         font-size: 20px;
     }
 
-    .hcs-bottom-nav__item .hcs-icon-badge {
+    .hcs-bottom-nav__item ::deep .hcs-icon-badge {
         right: calc(50% - 18px);
         top: 4px;
     }

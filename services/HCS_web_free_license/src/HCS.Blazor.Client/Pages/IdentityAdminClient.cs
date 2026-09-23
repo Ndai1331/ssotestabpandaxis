@@ -18,7 +18,8 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNameCaseInsensitive = true
     };
 
     public Task<IdentityAdminPagedResult<IdentityAdminUserDto>> GetUsersAsync(
@@ -257,7 +258,8 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         }
 
         query.Append("skipCount=").Append(Math.Max(0, skipCount))
-            .Append("&maxResultCount=").Append(Math.Clamp(maxResultCount, 1, 100));
+            .Append("&maxResultCount=").Append(Math.Clamp(maxResultCount, 1, 100))
+            .Append("&sorting=").Append(Uri.EscapeDataString("creationTime desc"));
         return query.ToString();
     }
 
@@ -278,11 +280,11 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         {
             return JsonSerializer.Deserialize<T>(body, JsonOptions);
         }
-        catch (JsonException)
+        catch (JsonException exception)
         {
-            // Identity sometimes returns 200 with a body the list DTO cannot bind
-            // (extra properties, date formats). Treat as empty so callers can GET.
-            return default;
+            throw new IdentityAdminApiException(
+                response.StatusCode,
+                $"Identity JSON could not be read. {exception.Message} Body: {TrimBody(body)}");
         }
     }
 
@@ -290,8 +292,8 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
     {
         userName = form.UserName.Trim(),
         password = NullIfWhiteSpace(form.Password),
-        surname = form.Surname.Trim(),
-        name = form.Name.Trim(),
+        surname = form.Surname?.Trim() ?? string.Empty,
+        name = form.Name?.Trim() ?? string.Empty,
         email = form.Email.Trim(),
         phoneNumber = form.PhoneNumber?.Trim() ?? string.Empty,
         isActive = form.IsActive,
@@ -301,6 +303,9 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
     };
 
     private static string? NullIfWhiteSpace(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string TrimBody(string body) =>
+        body.Length <= 500 ? body : body[..500];
 
     private sealed class ListResult<T>
     {

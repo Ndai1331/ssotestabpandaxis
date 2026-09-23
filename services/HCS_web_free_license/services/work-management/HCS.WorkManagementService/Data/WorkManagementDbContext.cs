@@ -83,6 +83,7 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
             b.ToTable("ProjectTaskDocuments"); b.ConfigureByConvention();
             b.Property(x => x.DocumentCode).HasMaxLength(WorkConsts.CodeLength);
             b.HasIndex(x => new { x.ProjectTaskId, x.DocumentId }).IsUnique(); b.HasIndex(x => x.DocumentId);
+            b.HasIndex(x => x.AddedByUserId);
             b.HasOne<ProjectTask>().WithMany().HasForeignKey(x => x.ProjectTaskId).OnDelete(DeleteBehavior.Cascade);
         });
         builder.Entity<CalendarEvent>(b =>

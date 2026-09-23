@@ -78,12 +78,13 @@
                 <table class="docs-table">
                     <thead>
                         <tr>
-                            <th scope="col">@L["Catalog:Code"]</th>
-                            <th scope="col">@L["Work:DateRange"]</th>
+                            <th class="col-code" scope="col">@L["Catalog:Code"]</th>
+                            <th class="col-project" scope="col">@L["Feature:ProjectName"]</th>
+                            <th class="col-dates" scope="col">@L["Work:DateRange"]</th>
                             <th class="col-status" scope="col">@L["Catalog:Status"]</th>
                             <th scope="col">@L["Catalog:Department"]</th>
-                            <th scope="col">@L["Work:Members"]</th>
-                            <th scope="col">@L["Menu:Tasks"]</th>
+                            <th class="col-count" scope="col">@L["Work:Members"]</th>
+                            <th class="col-count" scope="col">@L["Menu:Tasks"]</th>
                             <th class="col-actions" scope="col">@L["Catalog:Actions"]</th>
                         </tr>
                     </thead>
@@ -91,17 +92,15 @@
                     @foreach (var item in items)
                     {
                         <tr @key="item.Id">
+                            <td class="pj-code-cell">
+                                <span class="pj-code" title="@item.Code">@item.Code</span>
+                            </td>
                             <td>
                                 <div class="pj-name" title="@item.Name">
                                     <a href="@($"/project-detail/{item.Id}")">@item.Name</a>
-                                    <span>#@item.Code</span>
-                                    @if (!string.IsNullOrWhiteSpace(item.Description))
-                                    {
-                                        <span>@item.Description</span>
-                                    }
                                 </div>
                             </td>
-                            <td>@WorkUi.FormatRange(item.StartDate, item.EndDate)</td>
+                            <td class="pj-dates">@WorkUi.FormatRangeDays(item.StartDate, item.EndDate)</td>
                             <td><span class="@WorkUi.ProjectBadgeDs(item.Status)">@L[WorkUi.ProjectStatusKey(item.Status)]</span></td>
                             <td>@DepartmentName(item.OwnerDepartmentId)</td>
                             <td>@item.MemberCount</td>

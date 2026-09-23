@@ -18,6 +18,8 @@ using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.EntityFrameworkCore.DistributedEvents;
 using HCS.Auditing;
 using HCS.EntityFrameworkCore.Auditing;
+using HCS.Identity;
+using Volo.Abp.Identity;
 
 namespace HCS.EntityFrameworkCore;
 
@@ -55,6 +57,7 @@ public class HCSEntityFrameworkCoreModule : AbpModule
         context.Services.AddTransient<ILanguageRepository, EfCoreLanguageRepository>();
         context.Services.AddTransient<ILanguageTextRepository, EfCoreLanguageTextRepository>();
         context.Services.AddTransient<IAuditRecordProjectionRepository, EfCoreAuditRecordProjectionRepository>();
+        context.Services.AddTransient<IIdentityUserRepository, HcsIdentityUserRepository>();
 
         Configure<AbpDistributedEventBusOptions>(options =>
         {

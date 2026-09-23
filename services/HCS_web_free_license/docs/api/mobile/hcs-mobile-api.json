@@ -1,0 +1,714 @@
+{
+  "info": {
+    "title": "HCS Mobile API",
+    "version": "2026-09-23",
+    "source": "Blazor Client + Gateway /api/* (không gọi port 44411–44415)",
+    "note": "Web dùng cookie BFF. Mobile dùng PKCE client hcs-mobile + Authorization: Bearer. Không password grant, không nhúng secret HCS_App."
+  },
+  "servers": {
+    "local": {
+      "auth": "https://localhost:44401",
+      "gateway": "https://localhost:44402"
+    },
+    "production": {
+      "auth": "https://auth-hcs.htltech.vn",
+      "gateway": "https://api-hcs.htltech.vn"
+    }
+  },
+  "conventions": {
+    "headers": {
+      "Authorization": "Bearer {access_token}",
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    "paging": {
+      "workDocumentChatSocial": { "query": ["skip", "take"], "maxTake": 100, "socialFeedMaxTake": 50 },
+      "identity": { "query": ["skipCount", "maxResultCount"], "max": 100 }
+    },
+    "pagedResponse": { "totalCount": 42, "items": [] },
+    "dates": "UTC ISO-8601 (2026-09-23T01:00:00.0000000Z). Social from/to = yyyy-MM-dd.",
+    "error": {
+      "error": {
+        "code": "Work:CannotRemoveSelf",
+        "message": "...",
+        "details": null,
+        "validationErrors": []
+      }
+    },
+    "statusCodes": {
+      "200": "JSON hoặc binary",
+      "201": "Tạo thành công",
+      "204": "Thành công, không body",
+      "400": "Validation",
+      "401": "Refresh token một lần, rồi login",
+      "403": "Thiếu permission — không đẩy về login",
+      "404": "Không có / empty",
+      "409": "Conflict",
+      "413": "File quá lớn"
+    },
+    "fileLimitsMb": {
+      "avatarSignatureSealCsv": 2,
+      "chatSocialEventSurvey": 25,
+      "documentWorkflow": 50
+    }
+  },
+  "modules": {
+    "login": {
+      "clientId": "hcs-mobile",
+      "pkce": "S256",
+      "scopes": "openid profile email roles HCS offline_access",
+      "redirectUri": "com.htltech.hcs:/oauth/callback",
+      "postLogoutRedirectUri": "com.htltech.hcs:/oauth/logout",
+      "discovery": "GET {auth}/.well-known/openid-configuration",
+      "authorize": {
+        "method": "GET",
+        "url": "{auth}/connect/authorize",
+        "query": {
+          "client_id": "hcs-mobile",
+          "response_type": "code",
+          "redirect_uri": "{registered_redirect_uri}",
+          "scope": "openid profile email roles HCS offline_access",
+          "state": "{random}",
+          "code_challenge": "{BASE64URL(SHA256(code_verifier))}",
+          "code_challenge_method": "S256"
+        }
+      },
+      "token": {
+        "method": "POST",
+        "url": "{auth}/connect/token",
+        "contentType": "application/x-www-form-urlencoded",
+        "body": "grant_type=authorization_code&client_id=hcs-mobile&redirect_uri={uri}&code={code}&code_verifier={verifier}",
+        "response": {
+          "access_token": "ey...",
+          "token_type": "Bearer",
+          "expires_in": 3600,
+          "refresh_token": "...",
+          "scope": "openid profile email roles HCS offline_access"
+        }
+      },
+      "refresh": {
+        "method": "POST",
+        "url": "{auth}/connect/token",
+        "body": "grant_type=refresh_token&client_id=hcs-mobile&refresh_token={refresh_token}"
+      },
+      "bootstrapAfterLogin": [
+        "GET {gateway}/api/abp/application-configuration",
+        "GET {gateway}/api/abp/application-localization?cultureName=vi",
+        "GET {gateway}/api/language-management/languages/enabled"
+      ],
+      "doNotCall": ["/bff/login", "/bff/logout", "/bff/user", "/bff/antiforgery"]
+    },
+    "account": {
+      "permission": "Authenticated",
+      "endpoints": [
+        {
+          "name": "getProfile",
+          "method": "GET",
+          "path": "/api/account/my-profile",
+          "response": {
+            "userName": "admin",
+            "email": "admin@abp.io",
+            "name": "Admin",
+            "surname": null,
+            "phoneNumber": null,
+            "isExternal": false,
+            "hasPassword": true,
+            "concurrencyStamp": "abc"
+          }
+        },
+        {
+          "name": "updateProfile",
+          "method": "PUT",
+          "path": "/api/account/my-profile",
+          "request": {
+            "userName": "admin",
+            "email": "admin@abp.io",
+            "name": "Nguyễn",
+            "surname": "Văn A",
+            "phoneNumber": "0900000000",
+            "concurrencyStamp": "abc"
+          }
+        },
+        {
+          "name": "changePassword",
+          "method": "POST",
+          "path": "/api/account/my-profile/change-password",
+          "request": { "currentPassword": "old", "newPassword": "new" },
+          "response": "204",
+          "note": "Ẩn form nếu isExternal=true"
+        },
+        {
+          "name": "getMyAvatar",
+          "method": "GET",
+          "path": "/api/identity/profile/avatar",
+          "response": "binary; 404 nếu chưa có; có thể 304 nếu gửi If-None-Match"
+        },
+        {
+          "name": "uploadAvatar",
+          "method": "POST",
+          "path": "/api/identity/profile/avatar",
+          "contentType": "multipart/form-data",
+          "field": "file",
+          "maxBytes": 2097152,
+          "types": ["image/jpeg", "image/png", "image/webp", "image/gif"],
+          "response": "204"
+        },
+        {
+          "name": "deleteAvatar",
+          "method": "DELETE",
+          "path": "/api/identity/profile/avatar",
+          "response": "204"
+        },
+        {
+          "name": "getUserAvatar",
+          "method": "GET",
+          "path": "/api/identity/users/{userId}/avatar",
+          "response": "binary; 404 nếu chưa có"
+        }
+      ]
+    },
+    "config": {
+      "note": "Public. Logo/favicon/background URL là path Gateway, thêm query v=revision. Tải asset kèm Bearer hoặc anonymous.",
+      "endpoints": [
+        {
+          "name": "getPublicBranding",
+          "method": "GET",
+          "path": "/api/hcs/system-branding/public",
+          "auth": "optional",
+          "response": {
+            "title": "HCS",
+            "description": "Hệ thống hành chính số",
+            "showBrandingText": true,
+            "showSsoLoginButton": true,
+            "revision": 3,
+            "logo": {
+              "slot": "logo",
+              "url": "/api/hcs/system-branding/assets/logo?v=3",
+              "fileName": "logo.png",
+              "contentType": "image/png",
+              "size": 12345,
+              "revision": 3
+            },
+            "favicon": null,
+            "background": null
+          }
+        },
+        {
+          "name": "getBrandingAsset",
+          "method": "GET",
+          "path": "/api/hcs/system-branding/assets/{slot}",
+          "slot": ["logo", "favicon", "background"],
+          "response": "binary; Cache-Control immutable; ETag sha256"
+        }
+      ]
+    },
+    "workspace": {
+      "permission": "WorkManagement.Dashboard",
+      "note": "Không gọi GET /api/dashboard. Load song song; lỗi một widget không chặn widget khác. Lọc ngày phía client trừ notifications (server from/toExclusive).",
+      "parallelGets": [
+        "GET /api/calendar?from={utc}&to={utc}",
+        "GET /api/projects?skip=0&take=100",
+        "GET /api/project-tasks?skip=0&take=100",
+        "GET /api/signing/queue-page?skip=0&take=200",
+        "GET /api/notifications?unreadOnly=false&skip=0&take=20&from={utc}&toExclusive={utc}",
+        "GET /api/identity/organization-unit-lookup"
+      ]
+    },
+    "projects": {
+      "permission": "WorkManagement.Projects",
+      "statuses": ["Draft", "Active", "Completed", "Cancelled"],
+      "roles": ["Member", "Supervisor", "Manager"],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/projects",
+          "query": { "filter": "", "status": "Active", "skip": 0, "take": 20 },
+          "response": {
+            "totalCount": 1,
+            "items": [
+              {
+                "id": "00000000-0000-0000-0000-000000000001",
+                "code": "P01",
+                "name": "Dự án",
+                "description": null,
+                "startDate": "2026-09-01T00:00:00Z",
+                "endDate": "2026-09-30T00:00:00Z",
+                "status": "Active",
+                "ownerDepartmentId": null,
+                "ownerUserId": "00000000-0000-0000-0000-000000000002",
+                "memberCount": 3,
+                "taskCount": 12,
+                "canManage": true,
+                "canDelete": false
+              }
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/projects",
+          "request": {
+            "code": "P01",
+            "name": "Dự án",
+            "description": null,
+            "startDate": "2026-09-01T00:00:00Z",
+            "endDate": "2026-12-31T00:00:00Z",
+            "status": "Active",
+            "ownerDepartmentId": null
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/api/projects/{id}",
+          "request": {
+            "name": "Dự án",
+            "description": null,
+            "startDate": "2026-09-01T00:00:00Z",
+            "endDate": "2026-12-31T00:00:00Z",
+            "status": "Active",
+            "ownerDepartmentId": null
+          },
+          "note": "Không gửi code"
+        },
+        { "method": "DELETE", "path": "/api/projects/{id}", "response": "204" },
+        {
+          "method": "GET",
+          "path": "/api/projects/{id}",
+          "response": {
+            "project": {},
+            "members": [{ "id": "guid", "projectId": "guid", "userId": "guid", "role": "Member", "isActive": true }],
+            "tasks": []
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/projects/{id}/members",
+          "request": { "userId": "guid", "role": "Member" }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/projects/{id}/members/{memberId}",
+          "note": "memberId = id bản ghi, không phải userId. Không tự xóa mình (Work:CannotRemoveSelf)."
+        },
+        { "method": "POST", "path": "/api/projects/{id}/chat-access", "response": "204" },
+        { "method": "GET", "path": "/api/chat/conversations/by-project/{id}", "note": "404 nếu chưa có" }
+      ]
+    },
+    "tasks": {
+      "permission": "WorkManagement.ProjectTasks",
+      "statuses": ["New", "InProgress", "Waiting", "Completed", "Cancelled"],
+      "priorities": ["Low", "Normal", "High"],
+      "assignmentTypes": ["Member", "Supervisor", "Manager"],
+      "note": "JSON status/priority/assignmentType là string. Legacy assignmentType Assignee vẫn có thể còn trên dữ liệu cũ.",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/project-tasks",
+          "query": { "projectId": "guid", "filter": "", "status": "New", "skip": 0, "take": 20 }
+        },
+        {
+          "method": "POST",
+          "path": "/api/project-tasks",
+          "request": {
+            "projectId": "guid",
+            "parentTaskId": null,
+            "code": "T01",
+            "title": "Công việc",
+            "description": null,
+            "startDate": "2026-09-21T00:00:00Z",
+            "dueDate": "2026-09-30T00:00:00Z",
+            "priority": "Normal",
+            "status": "New",
+            "progressPercent": 0
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/api/project-tasks/{id}",
+          "request": {
+            "title": "Công việc",
+            "description": null,
+            "startDate": "2026-09-21T00:00:00Z",
+            "dueDate": "2026-09-30T00:00:00Z",
+            "priority": "Normal",
+            "status": "InProgress",
+            "progressPercent": 40
+          }
+        },
+        { "method": "DELETE", "path": "/api/project-tasks/{id}", "response": "204" },
+        {
+          "method": "GET",
+          "path": "/api/project-tasks/{id}",
+          "response": {
+            "task": {
+              "id": "guid",
+              "projectId": "guid",
+              "parentTaskId": null,
+              "code": "T01",
+              "title": "Công việc",
+              "status": "New",
+              "priority": "Normal",
+              "progressPercent": 0,
+              "canDelete": false,
+              "canManageAssignments": true,
+              "canCreateChild": true
+            },
+            "assignments": [{ "id": "guid", "projectTaskId": "guid", "userId": "guid", "assignmentType": "Member" }],
+            "documents": [
+              {
+                "id": "guid",
+                "projectTaskId": "guid",
+                "documentId": "guid",
+                "documentCode": "VB-01",
+                "addedByUserId": "guid",
+                "canDelete": true
+              }
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/project-tasks/{id}/assignments",
+          "request": { "userId": "guid", "assignmentType": "Member" }
+        },
+        { "method": "DELETE", "path": "/api/project-tasks/{id}/assignments/{assignmentId}", "response": "204" },
+        {
+          "method": "POST",
+          "path": "/api/project-tasks/{id}/documents",
+          "request": { "documentId": "guid", "documentCode": "VB-01" }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/project-tasks/{id}/documents/{referenceId}",
+          "note": "Chỉ xóa file mình thêm (hoặc admin / CanDelete). Work:CannotDeleteOthersDocument."
+        }
+      ]
+    },
+    "signing": {
+      "permissions": ["Documents.Signing.Execute", "Documents.Workflow.Decide"],
+      "kinds": { "Electronic": 0, "RemoteCa": 1, "Hsm": 2, "UsbToken": 3 },
+      "signingStatus": { "Pending": 0, "Completed": 1, "Failed": 2 },
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/signing/queue-page",
+          "query": {
+            "skip": 0,
+            "take": 20,
+            "from": null,
+            "toExclusive": null,
+            "inbox": null,
+            "search": null,
+            "status": null
+          },
+          "response": {
+            "totalCount": 1,
+            "countAll": 1,
+            "countToMe": 1,
+            "countByMe": 0,
+            "items": [
+              {
+                "document": {
+                  "id": "guid",
+                  "number": "01",
+                  "title": "Tờ trình",
+                  "status": 1,
+                  "files": [],
+                  "creationTime": "2026-09-23T00:00:00Z",
+                  "sourceType": 3,
+                  "fromUserId": "guid",
+                  "documentCode": "TT-01"
+                },
+                "task": {},
+                "instance": {},
+                "definition": {},
+                "canDelete": false
+              }
+            ]
+          },
+          "note": "GET /api/signing/queue vẫn còn (mảng). Web workspace dùng queue-page."
+        },
+        {
+          "method": "POST",
+          "path": "/api/signing/attempts",
+          "request": {
+            "documentId": "guid",
+            "fileId": "guid",
+            "kind": 0,
+            "idempotencyKey": "uuid",
+            "signatureId": null,
+            "placeholder": null,
+            "signerName": "Nguyễn Văn A",
+            "note": null
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/workflows/tasks/{taskId}/decision",
+          "request": {
+            "approve": true,
+            "comment": null,
+            "idempotencyKey": "uuid",
+            "return": false,
+            "signingAttemptId": null,
+            "signingFileId": null
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/workflows/tasks/{taskId}/extend",
+          "request": { "additionalDays": 3, "reason": null }
+        },
+        { "method": "GET", "path": "/api/signing/credentials/current" },
+        { "method": "GET", "path": "/api/signing/signatures" },
+        { "method": "GET", "path": "/api/signing/reports/documents/{documentId}" },
+        { "method": "DELETE", "path": "/api/documents/{id}/submission", "response": "204" }
+      ]
+    },
+    "chat": {
+      "permissions": ["Collaboration.Chat", "Collaboration.Notifications", "Collaboration.Realtime"],
+      "conversationType": { "User": 0, "Group": 1, "Project": 2, "Task": 3 },
+      "signalR": "{gateway}/hubs/chat?access_token={access_token}",
+      "signalREvents": ["ReceiveMessage", "MessageDeleted", "NotificationReceived", "PresenceChanged"],
+      "endpoints": [
+        { "method": "GET", "path": "/api/chat/conversations?skip=0&take=20" },
+        { "method": "GET", "path": "/api/chat/conversations/{id}" },
+        { "method": "GET", "path": "/api/chat/conversations/{id}/permissions" },
+        { "method": "GET", "path": "/api/chat/conversations/{id}/messages?skip=0&take=50" },
+        { "method": "POST", "path": "/api/chat/conversations/{id}/read" },
+        {
+          "method": "POST",
+          "path": "/api/chat/conversations",
+          "request": {
+            "type": 0,
+            "name": null,
+            "description": null,
+            "targetUserId": "guid",
+            "projectId": null,
+            "taskId": null,
+            "memberUserIds": []
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/chat/messages",
+          "request": {
+            "conversationId": "guid",
+            "text": "Nội dung",
+            "clientMessageId": "uuid",
+            "replyToMessageId": null,
+            "attachmentIds": []
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/chat/conversations/{id}/attachments",
+          "contentType": "multipart/form-data",
+          "maxMb": 25
+        },
+        { "method": "GET", "path": "/api/chat/contacts?search=&take=50" },
+        { "method": "GET", "path": "/api/chat/unread-count" },
+        { "method": "GET", "path": "/api/notifications?unreadOnly=false&skip=0&take=20" },
+        { "method": "GET", "path": "/api/notifications/unread-count" },
+        { "method": "POST", "path": "/api/notifications/{id}/read" },
+        { "method": "POST", "path": "/api/notifications/read-all" }
+      ]
+    },
+    "social": {
+      "permission": "Collaboration.Social",
+      "visibility": { "Public": 0, "Internal": 1 },
+      "reactions": { "Like": 0, "Love": 1, "Haha": 2, "Wow": 3, "Sad": 4, "Angry": 5 },
+      "endpoints": [
+        { "method": "GET", "path": "/api/social/feed?skip=0&take=20&keyword=&from=&to=&hashtag=&postId=" },
+        { "method": "GET", "path": "/api/social/profile/posts?skip=0&take=20&visibility=public&authorUserId=" },
+        { "method": "GET", "path": "/api/identity/social-profile" },
+        { "method": "GET", "path": "/api/identity/social-profile/{userId}" },
+        {
+          "method": "POST",
+          "path": "/api/social/posts",
+          "request": { "text": "Nội dung #tag", "visibility": 0, "mediaIds": [] }
+        },
+        { "method": "PUT", "path": "/api/social/posts/{id}", "request": { "text": "...", "visibility": 0 } },
+        { "method": "DELETE", "path": "/api/social/posts/{id}" },
+        { "method": "GET", "path": "/api/social/posts/{id}/comments" },
+        {
+          "method": "POST",
+          "path": "/api/social/posts/{id}/comments",
+          "request": { "text": "Bình luận", "parentCommentId": null, "attachmentIds": [] }
+        },
+        {
+          "method": "POST",
+          "path": "/api/social/posts/{id}/reactions",
+          "request": { "reactionType": 0, "remove": false }
+        },
+        { "method": "POST", "path": "/api/social/posts/{id}/shares", "request": {} },
+        { "method": "POST", "path": "/api/social/uploads", "contentType": "multipart/form-data", "maxMb": 25 },
+        { "method": "GET", "path": "/api/social/media/{id}" },
+        { "method": "GET", "path": "/api/identity/social-people?search=&take=30" }
+      ]
+    },
+    "eventCheckIn": {
+      "adminPermission": "WorkManagement.Events",
+      "publicPrefix": "/api/events/public",
+      "statuses": ["Preparing", "Ongoing", "Completed", "Cancelled"],
+      "rule": "confirm/decline khi Preparing; check-in khi Ongoing",
+      "admin": [
+        { "method": "GET", "path": "/api/events?filter=&group=&status=&skip=0&take=20" },
+        { "method": "GET", "path": "/api/events/{id}" },
+        { "method": "GET", "path": "/api/events/{id}/qr", "response": "image/png" },
+        { "method": "GET", "path": "/api/events/{id}/attendees?skip=0&take=50" }
+      ],
+      "public": [
+        {
+          "method": "GET",
+          "path": "/api/events/public/{code}?token={qrToken}",
+          "auth": "anonymous",
+          "response": {
+            "code": "EVT-01",
+            "name": "Hội nghị",
+            "startTime": "2026-09-21T08:00:00Z",
+            "endTime": "2026-09-21T11:00:00Z",
+            "location": "Hội trường",
+            "attachments": [],
+            "status": "Ongoing",
+            "content": null,
+            "description": null,
+            "registrationStatus": "Confirmed",
+            "checkInStatus": "NotCheckedIn",
+            "checkedInAt": null
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/events/public/{code}/confirm?token={qrToken}",
+          "request": { "fullName": "Nguyễn Văn A", "phoneNumber": "09...", "email": null, "note": null },
+          "response": { "fullName": "Nguyễn Văn A", "registrationStatus": "Confirmed" }
+        },
+        { "method": "POST", "path": "/api/events/public/{code}/decline?token={qrToken}" },
+        {
+          "method": "POST",
+          "path": "/api/events/public/{code}/check-in?token={qrToken}",
+          "response": { "fullName": "Nguyễn Văn A", "checkedInAt": "2026-09-21T08:15:00Z" }
+        }
+      ]
+    },
+    "calendar": {
+      "permission": "WorkManagement.Calendar",
+      "note": "Response GET là mảng, không paged. Khác module /api/events.",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/calendar?from={utc}&to={utc}",
+          "response": [
+            {
+              "id": "guid",
+              "title": "Họp",
+              "description": null,
+              "startTime": "2026-09-21T08:00:00Z",
+              "endTime": "2026-09-21T09:00:00Z",
+              "allDay": false,
+              "eventType": "guid",
+              "location": "P.201",
+              "relatedType": "None",
+              "relatedId": null,
+              "visibility": "Private",
+              "participantUserIds": ["guid"],
+              "ownerUserId": "guid",
+              "canManage": true
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/calendar",
+          "request": {
+            "title": "Họp",
+            "description": null,
+            "startTime": "2026-09-21T08:00:00Z",
+            "endTime": "2026-09-21T09:00:00Z",
+            "allDay": false,
+            "eventType": "guid",
+            "location": null,
+            "relatedType": "None",
+            "relatedId": null,
+            "visibility": "Private",
+            "participantUserIds": ["guid"]
+          }
+        },
+        { "method": "GET", "path": "/api/calendar/{id}" },
+        { "method": "PUT", "path": "/api/calendar/{id}" },
+        { "method": "DELETE", "path": "/api/calendar/{id}", "response": "204" },
+        { "method": "GET", "path": "/api/organization/master-data?type=EventType&isActive=true&skipCount=0&maxResultCount=100" }
+      ]
+    },
+    "documents": {
+      "permission": "Documents.View",
+      "sourceType": { "Archive": 0, "Personal": 1, "SentToMe": 2, "Workflow": 3 },
+      "status": { "Draft": 0, "Submitted": 1, "InReview": 2, "Approved": 3, "Rejected": 4, "Archived": 5 },
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/documents",
+          "query": {
+            "skip": 0,
+            "take": 20,
+            "mine": false,
+            "filter": "",
+            "status": "",
+            "sourceType": 0,
+            "documentTypeId": null,
+            "sectorId": null,
+            "urgencyId": null,
+            "confidentialityId": null,
+            "from": null,
+            "to": null
+          }
+        },
+        { "method": "GET", "path": "/api/documents/{id}" },
+        {
+          "method": "POST",
+          "path": "/api/documents",
+          "permission": "Documents.Update",
+          "request": {
+            "number": null,
+            "title": "Tên văn bản",
+            "description": null,
+            "documentTypeId": "guid",
+            "sectorId": "guid",
+            "urgencyId": "guid",
+            "confidentialityId": "guid",
+            "sourceType": 0,
+            "documentCode": null,
+            "organizationUnitId": null
+          }
+        },
+        { "method": "PUT", "path": "/api/documents/{id}" },
+        {
+          "method": "POST",
+          "path": "/api/documents/{id}/files",
+          "contentType": "multipart/form-data",
+          "field": "file",
+          "maxMb": 50
+        },
+        { "method": "GET", "path": "/api/documents/{id}/files/{fileId}/content" },
+        { "method": "GET", "path": "/api/documents/{id}/files/{fileId}/watermarked-content" },
+        { "method": "DELETE", "path": "/api/documents/{id}/files/{fileId}" },
+        {
+          "method": "POST",
+          "path": "/api/documents/{id}/send",
+          "permission": "Documents.Assign",
+          "request": { "receiverUserId": "guid", "organizationUnitId": null }
+        },
+        {
+          "method": "POST",
+          "path": "/api/documents/{id}/assignments",
+          "request": { "assigneeUserId": "guid", "responsibility": "VIEW" }
+        },
+        { "method": "POST", "path": "/api/documents/{id}/revoke", "request": {} },
+        { "method": "POST", "path": "/api/documents/{id}/activity", "request": { "action": "Viewed" } },
+        { "method": "DELETE", "path": "/api/documents/{id}", "response": "204" },
+        { "method": "GET", "path": "/api/organization/master-data?type=DocumentType" }
+      ]
+    }
+  }
+}

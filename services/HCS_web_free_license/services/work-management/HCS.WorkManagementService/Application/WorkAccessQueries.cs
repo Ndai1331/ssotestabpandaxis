@@ -28,6 +28,15 @@ public static class WorkAccessQueries
     public static bool CanManageAssignments(Guid? creatorId, Guid userId, bool isAdministrator, Guid? projectOwnerUserId = null) =>
         CanDeleteTask(creatorId, userId, isAdministrator, projectOwnerUserId);
 
+    public static bool CanRemoveParticipant(Guid targetUserId, Guid actorUserId) =>
+        targetUserId != actorUserId;
+
+    public static bool CanDeleteDocument(Guid? addedByUserId, Guid userId, bool isAdministrator,
+        Guid? taskCreatorId = null, Guid? projectOwnerUserId = null) =>
+        isAdministrator
+        || addedByUserId == userId
+        || (addedByUserId is null && CanDeleteTask(taskCreatorId, userId, isAdministrator, projectOwnerUserId));
+
     public static bool CanManageOwned(Guid ownerUserId, Guid userId, bool isAdministrator) =>
         isAdministrator || ownerUserId == userId;
 }

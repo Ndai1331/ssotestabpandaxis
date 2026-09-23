@@ -125,11 +125,13 @@ public sealed class ProjectTaskAssignment : Entity<Guid>
 public sealed class ProjectTaskDocument : Entity<Guid>
 {
     private ProjectTaskDocument() { }
-    public ProjectTaskDocument(Guid id, Guid taskId, Guid documentId, string? documentCode) : base(id)
-        => (ProjectTaskId, DocumentId, DocumentCode) = (taskId, documentId, documentCode);
+    public ProjectTaskDocument(Guid id, Guid taskId, Guid documentId, string? documentCode, Guid? addedByUserId = null) : base(id)
+        => (ProjectTaskId, DocumentId, DocumentCode, AddedByUserId) = (taskId, documentId, documentCode,
+            addedByUserId is null || addedByUserId == Guid.Empty ? null : addedByUserId);
     public Guid ProjectTaskId { get; private set; }
     public Guid DocumentId { get; private set; }
     public string? DocumentCode { get; private set; }
+    public Guid? AddedByUserId { get; private set; }
 }
 
 public sealed class CalendarEvent : FullAuditedAggregateRoot<Guid>

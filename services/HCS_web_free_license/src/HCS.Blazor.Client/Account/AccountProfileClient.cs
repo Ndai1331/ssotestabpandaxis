@@ -13,6 +13,10 @@ namespace HCS.Blazor.Client.Account;
 public sealed class AccountProfileClient(IHttpClientFactory httpClientFactory)
 {
     private const long MaxAvatarBytes = 2 * 1024 * 1024;
+    private readonly SemaphoreSlim mineLock = new(1, 1);
+    private bool mineLoaded;
+    private AccountFileContent? mineContent;
+    private string? mineEtag;
 
     public event EventHandler? AvatarChanged;
 
@@ -39,31 +43,102 @@ public sealed class AccountProfileClient(IHttpClientFactory httpClientFactory)
         content.Add(fileContent, "file", file.Name);
         using var response = await CreateClient().PostAsync("/api/identity/profile/avatar", content, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
+        await InvalidateMineAsync(cancellationToken);
         AvatarChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task DeleteAvatarAsync(CancellationToken cancellationToken = default)
     {
         await SendNoContentAsync(HttpMethod.Delete, "/api/identity/profile/avatar", null, cancellationToken);
+        await mineLock.WaitAsync(cancellationToken);
+        try
+        {
+            mineLoaded = true;
+            mineContent = null;
+            mineEtag = null;
+        }
+        finally
+        {
+            mineLock.Release();
+        }
+
         AvatarChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task<AccountFileContent?> TryGetAvatarAsync(Guid? userId = null, CancellationToken cancellationToken = default)
     {
-        var uri = userId is { } id
-            ? $"/api/identity/users/{id:D}/avatar"
-            : "/api/identity/profile/avatar";
-        using var response = await CreateClient().GetAsync(uri, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.NotFound)
+        if (userId is { } id)
         {
-            return null;
+            var fetched = await FetchAvatarAsync($"/api/identity/users/{id:D}/avatar", ifNoneMatch: null, cancellationToken);
+            return fetched.StatusCode == HttpStatusCode.NotFound ? null : fetched.Content;
+        }
+
+        await mineLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (mineLoaded)
+            {
+                return mineContent;
+            }
+
+            var fetched = await FetchAvatarAsync("/api/identity/profile/avatar", mineEtag, cancellationToken);
+            if (fetched.StatusCode == HttpStatusCode.NotModified)
+            {
+                mineLoaded = true;
+                return mineContent;
+            }
+
+            mineLoaded = true;
+            mineEtag = fetched.Etag;
+            mineContent = fetched.StatusCode == HttpStatusCode.NotFound ? null : fetched.Content;
+            return mineContent;
+        }
+        finally
+        {
+            mineLock.Release();
+        }
+    }
+
+    private async Task InvalidateMineAsync(CancellationToken cancellationToken)
+    {
+        await mineLock.WaitAsync(cancellationToken);
+        try
+        {
+            mineLoaded = false;
+            mineContent = null;
+            mineEtag = null;
+        }
+        finally
+        {
+            mineLock.Release();
+        }
+    }
+
+    private async Task<AvatarFetchResult> FetchAvatarAsync(string uri, string? ifNoneMatch, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        if (!string.IsNullOrWhiteSpace(ifNoneMatch)
+            && EntityTagHeaderValue.TryParse(ifNoneMatch, out var etag))
+        {
+            request.Headers.IfNoneMatch.Add(etag);
+        }
+
+        using var response = await CreateClient().SendAsync(request, cancellationToken);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.NotModified)
+        {
+            return new AvatarFetchResult(response.StatusCode, null, ReadEtag(response));
         }
 
         await EnsureSuccessAsync(response, cancellationToken);
         var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/png";
-        return new AccountFileContent(bytes, contentType);
+        return new AvatarFetchResult(response.StatusCode, new AccountFileContent(bytes, contentType), ReadEtag(response));
     }
+
+    private static string? ReadEtag(HttpResponseMessage response) =>
+        response.Headers.ETag?.ToString();
+
+    private sealed record AvatarFetchResult(HttpStatusCode StatusCode, AccountFileContent? Content, string? Etag);
 
     private async Task<T> SendAsync<T>(HttpMethod method, string uri, object? payload, CancellationToken cancellationToken)
     {
