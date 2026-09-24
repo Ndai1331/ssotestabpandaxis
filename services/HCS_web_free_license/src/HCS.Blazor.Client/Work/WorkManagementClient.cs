@@ -300,6 +300,16 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
         return GetAsync<List<SurveyResultSessionDetailDto>>(uri, cancellationToken);
     }
 
+    public async Task<byte[]> DownloadSurveyResultsExcelAsync(Guid? locationId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = "/api/surveys/results/export";
+        if (locationId.HasValue) uri += $"?locationId={locationId.Value:D}";
+        using var response = await CreateClient().GetAsync(uri, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
     public Task<PagedWorkResponse<EmployeeRatingSummaryDto>> GetEmployeeRatingSummariesAsync(
         int skip = 0, int take = MaxPageSize, DateTime? from = null, DateTime? to = null,
         Guid? userId = null, IReadOnlyList<Guid>? userIds = null,

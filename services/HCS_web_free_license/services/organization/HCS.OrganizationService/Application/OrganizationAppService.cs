@@ -422,7 +422,8 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
         var mappings = await (from userMapping in _db.UserOrganizationMappings.AsNoTracking()
                               join department in _db.Departments.AsNoTracking()
-                                  on userMapping.DepartmentId equals department.Id
+                                  on userMapping.DepartmentId equals department.Id into departmentJoin
+                              from department in departmentJoin.DefaultIfEmpty()
                               join position in _db.Positions.AsNoTracking()
                                   on userMapping.PositionId equals (Guid?)position.Id into positionJoin
                               from position in positionJoin.DefaultIfEmpty()
@@ -432,7 +433,7 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
                               {
                                   userMapping.UserId,
                                   userMapping.DepartmentId,
-                                  DepartmentName = department.Name,
+                                  DepartmentName = department == null ? null : department.Name,
                                   userMapping.PositionId,
                                   PositionName = position == null ? null : position.Name
                               }).ToListAsync(ct);
@@ -468,7 +469,10 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     private async Task ValidateMappingAsync(UpsertUserOrganizationMappingDto input, Guid? currentId, CancellationToken ct)
     {
-        await EnsureDepartmentExistsAsync(input.DepartmentId, ct);
+        if (input.DepartmentId is { } departmentId)
+            await EnsureMappingDepartmentExistsAsync(departmentId, ct);
+        else if (input.UnitId.HasValue)
+            throw new BusinessException(OrganizationErrorCodes.UnitDepartmentMismatch);
         if (input.UnitId.HasValue && !await _db.Units.AnyAsync(x => x.Id == input.UnitId && x.DepartmentId == input.DepartmentId, ct))
             throw new BusinessException(OrganizationErrorCodes.UnitDepartmentMismatch);
         if (input.PositionId.HasValue && !await _db.Positions.AnyAsync(x => x.Id == input.PositionId, ct))
@@ -506,6 +510,21 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     {
         if (id.HasValue && !await _db.Departments.AnyAsync(x => x.Id == id.Value, ct))
             throw new BusinessException(OrganizationErrorCodes.InvalidDepartment).WithData("DepartmentId", id.Value);
+    }
+
+    private async Task EnsureMappingDepartmentExistsAsync(Guid id, CancellationToken ct)
+    {
+        if (await _db.Departments.AnyAsync(x => x.Id == id, ct))
+        {
+            return;
+        }
+
+        if (UnitDepartmentLookup is not null && await UnitDepartmentLookup.ExistsAsync(id, ct))
+        {
+            return;
+        }
+
+        throw new BusinessException(OrganizationErrorCodes.InvalidDepartment).WithData("DepartmentId", id);
     }
 
     private static async Task EnsureUniqueCodeAsync<TEntity>(DbSet<TEntity> set, string code, Guid? currentId, CancellationToken ct)

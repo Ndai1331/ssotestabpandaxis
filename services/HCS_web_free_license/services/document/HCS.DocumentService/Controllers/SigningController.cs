@@ -63,8 +63,8 @@ public sealed class SigningController(ISigningAppService signing, ISigningKpiRep
         if (!await signingKpi.IsEnabledAsync(cancellationToken))
             return Forbid();
         var rows = await signingKpi.GetDetailsAsync(input, cancellationToken);
-        var fileName = $"signing-kpi-{DateTime.UtcNow:yyyyMMddHHmmss}.csv";
-        return File(SigningKpiCsvExporter.Build(rows), "text/csv; charset=utf-8", fileName);
+        var fileName = SigningKpiExcelExporter.FileName(DateTime.UtcNow);
+        return File(SigningKpiExcelExporter.Build(rows), SigningKpiExcelExporter.ContentType, fileName);
     }
     [HttpGet("signatures")]
     public Task<IReadOnlyList<UserSignatureDto>> GetSignatures([FromQuery] Guid? userId, CancellationToken cancellationToken) =>

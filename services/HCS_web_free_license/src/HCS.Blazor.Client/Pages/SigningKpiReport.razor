@@ -17,7 +17,7 @@
         </div>
         <div class="page-actions">
             <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@loading">@(loading ? "Đang tải…" : "Làm mới")</button>
-            <button class="btn btn-primary" type="button" @onclick="ExportAsync" disabled="@(loading || report is null)">Xuất CSV</button>
+            <button class="btn btn-primary" type="button" @onclick="ExportAsync" disabled="@(loading || report is null)">Xuất Excel</button>
         </div>
     </div>
 

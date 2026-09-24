@@ -13,6 +13,7 @@
     <InternalsVisibleTo Include="HCS.WorkManagementService.Tests" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MiniExcel" Version="1.41.4" />
     <PackageReference Include="OpenIddict.Validation.AspNetCore" Version="7.5.0" />
     <PackageReference Include="OpenIddict.Validation.SystemNetHttp" Version="7.5.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">

@@ -115,11 +115,11 @@ public sealed class OrganizationDbContext : AbpDbContext<OrganizationDbContext>
             b.ToTable("UserOrganizationMappings");
             b.ConfigureByConvention();
             b.Property(x => x.UserId).IsRequired();
-            b.Property(x => x.DepartmentId).IsRequired();
             b.HasIndex(x => new { x.UserId, x.DepartmentId, x.UnitId, x.PositionId }).IsUnique();
             b.HasIndex(x => x.UserId).IsUnique()
                 .HasFilter("\"IsPrimary\" = true");
-            b.HasOne<Department>().WithMany().HasForeignKey(x => x.DepartmentId).OnDelete(DeleteBehavior.Restrict);
+            // DepartmentId is an Identity organization unit. Legacy rows may still
+            // point at hcs_organization.Departments, so there is no foreign key.
             b.HasOne<Unit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.SetNull);
             b.HasOne<Position>().WithMany().HasForeignKey(x => x.PositionId).OnDelete(DeleteBehavior.SetNull);
         });

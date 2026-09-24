@@ -451,6 +451,11 @@
           "Newtonsoft.Json": "13.0.3"
         }
       },
+      "MiniExcel": {
+        "type": "Transitive",
+        "resolved": "1.41.4",
+        "contentHash": "fQwTTA2awWICM4xqjkldGTkAEr+U8TfncNdd7CCdQIMo3khCXoFkA1F080Ts8el7oeuRNhRauYjQs8aU0Z6v9Q=="
+      },
       "Minio": {
         "type": "Transitive",
         "resolved": "6.0.5",
@@ -1777,6 +1782,7 @@
           "HCS.Logging": "[1.0.0, )",
           "Microsoft.Data.SqlClient": "[6.0.2, )",
           "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "[10.0.9, )",
+          "MiniExcel": "[1.41.4, )",
           "OpenIddict.Validation.AspNetCore": "[7.5.0, )",
           "OpenIddict.Validation.SystemNetHttp": "[7.5.0, )",
           "PDFsharp": "[6.2.4, )",

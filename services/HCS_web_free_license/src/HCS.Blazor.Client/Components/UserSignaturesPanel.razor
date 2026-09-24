@@ -82,6 +82,10 @@
                             <span class="hcs-signature-card__type">@item.ContentType.Replace("image/", "", StringComparison.OrdinalIgnoreCase).ToUpperInvariant()</span>
                         </div>
                         <span class="hcs-signature-card__kind"><i class="fa fa-fingerprint" aria-hidden="true"></i>@SignatureTypeLabel(item.Type)</span>
+                        @if (!item.IsActive)
+                        {
+                            <span class="hcs-signature-card__kind">@L["Catalog:Inactive"]</span>
+                        }
                         @if (!string.IsNullOrWhiteSpace(item.ProviderCode)) { <span class="hcs-signature-card__kind">@item.ProviderCode @(item.IsActive ? "· Active" : "· Inactive")</span> }
                         @if (item.HasSealImage) { <span class="hcs-signature-card__kind"><i class="fa fa-stamp" aria-hidden="true"></i>@L["Account:SealImage"]</span> }
                         <dl class="hcs-signature-card__meta">
@@ -191,10 +195,9 @@
                         <HcsDatePicker TValue="DateTime?" @bind-Value="editForm.ValidTo" InputMode="DateInputMode.DateTime" ShowClearButton="true" />
                     </Field>
                 </div>
-                <label class="hcs-signature-check">
-                    <input type="checkbox" @bind="editForm.IsActive" />
-                    <span>@L["Account:IsActive"]</span>
-                </label>
+                <Field Class="hcs-catalog-active-field">
+                    <Check TValue="bool" @bind-Value="editForm.IsActive">@L["Account:IsActive"]</Check>
+                </Field>
             </form>
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">

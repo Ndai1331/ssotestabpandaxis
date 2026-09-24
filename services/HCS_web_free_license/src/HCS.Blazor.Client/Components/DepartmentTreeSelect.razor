@@ -10,7 +10,7 @@ else
         <button type="button" class="hcs-department-tree__expand" @onclick="ExpandAll">@L["Work:ExpandAll"]</button>
         @foreach (var node in Items)
         {
-            @RenderNode(node, 0)
+            @RenderNode(node)
         }
     </div>
 }
@@ -21,9 +21,9 @@ else
     [Parameter] public EventCallback<IReadOnlyList<Guid>> SelectedIdsChanged { get; set; }
     [Parameter] public string EmptyMessage { get; set; } = string.Empty;
 
-    private RenderFragment RenderNode(DepartmentTreeNode node, int depth) => __builder =>
+    private RenderFragment RenderNode(DepartmentTreeNode node) => __builder =>
     {
-        <div class="hcs-department-tree__row" style="@($"padding-left:{depth * 1.1}rem")">
+        <div class="hcs-department-tree__row">
             @if (node.HasChildren)
             {
                 <button type="button" class="hcs-department-tree__toggle" @onclick="() => Toggle(node)" aria-expanded="@((!node.Collapsed).ToString().ToLowerInvariant())">
@@ -38,12 +38,14 @@ else
                    @onchange="args => OnToggleAsync(node.Id, args.Value is true)" />
             <span class="hcs-department-tree__label">@node.Name</span>
         </div>
-        if (!node.Collapsed)
+        if (!node.Collapsed && node.HasChildren)
         {
-            foreach (var child in node.Children)
-            {
-                @RenderNode(child, depth + 1)
-            }
+            <div class="hcs-department-tree__children">
+                @foreach (var child in node.Children)
+                {
+                    @RenderNode(child)
+                }
+            </div>
         }
     };
 

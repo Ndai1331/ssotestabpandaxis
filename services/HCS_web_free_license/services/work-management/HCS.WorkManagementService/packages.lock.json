@@ -28,6 +28,12 @@
           "Microsoft.EntityFrameworkCore.Relational": "10.0.9"
         }
       },
+      "MiniExcel": {
+        "type": "Direct",
+        "requested": "[1.41.4, )",
+        "resolved": "1.41.4",
+        "contentHash": "fQwTTA2awWICM4xqjkldGTkAEr+U8TfncNdd7CCdQIMo3khCXoFkA1F080Ts8el7oeuRNhRauYjQs8aU0Z6v9Q=="
+      },
       "OpenIddict.Validation.AspNetCore": {
         "type": "Direct",
         "requested": "[7.5.0, )",

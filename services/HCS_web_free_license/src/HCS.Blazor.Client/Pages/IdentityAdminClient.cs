@@ -171,7 +171,7 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
 
     public Task<IdentityAdminUserMappingDto> CreateUserMappingAsync(
         Guid userId,
-        Guid departmentId,
+        Guid? departmentId,
         Guid? positionId,
         CancellationToken cancellationToken = default) =>
         SendAsync<IdentityAdminUserMappingDto>(HttpMethod.Post, "api/organization/user-mappings", new
@@ -186,7 +186,7 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
     public Task<IdentityAdminUserMappingDto> UpdateUserMappingAsync(
         Guid mappingId,
         Guid userId,
-        Guid departmentId,
+        Guid? departmentId,
         Guid? positionId,
         Guid? unitId = null,
         CancellationToken cancellationToken = default) =>

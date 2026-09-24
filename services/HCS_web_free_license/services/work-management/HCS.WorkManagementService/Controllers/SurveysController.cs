@@ -42,6 +42,14 @@ public sealed class SurveysController(SurveyAppService service, WorkAssetService
     }
 
     [Authorize(Policy = WorkPermissions.Surveys)]
+    [HttpGet("results/export")]
+    public async Task<IActionResult> ExportResults(Guid? locationId, CancellationToken ct)
+    {
+        var file = await service.ExportResultsAsync(locationId, ct);
+        return File(file.Content, file.ContentType, file.FileName);
+    }
+
+    [Authorize(Policy = WorkPermissions.Surveys)]
     [HttpGet("results/statistics")]
     public Task<SurveyResultStatisticsDto> GetStatistics(Guid? locationId, CancellationToken ct) => service.GetStatisticsAsync(locationId, ct);
 

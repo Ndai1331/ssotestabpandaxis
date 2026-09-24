@@ -222,13 +222,13 @@
                             </Field>
                             <Field>
                                 <FieldLabel>Chức vụ</FieldLabel>
-                                <Select TValue="string" @bind-Value="userForm.PositionId">
-                                    <SelectItem Value="@string.Empty">Chọn giá trị</SelectItem>
+                                <select class="form-select" value="@userForm.PositionId" @onchange="OnPositionChanged">
+                                    <option value="">Chọn giá trị</option>
                                     @foreach (var position in positions)
                                     {
-                                        <SelectItem Value="@position.Id.ToString()">@position.Code — @position.Name</SelectItem>
+                                        <option value="@position.Id.ToString("D")">@position.Code — @position.Name</option>
                                     }
-                                </Select>
+                                </select>
                             </Field>
                         </div>
                         <div class="hcs-user-flags">
@@ -591,7 +591,7 @@
             var mapping = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
             if (mapping?.PositionId is { } positionId)
             {
-                userForm.PositionId = positionId.ToString();
+                userForm.PositionId = positionId.ToString("D");
             }
         }
         catch (IdentityAdminApiException exception)
@@ -744,22 +744,34 @@
         return InvokeAsync(StateHasChanged);
     }
 
+    private void OnPositionChanged(ChangeEventArgs args) =>
+        userForm.PositionId = args.Value?.ToString() ?? string.Empty;
+
     private async Task SyncOrganizationMappingAsync(Guid userId)
     {
         Guid? positionId = Guid.TryParse(userForm.PositionId, out var parsedPositionId) ? parsedPositionId : null;
         var mappings = await IdentityClient.GetUserMappingsAsync(userId);
         var primary = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
+        Guid? departmentId = primary?.DepartmentId is { } current && userForm.DepartmentIds.Contains(current)
+            ? current
+            : userForm.DepartmentIds.Count == 0 ? null : userForm.DepartmentIds.First();
         if (primary is null)
         {
+            if (positionId is null)
+            {
+                return;
+            }
+
+            await IdentityClient.CreateUserMappingAsync(userId, departmentId, positionId);
             return;
         }
 
-        if (primary.PositionId == positionId)
+        if (primary.PositionId == positionId && primary.DepartmentId == departmentId)
         {
             return;
         }
 
-        await IdentityClient.UpdateUserMappingAsync(primary.Id, userId, primary.DepartmentId, positionId, primary.UnitId);
+        await IdentityClient.UpdateUserMappingAsync(primary.Id, userId, departmentId, positionId, primary.UnitId);
     }
 
     private async Task DeleteUserAsync(IdentityAdminUserDto user)

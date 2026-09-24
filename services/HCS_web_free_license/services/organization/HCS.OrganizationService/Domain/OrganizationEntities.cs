@@ -337,7 +337,7 @@ public sealed class Commune : CodedReferenceAggregate
 public sealed class UserOrganizationMapping : AuditedAggregateRoot<Guid>
 {
     public Guid UserId { get; private set; }
-    public Guid DepartmentId { get; private set; }
+    public Guid? DepartmentId { get; private set; }
     public Guid? UnitId { get; private set; }
     public Guid? PositionId { get; private set; }
     public bool IsPrimary { get; private set; }
@@ -345,13 +345,13 @@ public sealed class UserOrganizationMapping : AuditedAggregateRoot<Guid>
     private UserOrganizationMapping() { }
 
     public UserOrganizationMapping(
-        Guid id, Guid userId, Guid departmentId, Guid? unitId, Guid? positionId, bool isPrimary) : base(id)
+        Guid id, Guid userId, Guid? departmentId, Guid? unitId, Guid? positionId, bool isPrimary) : base(id)
         => Update(userId, departmentId, unitId, positionId, isPrimary);
 
-    public void Update(Guid userId, Guid departmentId, Guid? unitId, Guid? positionId, bool isPrimary)
+    public void Update(Guid userId, Guid? departmentId, Guid? unitId, Guid? positionId, bool isPrimary)
     {
         UserId = Check.NotDefaultOrNull<Guid>(userId, nameof(userId));
-        DepartmentId = Check.NotDefaultOrNull<Guid>(departmentId, nameof(departmentId));
+        DepartmentId = departmentId is null ? null : Check.NotDefaultOrNull<Guid>(departmentId, nameof(departmentId));
         UnitId = unitId;
         PositionId = positionId;
         IsPrimary = isPrimary;

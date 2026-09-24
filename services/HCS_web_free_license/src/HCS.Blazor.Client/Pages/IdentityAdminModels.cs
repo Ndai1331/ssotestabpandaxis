@@ -98,7 +98,7 @@ internal sealed class IdentityAdminUserMappingDto
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
-    public Guid DepartmentId { get; set; }
+    public Guid? DepartmentId { get; set; }
     public Guid? UnitId { get; set; }
     public Guid? PositionId { get; set; }
     public bool IsPrimary { get; set; }

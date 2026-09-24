@@ -836,7 +836,7 @@ namespace HCS.OrganizationService.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("CreatorId");
 
-                    b.Property<Guid>("DepartmentId")
+                    b.Property<Guid?>("DepartmentId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("ExtraProperties")
@@ -979,12 +979,6 @@ namespace HCS.OrganizationService.Data.Migrations
 
             modelBuilder.Entity("HCS.OrganizationService.Domain.UserOrganizationMapping", b =>
                 {
-                    b.HasOne("HCS.OrganizationService.Domain.Department", null)
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("HCS.OrganizationService.Domain.Position", null)
                         .WithMany()
                         .HasForeignKey("PositionId")

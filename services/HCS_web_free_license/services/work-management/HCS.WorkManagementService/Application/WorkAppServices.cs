@@ -1,3 +1,4 @@
+using System.Globalization;
 using HCS.WorkManagementService.Contracts;
 using HCS.WorkManagementService.Contracts.Integration;
 using HCS.WorkManagementService.Data;
@@ -5,6 +6,7 @@ using HCS.WorkManagementService.Domain;
 using HCS.WorkManagementService.Integration;
 using HCS.IntegrationEvents.Work;
 using Microsoft.EntityFrameworkCore;
+using MiniExcelLibs;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Domain.Entities;
@@ -769,6 +771,80 @@ public sealed class SurveyAppService(WorkManagementDbContext db, WorkRecordAutho
                       orderby criteria.Name, result.Id
                       select new SurveyResultSessionDetailDto(result.Id, result.SessionId, result.CriteriaId,
                           criteria.Name, result.Score, result.Comment)).Take(500).ToListAsync(ct);
+    }
+
+    public async Task<SurveyResultExcelFileDto> ExportResultsAsync(Guid? locationId, CancellationToken ct)
+    {
+        var rows = await (
+            from result in db.SurveyResults.AsNoTracking()
+            join session in db.SurveySessions.AsNoTracking() on result.SessionId equals session.Id
+            join criteria in db.SurveyCriteria.AsNoTracking() on result.CriteriaId equals criteria.Id
+            where !locationId.HasValue || session.LocationId == locationId
+            orderby (session.SurveyTime ?? session.StartsAt) descending, criteria.Name, result.Id
+            select new
+            {
+                result.Score,
+                CriteriaName = criteria.Name,
+                result.Comment,
+                LocationName = db.SurveyLocations
+                    .Where(location => location.Id == session.LocationId)
+                    .Select(location => location.Name)
+                    .FirstOrDefault(),
+                session.FullName,
+                session.PhoneNumber,
+                session.PatientCode,
+                session.Note,
+                SurveyTime = session.SurveyTime ?? session.StartsAt,
+                session.HandlingStatus,
+                session.HandlingNote
+            }).ToListAsync(ct);
+
+        var items = rows.Select(row => new Dictionary<string, object?>
+        {
+            ["Điểm đánh giá"] = ScoreToStars(row.Score),
+            ["Tiêu chí đánh giá"] = row.CriteriaName,
+            ["Nhận xét"] = row.Comment,
+            ["Vị trí khảo sát"] = row.LocationName,
+            ["Khách hàng"] = row.FullName,
+            ["Số điện thoại"] = row.PhoneNumber,
+            ["Mã bệnh nhân"] = row.PatientCode,
+            ["Ghi chú"] = row.Note,
+            ["Thời gian khảo sát"] = FormatSurveyTime(row.SurveyTime),
+            ["Trạng thái"] = HandlingLabel(row.HandlingStatus),
+            ["Ghi chú xử lý"] = row.HandlingNote
+        }).ToList();
+
+        await using var stream = new MemoryStream();
+        await stream.SaveAsAsync(items);
+        return new(stream.ToArray(), "SurveyResults.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    }
+
+    private static int ScoreToStars(decimal score) =>
+        score <= 0 ? 0 : Math.Clamp((int)Math.Round(score / 20m, MidpointRounding.AwayFromZero), 1, 5);
+
+    private static string HandlingLabel(string? status) =>
+        string.Equals(status, "Processed", StringComparison.OrdinalIgnoreCase) ? "Đã xử lý" : "Chưa xử lý";
+
+    private static string FormatSurveyTime(DateTime value)
+    {
+        var utc = value.Kind == DateTimeKind.Utc ? value : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        return TimeZoneInfo.ConvertTimeFromUtc(utc, SurveyExportTimeZone)
+            .ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+    }
+
+    private static readonly TimeZoneInfo SurveyExportTimeZone = ResolveSurveyExportTimeZone();
+
+    private static TimeZoneInfo ResolveSurveyExportTimeZone()
+    {
+        foreach (var id in new[] { "SE Asia Standard Time", "Asia/Ho_Chi_Minh" })
+        {
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+            catch (TimeZoneNotFoundException) { }
+            catch (InvalidTimeZoneException) { }
+        }
+
+        return TimeZoneInfo.CreateCustomTimeZone("ICT", TimeSpan.FromHours(7), "ICT", "ICT");
     }
 
     private async Task<SurveyResultSessionSummaryDto> MapResultSummaryAsync(SurveySession session, CancellationToken ct)

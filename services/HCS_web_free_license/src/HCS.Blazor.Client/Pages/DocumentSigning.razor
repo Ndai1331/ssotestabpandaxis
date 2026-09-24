@@ -583,7 +583,12 @@
         if (selected is not null) SelectDefaultSignatureForSelectedKind();
     }
 
-    private void ApplyFilter() { search = SearchText.Normalize(filter); currentPage = 1; _ = LoadAsync(); }
+    private Task ApplyFilter()
+    {
+        search = SearchText.Normalize(filter);
+        currentPage = 1;
+        return LoadAsync();
+    }
     private void ToggleSearch()
     {
         showSearch = !showSearch;
@@ -594,7 +599,7 @@
         showFilters = !showFilters;
         if (showFilters) showSearch = false;
     }
-    private void ResetSearch()
+    private Task ResetSearch()
     {
         filter = search = statusFilter = "";
         submitterId = departmentId = null;
@@ -602,7 +607,7 @@
         dateFilterField = "IncomingDate";
         showFilters = false;
         currentPage = 1;
-        _ = LoadAsync();
+        return LoadAsync();
     }
     private void OnStatusFilterChanged(string value) => statusFilter = value ?? "";
     private void OnDateFilterFieldChanged(string value) => dateFilterField = string.IsNullOrWhiteSpace(value) ? "IncomingDate" : value;
@@ -610,7 +615,12 @@
     private void OnDepartmentChanged(Guid? value) => departmentId = value;
     private void OnFromDateChanged(DateTime? value) => fromDate = value;
     private void OnToDateChanged(DateTime? value) => toDate = value;
-    private void SetInbox(string value) { inboxFilter = value; currentPage = 1; _ = LoadAsync(); }
+    private Task SetInbox(string value)
+    {
+        inboxFilter = value;
+        currentPage = 1;
+        return LoadAsync();
+    }
     private Task OpenSubmit() => submitModal?.ShowAsync() ?? Task.CompletedTask;
     private Task PreviewAsync(SigningQueueItem item)
     {

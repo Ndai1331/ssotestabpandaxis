@@ -130,6 +130,7 @@ public sealed record SurveyResultSessionDetailDto(Guid SurveyResultId, Guid Surv
 public sealed record HandleSurveyResultDto(string HandlingStatus, string? HandlingNote);
 public sealed record SurveyResultStatisticsDto(int TotalReviews, IReadOnlyDictionary<int, int> ScoreDistribution,
     IReadOnlyDictionary<string, decimal> CriteriaAverageScores);
+public sealed record SurveyResultExcelFileDto(byte[] Content, string FileName, string ContentType);
 public sealed record SurveyFileReferenceDto(Guid Id, Guid SessionId, string FileName, string ContentType, long Size);
 
 public sealed record DashboardDto(int ActiveProjects, int OpenTasks, int OverdueTasks, int ActiveSurveys,

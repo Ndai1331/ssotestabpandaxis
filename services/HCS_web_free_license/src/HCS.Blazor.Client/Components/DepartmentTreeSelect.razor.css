@@ -32,6 +32,12 @@
     width: 1rem;
 }
 
+.hcs-department-tree__children {
+    border-left: 1px solid var(--color-gray-100, #dce6ec);
+    margin: .1rem 0 .1rem .85rem;
+    padding-left: .35rem;
+}
+
 .hcs-department-tree__toggle {
     align-items: center;
     background: none;

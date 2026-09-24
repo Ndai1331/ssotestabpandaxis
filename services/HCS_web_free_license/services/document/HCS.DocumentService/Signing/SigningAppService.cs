@@ -651,7 +651,6 @@ public sealed class SigningAppService(
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         var items = await db.UserSignatures.AsNoTracking()
-            .WhereActiveUserSignatures()
             .Where(x => x.UserId == targetUserId)
             .OrderByDescending(x => x.IsDefault).ThenByDescending(x => x.CreationTime).ToListAsync(cancellationToken);
         return items.Select(MapSignature).ToList();
@@ -707,10 +706,7 @@ public sealed class SigningAppService(
 
             if (fileNameChanged) signature.Rename(normalizedFileName);
             if (typeChanged) signature.ChangeType(normalizedType);
-            if (normalizedType == UserSignatureType.Electronic) signature.ClearDigitalMetadata();
-            else if (hasMetadata || typeChanged)
-                signature.UpdateMetadata(metadata.ProviderCode, metadata.TokenRef, metadata.ProtectedSecret,
-                    metadata.SealImageBase64, NormalizeUtc(validFrom), NormalizeUtc(validTo), isActive);
+            ApplySignatureMetadata(signature, normalizedType, metadata, validFrom, validTo, isActive, hasMetadata || typeChanged);
             await db.SaveChangesAsync(cancellationToken);
             return MapSignature(signature);
         }
@@ -723,9 +719,7 @@ public sealed class SigningAppService(
         await signingBlobs.SaveAsync(newBlobName, content, overrideExisting: false, cancellationToken: cancellationToken);
         signature.ReplaceContent(normalizedFileName, normalizedContentType, newBlobName, uploadSize);
         signature.ChangeType(normalizedType);
-        if (normalizedType == UserSignatureType.Electronic) signature.ClearDigitalMetadata();
-        else signature.UpdateMetadata(metadata.ProviderCode, metadata.TokenRef, metadata.ProtectedSecret,
-            metadata.SealImageBase64, NormalizeUtc(validFrom), NormalizeUtc(validTo), isActive);
+        ApplySignatureMetadata(signature, normalizedType, metadata, validFrom, validTo, isActive, applyMetadata: true);
         try
         {
             await db.SaveChangesAsync(cancellationToken);
@@ -785,7 +779,6 @@ public sealed class SigningAppService(
     {
         var targetUserId = ResolveTargetUser(userId, DocumentPermissions.SigningExecute);
         var signature = await db.UserSignatures.AsNoTracking()
-            .WhereActiveUserSignatures()
             .SingleOrDefaultAsync(x => x.Id == id && x.UserId == targetUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Signature not found.");
         var stream = await signingBlobs.GetAsync(signature.BlobName, cancellationToken);
@@ -945,6 +938,22 @@ public sealed class SigningAppService(
     private static void ValidateSignatureType(UserSignatureType type)
     {
         if (!Enum.IsDefined(type)) throw new ArgumentOutOfRangeException(nameof(type));
+    }
+
+    private static void ApplySignatureMetadata(UserSignature signature, UserSignatureType type,
+        ResolvedSignatureMetadata metadata, DateTime? validFrom, DateTime? validTo, bool? isActive, bool applyMetadata)
+    {
+        if (type == UserSignatureType.Electronic)
+            signature.ClearDigitalMetadata();
+        if (!applyMetadata)
+            return;
+
+        signature.UpdateMetadata(
+            type == UserSignatureType.Electronic ? null : metadata.ProviderCode,
+            type == UserSignatureType.Electronic ? null : metadata.TokenRef,
+            type == UserSignatureType.Electronic ? null : metadata.ProtectedSecret,
+            type == UserSignatureType.Electronic ? null : metadata.SealImageBase64,
+            NormalizeUtc(validFrom), NormalizeUtc(validTo), isActive);
     }
 
     private async Task<ResolvedSignatureMetadata> ResolveSignatureMetadataAsync(Guid userId, UserSignatureType type,

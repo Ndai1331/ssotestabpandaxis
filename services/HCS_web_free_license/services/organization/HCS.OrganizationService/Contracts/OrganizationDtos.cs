@@ -25,7 +25,7 @@ public sealed record CountryDto(Guid Id, string Code, string Name, string Countr
 public sealed record ProvinceDto(Guid Id, string Code, string Name, Guid CountryId, string CountryCode, int SortOrder);
 public sealed record CommuneDto(Guid Id, string Code, string Name, Guid ProvinceId, string ProvinceCode, int SortOrder);
 public sealed record UserOrganizationMappingDto(
-    Guid Id, Guid UserId, Guid DepartmentId, Guid? UnitId, Guid? PositionId, bool IsPrimary);
+    Guid Id, Guid UserId, Guid? DepartmentId, Guid? UnitId, Guid? PositionId, bool IsPrimary);
 
 public sealed record UserDepartmentLookupDto(Guid UserId, Guid? DepartmentId, string? DepartmentName = null,
     Guid? PositionId = null, string? PositionName = null);
@@ -133,7 +133,7 @@ public sealed class UpsertCommuneDto
 public sealed class UpsertUserOrganizationMappingDto
 {
     public Guid UserId { get; set; }
-    public Guid DepartmentId { get; set; }
+    public Guid? DepartmentId { get; set; }
     public Guid? UnitId { get; set; }
     public Guid? PositionId { get; set; }
     public bool IsPrimary { get; set; }
