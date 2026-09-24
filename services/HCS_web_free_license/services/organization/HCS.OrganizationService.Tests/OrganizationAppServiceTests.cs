@@ -275,6 +275,37 @@ public sealed class OrganizationAppServiceTests : OrganizationTestBase
     }
 
     [Fact]
+    public async Task User_mapping_materializes_a_department_for_an_identity_unit_id()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var scope = ServiceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OrganizationDbContext>();
+        var service = new OrganizationAppService(db, new TestGuidGenerator());
+        var departmentId = Guid.NewGuid();
+        var position = await service.CreatePositionAsync(new UpsertPositionDto
+        {
+            Code = "BS", Name = "Bác sĩ", SignOrder = 1
+        }, ct);
+
+        var mapping = await service.CreateUserMappingAsync(new UpsertUserOrganizationMappingDto
+        {
+            UserId = Guid.NewGuid(),
+            DepartmentId = departmentId,
+            PositionId = position.Id,
+            IsPrimary = true,
+            DepartmentCode = "00001",
+            DepartmentName = "Khoa nội"
+        }, ct);
+
+        mapping.DepartmentId.ShouldBe(departmentId);
+        mapping.PositionId.ShouldBe(position.Id);
+        var department = await db.Departments.FindAsync([departmentId], ct);
+        department.ShouldNotBeNull();
+        department!.Code.ShouldBe("00001");
+        department.Name.ShouldBe("Khoa nội");
+    }
+
+    [Fact]
     public void Model_is_single_tenant_and_uses_owned_schema()
     {
         using var scope = ServiceProvider.CreateScope();

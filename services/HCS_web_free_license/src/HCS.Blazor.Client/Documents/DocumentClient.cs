@@ -110,6 +110,30 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
             ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
     }
 
+    public async Task<DocumentFileDto> UploadFileAsync(
+        Guid documentId,
+        byte[] bytes,
+        string fileName,
+        string? contentType,
+        CancellationToken cancellationToken = default)
+    {
+        if (bytes.LongLength > MaxUploadBytes)
+        {
+            throw new BffApiException(HttpStatusCode.RequestEntityTooLarge, "The file exceeds the 50 MB limit.");
+        }
+
+        using var content = new MultipartFormDataContent();
+        using var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentLength = bytes.LongLength;
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
+        content.Add(fileContent, "file", string.IsNullOrWhiteSpace(fileName) ? "file" : fileName);
+        using var response = await CreateClient().PostAsync($"/api/documents/{documentId:D}/files", content, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<DocumentFileDto>(cancellationToken: cancellationToken)
+            ?? throw new BffApiException(HttpStatusCode.NoContent, "Gateway returned an empty response.");
+    }
+
     public Task<List<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<WorkflowKindDto>>("/api/workflows/kinds", cancellationToken);
 

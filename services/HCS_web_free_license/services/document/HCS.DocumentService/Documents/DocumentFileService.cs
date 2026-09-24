@@ -18,7 +18,7 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
 
     public async Task<DocumentFileDto> UploadAsync(Guid documentId, string fileName, string contentType, Stream content, long size, CancellationToken cancellationToken)
     {
-        var (principal, userId) = RequireCurrentUser(DocumentPermissions.ManageFiles);
+        var (principal, userId) = RequireCurrentUser(DocumentPermissions.View);
         if (size > MaxFileSize) throw new InvalidOperationException("File size is outside the allowed range.");
         var bytes = await ReadAllBytesAsync(content, cancellationToken);
         if (bytes.Length <= 0 || bytes.Length > MaxFileSize) throw new InvalidOperationException("File size is outside the allowed range.");
@@ -70,7 +70,7 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
 
     public async Task DeleteAsync(Guid documentId, Guid fileId, CancellationToken cancellationToken)
     {
-        var (principal, userId) = RequireCurrentUser(DocumentPermissions.ManageFiles);
+        var (principal, userId) = RequireCurrentUser(DocumentPermissions.View);
         var document = await LoadManagedDocumentAsync(documentId, userId, principal, cancellationToken);
         var now = DateTime.UtcNow;
         var existingFileIds = document.Files.Select(x => x.Id).ToHashSet();
@@ -247,7 +247,9 @@ public sealed class DocumentFileService(DocumentServiceDbContext db, IBlobContai
             .SingleOrDefaultAsync(x => x.Id == documentId, cancellationToken)
             ?? throw new KeyNotFoundException("Document not found.");
         await db.Entry(document).Collection(x => x.Assignments).LoadAsync(cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
+        var isCreator = DocumentAccess.IsCreator(document, userId);
+        DocumentAccess.EnsureCanMutate(principal, document, isCreator, DocumentPermissions.ManageFiles);
+        DocumentAccess.EnsureCanManage(document, userId, principal, isCreator);
         return document;
     }
 

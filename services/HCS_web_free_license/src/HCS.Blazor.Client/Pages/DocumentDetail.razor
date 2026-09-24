@@ -1,7 +1,7 @@
 @page "/document-detail"
 @page "/document-detail/{DocumentId:guid}"
 @page "/view-document-detail/{DocumentId:guid}"
-@attribute [Authorize(Policy = "Documents.View")]
+@attribute [Authorize]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject OrganizationCatalogClient Catalog
@@ -361,15 +361,27 @@
         var authStateTask = AuthenticationStateProvider.GetAuthenticationStateAsync();
         await Task.WhenAll(featuresTask, authStateTask);
         var user = (await authStateTask).User;
+        var viewTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.View");
         var createTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.Create");
         var updateTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.Update");
         var deleteTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.Delete");
         var filesTask = AuthorizationService.AuthorizeAsync(user, null, "Documents.ManageFiles");
-        await Task.WhenAll(createTask, updateTask, deleteTask, filesTask);
+        await Task.WhenAll(viewTask, createTask, updateTask, deleteTask, filesTask);
+        var canBrowseArchive = (await viewTask).Succeeded;
         canCreateArchive = (await createTask).Succeeded;
-        canUpdateDocument = (await updateTask).Succeeded;
-        canDeleteDocument = (await deleteTask).Succeeded;
-        canManageFiles = (await filesTask).Succeeded;
+        canUpdateDocument = (await updateTask).Succeeded || IsPersonal;
+        canDeleteDocument = (await deleteTask).Succeeded || IsPersonal;
+        canManageFiles = (await filesTask).Succeeded || IsPersonal;
+        if (SourceType == 0 && !canBrowseArchive)
+        {
+            Navigation.NavigateTo("/manage-documents?sourceType=1", replace: true);
+            return;
+        }
+        if (IsCreate && SourceType == 0 && !canCreateArchive)
+        {
+            Navigation.NavigateTo("/manage-documents?sourceType=1", replace: true);
+            return;
+        }
         if (!IsCreate && SourceType == 2)
         {
             Navigation.NavigateTo($"/manage-documents?sourceType=2&preview={DocumentId:D}", replace: true);

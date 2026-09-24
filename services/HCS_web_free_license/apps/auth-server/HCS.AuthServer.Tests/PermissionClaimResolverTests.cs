@@ -26,6 +26,20 @@ public sealed class PermissionClaimResolverTests
     }
 
     [Fact]
+    public async Task ResolveAsync_LoadsLegacyEmployeeGrants_ForLocalizedStaffRole()
+    {
+        var manager = new FakePermissionManager(
+            ("nhanvien", [Granted("WorkManagement.Dashboard"), Granted("Documents.View")]),
+            ("Nhân viên", Array.Empty<PermissionWithGrantedProviders>()));
+
+        var permissions = await new PermissionClaimResolver(manager)
+            .ResolveAsync(CreatePrincipal("Nhân viên"));
+
+        Assert.Contains("WorkManagement.Dashboard", permissions);
+        Assert.Contains("Documents.View", permissions);
+    }
+
+    [Fact]
     public async Task ResolveAsync_PrioritizesModulePermissions_AndDoesNotDropWorkManagementForLargeGrantSets()
     {
         var many = Enumerable.Range(0, 300)

@@ -8,7 +8,9 @@ using Volo.Abp.AspNetCore.Mvc;
 namespace HCS.CollaborationService.Api;
 
 [ApiController, Authorize(Policy = CollaborationPermissions.Chat), Route("api/chat")]
-public sealed class ChatController(CollaborationAppService app, CollaborationAttachmentStore attachments) : AbpControllerBase
+public sealed class ChatController(
+    CollaborationAppService app,
+    CollaborationAttachmentStore attachments) : AbpControllerBase
 {
     [HttpPost("conversations")]
     public Task<ConversationDto> CreateConversation(CreateConversationInput input, CancellationToken ct) => app.CreateConversationAsync(input, ct);
@@ -77,7 +79,8 @@ public sealed class ChatController(CollaborationAppService app, CollaborationAtt
     public Task CreateTask(Guid messageId, CreateTaskFromMessageInput input, CancellationToken ct) => app.RequestTaskFromMessageAsync(messageId, input.Title, input.Description, ct);
 
     [HttpPost("conversations/{conversationId:guid}/attachments")]
-    [RequestSizeLimit(26_214_400)]
+    [RequestSizeLimit(ChatAttachmentPolicy.RequestCeilingBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ChatAttachmentPolicy.RequestCeilingBytes)]
     public async Task<UploadAttachmentResult> Upload(Guid conversationId, IFormFile file, CancellationToken ct)
     { await using var stream = file.OpenReadStream(); return await attachments.UploadAsync(conversationId, file.FileName, file.ContentType, stream, file.Length, ct); }
 

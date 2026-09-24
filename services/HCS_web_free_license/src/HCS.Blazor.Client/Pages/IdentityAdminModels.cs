@@ -61,7 +61,7 @@ internal sealed class IdentityAdminUserForm
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
-    public string PositionId { get; set; } = string.Empty;
+    public Guid? PositionId { get; set; }
     public HashSet<Guid> DepartmentIds { get; } = [];
     public bool IsActive { get; set; } = true;
     public bool LockoutEnabled { get; set; } = true;

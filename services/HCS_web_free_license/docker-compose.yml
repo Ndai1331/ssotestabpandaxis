@@ -218,6 +218,7 @@ services:
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
+      Services__Platform__BaseUrl: http://platform:8080/
   collaboration:
     <<: *hcs-image
     build: { context: ., dockerfile: deploy/docker/Dockerfile, args: { PROJECT: services/collaboration/HCS.CollaborationService/HCS.CollaborationService.csproj, APP_DLL: HCS.CollaborationService.dll } }

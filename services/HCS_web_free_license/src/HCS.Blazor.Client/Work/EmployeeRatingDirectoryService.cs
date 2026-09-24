@@ -48,13 +48,13 @@ public sealed class EmployeeRatingDirectoryService(
         skip = Math.Max(0, skip);
         if (organizationUnitId is { } unitId)
         {
-            var members = await organizationUnits.GetMembersAsync(
+            var members = await directoryClient.GetByOrganizationUnitAsync(
                 unitId, search, skip, take, cancellationToken);
-            var ids = members.Items.Where(member => member.IsActive).Select(member => member.Id);
+            var memberUsers = members.Items.AsEnumerable();
             if (excludeUserId is { } excludedMember)
-                ids = ids.Where(id => id != excludedMember);
+                memberUsers = memberUsers.Where(user => user.UserId != excludedMember);
             return new EmployeeRatingPeoplePage(
-                await GetPeopleByIdsAsync(ids, cancellationToken),
+                await AttachDepartmentsAsync(memberUsers.ToList(), cancellationToken),
                 members.TotalCount);
         }
 

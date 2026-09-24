@@ -114,8 +114,17 @@
                                     </Select>
                                 </Field>
                                 <Field>
-                                    <FieldLabel>@L["Feature:Progress"]</FieldLabel>
-                                    <NumericPicker TValue="int" Value="@form.ProgressPercent" ValueChanged="OnProgressChanged" Min="0" Max="100" />
+                                    <FieldLabel>@L["Work:ProgressPercent"] · @form.ProgressPercent%</FieldLabel>
+                                    <div class="hcs-progress-slider">
+                                        <input type="range" class="hcs-progress-range" min="0" max="100" step="5"
+                                               value="@form.ProgressPercent"
+                                               style="@($"--hcs-progress:{form.ProgressPercent}%")"
+                                               aria-valuemin="0" aria-valuemax="100" aria-valuenow="@form.ProgressPercent"
+                                               aria-label="@L["Work:ProgressPercent"]"
+                                               @oninput="OnProgressInput"
+                                               @onchange="OnProgressInput" />
+                                        <span class="hcs-progress-slider__value">@form.ProgressPercent%</span>
+                                    </div>
                                 </Field>
                             </div>
                             <Field>
@@ -283,10 +292,23 @@
         return Task.CompletedTask;
     }
 
-    private Task OnProgressChanged(int value)
+    private Task OnProgressInput(ChangeEventArgs args)
     {
+        if (!int.TryParse(args.Value?.ToString(), out var value))
+        {
+            return Task.CompletedTask;
+        }
+
         form.ProgressPercent = Math.Clamp(value, 0, 100);
-        if (form.ProgressPercent == 100) form.Status = "Completed";
+        if (form.ProgressPercent == 100)
+        {
+            form.Status = "Completed";
+        }
+        else if (string.Equals(form.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            form.Status = "InProgress";
+        }
+
         return Task.CompletedTask;
     }
 

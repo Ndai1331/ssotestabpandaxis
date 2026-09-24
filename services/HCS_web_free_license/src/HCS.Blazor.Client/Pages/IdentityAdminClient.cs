@@ -173,6 +173,8 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         Guid userId,
         Guid? departmentId,
         Guid? positionId,
+        string? departmentCode = null,
+        string? departmentName = null,
         CancellationToken cancellationToken = default) =>
         SendAsync<IdentityAdminUserMappingDto>(HttpMethod.Post, "api/organization/user-mappings", new
         {
@@ -180,7 +182,9 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
             departmentId,
             unitId = (Guid?)null,
             positionId,
-            isPrimary = true
+            isPrimary = true,
+            departmentCode,
+            departmentName
         }, cancellationToken);
 
     public Task<IdentityAdminUserMappingDto> UpdateUserMappingAsync(
@@ -189,6 +193,8 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
         Guid? departmentId,
         Guid? positionId,
         Guid? unitId = null,
+        string? departmentCode = null,
+        string? departmentName = null,
         CancellationToken cancellationToken = default) =>
         SendAsync<IdentityAdminUserMappingDto>(HttpMethod.Put, $"api/organization/user-mappings/{mappingId:D}", new
         {
@@ -196,7 +202,9 @@ internal sealed class IdentityAdminClient(IHttpClientFactory httpClientFactory)
             departmentId,
             unitId,
             positionId,
-            isPrimary = true
+            isPrimary = true,
+            departmentCode,
+            departmentName
         }, cancellationToken);
 
     public Task DeleteUserMappingAsync(Guid mappingId, CancellationToken cancellationToken = default) =>

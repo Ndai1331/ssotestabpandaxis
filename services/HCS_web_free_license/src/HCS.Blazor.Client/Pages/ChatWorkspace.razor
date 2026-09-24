@@ -6,6 +6,7 @@
 @using System.Globalization
 @using System.Net
 @using System.Threading
+@using HCS.Blazor.Client.Settings
 @using HCS.CollaborationService.Contracts
 @using HCS.Localization
 @using Microsoft.AspNetCore.SignalR.Client
@@ -14,7 +15,10 @@
 @using Microsoft.Extensions.Logging
 @using Volo.Abp.AspNetCore.Components.Messages
 @inject CollaborationClient Client
+@inject WorkManagementClient Work
+@inject DocumentClient Documents
 @inject ChatRealtimeConnection Realtime
+@inject SystemFeatureState Features
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IConfiguration Configuration
 @inject IStringLocalizer<HCSResource> Localizer
@@ -31,7 +35,7 @@
 
 <main class="hcs-chat-page page-chat chat-app" aria-labelledby="chat-title" @onclick="CloseMessageMenu">
     <h1 id="chat-title" class="visually-hidden">@T("Chat:Title")</h1>
-    <section class="hcs-chat chat-shell @(infoOpen ? "hcs-chat--info-open is-info-open" : "hcs-chat--info-collapsed") @(mobileView == MobileView.Thread ? "is-thread-open" : null)" aria-label="@T("Chat:Title")">
+    <section class="hcs-chat chat-shell @(infoOpen ? "hcs-chat--info-open is-info-open" : "hcs-chat--info-collapsed") @(IsDirectOrGroupInfo ? "chat-shell--compact-info" : null) @(mobileView == MobileView.Thread ? "is-thread-open" : null)" aria-label="@T("Chat:Title")">
         <aside class="hcs-chat__conversations chat-list @(mobileView == MobileView.List ? "hcs-chat__panel--mobile-active" : null)" aria-label="@T("Chat:ConversationList")">
             <div class="hcs-chat__toolbar chat-list-toolbar">
                 <label class="sr-only" for="chat-search">@T("Chat:Search")</label>
@@ -152,7 +156,7 @@
                                             <time datetime="@FormatMessageTimestamp(conversation.LastMessageAt)">@FormatConversationTime(conversation.LastMessageAt)</time>
                                         </span>
                                     </span>
-                                    <span class="chat-item-preview">@(string.IsNullOrWhiteSpace(conversation.LastMessage) ? T("Chat:NoMessages") : conversation.LastMessage)</span>
+                                    <span class="chat-item-preview">@(string.IsNullOrWhiteSpace(conversation.LastMessage) ? T("Chat:NoMessages") : PreviewText(conversation.LastMessage))</span>
                                 </span>
                                 @if (conversation.UnreadCount > 0)
                                 {
@@ -243,7 +247,7 @@
                             <span class="hcs-chat__message-skeleton-bubble" aria-hidden="true"></span>
                         </div>
                     }
-                    else if (messageError is not null && messages.Count == 0)
+                    else if (messagesLoadFailed && messages.Count == 0)
                     {
                         <div class="hcs-chat__state hcs-chat__state--error" role="alert"><p>@messageError</p><button class="btn btn-light btn-sm" type="button" @onclick="() => LoadMessagesAsync(reset: true)">@T("Chat:Retry")</button></div>
                     }
@@ -257,6 +261,7 @@
                         {
                             var isMine = message.SenderUserId == currentUserId;
                             var deletedClass = message.IsDeleted ? "is-recalled" : null;
+                            var taskCard = ChatTaskCardMessage.TryParse(message.Text, out var parsedTask) ? parsedTask : null;
                             <div class="msg @(isMine ? "is-out" : "is-in") @(message.IsPinned ? "is-pinned" : null) @deletedClass @(messageMenuId == message.Id ? "is-menu-open" : null)">
                                 @if (!isMine)
                                 {
@@ -292,7 +297,24 @@
                                                     <span>@(message.ForwardedFrom?.IsDeleted == true ? T("Chat:DeletedMessage") : PreviewText(message.ForwardedFrom?.Text, message.Text))</span>
                                                 </div>
                                             }
-                                            @if (!string.IsNullOrWhiteSpace(message.Text) && message.ForwardedFromMessageId is null)
+                                            @if (taskCard is not null)
+                                            {
+                                                <span class="msg-task-label">@T("Chat:AssignTask")</span>
+                                                <div class="msg-task-card">
+                                                    <strong>@taskCard.Title</strong>
+                                                    <p>@T("Chat:TaskAssignee"): @taskCard.AssigneeName</p>
+                                                    <p>@T("Feature:DueDate"): @(taskCard.DueDate is { } due ? due.ToString("dd/MM/yyyy") : T("Chat:TaskNoDue"))</p>
+                                                    @if (!string.IsNullOrWhiteSpace(taskCard.Note))
+                                                    {
+                                                        <p>@taskCard.Note</p>
+                                                    }
+                                                    <button class="msg-task-open" type="button" @onclick="() => OpenTaskViewAsync(taskCard.TaskId)" @onclick:stopPropagation="true">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>
+                                                        <span>@T("Chat:OpenTask")</span>
+                                                    </button>
+                                                </div>
+                                            }
+                                            else if (!string.IsNullOrWhiteSpace(message.Text) && message.ForwardedFromMessageId is null)
                                             {
                                                 <p>@message.Text</p>
                                             }
@@ -362,15 +384,18 @@
                                 }
                             </div>
                         }
-                        @if (messageError is not null && messages.Count > 0)
+                        @if (messageError is not null)
                         {
                             <p class="hcs-chat__composer-error" role="alert">@messageError</p>
                         }
                         <label class="icon-btn chat-attach" title="@T("Chat:Attach")">
-                            <InputFile class="sr-only" OnChange="OnFilesSelected" multiple accept="image/*,.pdf,.txt,.docx,.xlsx,.mp4,.mp3" />
+                            <InputFile class="chat-attach-input" OnChange="OnFilesSelected" multiple accept="image/*,.pdf,.txt,.docx,.xlsx,.mp4,.mp3" />
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21.4 11.6 12.8 20a5 5 0 0 1-7.1-7.1l9.2-9.2a3.2 3.2 0 0 1 4.5 4.5L10.2 17.4a1.4 1.4 0 1 1-2-2l8.2-8.2"/></svg>
                             <span class="sr-only">@T("Chat:Attach")</span>
                         </label>
+                        <button class="icon-btn chat-assign" type="button" title="@T("Chat:AssignTask")" aria-label="@T("Chat:AssignTask")" @onclick="() => OpenAssignTaskAsync(null)" disabled="@isSending">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>
+                        </button>
                         <label class="sr-only" for="chat-input">@T("Chat:MessagePlaceholder")</label>
                         <div class="chat-input-wrap">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v10H7l-3 3V6z"/></svg>
@@ -391,7 +416,7 @@
             }
         </section>
 
-        <aside class="hcs-chat__info chat-info @(mobileView == MobileView.Info ? "hcs-chat__panel--mobile-active" : null)" hidden="@(!infoOpen)" aria-label="@T("Chat:Information")">
+        <aside class="hcs-chat__info chat-info @(IsDirectOrGroupInfo ? "chat-info--compact" : null) @(mobileView == MobileView.Info ? "hcs-chat__panel--mobile-active" : null)" hidden="@(!infoOpen)" aria-label="@T("Chat:Information")">
             @if (selected is null)
             {
                 <div class="hcs-chat__info-empty">
@@ -406,6 +431,9 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
                     </button>
                     <p class="chat-info-kicker">@T("Chat:Information")</p>
+                    <button class="hcs-chat__icon icon-btn chat-info-pin @(selected.IsPinned ? "is-active" : null)" type="button" aria-pressed="@selected.IsPinned.ToString().ToLowerInvariant()" title="@(selected.IsPinned ? T("Chat:UnpinConversation") : T("Chat:PinConversation"))" aria-label="@(selected.IsPinned ? T("Chat:UnpinConversation") : T("Chat:PinConversation"))" @onclick="TogglePinnedAsync">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
+                    </button>
                 </header>
                 <div class="hcs-chat__info-body chat-info-body">
                     <div class="chat-info-profile">
@@ -444,12 +472,6 @@
                     {
                         <p class="hcs-chat__description">@selected.Description</p>
                     }
-                    <div class="hcs-chat__info-actions chat-info-actions">
-                        <button class="btn btn-outline btn-block" type="button" @onclick="TogglePinnedAsync">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 17v5"/><path d="M8 3h8l-1 7a4 4 0 1 1-6 0z"/></svg>
-                            <span>@(selected.IsPinned ? T("Chat:UnpinConversation") : T("Chat:PinConversation"))</span>
-                        </button>
-                    </div>
                     <section class="hcs-chat__info-section chat-info-section" aria-labelledby="chat-members-label">
                         <div class="chat-info-section-head">
                             <h3 id="chat-members-label">@T("Chat:Members")</h3>
@@ -477,23 +499,6 @@
                         }
                         </ul>
                     </section>
-                    <section class="hcs-chat__info-section chat-info-section" aria-labelledby="chat-pins-label">
-                        <h3 id="chat-pins-label">@T("Chat:PinnedSection")</h3>
-                        @if (pinnedMessages.Count == 0)
-                        {
-                            <p class="chat-media-empty">@T("Chat:NoPinnedMessages")</p>
-                        }
-                        else
-                        {
-                            @foreach (var pinned in pinnedMessages)
-                            {
-                                <button class="chat-pin-info" type="button" @onclick="() => OpenPinnedMessageAsync(pinned)">
-                                    <strong>@T("Chat:PinnedSection")</strong>
-                                    <span>@PreviewText(pinned.Text, pinned.Attachments.FirstOrDefault()?.FileName)</span>
-                                </button>
-                            }
-                        }
-                    </section>
                     <section class="hcs-chat__info-section chat-info-section" aria-labelledby="chat-media-label">
                         <h3 id="chat-media-label">@T("Chat:SharedMedia")</h3>
                         <div class="chat-media-tabs" role="tablist" aria-label="@T("Chat:SharedMedia")">
@@ -517,16 +522,21 @@
                                 {
                                     @foreach (var attachment in ConversationPhotos)
                                     {
-                                        <button class="chat-thumb" type="button" title="@T("Chat:ViewImage")" aria-label="@attachment.FileName" @onclick="() => OpenPreview(attachment)">
-                                            <img src="@AttachmentUrl(attachment.Id)" crossorigin="use-credentials" alt="@attachment.FileName" />
-                                        </button>
+                                        <div class="chat-thumb-wrap">
+                                            <button class="chat-thumb" type="button" title="@T("Chat:ViewImage")" aria-label="@attachment.FileName" @onclick="() => OpenPreview(attachment)">
+                                                <img src="@AttachmentUrl(attachment.Id)" crossorigin="use-credentials" alt="@attachment.FileName" />
+                                            </button>
+                                            <a class="chat-thumb-dl" href="@AttachmentUrl(attachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")" aria-label="@T("Chat:DownloadFile")" @onclick:stopPropagation="true">
+                                                @DownloadGlyph
+                                            </a>
+                                        </div>
                                     }
                                 }
                             </div>
                         }
                         else
                         {
-                            <div class="chat-media-grid" id="chat-media-files" role="tabpanel" aria-labelledby="chat-tab-files">
+                            <div class="chat-media-grid is-files" id="chat-media-files" role="tabpanel" aria-labelledby="chat-tab-files">
                                 @if (!ConversationFiles.Any())
                                 {
                                     <p class="chat-media-empty">@T("Chat:NoFiles")</p>
@@ -539,6 +549,7 @@
                                             @{ var mediaBadge = FileBadge(attachment.FileName); }
                                             <span class="chat-thumb-ext @mediaBadge.Css">@mediaBadge.Label</span>
                                             <span class="chat-thumb-name">@attachment.FileName</span>
+                                            <span class="chat-file-dl" aria-hidden="true">@DownloadGlyph</span>
                                         </a>
                                     }
                                 }
@@ -576,6 +587,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
                 @T("Chat:Forward")
             </button>
+            @if (permissions?.CanSend == true)
+            {
+                <button type="button" role="menuitem" @onclick="() => OpenAssignTaskFromMenuAsync(menuMessage)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>
+                    @T("Chat:AssignTask")
+                </button>
+            }
             <button type="button" role="menuitem" @onclick="() => ReplyFromMenu(menuMessage)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
                 @T("Chat:Reply")
@@ -595,6 +613,9 @@
             <div class="chat-preview-dialog" @onclick:stopPropagation>
                 <div class="chat-dialog-head">
                     <h2 id="chat-preview-title">@T("Chat:ViewImage")</h2>
+                    <a class="icon-btn" href="@AttachmentUrl(previewAttachment.Id)" target="_blank" rel="noopener" title="@T("Chat:DownloadFile")" aria-label="@T("Chat:DownloadFile")">
+                        @DownloadGlyph
+                    </a>
                     <button class="icon-btn" type="button" aria-label="@T("Chat:ClosePreview")" @onclick="ClosePreview">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                     </button>
@@ -645,6 +666,85 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
                         }
                         <span class="btn-label">@T("Chat:Forward")</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    @if (assignTaskOpen && selected is not null)
+    {
+        <div class="modal-overlay is-open" role="dialog" aria-modal="true" aria-labelledby="chat-task-title" @onclick="CloseAssignTask">
+            <div class="chat-dialog" @onclick:stopPropagation>
+                <div class="chat-dialog-head">
+                    <h2 id="chat-task-title">@T("Chat:AssignTask")</h2>
+                    <button class="icon-btn" type="button" aria-label="@T("Chat:Cancel")" @onclick="CloseAssignTask">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <div class="chat-dialog-view">
+                    @if (assignTaskError is not null)
+                    {
+                        <p class="chat-dialog-copy" role="alert">@assignTaskError</p>
+                    }
+                    @if (NeedsTaskProjectPicker)
+                    {
+                        <label class="field-label" for="chat-task-project">@T("Feature:Project")</label>
+                        <select class="select" id="chat-task-project" @bind="taskProjectKey" @bind:after="OnTaskProjectChangedAsync">
+                            <option value="">@T("Feature:ChooseProject")</option>
+                            @foreach (var project in taskProjects)
+                            {
+                                <option value="@project.Id.ToString("D")">@project.Code · @project.Name</option>
+                            }
+                        </select>
+                    }
+                    <label class="field-label" for="chat-task-name">@T("Feature:TaskTitle")</label>
+                    <input class="input" id="chat-task-name" @bind="taskTitle" maxlength="256" placeholder="@T("Chat:TaskTitlePlaceholder")" />
+                    <label class="field-label" for="chat-task-assignee">@T("Chat:TaskAssignee")</label>
+                    <select class="select" id="chat-task-assignee" @bind="taskAssigneeKey" disabled="@(PickedTaskProjectId is null || isLoadingTaskAssignees)">
+                        <option value="">@T("Feature:ChooseAssignee")</option>
+                        @foreach (var userId in taskAssigneeIds)
+                        {
+                            <option value="@userId.ToString("D")">@MemberName(userId)</option>
+                        }
+                    </select>
+                    @if (PickedTaskProjectId is not null && !isLoadingTaskAssignees && taskAssigneeIds.Count == 0)
+                    {
+                        <p class="chat-dialog-copy">@T("Chat:TaskNoProjectMembers")</p>
+                    }
+                    <label class="field-label" for="chat-task-due">@T("Feature:DueDate")</label>
+                    <input class="input" id="chat-task-due" type="date" @bind="taskDue" @bind:format="yyyy-MM-dd" />
+                    <label class="field-label" for="chat-task-note">@T("Feature:Description")</label>
+                    <input class="input" id="chat-task-note" @bind="taskNote" maxlength="500" placeholder="@T("Chat:TaskNotePlaceholder")" />
+                    @if (assignTaskSource is { Attachments.Count: > 0 } sourceWithFiles)
+                    {
+                        <p class="field-label">@T("Chat:TaskAttachFromMessage")</p>
+                        <div class="chat-compose-files" aria-label="@T("Chat:Attach")">
+                            @foreach (var attachment in sourceWithFiles.Attachments)
+                            {
+                                var chipBadge = FileBadge(attachment.FileName);
+                                <span class="chat-file-chip">
+                                    <span class="chat-thumb-ext @chipBadge.Css">@chipBadge.Label</span>
+                                    <span>@attachment.FileName</span>
+                                </span>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="chat-dialog-foot">
+                    <button class="btn btn-outline" type="button" @onclick="CloseAssignTask">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <span>@T("Chat:Cancel")</span>
+                    </button>
+                    <button class="btn btn-primary" type="button" @onclick="SubmitAssignTaskAsync" disabled="@isAssigningTask">
+                        @if (isAssigningTask)
+                        {
+                            <svg class="chat-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="40 20" stroke-linecap="round"/></svg>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>
+                        }
+                        <span class="btn-label">@T("Chat:AssignTask")</span>
                     </button>
                 </div>
             </div>
@@ -781,6 +881,7 @@
         </div>
     }
 </main>
+<ProjectTaskViewModal @ref="taskViewModal" />
 
 @code {
     [Parameter] public Guid? RedirectToConversationId { get; set; }
@@ -851,6 +952,21 @@
     private string forwardSearch = string.Empty;
     private bool showTransferAdmin;
     private Guid? transferAdminTo;
+    private bool assignTaskOpen;
+    private ProjectTaskViewModal? taskViewModal;
+    private bool isAssigningTask;
+    private bool messagesLoadFailed;
+    private string? assignTaskError;
+    private ChatMessageDto? assignTaskSource;
+    private string taskTitle = string.Empty;
+    private string taskNote = string.Empty;
+    private string taskAssigneeKey = string.Empty;
+    private string taskProjectKey = string.Empty;
+    private DateTime taskDue = DateTime.Today.AddDays(7);
+    private readonly List<ProjectDto> taskProjects = [];
+    private readonly List<Guid> taskAssigneeIds = [];
+    private bool isLoadingTaskAssignees;
+    private int taskAssigneeLoadVersion;
 
     private bool CanSend => !string.IsNullOrWhiteSpace(messageText) || pendingFiles.Count > 0;
 
@@ -1172,8 +1288,9 @@
     {
         if (message.IsDeleted)
             return string.Empty;
-        if (!string.IsNullOrWhiteSpace(message.Text))
-            return message.Text.Length <= 512 ? message.Text : message.Text[..512];
+        var text = ChatTaskCardMessage.Preview(message.Text);
+        if (!string.IsNullOrWhiteSpace(text))
+            return text.Length <= 512 ? text : text[..512];
         return message.Attachments.FirstOrDefault()?.FileName ?? string.Empty;
     }
 
@@ -1188,6 +1305,7 @@
         {
             isLoadingMessages = true;
             messageError = null;
+            messagesLoadFailed = false;
         }
         try
         {
@@ -1202,6 +1320,7 @@
             messages.InsertRange(0, incoming);
             messageSkip += incoming.Count;
             totalMessageCount = response.TotalCount;
+            messagesLoadFailed = false;
             await ResolveUserNamesAsync(incoming.SelectMany(MessageUserIds));
             if (reset)
             {
@@ -1210,6 +1329,7 @@
         }
         catch (Exception exception)
         {
+            messagesLoadFailed = messages.Count == 0;
             messageError = MapChatError(exception, "Chat:MessagesError");
         }
         finally
@@ -1234,7 +1354,7 @@
             var attachmentIds = new List<Guid>();
             foreach (var file in pendingFiles)
             {
-                var attachment = await Client.UploadAttachmentAsync(selected.Id, file);
+                                                var attachment = await Client.UploadAttachmentAsync(selected.Id, file, Features.ChatAttachmentMaxBytes);
                 attachmentIds.Add(attachment.Id);
             }
 
@@ -1258,7 +1378,7 @@
         }
         catch (CollaborationApiException exception) when (exception.StatusCode == HttpStatusCode.RequestEntityTooLarge)
         {
-            messageError = T("Chat:AttachmentTooLarge");
+            messageError = T("Chat:AttachmentTooLarge", Features.ChatAttachmentMaxMegabytes);
         }
         catch (Exception exception)
         {
@@ -1441,17 +1561,33 @@
 
     private void OnFilesSelected(InputFileChangeEventArgs args)
     {
-        pendingFiles.Clear();
+        if (isSending)
+        {
+            return;
+        }
+
         foreach (var file in args.GetMultipleFiles(20))
         {
-            if (file.Size <= 25 * 1024 * 1024)
+            if (pendingFiles.Count >= 20)
             {
-                pendingFiles.Add(file);
+                break;
             }
-            else
+
+            if (file.Size > Features.ChatAttachmentMaxBytes)
             {
-                messageError = T("Chat:AttachmentTooLarge");
+                messageError = T("Chat:AttachmentTooLarge", Features.ChatAttachmentMaxMegabytes);
+                continue;
             }
+
+            if (pendingFiles.Any(existing =>
+                    string.Equals(existing.Name, file.Name, StringComparison.OrdinalIgnoreCase)
+                    && existing.Size == file.Size))
+            {
+                continue;
+            }
+
+            pendingFiles.Add(file);
+            messageError = null;
         }
     }
 
@@ -1775,6 +1911,9 @@
         _ => T("Chat:UnknownConversation")
     };
 
+    private bool IsDirectOrGroupInfo =>
+        selected is { Type: ConversationType.User or ConversationType.Group };
+
     private string ConversationInitials(ConversationDto conversation) => Initials(ConversationTitle(conversation));
 
     private Guid? DirectConversationUserId(ConversationDto conversation) =>
@@ -2008,7 +2147,11 @@
     }
 
     private string AttachmentUrl(Guid id) => ChatAttachmentUrlBuilder.Build(Configuration, id);
+
+    private RenderFragment DownloadGlyph =>
+        @<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 20h14"/></svg>;
     private string T(string key) => Localizer[key];
+    private string T(string key, object arg) => Localizer[key, arg];
 
     private string MapChatError(Exception exception, string fallbackKey)
     {

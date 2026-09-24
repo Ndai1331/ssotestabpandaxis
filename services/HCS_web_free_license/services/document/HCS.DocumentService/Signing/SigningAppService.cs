@@ -143,24 +143,19 @@ public sealed class SigningAppService(
 
     private IQueryable<WorkflowInstance> VisibleQueueInstances(ClaimsPrincipal principal, Guid userId)
     {
-        var query = db.WorkflowInstances.AsNoTracking()
+        _ = principal;
+        return db.WorkflowInstances.AsNoTracking()
             .Where(x => db.Documents.Any(document => document.Id == x.DocumentId
                     && document.SourceType == DocumentSourceType.Workflow)
                 && (x.Tasks.Any(task => task.Status == ApprovalTaskStatus.Pending)
                     || x.Tasks.Any(task => task.Status != ApprovalTaskStatus.Pending
                         && (task.AssigneeUserId == userId || task.DecidedBy == userId))
-                    || db.Documents.Any(document => document.Id == x.DocumentId && document.FromUserId == userId)));
-        if (!DocumentAccess.IsElevated(principal))
-        {
-            query = query.Where(instance =>
+                    || db.Documents.Any(document => document.Id == x.DocumentId && document.FromUserId == userId)))
+            .Where(instance =>
                 instance.Tasks.Any(task => task.AssigneeUserId == userId || task.DecidedBy == userId)
                 || db.Documents.Any(document => document.Id == instance.DocumentId &&
                     (document.FromUserId == userId ||
-                     document.Assignments.Any(a => a.AssigneeUserId == userId) ||
                      document.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))));
-        }
-
-        return query;
     }
 
     private IQueryable<WorkflowInstance> ApplyQueueFilters(

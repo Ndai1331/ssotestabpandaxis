@@ -83,6 +83,13 @@ public class HCSSettingDefinitionProvider : SettingDefinitionProvider
                 isVisibleToClients: true));
         context.Add(
             new SettingDefinition(
+                HCSSettings.ChatAttachmentMaxMegabytes,
+                defaultValue: HCSSettings.ChatAttachmentMaxMegabytesDefault.ToString(),
+                displayName: L("Settings:ChatAttachmentMaxMegabytes"),
+                description: L("Settings:ChatAttachmentMaxMegabytesDescription"),
+                isVisibleToClients: true));
+        context.Add(
+            new SettingDefinition(
                 HCSSettings.LegacySigningReportEnabled,
                 defaultValue: "true",
                 displayName: L("Settings:ProposalStatistics"),

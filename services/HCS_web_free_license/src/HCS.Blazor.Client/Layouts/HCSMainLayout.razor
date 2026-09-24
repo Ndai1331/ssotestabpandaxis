@@ -92,8 +92,6 @@
 
             <AuthorizeView Context="documentsNav">
                 <Authorized>
-                    @if (CanOpenDocumentsNavigation(documentsNav.User))
-                    {
             <div class="hcs-nav-menu @(IsExpanded("documents") ? "hcs-nav-menu--expanded" : null)"
                  @onpointerenter="@(() => OnMenuPointerEnter("documents"))">
                 <button class="hcs-nav-menu__trigger" type="button"
@@ -107,14 +105,13 @@
                     <AuthorizeView Policy="Documents.View">
                         <Authorized>
                             <NavLink href="/manage-documents?sourceType=0" @onclick="CloseMobileNav"><i class="fa fa-folder-open" aria-hidden="true"></i>@Localizer["Menu:DocumentList"]</NavLink>
-                            <NavLink href="/manage-documents?sourceType=1" @onclick="CloseMobileNav"><i class="fa fa-pen" aria-hidden="true"></i>@Localizer["Menu:DocumentsICreated"]</NavLink>
-                            <NavLink href="/manage-documents?sourceType=2" @onclick="CloseMobileNav"><i class="fa fa-inbox" aria-hidden="true"></i>@Localizer["Menu:MyDocuments"]</NavLink>
                         </Authorized>
                     </AuthorizeView>
+                    <NavLink href="/manage-documents?sourceType=1" @onclick="CloseMobileNav"><i class="fa fa-pen" aria-hidden="true"></i>@Localizer["Menu:DocumentsICreated"]</NavLink>
+                    <NavLink href="/manage-documents?sourceType=2" @onclick="CloseMobileNav"><i class="fa fa-inbox" aria-hidden="true"></i>@Localizer["Menu:MyDocuments"]</NavLink>
                     <NavLink href="/document-signing" @onclick="CloseMobileNav"><i class="fa fa-signature" aria-hidden="true"></i>@Localizer["Menu:DocumentSigning"]</NavLink>
                 </div>
             </div>
-                    }
                 </Authorized>
             </AuthorizeView>
 
@@ -379,7 +376,7 @@
 
     <main id="main-content" class="hcs-main-content" inert="@mobileNavOpen" aria-hidden="@mobileNavOpen.ToString().ToLowerInvariant()">@Body</main>
     <nav class="hcs-bottom-nav" aria-label="@Localizer["Menu:BottomNav"]">
-        <AuthorizeView Policy="Documents.View">
+        <AuthorizeView>
             <Authorized>
                 <a class="@BottomNavClass("documents")" href="/manage-documents?sourceType=2" aria-current="@(IsBottomNavActive("documents") ? "page" : null)">
                     <i class="fa fa-file-lines" aria-hidden="true"></i>
@@ -427,10 +424,6 @@
     private bool isLoggingOut;
     private string? logoutError;
     private string? avatarDataUrl;
-
-    private static bool CanOpenDocumentsNavigation(System.Security.Claims.ClaimsPrincipal user) =>
-        HasPermission(user, HCSPermissions.Documents.View)
-        || HasPermission(user, HCSPermissions.Documents.SigningExecute);
 
     private static bool CanOpenProjectsNavigation(System.Security.Claims.ClaimsPrincipal user) =>
         HasPermission(user, HCSPermissions.WorkManagement.Projects)

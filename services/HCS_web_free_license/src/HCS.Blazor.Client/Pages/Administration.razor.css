@@ -92,6 +92,11 @@
     margin-bottom: 0;
 }
 
+.hcs-user-form-grid ::deep .form-select {
+    min-height: 2.5rem;
+    border-radius: var(--radius-xl, 16px);
+}
+
 .hcs-catalog-modal ::deep .field-label,
 .hcs-catalog-modal ::deep .form-label {
     color: var(--color-gray-700, #355770);

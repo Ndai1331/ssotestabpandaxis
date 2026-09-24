@@ -35,8 +35,7 @@ internal static class DocumentAccess
 
         return permission switch
         {
-            DocumentPermissions.View or DocumentPermissions.Create or
-                DocumentPermissions.WorkflowView or
+            DocumentPermissions.View or DocumentPermissions.WorkflowView or
                 DocumentPermissions.SigningConfigure => principal.Identity?.IsAuthenticated == true,
             DocumentPermissions.Assign or DocumentPermissions.WorkflowStart or
                 DocumentPermissions.SigningReport => principal.IsInRole("lanhdao"),
@@ -81,31 +80,53 @@ internal static class DocumentAccess
         IQueryable<DocumentAggregate> query, int? sourceType, Guid userId, bool mine, ClaimsPrincipal principal) =>
         sourceType switch
         {
-            // Quản lý tài liệu: Documents.View (Truy cập) sees the full archive; mutations stay on Create/Update/Delete.
+            // Quản lý tài liệu: only văn thư with Documents.View (Truy cập).
             0 when CanBrowseArchive(principal) => query.Where(x => x.SourceType == DocumentSourceType.Archive),
             0 => query.Where(x => false),
-            // Văn bản của tôi: only documents this user created.
+            // Văn bản tôi tạo: only documents this user created.
             1 => query.Where(x => x.SourceType == DocumentSourceType.Personal &&
                                   x.History.Any(h => h.Action == CreatedAction && h.ActorUserId == userId)),
-            // Văn bản gửi đến tôi: current inbox VIEW assignments.
+            // Văn bản của tôi: documents currently sent to this user.
             2 => query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId && a.IsCurrent &&
                                   a.Responsibility == "VIEW" && a.StepCode == null)),
-            3 when !IsElevated(principal) =>
-                query.Where(x => x.SourceType == DocumentSourceType.Workflow &&
+            3 => query.Where(x => x.SourceType == DocumentSourceType.Workflow &&
                                  (x.Assignments.Any(a => a.AssigneeUserId == userId) ||
-                                  x.History.Any(h => h.Action == CreatedAction && h.ActorUserId == userId))),
-            3 => query.Where(x => x.SourceType == DocumentSourceType.Workflow),
-            _ when mine || !IsElevated(principal) =>
-                query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) ||
-                                 x.History.Any(h => h.Action == CreatedAction && h.ActorUserId == userId)),
-            _ => query
+                                  x.History.Any(h => h.Action == CreatedAction && h.ActorUserId == userId) ||
+                                  x.FromUserId == userId)),
+            _ => query.Where(x => x.Assignments.Any(a => a.AssigneeUserId == userId) ||
+                                 x.History.Any(h => h.Action == CreatedAction && h.ActorUserId == userId))
         };
 
     public static bool CanBrowseArchive(ClaimsPrincipal principal) =>
-        IsElevated(principal)
-        || HasGrant(principal, DocumentPermissions.View)
-        || HasGrant(principal, DocumentPermissions.Create)
-        || HasGrant(principal, DocumentPermissions.Update);
+        HasGrant(principal, DocumentPermissions.View);
+
+    public static void EnsureCanBrowseArchive(ClaimsPrincipal principal)
+    {
+        if (!CanBrowseArchive(principal))
+            throw new AbpAuthorizationException($"Permission '{DocumentPermissions.View}' is required.");
+    }
+
+    public static bool OwnsPersonal(DocumentAggregate document, bool isCreator) =>
+        document.SourceType == DocumentSourceType.Personal && isCreator;
+
+    public static void EnsureCanCreate(ClaimsPrincipal principal, DocumentSourceType sourceType)
+    {
+        if (sourceType == DocumentSourceType.Archive)
+            RequireGrant(principal, DocumentPermissions.Create);
+    }
+
+    public static void EnsureCanMutate(ClaimsPrincipal principal, DocumentAggregate document, bool isCreator, string permission)
+    {
+        if (OwnsPersonal(document, isCreator))
+            return;
+        RequireGrant(principal, permission);
+    }
+
+    public static void RequireGrant(ClaimsPrincipal principal, string permission)
+    {
+        if (!HasGrant(principal, permission))
+            throw new AbpAuthorizationException($"Permission '{permission}' is required.");
+    }
 
     public static bool CanView(DocumentAggregate document, Guid userId, ClaimsPrincipal principal)
     {
@@ -126,8 +147,7 @@ internal static class DocumentAccess
         if (isCreator) return true;
         if (document.SourceType == DocumentSourceType.Personal) return false;
         if (document.SourceType == DocumentSourceType.Archive)
-            return IsElevated(principal)
-                || HasGrant(principal, DocumentPermissions.Update)
+            return HasGrant(principal, DocumentPermissions.Update)
                 || HasGrant(principal, DocumentPermissions.Assign);
         return IsElevated(principal);
     }

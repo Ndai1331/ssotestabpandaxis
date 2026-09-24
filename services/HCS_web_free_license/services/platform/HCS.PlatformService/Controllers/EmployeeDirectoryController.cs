@@ -17,6 +17,7 @@ public sealed record EmployeeDirectoryPageDto(IReadOnlyList<EmployeeDirectoryUse
 [Route("api/identity/employee-directory")]
 public sealed class EmployeeDirectoryController(
     IIdentityUserRepository identityUsers,
+    IOrganizationUnitRepository organizationUnits,
     HCSDbContext db) : ControllerBase
 {
     [HttpGet]
@@ -52,6 +53,37 @@ public sealed class EmployeeDirectoryController(
             cancellationToken: cancellationToken);
         var items = await MapUsersAsync(users, cancellationToken);
         return Ok(new EmployeeDirectoryPageDto(items, total, skip + items.Count < total));
+    }
+
+    // Read-only member list for the employee ratings department filter.
+    // Authenticated callers only; it does not grant department administration.
+    [HttpGet("organization-units/{organizationUnitId:guid}/members")]
+    public async Task<ActionResult<EmployeeDirectoryPageDto>> ListMembers(
+        Guid organizationUnitId,
+        [FromQuery] string? filter = null,
+        [FromQuery] int skipCount = 0,
+        [FromQuery] int maxResultCount = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var unit = await organizationUnits.FindAsync(organizationUnitId, includeDetails: false, cancellationToken);
+        if (unit is null)
+            return NotFound();
+
+        var max = Math.Clamp(maxResultCount, 1, 100);
+        var skip = Math.Max(0, skipCount);
+        var term = string.IsNullOrWhiteSpace(filter) ? null : filter.Trim();
+        var total = await organizationUnits.GetMembersCountAsync(unit, term, includeChildren: false, cancellationToken);
+        var members = await organizationUnits.GetMembersAsync(
+            unit,
+            sorting: nameof(IdentityUser.UserName),
+            maxResultCount: max,
+            skipCount: skip,
+            filter: term,
+            includeChildren: false,
+            includeDetails: false,
+            cancellationToken);
+        var items = await MapUsersAsync(members.Where(user => user.IsActive), cancellationToken);
+        return Ok(new EmployeeDirectoryPageDto(items, total, skip + members.Count < total));
     }
 
     [HttpGet("{userId:guid}")]

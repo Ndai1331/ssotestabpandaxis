@@ -9,6 +9,7 @@ using HCS.CollaborationService.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using StackExchange.Redis;
 using System.Net;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
@@ -58,9 +59,15 @@ public sealed class HCSCollaborationServiceModule : AbpModule
         var signalR = context.Services.AddSignalR();
         var redisConnection = configuration["Redis:Configuration"];
         if (!string.IsNullOrWhiteSpace(redisConnection))
+        {
+            context.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+                ConnectionMultiplexer.Connect(redisConnection));
             signalR.AddStackExchangeRedis(redisConnection, options =>
                 options.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal(
                     configuration["Redis:SignalRChannel"] ?? "hcs-collaboration"));
+        }
+        Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+            options.MultipartBodyLengthLimit = ChatAttachmentPolicy.RequestCeilingBytes);
         context.Services.AddHttpClient<IPushSender, FirebasePushSender>();
         context.Services.AddHttpClient<SocialLinkPreviewFetcher>(client =>
         {

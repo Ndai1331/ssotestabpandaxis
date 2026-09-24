@@ -19,6 +19,10 @@ public static class HCSSettings
     public const string KeycloakRoleMappings = Prefix + ".Authentication.Keycloak.RoleMappings";
     public const string KeycloakRevision = Prefix + ".Authentication.Keycloak.Revision";
     public const string AllowSigningFromDocuments = Prefix + ".Workflow.AllowSigningFromDocuments";
+    public const string ChatAttachmentMaxMegabytes = Prefix + ".Chat.AttachmentMaxMegabytes";
+    public const int ChatAttachmentMaxMegabytesDefault = 512;
+    public const int ChatAttachmentMaxMegabytesMin = 1;
+    public const int ChatAttachmentMaxMegabytesMax = 2048;
     public const string BrandingTitle = Prefix + ".Branding.Title";
     public const string BrandingDescription = Prefix + ".Branding.Description";
     public const string BrandingShowText = Prefix + ".Branding.ShowText";
@@ -46,4 +50,20 @@ public static class HCSSettings
 
     public static bool IsEnabledOrDefault(string? value) =>
         !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
+
+    public static int ParseChatAttachmentMaxMegabytes(string? value)
+    {
+        if (!int.TryParse(value, out var parsed))
+        {
+            return ChatAttachmentMaxMegabytesDefault;
+        }
+
+        return ClampChatAttachmentMaxMegabytes(parsed);
+    }
+
+    public static int ClampChatAttachmentMaxMegabytes(int megabytes) =>
+        Math.Clamp(megabytes, ChatAttachmentMaxMegabytesMin, ChatAttachmentMaxMegabytesMax);
+
+    public static long ChatAttachmentMaxBytes(int megabytes) =>
+        (long)ClampChatAttachmentMaxMegabytes(megabytes) * 1024 * 1024;
 }

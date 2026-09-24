@@ -1,6 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using HCS.Blazor.Client.Documents;
+using HCS.Blazor.Client.Services;
+using HCS.Blazor.Client.Work;
 using HCS.CollaborationService.Contracts;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -137,6 +142,342 @@ public partial class ChatWorkspace
     {
         CloseMessageMenu();
         OpenForward(message);
+    }
+
+    private Task OpenAssignTaskFromMenuAsync(ChatMessageDto message)
+    {
+        CloseMessageMenu();
+        return OpenAssignTaskAsync(message);
+    }
+
+    private bool NeedsTaskProjectPicker => selected?.ProjectId is null;
+
+    private Guid? PickedTaskProjectId =>
+        selected?.ProjectId
+        ?? (Guid.TryParse(taskProjectKey, out var projectId) && projectId != Guid.Empty ? projectId : null);
+
+    private Task OnTaskProjectChangedAsync() => LoadTaskAssigneesAsync();
+
+    private async Task LoadTaskAssigneesAsync()
+    {
+        var version = ++taskAssigneeLoadVersion;
+        var previous = taskAssigneeKey;
+        taskAssigneeIds.Clear();
+        taskAssigneeKey = string.Empty;
+        if (PickedTaskProjectId is not { } projectId)
+        {
+            return;
+        }
+
+        isLoadingTaskAssignees = true;
+        try
+        {
+            var detail = await Work.GetProjectAsync(projectId);
+            if (version != taskAssigneeLoadVersion)
+            {
+                return;
+            }
+
+            var ids = detail.Members
+                .Where(member => member.IsActive)
+                .Select(member => member.UserId)
+                .Append(detail.Project.OwnerUserId)
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList();
+            await ResolveUserNamesAsync(ids);
+            if (version != taskAssigneeLoadVersion)
+            {
+                return;
+            }
+
+            taskAssigneeIds.AddRange(ids
+                .OrderBy(id => id == currentUserId)
+                .ThenBy(MemberName, StringComparer.CurrentCultureIgnoreCase));
+
+            if (!string.IsNullOrEmpty(previous) && taskAssigneeIds.Any(id => id.ToString("D") == previous))
+            {
+                taskAssigneeKey = previous;
+            }
+            else if (selected is not null
+                     && DirectConversationUserId(selected) is { } counterpart
+                     && taskAssigneeIds.Contains(counterpart))
+            {
+                taskAssigneeKey = counterpart.ToString("D");
+            }
+            else
+            {
+                var others = taskAssigneeIds.Where(id => id != currentUserId).ToList();
+                if (others.Count == 1)
+                {
+                    taskAssigneeKey = others[0].ToString("D");
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            assignTaskError = BffErrorMapper.From(Localizer, exception, BffErrorKind.Load);
+        }
+        finally
+        {
+            if (version == taskAssigneeLoadVersion)
+            {
+                isLoadingTaskAssignees = false;
+            }
+        }
+    }
+
+    private async Task OpenAssignTaskAsync(ChatMessageDto? source)
+    {
+        if (selected is null || permissions?.CanSend != true)
+        {
+            return;
+        }
+
+        assignTaskSource = source;
+        assignTaskOpen = true;
+        assignTaskError = null;
+        isAssigningTask = false;
+        isLoadingTaskAssignees = false;
+        taskAssigneeIds.Clear();
+        taskTitle = TruncateTaskTitle(source is null ? string.Empty : ChatTaskCardMessage.Preview(source.Text));
+        if (string.IsNullOrWhiteSpace(taskTitle) && source is { Attachments.Count: > 0 })
+        {
+            taskTitle = TruncateTaskTitle(TitleFromFileName(source.Attachments[0].FileName));
+        }
+        taskNote = string.Empty;
+        taskDue = DateTime.Today.AddDays(7);
+        taskAssigneeKey = string.Empty;
+        taskProjectKey = selected.ProjectId?.ToString("D") ?? string.Empty;
+        taskProjects.Clear();
+        try
+        {
+            var page = await Work.GetProjectsAsync(new WorkListQuery(null, null, 0, 100));
+            taskProjects.AddRange(page.Items);
+            if (string.IsNullOrEmpty(taskProjectKey) && taskProjects.Count == 1)
+            {
+                taskProjectKey = taskProjects[0].Id.ToString("D");
+            }
+        }
+        catch (Exception exception)
+        {
+            assignTaskError = BffErrorMapper.From(Localizer, exception, BffErrorKind.Load);
+        }
+
+        await LoadTaskAssigneesAsync();
+    }
+
+    private void CloseAssignTask()
+    {
+        assignTaskOpen = false;
+        isAssigningTask = false;
+        isLoadingTaskAssignees = false;
+        assignTaskError = null;
+        assignTaskSource = null;
+        taskTitle = string.Empty;
+        taskNote = string.Empty;
+        taskAssigneeKey = string.Empty;
+        taskProjectKey = string.Empty;
+        taskProjects.Clear();
+        taskAssigneeIds.Clear();
+    }
+
+    private async Task OpenTaskViewAsync(Guid taskId)
+    {
+        if (taskId == Guid.Empty)
+        {
+            return;
+        }
+
+        try
+        {
+            if (taskViewModal is not null)
+            {
+                await taskViewModal.ShowAsync(taskId);
+            }
+        }
+        catch (Exception exception)
+        {
+            await UiMessageService.Error(BffErrorMapper.From(Localizer, exception, BffErrorKind.Load));
+        }
+    }
+
+    private async Task SubmitAssignTaskAsync()
+    {
+        if (selected is null || isAssigningTask)
+        {
+            return;
+        }
+
+        var title = taskTitle.Trim();
+        if (string.IsNullOrWhiteSpace(title)
+            || !Guid.TryParse(taskAssigneeKey, out var assigneeId)
+            || assigneeId == Guid.Empty)
+        {
+            assignTaskError = T("Chat:TaskNeed");
+            return;
+        }
+
+        var projectId = selected.ProjectId
+            ?? (Guid.TryParse(taskProjectKey, out var pickedProject) ? pickedProject : null);
+        if (projectId is not { } project)
+        {
+            assignTaskError = T("Chat:TaskNeedProject");
+            return;
+        }
+
+        isAssigningTask = true;
+        assignTaskError = null;
+        try
+        {
+            var start = DateTime.Today;
+            var due = taskDue.Date < start ? start : taskDue.Date;
+            var created = await Work.CreateTaskAsync(new CreateProjectTaskRequest(
+                project,
+                selected.Type == ConversationType.Task ? selected.TaskId : null,
+                $"CHAT-{Guid.NewGuid():N}"[..12],
+                title,
+                string.IsNullOrWhiteSpace(taskNote) ? null : taskNote.Trim(),
+                start,
+                due,
+                "Normal",
+                "New",
+                0));
+            try
+            {
+                await Work.AddAssignmentAsync(created.Id, new AddTaskAssignmentRequest(assigneeId, "Member"));
+            }
+            catch (Exception assignmentException)
+            {
+                assignTaskError = BffErrorMapper.From(Localizer, assignmentException, BffErrorKind.Save);
+            }
+
+            var fileFailures = await AttachMessageFilesToTaskAsync(created.Id, assignTaskSource);
+
+            var sent = await Client.SendMessageAsync(new SendMessageInput
+            {
+                ConversationId = selected.Id,
+                Text = ChatTaskCardMessage.Format(new ChatTaskCardMessage.Payload(
+                    created.Id,
+                    title,
+                    assigneeId,
+                    MemberName(assigneeId),
+                    DateOnly.FromDateTime(due),
+                    string.IsNullOrWhiteSpace(taskNote) ? null : taskNote.Trim())),
+                ClientMessageId = Guid.NewGuid(),
+                ReplyToMessageId = assignTaskSource?.Id
+            });
+            UpsertMessage(sent);
+            messageSkip = messages.Count;
+            totalMessageCount = Math.Max(totalMessageCount, messages.Count);
+            scrollToBottomAfterRender = true;
+            await Client.MarkReadAsync(selected.Id);
+            await PatchConversationFromMessageAsync(sent);
+            var assignmentWarning = assignTaskError;
+            CloseAssignTask();
+            if (!string.IsNullOrWhiteSpace(assignmentWarning))
+            {
+                await UiMessageService.Warn(assignmentWarning);
+            }
+
+            if (fileFailures > 0)
+            {
+                await UiMessageService.Warn(T("Chat:TaskAttachFromMessageFailed"));
+            }
+
+            await UiMessageService.Success(T("Chat:TaskCreated"));
+        }
+        catch (Exception exception)
+        {
+            assignTaskError = BffErrorMapper.From(Localizer, exception, BffErrorKind.Save);
+            if (string.Equals(assignTaskError, Localizer["Catalog:ValidationError"].Value, StringComparison.Ordinal)
+                || string.Equals(assignTaskError, Localizer["Catalog:SaveError"].Value, StringComparison.Ordinal))
+            {
+                assignTaskError = T("Chat:TaskCreateError");
+            }
+        }
+        finally
+        {
+            isAssigningTask = false;
+        }
+    }
+
+    private static string TruncateTaskTitle(string? text)
+    {
+        var value = (text ?? string.Empty).Trim();
+        if (value.Length == 0 || value == "…")
+        {
+            return string.Empty;
+        }
+
+        return value.Length <= 256 ? value : value[..256];
+    }
+
+    private async Task<int> AttachMessageFilesToTaskAsync(Guid taskId, ChatMessageDto? source)
+    {
+        if (source is null || source.IsDeleted || source.Attachments.Count == 0)
+        {
+            return 0;
+        }
+
+        var failed = 0;
+        foreach (var attachment in source.Attachments)
+        {
+            try
+            {
+                if (attachment.Id == Guid.Empty || attachment.Size > DocumentClient.MaxUploadBytes)
+                {
+                    failed++;
+                    continue;
+                }
+
+                var downloaded = await Client.DownloadAttachmentAsync(attachment.Id);
+                var fileName = string.IsNullOrWhiteSpace(attachment.FileName) ? downloaded.FileName : attachment.FileName;
+                var contentType = string.IsNullOrWhiteSpace(attachment.ContentType)
+                    ? downloaded.ContentType
+                    : attachment.ContentType;
+                var created = await Documents.CreateDocumentAsync(new CreateDocumentRequest(
+                    null,
+                    TitleFromFileName(fileName),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    DocumentSourceType.Personal));
+                try
+                {
+                    await Documents.UploadFileAsync(created.Id, downloaded.Bytes, fileName, contentType);
+                }
+                catch
+                {
+                    try { await Documents.DeleteDocumentAsync(created.Id); }
+                    catch { }
+                    throw;
+                }
+
+                await Work.AddTaskDocumentAsync(taskId, new AddTaskDocumentRequest(created.Id, created.Number));
+            }
+            catch (Exception exception)
+            {
+                LogChatError(exception, "Chat:TaskAttachFromMessageFailed");
+                failed++;
+            }
+        }
+
+        return failed;
+    }
+
+    private static string TitleFromFileName(string? fileName)
+    {
+        var name = (fileName ?? string.Empty).Trim();
+        if (name.Length == 0)
+        {
+            return "file";
+        }
+
+        var title = Path.GetFileNameWithoutExtension(name);
+        return string.IsNullOrWhiteSpace(title) ? name : title;
     }
 
     private async Task DeleteFromMenuAsync(ChatMessageDto message)
@@ -487,7 +828,7 @@ public partial class ChatWorkspace
 
     private static string PreviewText(string? text, string? fallback = null)
     {
-        var value = string.IsNullOrWhiteSpace(text) ? fallback : text;
+        var value = string.IsNullOrWhiteSpace(text) ? fallback : ChatTaskCardMessage.Preview(text);
         if (string.IsNullOrWhiteSpace(value) || value == ChatModerationRules.ForwardedPlaceholder)
         {
             return "…";

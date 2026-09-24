@@ -8,6 +8,7 @@ namespace HCS.DocumentService.Tests;
 public sealed class DocumentAccessTests
 {
     [Theory]
+    [InlineData(DocumentPermissions.Create)]
     [InlineData(DocumentPermissions.Update)]
     [InlineData(DocumentPermissions.Delete)]
     [InlineData(DocumentPermissions.ManageFiles)]
@@ -17,6 +18,21 @@ public sealed class DocumentAccessTests
         Assert.False(DocumentAccess.HasPermission(user, permission));
         ((ClaimsIdentity)user.Identity!).AddClaim(new Claim("permission", permission));
         Assert.True(DocumentAccess.HasPermission(user, permission));
+    }
+
+    [Fact]
+    public void Archive_browse_requires_view_grant_not_authenticated_fallback()
+    {
+        var employee = Principal(Guid.NewGuid(), role: "nhanvien");
+        Assert.True(DocumentAccess.HasPermission(employee, DocumentPermissions.View));
+        Assert.False(DocumentAccess.CanBrowseArchive(employee));
+        Assert.Throws<AbpAuthorizationException>(() => DocumentAccess.EnsureCanBrowseArchive(employee));
+        Assert.Throws<AbpAuthorizationException>(() =>
+            DocumentAccess.EnsureCanCreate(employee, DocumentSourceType.Archive));
+
+        ((ClaimsIdentity)employee.Identity!).AddClaim(new Claim("permission", DocumentPermissions.View));
+        Assert.True(DocumentAccess.CanBrowseArchive(employee));
+        DocumentAccess.EnsureCanBrowseArchive(employee);
     }
 
     [Fact]

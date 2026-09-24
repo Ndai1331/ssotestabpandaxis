@@ -15,16 +15,23 @@ public class SystemFeatureSettingsAppService(
     {
         var allowSigning = await settingManager.GetOrNullGlobalAsync(HCSSettings.AllowSigningFromDocuments);
         var enableReport = await settingManager.GetOrNullGlobalAsync(HCSSettings.LegacySigningReportEnabled);
+        var chatMax = await settingManager.GetOrNullGlobalAsync(HCSSettings.ChatAttachmentMaxMegabytes);
         return new SystemFeatureSettingsDto
         {
             AllowSigningFromDocuments = HCSSettings.IsEnabledOrDefault(allowSigning),
-            EnableProposalStatistics = HCSSettings.IsEnabledOrDefault(enableReport)
+            EnableProposalStatistics = HCSSettings.IsEnabledOrDefault(enableReport),
+            ChatAttachmentMaxMegabytes = HCSSettings.ParseChatAttachmentMaxMegabytes(chatMax)
         };
     }
 
     [Authorize(HCSPermissions.SystemBranding.Update)]
-    public Task UpdateGeneralAsync(UpdateGeneralSettingsDto input) =>
-        settingManager.SetGlobalAsync(
+    public async Task UpdateGeneralAsync(UpdateGeneralSettingsDto input)
+    {
+        await settingManager.SetGlobalAsync(
             HCSSettings.AllowSigningFromDocuments,
             input.AllowSigningFromDocuments ? "true" : "false");
+        await settingManager.SetGlobalAsync(
+            HCSSettings.ChatAttachmentMaxMegabytes,
+            HCSSettings.ClampChatAttachmentMaxMegabytes(input.ChatAttachmentMaxMegabytes).ToString());
+    }
 }

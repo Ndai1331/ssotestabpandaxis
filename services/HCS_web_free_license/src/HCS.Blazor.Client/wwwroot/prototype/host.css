@@ -137,7 +137,7 @@ body:has(.page-chat) {
   display: none !important;
 }
 
-.hcs-app-shell .page-chat button:not(.btn):not(.chat-send):not([role="menuitem"]):not(.doc-action):not(.chat-thumb):not(.chat-name-btn):not(.chat-pin-info) {
+.hcs-app-shell .page-chat button:not(.btn):not(.chat-send):not([role="menuitem"]):not(.doc-action):not(.chat-thumb):not(.chat-name-btn):not(.chat-pin-info):not(.msg-task-open) {
   -webkit-appearance: none !important;
   appearance: none !important;
   background: none;
@@ -409,13 +409,136 @@ body:has(.page-chat) {
   text-decoration: none;
 }
 
+.hcs-app-shell .page-chat a.msg-file:hover,
+.hcs-app-shell .page-chat a.msg-file:focus-visible {
+  color: inherit;
+  text-decoration: none;
+}
+
+.hcs-app-shell .page-chat .msg-task-open {
+  background: none;
+  border: 0;
+  color: var(--color-primary, #007f7c);
+  cursor: pointer;
+  height: auto;
+  min-height: 0 !important;
+  padding: 0;
+  text-decoration: none;
+}
+
+.hcs-app-shell .page-chat .msg-task-open:hover,
+.hcs-app-shell .page-chat .msg-task-open:focus-visible {
+  color: var(--color-primary-hover, #006866);
+}
+
+.hcs-app-shell .page-chat .chat-attach:hover,
+.hcs-app-shell .page-chat .chat-attach:focus-within,
+.hcs-app-shell .page-chat .chat-assign:hover:not(:disabled) {
+  background: var(--color-gray-100, #F1F5F9) !important;
+  color: var(--color-primary, #007f7c) !important;
+}
+
+.hcs-app-shell .page-chat .chat-attach-input:hover,
+.hcs-app-shell .page-chat .chat-attach-input:focus,
+.hcs-app-shell .page-chat .chat-attach-input:focus-visible {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
 .hcs-app-shell .page-chat .chat-info-actions .btn {
   width: 100%;
+}
+
+.hcs-app-shell .page-chat .chat-shell.is-info-open.chat-shell--compact-info {
+  grid-template-columns: 280px minmax(0, 1fr) 300px !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-avatar.lg,
+.hcs-app-shell .page-chat .chat-info--compact .hcs-chat__avatar-wrap .chat-avatar.lg,
+.hcs-app-shell .page-chat .chat-info--compact .hcs-chat__avatar-wrap--large .chat-avatar {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  font-size: 14px !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-name-btn,
+.hcs-app-shell .page-chat .chat-info--compact .chat-media-tab {
+  min-height: 28px !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-info-actions .btn {
+  height: auto !important;
+  min-height: 30px !important;
+  padding: 4px 10px !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-pin-info {
+  min-height: 30px !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-thumb {
+  border-radius: 6px !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-media-grid {
+  gap: 4px;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-media-grid.is-files {
+  grid-template-columns: 1fr !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-media-grid.is-files .chat-thumb-file {
+  aspect-ratio: auto;
+  flex-direction: row;
+  height: auto !important;
+  justify-content: flex-start;
+  min-height: 32px !important;
+  padding: 4px 8px !important;
+}
+
+.hcs-app-shell .page-chat .chat-info--compact .chat-thumb-ext {
+  height: 26px !important;
+  width: 22px !important;
+}
+
+.hcs-app-shell .page-chat a.chat-thumb-dl {
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  text-decoration: none;
+}
+
+.hcs-app-shell .page-chat .chat-thumb-wrap:hover a.chat-thumb-dl,
+.hcs-app-shell .page-chat .chat-thumb-wrap:focus-within a.chat-thumb-dl,
+.hcs-app-shell .page-chat a.chat-thumb-dl:focus-visible {
+  color: #fff !important;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hcs-app-shell .page-chat a.chat-thumb-dl:hover {
+  color: #fff !important;
+}
+
+@media (hover: none) {
+  .hcs-app-shell .page-chat a.chat-thumb-dl {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 @media (max-width: 1200px) and (min-width: 901px) {
   .hcs-app-shell .page-chat .chat-shell.is-info-open {
     grid-template-columns: minmax(0, 1fr) minmax(0, 390px) !important;
+  }
+
+  .hcs-app-shell .page-chat .chat-shell.is-info-open.chat-shell--compact-info {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 280px) !important;
   }
 }
 

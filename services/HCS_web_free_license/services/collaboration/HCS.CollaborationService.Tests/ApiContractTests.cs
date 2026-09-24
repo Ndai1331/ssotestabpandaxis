@@ -66,6 +66,15 @@ public sealed class ApiContractTests
     }
 
     [Fact]
+    public void Chat_upload_uses_the_configured_request_ceiling()
+    {
+        var bytes = typeof(ChatController).GetMethod(nameof(ChatController.Upload))!
+            .GetCustomAttributes(typeof(RequestSizeLimitAttribute), true)
+            .Cast<RequestSizeLimitAttribute>().Single().Bytes;
+        bytes.ShouldBe(ChatAttachmentPolicy.RequestCeilingBytes);
+    }
+
+    [Fact]
     public void Leave_accepts_optional_admin_transfer()
     {
         typeof(ChatController).GetMethod(nameof(ChatController.Leave))!.GetParameters()

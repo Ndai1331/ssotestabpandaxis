@@ -28,6 +28,10 @@
     grid-template-columns: 280px minmax(0, 1fr) 420px !important;
 }
 
+.hcs-chat-page ::deep .chat-shell.is-info-open.chat-shell--compact-info {
+    grid-template-columns: 280px minmax(0, 1fr) 300px !important;
+}
+
 .hcs-chat-page ::deep .chat-list,
 .hcs-chat-page ::deep .chat-thread,
 .hcs-chat-page ::deep .chat-info {
@@ -44,7 +48,23 @@
     display: none !important;
 }
 
-.hcs-chat-page ::deep button:not(.btn):not(.chat-send):not([role="menuitem"]):not(.doc-action):not(.chat-thumb):not(.chat-name-btn) {
+.hcs-chat-page ::deep .chat-info--compact .chat-avatar.lg {
+    font-size: 14px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    width: 44px !important;
+}
+
+.hcs-chat-page ::deep .chat-info--compact .chat-media-grid {
+    gap: 4px !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.hcs-chat-page ::deep .chat-info--compact .chat-media-grid.is-files {
+    grid-template-columns: 1fr !important;
+}
+
+.hcs-chat-page ::deep button:not(.btn):not(.chat-send):not([role="menuitem"]):not(.doc-action):not(.chat-thumb):not(.chat-name-btn):not(.msg-task-open) {
     -webkit-appearance: none;
     appearance: none;
     background: none;
@@ -103,6 +123,57 @@
     padding: 0 !important;
 }
 
+.hcs-chat-page ::deep .chat-attach,
+.hcs-chat-page ::deep .chat-assign {
+    background: var(--color-gray-50, #F8FAFC) !important;
+    color: var(--color-primary, #007f7c) !important;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.hcs-chat-page ::deep .chat-attach:hover,
+.hcs-chat-page ::deep .chat-attach:focus-within,
+.hcs-chat-page ::deep .chat-assign:hover:not(:disabled) {
+    background: var(--color-gray-100, #F1F5F9) !important;
+    color: var(--color-primary, #007f7c) !important;
+}
+
+.hcs-chat-page ::deep .chat-attach-input {
+    appearance: none;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    clip: auto !important;
+    cursor: pointer;
+    font-size: 0;
+    height: 100% !important;
+    inset: 0;
+    margin: 0 !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    opacity: 0 !important;
+    outline: none !important;
+    padding: 0 !important;
+    position: absolute;
+    width: 100% !important;
+    z-index: 1;
+}
+
+.hcs-chat-page ::deep .chat-attach-input:hover,
+.hcs-chat-page ::deep .chat-attach-input:focus,
+.hcs-chat-page ::deep .chat-attach-input:focus-visible {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.hcs-chat-page ::deep .chat-attach svg,
+.hcs-chat-page ::deep .chat-assign svg {
+    pointer-events: none;
+}
+
 .hcs-chat-page ::deep .chat-send {
     background: var(--color-primary, #007f7c) !important;
     border-radius: var(--radius-full, 9999px) !important;
@@ -148,6 +219,10 @@
 @media (max-width: 1200px) and (min-width: 901px) {
     .hcs-chat-page ::deep .chat-shell.is-info-open {
         grid-template-columns: minmax(0, 1fr) minmax(0, 390px) !important;
+    }
+
+    .hcs-chat-page ::deep .chat-shell.is-info-open.chat-shell--compact-info {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 280px) !important;
     }
 
     .hcs-chat-page ::deep .chat-shell.is-info-open .chat-list {

@@ -425,9 +425,10 @@
 
     private string ChatPreview(ChatMessageDto message)
     {
-        if (!string.IsNullOrWhiteSpace(message.Text))
+        var text = ChatTaskCardMessage.Preview(message.Text);
+        if (!string.IsNullOrWhiteSpace(text))
         {
-            return message.Text.Length <= 80 ? message.Text : message.Text[..80] + "…";
+            return text.Length <= 80 ? text : text[..80] + "…";
         }
 
         return message.Attachments.FirstOrDefault()?.FileName ?? L["Chat:NewMessage"];

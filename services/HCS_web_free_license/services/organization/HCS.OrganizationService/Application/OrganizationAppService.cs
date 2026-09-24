@@ -469,8 +469,8 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     private async Task ValidateMappingAsync(UpsertUserOrganizationMappingDto input, Guid? currentId, CancellationToken ct)
     {
-        if (input.DepartmentId is { } departmentId)
-            await EnsureMappingDepartmentExistsAsync(departmentId, ct);
+        if (input.DepartmentId.HasValue)
+            await EnsureMappingDepartmentExistsAsync(input, ct);
         else if (input.UnitId.HasValue)
             throw new BusinessException(OrganizationErrorCodes.UnitDepartmentMismatch);
         if (input.UnitId.HasValue && !await _db.Units.AnyAsync(x => x.Id == input.UnitId && x.DepartmentId == input.DepartmentId, ct))
@@ -483,6 +483,12 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
                 x.UserId == input.UserId && x.DepartmentId == input.DepartmentId &&
                 x.UnitId == input.UnitId && x.PositionId == input.PositionId && x.Id != currentId, ct))
             throw new BusinessException(OrganizationErrorCodes.DuplicateUserMapping);
+    }
+
+    private static string Clip(string value, int maxLength)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength];
     }
 
     private async Task EnsureDepartmentParentAsync(Guid? departmentId, Guid? parentId, CancellationToken ct)
@@ -512,9 +518,16 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
             throw new BusinessException(OrganizationErrorCodes.InvalidDepartment).WithData("DepartmentId", id.Value);
     }
 
-    private async Task EnsureMappingDepartmentExistsAsync(Guid id, CancellationToken ct)
+    private async Task EnsureMappingDepartmentExistsAsync(UpsertUserOrganizationMappingDto input, CancellationToken ct)
     {
-        if (await _db.Departments.AnyAsync(x => x.Id == id, ct))
+        if (input.DepartmentId is not { } id || id == Guid.Empty)
+        {
+            throw new BusinessException(OrganizationErrorCodes.InvalidDepartment)
+                .WithData("DepartmentId", input.DepartmentId);
+        }
+
+        if (await _db.Departments.AnyAsync(x => x.Id == id, ct)
+            || _db.Departments.Local.Any(x => x.Id == id))
         {
             return;
         }
@@ -524,7 +537,20 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
             return;
         }
 
-        throw new BusinessException(OrganizationErrorCodes.InvalidDepartment).WithData("DepartmentId", id);
+        var fallbackCode = Clip($"OU-{id:N}", OrganizationConsts.MaxCodeLength);
+        var code = string.IsNullOrWhiteSpace(input.DepartmentCode)
+            ? fallbackCode
+            : Clip(input.DepartmentCode, OrganizationConsts.MaxCodeLength);
+        if (await _db.Departments.AnyAsync(x => x.Code == code, ct)
+            || _db.Departments.Local.Any(x => string.Equals(x.Code, code, StringComparison.Ordinal)))
+        {
+            code = fallbackCode;
+        }
+
+        var name = string.IsNullOrWhiteSpace(input.DepartmentName)
+            ? code
+            : Clip(input.DepartmentName, OrganizationConsts.MaxNameLength);
+        _db.Departments.Add(new Department(id, code, name, null, 0, true));
     }
 
     private static async Task EnsureUniqueCodeAsync<TEntity>(DbSet<TEntity> set, string code, Guid? currentId, CancellationToken ct)

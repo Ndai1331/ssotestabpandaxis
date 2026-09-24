@@ -1441,6 +1441,22 @@
   height: 14px;
 }
 
+.comment-react-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.comment-react-summary svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
 .comment-compose {
   display: flex;
   align-items: center;

@@ -297,7 +297,7 @@ body:has(.hcs-public-shell) .hcs-boot-screen {
 .hcs-app-shell .form-select,
 .hcs-app-shell .input-group-text,
 .hcs-app-shell select:not([multiple]),
-.hcs-app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.hcs-app-shell input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]),
 .hcs-app-shell .b-is-datepicker .form-control,
 .hcs-app-shell .numeric-picker,
 .hcs-app-shell .select2-container .select2-selection {

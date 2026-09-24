@@ -221,9 +221,10 @@
                                                      Placeholder="@L["Account:PhonePlaceholder"]" />
                             </Field>
                             <Field>
-                                <FieldLabel>Chức vụ</FieldLabel>
-                                <select class="form-select" value="@userForm.PositionId" @onchange="OnPositionChanged">
-                                    <option value="">Chọn giá trị</option>
+                                <FieldLabel>@L["Social:Position"]</FieldLabel>
+                                <select class="form-select" value="@(userForm.PositionId?.ToString("D") ?? "")"
+                                        @onchange="OnUserPositionChanged">
+                                    <option value="">@L["Catalog:ChooseValue"]</option>
                                     @foreach (var position in positions)
                                     {
                                         <option value="@position.Id.ToString("D")">@position.Code — @position.Name</option>
@@ -589,10 +590,7 @@
 
             var mappings = await IdentityClient.GetUserMappingsAsync(latest.Id);
             var mapping = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
-            if (mapping?.PositionId is { } positionId)
-            {
-                userForm.PositionId = positionId.ToString("D");
-            }
+            userForm.PositionId = mapping?.PositionId;
         }
         catch (IdentityAdminApiException exception)
         {
@@ -696,6 +694,10 @@
 
                 secondaryError ??= FriendlyApiError(exception, "Users:SaveError");
             }
+            catch (InvalidOperationException exception)
+            {
+                secondaryError ??= exception.Message;
+            }
 
             await CloseUserModalAsync();
             if (secondaryError is null)
@@ -744,17 +746,31 @@
         return InvokeAsync(StateHasChanged);
     }
 
-    private void OnPositionChanged(ChangeEventArgs args) =>
-        userForm.PositionId = args.Value?.ToString() ?? string.Empty;
+    private void OnUserPositionChanged(ChangeEventArgs args)
+    {
+        userForm.PositionId = Guid.TryParse(args.Value?.ToString(), out var positionId) ? positionId : null;
+    }
 
     private async Task SyncOrganizationMappingAsync(Guid userId)
     {
-        Guid? positionId = Guid.TryParse(userForm.PositionId, out var parsedPositionId) ? parsedPositionId : null;
+        var positionId = userForm.PositionId is { } parsed && parsed != Guid.Empty ? parsed : (Guid?)null;
         var mappings = await IdentityClient.GetUserMappingsAsync(userId);
         var primary = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
-        Guid? departmentId = primary?.DepartmentId is { } current && userForm.DepartmentIds.Contains(current)
-            ? current
-            : userForm.DepartmentIds.Count == 0 ? null : userForm.DepartmentIds.First();
+        var departmentId = ResolveMappingDepartmentId(primary);
+        if (departmentId is null)
+        {
+            if (positionId is not null)
+            {
+                throw new InvalidOperationException(L["Users:PositionRequiresDepartment"].Value);
+            }
+
+            return;
+        }
+
+        var catalog = departments.FirstOrDefault(item => item.Id == departmentId.Value);
+        var departmentCode = catalog?.Code;
+        var departmentName = catalog is null ? null : OrganizationUnitCatalogMapper.DisplayText(catalog);
+
         if (primary is null)
         {
             if (positionId is null)
@@ -762,7 +778,8 @@
                 return;
             }
 
-            await IdentityClient.CreateUserMappingAsync(userId, departmentId, positionId);
+            await IdentityClient.CreateUserMappingAsync(
+                userId, departmentId, positionId, departmentCode, departmentName);
             return;
         }
 
@@ -771,7 +788,19 @@
             return;
         }
 
-        await IdentityClient.UpdateUserMappingAsync(primary.Id, userId, departmentId, positionId, primary.UnitId);
+        await IdentityClient.UpdateUserMappingAsync(
+            primary.Id, userId, departmentId, positionId, primary.UnitId, departmentCode, departmentName);
+    }
+
+    private Guid? ResolveMappingDepartmentId(IdentityAdminUserMappingDto? primary)
+    {
+        if (primary?.DepartmentId is { } current
+            && (userForm.DepartmentIds.Count == 0 || userForm.DepartmentIds.Contains(current)))
+        {
+            return current;
+        }
+
+        return userForm.DepartmentIds.Count > 0 ? userForm.DepartmentIds.First() : primary?.DepartmentId;
     }
 
     private async Task DeleteUserAsync(IdentityAdminUserDto user)
@@ -836,6 +865,13 @@
         if ((userForm.PhoneNumber?.Trim().Length ?? 0) > IdentityUserConsts.MaxPhoneNumberLength)
         {
             return L["Account:PhoneTooLong", IdentityUserConsts.MaxPhoneNumberLength];
+        }
+
+        if (userForm.PositionId is { } positionId
+            && positionId != Guid.Empty
+            && userForm.DepartmentIds.Count == 0)
+        {
+            return L["Users:PositionRequiresDepartment"];
         }
 
         return null;

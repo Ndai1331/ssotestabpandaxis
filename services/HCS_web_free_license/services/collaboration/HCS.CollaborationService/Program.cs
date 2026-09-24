@@ -1,5 +1,6 @@
 using Serilog;
 using Volo.Abp;
+using HCS.CollaborationService.Contracts;
 using HCS.CollaborationService.Data;
 using HCS.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,8 @@ public static class Program
         try
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.WebHost.ConfigureKestrel(options =>
+                options.Limits.MaxRequestBodySize = ChatAttachmentPolicy.RequestCeilingBytes);
             builder.Host.UseAutofac().UseSerilog((context, services, logger) => logger
                 .ReadFrom.Configuration(context.Configuration).ReadFrom.Services(services).Enrich.FromLogContext()
                 .WriteToHcsSeq(context.Configuration, "HCS.CollaborationService"));

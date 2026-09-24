@@ -29,6 +29,21 @@ public sealed class EmployeeRatingDirectoryClient(IHttpClientFactory httpClientF
         return GetAsync<EmployeeDirectoryPageResponse>(uri, cancellationToken);
     }
 
+    public Task<EmployeeDirectoryPageResponse> GetByOrganizationUnitAsync(
+        Guid organizationUnitId,
+        string? filter = null,
+        int skipCount = 0,
+        int maxResultCount = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var skip = Math.Max(0, skipCount);
+        var take = Math.Clamp(maxResultCount, 1, 100);
+        var uri = $"/api/identity/employee-directory/organization-units/{organizationUnitId:D}/members?skipCount={skip}&maxResultCount={take}";
+        if (!string.IsNullOrWhiteSpace(filter))
+            uri += $"&filter={Uri.EscapeDataString(SearchText.Normalize(filter))}";
+        return GetAsync<EmployeeDirectoryPageResponse>(uri, cancellationToken);
+    }
+
     public Task<EmployeeDirectoryUserDto> GetAsync(Guid userId, CancellationToken cancellationToken = default) =>
         GetAsync<EmployeeDirectoryUserDto>($"/api/identity/employee-directory/{userId:D}", cancellationToken);
 

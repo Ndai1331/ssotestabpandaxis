@@ -23,8 +23,8 @@ public static class Program
                 // replaced with the Redis session-id cookie. 128 KB is a safety net.
                 options.Limits.MaxRequestHeadersTotalSize = 128 * 1024;
                 options.Limits.MaxRequestHeaderCount = 200;
-                // Document uploads allow 50 MB; leave headroom for multipart wrapping.
-                options.Limits.MaxRequestBodySize = 64 * 1024 * 1024;
+                // Chat attachments allow up to 2 GB via system configuration; leave headroom for multipart.
+                options.Limits.MaxRequestBodySize = 3L * 1024 * 1024 * 1024;
             });
             builder.Host
                 .UseAutofac()

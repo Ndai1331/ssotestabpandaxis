@@ -19,7 +19,7 @@ public sealed class CollaborationAttachmentStore(
     CollaborationDbContext db,
     ICurrentUser currentUser,
     IGuidGenerator guidGenerator,
-    IConfiguration configuration) : ITransientDependency
+    ChatAttachmentLimitStore limits) : ITransientDependency
 {
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -34,7 +34,7 @@ public sealed class CollaborationAttachmentStore(
         var userId = currentUser.Id ?? throw new AbpAuthorizationException();
         if (!await db.ConversationMembers.AnyAsync(x => x.ConversationId == conversationId && x.UserId == userId, ct))
             throw new AbpAuthorizationException();
-        var maxBytes = configuration.GetValue<long?>("AttachmentPolicy:MaxBytes") ?? 25 * 1024 * 1024;
+        var maxBytes = limits.GetMaxBytes();
         if (size <= 0 || size > maxBytes) throw new BusinessException("Collaboration:InvalidAttachmentSize");
         if (string.IsNullOrWhiteSpace(contentType) || contentType.Length > 128)
             throw new BusinessException("Collaboration:InvalidAttachmentType");

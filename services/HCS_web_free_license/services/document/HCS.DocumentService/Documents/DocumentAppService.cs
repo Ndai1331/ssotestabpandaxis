@@ -24,6 +24,8 @@ public sealed class DocumentAppService(
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
         DocumentAccess.RequirePermission(principal, DocumentPermissions.View);
+        if (sourceType == 0)
+            DocumentAccess.EnsureCanBrowseArchive(principal);
         take = Math.Clamp(take, 1, 100);
         skip = Math.Max(skip, 0);
         // List responses do not need the full file/assignment/history collections.
@@ -65,9 +67,9 @@ public sealed class DocumentAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.Create);
-        var now = DateTime.UtcNow;
         var sourceType = input.SourceType is DocumentSourceType.Personal ? DocumentSourceType.Personal : DocumentSourceType.Archive;
+        DocumentAccess.EnsureCanCreate(principal, sourceType);
+        var now = DateTime.UtcNow;
         for (var attempt = 0; attempt < 3; attempt++)
         {
             var number = attempt == 0 ? ResolveNumber(input.Number, now) : GenerateNumber(now, attempt);
@@ -111,9 +113,10 @@ public sealed class DocumentAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
         var document = await LoadAsync(id, cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
+        var isCreator = DocumentAccess.IsCreator(document, userId);
+        DocumentAccess.EnsureCanMutate(principal, document, isCreator, DocumentPermissions.Update);
+        DocumentAccess.EnsureCanManage(document, userId, principal, isCreator);
         var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
         var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         document.Update(input.Title, input.Description, userId, DateTime.UtcNow);
@@ -162,9 +165,10 @@ public sealed class DocumentAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        DocumentAccess.RequirePermission(principal, DocumentPermissions.Update);
         var document = await LoadAsync(id, cancellationToken);
-        DocumentAccess.EnsureCanManage(document, userId, principal);
+        var isCreator = DocumentAccess.IsCreator(document, userId);
+        DocumentAccess.EnsureCanMutate(principal, document, isCreator, DocumentPermissions.Update);
+        DocumentAccess.EnsureCanManage(document, userId, principal, isCreator);
         var existingAssignmentIds = document.Assignments.Select(x => x.Id).ToHashSet();
         var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         document.Submit(userId, DateTime.UtcNow);
@@ -248,7 +252,6 @@ public sealed class DocumentAppService(
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
-        if (!submission) DocumentAccess.RequirePermission(principal, DocumentPermissions.Delete);
         await using var transaction = submission && db.Database.IsRelational()
             ? await DocumentTransaction.BeginIfNeededAsync(db.Database, cancellationToken)
             : null;
@@ -265,6 +268,8 @@ public sealed class DocumentAppService(
         var isCreator = await db.DocumentHistories.AsNoTracking().AnyAsync(
             x => x.DocumentId == id && x.Action == DocumentAccess.CreatedAction && x.ActorUserId == userId,
             cancellationToken);
+        if (!submission)
+            DocumentAccess.EnsureCanMutate(principal, document, isCreator, DocumentPermissions.Delete);
         DocumentAccess.EnsureCanManage(document, userId, principal, isCreator);
         var workflowInstances = await db.WorkflowInstances.AsNoTracking().Include(x => x.Tasks)
             .Where(x => x.DocumentId == id).ToListAsync(cancellationToken);

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -18,7 +17,6 @@ namespace HCS.Blazor.Client.Collaboration;
 
 internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
 {
-    private const long MaxAttachmentSize = 25 * 1024 * 1024;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNameCaseInsensitive = true
@@ -205,20 +203,23 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
     public async Task<UploadAttachmentResult> UploadAttachmentAsync(
         Guid conversationId,
         IBrowserFile file,
+        long maxBytes,
         CancellationToken cancellationToken = default)
     {
-        if (file.Size > MaxAttachmentSize)
+        if (maxBytes <= 0)
         {
-            throw new CollaborationApiException(HttpStatusCode.RequestEntityTooLarge, "Attachment exceeds the 25 MB limit.");
+            maxBytes = ChatAttachmentPolicy.ToBytes(ChatAttachmentPolicy.DefaultMegabytes);
+        }
+
+        if (file.Size > maxBytes)
+        {
+            throw new CollaborationApiException(HttpStatusCode.RequestEntityTooLarge, "Attachment exceeds the configured size limit.");
         }
 
         using var content = new MultipartFormDataContent();
-        await using var source = file.OpenReadStream(MaxAttachmentSize, cancellationToken);
-        await using var buffer = new MemoryStream();
-        await source.CopyToAsync(buffer, cancellationToken);
-        buffer.Position = 0;
-        using var fileContent = new StreamContent(buffer);
-        fileContent.Headers.ContentLength = buffer.Length;
+        await using var source = file.OpenReadStream(maxBytes, cancellationToken);
+        using var fileContent = new StreamContent(source);
+        fileContent.Headers.ContentLength = file.Size;
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
         content.Add(fileContent, "file", file.Name);
@@ -228,6 +229,32 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
         await EnsureSuccessAsync(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<UploadAttachmentResult>(JsonOptions, cancellationToken)
             ?? throw new CollaborationApiException(HttpStatusCode.NoContent, "The gateway returned an empty attachment response.");
+    }
+
+    public Task<ChatAttachmentPolicyDto> GetAttachmentPolicyAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<ChatAttachmentPolicyDto>("api/chat/attachment-policy", cancellationToken);
+
+    public async Task UpdateAttachmentPolicyAsync(int maxMegabytes, CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().PutAsJsonAsync(
+            "api/chat/attachment-policy",
+            new ChatAttachmentPolicyDto(ChatAttachmentPolicy.ClampMegabytes(maxMegabytes)),
+            cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
+    public async Task<ChatAttachmentContent> DownloadAttachmentAsync(
+        Guid attachmentId,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().GetAsync($"api/chat/attachments/{attachmentId:D}", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? "file";
+        return new ChatAttachmentContent(bytes, fileName, contentType);
     }
 
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)
@@ -287,3 +314,5 @@ public sealed class CollaborationApiException(HttpStatusCode statusCode, string?
     public HttpStatusCode StatusCode { get; } = statusCode;
     public string? ResponseBody { get; } = responseBody;
 }
+
+public sealed record ChatAttachmentContent(byte[] Bytes, string FileName, string ContentType);

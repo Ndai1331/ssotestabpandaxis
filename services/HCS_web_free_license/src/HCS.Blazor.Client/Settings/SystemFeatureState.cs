@@ -15,6 +15,8 @@ public sealed class SystemFeatureState(SystemFeatureSettingsClient client) : IAs
 
     public bool AllowSigningFromDocuments { get; private set; } = true;
     public bool EnableProposalStatistics { get; private set; } = true;
+    public int ChatAttachmentMaxMegabytes { get; private set; } = HCSSettings.ChatAttachmentMaxMegabytesDefault;
+    public long ChatAttachmentMaxBytes => HCSSettings.ChatAttachmentMaxBytes(ChatAttachmentMaxMegabytes);
 
     public async Task EnsureLoadedAsync(CancellationToken cancellationToken = default)
     {
@@ -29,15 +31,22 @@ public sealed class SystemFeatureState(SystemFeatureSettingsClient client) : IAs
 
     public void Apply(SystemFeatureSettingsDto snapshot)
     {
-        if (snapshot is null ||
-            (snapshot.AllowSigningFromDocuments == AllowSigningFromDocuments &&
-             snapshot.EnableProposalStatistics == EnableProposalStatistics))
+        if (snapshot is null)
+        {
+            return;
+        }
+
+        var chatMax = HCSSettings.ClampChatAttachmentMaxMegabytes(snapshot.ChatAttachmentMaxMegabytes);
+        if (snapshot.AllowSigningFromDocuments == AllowSigningFromDocuments &&
+            snapshot.EnableProposalStatistics == EnableProposalStatistics &&
+            chatMax == ChatAttachmentMaxMegabytes)
         {
             return;
         }
 
         AllowSigningFromDocuments = snapshot.AllowSigningFromDocuments;
         EnableProposalStatistics = snapshot.EnableProposalStatistics;
+        ChatAttachmentMaxMegabytes = chatMax;
         Changed?.Invoke(this, EventArgs.Empty);
     }
 

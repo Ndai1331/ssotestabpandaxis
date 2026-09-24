@@ -174,6 +174,38 @@ public sealed class DomainBehaviorTests
     }
 
     [Fact]
+    public void Chat_task_card_round_trips_payload_and_preview()
+    {
+        var taskId = Guid.NewGuid();
+        var assigneeId = Guid.NewGuid();
+        var payload = new ChatTaskCardMessage.Payload(
+            taskId, "Soạn tờ trình", assigneeId, "Nguyễn Văn A", new DateOnly(2026, 9, 30), "Gấp");
+        var text = ChatTaskCardMessage.Format(payload);
+        text.ShouldStartWith(ChatTaskCardMessage.Prefix);
+        ChatTaskCardMessage.TryParse(text, out var parsed).ShouldBeTrue();
+        parsed.ShouldNotBeNull();
+        parsed!.TaskId.ShouldBe(taskId);
+        parsed.Title.ShouldBe("Soạn tờ trình");
+        parsed.AssigneeUserId.ShouldBe(assigneeId);
+        parsed.AssigneeName.ShouldBe("Nguyễn Văn A");
+        parsed.DueDate.ShouldBe(new DateOnly(2026, 9, 30));
+        parsed.Note.ShouldBe("Gấp");
+        ChatTaskCardMessage.Preview(text).ShouldBe("Soạn tờ trình");
+        ChatTaskCardMessage.TryParse("hello", out _).ShouldBeFalse();
+        ChatTaskCardMessage.TryParse("hcs.task:{bad", out _).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Chat_attachment_policy_clamps_megabytes_to_the_admin_range()
+    {
+        ChatAttachmentPolicy.ClampMegabytes(0).ShouldBe(ChatAttachmentPolicy.MinMegabytes);
+        ChatAttachmentPolicy.ClampMegabytes(25).ShouldBe(25);
+        ChatAttachmentPolicy.ClampMegabytes(512).ShouldBe(512);
+        ChatAttachmentPolicy.ClampMegabytes(10_000).ShouldBe(ChatAttachmentPolicy.MaxMegabytes);
+        ChatAttachmentPolicy.ToBytes(1).ShouldBe(1024 * 1024);
+    }
+
+    [Fact]
     public void Push_token_can_be_safely_reassigned_without_mutating_the_provider_token()
     {
         var firstUser = Guid.NewGuid(); var nextUser = Guid.NewGuid();

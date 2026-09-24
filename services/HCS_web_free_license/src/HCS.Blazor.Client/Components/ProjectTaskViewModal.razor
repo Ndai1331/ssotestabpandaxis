@@ -44,14 +44,18 @@
                                 </div>
                                 <Field>
                                     <FieldLabel>@L["Work:ProgressPercent"] · @progress%</FieldLabel>
-                                    <input type="range" class="w-100" min="0" max="100" step="5"
-                                           value="@progress"
-                                           @oninput="args => OnProgressInput(args)" />
+                                    <div class="hcs-progress-slider">
+                                        <input type="range" class="hcs-progress-range" min="0" max="100" step="5"
+                                               value="@progress"
+                                               style="@($"--hcs-progress:{progress}%")"
+                                               aria-valuemin="0" aria-valuemax="100" aria-valuenow="@progress"
+                                               aria-label="@L["Work:ProgressPercent"]"
+                                               disabled="@(isSaving || isSavingProgress)"
+                                               @oninput="OnProgressInput"
+                                               @onchange="OnProgressCommitAsync" />
+                                        <span class="hcs-progress-slider__value">@progress%</span>
+                                    </div>
                                 </Field>
-                                <a class="btn btn-outline-primary btn-sm" href="@($"/project-task-detail/{detail.Task.Id}")">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-                                    @L["Work:ViewDetail"]
-                                </a>
                             </div>
                         </TabPanel>
                         <TabPanel Name="assignments">
@@ -118,6 +122,13 @@
             }
         </ModalBody>
         <ModalFooter Class="hcs-catalog-modal__footer">
+            @if (detail is not null)
+            {
+                <a class="btn hcs-decision-secondary hcs-catalog-view-detail" href="@($"/project-task-detail/{detail.Task.Id}")">
+                    <i class="fa fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    @L["Work:ViewDetail"]
+                </a>
+            }
             <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="HideAsync">@L["Catalog:Cancel"]</Button>
             <Button Color="Color.Primary" Class="hcs-catalog-save" Clicked="SaveAsync" Disabled="@isSaving">@L["Catalog:SaveChanges"]</Button>
         </ModalFooter>
@@ -152,6 +163,7 @@
     private Guid? assigneeId;
     private string assignmentType = "Member";
     private bool isSaving;
+    private bool isSavingProgress;
 
     public async Task ShowAsync(Guid taskId)
     {
@@ -187,7 +199,42 @@
         if (int.TryParse(args.Value?.ToString(), out var value))
         {
             progress = Math.Clamp(value, 0, 100);
-            if (progress == 100) status = "Completed";
+            if (progress == 100)
+            {
+                status = "Completed";
+            }
+            else if (string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase))
+            {
+                status = "InProgress";
+            }
+        }
+    }
+
+    private async Task OnProgressCommitAsync(ChangeEventArgs args)
+    {
+        OnProgressInput(args);
+        if (detail is null || isSaving || isSavingProgress)
+        {
+            return;
+        }
+
+        isSavingProgress = true;
+        try
+        {
+            var updated = await Work.UpdateTaskAsync(detail.Task.Id, new UpdateProjectTaskRequest(
+                title.Trim(), string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+                startDate, dueDate, priority, status, progress));
+            detail = detail with { Task = updated };
+            Bind(updated);
+            await OnChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex, BffErrorKind.Save);
+        }
+        finally
+        {
+            isSavingProgress = false;
         }
     }
 

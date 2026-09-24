@@ -137,4 +137,6 @@ public sealed class UpsertUserOrganizationMappingDto
     public Guid? UnitId { get; set; }
     public Guid? PositionId { get; set; }
     public bool IsPrimary { get; set; }
+    [StringLength(50)] public string? DepartmentCode { get; set; }
+    [StringLength(256)] public string? DepartmentName { get; set; }
 }

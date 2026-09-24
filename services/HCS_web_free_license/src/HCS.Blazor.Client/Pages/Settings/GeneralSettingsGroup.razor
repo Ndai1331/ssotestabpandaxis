@@ -1,8 +1,10 @@
+@using HCS.Blazor.Client.Collaboration
 @using HCS.Blazor.Client.Settings
 @using HCS.Settings
 @inherits HCSComponentBase
 @inject SystemFeatureSettingsClient SettingsClient
 @inject SystemFeatureState Features
+@inject CollaborationClient Collaboration
 
 <section class="hcs-general-settings" aria-labelledby="hcs-general-settings-title" aria-busy="@(isLoading || isSaving ? "true" : "false")">
     <h2 id="hcs-general-settings-title" class="sr-only">@L["Settings:GeneralGroup"]</h2>
@@ -44,6 +46,26 @@
                     <span>@(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsEnabled"] : L["Settings:AllowSigningFromDocumentsDisabled"])</span>
                 </button>
             </div>
+            <div class="hcs-settings-option">
+                <div>
+                    <h4>@L["Settings:ChatAttachmentMaxMegabytes"]</h4>
+                    <p id="hcs-chat-attachment-max-description">@L["Settings:ChatAttachmentMaxMegabytesDescription"]</p>
+                </div>
+                <label class="hcs-settings-number" for="hcs-chat-attachment-max">
+                    <span class="sr-only">@L["Settings:ChatAttachmentMaxMegabytes"]</span>
+                    <input class="input"
+                           id="hcs-chat-attachment-max"
+                           type="number"
+                           min="@HCSSettings.ChatAttachmentMaxMegabytesMin"
+                           max="@HCSSettings.ChatAttachmentMaxMegabytesMax"
+                           step="1"
+                           value="@chatAttachmentMaxMegabytes"
+                           aria-describedby="hcs-chat-attachment-max-description"
+                           disabled="@isSaving"
+                           @onchange="OnChatAttachmentMaxChanged" />
+                    <span>@L["Settings:ChatAttachmentMaxMegabytesUnit"]</span>
+                </label>
+            </div>
         </div>
 
         @if (ShowActions)
@@ -71,6 +93,7 @@
     private bool isSaving;
     private bool isDirty;
     private bool allowSigningFromDocuments = true;
+    private int chatAttachmentMaxMegabytes = HCSSettings.ChatAttachmentMaxMegabytesDefault;
     private string? errorMessage;
 
     protected override Task OnInitializedAsync() => LoadAsync();
@@ -83,6 +106,7 @@
         {
             var settings = await SettingsClient.GetAsync();
             allowSigningFromDocuments = settings.AllowSigningFromDocuments;
+            chatAttachmentMaxMegabytes = HCSSettings.ClampChatAttachmentMaxMegabytes(settings.ChatAttachmentMaxMegabytes);
             Features.Apply(settings);
             isDirty = false;
         }
@@ -94,6 +118,22 @@
         {
             isLoading = false;
         }
+    }
+
+    private void OnChatAttachmentMaxChanged(ChangeEventArgs args)
+    {
+        if (isSaving)
+        {
+            return;
+        }
+
+        if (int.TryParse(Convert.ToString(args.Value), out var value))
+        {
+            chatAttachmentMaxMegabytes = value;
+        }
+
+        isDirty = true;
+        errorMessage = null;
     }
 
     private void ToggleAllowSigningFromDocuments()
@@ -122,10 +162,14 @@
         errorMessage = null;
         try
         {
+            var megabytes = HCSSettings.ClampChatAttachmentMaxMegabytes(chatAttachmentMaxMegabytes);
+            chatAttachmentMaxMegabytes = megabytes;
             await SettingsClient.UpdateGeneralAsync(new UpdateGeneralSettingsDto
             {
-                AllowSigningFromDocuments = allowSigningFromDocuments
+                AllowSigningFromDocuments = allowSigningFromDocuments,
+                ChatAttachmentMaxMegabytes = megabytes
             });
+            await Collaboration.UpdateAttachmentPolicyAsync(megabytes);
             await Features.RefreshAsync();
             isDirty = false;
             return true;

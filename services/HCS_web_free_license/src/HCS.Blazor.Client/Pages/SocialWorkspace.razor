@@ -1427,12 +1427,11 @@
     {
         if (string.IsNullOrWhiteSpace(term))
         {
-            return new(topAuthors.Select(author => new CatalogSelect2Item(
-                author.UserId.ToString(),
-                author.DisplayName,
-                string.Format(L["Social:PostCount"].Value, author.PostCount),
-                null,
-                Initials(author.DisplayName))).ToList(), false);
+            var suggested = topAuthors
+                .Select(author => new SocialPersonDto(author.UserId, author.DisplayName, author.DisplayName, null, null, null))
+                .ToArray();
+            var enriched = await Social.AttachOrganizationAsync(suggested);
+            return new(enriched.Select(SidebarPersonItem).ToList(), false);
         }
 
         try
@@ -2440,6 +2439,18 @@
                             @L["Social:React"]
                         }
                     </button>
+                    @if (comment.Reactions.TotalCount > 0)
+                    {
+                        <span class="comment-react-summary" aria-label='@L["Social:ReactionSummary"]'>
+                            @foreach (var reaction in comment.Reactions.Counts.Take(3))
+                            {
+                                <span class="@ReactionColorClass(reaction.Type)" title='@($"{ReactionLabel(reaction.Type)} · {reaction.Count}")'>
+                                    @((MarkupString)ReactionGlyph(reaction.Type))
+                                </span>
+                            }
+                            <span>@comment.Reactions.TotalCount</span>
+                        </span>
+                    }
                     <div class="react-bar" role="listbox" aria-label='@L["Social:React"]'>
                         @foreach (var reactionType in ReactionTypes)
                         {

@@ -55,11 +55,11 @@ public sealed class HCSMenuContributor : IMenuContributor
         documents.AddItem(Item("HCS.Documents.Archive", "Quản lý tài liệu", "/manage-documents?sourceType=0", "fa fa-folder-open", 10)
             .RequirePermissions(HCSPermissions.Documents.View));
         documents.AddItem(Item("HCS.Documents.Personal", "Văn bản tôi tạo", "/manage-documents?sourceType=1", "fa fa-pen", 20)
-            .RequirePermissions(HCSPermissions.Documents.View));
+            .RequireAuthenticated());
         documents.AddItem(Item("HCS.Documents.SentToMe", "Văn bản của tôi", "/manage-documents?sourceType=2", "fa fa-inbox", 30)
-            .RequirePermissions(HCSPermissions.Documents.View));
+            .RequireAuthenticated());
         documents.AddItem(Item("HCS.Documents.Signing", "Ký duyệt", "/document-signing", "fa fa-signature", 40)
-            .RequirePermissions(false, HCSPermissions.Documents.View, HCSPermissions.Documents.SigningExecute));
+            .RequireAuthenticated());
         context.Menu.AddItem(documents);
 
         var workflows = Item("HCS.Workflows", "Quy trình", icon: "fa fa-arrow-trend-up", order: 150);

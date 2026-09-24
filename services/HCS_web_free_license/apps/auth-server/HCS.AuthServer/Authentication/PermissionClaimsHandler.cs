@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
+using HCS.Data;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Authorization.Permissions;
 using Volo.Abp.Identity;
@@ -51,15 +52,13 @@ public sealed class PermissionClaimResolver(
         var isAdmin = roles.Any(role => string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase));
 
         var grants = new HashSet<string>(StringComparer.Ordinal);
+        var loadedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var role in roles)
         {
-            var permissions = await permissionManager.GetAllForRoleAsync(role);
-            foreach (var permission in permissions)
+            await AddRoleGrantsAsync(grants, loadedRoles, role);
+            if (HCSRolePermissionSynchronizer.IsEmployeeRole(role))
             {
-                if (permission.IsGranted && IsValidPermissionName(permission.Name))
-                {
-                    grants.Add(permission.Name);
-                }
+                await AddRoleGrantsAsync(grants, loadedRoles, "nhanvien");
             }
         }
 
@@ -88,6 +87,26 @@ public sealed class PermissionClaimResolver(
         return isAdmin
             ? ordered.ToArray()
             : ordered.Take(MaxPermissionClaims).ToArray();
+    }
+
+    private async Task AddRoleGrantsAsync(
+        HashSet<string> grants,
+        HashSet<string> loadedRoles,
+        string role)
+    {
+        if (!loadedRoles.Add(role))
+        {
+            return;
+        }
+
+        var permissions = await permissionManager.GetAllForRoleAsync(role);
+        foreach (var permission in permissions)
+        {
+            if (permission.IsGranted && IsValidPermissionName(permission.Name))
+            {
+                grants.Add(permission.Name);
+            }
+        }
     }
 
     private static int PriorityRank(string permission)

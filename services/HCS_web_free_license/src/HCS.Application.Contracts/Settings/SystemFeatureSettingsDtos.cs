@@ -13,9 +13,11 @@ public sealed class SystemFeatureSettingsDto
 {
     public bool AllowSigningFromDocuments { get; set; } = true;
     public bool EnableProposalStatistics { get; set; } = true;
+    public int ChatAttachmentMaxMegabytes { get; set; } = HCSSettings.ChatAttachmentMaxMegabytesDefault;
 }
 
 public sealed class UpdateGeneralSettingsDto
 {
     public bool AllowSigningFromDocuments { get; set; } = true;
+    public int ChatAttachmentMaxMegabytes { get; set; } = HCSSettings.ChatAttachmentMaxMegabytesDefault;
 }

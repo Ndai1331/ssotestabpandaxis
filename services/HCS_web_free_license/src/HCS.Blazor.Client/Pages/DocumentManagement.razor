@@ -3,7 +3,7 @@
 @page "/document-assignments"
 @page "/document-files"
 @page "/document-histories"
-@attribute [Authorize(Policy = "Documents.View")]
+@attribute [Authorize]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject OrganizationCatalogClient Catalog
@@ -220,7 +220,7 @@
                                                 </Authorized>
                                             </AuthorizeView>
                                             }
-                                            @if (IsPersonal && canDeleteDocument)
+                                            @if (IsPersonal)
                                             {
                                                 <button class="doc-action is-danger" type="button" title="@L["Catalog:Delete"]" aria-label="@L["Catalog:Delete"]" @onclick="() => DeleteAsync(item)" disabled="@IsMutating(item.Id)">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>
@@ -321,6 +321,7 @@
         }
     }
     private bool canCreateArchive;
+    private bool canBrowseArchive;
     private bool canDeleteDocument;
     private bool IsPersonal => SourceType == 1;
     private bool CanCreate => IsPersonal || (canCreateArchive && SourceType == 0);
@@ -350,10 +351,19 @@
     {
         await Features.EnsureLoadedAsync();
         var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        canDeleteDocument = (await AuthorizationService.AuthorizeAsync(
-            authenticationState.User, null, HCSPermissions.Documents.Delete)).Succeeded;
-        canCreateArchive = (await AuthorizationService.AuthorizeAsync(
-            authenticationState.User, null, HCSPermissions.Documents.Create)).Succeeded;
+        var user = authenticationState.User;
+        var deleteTask = AuthorizationService.AuthorizeAsync(user, null, HCSPermissions.Documents.Delete);
+        var createTask = AuthorizationService.AuthorizeAsync(user, null, HCSPermissions.Documents.Create);
+        var viewTask = AuthorizationService.AuthorizeAsync(user, null, HCSPermissions.Documents.View);
+        await Task.WhenAll(deleteTask, createTask, viewTask);
+        canDeleteDocument = (await deleteTask).Succeeded;
+        canCreateArchive = (await createTask).Succeeded;
+        canBrowseArchive = (await viewTask).Succeeded;
+        if (SourceType == 0 && !canBrowseArchive)
+        {
+            Navigation.NavigateTo("/manage-documents?sourceType=1", replace: true);
+            return;
+        }
         await ReloadIfSourceChangedAsync(resetFilter: lastLoadedSource != int.MinValue);
     }
     protected override async Task OnAfterRenderAsync(bool firstRender) => await OpenInboxPreviewFromQueryAsync();
@@ -514,7 +524,7 @@
 
     private async Task DeleteAsync(DocumentDto item)
     {
-        if (!canDeleteDocument) return;
+        if (!IsPersonal && !canDeleteDocument) return;
         if (IsMutating(item.Id)) return;
         if (!await UiMessageService.Confirm(string.Format(L["Feature:DeleteDocumentConfirm"], item.Title))) return;
         mutatingIds.Add(item.Id);

@@ -125,7 +125,8 @@
             Features.Apply(new SystemFeatureSettingsDto
             {
                 AllowSigningFromDocuments = Features.AllowSigningFromDocuments,
-                EnableProposalStatistics = enabled
+                EnableProposalStatistics = enabled,
+                ChatAttachmentMaxMegabytes = Features.ChatAttachmentMaxMegabytes
             });
         }
         catch (Exception exception)
@@ -215,7 +216,8 @@
             Features.Apply(new SystemFeatureSettingsDto
             {
                 AllowSigningFromDocuments = Features.AllowSigningFromDocuments,
-                EnableProposalStatistics = enabled
+                EnableProposalStatistics = enabled,
+                ChatAttachmentMaxMegabytes = Features.ChatAttachmentMaxMegabytes
             });
             return true;
         }
