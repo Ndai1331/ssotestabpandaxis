@@ -6,6 +6,7 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
 @inject SystemFeatureState Features
 
 <PageTitle>@L["Menu:ProposalStatistics"] · HCS</PageTitle>
@@ -17,7 +18,7 @@
         </div>
         <div class="page-actions">
             <button class="btn btn-outline" type="button" @onclick="LoadAsync" disabled="@loading">@(loading ? "Đang tải…" : "Làm mới")</button>
-            <button class="btn btn-primary" type="button" @onclick="ExportAsync" disabled="@(loading || report is null)">Xuất Excel</button>
+            <button class="btn btn-primary" type="button" @onclick="ExportAsync" disabled="@(loading || exporting || report is null)">@(exporting ? "Đang xuất…" : "Xuất Excel")</button>
         </div>
     </div>
 
@@ -239,6 +240,7 @@
     private DateTime? toDate = DateTime.Today;
     private SigningKpiReportDto? report;
     private bool loading;
+    private bool exporting;
     private string? error;
 
     private List<string> PieLabels => report?.PieSlices.Select(x => x.Label).ToList() ?? [];
@@ -276,11 +278,24 @@
         finally { loading = false; }
     }
 
-    private Task ExportAsync()
+    private async Task ExportAsync()
     {
-        Navigation.NavigateTo(DocumentClient.GetSigningKpiExportUri(new SigningKpiQuery(null, fromDate?.Date,
-            toDate?.Date.AddDays(1).AddTicks(-1))), forceLoad: true);
-        return Task.CompletedTask;
+        if (exporting) return;
+        exporting = true;
+        try
+        {
+            var file = await Documents.DownloadSigningKpiExcelAsync(new SigningKpiQuery(null, fromDate?.Date,
+                toDate?.Date.AddDays(1).AddTicks(-1)));
+            await JsRuntime.InvokeVoidAsync("hcsDownloadBytes", file.FileName, file.ContentType, file.Bytes);
+        }
+        catch (Exception exception)
+        {
+            await NotifyErrorAsync(exception);
+        }
+        finally
+        {
+            exporting = false;
+        }
     }
 
     private static string FmtNum(long value) => value.ToString("N0", Vi);

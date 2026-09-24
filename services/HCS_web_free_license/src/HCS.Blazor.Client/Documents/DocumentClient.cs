@@ -299,6 +299,20 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 
     public static string GetSigningKpiExportUri(SigningKpiQuery query) => BuildSigningKpiUri("kpi/export", query);
 
+    public async Task<DocumentFileContent> DownloadSigningKpiExcelAsync(SigningKpiQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await CreateClient().GetAsync(GetSigningKpiExportUri(query), cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.MediaType
+            ?? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? $"bao_cao_trinh_ky_chi_tiet_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+        return new DocumentFileContent(bytes, contentType, fileName);
+    }
+
     public Task<List<UserSignatureDto>> GetSignaturesAsync(Guid? userId = null, CancellationToken cancellationToken = default) =>
         GetAsync<List<UserSignatureDto>>(SigningUserUri("/api/signing/signatures", userId), cancellationToken);
 
