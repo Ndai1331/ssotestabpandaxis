@@ -1,3 +1,4 @@
+using HCS.Coding;
 using HCS.OrganizationService.Contracts;
 using HCS.OrganizationService.Data;
 using HCS.OrganizationService.Domain;
@@ -17,6 +18,7 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     private readonly OrganizationDbContext _db;
     private readonly IGuidGenerator _guidGenerator;
     public IUnitDepartmentLookup UnitDepartmentLookup { get; set; } = default!;
+    public IAutoCodeSettings AutoCodeSettings { get; set; } = DefaultAutoCodeSettings.Instance;
 
     public OrganizationAppService(OrganizationDbContext db, IGuidGenerator guidGenerator)
     {
@@ -32,9 +34,10 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     public virtual async Task<DepartmentDto> CreateDepartmentAsync(UpsertDepartmentDto input, CancellationToken ct = default)
     {
-        await EnsureUniqueCodeAsync(_db.Departments, input.Code, null, ct);
+        var code = await ResolveCatalogCodeAsync(_db.Departments.Select(x => x.Code), input.Code, ct);
+        await EnsureUniqueCodeAsync(_db.Departments, code, null, ct);
         await EnsureDepartmentParentAsync(null, input.ParentId, ct);
-        var entity = new Department(_guidGenerator.Create(), input.Code, input.Name, input.ParentId, input.SortOrder, input.IsActive);
+        var entity = new Department(_guidGenerator.Create(), code, input.Name, input.ParentId, input.SortOrder, input.IsActive);
         _db.Departments.Add(entity);
         await _db.SaveChangesAsync(ct);
         return Map(entity);
@@ -43,9 +46,10 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     public virtual async Task<DepartmentDto> UpdateDepartmentAsync(Guid id, UpsertDepartmentDto input, CancellationToken ct = default)
     {
         var entity = await _db.Departments.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(Department), id);
-        await EnsureUniqueCodeAsync(_db.Departments, input.Code, id, ct);
+        var code = RequireCode(input.Code);
+        await EnsureUniqueCodeAsync(_db.Departments, code, id, ct);
         await EnsureDepartmentParentAsync(id, input.ParentId, ct);
-        entity.Update(input.Code, input.Name, input.ParentId, input.SortOrder, input.IsActive);
+        entity.Update(code, input.Name, input.ParentId, input.SortOrder, input.IsActive);
         await _db.SaveChangesAsync(ct);
         return Map(entity);
     }
@@ -61,8 +65,9 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     public virtual async Task<UnitDto> CreateUnitAsync(UpsertUnitDto input, CancellationToken ct = default)
     {
         await EnsureUnitDepartmentExistsAsync(input.DepartmentId, ct);
-        await EnsureUniqueCodeAsync(_db.Units, input.Code, null, ct);
-        var entity = new Unit(_guidGenerator.Create(), input.DepartmentId, input.Code, input.Name, input.SortOrder, input.IsActive);
+        var code = await ResolveCatalogCodeAsync(_db.Units.Select(x => x.Code), input.Code, ct);
+        await EnsureUniqueCodeAsync(_db.Units, code, null, ct);
+        var entity = new Unit(_guidGenerator.Create(), input.DepartmentId, code, input.Name, input.SortOrder, input.IsActive);
         _db.Units.Add(entity);
         await _db.SaveChangesAsync(ct);
         return Map(entity);
@@ -74,8 +79,9 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
         // Preserve legacy references until the user explicitly selects a new department.
         if (entity.DepartmentId != input.DepartmentId)
             await EnsureUnitDepartmentExistsAsync(input.DepartmentId, ct);
-        await EnsureUniqueCodeAsync(_db.Units, input.Code, id, ct);
-        entity.Update(input.DepartmentId, input.Code, input.Name, input.SortOrder, input.IsActive);
+        var code = RequireCode(input.Code);
+        await EnsureUniqueCodeAsync(_db.Units, code, id, ct);
+        entity.Update(input.DepartmentId, code, input.Name, input.SortOrder, input.IsActive);
         await _db.SaveChangesAsync(ct);
         return Map(entity);
     }
@@ -96,8 +102,9 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
 
     public virtual async Task<PositionDto> CreatePositionAsync(UpsertPositionDto input, CancellationToken ct = default)
     {
-        await EnsureUniqueCodeAsync(_db.Positions, input.Code, null, ct);
-        var entity = new Position(_guidGenerator.Create(), input.Code, input.Name, input.SignOrder, input.SortOrder, input.IsActive);
+        var code = await ResolveCatalogCodeAsync(_db.Positions.Select(x => x.Code), input.Code, ct);
+        await EnsureUniqueCodeAsync(_db.Positions, code, null, ct);
+        var entity = new Position(_guidGenerator.Create(), code, input.Name, input.SignOrder, input.SortOrder, input.IsActive);
         _db.Positions.Add(entity);
         await _db.SaveChangesAsync(ct);
         return Map(entity);
@@ -106,8 +113,9 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     public virtual async Task<PositionDto> UpdatePositionAsync(Guid id, UpsertPositionDto input, CancellationToken ct = default)
     {
         var entity = await _db.Positions.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(Position), id);
-        await EnsureUniqueCodeAsync(_db.Positions, input.Code, id, ct);
-        entity.Update(input.Code, input.Name, input.SignOrder, input.SortOrder, input.IsActive);
+        var code = RequireCode(input.Code);
+        await EnsureUniqueCodeAsync(_db.Positions, code, id, ct);
+        entity.Update(code, input.Name, input.SignOrder, input.SortOrder, input.IsActive);
         await _db.SaveChangesAsync(ct);
         return Map(entity);
     }
@@ -125,8 +133,10 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     public virtual async Task<MasterDataItemDto> CreateMasterDataAsync(UpsertMasterDataItemDto input, CancellationToken ct = default)
     {
         EnsureMasterDataTypeAllowed(input.Type);
-        await EnsureMasterDataUniqueAsync(input.Type, input.Code, null, ct);
-        var entity = new MasterDataItem(_guidGenerator.Create(), input.Type, input.Code, input.Name, input.SortOrder, input.IsActive);
+        var code = await ResolveCatalogCodeAsync(
+            _db.MasterDataItems.Where(x => x.Type == input.Type.Trim()).Select(x => x.Code), input.Code, ct);
+        await EnsureMasterDataUniqueAsync(input.Type, code, null, ct);
+        var entity = new MasterDataItem(_guidGenerator.Create(), input.Type, code, input.Name, input.SortOrder, input.IsActive);
         _db.MasterDataItems.Add(entity);
         await _db.SaveChangesAsync(ct);
         return Map(entity);
@@ -136,8 +146,9 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
     {
         var entity = await _db.MasterDataItems.FindAsync([id], ct) ?? throw new EntityNotFoundException(typeof(MasterDataItem), id);
         EnsureMasterDataTypeAllowed(input.Type);
-        await EnsureMasterDataUniqueAsync(input.Type, input.Code, id, ct);
-        entity.Update(input.Type, input.Code, input.Name, input.SortOrder, input.IsActive);
+        var code = RequireCode(input.Code);
+        await EnsureMasterDataUniqueAsync(input.Type, code, id, ct);
+        entity.Update(input.Type, code, input.Name, input.SortOrder, input.IsActive);
         await _db.SaveChangesAsync(ct);
         return Map(entity);
     }
@@ -551,6 +562,20 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
             ? code
             : Clip(input.DepartmentName, OrganizationConsts.MaxNameLength);
         _db.Departments.Add(new Department(id, code, name, null, 0, true));
+    }
+
+    private async Task<string> ResolveCatalogCodeAsync(IQueryable<string> existing, string? requested, CancellationToken ct)
+    {
+        var codes = await existing.ToListAsync(ct);
+        return await AutoCode.AllocateAsync(AutoCodeSettings, AutoCodeKind.Catalog, requested, codes, ct);
+    }
+
+    private static string RequireCode(string? code)
+    {
+        var normalized = AutoCode.NullIfEmpty(code);
+        if (normalized is null)
+            throw new BusinessException(OrganizationErrorCodes.DuplicateCode).WithData("Code", string.Empty);
+        return normalized;
     }
 
     private static async Task EnsureUniqueCodeAsync<TEntity>(DbSet<TEntity> set, string code, Guid? currentId, CancellationToken ct)

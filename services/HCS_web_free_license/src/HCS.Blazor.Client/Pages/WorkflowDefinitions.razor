@@ -3,6 +3,7 @@
 @inherits HCSComponentBase
 @inject DocumentClient Documents
 @inject IUiMessageService UiMessage
+@inject SystemFeatureState Features
 
 <PageTitle>@L["Menu:WorkflowDefinitions"] · HCS</PageTitle>
 <section class="page page-wf wf-kinds">
@@ -122,7 +123,7 @@
     <ModalBody Class="hcs-catalog-modal__body">
         <div class="hcs-catalog-form">
             <div class="hcs-form-row">
-                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsKindCode" MaxLength="64" Disabled="@(editing is not null)" /></Field>
+                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsKindCode" MaxLength="64" Disabled="@(editing is not null)" Placeholder="@(editing is null ? WorkflowCodePlaceholder : null)" /></Field>
                 <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsKindName" /></Field>
             </div>
             <Field><FieldLabel>@L["Work:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
@@ -139,6 +140,8 @@
     private readonly List<WorkflowKindDto> kinds = [];
     private List<WorkflowKindDto> pageItems = [];
     private readonly KindForm form = new();
+    private string? nextWorkflowCode;
+    private string WorkflowCodePlaceholder => nextWorkflowCode ?? Features.Prefix(AutoCodeKind.Workflow);
     private WorkflowKindDto? editing;
     private Modal? modal;
     private string filter = "", search = "", activeFilter = "";
@@ -207,7 +210,14 @@
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
     }
-    private async Task OpenCreate() { editing = null; form.Reset(); if (modal is not null) await modal.Show(); }
+    private async Task OpenCreate()
+    {
+        editing = null;
+        form.Reset();
+        nextWorkflowCode = null;
+        try { nextWorkflowCode = (await Documents.GetNextWorkflowCodeAsync()).Code; } catch { }
+        if (modal is not null) await modal.Show();
+    }
     private async Task Edit(WorkflowKindDto item)
     {
         editing = item;
@@ -216,15 +226,15 @@
     }
     private async Task SaveAsync()
     {
-        if (string.IsNullOrWhiteSpace(form.Code) || string.IsNullOrWhiteSpace(form.Name))
+        if (string.IsNullOrWhiteSpace(form.Name) || (editing is not null && string.IsNullOrWhiteSpace(form.Code)))
         {
-            await NotifyErrorAsync(L["Catalog:CodeNameRequired"]);
+            await NotifyErrorAsync(editing is null ? L["Catalog:NameRequired"] : L["Catalog:CodeNameRequired"]);
             return;
         }
         try
         {
             if (editing is null)
-                await Documents.CreateKindAsync(new CreateWorkflowKindRequest(form.Code.Trim(), form.Name.Trim(), form.Description, form.IsActive));
+                await Documents.CreateKindAsync(new CreateWorkflowKindRequest(string.IsNullOrWhiteSpace(form.Code) ? null : form.Code.Trim(), form.Name.Trim(), form.Description, form.IsActive));
             else
                 await Documents.UpdateKindAsync(editing.Id, new UpdateWorkflowKindRequest(form.Name.Trim(), form.Description, form.IsActive));
             if (modal is not null) await modal.Hide();

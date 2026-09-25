@@ -54,6 +54,12 @@ public sealed class HCSOrganizationServiceHostModule : AbpModule
         context.Services.AddHttpClient<Application.IUnitDepartmentLookup, HttpUnitDepartmentLookup>(client =>
             client.BaseAddress = new Uri(context.Services.GetConfiguration()["Services:Platform:BaseUrl"]
                 ?? throw new InvalidOperationException("Services:Platform:BaseUrl is required.")));
+        context.Services.AddHttpClient("HCS.Platform", client =>
+        {
+            var baseUrl = context.Services.GetConfiguration()["Services:Platform:BaseUrl"]
+                ?? throw new InvalidOperationException("Services:Platform:BaseUrl is required.");
+            client.BaseAddress = new Uri(baseUrl.EndsWith('/') ? baseUrl : baseUrl + "/");
+        });
         context.Services.AddAbpDbContext<OrganizationDbContext>();
         Configure<AbpDbContextOptions>(options =>
             options.Configure<OrganizationDbContext>(db => db.UseNpgsql()));

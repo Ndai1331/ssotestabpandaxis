@@ -67,14 +67,15 @@ public partial class OrganizationCatalog
         request = new object();
         validationMessage = string.Empty;
 
-        // Code/Name use HcsIsolatedTextInput (no Blazorise Validation) — enforce required here.
-        if (string.IsNullOrWhiteSpace(form.Code) || string.IsNullOrWhiteSpace(form.Name))
+        if (string.IsNullOrWhiteSpace(form.Name) || (editingId.HasValue && string.IsNullOrWhiteSpace(form.Code)))
         {
-            validationMessage = L["Catalog:ValidationError"].Value;
+            validationMessage = editingId.HasValue
+                ? L["Catalog:CodeNameRequired"].Value
+                : L["Catalog:NameRequired"].Value;
             return false;
         }
 
-        var code = form.Code.Trim();
+        var code = string.IsNullOrWhiteSpace(form.Code) ? null : form.Code.Trim();
         var name = form.Name.Trim();
 
         switch (Kind)

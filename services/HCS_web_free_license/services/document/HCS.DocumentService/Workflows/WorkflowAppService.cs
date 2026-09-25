@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using HCS.Coding;
 using HCS.DocumentService.Conversion;
 using HCS.DocumentService.Documents;
 using HCS.DocumentService.Storage;
@@ -11,17 +12,33 @@ using Volo.Abp.BlobStoring;
 
 namespace HCS.DocumentService.Workflows;
 
-public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContextAccessor httpContext,
-    IBlobContainer<DocumentBlobContainer> blobs, DocumentFileService files, IDocxToPdfConverter converter,
-    IWorkflowAssigneeResolver assigneeResolver, WorkflowSubmissionPreparationService submissionPreparation,
-    ILogger<WorkflowAppService> logger) : IWorkflowAppService
+public sealed class WorkflowAppService(
+    DocumentServiceDbContext db,
+    IHttpContextAccessor httpContext,
+    IBlobContainer<DocumentBlobContainer> blobs,
+    DocumentFileService files,
+    IDocxToPdfConverter converter,
+    IWorkflowAssigneeResolver assigneeResolver,
+    WorkflowSubmissionPreparationService submissionPreparation,
+    ILogger<WorkflowAppService> logger,
+    IAutoCodeSettings? autoCode = null) : IWorkflowAppService
 {
+    private readonly IAutoCodeSettings codes = autoCode ?? DefaultAutoCodeSettings.Instance;
     public async Task<IReadOnlyList<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowView);
         var kinds = await db.WorkflowKinds.AsNoTracking()
             .OrderBy(x => x.Name).ToListAsync(cancellationToken);
         return kinds.Select(MapKind).ToList();
+    }
+
+    public async Task<NextCodeDto> GetNextCodeAsync(CancellationToken cancellationToken = default)
+    {
+        Require(DocumentPermissions.WorkflowView);
+        var kindCodes = await db.WorkflowKinds.AsNoTracking().Select(x => x.Code).ToListAsync(cancellationToken);
+        var definitionCodes = await db.WorkflowDefinitions.AsNoTracking().Select(x => x.Code).ToListAsync(cancellationToken);
+        var code = await AutoCode.AllocateAsync(codes, AutoCodeKind.Workflow, null, kindCodes.Concat(definitionCodes), cancellationToken);
+        return new NextCodeDto(code);
     }
 
     public async Task<WorkflowKindDto?> GetKindAsync(Guid id, CancellationToken cancellationToken = default)
@@ -35,9 +52,11 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task<Guid> CreateKindAsync(CreateWorkflowKindRequest input, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowManage);
-        if (string.IsNullOrWhiteSpace(input.Code) || string.IsNullOrWhiteSpace(input.Name))
-            throw new InvalidOperationException("Code and name are required.");
-        var kind = new WorkflowKind(Guid.NewGuid(), input.Code, input.Name, input.Description, input.IsActive, DateTime.UtcNow);
+        if (string.IsNullOrWhiteSpace(input.Name))
+            throw new InvalidOperationException("Name is required.");
+        var existing = await db.WorkflowKinds.Select(x => x.Code).ToListAsync(cancellationToken);
+        var code = await AutoCode.AllocateAsync(codes, AutoCodeKind.Workflow, input.Code, existing, cancellationToken);
+        var kind = new WorkflowKind(Guid.NewGuid(), code, input.Name, input.Description, input.IsActive, DateTime.UtcNow);
         db.WorkflowKinds.Add(kind);
         await db.SaveChangesAsync(cancellationToken);
         return kind.Id;
@@ -137,7 +156,9 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
     public async Task<Guid> CreateDefinitionAsync(CreateWorkflowDefinitionRequest input, CancellationToken cancellationToken = default)
     {
         Require(DocumentPermissions.WorkflowManage);
-        var definition = new WorkflowDefinition(Guid.NewGuid(), input.Code, input.Name, input.Steps, DateTime.UtcNow,
+        var existing = await db.WorkflowDefinitions.WhereVisibleWorkflowDefinitions().Select(x => x.Code).ToListAsync(cancellationToken);
+        var code = await AutoCode.AllocateAsync(codes, AutoCodeKind.Workflow, input.Code, existing, cancellationToken);
+        var definition = new WorkflowDefinition(Guid.NewGuid(), code, input.Name, input.Steps, DateTime.UtcNow,
             input.KindId, input.Description, input.IsActive, input.SignMode);
         db.WorkflowDefinitions.Add(definition);
         await db.SaveChangesAsync(cancellationToken);
@@ -340,6 +361,8 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         if (workflowPdf is not null) document.SetWorkflowFile(workflowPdf.Id);
         if (document.Status == DocumentStatus.Draft) document.Submit(userId, now);
         document.StartReview(userId, now, input.SigningContent);
+        if (source is not null && source.Id != document.Id)
+            MirrorSourceStatus(source, document.Status, userId, now);
         var overrides = (input.Signers ?? [])
             .Where(x => !string.IsNullOrWhiteSpace(x.StepCode))
             .GroupBy(x => x.StepCode, StringComparer.OrdinalIgnoreCase)
@@ -434,6 +457,11 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             if (instance.Status is WorkflowInstanceStatus.Completed or WorkflowInstanceStatus.Rejected)
             {
                 documentForAccess.CompleteReview(instance.Status == WorkflowInstanceStatus.Completed, actor, input.Comment, DateTime.UtcNow);
+                if (documentForAccess.ParentDocumentId is { } parentId && parentId != documentForAccess.Id)
+                {
+                    var parent = await LoadDocumentAsync(parentId, cancellationToken);
+                    MirrorSourceStatus(parent, documentForAccess.Status, actor, DateTime.UtcNow);
+                }
 
                 var documentEntry = db.Entry(documentForAccess);
                 var loadedVersion = documentEntry.Property(x => x.Version).OriginalValue;
@@ -515,6 +543,11 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
         var existingTaskIds = instance.Tasks.Select(x => x.Id).ToHashSet();
         instance.Resubmit(definition.Steps.OrderBy(x => x.Order).ToList(), DateTime.UtcNow, idempotencyKey);
         if (document.Status != DocumentStatus.InReview) document.StartReview(actor, DateTime.UtcNow);
+        if (document.ParentDocumentId is { } parentId && parentId != document.Id)
+        {
+            var parent = await LoadDocumentAsync(parentId, cancellationToken);
+            MirrorSourceStatus(parent, DocumentStatus.InReview, actor, DateTime.UtcNow);
+        }
         GrantWorkflowAccess(document, instance, null, actor, DateTime.UtcNow);
         TrackNewApprovalTasks(db, instance, existingTaskIds);
         AddChangeEvent(instance, DateTime.UtcNow);
@@ -630,6 +663,29 @@ public sealed class WorkflowAppService(DocumentServiceDbContext db, IHttpContext
             else
                 throw new BusinessException("Document:ChooseSigner");
         }
+    }
+
+    private void MirrorSourceStatus(DocumentAggregate source, DocumentStatus workflowStatus, Guid actor, DateTime now)
+    {
+        if (source.Status is DocumentStatus.Approved or DocumentStatus.Rejected or DocumentStatus.Archived)
+            return;
+        var existingHistoryIds = source.History.Select(x => x.Id).ToHashSet();
+        try
+        {
+            if (source.Status == DocumentStatus.Draft && source.Files.Any(f => !f.IsPendingDeletion))
+                source.Submit(actor, now);
+            if (workflowStatus is DocumentStatus.InReview or DocumentStatus.Approved or DocumentStatus.Rejected
+                && source.Status == DocumentStatus.Submitted)
+                source.StartReview(actor, now);
+            if (workflowStatus is DocumentStatus.Approved or DocumentStatus.Rejected
+                && source.Status == DocumentStatus.InReview)
+                source.CompleteReview(workflowStatus == DocumentStatus.Approved, actor, null, now);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        db.DocumentHistories.AddRange(source.History.Where(x => !existingHistoryIds.Contains(x.Id)));
     }
 
     private async Task<DocumentAggregate> LoadDocumentAsync(Guid id, CancellationToken cancellationToken) =>

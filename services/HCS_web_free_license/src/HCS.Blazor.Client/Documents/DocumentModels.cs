@@ -26,6 +26,8 @@ public static class DocumentStatusUi
 }
 
 public sealed record PagedDocumentsResponse(long TotalCount, List<DocumentDto> Items);
+public sealed record DocumentNextCodesDto(string DocumentCode, string Number);
+public sealed record NextCodeDto(string Code);
 
 public sealed record DocumentFileDto(Guid Id, string FileName, string ContentType, long Size, string Sha256, DateTime CreationTime, Guid? PairedFileId = null, bool IsWorkflowFile = false);
 public sealed record DocumentFileContent(byte[] Bytes, string ContentType, string FileName);
@@ -61,11 +63,11 @@ public sealed record WorkflowStepDto(Guid Id, string Code, string Name, int Orde
     string AssigneeType = "SpecificUser", Guid? RoleId = null, List<Guid>? UserIds = null, List<Guid>? DepartmentIds = null,
     int? SlaDays = null, bool AllowReturn = false);
 public sealed record WorkflowKindDto(Guid Id, string Code, string Name, string? Description, bool IsActive, DateTime CreationTime);
-public sealed record CreateWorkflowKindRequest(string Code, string Name, string? Description, bool IsActive = true);
+public sealed record CreateWorkflowKindRequest(string? Code, string Name, string? Description, bool IsActive = true);
 public sealed record UpdateWorkflowKindRequest(string Name, string? Description, bool IsActive);
 public sealed record WorkflowDefinitionDto(Guid Id, string Code, string Name, List<WorkflowStepDto> Steps, DateTime CreationTime,
     Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = "SEQUENTIAL");
-public sealed record CreateWorkflowDefinitionRequest(string Code, string Name, List<WorkflowStepInput> Steps,
+public sealed record CreateWorkflowDefinitionRequest(string? Code, string Name, List<WorkflowStepInput> Steps,
     Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = "SEQUENTIAL");
 public sealed record UpdateWorkflowDefinitionRequest(string Name, List<WorkflowStepInput> Steps,
     Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = "SEQUENTIAL");

@@ -25,7 +25,7 @@
                 <div class="vb-editor-head">
                     <h1 title="@(IsCreate ? L["Catalog:Create"].Value : DocumentTitle)">@(IsCreate ? L["Catalog:Create"] : DocumentTitle)</h1>
                     <p class="vb-editor-sub">
-                        <span>@(string.IsNullOrWhiteSpace(form.Number) ? "—" : form.Number)</span>
+                        <span>@(string.IsNullOrWhiteSpace(form.Number) ? (IsCreate ? nextArchiveNumber ?? "—" : "—") : form.Number)</span>
                         @if (document is not null)
                         {
                             <span class="badge @DocumentStatusBadge(document.Status)">@L[DocumentStatusUi.TextKey(document.Status)]</span>
@@ -130,13 +130,14 @@
                             <Field>
                                 <FieldLabel>@L["Feature:DocumentCode"]</FieldLabel>
                                 <HcsIsolatedTextInput @bind-Value="form.DocumentCode" Name="hcsDocumentCode" MaxLength="64"
-                                                     CssClass="form-control input" />
+                                                     CssClass="form-control input"
+                                                     Placeholder="@DocumentCodePlaceholder" />
                             </Field>
                             <Field>
-                                <FieldLabel>@L["Feature:ArchiveNumber"]</FieldLabel>
+                                <FieldLabel>@(IsPersonal ? L["Settings:AutoCodePersonalArchive"] : L["Feature:ArchiveNumber"])</FieldLabel>
                                 <HcsIsolatedTextInput @bind-Value="form.Number" Name="hcsArchiveNumber" MaxLength="64"
                                                      CssClass="form-control input"
-                                                     Placeholder="@L["Feature:ArchiveNumberAuto"]"
+                                                     Placeholder="@ArchiveNumberPlaceholder"
                                                      Disabled="true" />
                             </Field>
                         </div>
@@ -168,20 +169,29 @@
                                                 Search="SearchSectorsAsync" />
                             </Field>
                         </div>
+                        @if (Features.ShowDocumentUrgency || Features.ShowDocumentConfidentiality)
+                        {
                         <div class="vb-field-row hcs-form-row hcs-form-row--equal">
+                            @if (Features.ShowDocumentUrgency)
+                            {
                             <Field>
                                 <FieldLabel>@L["Menu:UrgencyLevels"]</FieldLabel>
                                 <CatalogSelect2 Value="form.UrgencyId" ValueChanged="value => form.UrgencyId = value"
                                                 Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(urgencies, form.UrgencyId)"
                                                 Search="SearchUrgenciesAsync" />
                             </Field>
+                            }
+                            @if (Features.ShowDocumentConfidentiality)
+                            {
                             <Field>
                                 <FieldLabel>@L["Menu:ConfidentialityLevels"]</FieldLabel>
                                 <CatalogSelect2 Value="form.ConfidentialityId" ValueChanged="value => form.ConfidentialityId = value"
                                                 Placeholder="@L["Catalog:SearchPlaceholder"]" SelectedText="@MasterText(confidentialities, form.ConfidentialityId)"
                                                 Search="SearchConfidentialitiesAsync" />
                             </Field>
+                            }
                         </div>
+                        }
                         @if (!IsCreate && document?.Files.Count > 0)
                         {
                             <div class="docs-table-wrap vb-file-list">
@@ -338,6 +348,14 @@
     private DocumentFileDto? pendingPreviewFile;
     private string activeTab = "info";
     private bool IsCreate => DocumentId == Guid.Empty;
+    private string? nextDocumentCode;
+    private string? nextArchiveNumber;
+    private string? DocumentCodePlaceholder => IsCreate
+        ? nextDocumentCode ?? Features.Prefix(IsPersonal ? AutoCodeKind.PersonalDocument : AutoCodeKind.Document)
+        : null;
+    private string ArchiveNumberPlaceholder => IsCreate
+        ? nextArchiveNumber ?? Features.Prefix(IsPersonal ? AutoCodeKind.PersonalArchive : AutoCodeKind.Archive)
+        : L["Feature:ArchiveNumberAuto"];
     private int SourceType => SourceTypeQuery is >= 0 and <= 2 ? SourceTypeQuery.Value : 0;
     private bool IsPersonal => SourceType == 1;
     // The signing queue uses sourceType=3 as navigation context, not a document source type.
@@ -397,6 +415,7 @@
             pendingPreviewFile = null;
             activeTab = "info";
             ApplyCreateDefaults();
+            await LoadNextCodesAsync();
             await RevokePdfAsync();
             return;
         }
@@ -436,8 +455,12 @@
 
         var typesTask = documentTypes.Count == 0 ? LoadMasterAsync("DocumentType") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
         var sectorsTask = sectors.Count == 0 ? LoadMasterAsync("Sector") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
-        var urgenciesTask = urgencies.Count == 0 ? LoadMasterAsync("UrgencyLevel") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
-        var confidentialitiesTask = confidentialities.Count == 0 ? LoadMasterAsync("ConfidentialityLevel") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
+        var urgenciesTask = Features.ShowDocumentUrgency && urgencies.Count == 0
+            ? LoadMasterAsync("UrgencyLevel")
+            : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
+        var confidentialitiesTask = Features.ShowDocumentConfidentiality && confidentialities.Count == 0
+            ? LoadMasterAsync("ConfidentialityLevel")
+            : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
         var unitsTask = units.Count == 0 ? LoadUnitsAsync() : Task.FromResult<IReadOnlyList<UnitCatalogDto>>([]);
         var contactsTask = contacts.Count == 0 ? LoadContactsAsync() : Task.FromResult<IReadOnlyList<ChatContactDto>>([]);
         await Task.WhenAll(typesTask, sectorsTask, urgenciesTask, confidentialitiesTask, unitsTask, contactsTask);
@@ -448,6 +471,20 @@
         units.AddRange(await unitsTask);
         contacts.AddRange(await contactsTask);
         ApplyCreateDefaults();
+    }
+
+    private async Task LoadNextCodesAsync()
+    {
+        nextDocumentCode = nextArchiveNumber = null;
+        try
+        {
+            var next = await Documents.GetNextCodesAsync(SourceType);
+            nextDocumentCode = next.DocumentCode;
+            nextArchiveNumber = next.Number;
+        }
+        catch
+        {
+        }
     }
 
     private async Task ReloadExistingAsync()
@@ -771,12 +808,12 @@
         if (!IsCreate) return;
         form.DocumentTypeId ??= LowestId(documentTypes);
         form.SectorId ??= LowestId(sectors);
-        form.UrgencyId ??= LowestId(urgencies);
-        form.ConfidentialityId ??= LowestId(confidentialities);
+        if (Features.ShowDocumentUrgency)
+            form.UrgencyId ??= LowestId(urgencies);
+        if (Features.ShowDocumentConfidentiality)
+            form.ConfidentialityId ??= LowestId(confidentialities);
         form.OrganizationUnitId ??= units.Where(x => x.IsActive).OrderBy(x => x.SortOrder).ThenBy(x => x.Name)
             .Select(x => (Guid?)x.Id).FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(form.Number))
-            form.Number = DateTime.Now.ToString("yyyyMMdd-HHmmss");
     }
 
     private static Guid? LowestId(IEnumerable<MasterDataCatalogDto> items) =>

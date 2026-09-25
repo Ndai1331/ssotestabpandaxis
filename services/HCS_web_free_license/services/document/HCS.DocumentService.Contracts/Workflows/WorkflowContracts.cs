@@ -40,7 +40,7 @@ public sealed record WorkflowStepInput(string Code, string Name, int Order, stri
 public sealed record WorkflowStepAssignmentDto(string AssigneeType, Guid? RoleId, IReadOnlyList<Guid> UserIds,
     IReadOnlyList<Guid> DepartmentIds);
 
-public sealed record CreateWorkflowDefinitionRequest(string Code, string Name, IReadOnlyList<WorkflowStepInput> Steps,
+public sealed record CreateWorkflowDefinitionRequest(string? Code, string Name, IReadOnlyList<WorkflowStepInput> Steps,
     Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = WorkflowSignModes.Sequential);
 public sealed record UpdateWorkflowDefinitionRequest(string Name, IReadOnlyList<WorkflowStepInput> Steps,
     Guid? KindId = null, string? Description = null, bool IsActive = true, string SignMode = WorkflowSignModes.Sequential);
@@ -51,7 +51,7 @@ public sealed record WorkflowDefinitionDto(Guid Id, string Code, string Name, Gu
     bool IsActive, IReadOnlyList<WorkflowStepDto> Steps, DateTime CreationTime,
     string SignMode = WorkflowSignModes.Sequential);
 public sealed record WorkflowKindDto(Guid Id, string Code, string Name, string? Description, bool IsActive, DateTime CreationTime);
-public sealed record CreateWorkflowKindRequest(string Code, string Name, string? Description, bool IsActive = true);
+public sealed record CreateWorkflowKindRequest(string? Code, string Name, string? Description, bool IsActive = true);
 public sealed record UpdateWorkflowKindRequest(string Name, string? Description, bool IsActive);
 public sealed record CreateWorkflowTemplateRequest(string Code, string Name, Guid DefinitionId, int Version, string TemplateJson, string OutputFormat = "PDF");
 public sealed record UpdateWorkflowTemplateRequest(string Name, string TemplateJson, string OutputFormat = "PDF");
@@ -82,9 +82,12 @@ public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, 
 public sealed record WorkflowInstanceDto(Guid Id, Guid DocumentId, Guid DefinitionId, WorkflowInstanceStatus Status,
     int CurrentStep, IReadOnlyList<ApprovalTaskDto> Tasks, DateTime CreationTime);
 
+public sealed record NextCodeDto(string Code);
+
 public interface IWorkflowAppService
 {
     Task<IReadOnlyList<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default);
+    Task<NextCodeDto> GetNextCodeAsync(CancellationToken cancellationToken = default);
     Task<WorkflowKindDto?> GetKindAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Guid> CreateKindAsync(CreateWorkflowKindRequest input, CancellationToken cancellationToken = default);
     Task UpdateKindAsync(Guid id, UpdateWorkflowKindRequest input, CancellationToken cancellationToken = default);

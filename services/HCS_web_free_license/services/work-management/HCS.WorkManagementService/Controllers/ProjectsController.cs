@@ -15,6 +15,9 @@ public sealed class ProjectsController(ProjectAppService service) : ControllerBa
     [HttpGet("{id:guid}")]
     public Task<ProjectDetailDto> Get(Guid id, CancellationToken ct) => service.GetAsync(id, ct);
 
+    [HttpGet("next-code")]
+    public Task<NextCodeDto> GetNextCode(CancellationToken ct) => service.GetNextCodeAsync(ct);
+
     [HttpPost, Authorize(Policy = WorkPermissions.Projects)]
     public Task<ProjectDto> Create(CreateProjectDto input, CancellationToken ct) => service.CreateAsync(input, ct);
 

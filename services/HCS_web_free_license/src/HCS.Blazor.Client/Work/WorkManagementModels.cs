@@ -16,6 +16,7 @@ public sealed record ProjectTaskDto(
     DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent,
     Guid? CreatorId = null, bool CanDelete = false, bool CanManageAssignments = false, bool CanCreateChild = false);
 public sealed record ProjectDetailDto(ProjectDto Project, List<ProjectMemberDto> Members, List<ProjectTaskDto> Tasks);
+public sealed record NextCodeDto(string Code);
 public sealed record TaskAssignmentDto(Guid Id, Guid ProjectTaskId, Guid UserId, string AssignmentType);
 public sealed record TaskDocumentReferenceDto(Guid Id, Guid ProjectTaskId, Guid DocumentId, string? DocumentCode,
     Guid? AddedByUserId = null, bool CanDelete = false);
@@ -23,12 +24,12 @@ public sealed record ProjectTaskDetailDto(
     ProjectTaskDto Task, List<TaskAssignmentDto> Assignments, List<TaskDocumentReferenceDto> Documents);
 
 public sealed record CreateProjectRequest(
-    string Code, string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
+    string? Code, string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record UpdateProjectRequest(
     string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record AddProjectMemberRequest(Guid UserId, string Role);
 public sealed record CreateProjectTaskRequest(
-    Guid ProjectId, Guid? ParentTaskId, string Code, string Title, string? Description,
+    Guid ProjectId, Guid? ParentTaskId, string? Code, string Title, string? Description,
     DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent);
 public sealed record UpdateProjectTaskRequest(
     string Title, string? Description, DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent);

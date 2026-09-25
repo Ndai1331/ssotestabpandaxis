@@ -7,6 +7,7 @@
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
 @inject OrganizationUnitCatalogClient OrganizationUnits
+@inject SystemFeatureState Features
 
 <PageTitle>@L["Feature:WorkspaceTitle"] · HCS</PageTitle>
 <section class="hcs-workspace">
@@ -354,7 +355,7 @@
         <ModalBody Class="hcs-catalog-modal__body">
             <div class="hcs-catalog-form">
                 <div class="hcs-form-row">
-                    <Field><FieldLabel>@L["Catalog:Code"] *</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Code" Name="hcsWorkspaceProjectCode" MaxLength="64" /></Field>
+                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Code" Name="hcsWorkspaceProjectCode" MaxLength="64" Placeholder="@ProjectCodePlaceholder" /></Field>
                     <Field><FieldLabel>@L["Feature:ProjectName"] *</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Name" Name="hcsWorkspaceProjectName" /></Field>
                 </div>
                 <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="projectForm.Description"></textarea></Field>
@@ -494,6 +495,8 @@
     private DocumentPdfPreviewModal? documentPreviewModal;
     private MyDocumentRow? previewingMyDocument;
     private Modal? createProjectModal;
+    private string? nextProjectCode;
+    private string ProjectCodePlaceholder => nextProjectCode ?? Features.Prefix(AutoCodeKind.Project);
     private Modal? projectDetailModal;
     private ProjectDetailDto? projectDetail;
     private bool isSavingProject;
@@ -645,6 +648,8 @@
     private async Task OpenCreateProjectModalAsync()
     {
         projectForm.Reset();
+        nextProjectCode = null;
+        try { nextProjectCode = (await Work.GetNextProjectCodeAsync()).Code; } catch { }
         if (departments.Count == 0)
         {
             try { departments.AddRange(await OrganizationUnits.GetDepartmentCatalogAsync()); } catch { }
@@ -660,9 +665,9 @@
 
     private async Task CreateProjectAsync()
     {
-        if (string.IsNullOrWhiteSpace(projectForm.Code) || string.IsNullOrWhiteSpace(projectForm.Name))
+        if (string.IsNullOrWhiteSpace(projectForm.Name))
         {
-            await NotifyErrorAsync(L["Catalog:CodeNameRequired"]);
+            await NotifyErrorAsync(L["Catalog:NameRequired"]);
             return;
         }
         if (projectForm.EndDate < projectForm.StartDate)
@@ -673,7 +678,7 @@
         isSavingProject = true;
         try
         {
-            await Work.CreateProjectAsync(new CreateProjectRequest(projectForm.Code.Trim(), projectForm.Name.Trim(),
+            await Work.CreateProjectAsync(new CreateProjectRequest(string.IsNullOrWhiteSpace(projectForm.Code) ? null : projectForm.Code.Trim(), projectForm.Name.Trim(),
                 string.IsNullOrWhiteSpace(projectForm.Description) ? null : projectForm.Description.Trim(),
                 projectForm.StartDate, projectForm.EndDate, projectForm.Status, projectForm.OwnerDepartmentId));
             await NotifySuccessAsync(L["Catalog:Created"]);

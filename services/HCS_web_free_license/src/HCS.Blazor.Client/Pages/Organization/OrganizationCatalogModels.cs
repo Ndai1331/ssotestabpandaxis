@@ -63,7 +63,7 @@ public sealed record MasterDataCatalogDto(
     bool IsActive);
 
 public sealed record DepartmentUpsertRequest(
-    string Code,
+    string? Code,
     string Name,
     Guid? ParentId,
     int SortOrder,
@@ -71,13 +71,13 @@ public sealed record DepartmentUpsertRequest(
 
 public sealed record UnitUpsertRequest(
     Guid DepartmentId,
-    string Code,
+    string? Code,
     string Name,
     int SortOrder,
     bool IsActive);
 
 public sealed record PositionUpsertRequest(
-    string Code,
+    string? Code,
     string Name,
     int SignOrder,
     int SortOrder,
@@ -85,14 +85,14 @@ public sealed record PositionUpsertRequest(
 
 public sealed record MasterDataUpsertRequest(
     string Type,
-    string Code,
+    string? Code,
     string Name,
     int SortOrder,
     bool IsActive);
 
 public sealed class OrganizationCatalogFormModel
 {
-    [Required, StringLength(50)]
+    [StringLength(50)]
     public string Code { get; set; } = string.Empty;
 
     [Required, StringLength(256)]

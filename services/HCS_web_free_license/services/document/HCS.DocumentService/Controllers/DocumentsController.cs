@@ -18,6 +18,9 @@ public sealed class DocumentsController(
         [FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null, CancellationToken cancellationToken = default) =>
         documents.GetListAsync(filter, status, mine, skip, take, sourceType, documentTypeId, sectorId, urgencyId,
             confidentialityId, from, to, cancellationToken);
+    [HttpGet("next-codes")]
+    public Task<DocumentNextCodesDto> GetNextCodes([FromQuery] int? sourceType, CancellationToken cancellationToken = default) =>
+        documents.GetNextCodesAsync(sourceType, cancellationToken);
     [HttpPost]
     public Task<DocumentDto> Create(CreateDocumentRequest input, CancellationToken cancellationToken) => documents.CreateAsync(input, cancellationToken);
     [HttpGet("{id:guid}")]

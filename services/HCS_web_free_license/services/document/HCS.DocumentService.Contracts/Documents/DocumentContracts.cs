@@ -44,6 +44,7 @@ public sealed record DocumentDto(Guid Id, string Number, string Title, string? D
     Guid? FromUserId = null, Guid? OrganizationUnitId = null, int FileCount = 0, bool IsSent = false,
     string? DocumentCode = null);
 public sealed record PagedDocumentsDto(long TotalCount, IReadOnlyList<DocumentDto> Items);
+public sealed record DocumentNextCodesDto(string DocumentCode, string Number);
 
 public interface IDocumentAppService
 {
@@ -51,6 +52,7 @@ public interface IDocumentAppService
         bool mine = false, int skip = 0, int take = 50, int? sourceType = null,
         Guid? documentTypeId = null, Guid? sectorId = null, Guid? urgencyId = null, Guid? confidentialityId = null,
         DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default);
+    Task<DocumentNextCodesDto> GetNextCodesAsync(int? sourceType = null, CancellationToken cancellationToken = default);
     Task<DocumentDto> CreateAsync(CreateDocumentRequest input, CancellationToken cancellationToken = default);
     Task<DocumentDto?> GetAsync(Guid id, CancellationToken cancellationToken = default);
     Task<DocumentDto> UpdateAsync(Guid id, UpdateDocumentRequest input, CancellationToken cancellationToken = default);

@@ -25,6 +25,9 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
     public Task<ProjectDetailDto> GetProjectAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<ProjectDetailDto>($"/api/projects/{id:D}", cancellationToken);
 
+    public Task<NextCodeDto> GetNextProjectCodeAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<NextCodeDto>("/api/projects/next-code", cancellationToken);
+
     public Task<ProjectDto> CreateProjectAsync(CreateProjectRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<ProjectDto>(HttpMethod.Post, "/api/projects", request, cancellationToken);
 
@@ -52,6 +55,9 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
 
     public Task<ProjectTaskDetailDto> GetTaskAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<ProjectTaskDetailDto>($"/api/project-tasks/{id:D}", cancellationToken);
+
+    public Task<NextCodeDto> GetNextTaskCodeAsync(Guid projectId, CancellationToken cancellationToken = default) =>
+        GetAsync<NextCodeDto>($"/api/project-tasks/next-code?projectId={projectId:D}", cancellationToken);
 
     public Task<ProjectTaskDto> CreateTaskAsync(CreateProjectTaskRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<ProjectTaskDto>(HttpMethod.Post, "/api/project-tasks", request, cancellationToken);

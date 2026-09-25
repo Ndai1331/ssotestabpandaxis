@@ -93,14 +93,24 @@ public sealed class HCSMenuContributor : IMenuContributor
         catalogs.AddItem(Item("HCS.Catalogs.MasterData", "Danh mục dùng chung", "/master-datas", "fa fa-list", 10)
             .RequirePermissions(false, HCSPermissions.Catalogs.MasterData, HCSPermissions.Organization.MasterData));
         var documentCatalogs = Item("HCS.Catalogs.Documents", "Danh mục văn bản", icon: "fa fa-file-lines", order: 20);
+        var settingProvider = context.ServiceProvider.GetRequiredService<ISettingProvider>();
+        var proposalStatsSetting = await settingProvider.GetOrNullAsync(HCSSettings.LegacySigningReportEnabled);
+        var showUrgency = HCSSettings.IsEnabledOrDefault(await settingProvider.GetOrNullAsync(HCSSettings.ShowDocumentUrgency));
+        var showConfidentiality = HCSSettings.IsEnabledOrDefault(await settingProvider.GetOrNullAsync(HCSSettings.ShowDocumentConfidentiality));
         documentCatalogs.AddItem(Item("HCS.Catalogs.DocumentTypes", "Loại văn bản", "/document-types", order: 10)
             .RequirePermissions(false, HCSPermissions.Catalogs.DocumentTypes, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
         documentCatalogs.AddItem(Item("HCS.Catalogs.Sectors", "Lĩnh vực", "/sectors", order: 20)
             .RequirePermissions(false, HCSPermissions.Catalogs.Sectors, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
-        documentCatalogs.AddItem(Item("HCS.Catalogs.UrgencyLevels", "Độ khẩn", "/urgency-levels", order: 30)
-            .RequirePermissions(false, HCSPermissions.Catalogs.UrgencyLevels, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
-        documentCatalogs.AddItem(Item("HCS.Catalogs.ConfidentialityLevels", "Độ mật", "/confidentiality-levels", order: 40)
-            .RequirePermissions(false, HCSPermissions.Catalogs.ConfidentialityLevels, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
+        if (showUrgency)
+        {
+            documentCatalogs.AddItem(Item("HCS.Catalogs.UrgencyLevels", "Độ khẩn", "/urgency-levels", order: 30)
+                .RequirePermissions(false, HCSPermissions.Catalogs.UrgencyLevels, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
+        }
+        if (showConfidentiality)
+        {
+            documentCatalogs.AddItem(Item("HCS.Catalogs.ConfidentialityLevels", "Độ mật", "/confidentiality-levels", order: 40)
+                .RequirePermissions(false, HCSPermissions.Catalogs.ConfidentialityLevels, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
+        }
         documentCatalogs.AddItem(Item("HCS.Catalogs.ProcessingMethods", "Phương thức xử lý", "/processing-methods", order: 50)
             .RequirePermissions(false, HCSPermissions.Catalogs.ProcessingMethods, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
         documentCatalogs.AddItem(Item("HCS.Catalogs.DocumentStatus", "Trạng thái văn bản", "/document-status", order: 60)
@@ -110,9 +120,6 @@ public sealed class HCSMenuContributor : IMenuContributor
         documentCatalogs.AddItem(Item("HCS.Catalogs.EventTypes", "Loại sự kiện", "/event-types", order: 80)
             .RequirePermissions(false, HCSPermissions.Catalogs.EventTypes, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
         catalogs.AddItem(documentCatalogs);
-        var proposalStatsSetting = await context.ServiceProvider
-            .GetRequiredService<ISettingProvider>()
-            .GetOrNullAsync(HCSSettings.LegacySigningReportEnabled);
         if (HCSSettings.IsEnabledOrDefault(proposalStatsSetting))
         {
             catalogs.AddItem(Item("HCS.Catalogs.ProposalStatistics", "Thống kê đề xuất", "/thong-ke-de-xuat", "fa fa-chart-pie", 90)

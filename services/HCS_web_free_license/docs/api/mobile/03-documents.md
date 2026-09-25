@@ -34,6 +34,7 @@ Clients: [`DocumentClient.cs`](../../../src/HCS.Blazor.Client/Documents/Document
 | Master-data + search | `GET` | `/api/organization/master-data` |
 | Đơn vị | `GET` | `/api/organization/units` |
 | Contacts người nhận | `GET` | `/api/chat/contacts` |
+| Số tiếp theo (placeholder) | `GET` | `/api/documents/next-codes?sourceType=` |
 | Tạo | `POST` | `/api/documents` |
 | Sửa | `PUT` | `/api/documents/{id}` |
 | Upload file | `POST` | `/api/documents/{id}/files` |
@@ -92,6 +93,12 @@ DocumentDto chính: `id`, `number`, `title`, `description`, `status`, `documentT
 File: `id`, `fileName`, `contentType`, `size`, `sha256`, `creationTime`, `pairedFileId`, `isWorkflowFile`.
 
 ### POST `/api/documents`
+
+Để `number` và `documentCode` là `null` thì server tự sinh. Xem số tiếp theo (không giữ chỗ):
+
+`GET /api/documents/next-codes?sourceType=0|1` → `{ "documentCode": "VB0012", "number": "LT-20270008" }`.
+
+`sourceType` `1` dùng dãy VBCN / LTCN. Placeholder trên form; lúc POST vẫn gửi `null` để server cấp lại nếu có người tạo trước.
 
 ```json
 {

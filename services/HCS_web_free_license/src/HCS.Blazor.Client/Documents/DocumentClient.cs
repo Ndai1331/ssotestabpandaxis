@@ -41,6 +41,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
     public Task<DocumentDto> GetDocumentAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<DocumentDto>($"/api/documents/{id:D}", cancellationToken);
 
+    public Task<DocumentNextCodesDto> GetNextCodesAsync(int sourceType, CancellationToken cancellationToken = default) =>
+        GetAsync<DocumentNextCodesDto>($"/api/documents/next-codes?sourceType={sourceType}", cancellationToken);
+
     public Task<DocumentDto> CreateDocumentAsync(CreateDocumentRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<DocumentDto>(HttpMethod.Post, "/api/documents", request, cancellationToken);
 
@@ -136,6 +139,9 @@ public sealed class DocumentClient(IHttpClientFactory httpClientFactory)
 
     public Task<List<WorkflowKindDto>> GetKindsAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<WorkflowKindDto>>("/api/workflows/kinds", cancellationToken);
+
+    public Task<NextCodeDto> GetNextWorkflowCodeAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<NextCodeDto>("/api/workflows/next-code", cancellationToken);
 
     public Task<Guid> CreateKindAsync(CreateWorkflowKindRequest request, CancellationToken cancellationToken = default) =>
         SendAsync<Guid>(HttpMethod.Post, "/api/workflows/kinds", request, cancellationToken);

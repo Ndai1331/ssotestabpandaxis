@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Blazorise;
+using HCS.Blazor.Client.Settings;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -20,6 +21,7 @@ public partial class OrganizationCatalog : System.IDisposable
     [Inject] private OrganizationCatalogClient CatalogClient { get; set; } = default!;
     [Inject] private OrganizationUnitCatalogClient OrganizationUnits { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+    [Inject] private SystemFeatureState Features { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public OrganizationCatalogKind Kind { get; set; }

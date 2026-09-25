@@ -7,6 +7,7 @@
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
 @inject IJSRuntime JsRuntime
+@inject SystemFeatureState Features
 
 <PageTitle>@L["Feature:ProjectsTitle"] · HCS</PageTitle>
 <section class="page page-wf page-pj" aria-labelledby="projects-title">
@@ -154,7 +155,7 @@
         <ModalBody Class="hcs-catalog-modal__body">
             <div class="hcs-catalog-form">
                 <div class="hcs-form-row">
-                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsProjectCode" MaxLength="64" Disabled="@(editingId is not null)" /></Field>
+                    <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsProjectCode" MaxLength="64" Disabled="@(editingId is not null)" Placeholder="@(editingId is null ? ProjectCodePlaceholder : null)" /></Field>
                     <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsProjectName" /></Field>
                 </div>
                 <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description" autocomplete="off"></textarea></Field>
@@ -197,6 +198,8 @@
     private bool isLoading, isSaving, showFilters, showSearch, isOpeningChat;
     private int totalCount, pageSize = 20, currentPage = 1;
 
+    private string? nextProjectCode;
+    private string ProjectCodePlaceholder => nextProjectCode ?? Features.Prefix(AutoCodeKind.Project);
     private bool IsSearchFiltered => !string.IsNullOrWhiteSpace(filter);
     private int PageCount => Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
     private bool CanPrev => currentPage > 1;
@@ -261,6 +264,8 @@
     {
         editingId = null;
         form.Reset();
+        nextProjectCode = null;
+        try { nextProjectCode = (await Work.GetNextProjectCodeAsync()).Code; } catch { }
         if (modal is not null) await modal.Show();
     }
 
@@ -332,7 +337,7 @@
             if (editingId is { } id)
                 await Work.UpdateProjectAsync(id, new UpdateProjectRequest(form.Name.Trim(), Blank(form.Description), form.StartDate, form.EndDate, form.Status, form.OwnerDepartmentId));
             else
-                await Work.CreateProjectAsync(new CreateProjectRequest(form.Code.Trim(), form.Name.Trim(), Blank(form.Description), form.StartDate, form.EndDate, form.Status, form.OwnerDepartmentId));
+                await Work.CreateProjectAsync(new CreateProjectRequest(Blank(form.Code), form.Name.Trim(), Blank(form.Description), form.StartDate, form.EndDate, form.Status, form.OwnerDepartmentId));
             await NotifySuccessAsync(editingId is null ? L["Catalog:Created"] : L["Catalog:Updated"]);
             if (modal is not null) await modal.Hide();
             await LoadAsync();

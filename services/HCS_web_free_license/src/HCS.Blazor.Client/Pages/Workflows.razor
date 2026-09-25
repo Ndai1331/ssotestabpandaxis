@@ -4,6 +4,7 @@
 @inject DocumentClient Documents
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
+@inject SystemFeatureState Features
 
 <PageTitle>@L["Menu:WorkflowList"] · HCS</PageTitle>
 <section class="page page-wf wf-list">
@@ -131,7 +132,7 @@
                                 Search="SearchKindsAsync" />
             </Field>
             <div class="hcs-form-row">
-                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsWorkflowListCode" MaxLength="64" /></Field>
+                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Code" Name="hcsWorkflowListCode" MaxLength="64" Placeholder="@WorkflowCodePlaceholder" /></Field>
                 <Field><FieldLabel>@L["Catalog:Name"]</FieldLabel><HcsIsolatedTextInput @bind-Value="form.Name" Name="hcsWorkflowListName" /></Field>
             </div>
             <Field><FieldLabel>@L["Work:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="form.Description"></textarea></Field>
@@ -156,6 +157,8 @@
     private readonly List<WorkflowTemplateDto> templates = [];
     private readonly List<WorkflowKindDto> kinds = [];
     private readonly WorkflowCreateForm form = new();
+    private string? nextWorkflowCode;
+    private string WorkflowCodePlaceholder => nextWorkflowCode ?? Features.Prefix(AutoCodeKind.Workflow);
     private Modal? modal;
     private string filter = "", search = "", activeFilter = "";
     private bool isLoading, isSaving, showFilters, showSearch;
@@ -241,13 +244,15 @@
     private async Task OpenCreate()
     {
         form.Reset();
+        nextWorkflowCode = null;
+        try { nextWorkflowCode = (await Documents.GetNextWorkflowCodeAsync()).Code; } catch { }
         if (modal is not null) await modal.Show();
     }
     private async Task SaveCreateAsync()
     {
-        if (string.IsNullOrWhiteSpace(form.Code) || string.IsNullOrWhiteSpace(form.Name))
+        if (string.IsNullOrWhiteSpace(form.Name))
         {
-            await NotifyErrorAsync(L["Catalog:TypeRequired"]);
+            await NotifyErrorAsync(L["Catalog:NameRequired"]);
             return;
         }
         isSaving = true;
@@ -255,7 +260,7 @@
         {
             var steps = new List<WorkflowStepInput> { new("review", L["Feature:StepName"], 1, "Documents.Workflow.Decide", "PROCESS") };
             var id = await Documents.CreateDefinitionAsync(new CreateWorkflowDefinitionRequest(
-                form.Code.Trim(), form.Name.Trim(), steps, form.KindId, form.Description, form.IsActive, form.SignMode));
+                string.IsNullOrWhiteSpace(form.Code) ? null : form.Code.Trim(), form.Name.Trim(), steps, form.KindId, form.Description, form.IsActive, form.SignMode));
             if (modal is not null) await modal.Hide();
             await NotifySuccessAsync(L["Catalog:Created"]);
             await LoadAsync();

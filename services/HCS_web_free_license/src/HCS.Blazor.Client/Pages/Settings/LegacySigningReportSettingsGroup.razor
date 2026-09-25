@@ -122,12 +122,7 @@
             hasConnectionString = settings.HasConnectionString;
             connectionString = settings.ConnectionString ?? string.Empty;
             isDirty = false;
-            Features.Apply(new SystemFeatureSettingsDto
-            {
-                AllowSigningFromDocuments = Features.AllowSigningFromDocuments,
-                EnableProposalStatistics = enabled,
-                ChatAttachmentMaxMegabytes = Features.ChatAttachmentMaxMegabytes
-            });
+            Features.Apply(Features.Snapshot(enabled));
         }
         catch (Exception exception)
         {
@@ -213,12 +208,7 @@
             });
             hasConnectionString = !string.IsNullOrWhiteSpace(connectionString);
             isDirty = false;
-            Features.Apply(new SystemFeatureSettingsDto
-            {
-                AllowSigningFromDocuments = Features.AllowSigningFromDocuments,
-                EnableProposalStatistics = enabled,
-                ChatAttachmentMaxMegabytes = Features.ChatAttachmentMaxMegabytes
-            });
+            Features.Apply(Features.Snapshot(enabled));
             return true;
         }
         catch (Exception exception)

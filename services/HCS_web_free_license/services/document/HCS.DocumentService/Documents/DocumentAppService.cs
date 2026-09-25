@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using HCS.Coding;
 using HCS.DocumentService.Integration;
 using HCS.DocumentService.Signing;
 using HCS.DocumentService.Storage;
@@ -14,8 +15,10 @@ namespace HCS.DocumentService.Documents;
 public sealed class DocumentAppService(
     DocumentServiceDbContext db,
     IHttpContextAccessor httpContext,
-    IDocumentBlobCleanup blobCleanup) : IDocumentAppService
+    IDocumentBlobCleanup blobCleanup,
+    IAutoCodeSettings? autoCode = null) : IDocumentAppService
 {
+    private readonly IAutoCodeSettings codes = autoCode ?? DefaultAutoCodeSettings.Instance;
     public async Task<PagedDocumentsDto> GetListAsync(string? filter = null, DocumentStatus? status = null,
         bool mine = false, int skip = 0, int take = 50, int? sourceType = null,
         Guid? documentTypeId = null, Guid? sectorId = null, Guid? urgencyId = null, Guid? confidentialityId = null,
@@ -57,10 +60,34 @@ public sealed class DocumentAppService(
                 IsSent = x.History.Any(h => h.Action == DocumentSendState.SentAction) &&
                          !x.History.Any(h => h.Action == DocumentSendState.RevokedAction &&
                              h.OccurredAt >= x.History.Where(s => s.Action == DocumentSendState.SentAction)
-                                 .Max(s => s.OccurredAt))
+                                 .Max(s => s.OccurredAt)),
+                WorkflowChildStatus = db.Documents
+                    .Where(c => c.ParentDocumentId == x.Id && c.SourceType == DocumentSourceType.Workflow)
+                    .OrderByDescending(c => c.CreationTime)
+                    .Select(c => (DocumentStatus?)c.Status)
+                    .FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
-        return new PagedDocumentsDto(totalCount, items.Select(x => MapList(x.Document, x.FileCount, x.IsSent)).ToList());
+        return new PagedDocumentsDto(totalCount, items.Select(x => MapList(
+            x.Document, x.FileCount, x.IsSent,
+            DocumentStatusDisplay.Resolve(x.Document.Status, x.IsSent, x.WorkflowChildStatus))).ToList());
+    }
+
+    public async Task<DocumentNextCodesDto> GetNextCodesAsync(int? sourceType = null, CancellationToken cancellationToken = default)
+    {
+        var principal = Principal;
+        DocumentAccess.RequireUser(principal);
+        DocumentAccess.RequirePermission(principal, DocumentPermissions.View);
+        var personal = sourceType == (int)DocumentSourceType.Personal;
+        var kind = personal ? DocumentSourceType.Personal : DocumentSourceType.Archive;
+        DocumentAccess.EnsureCanCreate(principal, kind);
+        var archiveNumbers = await db.Documents.Select(x => x.Number).ToListAsync(cancellationToken);
+        var documentCodes = await db.Documents.Where(x => x.DocumentCode != null).Select(x => x.DocumentCode!).ToListAsync(cancellationToken);
+        var documentCodeKind = personal ? AutoCodeKind.PersonalDocument : AutoCodeKind.Document;
+        var archiveKind = personal ? AutoCodeKind.PersonalArchive : AutoCodeKind.Archive;
+        var documentCode = await AutoCode.AllocateAsync(codes, documentCodeKind, null, documentCodes, cancellationToken);
+        var number = await AutoCode.AllocateAsync(codes, archiveKind, null, archiveNumbers, cancellationToken);
+        return new DocumentNextCodesDto(documentCode, number);
     }
 
     public async Task<DocumentDto> CreateAsync(CreateDocumentRequest input, CancellationToken cancellationToken = default)
@@ -70,11 +97,18 @@ public sealed class DocumentAppService(
         var sourceType = input.SourceType is DocumentSourceType.Personal ? DocumentSourceType.Personal : DocumentSourceType.Archive;
         DocumentAccess.EnsureCanCreate(principal, sourceType);
         var now = DateTime.UtcNow;
+        var archiveNumbers = await db.Documents.Select(x => x.Number).ToListAsync(cancellationToken);
+        var documentCodes = await db.Documents.Where(x => x.DocumentCode != null).Select(x => x.DocumentCode!).ToListAsync(cancellationToken);
+        var documentCodeKind = sourceType is DocumentSourceType.Personal ? AutoCodeKind.PersonalDocument : AutoCodeKind.Document;
+        var archiveKind = sourceType is DocumentSourceType.Personal ? AutoCodeKind.PersonalArchive : AutoCodeKind.Archive;
+        var documentCode = await AutoCode.AllocateAsync(codes, documentCodeKind, input.DocumentCode, documentCodes, cancellationToken);
         for (var attempt = 0; attempt < 3; attempt++)
         {
-            var number = attempt == 0 ? ResolveNumber(input.Number, now) : GenerateNumber(now, attempt);
+            var number = attempt == 0
+                ? await ResolveNumberAsync(input.Number, archiveKind, archiveNumbers, cancellationToken)
+                : AutoCode.Next(await codes.GetPrefixAsync(archiveKind, cancellationToken), archiveNumbers);
             var document = new DocumentAggregate(Guid.NewGuid(), number, input.Title, input.Description, userId, now, sourceType);
-            document.SetDocumentCode(input.DocumentCode);
+            document.SetDocumentCode(documentCode);
             document.SetOrganizationUnit(input.OrganizationUnitId);
             if (input.DocumentTypeId is not null || input.SectorId is not null || input.UrgencyId is not null || input.ConfidentialityId is not null)
                 document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, now);
@@ -88,6 +122,7 @@ public sealed class DocumentAppService(
             catch (DbUpdateException exception) when (IsUniqueViolation(exception) && attempt < 2)
             {
                 db.ChangeTracker.Clear();
+                archiveNumbers.Add(number);
             }
             catch (DbUpdateException exception) when (IsUniqueViolation(exception))
             {
@@ -106,7 +141,17 @@ public sealed class DocumentAppService(
         DocumentAccess.RequirePermission(principal, DocumentPermissions.View);
         var document = await Query().SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (document is not null) DocumentAccess.EnsureCanView(document, userId, principal);
-        return document is null ? null : Map(document);
+        if (document is null) return null;
+        var dto = Map(document);
+        if (document.SourceType == DocumentSourceType.Workflow || dto.Status != DocumentStatus.Draft)
+            return dto;
+        var child = await db.Documents.AsNoTracking()
+            .Where(c => c.ParentDocumentId == document.Id && c.SourceType == DocumentSourceType.Workflow)
+            .OrderByDescending(c => c.CreationTime)
+            .Select(c => (DocumentStatus?)c.Status)
+            .FirstOrDefaultAsync(cancellationToken);
+        var display = DocumentStatusDisplay.Resolve(dto.Status, dto.IsSent, child);
+        return display == dto.Status ? dto : dto with { Status = display };
     }
 
     public async Task<DocumentDto> UpdateAsync(Guid id, UpdateDocumentRequest input, CancellationToken cancellationToken = default)
@@ -190,6 +235,8 @@ public sealed class DocumentAppService(
         var existingHistoryIds = document.History.Select(x => x.Id).ToHashSet();
         var now = DateTime.UtcNow;
         document.Send(input.ReceiverUserId, input.OrganizationUnitId, userId, now);
+        if (document.Status == DocumentStatus.Draft && document.Files.Any(f => !f.IsPendingDeletion))
+            document.Submit(userId, now);
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         if (input.ReceiverUserId is { } receiverUserId)
             EnqueueSentToInbox(document, userId, now, receiverUserId);
@@ -348,41 +395,18 @@ public sealed class DocumentAppService(
         db.DocumentHistories.AddRange(document.History.Where(x => !existingHistoryIds.Contains(x.Id)));
     }
 
-    private static string ResolveNumber(string? requested, DateTime now, int attempt = 0)
+    private async Task<string> ResolveNumberAsync(string? requested, AutoCodeKind kind, IReadOnlyList<string> existing, CancellationToken cancellationToken)
     {
         var normalized = requested?.Trim();
         if (!string.IsNullOrWhiteSpace(normalized)) return normalized;
-        return GenerateNumber(now, attempt);
+        return await AutoCode.AllocateAsync(codes, kind, null, existing, cancellationToken);
     }
 
     private static bool IsUniqueViolation(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
-    private static readonly TimeZoneInfo VietnamZone = ResolveVietnamZone();
-
-    internal static string GenerateNumber(DateTime now, int attempt = 0)
-    {
-        var utc = now.Kind switch
-        {
-            DateTimeKind.Utc => now,
-            DateTimeKind.Local => now.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(now, DateTimeKind.Utc)
-        };
-        var local = TimeZoneInfo.ConvertTimeFromUtc(utc, VietnamZone);
-        var stamp = local.ToString("yyyyMMdd-HHmmss");
-        return attempt <= 0 ? stamp : $"{stamp}-{attempt}";
-    }
-
-    private static TimeZoneInfo ResolveVietnamZone()
-    {
-        foreach (var id in new[] { "SE Asia Standard Time", "Asia/Ho_Chi_Minh" })
-        {
-            try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
-            catch (TimeZoneNotFoundException) { }
-            catch (InvalidTimeZoneException) { }
-        }
-        return TimeZoneInfo.CreateCustomTimeZone("ICT", TimeSpan.FromHours(7), "ICT", "ICT");
-    }
+    internal static string GenerateNumber(DateTime now, int attempt = 0) =>
+        AutoCode.Format(AutoCode.Defaults.Archive, Math.Max(attempt, 1));
 
     private void EnqueueSentToInbox(DocumentAggregate document, Guid senderUserId, DateTime now, params Guid[] recipientUserIds)
     {
@@ -423,7 +447,7 @@ public sealed class DocumentAppService(
         x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId,
         x.Files.Count(f => !f.IsPendingDeletion), DocumentSendState.IsActivelySent(x.History), x.DocumentCode);
 
-    private static DocumentDto MapList(DocumentAggregate x, int fileCount, bool isSent) => new(x.Id, x.Number, x.Title, x.Description, x.Status,
+    private static DocumentDto MapList(DocumentAggregate x, int fileCount, bool isSent, DocumentStatus status) => new(x.Id, x.Number, x.Title, x.Description, status,
         x.DocumentTypeId, x.SectorId, x.UrgencyId, x.ConfidentialityId,
         Array.Empty<DocumentFileDto>(), Array.Empty<DocumentAssignmentDto>(), Array.Empty<DocumentHistoryDto>(),
         x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId, fileCount, isSent, x.DocumentCode);

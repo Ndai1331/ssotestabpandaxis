@@ -270,6 +270,11 @@
           },
           "note": "Không gửi code"
         },
+        {
+          "method": "GET",
+          "path": "/api/projects/next-code",
+          "response": { "code": "PJ0012" }
+        },
         { "method": "DELETE", "path": "/api/projects/{id}", "response": "204" },
         {
           "method": "GET",
@@ -305,6 +310,11 @@
           "method": "GET",
           "path": "/api/project-tasks",
           "query": { "projectId": "guid", "filter": "", "status": "New", "skip": 0, "take": 20 }
+        },
+        {
+          "method": "GET",
+          "path": "/api/project-tasks/next-code?projectId={guid}",
+          "response": { "code": "T0008" }
         },
         {
           "method": "POST",
@@ -441,6 +451,12 @@
             "signerName": "Nguyễn Văn A",
             "note": null
           }
+        },
+        {
+          "method": "GET",
+          "path": "/api/workflows/next-code",
+          "response": { "code": "QT0008" },
+          "note": "Peek kinds+definitions. Không giữ chỗ; POST kinds/definitions để code null."
         },
         {
           "method": "POST",
@@ -665,6 +681,12 @@
           }
         },
         { "method": "GET", "path": "/api/documents/{id}" },
+        {
+          "method": "GET",
+          "path": "/api/documents/next-codes?sourceType=0",
+          "response": { "documentCode": "VB0012", "number": "LT-20270008" },
+          "note": "sourceType=1 dùng VBCN/LTCN. Không giữ chỗ; POST vẫn gửi null."
+        },
         {
           "method": "POST",
           "path": "/api/documents",

@@ -32,7 +32,7 @@ public sealed record UserDepartmentLookupDto(Guid UserId, Guid? DepartmentId, st
 
 public sealed class UpsertDepartmentDto
 {
-    [Required, StringLength(50)] public string Code { get; set; } = string.Empty;
+    [StringLength(50)] public string? Code { get; set; }
     [Required, StringLength(256)] public string Name { get; set; } = string.Empty;
     public Guid? ParentId { get; set; }
     [Range(0, 10_000)] public int SortOrder { get; set; }
@@ -42,7 +42,7 @@ public sealed class UpsertDepartmentDto
 public sealed class UpsertUnitDto
 {
     public Guid DepartmentId { get; set; }
-    [Required, StringLength(50)] public string Code { get; set; } = string.Empty;
+    [StringLength(50)] public string? Code { get; set; }
     [Required, StringLength(256)] public string Name { get; set; } = string.Empty;
     [Range(0, 10_000)] public int SortOrder { get; set; }
     public bool IsActive { get; set; } = true;
@@ -50,7 +50,7 @@ public sealed class UpsertUnitDto
 
 public sealed class UpsertPositionDto
 {
-    [Required, StringLength(50)] public string Code { get; set; } = string.Empty;
+    [StringLength(50)] public string? Code { get; set; }
     [Required, StringLength(256)] public string Name { get; set; } = string.Empty;
     [Range(0, 100)] public int SignOrder { get; set; }
     [Range(0, 10_000)] public int SortOrder { get; set; }
@@ -60,7 +60,7 @@ public sealed class UpsertPositionDto
 public sealed class UpsertMasterDataItemDto
 {
     [Required, StringLength(50)] public string Type { get; set; } = string.Empty;
-    [Required, StringLength(50)] public string Code { get; set; } = string.Empty;
+    [StringLength(50)] public string? Code { get; set; }
     [Required, StringLength(256)] public string Name { get; set; } = string.Empty;
     [Range(0, 10_000)] public int SortOrder { get; set; }
     public bool IsActive { get; set; } = true;

@@ -21,6 +21,7 @@ Tạo task: `ProjectTaskCreateModal` (từ list/detail).
 |---|---|---|
 | List | `GET` | `/api/projects?filter&status&skip&take` |
 | OU owner | `GET` | `/api/identity/organization-unit-lookup` |
+| Số tiếp theo (placeholder) | `GET` | `/api/projects/next-code` |
 | Tạo / sửa / xóa | `POST` `PUT` `DELETE` | `/api/projects`, `/api/projects/{id}` |
 | Mở chat dự án | `POST` | `/api/projects/{id}/chat-access` |
 | Tìm conversation | `GET` | `/api/chat/conversations/by-project/{id}` (`404` = chưa có) |
@@ -41,6 +42,7 @@ Tạo task: `ProjectTaskCreateModal` (từ list/detail).
 | List projects (filter) | `GET` | `/api/projects` |
 | List tasks | `GET` | `/api/project-tasks?projectId&filter&status&skip&take` |
 | Đổi status (kanban) / xóa | `PUT` `DELETE` | `/api/project-tasks/{id}` |
+| Số tiếp theo (placeholder) | `GET` | `/api/project-tasks/next-code?projectId=` |
 | Tạo (modal) | `POST` | `/api/project-tasks` |
 | Gán người / văn bản lúc tạo | `POST` | `.../assignments`, `.../documents` |
 
@@ -55,6 +57,8 @@ Paged `{ totalCount, items }`. Query: `skip`, `take` (max 100), `filter`, `statu
 List item: `id`, `code`, `name`, `description`, `startDate`, `endDate`, `status`, `ownerDepartmentId`, `ownerUserId`, `memberCount`, `taskCount`, `canManage`, `canDelete`.
 
 ### POST `/api/projects`
+
+`GET /api/projects/next-code` → `{ "code": "PJ0012" }` (placeholder, không giữ chỗ). Để `code` null khi POST để server cấp.
 
 ```json
 {
@@ -97,6 +101,8 @@ Task: `id`, `projectId`, `parentTaskId`, `code`, `title`, `description`, `startD
 `priority` / `status` Web gửi **string** (không enum số).
 
 ### POST `/api/project-tasks`
+
+`GET /api/project-tasks/next-code?projectId={guid}` → `{ "code": "T0008" }` (theo từng dự án, không giữ chỗ). Để `code` null khi POST.
 
 ```json
 {

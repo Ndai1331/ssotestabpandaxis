@@ -335,7 +335,7 @@ public partial class ChatWorkspace
             var created = await Work.CreateTaskAsync(new CreateProjectTaskRequest(
                 project,
                 selected.Type == ConversationType.Task ? selected.TaskId : null,
-                $"CHAT-{Guid.NewGuid():N}"[..12],
+                null,
                 title,
                 string.IsNullOrWhiteSpace(taskNote) ? null : taskNote.Trim(),
                 start,

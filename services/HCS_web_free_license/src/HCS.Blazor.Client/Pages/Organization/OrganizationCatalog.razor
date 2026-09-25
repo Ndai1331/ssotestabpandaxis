@@ -210,11 +210,12 @@
                         @* HcsIsolatedTextInput is a plain input — do not wrap in Blazorise Validation
                            (ValidateAll requires IValidationInput and throws "Input component is not assigned"). *@
                         <Field>
-                            <FieldLabel>@L["Catalog:Code"] *</FieldLabel>
+                            <FieldLabel>@L["Catalog:Code"]</FieldLabel>
                             <HcsIsolatedTextInput @bind-Value="form.Code"
                                                  Name="hcsCatalogCode"
                                                  MaxLength="50"
                                                  Autofocus="true"
+                                                 Placeholder="@(editingId is null ? string.Format(L["Catalog:CodeAuto"], Features.Prefix(AutoCodeKind.Catalog)) : null)"
                                                  CssClass="form-control hcs-catalog-input hcs-catalog-input--code" />
                         </Field>
                         <Field>

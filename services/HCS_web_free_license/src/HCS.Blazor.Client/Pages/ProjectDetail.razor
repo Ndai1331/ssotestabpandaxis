@@ -7,6 +7,7 @@
 @inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
 @inject NavigationManager Navigation
+@inject SystemFeatureState Features
 
 <PageTitle>@(IsCreate ? L["Feature:ProjectCreate"] : L["Feature:ProjectDetail"]) · HCS</PageTitle>
 <section class="page page-wf page-pj pj-detail" aria-labelledby="project-detail-title">
@@ -168,13 +169,15 @@
     private Guid? memberUserId;
     private string memberRole = "Member";
     private bool isLoading, isSaving;
+    private string? nextProjectCode;
     private bool IsCreate => ProjectId is null;
     private bool CanManageProject => IsCreate || detail?.Project.CanManage == true;
+    private string ProjectCodePlaceholder => nextProjectCode ?? Features.Prefix(AutoCodeKind.Project);
 
     private RenderFragment ProjectFields(bool editableCode) => @<text>
         <div class="pj-detail__fields">
             <div class="pj-detail__fields-row">
-                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Code" Name="hcsProjectDetailCode" MaxLength="64" Disabled="@(!editableCode)" /></Field>
+                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Code" Name="hcsProjectDetailCode" MaxLength="64" Disabled="@(!editableCode)" Placeholder="@(editableCode ? ProjectCodePlaceholder : null)" /></Field>
                 <Field><FieldLabel>@L["Feature:ProjectName"]</FieldLabel><HcsIsolatedTextInput @bind-Value="projectForm.Name" Name="hcsProjectDetailName" Disabled="@(!CanManageProject)" /></Field>
                 <Field><FieldLabel>@L["Feature:StartDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="projectForm.StartDate" InputMode="DateInputMode.DateTime" ShowTodayButton="@CanManageProject" ShowClearButton="@CanManageProject" Disabled="@(!CanManageProject)" /></Field>
                 <Field><FieldLabel>@L["Feature:EndDate"]</FieldLabel><HcsDatePicker TValue="DateTime" @bind-Value="projectForm.EndDate" InputMode="DateInputMode.DateTime" ShowTodayButton="@CanManageProject" ShowClearButton="@CanManageProject" Disabled="@(!CanManageProject)" /></Field>
@@ -247,6 +250,11 @@
                 BindProjectForm(detail.Project);
                 await ChatContactDirectory.EnsureAsync(Chat, contacts, detail.Members.Select(x => x.UserId), CurrentUser);
             }
+            else if (IsCreate)
+            {
+                nextProjectCode = null;
+                try { nextProjectCode = (await Work.GetNextProjectCodeAsync()).Code; } catch { }
+            }
         }
         catch (Exception ex) { await NotifyErrorAsync(ex); }
         finally { isLoading = false; }
@@ -272,7 +280,7 @@
         try
         {
             await Work.CreateProjectAsync(new CreateProjectRequest(
-                projectForm.Code.Trim(), projectForm.Name.Trim(), Blank(projectForm.Description),
+                Blank(projectForm.Code), projectForm.Name.Trim(), Blank(projectForm.Description),
                 projectForm.StartDate, projectForm.EndDate, projectForm.Status, projectForm.OwnerDepartmentId));
             await NotifySuccessAsync(L["Catalog:Created"]);
             Navigation.NavigateTo("/projects");

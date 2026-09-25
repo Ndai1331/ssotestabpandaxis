@@ -213,8 +213,14 @@
                             <p class="hcs-nav-menu__label">@Localizer["Menu:DocumentCatalogs"]</p>
                             <NavLink href="/document-types" @onclick="CloseMobileNav"><i class="fa fa-file-lines" aria-hidden="true"></i>@Localizer["Menu:DocumentTypes"]</NavLink>
                             <NavLink href="/sectors" @onclick="CloseMobileNav"><i class="fa fa-folder-tree" aria-hidden="true"></i>@Localizer["Menu:Sectors"]</NavLink>
+                            @if (Features.ShowDocumentUrgency)
+                            {
                             <NavLink href="/urgency-levels" @onclick="CloseMobileNav"><i class="fa fa-bolt" aria-hidden="true"></i>@Localizer["Menu:UrgencyLevels"]</NavLink>
+                            }
+                            @if (Features.ShowDocumentConfidentiality)
+                            {
                             <NavLink href="/confidentiality-levels" @onclick="CloseMobileNav"><i class="fa fa-lock" aria-hidden="true"></i>@Localizer["Menu:ConfidentialityLevels"]</NavLink>
+                            }
                             <NavLink href="/processing-methods" @onclick="CloseMobileNav"><i class="fa fa-gears" aria-hidden="true"></i>@Localizer["Menu:ProcessingMethods"]</NavLink>
                             <NavLink href="/document-status" @onclick="CloseMobileNav"><i class="fa fa-circle-check" aria-hidden="true"></i>@Localizer["Menu:DocumentStatus"]</NavLink>
                             <NavLink href="/signing-methods" @onclick="CloseMobileNav"><i class="fa fa-pen-nib" aria-hidden="true"></i>@Localizer["Menu:SigningMethods"]</NavLink>

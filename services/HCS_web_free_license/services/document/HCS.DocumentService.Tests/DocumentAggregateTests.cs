@@ -172,12 +172,12 @@ public sealed class DocumentAggregateTests
     }
 
     [Fact]
-    public void Generated_document_number_is_date_prefixed_and_compact()
+    public void Generated_archive_number_uses_the_configured_prefix()
     {
         var number = DocumentAppService.GenerateNumber(Now);
 
-        Assert.Equal("20260803-070000", number);
-        Assert.Matches(@"^\d{8}-\d{6}$", number);
+        Assert.Equal("LT0001", number);
+        Assert.Equal("LT0003", DocumentAppService.GenerateNumber(Now, 3));
     }
 
     [Fact]
@@ -202,6 +202,18 @@ public sealed class DocumentAggregateTests
         document.StartReview(null, Now, "Nội dung trình ký");
 
         Assert.Equal("Nội dung trình ký", document.History.Single(x => x.Action == "ReviewStarted").Detail);
+    }
+
+    [Theory]
+    [InlineData(DocumentStatus.Draft, false, null, DocumentStatus.Draft)]
+    [InlineData(DocumentStatus.Draft, true, null, DocumentStatus.Submitted)]
+    [InlineData(DocumentStatus.Draft, false, DocumentStatus.InReview, DocumentStatus.InReview)]
+    [InlineData(DocumentStatus.Draft, true, DocumentStatus.Approved, DocumentStatus.Approved)]
+    [InlineData(DocumentStatus.Approved, true, DocumentStatus.InReview, DocumentStatus.Approved)]
+    public void Display_status_follows_send_and_workflow_child(
+        DocumentStatus stored, bool isSent, DocumentStatus? workflowChild, DocumentStatus expected)
+    {
+        Assert.Equal(expected, DocumentStatusDisplay.Resolve(stored, isSent, workflowChild));
     }
 
     [Fact]

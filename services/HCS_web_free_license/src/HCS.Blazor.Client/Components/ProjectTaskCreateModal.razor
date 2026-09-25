@@ -3,6 +3,7 @@
 @inject DocumentClient Documents
 @inject CollaborationClient Chat
 @inject IUiMessageService UiMessage
+@inject SystemFeatureState Features
 
 <Modal @ref="modal" Size="ModalSize.Large">
     <ModalContent Centered Class="hcs-catalog-modal">
@@ -40,7 +41,7 @@
                                 </Select>
                             </Field>
                             <div class="hcs-form-row">
-                                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="code" Name="hcsTaskCode" MaxLength="64" Disabled="@(createdId is not null)" /></Field>
+                                <Field><FieldLabel>@L["Catalog:Code"]</FieldLabel><HcsIsolatedTextInput @bind-Value="code" Name="hcsTaskCode" MaxLength="64" Disabled="@(createdId is not null)" Placeholder="@(createdId is null ? TaskCodePlaceholder : null)" /></Field>
                                 <Field><FieldLabel>@L["Feature:TaskTitle"]</FieldLabel><HcsIsolatedTextInput @bind-Value="title" Name="hcsTaskTitle" /></Field>
                             </div>
                             <Field><FieldLabel>@L["Feature:Description"]</FieldLabel><textarea class="form-control" rows="3" @bind="description"></textarea></Field>
@@ -148,6 +149,8 @@
     private List<TaskDocumentReferenceDto> documentReferences = [];
     private Guid? projectId, selectedProjectId, parentTaskId, createdId, assigneeId, linkedDocumentId;
     private string tab = "general", code = "", title = "", description = "", priority = "Normal", status = "New", assignmentType = "Member";
+    private string? nextTaskCode;
+    private string TaskCodePlaceholder => nextTaskCode ?? Features.Prefix(AutoCodeKind.Task);
     private DateTime startDate = DateTime.Today, dueDate = DateTime.Today.AddDays(7);
     private bool isSaving, isAssigning;
 
@@ -167,6 +170,7 @@
         catch { }
         await ChatContactDirectory.EnsureAsync(Chat, contacts, CurrentUser.Id is { } me ? [me] : [], CurrentUser);
         await LoadParentsAsync();
+        await LoadNextTaskCodeAsync();
         if (linkedDocumentId is { } linked)
         {
             try
@@ -194,6 +198,15 @@
         parentOptions.Clear();
         assignments.Clear();
         documentReferences = [];
+        nextTaskCode = null;
+    }
+
+    private async Task LoadNextTaskCodeAsync()
+    {
+        nextTaskCode = null;
+        var id = projectId ?? selectedProjectId;
+        if (id is not { } project) return;
+        try { nextTaskCode = (await Work.GetNextTaskCodeAsync(project)).Code; } catch { }
     }
 
     private async Task OnProjectChanged(Guid? value)
@@ -201,6 +214,7 @@
         selectedProjectId = value;
         parentTaskId = null;
         await LoadParentsAsync();
+        await LoadNextTaskCodeAsync();
     }
 
     private async Task OnTabChanged(string value)
@@ -245,7 +259,7 @@
         try
         {
             var created = await Work.CreateTaskAsync(new CreateProjectTaskRequest(
-                project, parentTaskId, code.Trim(), title.Trim(),
+                project, parentTaskId, string.IsNullOrWhiteSpace(code) ? null : code.Trim(), title.Trim(),
                 string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
                 startDate, dueDate, priority, status, 0));
             createdId = created.Id;

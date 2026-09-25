@@ -1,4 +1,5 @@
 using System.Globalization;
+using HCS.Coding;
 using HCS.WorkManagementService.Contracts;
 using HCS.WorkManagementService.Contracts.Integration;
 using HCS.WorkManagementService.Data;
@@ -18,8 +19,13 @@ public static class SurveySubmissionIdentity
     public static Guid Resolve(Guid authenticatedUserId, Guid? untrustedRequestedUserId) => authenticatedUserId;
 }
 
-public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuthorization access, OutboxDispatcher outbox) : ITransientDependency
+public sealed class ProjectAppService(
+    WorkManagementDbContext db,
+    WorkRecordAuthorization access,
+    OutboxDispatcher outbox,
+    IAutoCodeSettings? autoCode = null) : ITransientDependency
 {
+    private readonly IAutoCodeSettings codes = autoCode ?? DefaultAutoCodeSettings.Instance;
     public async Task<PagedWorkDto<ProjectDto>> GetListAsync(string? filter, string? status, int skip, int take, CancellationToken ct)
     {
         skip = Math.Max(skip, 0);
@@ -64,10 +70,20 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
         return new(Map(project), members, tasks);
     }
 
+    public async Task<NextCodeDto> GetNextCodeAsync(CancellationToken ct)
+    {
+        var existing = await db.Projects.Select(x => x.Code).ToListAsync(ct);
+        var code = await AutoCode.AllocateAsync(codes, AutoCodeKind.Project, null, existing, ct);
+        return new NextCodeDto(code);
+    }
+
     public async Task<ProjectDto> CreateAsync(CreateProjectDto input, CancellationToken ct)
     {
-        if (await db.Projects.AnyAsync(x => x.Code == input.Code, ct)) throw new BusinessException("Work:DuplicateProjectCode");
-        var project = new Project(Guid.NewGuid(), input.Code, input.Name, input.StartDate, input.EndDate,
+        var existing = await db.Projects.Select(x => x.Code).ToListAsync(ct);
+        var code = await AutoCode.AllocateAsync(codes, AutoCodeKind.Project, input.Code, existing, ct);
+        if (existing.Any(x => string.Equals(x, code, StringComparison.OrdinalIgnoreCase)))
+            throw new BusinessException("Work:DuplicateProjectCode");
+        var project = new Project(Guid.NewGuid(), code, input.Name, input.StartDate, input.EndDate,
             input.Status, input.OwnerDepartmentId, access.UserId, input.Description);
         db.Projects.Add(project);
         await WorkCalendarLinker.SyncProjectAsync(db, project, ct);
@@ -189,8 +205,12 @@ public sealed class ProjectAppService(WorkManagementDbContext db, WorkRecordAuth
     private static string Correlation() => System.Diagnostics.Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
 }
 
-public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecordAuthorization access) : ITransientDependency
+public sealed class ProjectTaskAppService(
+    WorkManagementDbContext db,
+    WorkRecordAuthorization access,
+    IAutoCodeSettings? autoCode = null) : ITransientDependency
 {
+    private readonly IAutoCodeSettings codes = autoCode ?? DefaultAutoCodeSettings.Instance;
     public async Task<PagedWorkDto<ProjectTaskDto>> GetListAsync(Guid? projectId, string? filter, string? status, int skip, int take, CancellationToken ct)
     {
         skip = Math.Max(skip, 0);
@@ -226,6 +246,15 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         return new(Map(task, canCreate.Contains(task.ProjectId), owner), assignments, documents);
     }
 
+    public async Task<NextCodeDto> GetNextCodeAsync(Guid projectId, CancellationToken ct)
+    {
+        await access.DemandProjectMemberAsync(projectId, ct);
+        if (!await db.Projects.AnyAsync(x => x.Id == projectId, ct)) throw new EntityNotFoundException(typeof(Project), projectId);
+        var existing = await db.ProjectTasks.Where(x => x.ProjectId == projectId).Select(x => x.Code).ToListAsync(ct);
+        var code = await AutoCode.AllocateAsync(codes, AutoCodeKind.Task, null, existing, ct);
+        return new NextCodeDto(code);
+    }
+
     public async Task<ProjectTaskDto> CreateAsync(CreateProjectTaskDto input, CancellationToken ct)
     {
         await access.DemandProjectMemberAsync(input.ProjectId, ct);
@@ -233,9 +262,11 @@ public sealed class ProjectTaskAppService(WorkManagementDbContext db, WorkRecord
         if (input.ParentTaskId.HasValue && !await access.VisibleTasks()
                 .AnyAsync(x => x.Id == input.ParentTaskId && x.ProjectId == input.ProjectId, ct))
             throw new BusinessException("Work:InvalidParentTask");
-        if (await db.ProjectTasks.AnyAsync(x => x.ProjectId == input.ProjectId && x.Code == input.Code, ct))
+        var existing = await db.ProjectTasks.Where(x => x.ProjectId == input.ProjectId).Select(x => x.Code).ToListAsync(ct);
+        var code = await AutoCode.AllocateAsync(codes, AutoCodeKind.Task, input.Code, existing, ct);
+        if (existing.Any(x => string.Equals(x, code, StringComparison.OrdinalIgnoreCase)))
             throw new BusinessException("Work:DuplicateTaskCode");
-        var task = new ProjectTask(Guid.NewGuid(), input.ProjectId, input.ParentTaskId, input.Code, input.Title,
+        var task = new ProjectTask(Guid.NewGuid(), input.ProjectId, input.ParentTaskId, code, input.Title,
             input.Description, input.StartDate, input.DueDate, input.Priority, input.Status, input.ProgressPercent);
         task.SetCreatedBy(access.UserId);
         db.ProjectTasks.Add(task); AddEvent(task, "Created", []);

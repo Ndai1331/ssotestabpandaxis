@@ -1,4 +1,5 @@
-﻿using HCS.Localization;
+﻿using HCS.Coding;
+using HCS.Localization;
 using Volo.Abp.Localization;
 using Volo.Abp.Settings;
 
@@ -83,11 +84,33 @@ public class HCSSettingDefinitionProvider : SettingDefinitionProvider
                 isVisibleToClients: true));
         context.Add(
             new SettingDefinition(
+                HCSSettings.ShowDocumentUrgency,
+                defaultValue: "true",
+                displayName: L("Settings:ShowDocumentUrgency"),
+                description: L("Settings:ShowDocumentUrgencyDescription"),
+                isVisibleToClients: true));
+        context.Add(
+            new SettingDefinition(
+                HCSSettings.ShowDocumentConfidentiality,
+                defaultValue: "true",
+                displayName: L("Settings:ShowDocumentConfidentiality"),
+                description: L("Settings:ShowDocumentConfidentialityDescription"),
+                isVisibleToClients: true));
+        context.Add(
+            new SettingDefinition(
                 HCSSettings.ChatAttachmentMaxMegabytes,
                 defaultValue: HCSSettings.ChatAttachmentMaxMegabytesDefault.ToString(),
                 displayName: L("Settings:ChatAttachmentMaxMegabytes"),
                 description: L("Settings:ChatAttachmentMaxMegabytesDescription"),
                 isVisibleToClients: true));
+        AddAutoCodePrefix(context, HCSSettings.AutoCodeProjectPrefix, "Settings:AutoCodeProject", AutoCode.Defaults.Project);
+        AddAutoCodePrefix(context, HCSSettings.AutoCodeTaskPrefix, "Settings:AutoCodeTask", AutoCode.Defaults.Task);
+        AddAutoCodePrefix(context, HCSSettings.AutoCodeDocumentPrefix, "Settings:AutoCodeDocument", AutoCode.Defaults.Document);
+        AddAutoCodePrefix(context, HCSSettings.AutoCodePersonalDocumentPrefix, "Settings:AutoCodePersonalDocument", AutoCode.Defaults.PersonalDocument);
+        AddAutoCodePrefix(context, HCSSettings.AutoCodeArchivePrefix, "Settings:AutoCodeArchive", AutoCode.Defaults.Archive);
+        AddAutoCodePrefix(context, HCSSettings.AutoCodePersonalArchivePrefix, "Settings:AutoCodePersonalArchive", AutoCode.Defaults.PersonalArchive);
+        AddAutoCodePrefix(context, HCSSettings.AutoCodeWorkflowPrefix, "Settings:AutoCodeWorkflow", AutoCode.Defaults.Workflow);
+        AddAutoCodePrefix(context, HCSSettings.AutoCodeCatalogPrefix, "Settings:AutoCodeCatalog", AutoCode.Defaults.Catalog);
         context.Add(
             new SettingDefinition(
                 HCSSettings.LegacySigningReportEnabled,
@@ -125,6 +148,21 @@ public class HCSSettingDefinitionProvider : SettingDefinitionProvider
                 isVisibleToClients: false,
                 isEncrypted: true));
         StorageSettingDefinitions.Add(context);
+    }
+
+    private static void AddAutoCodePrefix(
+        ISettingDefinitionContext context,
+        string name,
+        string displayName,
+        string defaultValue)
+    {
+        context.Add(
+            new SettingDefinition(
+                name,
+                defaultValue: defaultValue,
+                displayName: L(displayName),
+                description: L("Settings:AutoCodePrefixDescription"),
+                isVisibleToClients: true));
     }
 
     private static LocalizableString L(string name)

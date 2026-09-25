@@ -1,4 +1,5 @@
 ﻿using System;
+using HCS.Coding;
 
 namespace HCS.Settings;
 
@@ -19,10 +20,20 @@ public static class HCSSettings
     public const string KeycloakRoleMappings = Prefix + ".Authentication.Keycloak.RoleMappings";
     public const string KeycloakRevision = Prefix + ".Authentication.Keycloak.Revision";
     public const string AllowSigningFromDocuments = Prefix + ".Workflow.AllowSigningFromDocuments";
+    public const string ShowDocumentUrgency = Prefix + ".Documents.ShowUrgency";
+    public const string ShowDocumentConfidentiality = Prefix + ".Documents.ShowConfidentiality";
     public const string ChatAttachmentMaxMegabytes = Prefix + ".Chat.AttachmentMaxMegabytes";
     public const int ChatAttachmentMaxMegabytesDefault = 512;
     public const int ChatAttachmentMaxMegabytesMin = 1;
     public const int ChatAttachmentMaxMegabytesMax = 2048;
+    public const string AutoCodeProjectPrefix = Prefix + ".AutoCode.ProjectPrefix";
+    public const string AutoCodeTaskPrefix = Prefix + ".AutoCode.TaskPrefix";
+    public const string AutoCodeDocumentPrefix = Prefix + ".AutoCode.DocumentPrefix";
+    public const string AutoCodePersonalDocumentPrefix = Prefix + ".AutoCode.PersonalDocumentPrefix";
+    public const string AutoCodeArchivePrefix = Prefix + ".AutoCode.ArchivePrefix";
+    public const string AutoCodePersonalArchivePrefix = Prefix + ".AutoCode.PersonalArchivePrefix";
+    public const string AutoCodeWorkflowPrefix = Prefix + ".AutoCode.WorkflowPrefix";
+    public const string AutoCodeCatalogPrefix = Prefix + ".AutoCode.CatalogPrefix";
     public const string BrandingTitle = Prefix + ".Branding.Title";
     public const string BrandingDescription = Prefix + ".Branding.Description";
     public const string BrandingShowText = Prefix + ".Branding.ShowText";
@@ -66,4 +77,20 @@ public static class HCSSettings
 
     public static long ChatAttachmentMaxBytes(int megabytes) =>
         (long)ClampChatAttachmentMaxMegabytes(megabytes) * 1024 * 1024;
+
+    public static string ParseAutoCodePrefix(string? value, AutoCodeKind kind) =>
+        AutoCode.NormalizePrefix(value, kind);
+
+    public static string SettingName(AutoCodeKind kind) => kind switch
+    {
+        AutoCodeKind.Project => AutoCodeProjectPrefix,
+        AutoCodeKind.Task => AutoCodeTaskPrefix,
+        AutoCodeKind.Document => AutoCodeDocumentPrefix,
+        AutoCodeKind.PersonalDocument => AutoCodePersonalDocumentPrefix,
+        AutoCodeKind.Archive => AutoCodeArchivePrefix,
+        AutoCodeKind.PersonalArchive => AutoCodePersonalArchivePrefix,
+        AutoCodeKind.Workflow => AutoCodeWorkflowPrefix,
+        AutoCodeKind.Catalog => AutoCodeCatalogPrefix,
+        _ => AutoCodeCatalogPrefix
+    };
 }

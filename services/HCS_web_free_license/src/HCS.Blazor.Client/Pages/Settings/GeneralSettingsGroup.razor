@@ -1,5 +1,6 @@
 @using HCS.Blazor.Client.Collaboration
 @using HCS.Blazor.Client.Settings
+@using HCS.Coding
 @using HCS.Settings
 @inherits HCSComponentBase
 @inject SystemFeatureSettingsClient SettingsClient
@@ -29,42 +30,93 @@
         <div class="hcs-settings-section">
             <h3>@L["Settings:GeneralGroup"]</h3>
             <p>@L["Settings:GeneralDescription"]</p>
-            <div class="hcs-settings-option">
-                <div>
-                    <h4>@L["Settings:AllowSigningFromDocuments"]</h4>
-                    <p id="hcs-allow-signing-from-documents-description">@L["Settings:AllowSigningFromDocumentsDescription"]</p>
+            <div class="hcs-settings-option-grid">
+                <div class="hcs-settings-option">
+                    <div>
+                        <h4>@L["Settings:AllowSigningFromDocuments"]</h4>
+                        <p id="hcs-allow-signing-from-documents-description">@L["Settings:AllowSigningFromDocumentsDescription"]</p>
+                    </div>
+                    <button type="button"
+                            class="hcs-settings-switch @(allowSigningFromDocuments ? "is-enabled" : null)"
+                            aria-pressed="@(allowSigningFromDocuments ? "true" : "false")"
+                            aria-describedby="hcs-allow-signing-from-documents-description"
+                            @onclick="ToggleAllowSigningFromDocuments"
+                            disabled="@isSaving">
+                        <span class="hcs-settings-switch__track" aria-hidden="true">
+                            <span class="hcs-settings-switch__thumb"></span>
+                        </span>
+                        <span>@(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsEnabled"] : L["Settings:AllowSigningFromDocumentsDisabled"])</span>
+                    </button>
                 </div>
-                <button type="button"
-                        class="hcs-settings-switch @(allowSigningFromDocuments ? "is-enabled" : null)"
-                        aria-pressed="@(allowSigningFromDocuments ? "true" : "false")"
-                        aria-describedby="hcs-allow-signing-from-documents-description"
-                        @onclick="ToggleAllowSigningFromDocuments"
-                        disabled="@isSaving">
-                    <span class="hcs-settings-switch__track" aria-hidden="true">
-                        <span class="hcs-settings-switch__thumb"></span>
-                    </span>
-                    <span>@(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsEnabled"] : L["Settings:AllowSigningFromDocumentsDisabled"])</span>
-                </button>
+                <div class="hcs-settings-option">
+                    <div>
+                        <h4>@L["Settings:ShowDocumentUrgency"]</h4>
+                        <p id="hcs-show-document-urgency-description">@L["Settings:ShowDocumentUrgencyDescription"]</p>
+                    </div>
+                    <button type="button"
+                            class="hcs-settings-switch @(showDocumentUrgency ? "is-enabled" : null)"
+                            aria-pressed="@(showDocumentUrgency ? "true" : "false")"
+                            aria-describedby="hcs-show-document-urgency-description"
+                            @onclick="ToggleShowDocumentUrgency"
+                            disabled="@isSaving">
+                        <span class="hcs-settings-switch__track" aria-hidden="true">
+                            <span class="hcs-settings-switch__thumb"></span>
+                        </span>
+                        <span>@(showDocumentUrgency ? L["Settings:AllowSigningFromDocumentsEnabled"] : L["Settings:AllowSigningFromDocumentsDisabled"])</span>
+                    </button>
+                </div>
+                <div class="hcs-settings-option">
+                    <div>
+                        <h4>@L["Settings:ShowDocumentConfidentiality"]</h4>
+                        <p id="hcs-show-document-confidentiality-description">@L["Settings:ShowDocumentConfidentialityDescription"]</p>
+                    </div>
+                    <button type="button"
+                            class="hcs-settings-switch @(showDocumentConfidentiality ? "is-enabled" : null)"
+                            aria-pressed="@(showDocumentConfidentiality ? "true" : "false")"
+                            aria-describedby="hcs-show-document-confidentiality-description"
+                            @onclick="ToggleShowDocumentConfidentiality"
+                            disabled="@isSaving">
+                        <span class="hcs-settings-switch__track" aria-hidden="true">
+                            <span class="hcs-settings-switch__thumb"></span>
+                        </span>
+                        <span>@(showDocumentConfidentiality ? L["Settings:AllowSigningFromDocumentsEnabled"] : L["Settings:AllowSigningFromDocumentsDisabled"])</span>
+                    </button>
+                </div>
+                <div class="hcs-settings-option">
+                    <div>
+                        <h4>@L["Settings:ChatAttachmentMaxMegabytes"]</h4>
+                        <p id="hcs-chat-attachment-max-description">@L["Settings:ChatAttachmentMaxMegabytesDescription"]</p>
+                    </div>
+                    <label class="hcs-settings-number" for="hcs-chat-attachment-max">
+                        <span class="sr-only">@L["Settings:ChatAttachmentMaxMegabytes"]</span>
+                        <input class="input"
+                               id="hcs-chat-attachment-max"
+                               type="number"
+                               min="@HCSSettings.ChatAttachmentMaxMegabytesMin"
+                               max="@HCSSettings.ChatAttachmentMaxMegabytesMax"
+                               step="1"
+                               value="@chatAttachmentMaxMegabytes"
+                               aria-describedby="hcs-chat-attachment-max-description"
+                               disabled="@isSaving"
+                               @onchange="OnChatAttachmentMaxChanged" />
+                        <span>@L["Settings:ChatAttachmentMaxMegabytesUnit"]</span>
+                    </label>
+                </div>
             </div>
-            <div class="hcs-settings-option">
-                <div>
-                    <h4>@L["Settings:ChatAttachmentMaxMegabytes"]</h4>
-                    <p id="hcs-chat-attachment-max-description">@L["Settings:ChatAttachmentMaxMegabytesDescription"]</p>
-                </div>
-                <label class="hcs-settings-number" for="hcs-chat-attachment-max">
-                    <span class="sr-only">@L["Settings:ChatAttachmentMaxMegabytes"]</span>
-                    <input class="input"
-                           id="hcs-chat-attachment-max"
-                           type="number"
-                           min="@HCSSettings.ChatAttachmentMaxMegabytesMin"
-                           max="@HCSSettings.ChatAttachmentMaxMegabytesMax"
-                           step="1"
-                           value="@chatAttachmentMaxMegabytes"
-                           aria-describedby="hcs-chat-attachment-max-description"
-                           disabled="@isSaving"
-                           @onchange="OnChatAttachmentMaxChanged" />
-                    <span>@L["Settings:ChatAttachmentMaxMegabytesUnit"]</span>
-                </label>
+        </div>
+
+        <div class="hcs-settings-section">
+            <h3>@L["Settings:AutoCodeGroup"]</h3>
+            <p>@L["Settings:AutoCodeDescription"]</p>
+            <div class="hcs-autocode-grid">
+                @PrefixField(AutoCodeKind.Project, "hcs-autocode-project", projectPrefix, value => { projectPrefix = value; MarkDirty(); })
+                @PrefixField(AutoCodeKind.Task, "hcs-autocode-task", taskPrefix, value => { taskPrefix = value; MarkDirty(); })
+                @PrefixField(AutoCodeKind.Document, "hcs-autocode-document", documentPrefix, value => { documentPrefix = value; MarkDirty(); })
+                @PrefixField(AutoCodeKind.PersonalDocument, "hcs-autocode-personal-document", personalDocumentPrefix, value => { personalDocumentPrefix = value; MarkDirty(); })
+                @PrefixField(AutoCodeKind.Archive, "hcs-autocode-archive", archivePrefix, value => { archivePrefix = value; MarkDirty(); })
+                @PrefixField(AutoCodeKind.PersonalArchive, "hcs-autocode-personal-archive", personalArchivePrefix, value => { personalArchivePrefix = value; MarkDirty(); })
+                @PrefixField(AutoCodeKind.Workflow, "hcs-autocode-workflow", workflowPrefix, value => { workflowPrefix = value; MarkDirty(); })
+                @PrefixField(AutoCodeKind.Catalog, "hcs-autocode-catalog", catalogPrefix, value => { catalogPrefix = value; MarkDirty(); })
             </div>
         </div>
 
@@ -72,7 +124,7 @@
         {
             <footer class="hcs-settings-footer">
                 <p class="hcs-settings-hint" role="status">
-                    @(allowSigningFromDocuments ? L["Settings:AllowSigningFromDocumentsStatusEnabled"] : L["Settings:AllowSigningFromDocumentsStatusDisabled"])
+                    @L["Settings:AutoCodeSaveHint"]
                 </p>
                 <div class="page-actions">
                     <button class="btn btn-primary" type="button" @onclick="SaveAsync" disabled="@(isSaving || !isDirty)">
@@ -93,10 +145,50 @@
     private bool isSaving;
     private bool isDirty;
     private bool allowSigningFromDocuments = true;
+    private bool showDocumentUrgency = true;
+    private bool showDocumentConfidentiality = true;
     private int chatAttachmentMaxMegabytes = HCSSettings.ChatAttachmentMaxMegabytesDefault;
+    private string projectPrefix = AutoCode.Defaults.Project;
+    private string taskPrefix = AutoCode.Defaults.Task;
+    private string documentPrefix = AutoCode.Defaults.Document;
+    private string personalDocumentPrefix = AutoCode.Defaults.PersonalDocument;
+    private string archivePrefix = AutoCode.Defaults.Archive;
+    private string personalArchivePrefix = AutoCode.Defaults.PersonalArchive;
+    private string workflowPrefix = AutoCode.Defaults.Workflow;
+    private string catalogPrefix = AutoCode.Defaults.Catalog;
     private string? errorMessage;
 
     protected override Task OnInitializedAsync() => LoadAsync();
+
+    private RenderFragment PrefixField(AutoCodeKind kind, string id, string value, Action<string> changed) => __builder =>
+    {
+        var title = kind switch
+        {
+            AutoCodeKind.Project => L["Settings:AutoCodeProject"],
+            AutoCodeKind.Task => L["Settings:AutoCodeTask"],
+            AutoCodeKind.Document => L["Settings:AutoCodeDocument"],
+            AutoCodeKind.PersonalDocument => L["Settings:AutoCodePersonalDocument"],
+            AutoCodeKind.Archive => L["Settings:AutoCodeArchive"],
+            AutoCodeKind.PersonalArchive => L["Settings:AutoCodePersonalArchive"],
+            AutoCodeKind.Workflow => L["Settings:AutoCodeWorkflow"],
+            _ => L["Settings:AutoCodeCatalog"]
+        };
+        var prefix = HCSSettings.ParseAutoCodePrefix(value, kind);
+        <div class="hcs-autocode-card">
+            <label class="field-label" for="@id">@title</label>
+            <div class="hcs-autocode-card__row">
+                <input class="input"
+                       id="@id"
+                       value="@value"
+                       maxlength="@AutoCode.MaxPrefixLength"
+                       autocomplete="off"
+                       spellcheck="false"
+                       disabled="@isSaving"
+                       @oninput="args => changed(args.Value?.ToString() ?? string.Empty)" />
+                <span class="hcs-autocode-preview" title="@L["Settings:AutoCodePreview"]">@AutoCode.Preview(prefix)</span>
+            </div>
+        </div>
+    };
 
     private async Task LoadAsync()
     {
@@ -106,7 +198,17 @@
         {
             var settings = await SettingsClient.GetAsync();
             allowSigningFromDocuments = settings.AllowSigningFromDocuments;
+            showDocumentUrgency = settings.ShowDocumentUrgency;
+            showDocumentConfidentiality = settings.ShowDocumentConfidentiality;
             chatAttachmentMaxMegabytes = HCSSettings.ClampChatAttachmentMaxMegabytes(settings.ChatAttachmentMaxMegabytes);
+            projectPrefix = HCSSettings.ParseAutoCodePrefix(settings.ProjectCodePrefix, AutoCodeKind.Project);
+            taskPrefix = HCSSettings.ParseAutoCodePrefix(settings.TaskCodePrefix, AutoCodeKind.Task);
+            documentPrefix = HCSSettings.ParseAutoCodePrefix(settings.DocumentCodePrefix, AutoCodeKind.Document);
+            personalDocumentPrefix = HCSSettings.ParseAutoCodePrefix(settings.PersonalDocumentCodePrefix, AutoCodeKind.PersonalDocument);
+            archivePrefix = HCSSettings.ParseAutoCodePrefix(settings.ArchiveNumberPrefix, AutoCodeKind.Archive);
+            personalArchivePrefix = HCSSettings.ParseAutoCodePrefix(settings.PersonalArchiveNumberPrefix, AutoCodeKind.PersonalArchive);
+            workflowPrefix = HCSSettings.ParseAutoCodePrefix(settings.WorkflowCodePrefix, AutoCodeKind.Workflow);
+            catalogPrefix = HCSSettings.ParseAutoCodePrefix(settings.CatalogCodePrefix, AutoCodeKind.Catalog);
             Features.Apply(settings);
             isDirty = false;
         }
@@ -118,6 +220,12 @@
         {
             isLoading = false;
         }
+    }
+
+    private void MarkDirty()
+    {
+        isDirty = true;
+        errorMessage = null;
     }
 
     private void OnChatAttachmentMaxChanged(ChangeEventArgs args)
@@ -132,8 +240,7 @@
             chatAttachmentMaxMegabytes = value;
         }
 
-        isDirty = true;
-        errorMessage = null;
+        MarkDirty();
     }
 
     private void ToggleAllowSigningFromDocuments()
@@ -141,8 +248,25 @@
         if (!isSaving)
         {
             allowSigningFromDocuments = !allowSigningFromDocuments;
-            isDirty = true;
-            errorMessage = null;
+            MarkDirty();
+        }
+    }
+
+    private void ToggleShowDocumentUrgency()
+    {
+        if (!isSaving)
+        {
+            showDocumentUrgency = !showDocumentUrgency;
+            MarkDirty();
+        }
+    }
+
+    private void ToggleShowDocumentConfidentiality()
+    {
+        if (!isSaving)
+        {
+            showDocumentConfidentiality = !showDocumentConfidentiality;
+            MarkDirty();
         }
     }
 
@@ -164,10 +288,28 @@
         {
             var megabytes = HCSSettings.ClampChatAttachmentMaxMegabytes(chatAttachmentMaxMegabytes);
             chatAttachmentMaxMegabytes = megabytes;
+            projectPrefix = HCSSettings.ParseAutoCodePrefix(projectPrefix, AutoCodeKind.Project);
+            taskPrefix = HCSSettings.ParseAutoCodePrefix(taskPrefix, AutoCodeKind.Task);
+            documentPrefix = HCSSettings.ParseAutoCodePrefix(documentPrefix, AutoCodeKind.Document);
+            personalDocumentPrefix = HCSSettings.ParseAutoCodePrefix(personalDocumentPrefix, AutoCodeKind.PersonalDocument);
+            archivePrefix = HCSSettings.ParseAutoCodePrefix(archivePrefix, AutoCodeKind.Archive);
+            personalArchivePrefix = HCSSettings.ParseAutoCodePrefix(personalArchivePrefix, AutoCodeKind.PersonalArchive);
+            workflowPrefix = HCSSettings.ParseAutoCodePrefix(workflowPrefix, AutoCodeKind.Workflow);
+            catalogPrefix = HCSSettings.ParseAutoCodePrefix(catalogPrefix, AutoCodeKind.Catalog);
             await SettingsClient.UpdateGeneralAsync(new UpdateGeneralSettingsDto
             {
                 AllowSigningFromDocuments = allowSigningFromDocuments,
-                ChatAttachmentMaxMegabytes = megabytes
+                ShowDocumentUrgency = showDocumentUrgency,
+                ShowDocumentConfidentiality = showDocumentConfidentiality,
+                ChatAttachmentMaxMegabytes = megabytes,
+                ProjectCodePrefix = projectPrefix,
+                TaskCodePrefix = taskPrefix,
+                DocumentCodePrefix = documentPrefix,
+                PersonalDocumentCodePrefix = personalDocumentPrefix,
+                ArchiveNumberPrefix = archivePrefix,
+                PersonalArchiveNumberPrefix = personalArchivePrefix,
+                WorkflowCodePrefix = workflowPrefix,
+                CatalogCodePrefix = catalogPrefix
             });
             await Collaboration.UpdateAttachmentPolicyAsync(megabytes);
             await Features.RefreshAsync();

@@ -80,7 +80,11 @@
                             }
                         </div>
                     </div>
+                    @if (Features.ShowDocumentUrgency || Features.ShowDocumentConfidentiality)
+                    {
                     <div class="vb-field-row">
+                        @if (Features.ShowDocumentUrgency)
+                        {
                         <div class="filter-menu-field">
                             <label class="field-label" for="docs-urgency-filter">@L["Menu:UrgencyLevels"]</label>
                             <select class="select input" id="docs-urgency-filter" @bind="urgencyFilter">
@@ -91,6 +95,9 @@
                                 }
                             </select>
                         </div>
+                        }
+                        @if (Features.ShowDocumentConfidentiality)
+                        {
                         <div class="filter-menu-field">
                             <label class="field-label" for="docs-confidentiality-filter">@L["Menu:ConfidentialityLevels"]</label>
                             <select class="select input" id="docs-confidentiality-filter" @bind="confidentialityFilter">
@@ -101,7 +108,9 @@
                                 }
                             </select>
                         </div>
+                        }
                     </div>
+                    }
                     <div class="vb-field-row">
                         <div class="filter-menu-field">
                             <label class="field-label">@L["Feature:StartDate"]</label>
@@ -392,8 +401,8 @@
 
         var typesTask = LoadMasterAsync("DocumentType");
         var sectorsTask = LoadMasterAsync("Sector");
-        var urgenciesTask = LoadMasterAsync("UrgencyLevel");
-        var confidentialitiesTask = LoadMasterAsync("ConfidentialityLevel");
+        var urgenciesTask = Features.ShowDocumentUrgency ? LoadMasterAsync("UrgencyLevel") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
+        var confidentialitiesTask = Features.ShowDocumentConfidentiality ? LoadMasterAsync("ConfidentialityLevel") : Task.FromResult<IReadOnlyList<MasterDataCatalogDto>>([]);
         await Task.WhenAll(typesTask, sectorsTask, urgenciesTask, confidentialitiesTask);
         documentTypes.AddRange(await typesTask);
         sectors.AddRange(await sectorsTask);
@@ -440,6 +449,8 @@
         try
         {
             var search = CombinedFilter();
+            if (!Features.ShowDocumentUrgency) urgencyFilter = "";
+            if (!Features.ShowDocumentConfidentiality) confidentialityFilter = "";
             DocumentStatus? status = Enum.TryParse<DocumentStatus>(statusFilter, out var parsed) ? parsed : null;
             var page = await Documents.GetDocumentsAsync(new DocumentListQuery(
                 search, status?.ToString(), SourceType == 1, (currentPage - 1) * pageSize, pageSize, SourceType,

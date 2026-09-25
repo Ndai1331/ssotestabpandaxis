@@ -66,6 +66,8 @@ Trình ký từ văn bản: `SubmitWorkflowModal` (nhúng document-detail / sign
 
 `GET /api/workflows/kinds` → mảng `{ id, code, name, description, isActive, creationTime }`.
 
+`GET /api/workflows/next-code` → `{ "code": "QT0008" }` (peek kinds + definitions, không giữ chỗ). Để `code` null khi POST để server cấp.
+
 POST `{ "code", "name", "description", "isActive": true }` → `guid`.  
 PUT `{ "name", "description", "isActive" }` → `204`.  
 DELETE → `204`.

@@ -10,6 +10,9 @@ public sealed class WorkflowsController(IWorkflowAppService workflows) : Control
     [HttpGet("kinds")]
     public Task<IReadOnlyList<WorkflowKindDto>> GetKinds(CancellationToken cancellationToken) =>
         workflows.GetKindsAsync(cancellationToken);
+    [HttpGet("next-code")]
+    public Task<NextCodeDto> GetNextCode(CancellationToken cancellationToken) =>
+        workflows.GetNextCodeAsync(cancellationToken);
     [HttpGet("kinds/{id:guid}")]
     public async Task<ActionResult<WorkflowKindDto>> GetKind(Guid id, CancellationToken cancellationToken) =>
         await workflows.GetKindAsync(id, cancellationToken) is { } result ? Ok(result) : NotFound();
