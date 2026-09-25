@@ -44,20 +44,27 @@ public sealed class EmployeeDirectoryReader(
 
 public sealed class EmployeeRatingClock(IConfiguration configuration) : ITransientDependency
 {
-    public DateOnly Today()
+    public DateOnly Today() =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ResolveTimeZone()));
+
+    public DateOnly DateOf(DateTime value)
+    {
+        var timeZone = ResolveTimeZone();
+        var utc = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(utc, timeZone));
+    }
+
+    private TimeZoneInfo ResolveTimeZone()
     {
         var timeZoneId = configuration["EmployeeRatings:TimeZoneId"] ?? "Asia/Ho_Chi_Minh";
-        TimeZoneInfo timeZone;
         try
         {
-            timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
         }
         catch (TimeZoneNotFoundException)
         {
-            timeZone = TimeZoneInfo.Utc;
+            return TimeZoneInfo.Utc;
         }
-
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
     }
 }
 
@@ -160,16 +167,23 @@ public sealed class EmployeeRatingAppService(
             Distribution(rows.Select(x => x.Score)), summaries);
     }
 
-    private static IQueryable<EmployeeRating> ApplyRange(IQueryable<EmployeeRating> query,
+    private IQueryable<EmployeeRating> ApplyRange(IQueryable<EmployeeRating> query,
         DateTime? from, DateTime? to)
     {
-        if (from.HasValue) query = query.Where(x => x.CreationTime >= ToUtc(from.Value));
-        if (to.HasValue) query = query.Where(x => x.CreationTime < ToUtc(to.Value));
+        if (from.HasValue)
+        {
+            var start = clock.DateOf(from.Value);
+            query = query.Where(x => x.EvaluationDate >= start);
+        }
+
+        if (to.HasValue)
+        {
+            var end = clock.DateOf(to.Value);
+            query = query.Where(x => x.EvaluationDate < end);
+        }
+
         return query;
     }
-
-    private static DateTime ToUtc(DateTime value) => value.Kind == DateTimeKind.Utc
-        ? value : value.ToUniversalTime();
 
     private static EmployeeRatingSummaryDto EmptySummary(Guid userId) =>
         new(userId, 0, 0, Enumerable.Range(1, 5).ToDictionary(score => score, _ => 0));

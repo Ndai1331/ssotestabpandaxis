@@ -17,6 +17,9 @@ public static class DocumentPermissions
     public const string WorkflowStart = "Documents.Workflow.Start";
     public const string WorkflowDecide = "Documents.Workflow.Decide";
     public const string SigningConfigure = "Documents.Signing.Configure";
+    public const string SigningConfigureCreate = SigningConfigure + ".Create";
+    public const string SigningConfigureUpdate = SigningConfigure + ".Update";
+    public const string SigningConfigureDelete = SigningConfigure + ".Delete";
     public const string SigningExecute = "Documents.Signing.Execute";
     public const string SigningReport = "Documents.Signing.Report";
 }

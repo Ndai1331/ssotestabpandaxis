@@ -1,7 +1,7 @@
 @page "/administration"
 @page "/users"
 @page "/identity/users-management"
-@attribute [Authorize(Roles = "admin")]
+@attribute [Authorize(Policy = "AbpIdentity.Users")]
 @using System.Globalization
 @using System.Linq
 @using System.Net
@@ -25,10 +25,12 @@
 @inject IConfiguration Configuration
 @inject NavigationManager Navigation
 @inject Volo.Abp.Users.ICurrentUser CurrentUser
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using HCS.Permissions
 
 <PageTitle>@L["Menu:Users"] · HCS</PageTitle>
 
-<AuthorizeView Roles="admin">
+<AuthorizeView Policy="AbpIdentity.Users">
     <Authorized>
         <section class="page page-wf page-admin-users" aria-labelledby="users-title">
             <div class="page-head">
@@ -183,9 +185,12 @@
                     }
                     <div class="process-side-tabs" role="tablist">
                         <button class="process-side-tab @(activeUserTab == "info" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "info")">@L["Users:InfoTab"]</button>
-                        <button class="process-side-tab @(activeUserTab == "roles" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "roles")">@L["Users:RolesTab"] (@userForm.RoleNames.Count)</button>
+                        @if (canManageRoles)
+                        {
+                            <button class="process-side-tab @(activeUserTab == "roles" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "roles")">@L["Users:RolesTab"] (@userForm.RoleNames.Count)</button>
+                        }
                         <button class="process-side-tab @(activeUserTab == "departments" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "departments")">@L["Users:DepartmentTab"] (@userForm.DepartmentIds.Count)</button>
-                        @if (editingUserId.HasValue)
+                        @if (editingUserId.HasValue && canManageSignatures)
                         {
                             <button class="process-side-tab @(activeUserTab == "signatures" ? "is-active" : null)" type="button" role="tab" @onclick="@(() => activeUserTab = "signatures")">@L["Admin:SignaturesTab"]</button>
                         }
@@ -270,7 +275,7 @@
                         </Field>
                         <p class="hcs-form-note">@L["Users:DepartmentNote"]</p>
                     </div>
-                    @if (editingUserId.HasValue)
+                    @if (editingUserId.HasValue && canManageSignatures)
                     {
                         <div class="hcs-user-tab-panel" hidden="@(activeUserTab != "signatures")" role="tabpanel">
                             <div class="hcs-user-signing">
@@ -328,6 +333,8 @@
     private int pageSize = 20;
     private int currentPage = 1;
     private bool selectAll;
+    private bool canManageRoles;
+    private bool canManageSignatures;
 
     private int PageCount => Math.Max(1, (int)Math.Ceiling(totalUsers / (double)Math.Max(pageSize, 1)));
     private bool CanPrevPage => currentPage > 1;
@@ -336,6 +343,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = state.User;
+        canManageRoles = HcsAdministrator.Is(user)
+            || user.HasClaim("permission", "AbpIdentity.Users.Update.ManageRoles")
+            || user.HasClaim("permission", "AbpIdentity.Users.ManageRoles");
+        canManageSignatures = HcsAdministrator.Is(user) || user.IsInRole("lanhdao");
         await Task.WhenAll(LoadRolesAsync(), LoadOrganizationLookupsAsync());
         await LoadUsersAsync();
     }
@@ -572,9 +585,24 @@
         };
         formErrorMessage = null;
         activeUserTab = "info";
+        if (canManageRoles)
+        {
+            try
+            {
+                foreach (var role in await IdentityClient.GetUserRolesAsync(latest.Id)) userForm.RoleNames.Add(role.Name);
+            }
+            catch (IdentityAdminApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden)
+            {
+            }
+            catch (IdentityAdminApiException exception)
+            {
+                if (RedirectIfUnauthorized(exception)) return;
+                formErrorMessage = FriendlyApiError(exception, "Users:LoadError");
+            }
+        }
+
         try
         {
-            foreach (var role in await IdentityClient.GetUserRolesAsync(latest.Id)) userForm.RoleNames.Add(role.Name);
             var memberships = await OrganizationUnits.GetUserDepartmentsAsync([latest.Id]);
             var membership = memberships.FirstOrDefault();
             userForm.DepartmentIds.Clear();
@@ -587,28 +615,29 @@
             {
                 userForm.DepartmentIds.Add(fallbackId);
             }
+        }
+        catch (OrganizationUnitApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden)
+        {
+        }
+        catch (OrganizationUnitApiException exception)
+        {
+            if (RedirectIfUnauthorized(exception)) return;
+            formErrorMessage ??= FriendlyOuError(exception, "Users:LoadError");
+        }
 
+        try
+        {
             var mappings = await IdentityClient.GetUserMappingsAsync(latest.Id);
             var mapping = mappings.FirstOrDefault(item => item.IsPrimary) ?? mappings.FirstOrDefault();
             userForm.PositionId = mapping?.PositionId;
         }
+        catch (IdentityAdminApiException exception) when (exception.StatusCode is HttpStatusCode.Forbidden)
+        {
+        }
         catch (IdentityAdminApiException exception)
         {
-            if (RedirectIfUnauthorized(exception))
-            {
-                return;
-            }
-
-            formErrorMessage = FriendlyApiError(exception, "Users:LoadError");
-        }
-        catch (OrganizationUnitApiException exception)
-        {
-            if (RedirectIfUnauthorized(exception))
-            {
-                return;
-            }
-
-            formErrorMessage = FriendlyOuError(exception, "Users:LoadError");
+            if (RedirectIfUnauthorized(exception)) return;
+            formErrorMessage ??= FriendlyApiError(exception, "Users:LoadError");
         }
 
         if (userModal is not null) await userModal.Show();
@@ -657,18 +686,21 @@
             }
 
             string? secondaryError = null;
-            try
+            if (canManageRoles)
             {
-                await IdentityClient.UpdateUserRolesAsync(savedUser.Id, userForm.RoleNames);
-            }
-            catch (IdentityAdminApiException exception)
-            {
-                if (RedirectIfUnauthorized(exception))
+                try
                 {
-                    return;
+                    await IdentityClient.UpdateUserRolesAsync(savedUser.Id, userForm.RoleNames);
                 }
+                catch (IdentityAdminApiException exception)
+                {
+                    if (RedirectIfUnauthorized(exception))
+                    {
+                        return;
+                    }
 
-                secondaryError = FriendlyApiError(exception, "Users:SaveError");
+                    secondaryError = FriendlyApiError(exception, "Users:SaveError");
+                }
             }
 
             try

@@ -101,7 +101,8 @@ public class HcsIdentityUserAppService : IdentityUserAppService
             return true;
         }
 
-        return await PermissionChecker.IsGrantedAsync(IdentityPermissions.Users.ManageRoles);
+        return await PermissionChecker.IsGrantedAsync(IdentityPermissions.Users.ManageRoles)
+            || await PermissionChecker.IsGrantedAsync("AbpIdentity.Users.Update.ManageRoles");
     }
 
     protected override async Task UpdateUserByInput(IdentityUser user, IdentityUserCreateOrUpdateDtoBase input)

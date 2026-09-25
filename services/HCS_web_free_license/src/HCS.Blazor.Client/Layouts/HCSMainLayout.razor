@@ -208,26 +208,46 @@
                     <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
                 </button>
                 <div class="hcs-nav-menu__panel hcs-nav-menu__panel--wide" role="menu">
-                    <AuthorizeView Policy="HCS.Organization.MasterData">
-                        <Authorized>
-                            <p class="hcs-nav-menu__label">@Localizer["Menu:DocumentCatalogs"]</p>
+                    @if (HasDocumentCatalogNavigation(catalogAuth.User))
+                    {
+                        <p class="hcs-nav-menu__label">@Localizer["Menu:DocumentCatalogs"]</p>
+                        @if (CanSeeDocumentCatalog(catalogAuth.User, HCSCatalogPermissions.DocumentTypes))
+                        {
                             <NavLink href="/document-types" @onclick="CloseMobileNav"><i class="fa fa-file-lines" aria-hidden="true"></i>@Localizer["Menu:DocumentTypes"]</NavLink>
+                        }
+                        @if (CanSeeDocumentCatalog(catalogAuth.User, HCSCatalogPermissions.Sectors))
+                        {
                             <NavLink href="/sectors" @onclick="CloseMobileNav"><i class="fa fa-folder-tree" aria-hidden="true"></i>@Localizer["Menu:Sectors"]</NavLink>
-                            @if (Features.ShowDocumentUrgency)
-                            {
+                        }
+                        @if (Features.ShowDocumentUrgency && CanSeeDocumentCatalog(catalogAuth.User, HCSCatalogPermissions.UrgencyLevels))
+                        {
                             <NavLink href="/urgency-levels" @onclick="CloseMobileNav"><i class="fa fa-bolt" aria-hidden="true"></i>@Localizer["Menu:UrgencyLevels"]</NavLink>
-                            }
-                            @if (Features.ShowDocumentConfidentiality)
-                            {
+                        }
+                        @if (Features.ShowDocumentConfidentiality && CanSeeDocumentCatalog(catalogAuth.User, HCSCatalogPermissions.ConfidentialityLevels))
+                        {
                             <NavLink href="/confidentiality-levels" @onclick="CloseMobileNav"><i class="fa fa-lock" aria-hidden="true"></i>@Localizer["Menu:ConfidentialityLevels"]</NavLink>
-                            }
+                        }
+                        @if (CanSeeDocumentCatalog(catalogAuth.User, HCSCatalogPermissions.ProcessingMethods))
+                        {
                             <NavLink href="/processing-methods" @onclick="CloseMobileNav"><i class="fa fa-gears" aria-hidden="true"></i>@Localizer["Menu:ProcessingMethods"]</NavLink>
+                        }
+                        @if (CanSeeDocumentCatalog(catalogAuth.User, HCSCatalogPermissions.DocumentStatuses))
+                        {
                             <NavLink href="/document-status" @onclick="CloseMobileNav"><i class="fa fa-circle-check" aria-hidden="true"></i>@Localizer["Menu:DocumentStatus"]</NavLink>
+                        }
+                        @if (CanSeeDocumentCatalog(catalogAuth.User, HCSCatalogPermissions.SigningMethods))
+                        {
                             <NavLink href="/signing-methods" @onclick="CloseMobileNav"><i class="fa fa-pen-nib" aria-hidden="true"></i>@Localizer["Menu:SigningMethods"]</NavLink>
+                        }
+                        @if (HasPermission(catalogAuth.User, HCSPermissions.Documents.SigningConfigure))
+                        {
                             <NavLink href="/signature-settings" @onclick="CloseMobileNav"><i class="fa fa-key" aria-hidden="true"></i>@Localizer["Menu:SignatureSettings"]</NavLink>
+                        }
+                        @if (CanSeeDocumentCatalog(catalogAuth.User, HCSCatalogPermissions.EventTypes))
+                        {
                             <NavLink href="/event-types" @onclick="CloseMobileNav"><i class="fa fa-star-o" aria-hidden="true"></i>@Localizer["Menu:EventTypes"]</NavLink>
-                        </Authorized>
-                    </AuthorizeView>
+                        }
+                    }
                     <AuthorizeView Policy="HCS.Organization.Departments">
                         <Authorized>
                             <p class="hcs-nav-menu__label">@Localizer["Menu:OrganizationCatalogs"]</p>
@@ -352,19 +372,30 @@
                                 <i class="fa fa-chevron-down hcs-nav-menu__chevron" aria-hidden="true"></i>
                             </button>
                             <div class="hcs-nav-menu__panel" role="menu">
-                                @if (authenticationState.User.IsInRole("admin") || authenticationState.User.IsInRole("ADMIN"))
+                                @if (CanSeeAdministrationItem(authenticationState.User, IdentityUsersPermission))
                                 {
                                     <NavLink href="/administration" @onclick="CloseMobileNav"><i class="fa fa-users-gear" aria-hidden="true"></i>@Localizer["Menu:Users"]</NavLink>
+                                }
+                                @if (CanSeeAdministrationItem(authenticationState.User, IdentityRolesPermission))
+                                {
                                     <NavLink href="/administration/roles" @onclick="CloseMobileNav"><i class="fa fa-shield-halved" aria-hidden="true"></i>@Localizer["Menu:Roles"]</NavLink>
+                                }
+                                @if (CanSeeAdministrationItem(authenticationState.User, HCSPermissions.Languages.Default))
+                                {
                                     <NavLink href="/administration/languages" @onclick="CloseMobileNav"><i class="fa fa-language" aria-hidden="true"></i>@Localizer["Menu:Languages"]</NavLink>
+                                }
+                                @if (CanSeeAdministrationItem(authenticationState.User, HCSPermissions.AuditViewer.Default))
+                                {
                                     <NavLink href="/administration/audit-logs" @onclick="CloseMobileNav"><i class="fa fa-clipboard-list" aria-hidden="true"></i>@Localizer["Menu:AuditLogs"]</NavLink>
+                                }
+                                @if (CanSeeAdministrationItem(authenticationState.User, HCSPermissions.ServiceLogs.Default))
+                                {
                                     <NavLink href="/administration/service-logs" @onclick="CloseMobileNav"><i class="fa fa-bars-staggered" aria-hidden="true"></i>@Localizer["Menu:ServiceLogs"]</NavLink>
                                 }
-                                <AuthorizeView Policy="@HCSPermissions.SystemBranding.Update">
-                                    <Authorized>
-                                        <NavLink href="/administration/system-branding" @onclick="CloseMobileNav"><i class="fa fa-palette" aria-hidden="true"></i>Cấu hình hệ thống</NavLink>
-                                    </Authorized>
-                                </AuthorizeView>
+                                @if (CanSeeAdministrationItem(authenticationState.User, HCSPermissions.SystemBranding.Update))
+                                {
+                                    <NavLink href="/administration/system-branding" @onclick="CloseMobileNav"><i class="fa fa-palette" aria-hidden="true"></i>@Localizer["Settings:SystemConfigTitle"]</NavLink>
+                                }
                             </div>
                         </div>
                     }
@@ -438,6 +469,16 @@
     private static bool CanOpenCatalogNavigation(System.Security.Claims.ClaimsPrincipal user, bool enableProposalStatistics) =>
         HasAnyPermission(user,
             HCSOrganizationPermissions.MasterData,
+            HCSCatalogPermissions.MasterData,
+            HCSCatalogPermissions.DocumentTypes,
+            HCSCatalogPermissions.Sectors,
+            HCSCatalogPermissions.UrgencyLevels,
+            HCSCatalogPermissions.ConfidentialityLevels,
+            HCSCatalogPermissions.ProcessingMethods,
+            HCSCatalogPermissions.DocumentStatuses,
+            HCSCatalogPermissions.SigningMethods,
+            HCSCatalogPermissions.EventTypes,
+            HCSPermissions.Documents.SigningConfigure,
             HCSOrganizationPermissions.Departments,
             HCSOrganizationPermissions.Units,
             HCSOrganizationPermissions.Positions,
@@ -450,6 +491,20 @@
             HCSCatalogPermissions.Communes,
             HCSPermissions.WorkManagement.Reports)
         || (enableProposalStatistics && HasPermission(user, HCSPermissions.Documents.SigningReport));
+
+    private static bool HasDocumentCatalogNavigation(System.Security.Claims.ClaimsPrincipal user) =>
+        HasPermission(user, HCSPermissions.Documents.SigningConfigure)
+        || CanSeeDocumentCatalog(user, HCSCatalogPermissions.DocumentTypes)
+        || CanSeeDocumentCatalog(user, HCSCatalogPermissions.Sectors)
+        || CanSeeDocumentCatalog(user, HCSCatalogPermissions.UrgencyLevels)
+        || CanSeeDocumentCatalog(user, HCSCatalogPermissions.ConfidentialityLevels)
+        || CanSeeDocumentCatalog(user, HCSCatalogPermissions.ProcessingMethods)
+        || CanSeeDocumentCatalog(user, HCSCatalogPermissions.DocumentStatuses)
+        || CanSeeDocumentCatalog(user, HCSCatalogPermissions.SigningMethods)
+        || CanSeeDocumentCatalog(user, HCSCatalogPermissions.EventTypes);
+
+    private static bool CanSeeDocumentCatalog(System.Security.Claims.ClaimsPrincipal user, string permission) =>
+        HasAnyPermission(user, permission, HCSOrganizationPermissions.MasterData, HCSCatalogPermissions.MasterData);
 
     private static bool HasHealthCatalogNavigation(System.Security.Claims.ClaimsPrincipal user) =>
         HasAnyPermission(user,
@@ -487,9 +542,19 @@
             HCSPermissions.WorkManagement.EmployeeRatingsManagement,
             HCSPermissions.WorkManagement.EmployeeRatingsDashboard);
 
+    private const string IdentityUsersPermission = "AbpIdentity.Users";
+    private const string IdentityRolesPermission = "AbpIdentity.Roles";
+
     private static bool CanOpenAdministrationNavigation(System.Security.Claims.ClaimsPrincipal user) =>
-        user.IsInRole("admin")
-        || user.HasClaim("permission", HCSPermissions.SystemBranding.Update);
+        CanSeeAdministrationItem(user, IdentityUsersPermission)
+        || CanSeeAdministrationItem(user, IdentityRolesPermission)
+        || CanSeeAdministrationItem(user, HCSPermissions.Languages.Default)
+        || CanSeeAdministrationItem(user, HCSPermissions.AuditViewer.Default)
+        || CanSeeAdministrationItem(user, HCSPermissions.ServiceLogs.Default)
+        || CanSeeAdministrationItem(user, HCSPermissions.SystemBranding.Update);
+
+    private static bool CanSeeAdministrationItem(System.Security.Claims.ClaimsPrincipal user, string permission) =>
+        HcsAdministrator.Is(user) || HasPermission(user, permission);
 
     protected override void OnInitialized()
     {

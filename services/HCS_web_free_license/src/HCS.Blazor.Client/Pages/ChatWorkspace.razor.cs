@@ -330,8 +330,12 @@ public partial class ChatWorkspace
         assignTaskError = null;
         try
         {
-            var start = DateTime.Today;
-            var due = taskDue.Date < start ? start : taskDue.Date;
+            var start = WallClock(DateTime.Today);
+            var due = WallClock(taskDue);
+            if (due < start)
+            {
+                due = start;
+            }
             var created = await Work.CreateTaskAsync(new CreateProjectTaskRequest(
                 project,
                 selected.Type == ConversationType.Task ? selected.TaskId : null,
@@ -401,6 +405,9 @@ public partial class ChatWorkspace
             isAssigningTask = false;
         }
     }
+
+    private static DateTime WallClock(DateTime value) =>
+        DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
 
     private static string TruncateTaskTitle(string? text)
     {

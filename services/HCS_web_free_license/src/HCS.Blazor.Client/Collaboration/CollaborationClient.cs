@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using HCS.CollaborationService.Contracts;
 using HCS.Blazor.Client.Services;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HCS.Blazor.Client.Collaboration;
@@ -202,7 +201,9 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
 
     public async Task<UploadAttachmentResult> UploadAttachmentAsync(
         Guid conversationId,
-        IBrowserFile file,
+        string fileName,
+        string contentType,
+        byte[] content,
         long maxBytes,
         CancellationToken cancellationToken = default)
     {
@@ -211,21 +212,19 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
             maxBytes = ChatAttachmentPolicy.ToBytes(ChatAttachmentPolicy.DefaultMegabytes);
         }
 
-        if (file.Size > maxBytes)
+        if (content.LongLength <= 0 || content.LongLength > maxBytes)
         {
             throw new CollaborationApiException(HttpStatusCode.RequestEntityTooLarge, "Attachment exceeds the configured size limit.");
         }
 
-        using var content = new MultipartFormDataContent();
-        await using var source = file.OpenReadStream(maxBytes, cancellationToken);
-        using var fileContent = new StreamContent(source);
-        fileContent.Headers.ContentLength = file.Size;
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
-            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
-        content.Add(fileContent, "file", file.Name);
+        using var form = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(content);
+        fileContent.Headers.ContentLength = content.LongLength;
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        form.Add(fileContent, "file", fileName);
 
         using var response = await CreateClient().PostAsync(
-            $"api/chat/conversations/{conversationId:D}/attachments", content, cancellationToken);
+            $"api/chat/conversations/{conversationId:D}/attachments", form, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<UploadAttachmentResult>(JsonOptions, cancellationToken)
             ?? throw new CollaborationApiException(HttpStatusCode.NoContent, "The gateway returned an empty attachment response.");

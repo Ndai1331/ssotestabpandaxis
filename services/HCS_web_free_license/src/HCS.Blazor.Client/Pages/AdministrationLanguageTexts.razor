@@ -1,5 +1,5 @@
 @page "/administration/language-texts"
-@attribute [Authorize(Roles = "admin")]
+@attribute [Authorize(Policy = HCSPermissions.Languages.Default)]
 @using HCS.Permissions
 @using Microsoft.AspNetCore.Authorization
 @inherits HCSComponentBase
@@ -8,7 +8,7 @@
 
 <PageTitle>@L["LanguageTexts:Title"] · HCS</PageTitle>
 
-<AuthorizeView Roles="admin">
+<AuthorizeView Policy="@HCSPermissions.Languages.Default">
     <Authorized>
         <section class="page page-wf page-admin-language-texts" aria-labelledby="language-texts-title">
             <div class="page-head">

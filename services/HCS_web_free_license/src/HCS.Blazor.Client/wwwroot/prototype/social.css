@@ -1609,13 +1609,23 @@
   overflow: visible;
 }
 
+.page-social .post-card:has(.react-wrap:hover),
+.page-social .post-card:has(.react-wrap:focus-within),
+.page-social .post-card:has(.react-wrap.is-open),
+.page-social .card.post-card:has(.react-wrap:hover),
+.page-social .card.post-card:has(.react-wrap:focus-within),
+.page-social .card.post-card:has(.react-wrap.is-open) {
+  position: relative;
+  z-index: 4;
+}
+
 .page-social .post-stats {
   position: relative;
   z-index: 0;
 }
 
 .page-social .react-bar {
-  z-index: 30;
+  z-index: calc(var(--z-dropdown, 60) + 4);
 }
 
 .page-social .post-head {

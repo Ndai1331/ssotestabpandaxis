@@ -20,6 +20,13 @@ public static class ChatErrorMapper
         if (api.ResponseBody?.Contains("WorkSubjectNotProvisioned", StringComparison.OrdinalIgnoreCase) == true)
             return localizer["Chat:WorkSubjectNotProvisioned"].Value;
 
+        if (api.ResponseBody?.Contains("InvalidAttachmentType", StringComparison.OrdinalIgnoreCase) == true
+            || api.ResponseBody?.Contains("InvalidFileName", StringComparison.OrdinalIgnoreCase) == true)
+            return localizer["Chat:AttachmentType"].Value;
+
+        if (api.ResponseBody?.Contains("InvalidAttachmentSize", StringComparison.OrdinalIgnoreCase) == true)
+            return localizer["Chat:AttachmentError"].Value;
+
         return api.StatusCode switch
         {
             HttpStatusCode.Unauthorized => localizer["Catalog:Unauthorized"].Value,

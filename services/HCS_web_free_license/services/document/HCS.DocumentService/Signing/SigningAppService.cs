@@ -337,6 +337,9 @@ public sealed class SigningAppService(
                     && x.ProviderCode.ToUpper() == providerCode.ToUpper())
                 .OrderByDescending(x => x.UpdatedAt)
                 .FirstOrDefaultAsync(cancellationToken);
+        DocumentAccess.RequireGrant(principal, credential is null
+            ? DocumentPermissions.SigningConfigureCreate
+            : DocumentPermissions.SigningConfigureUpdate);
         var rawSecret = input.ConsumeSecret();
         if (credential is null && input.Kind != SigningKind.Electronic && string.IsNullOrWhiteSpace(rawSecret))
             throw new ArgumentException("A signing secret is required for a new provider configuration.", nameof(input));

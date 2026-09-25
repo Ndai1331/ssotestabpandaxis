@@ -2,6 +2,7 @@
 @attribute [Authorize(Policy = "Documents.Signing.Configure")]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
+@using HCS.Permissions
 @using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>@L["Menu:SignatureSettings"] · HCS</PageTitle>
@@ -11,12 +12,15 @@
             <h1 id="provider-settings-title">@L["Menu:SignatureSettings"]</h1>
             <p class="event-panel-kicker">@L["Feature:ProviderSettingsHint"]</p>
         </div>
-        <div class="page-actions">
-            <button class="btn btn-primary" type="button" @onclick="OpenCreateAsync" disabled="@isLoading">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                @L["Feature:AddProvider"]
-            </button>
-        </div>
+        @if (canCreate)
+        {
+            <div class="page-actions">
+                <button class="btn btn-primary" type="button" @onclick="OpenCreateAsync" disabled="@isLoading">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    @L["Feature:AddProvider"]
+                </button>
+            </div>
+        }
     </div>
 
     @if (isLoading)
@@ -35,12 +39,15 @@
         <DocsEmpty Title="@L["Feature:NoProviders"]" Hint="@L["Feature:NoProvidersHint"]">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z"/></svg>
         </DocsEmpty>
-        <div class="page-actions">
-            <button class="btn btn-primary" type="button" @onclick="OpenCreateAsync">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                @L["Feature:AddProvider"]
-            </button>
-        </div>
+        @if (canCreate)
+        {
+            <div class="page-actions">
+                <button class="btn btn-primary" type="button" @onclick="OpenCreateAsync">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    @L["Feature:AddProvider"]
+                </button>
+            </div>
+        }
     }
     else
     {
@@ -66,11 +73,14 @@
                                 <dt class="col-5">@L["Feature:LayoutImage"]</dt><dd class="col-7">@(item.HasLayoutImage ? L["Feature:Configured"] : L["Feature:NotConfigured"])</dd>
                                 <dt class="col-5">@L["Feature:SigningTimeout"]</dt><dd class="col-7">@item.ApiTimeoutSeconds s</dd>
                             </dl>
-                            <div class="mt-auto d-flex justify-content-end">
-                                <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--edit" Clicked="() => OpenEditAsync(item)">
-                                    <Icon Name="@IconName.Edit" /> @L["Catalog:Edit"]
-                                </Button>
-                            </div>
+                            @if (canUpdate)
+                            {
+                                <div class="mt-auto d-flex justify-content-end">
+                                    <Button Color="Color.Primary" Outline="true" Size="Size.Small" Class="hcs-action-button hcs-action-button--edit" Clicked="() => OpenEditAsync(item)">
+                                        <Icon Name="@IconName.Edit" /> @L["Catalog:Edit"]
+                                    </Button>
+                                </div>
+                            }
                         </CardBody>
                     </Card>
                 </article>
@@ -158,11 +168,22 @@
     private bool loadFailed;
     private bool isSaving;
     private bool isCreating;
+    private bool canCreate;
+    private bool canUpdate;
     private Modal? providerModal;
     private int layoutInputKey;
     private const long MaxLayoutImageSize = 3 * 1024 * 1024;
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        canCreate = await IsGrantedAsync(state.User, HcsCrudPermissions.Create(HCSPermissions.Documents.SigningConfigure));
+        canUpdate = await IsGrantedAsync(state.User, HcsCrudPermissions.Update(HCSPermissions.Documents.SigningConfigure));
+        await LoadAsync();
+    }
+
+    private async Task<bool> IsGrantedAsync(System.Security.Claims.ClaimsPrincipal user, string permission) =>
+        (await AuthorizationService.AuthorizeAsync(user, null, permission)).Succeeded;
 
     private async Task LoadAsync()
     {
@@ -188,6 +209,7 @@
 
     private async Task OpenCreateAsync()
     {
+        if (!canCreate) return;
         isCreating = true;
         editingCredential = new SigningCredentialDto(Guid.Empty, 1, "", "", "", 30, 150, 70, true, true, false, DateTime.UtcNow);
         form.Reset();
@@ -200,6 +222,7 @@
 
     private async Task OpenEditAsync(SigningCredentialDto item)
     {
+        if (!canUpdate) return;
         isCreating = false;
         editingCredential = item;
         form.Apply(item);
@@ -226,7 +249,7 @@
 
     private async Task SaveAsync()
     {
-        if (editingCredential is null || isSaving) return;
+        if (editingCredential is null || isSaving || (isCreating ? !canCreate : !canUpdate)) return;
 
         // Native browser validation can stop the submit event without invoking
         // Blazor (for example TAG has no default endpoint). Validate explicitly

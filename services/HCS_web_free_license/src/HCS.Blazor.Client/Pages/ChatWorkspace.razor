@@ -4,6 +4,7 @@
 @page "/chat1/{RedirectToConversationId:guid}"
 @attribute [Authorize(Policy = CollaborationPermissions.Chat)]
 @using System.Globalization
+@using System.IO
 @using System.Net
 @using System.Threading
 @using HCS.Blazor.Client.Settings
@@ -711,8 +712,8 @@
                     {
                         <p class="chat-dialog-copy">@T("Chat:TaskNoProjectMembers")</p>
                     }
-                    <label class="field-label" for="chat-task-due">@T("Feature:DueDate")</label>
-                    <input class="input" id="chat-task-due" type="date" @bind="taskDue" @bind:format="yyyy-MM-dd" />
+                    <label class="field-label">@T("Feature:DueDate")</label>
+                    <HcsDatePicker TValue="DateTime" @bind-Value="taskDue" InputMode="DateInputMode.DateTime" ShowTodayButton ShowClearButton />
                     <label class="field-label" for="chat-task-note">@T("Feature:Description")</label>
                     <input class="input" id="chat-task-note" @bind="taskNote" maxlength="500" placeholder="@T("Chat:TaskNotePlaceholder")" />
                     @if (assignTaskSource is { Attachments.Count: > 0 } sourceWithFiles)
@@ -892,7 +893,7 @@
     private readonly HashSet<Guid> selectedMemberIds = [];
     private readonly HashSet<string> avatarLoadFailures = new(StringComparer.Ordinal);
     private readonly Dictionary<Guid, ChatContactDto> knownUsers = [];
-    private readonly List<IBrowserFile> pendingFiles = [];
+    private readonly List<PendingChatFile> pendingFiles = [];
     private readonly List<ChatMessageDto> messages = [];
     private IReadOnlyList<ConversationDto> conversations = [];
     private IReadOnlyList<ChatContactDto> contacts = [];
@@ -1354,7 +1355,8 @@
             var attachmentIds = new List<Guid>();
             foreach (var file in pendingFiles)
             {
-                                                var attachment = await Client.UploadAttachmentAsync(selected.Id, file, Features.ChatAttachmentMaxBytes);
+                var attachment = await Client.UploadAttachmentAsync(
+                    selected.Id, file.Name, file.ContentType, file.Content, Features.ChatAttachmentMaxBytes);
                 attachmentIds.Add(attachment.Id);
             }
 
@@ -1559,13 +1561,14 @@
         }
     }
 
-    private void OnFilesSelected(InputFileChangeEventArgs args)
+    private async Task OnFilesSelected(InputFileChangeEventArgs args)
     {
         if (isSending)
         {
             return;
         }
 
+        var maxBytes = Features.ChatAttachmentMaxBytes;
         foreach (var file in args.GetMultipleFiles(20))
         {
             if (pendingFiles.Count >= 20)
@@ -1573,25 +1576,86 @@
                 break;
             }
 
-            if (file.Size > Features.ChatAttachmentMaxBytes)
+            if (file.Size <= 0 || file.Size > maxBytes)
             {
                 messageError = T("Chat:AttachmentTooLarge", Features.ChatAttachmentMaxMegabytes);
                 continue;
             }
 
+            var contentType = NormalizeChatContentType(file.ContentType, file.Name);
+            if (contentType is null)
+            {
+                messageError = T("Chat:AttachmentType");
+                continue;
+            }
+
             if (pendingFiles.Any(existing =>
                     string.Equals(existing.Name, file.Name, StringComparison.OrdinalIgnoreCase)
-                    && existing.Size == file.Size))
+                    && existing.Content.LongLength == file.Size))
             {
                 continue;
             }
 
-            pendingFiles.Add(file);
-            messageError = null;
+            try
+            {
+                await using var stream = file.OpenReadStream(maxBytes);
+                using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer);
+                if (buffer.Length != file.Size)
+                {
+                    messageError = T("Chat:AttachmentError");
+                    continue;
+                }
+
+                pendingFiles.Add(new PendingChatFile(file.Name, contentType, buffer.ToArray()));
+                messageError = null;
+            }
+            catch (Exception exception)
+            {
+                messageError = MapChatError(exception, "Chat:AttachmentError");
+            }
         }
     }
 
-    private void RemovePendingFile(IBrowserFile file) => pendingFiles.Remove(file);
+    private void RemovePendingFile(PendingChatFile file) => pendingFiles.Remove(file);
+
+    private static string? NormalizeChatContentType(string? contentType, string fileName)
+    {
+        var mediaType = contentType?.Split(';', 2)[0].Trim().ToLowerInvariant();
+        mediaType = mediaType switch
+        {
+            "image/jpg" or "image/pjpeg" => "image/jpeg",
+            "audio/mp3" => "audio/mpeg",
+            "application/octet-stream" or "" or null => ExtensionContentType(fileName),
+            _ => mediaType
+        };
+        return mediaType is not null && AllowedChatContentTypes.Contains(mediaType) ? mediaType : null;
+    }
+
+    private static string? ExtensionContentType(string fileName) =>
+        Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            ".pdf" => "application/pdf",
+            ".txt" => "text/plain",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".mp4" => "video/mp4",
+            ".mp3" => "audio/mpeg",
+            _ => null
+        };
+
+    private static readonly HashSet<string> AllowedChatContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "text/plain",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "video/mp4", "audio/mpeg"
+    };
+
+    private sealed record PendingChatFile(string Name, string ContentType, byte[] Content);
 
     private async Task OnComposerKeyDown(KeyboardEventArgs args)
     {

@@ -1,6 +1,6 @@
 @page "/administration/roles"
 @page "/roles"
-@attribute [Authorize(Roles = "admin")]
+@attribute [Authorize(Policy = "AbpIdentity.Roles")]
 @using HCS.Localization
 @using System.Net
 @using Microsoft.AspNetCore.Components
@@ -16,7 +16,7 @@
 
 <PageTitle>@L["Roles:Title"] · HCS</PageTitle>
 
-<AuthorizeView Roles="admin">
+<AuthorizeView Policy="AbpIdentity.Roles">
     <Authorized>
         <section class="page page-wf page-admin-roles" aria-labelledby="roles-title">
             <div class="page-head">

@@ -15,13 +15,6 @@
             <h1 id="employee-rating-dashboard-title">@L["Menu:EmployeeRatingResults"]</h1>
             <p class="hcs-rating-page__lede">@L["EmployeeRatings:DashboardSubtitle"]</p>
         </div>
-        <div>
-            <label class="visually-hidden" for="rating-dashboard-period">@L["EmployeeRatings:Period"]</label>
-            <select id="rating-dashboard-period" class="form-select" @bind="period" @bind:after="LoadAsync">
-                <option value="quarter">@L["EmployeeRatings:Quarter"]</option>
-                <option value="month">@L["EmployeeRatings:Month"]</option>
-            </select>
-        </div>
     </header>
 
     <EmployeeRatingNav />
@@ -93,7 +86,6 @@
 
     private readonly List<EmployeeRatingPerson> people = [];
     private EmployeeRatingDashboardDto? dashboard;
-    private string period = "quarter";
     private bool isLoading = true;
     private bool hasError;
     private long directoryTotal;
@@ -117,9 +109,8 @@
         hasError = false;
         try
         {
-            var range = GetRange();
             var countTask = Directory.GetPeoplePageAsync(null, 0, 1);
-            var dashboardTask = Work.GetEmployeeRatingDashboardAsync(range.From, range.To);
+            var dashboardTask = Work.GetEmployeeRatingDashboardAsync();
             await Task.WhenAll(countTask, dashboardTask);
             dashboard = await dashboardTask;
             directoryTotal = (await countTask).TotalCount;
@@ -164,18 +155,5 @@
         DistributionRows = Enumerable.Range(1, 5)
             .Select(score => (Label: $"{score} {L["EmployeeRatings:Stars"]}", Count: dashboard.ScoreDistribution.GetValueOrDefault(score)))
             .ToList();
-    }
-
-    private (DateTime From, DateTime To) GetRange()
-    {
-        var today = DateTime.Today;
-        if (period == "month")
-        {
-            var from = new DateTime(today.Year, today.Month, 1);
-            return (from, from.AddMonths(1));
-        }
-        var quarterMonth = ((today.Month - 1) / 3) * 3 + 1;
-        var quarterStart = new DateTime(today.Year, quarterMonth, 1);
-        return (quarterStart, quarterStart.AddMonths(3));
     }
 }

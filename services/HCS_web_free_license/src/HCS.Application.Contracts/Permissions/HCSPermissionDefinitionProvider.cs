@@ -63,7 +63,7 @@ public class HCSPermissionDefinitionProvider : PermissionDefinitionProvider
         catalogs.AddPermission(HCSPermissions.Organization.MasterData, L("Permission:Organization.MasterData"));
         catalogs.AddPermission(HCSPermissions.WorkManagement.Reports, L("Permission:WorkManagement.Reports"));
         catalogs.AddPermission(HCSPermissions.Documents.SigningReport, L("Permission:Documents.Signing.Report"));
-        catalogs.AddPermission(HCSPermissions.Documents.SigningConfigure, L("Permission:Documents.Signing.Configure"));
+        AddCrud(catalogs.AddPermission(HCSPermissions.Documents.SigningConfigure, L("Permission:Documents.Signing.Configure")));
 
         var social = context.AddGroup(HCSPermissions.MenuGroups.Social, L("Menu:Social"));
         social.AddPermission(HCSPermissions.Collaboration.Chat, L("Permission:Collaboration.Chat"));

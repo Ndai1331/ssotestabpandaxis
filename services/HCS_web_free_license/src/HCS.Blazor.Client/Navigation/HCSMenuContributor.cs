@@ -117,6 +117,8 @@ public sealed class HCSMenuContributor : IMenuContributor
             .RequirePermissions(false, HCSPermissions.Catalogs.DocumentStatuses, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
         documentCatalogs.AddItem(Item("HCS.Catalogs.SigningMethods", "Phương thức ký", "/signing-methods", order: 70)
             .RequirePermissions(false, HCSPermissions.Catalogs.SigningMethods, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
+        documentCatalogs.AddItem(Item("HCS.Catalogs.SignatureSettings", "Cấu hình ký số", "/signature-settings", "fa fa-key", 75)
+            .RequirePermissions(HCSPermissions.Documents.SigningConfigure));
         documentCatalogs.AddItem(Item("HCS.Catalogs.EventTypes", "Loại sự kiện", "/event-types", order: 80)
             .RequirePermissions(false, HCSPermissions.Catalogs.EventTypes, HCSPermissions.Organization.MasterData, HCSPermissions.Catalogs.MasterData));
         catalogs.AddItem(documentCatalogs);
@@ -129,9 +131,18 @@ public sealed class HCSMenuContributor : IMenuContributor
 
         var administration = Item("HCS.Administration", "Quản trị", icon: "fa fa-shield-halved", order: 350)
             .RequireAuthenticated();
-        administration.AddItem(
-            Item("HCS.Administration.SystemBranding", "Cấu hình hệ thống", "/administration/system-branding", "fa fa-palette", 10)
-                .RequirePermissions(HCSPermissions.SystemBranding.Update));
+        administration.AddItem(Item("HCS.Administration.Users", "Người dùng", "/administration", "fa fa-users-gear", 10)
+            .RequirePermissions("AbpIdentity.Users"));
+        administration.AddItem(Item("HCS.Administration.Roles", "Vai trò & quyền", "/administration/roles", "fa fa-shield-halved", 20)
+            .RequirePermissions("AbpIdentity.Roles"));
+        administration.AddItem(Item("HCS.Administration.Languages", "Ngôn ngữ", "/administration/languages", "fa fa-language", 30)
+            .RequirePermissions(HCSPermissions.Languages.Default));
+        administration.AddItem(Item("HCS.Administration.AuditLogs", "Nhật ký hệ thống", "/administration/audit-logs", "fa fa-clipboard-list", 40)
+            .RequirePermissions(HCSPermissions.AuditViewer.Default));
+        administration.AddItem(Item("HCS.Administration.ServiceLogs", "Nhật ký service", "/administration/service-logs", "fa fa-bars-staggered", 50)
+            .RequirePermissions(HCSPermissions.ServiceLogs.Default));
+        administration.AddItem(Item("HCS.Administration.SystemBranding", "Cấu hình hệ thống", "/administration/system-branding", "fa fa-palette", 60)
+            .RequirePermissions(HCSPermissions.SystemBranding.Update));
         context.Menu.AddItem(administration);
     }
 

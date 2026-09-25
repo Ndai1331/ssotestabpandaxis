@@ -76,12 +76,18 @@ public sealed class HCSOrganizationServiceHostModule : AbpModule
                      {
                          Contracts.OrganizationPermissions.Departments,
                          Contracts.OrganizationPermissions.Units,
-                         Contracts.OrganizationPermissions.Positions,
-                         Contracts.OrganizationPermissions.UserMappings
+                         Contracts.OrganizationPermissions.Positions
                      })
             {
                 options.AddPolicy(permission, policy => policy.RequireClaim("permission", permission));
             }
+
+            options.AddPolicy(Contracts.OrganizationPermissions.UserMappings, policy =>
+                policy.RequireAssertion(context =>
+                    context.User.IsInRole("admin")
+                    || context.User.HasClaim("permission", Contracts.OrganizationPermissions.UserMappings)
+                    || context.User.HasClaim("permission", "AbpIdentity.Users.Create")
+                    || context.User.HasClaim("permission", "AbpIdentity.Users.Update")));
 
             var masterDataAccess = Contracts.OrganizationPermissions.MasterDataAccess;
             options.AddPolicy(Contracts.OrganizationPermissions.MasterData, policy =>
