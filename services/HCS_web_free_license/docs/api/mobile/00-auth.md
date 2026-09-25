@@ -2,6 +2,39 @@
 
 Mọi endpoint nghiệp vụ trong bộ docs này đi qua Gateway. Mobile **không** dùng cookie `.HCS.Bff` và **không** gọi `/bff/login`.
 
+## Production — copy
+
+Bệnh viện 199. Mobile gọi Auth để lấy token, gọi Gateway cho mọi `/api/*`. Host Web là trang Blazor; app native không gọi API ở đó.
+
+```text
+WEB=https://hanhchinhso.benhvien199.vn
+AUTH=https://auth-hcs.benhvien199.vn
+API=https://api-hcs.benhvien199.vn
+
+HCS_MOBILE_CLIENT_ID=hcs-mobile
+HCS_MOBILE_REDIRECT_URI=com.htltech.hcs:/oauth/callback
+HCS_MOBILE_POST_LOGOUT_REDIRECT_URI=com.htltech.hcs:/oauth/logout
+```
+
+| Việc | URL |
+|---|---|
+| Discovery | `https://auth-hcs.benhvien199.vn/.well-known/openid-configuration` |
+| Authorize (mở browser) | `https://auth-hcs.benhvien199.vn/connect/authorize` |
+| Token / refresh | `https://auth-hcs.benhvien199.vn/connect/token` |
+| Profile | `https://api-hcs.benhvien199.vn/api/account/my-profile` |
+| Bootstrap ABP | `https://api-hcs.benhvien199.vn/api/abp/application-configuration` |
+| Localization | `https://api-hcs.benhvien199.vn/api/abp/application-localization?cultureName=vi` |
+| Ngôn ngữ | `https://api-hcs.benhvien199.vn/api/language-management/languages/enabled` |
+| SignalR chat | `https://api-hcs.benhvien199.vn/hubs/chat?access_token={access_token}` |
+
+Authorize đầy đủ (thay `state`, `code_challenge`; `redirect_uri` phải đúng URI đã đăng ký):
+
+```text
+https://auth-hcs.benhvien199.vn/connect/authorize?client_id=hcs-mobile&response_type=code&redirect_uri=com.htltech.hcs%3A%2Foauth%2Fcallback&scope=openid%20profile%20email%20roles%20HCS%20offline_access&state={state}&code_challenge={code_challenge}&code_challenge_method=S256
+```
+
+Local vẫn dùng `https://localhost:44401` (auth) và `https://localhost:44402` (gateway).
+
 ## 1. Web vs mobile
 
 | | Web Blazor | Native mobile |

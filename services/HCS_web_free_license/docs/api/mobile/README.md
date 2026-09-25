@@ -12,14 +12,23 @@ Cập nhật theo mã nguồn ngày 2026-09-21.
 
 Catalog JSON (import Postman / codegen): [`hcs-mobile-api.json`](hcs-mobile-api.json).
 
-Base URL mobile = **Gateway**. Không gọi port nội bộ `44411`–`44415`.
+Base URL mobile = **Gateway**. Không gọi port nội bộ `44411`–`44415`. Web chỉ để mở trình duyệt; API không gọi host Web.
 
-| Môi trường | Auth Server | Gateway / API |
-|---|---|---|
-| Local | `https://localhost:44401` | `https://localhost:44402` |
-| Production | `https://auth-hcs.htltech.vn` | `https://api-hcs.htltech.vn` |
+| Môi trường | Web | Auth Server | Gateway / API |
+|---|---|---|---|
+| Local | (Blazor local) | `https://localhost:44401` | `https://localhost:44402` |
+| Production | `https://hanhchinhso.benhvien199.vn` | `https://auth-hcs.benhvien199.vn` | `https://api-hcs.benhvien199.vn` |
 
-Ví dụ: `GET https://api-hcs.htltech.vn/api/projects`.
+Copy production (chi tiết PKCE ở [00-auth.md](00-auth.md)):
+
+```text
+https://auth-hcs.benhvien199.vn/.well-known/openid-configuration
+https://auth-hcs.benhvien199.vn/connect/authorize
+https://auth-hcs.benhvien199.vn/connect/token
+https://api-hcs.benhvien199.vn/api/account/my-profile
+```
+
+Ví dụ: `GET https://api-hcs.benhvien199.vn/api/projects`.
 
 ## Kiến trúc
 

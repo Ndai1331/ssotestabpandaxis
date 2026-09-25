@@ -11,8 +11,14 @@
       "gateway": "https://localhost:44402"
     },
     "production": {
-      "auth": "https://auth-hcs.htltech.vn",
-      "gateway": "https://api-hcs.htltech.vn"
+      "web": "https://hanhchinhso.benhvien199.vn",
+      "auth": "https://auth-hcs.benhvien199.vn",
+      "gateway": "https://api-hcs.benhvien199.vn",
+      "discovery": "https://auth-hcs.benhvien199.vn/.well-known/openid-configuration",
+      "authorize": "https://auth-hcs.benhvien199.vn/connect/authorize",
+      "token": "https://auth-hcs.benhvien199.vn/connect/token",
+      "profile": "https://api-hcs.benhvien199.vn/api/account/my-profile",
+      "signalR": "https://api-hcs.benhvien199.vn/hubs/chat"
     }
   },
   "conventions": {
