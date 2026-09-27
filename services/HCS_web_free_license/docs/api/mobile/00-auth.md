@@ -181,13 +181,35 @@ Enum trong JSON body Web thường serialize **số** (`status: 0`, `visibility:
 | `201` | Tạo thành công |
 | `204` | Thành công, không body |
 | `400` | Validation; đọc `error.validationErrors` |
-| `401` | Refresh một lần; nếu vẫn lỗi thì login |
+| `401` | Refresh một lần; nếu vẫn lỗi thì login. Gateway cũ reject `typ: at+jwt` — xem mục 7.1 |
 | `403` | Thiếu permission — **không** đẩy về login |
 | `404` | Resource không có / empty |
 | `409` | Conflict (ví dụ `Work:EmployeeRatingAlreadySubmitted`) |
 | `413` | File quá lớn |
 | `429` | Backoff |
 | `5xx` | Retry GET có giới hạn; POST chỉ retry khi có `idempotencyKey` |
+
+### 7.1 Gateway 401 `invalid_token` (ID2004) với token PKCE hợp lệ
+
+Triệu chứng (issuer / API host lấy từ env `HCS_AUTH_PUBLIC_HOST` / `HCS_API_PUBLIC_HOST` của từng bệnh viện):
+
+- PKCE client `hcs-mobile` lấy được `access_token` (`typ: at+jwt`, `aud: ["HCS","HCS.BusManagementService"]`).
+- `GET /connect/userinfo` trên Auth Server → `200`.
+- Cùng Bearer gọi Gateway `/api/*` → `401`, `www-authenticate: Bearer error="invalid_token"`.
+- Web cookie `.HCS.Bff` (client `HCS_App`) vẫn `200` — Web không đi JwtBearer.
+
+Nguyên nhân: Gateway `HCS.Mobile.Bearer` dùng Microsoft JwtBearer, mặc định chỉ chấp `typ: JWT`. OpenIddict phát hành access token `typ: at+jwt`. Userinfo validate local nên không dính rule này.
+
+Fix backend (cần **rebuild + redeploy Gateway**): `ValidTypes = at+jwt + JWT`, `ValidIssuers` lấy từ `Authentication__Authority` (có/không trailing slash), `Authentication__BearerMetadataAddress` trỏ discovery nội bộ (`http://auth-server:8080/.well-known/openid-configuration`). Collaboration JwtBearer cũng nhận `at+jwt` cho chat/social.
+
+Issuer công khai không hardcode bệnh viện — compose set `Authentication__Authority=https://${HCS_AUTH_PUBLIC_HOST}`.
+
+Sau deploy, kiểm tra lại (`{HCS_API_PUBLIC_HOST}` theo env bệnh viện):
+
+```http
+GET https://{HCS_API_PUBLIC_HOST}/api/account/my-profile
+Authorization: Bearer {access_token}
+```
 
 Lỗi ABP:
 

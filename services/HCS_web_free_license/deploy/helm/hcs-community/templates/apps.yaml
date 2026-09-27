@@ -53,6 +53,7 @@ spec:
             {{- end }}
             {{- if eq $app.name "web-gateway" }}
             - { name: Authentication__BearerAudience, value: "HCS" }
+            - { name: Authentication__BearerMetadataAddress, value: "http://auth-server/.well-known/openid-configuration" }
             - { name: ReverseProxy__Clusters__Platform__Destinations__primary__Address, value: "http://platform/" }
             - { name: ReverseProxy__Clusters__Organization__Destinations__primary__Address, value: "http://organization/" }
             - { name: ReverseProxy__Clusters__Document__Destinations__primary__Address, value: "http://document/" }

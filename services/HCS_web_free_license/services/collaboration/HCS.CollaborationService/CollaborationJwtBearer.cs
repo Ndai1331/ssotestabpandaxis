@@ -47,6 +47,7 @@ public static class CollaborationJwtBearer
         options.Audience = configuration["AuthServer:Audience"] ?? "HCS";
         options.RequireHttpsMetadata = configuration.GetValue("AuthServer:RequireHttpsMetadata", true);
         options.MapInboundClaims = false;
+        options.TokenValidationParameters.ValidTypes = ["at+jwt", "JWT"];
         options.TokenValidationParameters.NameClaimType = JwtSubjectClaim;
         options.TokenValidationParameters.RoleClaimType = JwtRoleClaim;
         if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false))

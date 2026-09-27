@@ -46,6 +46,8 @@ public sealed class BearerAuthContractTests
         options.Authority.ShouldBe("https://auth.hcs.localhost");
         options.Audience.ShouldBe("HCS");
         options.MapInboundClaims.ShouldBeFalse();
+        options.TokenValidationParameters.ValidTypes.ShouldContain("at+jwt");
+        options.TokenValidationParameters.ValidTypes.ShouldContain("JWT");
         options.TokenValidationParameters.NameClaimType.ShouldBe(CollaborationJwtBearer.JwtSubjectClaim);
         options.TokenValidationParameters.RoleClaimType.ShouldBe(CollaborationJwtBearer.JwtRoleClaim);
         Volo.Abp.Security.Claims.AbpClaimTypes.UserId.ShouldBe(CollaborationJwtBearer.JwtSubjectClaim);

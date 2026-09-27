@@ -173,12 +173,6 @@ public sealed class HCSWebGatewayModule : AbpModule
     private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         var authority = GetRequiredAbsoluteHttpsUrl(configuration, "Authentication:Authority");
-        var bearerAudience = configuration["Authentication:BearerAudience"]?.Trim();
-        if (string.IsNullOrWhiteSpace(bearerAudience))
-        {
-            bearerAudience = "HCS";
-        }
-
         var clientId = GetRequiredValue(configuration, "Authentication:ClientId");
         var clientSecret = GetRequiredValue(configuration, "Authentication:ClientSecret");
         var cookieDomain = BffDeploymentPolicy.ValidateAndGetCookieDomain(configuration);
@@ -228,34 +222,7 @@ public sealed class HCSWebGatewayModule : AbpModule
                     return Task.CompletedTask;
                 };
             })
-            .AddJwtBearer(BearerScheme, options =>
-            {
-                options.Authority = authority;
-                options.Audience = bearerAudience;
-                options.RequireHttpsMetadata = configuration.GetValue("Authentication:RequireHttpsMetadata", true);
-                options.MapInboundClaims = false;
-                if (configuration.GetValue("Authentication:AllowUntrustedBackchannelCertificate", false))
-                {
-                    options.BackchannelHttpHandler = new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-                    };
-                }
-
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        if (context.Request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase) &&
-                            string.IsNullOrWhiteSpace(context.Token))
-                        {
-                            context.Token = context.Request.Query["access_token"];
-                        }
-
-                        return Task.CompletedTask;
-                    }
-                };
-            })
+            .AddJwtBearer(BearerScheme, options => GatewayJwtBearer.Configure(options, configuration, authority))
             .AddOpenIdConnect(OidcScheme, options =>
             {
                 options.Authority = authority;
