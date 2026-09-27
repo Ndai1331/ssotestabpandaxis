@@ -69,9 +69,10 @@ public sealed class ApiContractTests
     public void Chat_upload_uses_the_configured_request_ceiling()
     {
         var bytes = typeof(ChatController).GetMethod(nameof(ChatController.Upload))!
-            .GetCustomAttributes(typeof(RequestSizeLimitAttribute), true)
-            .Cast<RequestSizeLimitAttribute>().Single().Bytes;
-        bytes.ShouldBe(ChatAttachmentPolicy.RequestCeilingBytes);
+            .GetCustomAttributesData()
+            .Single(attribute => attribute.AttributeType == typeof(RequestSizeLimitAttribute))
+            .ConstructorArguments[0].Value;
+        Convert.ToInt64(bytes).ShouldBe(ChatAttachmentPolicy.RequestCeilingBytes);
     }
 
     [Fact]

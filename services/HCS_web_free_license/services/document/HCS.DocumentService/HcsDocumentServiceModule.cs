@@ -22,7 +22,6 @@ using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore.PostgreSql;
 using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
-using Volo.Abp.OpenIddict;
 using Volo.Abp.Swashbuckle;
 
 namespace HCS.DocumentService;
@@ -30,8 +29,7 @@ namespace HCS.DocumentService;
 [DependsOn(typeof(AbpAutofacModule), typeof(AbpAspNetCoreMvcModule), typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEntityFrameworkCorePostgreSqlModule), typeof(AbpBlobStoringMinioModule),
     typeof(HcsBlobStorageModule),
-    typeof(AbpEventBusRabbitMqModule), typeof(AbpSwashbuckleModule),
-    typeof(AbpOpenIddictAspNetCoreModule))]
+    typeof(AbpEventBusRabbitMqModule), typeof(AbpSwashbuckleModule))]
 public sealed class HcsDocumentServiceModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
@@ -47,6 +45,7 @@ public sealed class HcsDocumentServiceModule : AbpModule
         ConfigureDataProtection(context.Services, configuration, environment);
         context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options => HCS.HcsServiceJwtBearer.Configure(options, configuration));
+        HCS.HcsServiceJwtBearer.ForceDefaultSchemes(context.Services);
         context.Services.AddAuthorization(options =>
         {
             foreach (var permission in GetDocumentPermissions())

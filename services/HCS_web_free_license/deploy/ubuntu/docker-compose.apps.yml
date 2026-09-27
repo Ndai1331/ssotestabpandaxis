@@ -190,6 +190,7 @@ services:
     ports: ["127.0.0.1:8081:8080"]
     volumes:
       - ./config/blazor-client.appsettings.json:/app/wwwroot/_content/HCS.Blazor.Client/appsettings.json:ro
+      - ./config/blazor-client.appsettings.json:/app/wwwroot/_content/HCS.Blazor.Client/appsettings.Production.json:ro
     depends_on: { db-migrator: { condition: service_completed_successfully } }
     environment:
       <<: *common-env

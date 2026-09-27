@@ -41,6 +41,7 @@ public sealed class HCSCollaborationServiceModule : AbpModule
 
         context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options => CollaborationJwtBearer.Configure(options, configuration));
+        HCS.HcsServiceJwtBearer.ForceDefaultSchemes(context.Services);
         context.Services.AddHttpContextAccessor();
         Configure<AbpAntiForgeryOptions>(BearerApiAntiforgery.DisableCookieValidation);
         context.Services.AddAuthorization(options =>

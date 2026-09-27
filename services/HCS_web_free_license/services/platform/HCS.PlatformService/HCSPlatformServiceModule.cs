@@ -17,7 +17,6 @@ using Volo.Abp.Autofac;
 using Volo.Abp.BlobStoring;
 using Volo.Abp.BlobStoring.Minio;
 using Volo.Abp.Modularity;
-using Volo.Abp.OpenIddict;
 using Volo.Abp.Security.Claims;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.EventBus.RabbitMq;
@@ -34,7 +33,6 @@ namespace HCS.PlatformService;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpBlobStoringMinioModule),
     typeof(AbpEventBusRabbitMqModule),
-    typeof(AbpOpenIddictAspNetCoreModule),
     typeof(AbpSwashbuckleModule))]
 public sealed class HCSPlatformServiceModule : AbpModule
 {
@@ -48,6 +46,7 @@ public sealed class HCSPlatformServiceModule : AbpModule
             options.Filters.Add<DefaultApplicationLocalizationCultureFilter>());
         context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options => HCS.HcsServiceJwtBearer.Configure(options, context.Services.GetConfiguration()));
+        HCS.HcsServiceJwtBearer.ForceDefaultSchemes(context.Services);
         context.Services.AddAuthorization(options =>
         {
             options.AddPolicy(HCSPermissions.Collaboration.Chat,

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.Security.Claims;
@@ -20,12 +21,34 @@ public static class HcsServiceJwtBearer
     {
         var values = new HashSet<string>(StringComparer.Ordinal);
         Add(values, configuration["AuthServer:Authority"]);
+        Add(values, configuration["Authentication:Authority"]);
         foreach (var extra in configuration.GetSection("AuthServer:ValidIssuers").Get<string[]>() ?? [])
         {
             Add(values, extra);
         }
 
+        foreach (var extra in configuration.GetSection("Authentication:ValidIssuers").Get<string[]>() ?? [])
+        {
+            Add(values, extra);
+        }
+
         return [.. values];
+    }
+
+    /// <summary>
+    /// ABP <c>AbpOpenIddictAspNetCoreModule</c> registers OpenIddict.Validation and
+    /// may reset the default scheme after <c>AddJwtBearer</c>. Resource APIs must
+    /// authenticate with Microsoft JwtBearer against Auth Server JWKS.
+    /// </summary>
+    public static void ForceDefaultSchemes(IServiceCollection services)
+    {
+        services.PostConfigure<AuthenticationOptions>(options =>
+        {
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultForbidScheme = JwtBearerDefaults.AuthenticationScheme;
+        });
     }
 
     public static void AlignAbpClaimTypes()
@@ -42,17 +65,23 @@ public static class HcsServiceJwtBearer
     {
         AlignAbpClaimTypes();
         var authority = configuration["AuthServer:Authority"]
+            ?? configuration["Authentication:Authority"]
             ?? throw new InvalidOperationException("AuthServer:Authority is required.");
 
         options.Authority = authority;
-        options.Audience = configuration["AuthServer:Audience"] ?? "HCS";
+        options.Audience = configuration["AuthServer:Audience"]
+            ?? configuration["Authentication:BearerAudience"]
+            ?? "HCS";
         options.MapInboundClaims = false;
         options.TokenValidationParameters.ValidTypes = [AccessTokenType, JwtTokenType];
         options.TokenValidationParameters.NameClaimType = JwtSubjectClaim;
         options.TokenValidationParameters.RoleClaimType = JwtRoleClaim;
+        options.TokenValidationParameters.ValidateAudience = true;
+        options.TokenValidationParameters.ValidAudiences = [options.Audience];
 
         var metadataAddress = configuration["AuthServer:MetadataAddress"]?.Trim()
-            ?? configuration["AuthServer:BearerMetadataAddress"]?.Trim();
+            ?? configuration["AuthServer:BearerMetadataAddress"]?.Trim()
+            ?? configuration["Authentication:BearerMetadataAddress"]?.Trim();
         if (!string.IsNullOrWhiteSpace(metadataAddress))
         {
             options.MetadataAddress = metadataAddress;
@@ -61,9 +90,11 @@ public static class HcsServiceJwtBearer
         var metadataIsHttp = Uri.TryCreate(options.MetadataAddress, UriKind.Absolute, out var metadataUri) &&
             metadataUri.Scheme == Uri.UriSchemeHttp;
         options.RequireHttpsMetadata = !metadataIsHttp &&
-            configuration.GetValue("AuthServer:RequireHttpsMetadata", true);
+            configuration.GetValue("AuthServer:RequireHttpsMetadata",
+                configuration.GetValue("Authentication:RequireHttpsMetadata", true));
 
-        if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false))
+        if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false)
+            || configuration.GetValue("Authentication:AllowUntrustedBackchannelCertificate", false))
         {
             options.BackchannelHttpHandler = new HttpClientHandler
             {
@@ -94,6 +125,14 @@ public static class HcsServiceJwtBearer
                     context.Token = context.Request.Query["access_token"];
                 }
 
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                context.HttpContext.RequestServices
+                    .GetService<ILoggerFactory>()
+                    ?.CreateLogger("HCS.JwtBearer")
+                    .LogWarning(context.Exception, "Bearer token rejected by resource-service JWT validation.");
                 return Task.CompletedTask;
             }
         };

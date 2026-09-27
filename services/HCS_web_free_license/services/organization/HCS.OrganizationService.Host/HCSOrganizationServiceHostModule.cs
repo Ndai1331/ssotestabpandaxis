@@ -2,7 +2,6 @@ using HCS.OrganizationService.Data;
 using HCS.OrganizationService.Host.Integration;
 using HCS.OrganizationService.Integration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Volo.Abp.OpenIddict;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
@@ -24,8 +23,7 @@ namespace HCS.OrganizationService.Host;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpAutofacModule),
     typeof(AbpEntityFrameworkCorePostgreSqlModule),
-    typeof(AbpEventBusRabbitMqModule),
-    typeof(AbpOpenIddictAspNetCoreModule))]
+    typeof(AbpEventBusRabbitMqModule))]
 public sealed class HCSOrganizationServiceHostModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
@@ -51,6 +49,7 @@ public sealed class HCSOrganizationServiceHostModule : AbpModule
             options.Configure<OrganizationDbContext>(db => db.UseNpgsql()));
         context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options => HCS.HcsServiceJwtBearer.Configure(options, context.Services.GetConfiguration()));
+        HCS.HcsServiceJwtBearer.ForceDefaultSchemes(context.Services);
 
         context.Services.AddAuthorization(options =>
         {
