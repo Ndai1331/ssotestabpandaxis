@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using OpenIddict.Abstractions;
@@ -201,7 +202,34 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
         }
         else
         {
+            MergeStoredUris(descriptor.RedirectUris, existingApplication.RedirectUris);
+            MergeStoredUris(descriptor.PostLogoutRedirectUris, existingApplication.PostLogoutRedirectUris);
             await ApplicationManager.UpdateAsync(existingApplication.ToModel(), descriptor);
+        }
+    }
+
+    private static void MergeStoredUris(ISet<Uri> target, string? storedJson)
+    {
+        if (string.IsNullOrWhiteSpace(storedJson))
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var value in JsonSerializer.Deserialize<string[]>(storedJson) ?? [])
+            {
+                if (Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+                    uri.IsWellFormedOriginalString() &&
+                    !uri.IsFile)
+                {
+                    target.Add(uri);
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Keep configured URIs when the stored payload is not a JSON array.
         }
     }
 
