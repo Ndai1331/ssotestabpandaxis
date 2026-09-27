@@ -8,6 +8,7 @@ internal static class BffAccessTokenTransform
 {
     internal static void Add(TransformBuilderContext builderContext)
     {
+        builderContext.AddRequestHeaderRemove("Authorization");
         builderContext.AddRequestTransform(transformContext =>
         {
             Apply(transformContext.HttpContext, transformContext.ProxyRequest);

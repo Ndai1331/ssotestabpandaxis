@@ -119,7 +119,15 @@ public static class HcsServiceJwtBearer
         {
             OnMessageReceived = context =>
             {
-                if (context.Request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase) &&
+                var bearer = ReadBearerToken(
+                    context.Request.Headers.Authorization.Count > 0
+                        ? context.Request.Headers.Authorization[0]
+                        : null);
+                if (!string.IsNullOrWhiteSpace(bearer))
+                {
+                    context.Token = bearer;
+                }
+                else if (context.Request.Path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase) &&
                     string.IsNullOrWhiteSpace(context.Token))
                 {
                     context.Token = context.Request.Query["access_token"];
@@ -136,6 +144,34 @@ public static class HcsServiceJwtBearer
                 return Task.CompletedTask;
             }
         };
+    }
+
+    /// <summary>
+    /// YARP may forward two <c>Authorization</c> values. ASP.NET joins them with
+    /// <c>, </c>, turning a 3-part JWS into a 5-part string (IDX14309 / JWE IV).
+    /// </summary>
+    public static string? ReadBearerToken(string? authorization)
+    {
+        if (string.IsNullOrWhiteSpace(authorization))
+        {
+            return null;
+        }
+
+        var first = authorization;
+        var cut = first.IndexOf(", Bearer ", StringComparison.OrdinalIgnoreCase);
+        if (cut >= 0)
+        {
+            first = first[..cut];
+        }
+
+        const string prefix = "Bearer ";
+        if (!first.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var token = first[prefix.Length..].Trim();
+        return string.IsNullOrWhiteSpace(token) ? null : token;
     }
 
     private static void Add(ISet<string> values, string? value)

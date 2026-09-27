@@ -115,4 +115,15 @@ public sealed class BearerAuthContractTests
         options.RequireHttpsMetadata.ShouldBeFalse();
         options.Events.ShouldNotBeNull();
     }
+
+    [Fact]
+    public void Read_bearer_token_keeps_only_the_first_jwt_when_headers_are_joined()
+    {
+        const string jwt = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.signature";
+        var joined = $"Bearer {jwt}, Bearer {jwt}";
+
+        HCS.HcsServiceJwtBearer.ReadBearerToken(joined).ShouldBe(jwt);
+        HCS.HcsServiceJwtBearer.ReadBearerToken($"Bearer {jwt}").ShouldBe(jwt);
+        HCS.HcsServiceJwtBearer.ReadBearerToken(null).ShouldBeNull();
+    }
 }
