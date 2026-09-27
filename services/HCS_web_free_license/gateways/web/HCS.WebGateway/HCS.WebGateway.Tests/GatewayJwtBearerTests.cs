@@ -11,6 +11,7 @@ public sealed class GatewayJwtBearerTests
         Environment.GetEnvironmentVariable("Authentication__Authority")
         ?? "https://auth.hcs.localhost";
 
+
     [Fact]
     public void Accepts_openiddict_access_token_type_and_issuer_slash_variants()
     {
