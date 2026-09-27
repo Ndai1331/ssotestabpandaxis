@@ -164,6 +164,7 @@ services:
     environment:
       <<: *common-env
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "false"
@@ -180,6 +181,7 @@ services:
     environment:
       <<: *common-env
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "false"
       RabbitMQ__EventBus__ClientName: HCS.OrganizationService
@@ -192,6 +194,7 @@ services:
     environment:
       <<: *common-env
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "false"
@@ -210,6 +213,7 @@ services:
       <<: *common-env
       Events__PublicOrigin: https://${HCS_PUBLIC_HOST}
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "false"
@@ -221,6 +225,7 @@ services:
     environment:
       <<: *common-env
       AuthServer__Authority: https://${HCS_AUTH_PUBLIC_HOST}
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "false"

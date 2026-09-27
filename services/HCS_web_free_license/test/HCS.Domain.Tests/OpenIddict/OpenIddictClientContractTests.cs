@@ -1,5 +1,6 @@
 using HCS.OpenIddict;
 using Microsoft.Extensions.Configuration;
+using OpenIddict.Abstractions;
 using System;
 using System.Collections.Generic;
 using Xunit;
@@ -44,5 +45,19 @@ public sealed class OpenIddictClientContractTests
 
         Assert.Throws<InvalidOperationException>(() =>
             OpenIddictDataSeedContributor.GetHcsAppRegistration(configuration.GetSection("Applications")));
+    }
+
+    [Fact]
+    public void Mobile_client_allows_password_and_refresh_grants()
+    {
+        Assert.Equal("password", OpenIddictConstants.GrantTypes.Password);
+        Assert.Contains(
+            OpenIddictConstants.Permissions.GrantTypes.Password,
+            new[]
+            {
+                OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                OpenIddictConstants.Permissions.GrantTypes.Password,
+                OpenIddictConstants.Permissions.GrantTypes.RefreshToken
+            });
     }
 }

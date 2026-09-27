@@ -5,9 +5,9 @@ using HCS.PlatformService.Filters;
 using HCS.PlatformService.Storage;
 using System.Net;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
-using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.ExceptionHandling;
 using Volo.Abp.AspNetCore.Mvc;
@@ -38,42 +38,16 @@ namespace HCS.PlatformService;
     typeof(AbpSwashbuckleModule))]
 public sealed class HCSPlatformServiceModule : AbpModule
 {
-    public override void PreConfigureServices(ServiceConfigurationContext context)
-    {
-        var configuration = context.Services.GetConfiguration();
-        var authority = configuration["AuthServer:Authority"]
-            ?? throw new InvalidOperationException("AuthServer:Authority is required.");
-
-        PreConfigure<OpenIddictBuilder>(builder => builder.AddValidation(options =>
-        {
-            options.SetIssuer(new Uri(authority));
-            options.AddAudiences("HCS");
-            options.UseSystemNetHttp(http =>
-            {
-                if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false))
-                {
-                    // Local Docker reaches the public issuer through Caddy's development
-                    // certificate. Production retains the default certificate validation.
-                    http.ConfigureHttpClientHandler(handler =>
-                        handler.ServerCertificateCustomValidationCallback =
-                            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
-                }
-            });
-            options.UseAspNetCore();
-        }));
-    }
-
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         // OpenIddict preserves JWT claim names. Align ABP's role/user providers with
         // the access-token contract so existing role-based permission grants apply.
-        AbpClaimTypes.UserId = "sub";
-        AbpClaimTypes.Role = "role";
+        HCS.HcsServiceJwtBearer.AlignAbpClaimTypes();
 
         context.Services.Configure<MvcOptions>(options =>
             options.Filters.Add<DefaultApplicationLocalizationCultureFilter>());
-        context.Services.AddAuthentication(
-            OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+        context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => HCS.HcsServiceJwtBearer.Configure(options, context.Services.GetConfiguration()));
         context.Services.AddAuthorization(options =>
         {
             options.AddPolicy(HCSPermissions.Collaboration.Chat,

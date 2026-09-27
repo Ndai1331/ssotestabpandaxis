@@ -6,46 +6,37 @@ Mọi endpoint nghiệp vụ trong bộ docs này đi qua Gateway. Mobile **khô
 
 Bệnh viện 199. Mobile gọi Auth để lấy token, gọi Gateway cho mọi `/api/*`. Host Web là trang Blazor; app native không gọi API ở đó.
 
-```text
-WEB=https://hanhchinhso.benhvien199.vn
-AUTH=https://auth-hcs.benhvien199.vn
-API=https://api-hcs.benhvien199.vn
+Host lấy từ env bệnh viện (`HCS_AUTH_PUBLIC_HOST`, `HCS_API_PUBLIC_HOST`). Ví dụ BV199:
 
+```text
+AUTH=https://auth.benhvien199.vn
+API=https://api-hcs.benhvien199.vn
 HCS_MOBILE_CLIENT_ID=hcs-mobile
-HCS_MOBILE_REDIRECT_URI=com.htltech.hcs:/oauth/callback
-HCS_MOBILE_POST_LOGOUT_REDIRECT_URI=com.htltech.hcs:/oauth/logout
 ```
 
 | Việc | URL |
 |---|---|
-| Discovery | `https://auth-hcs.benhvien199.vn/.well-known/openid-configuration` |
-| Authorize (mở browser) | `https://auth-hcs.benhvien199.vn/connect/authorize` |
-| Token / refresh | `https://auth-hcs.benhvien199.vn/connect/token` |
-| Profile | `https://api-hcs.benhvien199.vn/api/account/my-profile` |
-| Bootstrap ABP | `https://api-hcs.benhvien199.vn/api/abp/application-configuration` |
-| Localization | `https://api-hcs.benhvien199.vn/api/abp/application-localization?cultureName=vi` |
-| Ngôn ngữ | `https://api-hcs.benhvien199.vn/api/language-management/languages/enabled` |
-| SignalR chat | `https://api-hcs.benhvien199.vn/hubs/chat?access_token={access_token}` |
+| Discovery | `{AUTH}/.well-known/openid-configuration` |
+| Token / refresh / password login | `{AUTH}/connect/token` |
+| Profile | `{API}/api/account/my-profile` |
+| Bootstrap ABP | `{API}/api/abp/application-configuration` |
+| Localization | `{API}/api/abp/application-localization?cultureName=vi` |
+| Ngôn ngữ | `{API}/api/language-management/languages/enabled` |
+| SignalR chat | `{API}/hubs/chat?access_token={access_token}` |
 
-Authorize đầy đủ (thay `state`, `code_challenge`; `redirect_uri` phải đúng URI đã đăng ký):
-
-```text
-https://auth-hcs.benhvien199.vn/connect/authorize?client_id=hcs-mobile&response_type=code&redirect_uri=com.htltech.hcs%3A%2Foauth%2Fcallback&scope=openid%20profile%20email%20roles%20HCS%20offline_access&state={state}&code_challenge={code_challenge}&code_challenge_method=S256
-```
-
-Local vẫn dùng `https://localhost:44401` (auth) và `https://localhost:44402` (gateway).
+Local: `https://localhost:44401` (auth), `https://localhost:44402` (gateway).
 
 ## 1. Web vs mobile
 
 | | Web Blazor | Native mobile |
 |---|---|---|
 | Client OpenIddict | `HCS_App` (confidential, secret trên Gateway) | `hcs-mobile` (public, không secret) |
-| Grant | Authorization Code + PKCE, session cookie | Authorization Code + PKCE, token trên máy |
+| Grant | Authorization Code + PKCE, session cookie | **Password grant** (form trong app, như ABP Commercial). Không mở browser |
 | Gọi API | Cookie + `X-XSRF-TOKEN` | `Authorization: Bearer {access_token}` |
 | Token lưu ở | Redis / Gateway | Keychain / Keystore |
 | SignalR | Cookie + antiforgery handler | `access_token` query trên handshake |
 
-Không nhúng client secret `HCS_App` vào app mobile. Không dùng password grant.
+Không nhúng client secret `HCS_App` vào app mobile. PKCE/browser chỉ dùng nếu sau này cần SSO web-view; mặc định mobile **không** mở browser.
 
 ## 2. Client `hcs-mobile`
 
@@ -57,10 +48,10 @@ HCS_MOBILE_REDIRECT_URI=com.htltech.hcs:/oauth/callback
 HCS_MOBILE_POST_LOGOUT_REDIRECT_URI=com.htltech.hcs:/oauth/logout
 ```
 
-- Grant: `authorization_code`, `refresh_token`
-- PKCE bắt buộc, `S256`
-- Scopes tối thiểu: `openid profile email roles HCS offline_access`
-- Audience JWT Gateway: `HCS`
+- Grant: `password`, `refresh_token` (in-app). `authorization_code` + PKCE chỉ khi cần SSO browser
+- Public client, không secret
+- Scopes: `openid profile email roles HCS offline_access`
+- Audience JWT: `HCS`
 
 Discovery:
 
@@ -68,31 +59,21 @@ Discovery:
 GET {auth_server}/.well-known/openid-configuration
 ```
 
-Dùng `authorization_endpoint`, `token_endpoint`, `issuer`; logout/revoke nếu có `end_session_endpoint` / `revocation_endpoint`.
+Dùng `token_endpoint`, `issuer`; logout/revoke nếu có `end_session_endpoint` / `revocation_endpoint`.
 
-## 3. Luồng PKCE
+## 3. Login trong app (password grant)
 
-1. Tạo `code_verifier`, `code_challenge = BASE64URL(SHA256(code_verifier))`.
-2. Mở browser hệ thống:
-
-```text
-{authorization_endpoint}
-  ?client_id=hcs-mobile
-  &response_type=code
-  &redirect_uri={registered_redirect_uri}
-  &scope=openid%20profile%20email%20roles%20HCS%20offline_access
-  &state={random_state}
-  &code_challenge={code_challenge}
-  &code_challenge_method=S256
-```
-
-3. Callback: kiểm tra `state`, đổi code:
+Form username/password **trong app**. POST thẳng Auth — giống ABP Commercial / MAUI.
 
 ```http
-POST {token_endpoint}
+POST {AUTH}/connect/token
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=authorization_code&client_id=hcs-mobile&redirect_uri={registered_redirect_uri}&code={code}&code_verifier={code_verifier}
+grant_type=password
+&client_id=hcs-mobile
+&username={username}
+&password={password}
+&scope=openid profile email roles HCS offline_access
 ```
 
 Response:
@@ -130,7 +111,7 @@ Accept: application/json
 
 JSON body thêm `Content-Type: application/json`. Upload dùng `multipart/form-data`. Download đọc `Content-Type` / `Content-Disposition`.
 
-`GET /bff/user`, `GET /bff/antiforgery`, `GET /bff/login`, `POST /bff/logout` là contract browser. Mobile PKCE không gọi.
+`GET /bff/user`, `GET /bff/antiforgery`, `GET /bff/login`, `POST /bff/logout` là contract browser. Mobile không gọi.
 
 SignalR:
 

@@ -1,7 +1,7 @@
 using HCS.OrganizationService.Data;
 using HCS.OrganizationService.Host.Integration;
 using HCS.OrganizationService.Integration;
-using OpenIddict.Validation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Volo.Abp.OpenIddict;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -32,20 +32,6 @@ public sealed class HCSOrganizationServiceHostModule : AbpModule
     {
         var configuration = context.Services.GetConfiguration();
         context.Services.AddAbpDbContext<OrganizationDbContext>();
-        var authority = configuration["AuthServer:Authority"]
-            ?? throw new InvalidOperationException("AuthServer:Authority is required.");
-        PreConfigure<OpenIddictBuilder>(builder => builder.AddValidation(options =>
-        {
-            options.SetIssuer(new Uri(authority));
-            options.AddAudiences(configuration["AuthServer:Audience"] ?? "HCS");
-            options.UseSystemNetHttp(http =>
-            {
-                if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false))
-                    http.ConfigureHttpClientHandler(handler => handler.ServerCertificateCustomValidationCallback =
-                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
-            });
-            options.UseAspNetCore();
-        }));
     }
 
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -63,12 +49,8 @@ public sealed class HCSOrganizationServiceHostModule : AbpModule
         context.Services.AddAbpDbContext<OrganizationDbContext>();
         Configure<AbpDbContextOptions>(options =>
             options.Configure<OrganizationDbContext>(db => db.UseNpgsql()));
-        context.Services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-            options.DefaultForbidScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-        });
+        context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => HCS.HcsServiceJwtBearer.Configure(options, context.Services.GetConfiguration()));
 
         context.Services.AddAuthorization(options =>
         {

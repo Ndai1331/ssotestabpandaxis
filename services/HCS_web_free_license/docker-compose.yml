@@ -175,6 +175,7 @@ services:
     environment:
       <<: *common-env
       AuthServer__Authority: https://auth.hcs.localhost
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
@@ -189,6 +190,7 @@ services:
       # Tokens are issued with the public issuer. Resolve discovery through Caddy
       # as well, so JWT issuer validation uses the same canonical address.
       AuthServer__Authority: https://auth.hcs.localhost
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
       RabbitMQ__EventBus__ClientName: HCS.OrganizationService
@@ -199,6 +201,7 @@ services:
     environment:
       <<: *common-env
       AuthServer__Authority: https://auth.hcs.localhost
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
@@ -216,6 +219,7 @@ services:
       <<: *common-env
       Events__PublicOrigin: https://hcs.localhost
       AuthServer__Authority: https://auth.hcs.localhost
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
@@ -228,6 +232,7 @@ services:
       # Tokens are issued with the public issuer. Resolve discovery through Caddy
       # so JWT issuer validation matches https://auth.hcs.localhost/ on the token.
       AuthServer__Authority: https://auth.hcs.localhost
+      AuthServer__MetadataAddress: http://auth-server:8080/.well-known/openid-configuration
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"

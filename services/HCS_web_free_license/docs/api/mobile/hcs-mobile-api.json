@@ -3,7 +3,7 @@
     "title": "HCS Mobile API",
     "version": "2026-09-23",
     "source": "Blazor Client + Gateway /api/* (không gọi port 44411–44415)",
-    "note": "Web dùng cookie BFF. Mobile dùng PKCE client hcs-mobile + Authorization: Bearer. Không password grant, không nhúng secret HCS_App."
+    "note": "Web dùng cookie BFF. Mobile login in-app: POST /connect/token grant_type=password client_id=hcs-mobile. Gọi API bằng Authorization: Bearer. Không nhúng secret HCS_App."
   },
   "servers": {
     "local": {

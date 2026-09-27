@@ -5,8 +5,8 @@ using HCS.WorkManagementService.Data;
 using HCS.WorkManagementService.Integration;
 using HCS.WorkManagementService.Storage;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi;
-using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
@@ -29,38 +29,11 @@ namespace HCS.WorkManagementService;
     typeof(AbpOpenIddictAspNetCoreModule))]
 public sealed class HcsWorkManagementServiceModule : AbpModule
 {
-    public override void PreConfigureServices(ServiceConfigurationContext context)
-    {
-        var configuration = context.Services.GetConfiguration();
-        var authority = configuration["AuthServer:Authority"]
-            ?? throw new InvalidOperationException("AuthServer:Authority is required.");
-
-        PreConfigure<OpenIddictBuilder>(builder => builder.AddValidation(options =>
-        {
-            options.SetIssuer(new Uri(authority));
-            options.AddAudiences("HCS");
-            var audience = configuration["AuthServer:Audience"];
-            if (!string.IsNullOrWhiteSpace(audience) && !string.Equals(audience, "HCS", StringComparison.Ordinal))
-                options.AddAudiences(audience);
-            options.UseSystemNetHttp(http =>
-            {
-                if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false))
-                    http.ConfigureHttpClientHandler(handler => handler.ServerCertificateCustomValidationCallback =
-                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
-            });
-            options.UseAspNetCore();
-        }));
-    }
-
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
-        context.Services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-            options.DefaultForbidScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-        });
+        context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => HCS.HcsServiceJwtBearer.Configure(options, configuration));
         context.Services.AddAuthorization(options =>
         {
             foreach (var permission in new[] { WorkPermissions.Projects, WorkPermissions.Tasks, WorkPermissions.Calendar, WorkPermissions.Events,

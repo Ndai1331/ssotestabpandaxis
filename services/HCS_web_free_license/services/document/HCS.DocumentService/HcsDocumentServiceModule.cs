@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi;
-using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
@@ -37,23 +37,6 @@ public sealed class HcsDocumentServiceModule : AbpModule
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
         PdfSharpFontResolverRegistration.EnsureRegistered();
-
-        var configuration = context.Services.GetConfiguration();
-        var authority = configuration["AuthServer:Authority"]
-            ?? throw new InvalidOperationException("AuthServer:Authority is required.");
-
-        PreConfigure<OpenIddictBuilder>(builder => builder.AddValidation(options =>
-        {
-            options.SetIssuer(new Uri(authority));
-            options.AddAudiences(configuration["AuthServer:Audience"] ?? "HCS");
-            options.UseSystemNetHttp(http =>
-            {
-                if (configuration.GetValue("AuthServer:AllowUntrustedBackchannelCertificate", false))
-                    http.ConfigureHttpClientHandler(handler => handler.ServerCertificateCustomValidationCallback =
-                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
-            });
-            options.UseAspNetCore();
-        }));
     }
 
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -62,12 +45,8 @@ public sealed class HcsDocumentServiceModule : AbpModule
         var environment = context.Services.GetHostingEnvironment();
         context.Services.AddHttpContextAccessor();
         ConfigureDataProtection(context.Services, configuration, environment);
-        context.Services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-            options.DefaultForbidScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-        });
+        context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => HCS.HcsServiceJwtBearer.Configure(options, configuration));
         context.Services.AddAuthorization(options =>
         {
             foreach (var permission in GetDocumentPermissions())

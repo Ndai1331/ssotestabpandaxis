@@ -60,6 +60,7 @@ public sealed class HCSAuthServerModule : AbpModule
         });
 
         PreConfigure<OpenIddictServerBuilder>(ConfigureAccessTokenFormat);
+        PreConfigure<OpenIddictServerBuilder>(ConfigureServerFlows);
         PreConfigure<OpenIddictServerBuilder>(serverBuilder =>
             serverBuilder.AddEventHandler<OpenIddictServerEvents.ProcessSignInContext>(builder =>
                 builder.UseScopedHandler<PermissionClaimsHandler>()
@@ -87,6 +88,12 @@ public sealed class HCSAuthServerModule : AbpModule
         // APIs validate tokens in separate processes through issuer discovery.
         // Keep access tokens signed but unencrypted so standard JWT validation can read them.
         serverBuilder.DisableAccessTokenEncryption();
+    }
+
+    public static void ConfigureServerFlows(OpenIddictServerBuilder serverBuilder)
+    {
+        // Native mobile (ABP commerce style) posts username/password to /connect/token.
+        serverBuilder.AllowPasswordFlow();
     }
 
     public override void ConfigureServices(ServiceConfigurationContext context)

@@ -51,6 +51,9 @@ spec:
             - { name: App__SelfUrl, value: "https://{{ $root.Values.ingress.authHost }}" }
             - { name: App__RedirectAllowedUrls, value: "https://{{ $root.Values.ingress.authHost }}" }
             {{- end }}
+            {{- if or (eq $app.name "platform") (eq $app.name "organization") (eq $app.name "document") (eq $app.name "work-management") (eq $app.name "collaboration") }}
+            - { name: AuthServer__MetadataAddress, value: "http://auth-server/.well-known/openid-configuration" }
+            {{- end }}
             {{- if eq $app.name "web-gateway" }}
             - { name: Authentication__BearerAudience, value: "HCS" }
             - { name: Authentication__BearerMetadataAddress, value: "http://auth-server/.well-known/openid-configuration" }
