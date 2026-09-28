@@ -148,6 +148,8 @@
     private readonly List<TaskAssignmentDto> assignments = [];
     private List<TaskDocumentReferenceDto> documentReferences = [];
     private Guid? projectId, selectedProjectId, parentTaskId, createdId, assigneeId, linkedDocumentId;
+    private Guid? participantProjectId;
+    private HashSet<Guid> participantIds = [];
     private string tab = "general", code = "", title = "", description = "", priority = "Normal", status = "New", assignmentType = "Member";
     private string? nextTaskCode;
     private string TaskCodePlaceholder => nextTaskCode ?? Features.Prefix(AutoCodeKind.Task);
@@ -197,6 +199,8 @@
         dueDate = DateTime.Today.AddDays(7);
         parentOptions.Clear();
         assignments.Clear();
+        participantProjectId = null;
+        participantIds = [];
         documentReferences = [];
         nextTaskCode = null;
     }
@@ -213,6 +217,8 @@
     {
         selectedProjectId = value;
         parentTaskId = null;
+        participantProjectId = null;
+        participantIds = [];
         await LoadParentsAsync();
         await LoadNextTaskCodeAsync();
     }
@@ -303,7 +309,6 @@
             assignments.RemoveAll(x => x.Id == assignment.Id);
             assignments.Add(assignment);
             assigneeId = null;
-            await NotifySuccessAsync(L["Feature:AssignmentAdded"]);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
         finally { isAssigning = false; }
@@ -365,9 +370,27 @@
     private CatalogSelect2Item? ContactItem(Guid? id) => id is { } userId
         ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault()
         : null;
+    private async Task EnsureParticipantsAsync()
+    {
+        var id = projectId ?? selectedProjectId;
+        if (id is not { } project)
+        {
+            participantProjectId = null;
+            participantIds = [];
+            return;
+        }
+        if (participantProjectId == project)
+            return;
+        var detail = await Work.GetProjectAsync(project);
+        if ((projectId ?? selectedProjectId) != project)
+            return;
+        participantIds = ProjectParticipantPicker.Ids(detail);
+        participantProjectId = project;
+        await ChatContactDirectory.EnsureAsync(Chat, contacts, participantIds, CurrentUser);
+    }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {
-        var found = ChatContactDirectory.WithCurrentUser(await Chat.GetContactsAsync(term, 50), contacts, CurrentUser, term);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
+        await EnsureParticipantsAsync();
+        return ProjectParticipantPicker.Filter(contacts, participantIds, term);
     }
 }

@@ -25,6 +25,7 @@ public partial class OrganizationUnitManagementAppService
         UserName = user.UserName ?? string.Empty,
         FullName = BuildFullName(user),
         Email = user.Email ?? string.Empty,
+        PhoneNumber = string.IsNullOrWhiteSpace(user.PhoneNumber) ? null : user.PhoneNumber.Trim(),
         IsActive = user.IsActive
     };
 
@@ -34,14 +35,18 @@ public partial class OrganizationUnitManagementAppService
         if (mapped.Count == 0)
             return mapped;
 
-        var rolesByUser = (await identityUserRepository.GetRoleNamesAsync(mapped.Select(x => x.Id).ToArray()))
+        var userIds = mapped.Select(x => x.Id).ToArray();
+        var rolesByUser = (await identityUserRepository.GetRoleNamesAsync(userIds))
             .ToDictionary(item => item.Id, item => item.RoleNames);
+        var departments = await userOrganizationNames.GetDisplayNamesAsync(userIds);
         foreach (var member in mapped)
         {
             member.RoleNames = rolesByUser.TryGetValue(member.Id, out var roleNames)
                 ? roleNames?.Where(name => !string.IsNullOrWhiteSpace(name)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
                     ?? []
                 : [];
+            if (departments.TryGetValue(member.Id, out var department) && !string.IsNullOrWhiteSpace(department))
+                member.DepartmentName = department;
         }
 
         return mapped;

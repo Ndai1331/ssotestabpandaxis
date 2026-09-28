@@ -1,4 +1,5 @@
 using HCS.EntityFrameworkCore;
+using HCS.Identity;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,8 @@ namespace HCS.PlatformService.Controllers;
 public sealed class WorkflowAssigneeCandidatesController(
     IIdentityUserRepository identityUsers,
     ICurrentUser currentUser,
-    HCSDbContext identityDb) : ControllerBase
+    HCSDbContext identityDb,
+    IUserOrganizationNames organizationNames) : ControllerBase
 {
     [HttpGet("roles")]
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowAssigneeCandidateDto>>> GetRolesAsync(
@@ -70,11 +72,17 @@ public sealed class WorkflowAssigneeCandidatesController(
         // Query the scoped Identity DbContext once. Running one FindAsync per ID
         // made this endpoint an N+1 query from list pages such as document-signing.
         var users = await identityUsers.GetListByIdsAsync(ids, includeDetails: false, cancellationToken: cancellationToken);
+        var active = users.Where(user => user.IsActive).ToArray();
+        var departments = await organizationNames.GetDisplayNamesAsync(active.Select(user => user.Id).ToArray(), cancellationToken);
 
-        return Ok(users
-            .Where(user => user.IsActive)
+        return Ok(active
             .Select(user => new WorkflowAssigneeCandidateDto(
-                user.Id, DisplayName(user), null, user.UserName))
+                user.Id,
+                DisplayName(user),
+                null,
+                user.UserName,
+                user.PhoneNumber,
+                departments.GetValueOrDefault(user.Id)))
             .ToArray());
     }
 
@@ -96,12 +104,15 @@ public sealed class WorkflowAssigneeCandidatesController(
             .Where(x => x.UserId == userId)
             .Select(x => (Guid?)x.OrganizationUnitId)
             .FirstOrDefaultAsync(cancellationToken);
+        var departments = await organizationNames.GetDisplayNamesAsync([user.Id], cancellationToken);
 
         return Ok(new WorkflowAssigneeCandidateDto(
             user.Id,
             DisplayName(user),
             ouId,
-            user.UserName));
+            user.UserName,
+            user.PhoneNumber,
+            departments.GetValueOrDefault(user.Id)));
     }
 
     private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<WorkflowAssigneeCandidateDto>>> BuildCandidateGroupsAsync(
@@ -116,6 +127,7 @@ public sealed class WorkflowAssigneeCandidatesController(
             : await identityUsers.GetListByIdsAsync(allUserIds, includeDetails: false, cancellationToken: cancellationToken);
         var usersById = users.Where(x => x.IsActive).ToDictionary(x => x.Id);
         var primaryOuByUser = await LoadPrimaryOuByUserAsync(allUserIds, submitterOuSet, cancellationToken);
+        var departments = await organizationNames.GetDisplayNamesAsync(usersById.Keys.ToArray(), cancellationToken);
 
         return roleIds.ToDictionary(roleId => roleId, roleId => (IReadOnlyList<WorkflowAssigneeCandidateDto>)
             userIdsByRole.GetValueOrDefault(roleId, [])
@@ -127,7 +139,9 @@ public sealed class WorkflowAssigneeCandidatesController(
                         user.Id,
                         DisplayName(user),
                         primaryOuByUser.GetValueOrDefault(userId),
-                        user.UserName);
+                        user.UserName,
+                        user.PhoneNumber,
+                        departments.GetValueOrDefault(user.Id));
                 })
                 .DistinctBy(x => x.UserId)
                 .ToArray());
@@ -198,4 +212,4 @@ public sealed class WorkflowAssigneeCandidatesController(
 }
 
 public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId,
-    string? UserName = null);
+    string? UserName = null, string? PhoneNumber = null, string? DepartmentName = null);

@@ -97,6 +97,7 @@ Không có: CRUD admin, danh mục quản trị, audit, service logs, branding, 
 | [10-social.md](10-social.md) | Feed, comment, reaction, media; rating trên profile |
 | [11-lookups.md](11-lookups.md) | OU, master-data GET, contacts, assignees |
 | [12-api-request-status.md](12-api-request-status.md) | Trạng thái đề xuất API mobile (chat, push, ký số, dự án) + **thay đổi bắt buộc** phía mobile |
+| [13-new-api-request-reply.md](13-new-api-request-reply.md) | Phản hồi từng mục file `new-api-request.md` (0–5): như đề xuất / đổi / bỏ |
 
 ## Lệch so với runbook cũ
 

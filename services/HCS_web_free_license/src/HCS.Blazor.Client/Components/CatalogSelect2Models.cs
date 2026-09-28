@@ -8,7 +8,8 @@ public sealed record CatalogSelect2Item(
     [property: JsonPropertyName("text")] string Text,
     [property: JsonPropertyName("description")] string? Description = null,
     [property: JsonPropertyName("avatarUrl")] string? AvatarUrl = null,
-    [property: JsonPropertyName("initials")] string? Initials = null);
+    [property: JsonPropertyName("initials")] string? Initials = null,
+    [property: JsonPropertyName("department")] string? Department = null);
 
 public sealed record CatalogSelect2SearchResponse(
     [property: JsonPropertyName("results")] List<CatalogSelect2Item> Results,

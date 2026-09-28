@@ -143,6 +143,7 @@
                                     <UserSelect2 Value="assigneeId"
                                                  ValueChanged="value => assigneeId = value"
                                                  Placeholder="@L["Chat:SelectContacts"]"
+                                                 SelectedItem="@ContactItem(assigneeId)"
                                                  SelectedText="@Name(assigneeId)"
                                                  Search="SearchContactsAsync" />
                                 </div>
@@ -208,6 +209,7 @@
     private string projectName = "";
     private string activeTab = "info";
     private Guid? assigneeId;
+    private HashSet<Guid> participantIds = [];
     private string assignmentType = "Member";
     private bool isLoading, isSaving;
     private string ParentTaskLabel =>
@@ -266,7 +268,9 @@
         {
             var project = await Work.GetProjectAsync(projectId);
             projectName = project.Project.Name;
+            participantIds = ProjectParticipantPicker.Ids(project);
             siblingTasks.AddRange(project.Tasks.Where(x => x.Id != TaskId));
+            await ChatContactDirectory.EnsureAsync(Chat, contacts, participantIds, CurrentUser);
         }
         catch { /* fall back to chat contacts */ }
     }
@@ -319,8 +323,8 @@
         {
             await Work.AddAssignmentAsync(TaskId, new AddTaskAssignmentRequest(userId, assignmentType));
             detail = await Work.GetTaskAsync(TaskId);
+            assigneeId = null;
             await ChatContactDirectory.EnsureAsync(Chat, contacts, detail.Assignments.Select(x => x.UserId), CurrentUser);
-            await NotifySuccessAsync(L["Catalog:Updated"]);
         }
         catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
     }
@@ -342,6 +346,9 @@
     }
 
     private string Name(Guid? id) => ChatContactDirectory.Name(contacts, id);
+    private CatalogSelect2Item? ContactItem(Guid? id) => id is { } userId
+        ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault()
+        : null;
     private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[..1];
     private string AssignmentTypeLabel(string type) => type switch
     {
@@ -352,11 +359,8 @@
         _ => type
     };
     private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
-    {
-        var found = ChatContactDirectory.WithCurrentUser(await Chat.GetContactsAsync(term, 50), contacts, CurrentUser, term);
-        return CatalogSelect2Cache.Merge(contacts, found, x => x.Id, x => x.DisplayName, false, CatalogSelect2Cache.UserItem);
-    }
+    private Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page) =>
+        Task.FromResult(ProjectParticipantPicker.Filter(contacts, participantIds, term));
 
     private sealed class TaskEditForm
     {

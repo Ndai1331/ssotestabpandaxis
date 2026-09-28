@@ -1,5 +1,6 @@
 using HCS.CollaborationService.Contracts;
 using HCS.EntityFrameworkCore;
+using HCS.Identity;
 using HCS.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,8 @@ namespace HCS.PlatformService.Controllers;
 [ApiController, Authorize(Policy = HCSPermissions.Collaboration.ChatRead), Route("api/chat/contacts")]
 public sealed class ChatContactsController(
     ICurrentUser currentUser,
-    HCSDbContext db) : ControllerBase
+    HCSDbContext db,
+    IUserOrganizationNames organizationNames) : ControllerBase
 {
     [HttpGet]
     public async Task<IReadOnlyList<ChatContactDto>> GetAsync(
@@ -57,12 +59,18 @@ public sealed class ChatContactsController(
 
         if (searchTerm is not null)
         {
+            var departmentUserIds = db.Set<IdentityUserOrganizationUnit>()
+                .Where(link => db.OrganizationUnits.Any(unit =>
+                    unit.Id == link.OrganizationUnitId &&
+                    unit.DisplayName.ToLower().Contains(searchTerm)))
+                .Select(link => link.UserId);
             query = query.Where(user =>
                 ((user.Surname ?? string.Empty) + " " + (user.Name ?? string.Empty))
                     .ToLower().Contains(searchTerm) ||
                 (user.PhoneNumber != null && user.PhoneNumber.ToLower().Contains(searchTerm)) ||
                 (user.Email != null && user.Email.ToLower().Contains(searchTerm)) ||
-                user.UserName.ToLower().Contains(searchTerm));
+                user.UserName.ToLower().Contains(searchTerm) ||
+                departmentUserIds.Contains(user.Id));
         }
 
         var totalCount = await query.LongCountAsync(cancellationToken);
@@ -97,6 +105,7 @@ public sealed class ChatContactsController(
             .Where(avatar => userIds.Contains(avatar.UserId))
             .Select(avatar => avatar.UserId)
             .ToHashSetAsync(cancellationToken);
+        var departments = await organizationNames.GetDisplayNamesAsync(userIds, cancellationToken);
 
         return mappedUsers
             .Select(user => new ChatContactDto(
@@ -109,7 +118,8 @@ public sealed class ChatContactsController(
                 user.PhoneNumber,
                 avatarUserIds.Contains(user.Id)
                     ? $"/api/identity/users/{user.Id:D}/avatar"
-                    : null))
+                    : null,
+                departments.GetValueOrDefault(user.Id)))
             .ToArray();
     }
 }

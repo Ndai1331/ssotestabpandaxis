@@ -384,11 +384,19 @@
     {
         if (id is not { } userId) return null;
         if (CandidatesFor(stepCode).FirstOrDefault(x => x.UserId == userId) is { } candidate)
-        {
-            var text = CandidateDisplayName(candidate);
-            return new CatalogSelect2Item(userId.ToString("D"), text, candidate.UserName);
-        }
+            return CandidateSelectItem(candidate);
         return ContactItem(id);
+    }
+    private CatalogSelect2Item CandidateSelectItem(WorkflowAssigneeCandidateDto candidate)
+    {
+        var contact = contacts.FirstOrDefault(item => item.Id == candidate.UserId);
+        return CatalogSelect2Cache.PersonItem(
+            candidate.UserId.ToString("D"),
+            CandidateDisplayName(candidate),
+            string.IsNullOrWhiteSpace(candidate.PhoneNumber) ? contact?.PhoneNumber : candidate.PhoneNumber,
+            string.IsNullOrWhiteSpace(candidate.DepartmentName) ? contact?.DepartmentName : candidate.DepartmentName,
+            contact?.AvatarUrl,
+            candidate.UserName);
     }
     private CatalogSelect2Item? ContactItem(Guid? id) =>
         id is { } userId ? contacts.Where(x => x.Id == userId).Select(CatalogSelect2Cache.UserItem).FirstOrDefault() : null;
@@ -417,10 +425,10 @@
         var found = candidates.Where(x => query.Length == 0
             || CatalogSelect2Text.NormalizeSearch(CandidateDisplayName(x)).Contains(query, StringComparison.Ordinal)
             || CatalogSelect2Text.NormalizeSearch(x.UserName).Contains(query, StringComparison.Ordinal)
-            || CatalogSelect2Text.NormalizeSearch(x.DisplayName).Contains(query, StringComparison.Ordinal)).ToList();
-        return Task.FromResult(new CatalogSelect2SearchResponse(
-            found.Select(x => new CatalogSelect2Item(x.UserId.ToString("D"), CandidateDisplayName(x), x.UserName)).ToList(),
-            false));
+            || CatalogSelect2Text.NormalizeSearch(x.DisplayName).Contains(query, StringComparison.Ordinal)
+            || CatalogSelect2Text.NormalizeSearch(x.PhoneNumber).Contains(query, StringComparison.Ordinal)
+            || CatalogSelect2Text.NormalizeSearch(x.DepartmentName).Contains(query, StringComparison.Ordinal)).ToList();
+        return Task.FromResult(new CatalogSelect2SearchResponse(found.Select(CandidateSelectItem).ToList(), false));
     }
     private async Task<CatalogSelect2SearchResponse> SearchContactsAsync(string term, int page)
     {

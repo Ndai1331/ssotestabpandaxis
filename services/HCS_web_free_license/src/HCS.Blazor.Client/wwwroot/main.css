@@ -399,15 +399,24 @@ body:has(.hcs-public-shell) .hcs-boot-screen {
 }
 
 .hcs-user-option__name,
-.hcs-user-option__phone {
+.hcs-user-option__phone,
+.hcs-user-option__dept {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.hcs-user-option__phone {
+.hcs-user-option__phone,
+.hcs-user-option__dept {
     color: #718096;
     font-size: .78rem;
+}
+
+.select2-results__option--highlighted .hcs-user-option__phone,
+.select2-results__option--highlighted .hcs-user-option__dept,
+.select2-results__option--selected .hcs-user-option__phone,
+.select2-results__option--selected .hcs-user-option__dept {
+    color: inherit;
 }
 
 .hcs-workflow-step-meta-row {

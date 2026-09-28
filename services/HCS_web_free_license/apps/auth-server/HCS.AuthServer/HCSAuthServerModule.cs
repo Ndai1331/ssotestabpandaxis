@@ -15,6 +15,7 @@ using OpenIddict.Validation.AspNetCore;
 using Volo.Abp;
 using Volo.Abp.Account;
 using Volo.Abp.Account.Web;
+using Volo.Abp.AspNetCore.Mvc.Libs;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite.Bundling;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.Shared;
@@ -99,6 +100,10 @@ public sealed class HCSAuthServerModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
+
+        // Discovery and account pages must stay available without a LibMan wwwroot/libs folder.
+        // Theme assets are embedded; the same switch is used by the Blazor host.
+        Configure<AbpMvcLibsOptions>(options => options.CheckLibs = false);
 
         Configure<AbpLayoutHookOptions>(options =>
             options.Add(

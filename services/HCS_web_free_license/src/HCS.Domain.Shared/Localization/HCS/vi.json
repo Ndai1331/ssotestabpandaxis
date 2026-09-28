@@ -1543,6 +1543,7 @@
     "Work:TaskDateRange": "Hạn hoàn thành không được trước ngày bắt đầu công việc.",
     "Work:TaskProgressRange": "Tiến độ công việc phải nằm trong khoảng từ 0 đến 100%.",
     "Work:DuplicateTaskAssignment": "Người này đã được phân công vai trò này trong công việc.",
+    "Work:AssigneeNotProjectMember": "Chỉ được giao việc cho người đang tham gia dự án.",
     "Work:DuplicateTaskDocument": "Văn bản này đã được gắn vào công việc.",
     "Work:CannotRemoveSelf": "Bạn không thể tự xóa mình khỏi dự án hoặc công việc.",
     "Work:CannotDeleteOthersDocument": "Bạn chỉ được xóa tệp do mình thêm.",

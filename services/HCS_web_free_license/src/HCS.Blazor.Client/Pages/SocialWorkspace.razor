@@ -1447,9 +1447,13 @@
     }
 
     private CatalogSelect2Item SidebarPersonItem(SocialPersonDto person) =>
-        new(person.UserId.ToString(), person.DisplayName,
-            person.DepartmentName ?? person.PositionName ?? person.UserName,
-            person.AvatarUrl, Initials(person.DisplayName));
+        CatalogSelect2Cache.PersonItem(
+            person.UserId.ToString(),
+            person.DisplayName,
+            person.PhoneNumber,
+            person.DepartmentName,
+            person.AvatarUrl,
+            person.UserName);
 
     private string ProfileHref(Guid userId) =>
         currentUserId == userId ? "/social/profile" : $"/social/profile/{userId:D}";

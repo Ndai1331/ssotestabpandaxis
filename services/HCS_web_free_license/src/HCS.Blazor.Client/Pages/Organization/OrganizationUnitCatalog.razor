@@ -202,11 +202,12 @@
         <ModalContent Centered Class="hcs-catalog-modal">
             <ModalHeader Class="hcs-catalog-modal__header"><ModalTitle>@L["OrganizationUnit:AddMember"]</ModalTitle><CloseButton Clicked="CloseMemberModalAsync" /></ModalHeader>
             <ModalBody Class="hcs-catalog-modal__body">
-                <CatalogSelect2 @key="selectedId" Value="selectedAvailableMemberId"
-                                ValueChanged="value => selectedAvailableMemberId = value"
-                                Placeholder="@L["OrganizationUnit:ChooseMember"]"
-                                SelectedText="@SelectedAvailableMemberText"
-                                Search="SearchAvailableMembersAsync" />
+                <UserSelect2 @key="selectedId" Value="selectedAvailableMemberId"
+                             ValueChanged="value => selectedAvailableMemberId = value"
+                             Placeholder="@L["OrganizationUnit:ChooseMember"]"
+                             SelectedItem="@SelectedAvailableMemberItem"
+                             SelectedText="@SelectedAvailableMemberText"
+                             Search="SearchAvailableMembersAsync" />
             </ModalBody>
             <ModalFooter Class="hcs-catalog-modal__footer">
                 <Button Color="Color.Secondary" Class="hcs-catalog-cancel" Clicked="CloseMemberModalAsync">@L["Catalog:Cancel"]</Button>

@@ -99,7 +99,7 @@ public sealed record SigningQueueQuery(
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, List<Guid> DepartmentIds, List<Guid> UserIds);
 public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null,
-    string? UserName = null);
+    string? UserName = null, string? PhoneNumber = null, string? DepartmentName = null);
 public sealed record WorkflowStepCandidateGroupDto(string StepCode, string StepName, string AssigneeType, Guid? RoleId,
     List<WorkflowAssigneeCandidateDto> Candidates);
 public sealed record StartWorkflowRequest(Guid? DocumentId, Guid DefinitionId, string IdempotencyKey,

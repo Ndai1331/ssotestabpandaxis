@@ -356,7 +356,7 @@
 
                 @if (permissions?.CanSend == true)
                 {
-                    <form class="chat-compose" @onsubmit="SendAsync" @onsubmit:preventDefault>
+                    <form id="chat-compose" class="chat-compose" @onsubmit="SendAsync" @onsubmit:preventDefault>
                         @if (replyingTo is not null)
                         {
                             <div class="chat-compose-banner">
@@ -700,14 +700,23 @@
                     }
                     <label class="field-label" for="chat-task-name">@T("Feature:TaskTitle")</label>
                     <input class="input" id="chat-task-name" @bind="taskTitle" maxlength="256" placeholder="@T("Chat:TaskTitlePlaceholder")" />
-                    <label class="field-label" for="chat-task-assignee">@T("Chat:TaskAssignee")</label>
-                    <select class="select" id="chat-task-assignee" @bind="taskAssigneeKey" disabled="@(PickedTaskProjectId is null || isLoadingTaskAssignees)">
-                        <option value="">@T("Feature:ChooseAssignee")</option>
-                        @foreach (var userId in taskAssigneeIds)
-                        {
-                            <option value="@userId.ToString("D")">@MemberName(userId)</option>
-                        }
-                    </select>
+                    <label class="field-label">@T("Chat:TaskAssignee")</label>
+                    @if (PickedTaskProjectId is null || isLoadingTaskAssignees)
+                    {
+                        <select class="select" id="chat-task-assignee" disabled>
+                            <option value="">@T("Feature:ChooseAssignee")</option>
+                        </select>
+                    }
+                    else
+                    {
+                        <UserSelect2 @key="@($"{PickedTaskProjectId:N}:{taskAssigneeLoadVersion}")"
+                                     Value="TaskAssigneeId"
+                                     ValueChanged="OnTaskAssigneeChanged"
+                                     Placeholder="@T("Feature:ChooseAssignee")"
+                                     SelectedItem="TaskAssigneeItem"
+                                     SelectedText="@TaskAssigneeText"
+                                     Search="SearchTaskAssigneesAsync" />
+                    }
                     @if (PickedTaskProjectId is not null && !isLoadingTaskAssignees && taskAssigneeIds.Count == 0)
                     {
                         <p class="chat-dialog-copy">@T("Chat:TaskNoProjectMembers")</p>
@@ -962,6 +971,13 @@
     private string taskTitle = string.Empty;
     private string taskNote = string.Empty;
     private string taskAssigneeKey = string.Empty;
+    private DotNetObjectReference<ChatWorkspace>? composerPasteRef;
+    private Guid? TaskAssigneeId => Guid.TryParse(taskAssigneeKey, out var id) && id != Guid.Empty ? id : null;
+    private string TaskAssigneeText => TaskAssigneeId is { } id ? MemberName(id) : "";
+    private CatalogSelect2Item? TaskAssigneeItem =>
+        TaskAssigneeId is { } id && knownUsers.TryGetValue(id, out var contact)
+            ? CatalogSelect2Cache.UserItem(contact)
+            : null;
     private string taskProjectKey = string.Empty;
     private DateTime taskDue = DateTime.Today.AddDays(7);
     private readonly List<ProjectDto> taskProjects = [];
@@ -1016,6 +1032,22 @@
 
     private IEnumerable<ConversationMemberDto> TransferCandidates =>
         selected?.Members.Where(member => member.UserId != currentUserId) ?? [];
+
+    private Task OnTaskAssigneeChanged(Guid? value)
+    {
+        taskAssigneeKey = value is { } id && id != Guid.Empty ? id.ToString("D") : string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task<CatalogSelect2SearchResponse> SearchTaskAssigneesAsync(string term, int page)
+    {
+        var found = taskAssigneeIds
+            .Select(id => knownUsers.TryGetValue(id, out var contact) ? contact : null)
+            .OfType<ChatContactDto>()
+            .Where(contact => ChatContactSearch.Matches(contact, term))
+            .ToList();
+        return Task.FromResult(new CatalogSelect2SearchResponse(found.Select(CatalogSelect2Cache.UserItem).ToList(), false));
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -1559,6 +1591,66 @@
         {
             isLeaving = false;
         }
+    }
+
+    [JSInvokable]
+    public async Task OnPastedImagesAsync(PastedChatImage[]? images)
+    {
+        if (images is null || images.Length == 0 || isSending)
+            return;
+
+        var maxBytes = Features.ChatAttachmentMaxBytes;
+        var index = 0;
+        foreach (var image in images)
+        {
+            if (pendingFiles.Count >= 20)
+                break;
+
+            byte[] content;
+            try
+            {
+                content = Convert.FromBase64String(image.Base64 ?? "");
+            }
+            catch
+            {
+                messageError = T("Chat:AttachmentError");
+                continue;
+            }
+
+            if (content.Length == 0 || content.LongLength > maxBytes)
+            {
+                messageError = T("Chat:AttachmentTooLarge", Features.ChatAttachmentMaxMegabytes);
+                continue;
+            }
+
+            var contentType = NormalizeChatContentType(image.ContentType, string.IsNullOrWhiteSpace(image.Name) ? "screenshot.png" : image.Name);
+            if (contentType is null)
+            {
+                messageError = T("Chat:AttachmentType");
+                continue;
+            }
+
+            index++;
+            var name = string.IsNullOrWhiteSpace(image.Name)
+                ? $"anh-chup-{DateTime.Now:yyyyMMdd-HHmmss}{(images.Length > 1 ? $"-{index}" : "")}.png"
+                : image.Name;
+            if (pendingFiles.Any(existing =>
+                    string.Equals(existing.Name, name, StringComparison.OrdinalIgnoreCase)
+                    && existing.Content.LongLength == content.LongLength))
+                continue;
+
+            pendingFiles.Add(new PendingChatFile(name, contentType, content));
+            messageError = null;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public sealed class PastedChatImage
+    {
+        public string? Name { get; set; }
+        public string? ContentType { get; set; }
+        public string? Base64 { get; set; }
     }
 
     private async Task OnFilesSelected(InputFileChangeEventArgs args)
@@ -2238,6 +2330,7 @@
 
     public ValueTask DisposeAsync()
     {
+        composerPasteRef?.Dispose();
         contactSearchCts?.Cancel();
         contactSearchCts?.Dispose();
         memberSearchCts?.Cancel();

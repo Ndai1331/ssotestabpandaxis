@@ -40,10 +40,20 @@ public static class CatalogSelect2Cache
     }
 
     public static CatalogSelect2Item UserItem(ChatContactDto contact) =>
-        new(contact.Id.ToString(), contact.DisplayName,
-            string.IsNullOrWhiteSpace(contact.PhoneNumber) ? null : contact.PhoneNumber.Trim(),
-            contact.AvatarUrl,
-            Initials(contact.DisplayName, contact.UserName));
+        PersonItem(contact.Id.ToString(), contact.DisplayName, contact.PhoneNumber, contact.DepartmentName, contact.AvatarUrl, contact.UserName);
+
+    public static CatalogSelect2Item PersonItem(
+        string id,
+        string name,
+        string? phone,
+        string? department,
+        string? avatarUrl = null,
+        string? userName = null) =>
+        new(id, name,
+            string.IsNullOrWhiteSpace(phone) ? null : phone.Trim(),
+            string.IsNullOrWhiteSpace(avatarUrl) ? null : avatarUrl.Trim(),
+            Initials(name, userName),
+            string.IsNullOrWhiteSpace(department) ? null : department.Trim());
 
     private static string Initials(string? displayName, string? userName)
     {

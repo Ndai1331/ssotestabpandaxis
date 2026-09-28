@@ -32,8 +32,9 @@ internal static class ChatContactDirectory
         CancellationToken cancellationToken = default)
     {
         var missing = userIds
-            .Where(id => id != Guid.Empty && contacts.All(item => item.Id != id))
+            .Where(id => id != Guid.Empty)
             .Distinct()
+            .Where(id => NeedsProfile(contacts.FirstOrDefault(item => item.Id == id)))
             .ToArray();
         if (missing.Length > 0)
         {
@@ -41,8 +42,11 @@ internal static class ChatContactDirectory
             {
                 foreach (var contact in await chat.GetContactsByIdsAsync(missing, cancellationToken))
                 {
-                    if (contacts.All(item => item.Id != contact.Id))
+                    var index = contacts.FindIndex(item => item.Id == contact.Id);
+                    if (index < 0)
                         contacts.Add(contact);
+                    else if (NeedsProfile(contacts[index]))
+                        contacts[index] = contact;
                 }
             }
             catch
@@ -54,6 +58,10 @@ internal static class ChatContactDirectory
         if (currentUser is not null)
             EnsureCurrentUser(contacts, currentUser);
     }
+
+    private static bool NeedsProfile(ChatContactDto? contact) =>
+        contact is null
+        || (string.IsNullOrWhiteSpace(contact.PhoneNumber) && string.IsNullOrWhiteSpace(contact.DepartmentName));
 
     public static void EnsureCurrentUser(List<ChatContactDto> contacts, ICurrentUser currentUser)
     {

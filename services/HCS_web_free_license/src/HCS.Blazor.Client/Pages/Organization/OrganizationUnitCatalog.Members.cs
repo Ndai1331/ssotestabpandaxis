@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using HCS.Blazor.Client.Components;
@@ -42,14 +43,18 @@ public partial class OrganizationUnitCatalog
 
         selectedAvailableMemberId = null;
         availableMembers.Clear();
+        availableMemberItems.Clear();
         if (memberModal is not null)
         {
             await memberModal.Show();
         }
     }
 
+    private readonly Dictionary<Guid, CatalogSelect2Item> availableMemberItems = [];
     private string SelectedAvailableMemberText => availableMembers.FirstOrDefault(x => x.Id == selectedAvailableMemberId) is { } member
-        ? $"{member.FullName} ({member.UserName})" : "";
+        ? member.FullName : "";
+    private CatalogSelect2Item? SelectedAvailableMemberItem =>
+        selectedAvailableMemberId is { } id && availableMemberItems.TryGetValue(id, out var item) ? item : null;
 
     private async Task<CatalogSelect2SearchResponse> SearchAvailableMembersAsync(string term, int page)
     {
@@ -66,8 +71,20 @@ public partial class OrganizationUnitCatalog
                 term,
                 skip,
                 MemberPageSize);
-            return CatalogSelect2Cache.Merge(availableMembers, result.Items, x => x.Id,
-                x => $"{x.FullName} ({x.UserName})", skip + result.Items.Count < result.TotalCount);
+            foreach (var member in result.Items)
+            {
+                if (availableMembers.All(x => x.Id != member.Id))
+                    availableMembers.Add(member);
+                availableMemberItems[member.Id] = CatalogSelect2Cache.PersonItem(
+                    member.Id.ToString(),
+                    member.FullName,
+                    member.PhoneNumber,
+                    member.DepartmentName,
+                    userName: member.UserName);
+            }
+            return new CatalogSelect2SearchResponse(
+                result.Items.Select(member => availableMemberItems[member.Id]).ToList(),
+                skip + result.Items.Count < result.TotalCount);
         }
         catch (Exception exception)
         {

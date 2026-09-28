@@ -25,6 +25,8 @@ public sealed class OrganizationUnitMemberDto
     public string UserName { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? DepartmentName { get; set; }
     public bool IsActive { get; set; }
     public string[] RoleNames { get; set; } = [];
 }

@@ -347,6 +347,12 @@ public sealed class ProjectTaskAppService(
         await access.DemandTaskOwnerAsync(taskId, ct);
         var task = await db.ProjectTasks.SingleOrDefaultAsync(x => x.Id == taskId, ct)
             ?? throw new EntityNotFoundException(typeof(ProjectTask), taskId);
+        var ownerId = await OwnerUserId(task.ProjectId, ct);
+        var isProjectParticipant = input.UserId == ownerId
+            || await db.ProjectMembers.AnyAsync(
+                x => x.ProjectId == task.ProjectId && x.UserId == input.UserId && x.IsActive, ct);
+        if (!isProjectParticipant)
+            throw new BusinessException("Work:AssigneeNotProjectMember");
         if (await db.ProjectTaskAssignments.AnyAsync(x => x.ProjectTaskId == taskId && x.UserId == input.UserId && x.AssignmentType == input.AssignmentType, ct))
             throw new BusinessException("Work:DuplicateTaskAssignment");
         var assignment = new ProjectTaskAssignment(Guid.NewGuid(), taskId, input.UserId, input.AssignmentType, input.Note);

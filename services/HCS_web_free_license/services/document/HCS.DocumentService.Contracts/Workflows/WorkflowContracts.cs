@@ -61,7 +61,7 @@ public sealed record WorkflowTemplateDto(Guid Id, string Code, string Name, Guid
 public sealed record WorkflowStepSignerSelection(string StepCode, Guid UserId);
 public sealed record WorkflowViewScopeSelection(string StepCode, IReadOnlyList<Guid> DepartmentIds, IReadOnlyList<Guid> UserIds);
 public sealed record WorkflowAssigneeCandidateDto(Guid UserId, string DisplayName, Guid? OrganizationUnitId = null,
-    string? UserName = null);
+    string? UserName = null, string? PhoneNumber = null, string? DepartmentName = null);
 public sealed record WorkflowStepCandidateGroupDto(string StepCode, string StepName, string AssigneeType, Guid? RoleId,
     IReadOnlyList<WorkflowAssigneeCandidateDto> Candidates);
 public sealed record StartWorkflowRequest(Guid? DocumentId, Guid DefinitionId, string IdempotencyKey,

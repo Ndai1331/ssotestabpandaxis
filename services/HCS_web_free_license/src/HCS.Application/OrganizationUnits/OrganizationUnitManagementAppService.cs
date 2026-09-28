@@ -21,17 +21,20 @@ public partial class OrganizationUnitManagementAppService : HCSAppService, IOrga
     private readonly OrganizationUnitManager organizationUnitManager;
     private readonly IdentityUserManager identityUserManager;
     private readonly IIdentityUserRepository identityUserRepository;
+    private readonly HCS.Identity.IUserOrganizationNames userOrganizationNames;
 
     public OrganizationUnitManagementAppService(
         IOrganizationUnitRepository organizationUnitRepository,
         OrganizationUnitManager organizationUnitManager,
         IdentityUserManager identityUserManager,
-        IIdentityUserRepository identityUserRepository)
+        IIdentityUserRepository identityUserRepository,
+        HCS.Identity.IUserOrganizationNames userOrganizationNames)
     {
         this.organizationUnitRepository = organizationUnitRepository;
         this.organizationUnitManager = organizationUnitManager;
         this.identityUserManager = identityUserManager;
         this.identityUserRepository = identityUserRepository;
+        this.userOrganizationNames = userOrganizationNames;
     }
 
     public async Task<List<OrganizationUnitDto>> GetListAsync()

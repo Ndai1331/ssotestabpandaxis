@@ -38,7 +38,8 @@ public sealed record ChatContactDto(
     string? Surname = null,
     string? Name = null,
     string? PhoneNumber = null,
-    string? AvatarUrl = null);
+    string? AvatarUrl = null,
+    string? DepartmentName = null);
 public sealed record PagedChatContactsDto(long TotalCount, IReadOnlyList<ChatContactDto> Items);
 public sealed record ConversationPermissionDto(bool CanSend, bool CanManageMembers, bool CanRename, bool CanLeave,
     bool CanModerateMessages = false);
@@ -287,7 +288,8 @@ public static class ChatContactSearch
         }
 
         return Matches(contact.Surname, contact.Name, contact.PhoneNumber, email: null, term, contact.UserName)
-            || ContainsInsensitive(contact.DisplayName, term);
+            || ContainsInsensitive(contact.DisplayName, term)
+            || ContainsInsensitive(contact.DepartmentName, term);
     }
 
     public static bool Matches(

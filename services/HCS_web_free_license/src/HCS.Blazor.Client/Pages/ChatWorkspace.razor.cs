@@ -54,6 +54,12 @@ public partial class ChatWorkspace
                 "chat-msg-menu",
                 $"[data-msg-more='{menuId:D}']"));
         }
+
+        if (permissions?.CanSend == true)
+        {
+            composerPasteRef ??= DotNetObjectReference.Create(this);
+            await TryChatScriptAsync(() => Js.InvokeVoidAsync("hcsChat.bindComposerPaste", "chat-compose", composerPasteRef));
+        }
     }
 
     private async Task LoadOlderMessagesAsync()

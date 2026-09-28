@@ -25,6 +25,7 @@
             if (item.description) option.setAttribute("data-description", item.description);
             if (item.avatarUrl) option.setAttribute("data-avatar-url", item.avatarUrl);
             if (item.initials) option.setAttribute("data-initials", item.initials);
+            if (item.department) option.setAttribute("data-department", item.department);
             $el.append(option);
         }
         if (!multiple && items.length > 1) {
@@ -56,6 +57,7 @@
         var $copy = $("<span class='hcs-user-option__copy'></span>");
         $("<span class='hcs-user-option__name'></span>").text(item.text || "").appendTo($copy);
         if (item.description) $("<span class='hcs-user-option__phone'></span>").text(item.description).appendTo($copy);
+        if (item.department) $("<span class='hcs-user-option__dept'></span>").text(item.department).appendTo($copy);
         $copy.appendTo($root);
         return $root;
     }
@@ -105,9 +107,12 @@
         var listSearch = $el.closest(".list-search-select");
         var wrap = $el.closest(".hcs-select2");
         var modal = $el.closest(".modal");
-        var dropdownParent = listSearch.length
-            ? listSearch
-            : (wrap.length && !modal.length ? wrap : (modal.length ? modal : $(document.body)));
+        var chatDialog = $el.closest(".chat-dialog");
+        var dropdownParent = chatDialog.length
+            ? $(document.body)
+            : (listSearch.length
+                ? listSearch
+                : (wrap.length && !modal.length ? wrap : (modal.length ? modal : $(document.body))));
         var select2Options = {
             width: "100%",
             placeholder: placeholder,
