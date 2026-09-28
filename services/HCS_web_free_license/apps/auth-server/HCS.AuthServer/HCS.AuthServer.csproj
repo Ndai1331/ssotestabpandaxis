@@ -28,4 +28,8 @@
     <ProjectReference Include="..\..\..\src\HCS.EntityFrameworkCore\HCS.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\..\..\src\HCS.Application\Identity\DisableSelfRegistrationSettingDefinitionProvider.cs" Link="Identity\DisableSelfRegistrationSettingDefinitionProvider.cs" />
+  </ItemGroup>
+
 </Project>

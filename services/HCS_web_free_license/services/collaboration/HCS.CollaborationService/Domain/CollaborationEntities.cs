@@ -34,12 +34,17 @@ public sealed class Conversation : FullAuditedAggregateRoot<Guid>
     public Guid? DirectUserHighId { get; private set; }
     public string? LastMessage { get; private set; }
     public DateTime? LastMessageAt { get; private set; }
+    public string? AvatarBlobName { get; private set; }
+    public string? AvatarContentType { get; private set; }
     public ICollection<ConversationMember> Members { get; private set; } = [];
 
     private Conversation() { }
     public Conversation(Guid id, ConversationType type, string? name, string? description,
-        Guid? projectId = null, Guid? taskId = null, Guid? directUserOne = null, Guid? directUserTwo = null) : base(id)
+        Guid? projectId = null, Guid? taskId = null, Guid? directUserOne = null, Guid? directUserTwo = null,
+        DateTime? creationTimeUtc = null) : base(id)
     {
+        // Set explicitly: the service writes through the DbContext without ABP audit property setters.
+        CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
         Type = type;
         Name = name?.Trim();
         Description = description?.Trim();
@@ -61,10 +66,31 @@ public sealed class Conversation : FullAuditedAggregateRoot<Guid>
     }
 
     public void Rename(string name) => Name = Check.NotNullOrWhiteSpace(name, nameof(name), 256);
+    public void UpdateInfo(string name, string? description)
+    {
+        if (Type == ConversationType.User)
+            throw new BusinessException("Collaboration:DirectConversationInfoIsFixed");
+        Rename(name.Trim());
+        Description = Check.Length(description?.Trim(), nameof(description), 1024);
+    }
+    public void SetAvatar(string blobName, string contentType)
+    {
+        if (Type == ConversationType.User)
+            throw new BusinessException("Collaboration:DirectConversationInfoIsFixed");
+        AvatarBlobName = Check.NotNullOrWhiteSpace(blobName, nameof(blobName), 512);
+        AvatarContentType = Check.NotNullOrWhiteSpace(contentType, nameof(contentType), 128);
+    }
+    public void ClearAvatar() { AvatarBlobName = null; AvatarContentType = null; }
     public void SetLastMessage(string text, DateTime at)
     {
         LastMessage = text.Length <= 512 ? text : text[..512];
         LastMessageAt = at;
+    }
+    public void MarkDeleted(Guid deleterId, DateTime at)
+    {
+        if (Type != ConversationType.Group)
+            throw new BusinessException("Collaboration:OnlyGroupConversationCanBeDeleted");
+        IsDeleted = true; DeleterId = deleterId; DeletionTime = at;
     }
 }
 
@@ -76,14 +102,27 @@ public sealed class ConversationMember : CreationAuditedEntity<Guid>
     public int UnreadCount { get; private set; }
     public bool IsPinned { get; private set; }
     public DateTime? LastReadAt { get; private set; }
+    public DateTime? HistoryClearedAt { get; private set; }
+    public DateTime? HiddenAt { get; private set; }
+    public bool IsMuted { get; private set; }
 
     private ConversationMember() { }
-    public ConversationMember(Guid id, Guid conversationId, Guid userId, ConversationMemberRole role) : base(id)
-    { ConversationId = conversationId; UserId = userId; Role = role; }
+    public ConversationMember(Guid id, Guid conversationId, Guid userId, ConversationMemberRole role,
+        DateTime? creationTimeUtc = null) : base(id)
+    {
+        ConversationId = conversationId; UserId = userId; Role = role;
+        CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
+    }
     public void SetRole(ConversationMemberRole role) => Role = role;
     public void IncrementUnread() => UnreadCount++;
     public void MarkRead(DateTime at) { UnreadCount = 0; LastReadAt = at; }
     public void SetPinned(bool value) => IsPinned = value;
+    public void SetMuted(bool value) => IsMuted = value;
+    public void ClearHistory(DateTime at) { HistoryClearedAt = at; MarkRead(at); }
+    public void Hide(DateTime at) { ClearHistory(at); HiddenAt = at; }
+    public void Unhide() => HiddenAt = null;
+    public bool CanSee(DateTime messageCreationTime) =>
+        HistoryClearedAt is not { } cleared || messageCreationTime > cleared;
 }
 
 public sealed class ChatMessage : CreationAuditedAggregateRoot<Guid>
@@ -98,14 +137,18 @@ public sealed class ChatMessage : CreationAuditedAggregateRoot<Guid>
     public DateTime? PinnedAt { get; private set; }
     public Guid? PinnedByUserId { get; private set; }
     public bool IsDeleted { get; private set; }
+    public DateTime? RecalledAt { get; private set; }
     public ICollection<MessageAttachment> Attachments { get; private set; } = [];
 
     private ChatMessage() { }
     public ChatMessage(Guid id, Guid conversationId, Guid senderUserId, string text,
-        Guid? clientMessageId = null, Guid? replyToMessageId = null, Guid? forwardedFromMessageId = null) : base(id)
+        Guid? clientMessageId = null, Guid? replyToMessageId = null, Guid? forwardedFromMessageId = null,
+        DateTime? creationTimeUtc = null) : base(id)
     {
         ConversationId = conversationId;
         SenderUserId = senderUserId;
+        CreatorId = senderUserId;
+        CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
         Text = Check.Length(text ?? string.Empty, nameof(text), maxLength: 4000) ?? string.Empty;
         ClientMessageId = clientMessageId;
         ReplyToMessageId = replyToMessageId;
@@ -114,6 +157,43 @@ public sealed class ChatMessage : CreationAuditedAggregateRoot<Guid>
     public void Pin(Guid userId, DateTime at) { IsPinned = true; PinnedByUserId = userId; PinnedAt = at; }
     public void Unpin() { IsPinned = false; PinnedByUserId = null; PinnedAt = null; }
     public void SoftDeleteContent() { IsDeleted = true; Text = ""; }
+    public bool IsRecalled => RecalledAt.HasValue;
+    public void Recall(Guid userId, DateTime at)
+    {
+        if (userId != SenderUserId) throw new Volo.Abp.Authorization.AbpAuthorizationException("Only the sender can recall a message.");
+        if (IsDeleted) throw new BusinessException("Collaboration:MessageNotFound");
+        if (IsRecalled) return;
+        RecalledAt = at; Text = ""; Unpin();
+    }
+}
+
+public sealed class ChatMessageReaction : CreationAuditedEntity<Guid>
+{
+    public const int MaxEmojiLength = 32;
+    public Guid MessageId { get; private set; }
+    public Guid UserId { get; private set; }
+    public string Emoji { get; private set; } = string.Empty;
+
+    private ChatMessageReaction() { }
+    public ChatMessageReaction(Guid id, Guid messageId, Guid userId, string emoji, DateTime? creationTimeUtc = null) : base(id)
+    {
+        MessageId = messageId; UserId = userId; SetEmoji(emoji);
+        CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
+    }
+    public void SetEmoji(string emoji) => Emoji = Check.NotNullOrWhiteSpace(emoji?.Trim(), nameof(emoji), MaxEmojiLength);
+}
+
+public sealed class ChatSavedMessage : CreationAuditedEntity<Guid>
+{
+    public Guid UserId { get; private set; }
+    public Guid MessageId { get; private set; }
+
+    private ChatSavedMessage() { }
+    public ChatSavedMessage(Guid id, Guid userId, Guid messageId, DateTime? savedAtUtc = null) : base(id)
+    {
+        UserId = userId; MessageId = messageId;
+        CreationTime = NotificationTimes.ToUtc(savedAtUtc ?? DateTime.UtcNow);
+    }
 }
 
 public sealed class MessageAttachment : CreationAuditedEntity<Guid>
@@ -129,10 +209,11 @@ public sealed class MessageAttachment : CreationAuditedEntity<Guid>
 
     private MessageAttachment() { }
     public MessageAttachment(Guid id, Guid conversationId, Guid userId, string blobName,
-        string fileName, string contentType, long size, AttachmentKind kind) : base(id)
+        string fileName, string contentType, long size, AttachmentKind kind, DateTime? creationTimeUtc = null) : base(id)
     {
         ConversationId = conversationId; UploadedByUserId = userId; BlobName = blobName;
         FileName = fileName; ContentType = contentType; Size = size; Kind = kind;
+        CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
     }
     public void AttachTo(Guid messageId)
     {
@@ -211,8 +292,11 @@ public sealed class PushDeviceToken : CreationAuditedAggregateRoot<Guid>
     public string Platform { get; private set; } = string.Empty;
     public bool IsActive { get; private set; } = true;
     private PushDeviceToken() { }
-    public PushDeviceToken(Guid id, Guid userId, string token, string platform) : base(id)
-    { UserId = userId; Token = Check.NotNullOrWhiteSpace(token, nameof(token), 2048); Platform = platform; }
+    public PushDeviceToken(Guid id, Guid userId, string token, string platform, DateTime? creationTimeUtc = null) : base(id)
+    {
+        UserId = userId; Token = Check.NotNullOrWhiteSpace(token, nameof(token), 2048); Platform = platform;
+        CreationTime = NotificationTimes.ToUtc(creationTimeUtc ?? DateTime.UtcNow);
+    }
     public void Deactivate() => IsActive = false;
     public void AssignTo(Guid userId, string platform) { UserId = userId; Platform = platform; IsActive = true; }
 }

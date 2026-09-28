@@ -57,8 +57,10 @@ Gửi văn bản (`SendDocumentModal`):
 
 | Hành động | Method | Path |
 |---|---|---|
-| Queue | `GET` | `/api/signing/queue` |
-| Credential / chữ ký | `GET` | `/api/signing/credentials/current`, `/api/signing/signatures` |
+| Queue | `GET` | `/api/signing/queue` (mobile nên dùng `/api/signing/queue-page`) |
+| Đã ký / xử lý (mobile) | `GET` | `/api/signing/history` |
+| Thống kê dashboard (mobile) | `GET` | `/api/signing/stats` |
+| Credential / chữ ký | `GET` | `/api/signing/credentials/current`, `/api/signing/signatures`, `/api/signing/signatures/{id}` |
 | Report | `GET` | `/api/signing/reports/documents/{documentId}` |
 | Ký | `POST` | `/api/signing/attempts` |
 | Quyết định | `POST` | `/api/workflows/tasks/{taskId}/decision` |
@@ -82,13 +84,23 @@ Trình ký từ văn bản: `SubmitWorkflowModal` → [04-workflows.md](04-workf
 
 Query (Web): `skip`, `take` (max 100), `mine` (`true`/`false`), `filter`, `status`, `sourceType` (số), `documentTypeId`, `sectorId`, `urgencyId`, `confidentialityId`, `from`, `to` (ISO-8601).
 
+Filter thêm cho mobile:
+
+| Param | Ý nghĩa |
+|---|---|
+| `organizationUnitId` | Đơn vị ban hành |
+| `workflowDefinitionId` | Văn bản có hồ sơ chạy quy trình này (kể cả hồ sơ con của văn bản lưu trữ) |
+| `processingMethodId` | Hình thức xử lý — danh mục `GET /api/organization/master-data?type=ProcessingMethod` |
+
+`mine` không có tác dụng lọc — lọc theo nguồn bằng `sourceType`.
+
 `sourceType`: `Archive=0`, `Personal=1`, `SentToMe=2`, `Workflow=3`. Workflow instances page gọi `sourceType=3`.
 
 Response `{ totalCount, items: DocumentDto[] }`.
 
 `DocumentStatus`: `Draft=0`, `Submitted=1`, `InReview=2`, `Approved=3`, `Rejected=4`, `Archived=5`.
 
-DocumentDto chính: `id`, `number`, `title`, `description`, `status`, `documentTypeId`, `sectorId`, `urgencyId`, `confidentialityId`, `files[]`, `assignments[]`, `history[]`, `creationTime`, `sourceType`, `parentDocumentId`, `fromUserId`, `organizationUnitId`, `fileCount`, `isSent`, `documentCode`.
+DocumentDto chính: `id`, `number`, `title`, `description`, `status`, `documentTypeId`, `sectorId`, `urgencyId`, `confidentialityId`, `files[]`, `assignments[]`, `history[]`, `creationTime`, `sourceType`, `parentDocumentId`, `fromUserId`, `organizationUnitId`, `fileCount`, `isSent`, `documentCode`, `processingMethodId`, `isViewed` (user hiện tại đã ghi `Viewed`), `sentAt` (lần gửi gần nhất, `null` nếu chưa gửi).
 
 File: `id`, `fileName`, `contentType`, `size`, `sha256`, `creationTime`, `pairedFileId`, `isWorkflowFile`.
 
@@ -111,7 +123,8 @@ File: `id`, `fileName`, `contentType`, `size`, `sha256`, `creationTime`, `paired
   "confidentialityId": "guid",
   "sourceType": 0,
   "documentCode": null,
-  "organizationUnitId": null
+  "organizationUnitId": null,
+  "processingMethodId": null
 }
 ```
 
@@ -128,9 +141,12 @@ Quyền tạo/sửa: `Documents.Update`. File max **50 MB**, field multipart `fi
   "urgencyId": null,
   "confidentialityId": null,
   "documentCode": null,
-  "organizationUnitId": null
+  "organizationUnitId": null,
+  "processingMethodId": null
 }
 ```
+
+`processingMethodId`: không gửi / `null` = giữ nguyên; `"00000000-0000-0000-0000-000000000000"` = xoá.
 
 ### POST `/api/documents/{id}/send`
 
@@ -154,7 +170,7 @@ Quyền `Documents.Assign`. Gửi đơn vị: `receiverUserId` null, `organizati
 { "action": "Viewed" }
 ```
 
-Web ghi khi preview PDF.
+Web ghi khi preview PDF. `action`: `Viewed` / `Printed` / `Downloaded` (không phân biệt hoa thường). `Viewed` làm `isViewed = true`.
 
 ### DELETE `/api/documents/{id}` — `204`.
 
@@ -167,6 +183,18 @@ Download: lấy tên file từ `Content-Disposition`. Không dùng URL storage n
 ### GET `/api/signing/queue`
 
 Mảng `{ document, task, instance, definition, canDelete }`.
+
+### GET `/api/signing/queue-page`
+
+`inbox` (`toMe` / `byMe`), `status` (`Pending`, `InProgress`, `Overdue`, `Completed`, `Approved`, `Rejected`, `Returned`, `Cancelled` — không phân biệt hoa thường), `search`, `from`, `toExclusive`, `dateField`, `submitterId`, `fromUserIds`, `skip`, `take`. Response `{ totalCount, countAll, countToMe, countByMe, items }`.
+
+### GET `/api/signing/history`
+
+`skip`, `take` (≤ 100, mặc định 20), `from`, `toExclusive` (theo thời điểm quyết định), `decision` (`Approved=1` / `Rejected=2` / `Returned=4`; khác → `400`). Chỉ task **tôi đã quyết định**, mới nhất trước. Response `{ totalCount, items: [{ document, task, instance, definition, canDelete: false }] }`.
+
+### GET `/api/signing/stats`
+
+`from`, `toExclusive` → `{ pending, approved, rejected, returned, overdue }` của user hiện tại. `pending` / `overdue` không lọc theo ngày; ba số còn lại theo thời điểm quyết định.
 
 ### POST `/api/signing/attempts`
 
@@ -232,6 +260,7 @@ Query `userId` optional (admin sửa hộ). Web account chỉ gọi không `user
 
 ```http
 GET    /api/signing/signatures
+GET    /api/signing/signatures/{id}     404 nếu không thuộc user
 POST   /api/signing/signatures          multipart
 PUT    /api/signing/signatures/{id}     multipart
 PUT    /api/signing/signatures/{id}/default

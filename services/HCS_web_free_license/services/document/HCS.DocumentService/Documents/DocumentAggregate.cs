@@ -48,6 +48,7 @@ public sealed class DocumentAggregate
     public Guid? SectorId { get; private set; }
     public Guid? UrgencyId { get; private set; }
     public Guid? ConfidentialityId { get; private set; }
+    public Guid? ProcessingMethodId { get; private set; }
     public DateTime CreationTime { get; private set; }
     public uint Version { get; private set; }
     public IReadOnlyCollection<DocumentFile> Files => _files;
@@ -69,6 +70,11 @@ public sealed class DocumentAggregate
     public void SetOrganizationUnit(Guid? organizationUnitId)
     {
         OrganizationUnitId = organizationUnitId is { } id && id != Guid.Empty ? id : null;
+    }
+
+    public void SetProcessingMethod(Guid? processingMethodId)
+    {
+        ProcessingMethodId = processingMethodId is { } id && id != Guid.Empty ? id : null;
     }
 
     public void Classify(Guid? documentTypeId, Guid? sectorId, Guid? urgencyId, Guid? confidentialityId, Guid? actorUserId, DateTime now)

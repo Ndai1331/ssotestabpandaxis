@@ -9,8 +9,8 @@ namespace HCS.WorkManagementService.Controllers;
 public sealed class ProjectsController(ProjectAppService service) : ControllerBase
 {
     [HttpGet]
-    public Task<PagedWorkDto<ProjectDto>> GetList(string? filter, string? status, int skip = 0, int take = 20, CancellationToken ct = default) =>
-        service.GetListAsync(filter, status, skip, take, ct);
+    public Task<PagedWorkDto<ProjectDto>> GetList([FromQuery] GetProjectListInput input, CancellationToken ct = default) =>
+        service.GetListAsync(input, ct);
 
     [HttpGet("{id:guid}")]
     public Task<ProjectDetailDto> Get(Guid id, CancellationToken ct) => service.GetAsync(id, ct);
@@ -41,6 +41,10 @@ public sealed class ProjectsController(ProjectAppService service) : ControllerBa
     [HttpPost("{id:guid}/members"), Authorize(Policy = WorkPermissions.Projects)]
     public Task<ProjectMemberDto> AddMember(Guid id, AddProjectMemberDto input, CancellationToken ct) =>
         service.AddMemberAsync(id, input, ct);
+
+    [HttpPut("{id:guid}/members/{memberId:guid}"), Authorize(Policy = WorkPermissions.Projects)]
+    public Task<ProjectMemberDto> UpdateMemberRole(Guid id, Guid memberId, UpdateProjectMemberRoleDto input, CancellationToken ct) =>
+        service.UpdateMemberRoleAsync(id, memberId, input, ct);
 
     [HttpDelete("{id:guid}/members/{memberId:guid}"), Authorize(Policy = WorkPermissions.Projects)]
     public async Task<IActionResult> RemoveMember(Guid id, Guid memberId, CancellationToken ct)

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HCS.WorkManagementService.Contracts;
 
 public static class WorkPermissions
@@ -30,7 +32,33 @@ public sealed record PagedWorkDto<T>(long TotalCount, IReadOnlyList<T> Items);
 
 public sealed record ProjectDto(Guid Id, string Code, string Name, string? Description, DateTime StartDate,
     DateTime EndDate, string Status, Guid? OwnerDepartmentId, Guid OwnerUserId, int MemberCount = 0, int TaskCount = 0,
-    bool CanManage = false, bool CanDelete = false);
+    bool CanManage = false, bool CanDelete = false, int ProgressPercent = 0);
+
+public sealed class GetProjectListInput
+{
+    public string? Filter { get; set; }
+    public string? Status { get; set; }
+    public int Skip { get; set; }
+    public int Take { get; set; } = 20;
+    public DateTime? From { get; set; }
+    public DateTime? To { get; set; }
+    public Guid? OwnerDepartmentId { get; set; }
+}
+
+public sealed class GetProjectTaskListInput
+{
+    public Guid? ProjectId { get; set; }
+    public string? Filter { get; set; }
+    public string? Status { get; set; }
+    public int Skip { get; set; }
+    public int Take { get; set; } = 20;
+    public DateTime? From { get; set; }
+    public DateTime? To { get; set; }
+    public string? Priority { get; set; }
+    public Guid? ParentTaskId { get; set; }
+    public bool RootOnly { get; set; }
+    public Guid? AssigneeUserId { get; set; }
+}
 public sealed record ProjectDetailDto(ProjectDto Project, IReadOnlyList<ProjectMemberDto> Members,
     IReadOnlyList<ProjectTaskDto> Tasks);
 public sealed record NextCodeDto(string Code);
@@ -39,21 +67,56 @@ public sealed record CreateProjectDto(string? Code, string Name, string? Descrip
 public sealed record UpdateProjectDto(string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);
 public sealed record ProjectMemberDto(Guid Id, Guid ProjectId, Guid UserId, string Role, bool IsActive);
 public sealed record AddProjectMemberDto(Guid UserId, string Role);
+public sealed record UpdateProjectMemberRoleDto(string Role);
+
+public static class ProjectMemberRoles
+{
+    public const string Manager = "Manager";
+    public const string Supervisor = "Supervisor";
+    public const string Member = "Member";
+
+    public static bool IsValid(string? role) => role is Manager or Supervisor or Member;
+}
 
 public sealed record ProjectTaskDto(Guid Id, Guid ProjectId, Guid? ParentTaskId, string Code, string Title,
     string? Description, DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent,
-    Guid? CreatorId = null, bool CanDelete = false, bool CanManageAssignments = false, bool CanCreateChild = false);
+    Guid? CreatorId = null, bool CanDelete = false, bool CanManageAssignments = false, bool CanCreateChild = false,
+    IReadOnlyList<Guid>? AssigneeUserIds = null);
 public sealed record CreateProjectTaskDto(Guid ProjectId, Guid? ParentTaskId, string? Code, string Title,
     string? Description, DateTime StartDate, DateTime DueDate, string Priority, string Status, int ProgressPercent);
 public sealed record UpdateProjectTaskDto(string Title, string? Description, DateTime StartDate, DateTime DueDate,
     string Priority, string Status, int ProgressPercent);
-public sealed record TaskAssignmentDto(Guid Id, Guid ProjectTaskId, Guid UserId, string AssignmentType);
-public sealed record AddTaskAssignmentDto(Guid UserId, string AssignmentType);
+public sealed record TaskAssignmentDto(Guid Id, Guid ProjectTaskId, Guid UserId, string AssignmentType,
+    string? Note = null);
+public sealed record AddTaskAssignmentDto(Guid UserId, string AssignmentType,
+    [StringLength(TaskNoteRules.MaxNoteLength)] string? Note = null);
 public sealed record TaskDocumentReferenceDto(Guid Id, Guid ProjectTaskId, Guid DocumentId, string? DocumentCode,
-    Guid? AddedByUserId = null, bool CanDelete = false);
-public sealed record AddTaskDocumentReferenceDto(Guid DocumentId, string? DocumentCode);
+    Guid? AddedByUserId = null, bool CanDelete = false, string? Note = null,
+    string Purpose = TaskDocumentPurposes.Reference);
+public sealed record AddTaskDocumentReferenceDto(Guid DocumentId, string? DocumentCode,
+    [StringLength(TaskNoteRules.MaxNoteLength)] string? Note = null, string? Purpose = null);
+public sealed record ProjectTaskFileDto(Guid Id, string FileName, string ContentType, long Size,
+    Guid UploadedByUserId, DateTime CreatedAt, bool CanDelete = false);
 public sealed record ProjectTaskDetailDto(ProjectTaskDto Task, IReadOnlyList<TaskAssignmentDto> Assignments,
-    IReadOnlyList<TaskDocumentReferenceDto> Documents);
+    IReadOnlyList<TaskDocumentReferenceDto> Documents, IReadOnlyList<ProjectTaskFileDto>? Files = null);
+
+public static class TaskNoteRules
+{
+    public const int MaxNoteLength = 1000;
+}
+
+public static class TaskDocumentPurposes
+{
+    public const string Report = "REPORT";
+    public const string Reference = "REFERENCE";
+
+    /// <summary>Returns the canonical purpose, or null when the value is not supported.</summary>
+    public static string? Normalize(string? value)
+    {
+        var normalized = string.IsNullOrWhiteSpace(value) ? Reference : value.Trim().ToUpperInvariant();
+        return normalized is Report or Reference ? normalized : null;
+    }
+}
 
 public sealed record CalendarEventDto(Guid Id, string Title, string? Description, DateTime StartTime, DateTime EndTime,
     bool AllDay, string EventType, string? Location, string RelatedType, string? RelatedId, string Visibility,

@@ -122,11 +122,38 @@ public sealed class WorkflowAppService(
         return template is null ? null : MapTemplate(template);
     }
 
-    public async Task<IReadOnlyList<WorkflowInstanceDto>> GetInstancesAsync(Guid? documentId = null,
-        WorkflowInstanceStatus? status = null, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<WorkflowInstanceDto>> GetInstancesAsync(Guid? documentId = null,
+        WorkflowInstanceStatus? status = null, CancellationToken cancellationToken = default) =>
+        GetInstancesAsync(new GetWorkflowInstancesInput { DocumentId = documentId, Status = status }, cancellationToken);
+
+    public async Task<IReadOnlyList<WorkflowInstanceDto>> GetInstancesAsync(GetWorkflowInstancesInput input,
+        CancellationToken cancellationToken = default)
+    {
+        var query = InstanceListQuery(input);
+        var skip = Math.Max(0, input.Skip);
+        var take = Math.Clamp(input.Take <= 0 ? 200 : input.Take, 1, 200);
+        var instances = await query.OrderByDescending(x => x.CreationTime).Skip(skip).Take(take).ToListAsync(cancellationToken);
+        var now = DateTime.UtcNow;
+        return instances.Select(x => Map(x, now)).ToList();
+    }
+
+    public async Task<PagedWorkflowInstancesDto> GetInstancesPageAsync(GetWorkflowInstancesInput input,
+        CancellationToken cancellationToken = default)
+    {
+        var query = InstanceListQuery(input);
+        var skip = Math.Max(0, input.Skip);
+        var take = Math.Clamp(input.Take <= 0 ? 20 : input.Take, 1, 100);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var instances = await query.OrderByDescending(x => x.CreationTime).Skip(skip).Take(take).ToListAsync(cancellationToken);
+        var now = DateTime.UtcNow;
+        return new PagedWorkflowInstancesDto(totalCount, instances.Select(x => Map(x, now)).ToList());
+    }
+
+    private IQueryable<WorkflowInstance> InstanceListQuery(GetWorkflowInstancesInput input)
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
+        var scope = WorkflowInstanceScopes.Normalize(input.Scope);
         var query = Query().AsNoTracking();
         if (!DocumentAccess.IsElevated(principal))
         {
@@ -136,10 +163,17 @@ public sealed class WorkflowAppService(
                     (document.Assignments.Any(a => a.AssigneeUserId == userId) ||
                      document.History.Any(h => h.Action == "Created" && h.ActorUserId == userId))));
         }
-        if (documentId.HasValue) query = query.Where(x => x.DocumentId == documentId.Value);
-        if (status.HasValue) query = query.Where(x => x.Status == status.Value);
-        var instances = await query.OrderByDescending(x => x.CreationTime).Take(200).ToListAsync(cancellationToken);
-        return instances.Select(Map).ToList();
+        query = scope switch
+        {
+            WorkflowInstanceScopes.Mine => query.Where(instance =>
+                instance.Tasks.Any(task => task.AssigneeUserId == userId || task.DecidedBy == userId)),
+            WorkflowInstanceScopes.DecidedByMe => query.Where(instance =>
+                instance.Tasks.Any(task => task.DecidedBy == userId)),
+            _ => query
+        };
+        if (input.DocumentId.HasValue) query = query.Where(x => x.DocumentId == input.DocumentId.Value);
+        if (input.Status.HasValue) query = query.Where(x => x.Status == input.Status.Value);
+        return query;
     }
 
     public async Task<WorkflowInstanceDto?> GetInstanceAsync(Guid id, CancellationToken cancellationToken = default)
@@ -722,8 +756,22 @@ public sealed class WorkflowAppService(
             .Select(task => task.AssigneeUserId!.Value)
             .Distinct()
             .ToArray();
-    internal static WorkflowInstanceDto Map(WorkflowInstance x) => new(x.Id, x.DocumentId, x.DefinitionId, x.Status, x.CurrentStep,
-        x.Tasks.OrderBy(t => t.CreationTime).Select(t => new ApprovalTaskDto(t.Id, t.InstanceId, t.StepCode, t.Status, t.DecidedBy, t.DecidedAt, t.AssigneeUserId, t.DueAt, t.Comment)).ToList(), x.CreationTime);
+    internal static WorkflowInstanceDto Map(WorkflowInstance x) => Map(x, DateTime.UtcNow);
+
+    internal static WorkflowInstanceDto Map(WorkflowInstance x, DateTime nowUtc)
+    {
+        var tasks = x.Tasks.OrderBy(t => t.CreationTime).ToList();
+        var currentStepCode = tasks.FirstOrDefault(t => t.Status == ApprovalTaskStatus.Pending)?.StepCode;
+        return new(x.Id, x.DocumentId, x.DefinitionId, x.Status, x.CurrentStep,
+            tasks.Select(t => MapTask(t, nowUtc)).ToList(), x.CreationTime, currentStepCode);
+    }
+
+    internal static ApprovalTaskDto MapTask(ApprovalTask t, DateTime nowUtc) =>
+        new(t.Id, t.InstanceId, t.StepCode, t.Status, t.DecidedBy, t.DecidedAt, t.AssigneeUserId, t.DueAt, t.Comment,
+            IsOverdue(t, nowUtc));
+
+    internal static bool IsOverdue(ApprovalTask t, DateTime nowUtc) =>
+        t.Status == ApprovalTaskStatus.Pending && t.DueAt is { } dueAt && dueAt < nowUtc;
     internal static WorkflowDefinitionDto MapDefinition(WorkflowDefinition x) => new(x.Id, x.Code, x.Name, x.KindId, x.Description, x.IsActive,
         x.Steps.OrderBy(step => step.Order).Select(step => new WorkflowStepDto(step.Id, step.Code, step.Name,
             step.Order, step.RequiredPermission, step.Type, step.AssigneeUserId, step.AssigneeType, step.RoleId,

@@ -57,6 +57,8 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
                 connection.On<ChatMessageDto>("ReceiveMessage", NotifyMessageAsync);
                 connection.On<ChatDeletedPayload>("MessageDeleted", NotifyDeletedAsync);
+                // The web UI renders a recalled message exactly like a deleted one.
+                connection.On<ChatDeletedPayload>("MessageRecalled", NotifyDeletedAsync);
                 connection.On<NotificationDto>("NotificationReceived", NotifyNotificationAsync);
                 connection.On<PresenceChangedDto>("PresenceChanged", NotifyPresenceChangedAsync);
                 connection.Reconnecting += _ => NotifyStatusAsync(HubConnectionState.Reconnecting);

@@ -44,9 +44,13 @@ public sealed class WorkflowsController(IWorkflowAppService workflows) : Control
     public async Task<ActionResult<WorkflowTemplateDto>> GetTemplate(Guid id, CancellationToken cancellationToken) =>
         await workflows.GetTemplateAsync(id, cancellationToken) is { } result ? Ok(result) : NotFound();
     [HttpGet("instances")]
-    public Task<IReadOnlyList<WorkflowInstanceDto>> GetInstances([FromQuery] Guid? documentId,
-        [FromQuery] WorkflowInstanceStatus? status, CancellationToken cancellationToken) =>
-        workflows.GetInstancesAsync(documentId, status, cancellationToken);
+    public Task<IReadOnlyList<WorkflowInstanceDto>> GetInstances([FromQuery] GetWorkflowInstancesInput input,
+        CancellationToken cancellationToken) =>
+        workflows.GetInstancesAsync(input, cancellationToken);
+    [HttpGet("instances/page")]
+    public Task<PagedWorkflowInstancesDto> GetInstancesPage([FromQuery] GetWorkflowInstancesInput input,
+        CancellationToken cancellationToken) =>
+        workflows.GetInstancesPageAsync(input, cancellationToken);
     [HttpGet("instances/{id:guid}")]
     public async Task<ActionResult<WorkflowInstanceDto>> GetInstance(Guid id, CancellationToken cancellationToken) =>
         await workflows.GetInstanceAsync(id, cancellationToken) is { } result ? Ok(result) : NotFound();

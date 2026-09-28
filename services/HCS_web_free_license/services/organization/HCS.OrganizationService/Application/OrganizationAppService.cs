@@ -431,32 +431,35 @@ public class OrganizationAppService : ApplicationService, IOrganizationAppServic
         var ids = userIds.Where(x => x != Guid.Empty).Distinct().Take(200).ToHashSet();
         if (ids.Count == 0) return [];
 
-        var mappings = await (from userMapping in _db.UserOrganizationMappings.AsNoTracking()
-                              join department in _db.Departments.AsNoTracking()
-                                  on userMapping.DepartmentId equals department.Id into departmentJoin
-                              from department in departmentJoin.DefaultIfEmpty()
-                              join position in _db.Positions.AsNoTracking()
-                                  on userMapping.PositionId equals (Guid?)position.Id into positionJoin
-                              from position in positionJoin.DefaultIfEmpty()
-                              where ids.Contains(userMapping.UserId)
-                              orderby userMapping.UserId, userMapping.IsPrimary descending, userMapping.CreationTime
-                              select new
-                              {
-                                  userMapping.UserId,
-                                  userMapping.DepartmentId,
-                                  DepartmentName = department == null ? null : department.Name,
-                                  userMapping.PositionId,
-                                  PositionName = position == null ? null : position.Name
-                              }).ToListAsync(ct);
-
+        var mappings = await QueryUserDepartmentLookups(ids).ToListAsync(ct);
         var mappingByUser = mappings.GroupBy(x => x.UserId).ToDictionary(x => x.Key, x => x.First());
         return ids.Select(userId => mappingByUser.TryGetValue(userId, out var mapping)
-                && mapping is not null
-                ? new UserDepartmentLookupDto(userId, mapping.DepartmentId, mapping.DepartmentName,
-                    mapping.PositionId, mapping.PositionName)
+                ? mapping
                 : new UserDepartmentLookupDto(userId, null))
             .ToArray();
     }
+
+    public virtual async Task<IReadOnlyList<UserDepartmentLookupDto>> GetAllUserDepartmentsAsync(Guid userId,
+        CancellationToken ct = default) =>
+        userId == Guid.Empty ? [] : await QueryUserDepartmentLookups([userId]).ToListAsync(ct);
+
+    // Primary mapping first, then oldest; callers that need one mapping per user take the first row.
+    private IQueryable<UserDepartmentLookupDto> QueryUserDepartmentLookups(IReadOnlyCollection<Guid> userIds) =>
+        from userMapping in _db.UserOrganizationMappings.AsNoTracking()
+        join department in _db.Departments.AsNoTracking()
+            on userMapping.DepartmentId equals department.Id into departmentJoin
+        from department in departmentJoin.DefaultIfEmpty()
+        join position in _db.Positions.AsNoTracking()
+            on userMapping.PositionId equals (Guid?)position.Id into positionJoin
+        from position in positionJoin.DefaultIfEmpty()
+        where userIds.Contains(userMapping.UserId)
+        orderby userMapping.UserId, userMapping.IsPrimary descending, userMapping.CreationTime
+        select new UserDepartmentLookupDto(
+            userMapping.UserId,
+            userMapping.DepartmentId,
+            department == null ? null : department.Name,
+            userMapping.PositionId,
+            position == null ? null : position.Name);
 
     public virtual async Task<UserOrganizationMappingDto> CreateUserMappingAsync(UpsertUserOrganizationMappingDto input, CancellationToken ct = default)
     {

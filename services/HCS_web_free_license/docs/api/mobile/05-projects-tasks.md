@@ -52,9 +52,9 @@ Tạo task: `ProjectTaskCreateModal` (từ list/detail).
 
 ## Projects
 
-Paged `{ totalCount, items }`. Query: `skip`, `take` (max 100), `filter`, `status` (string, ví dụ `Active`).
+Paged `{ totalCount, items }`. Query: `skip`, `take` (max 100), `filter`, `status` (string, ví dụ `Active`), `from`, `to` (dự án có `[startDate, endDate]` giao với `[from, to]`), `ownerDepartmentId`.
 
-List item: `id`, `code`, `name`, `description`, `startDate`, `endDate`, `status`, `ownerDepartmentId`, `ownerUserId`, `memberCount`, `taskCount`, `canManage`, `canDelete`.
+List item: `id`, `code`, `name`, `description`, `startDate`, `endDate`, `status`, `ownerDepartmentId`, `ownerUserId`, `memberCount`, `taskCount`, `canManage`, `canDelete`, `progressPercent` (trung bình tiến độ các task **gốc**, làm tròn; không có task → 0).
 
 ### POST `/api/projects`
 
@@ -88,6 +88,8 @@ PUT **không** gửi `code` / owner:
 
 `POST /api/projects/{id}/members` `{ "userId": "guid", "role": "Member" }` — Web dùng role form (thường `Member`/`Manager`).
 
+`PUT /api/projects/{id}/members/{memberId}` `{ "role": "Manager" }` — đổi vai trò, giữ nguyên `memberId`. `role`: `Manager` | `Supervisor` | `Member` (phân biệt hoa thường). Chỉ chủ dự án hoặc admin; không đổi được role của chủ dự án (`Work:CannotChangeOwnerRole`). Trả `ProjectMemberDto`.
+
 `DELETE /api/projects/{id}/members/{memberId}` — `memberId` là id bản ghi member, không phải userId.
 
 `POST /api/projects/{id}/chat-access` → `204`. Sau đó `GET /api/chat/conversations/by-project/{id}`.
@@ -96,7 +98,9 @@ PUT **không** gửi `code` / owner:
 
 `GET /api/project-tasks?projectId={guid}&filter=&status=&skip=0&take=20`
 
-Task: `id`, `projectId`, `parentTaskId`, `code`, `title`, `description`, `startDate`, `dueDate`, `priority`, `status`, `progressPercent`, `creatorId`, `canDelete`, `canManageAssignments`, `canCreateChild`.
+Filter thêm: `from`, `to` (theo `dueDate`, gồm cả hai đầu), `priority`, `parentTaskId` (task con trực tiếp), `rootOnly=true` (chỉ task gốc; bỏ qua nếu có `parentTaskId`), `assigneeUserId`.
+
+Task: `id`, `projectId`, `parentTaskId`, `code`, `title`, `description`, `startDate`, `dueDate`, `priority`, `status`, `progressPercent`, `creatorId`, `canDelete`, `canManageAssignments`, `canCreateChild`, `assigneeUserIds` (có trong list, chi tiết dự án, chi tiết task).
 
 `priority` / `status` Web gửi **string** (không enum số).
 
@@ -133,10 +137,22 @@ PUT:
 }
 ```
 
-Detail: `{ task, assignments: [{ id, projectTaskId, userId, assignmentType }], documents: [{ id, projectTaskId, documentId, documentCode }] }`.
+Detail: `{ task, assignments: [{ id, projectTaskId, userId, assignmentType, note }], documents: [{ id, projectTaskId, documentId, documentCode, addedByUserId, canDelete, note, purpose }], files: [ProjectTaskFileDto] }`.
 
-`POST .../assignments` `{ "userId", "assignmentType": "Assignee" }`  
-`POST .../documents` `{ "documentId", "documentCode": "số văn bản" }`
+`POST .../assignments` `{ "userId", "assignmentType": "Assignee", "note": null }`  
+`POST .../documents` `{ "documentId", "documentCode": "số văn bản", "note": null, "purpose": "REFERENCE" }`
+
+`note` ≤ 1000 (tự trim; rỗng = `null`). `purpose`: `REPORT` | `REFERENCE` (không phân biệt hoa thường, mặc định `REFERENCE`; khác → `Work:InvalidTaskDocumentPurpose`).
+
+### File đính kèm task
+
+| Route | Ghi chú |
+|---|---|
+| `POST /api/project-tasks/{id}/files` | multipart field `file`, ≤ 25 MB. Thành viên task (quyền `WorkManagement.ProjectTasks`). Trả `ProjectTaskFileDto` |
+| `GET /api/project-tasks/{id}/files/{fileId}` | Tải file (thành viên task) |
+| `DELETE /api/project-tasks/{id}/files/{fileId}` | Người upload, người tạo task, chủ dự án hoặc admin (`Work:CannotDeleteOthersFile`) |
+
+`ProjectTaskFileDto`: `id`, `fileName`, `contentType`, `size`, `uploadedByUserId`, `createdAt`, `canDelete`. Xoá task sẽ xoá luôn file.
 
 ## Lookup
 

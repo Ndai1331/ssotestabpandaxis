@@ -46,6 +46,7 @@ public sealed class DocumentServiceDbContext(DbContextOptions<DocumentServiceDbC
                 .HasMethod("gin").HasOperators("gin_trgm_ops");
             b.HasIndex(x => x.SourceType);
             b.HasIndex(x => x.ParentDocumentId);
+            b.HasIndex(x => x.ProcessingMethodId);
             b.HasMany(x => x.Files).WithOne().HasForeignKey(x => x.DocumentId).OnDelete(DeleteBehavior.Cascade);
             b.HasMany(x => x.Assignments).WithOne().HasForeignKey(x => x.DocumentId).OnDelete(DeleteBehavior.Cascade);
             b.HasMany(x => x.History).WithOne().HasForeignKey(x => x.DocumentId).OnDelete(DeleteBehavior.Cascade);

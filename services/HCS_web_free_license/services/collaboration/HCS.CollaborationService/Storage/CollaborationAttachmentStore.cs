@@ -1,7 +1,9 @@
+using HCS.CollaborationService.Application;
 using HCS.CollaborationService.Contracts;
 using HCS.CollaborationService.Data;
 using HCS.CollaborationService.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.Authorization;
 using Volo.Abp.BlobStoring;
@@ -19,7 +21,9 @@ public sealed class CollaborationAttachmentStore(
     CollaborationDbContext db,
     ICurrentUser currentUser,
     IGuidGenerator guidGenerator,
-    ChatAttachmentLimitStore limits) : ITransientDependency
+    ChatAttachmentLimitStore limits,
+    IChatRealtimeNotifier notifier,
+    ILogger<CollaborationAttachmentStore> logger) : ITransientDependency
 {
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -32,7 +36,8 @@ public sealed class CollaborationAttachmentStore(
         string contentType, Stream content, long size, CancellationToken ct = default)
     {
         var userId = currentUser.Id ?? throw new AbpAuthorizationException();
-        if (!await db.ConversationMembers.AnyAsync(x => x.ConversationId == conversationId && x.UserId == userId, ct))
+        if (!await db.ConversationMembers.AnyAsync(x => x.ConversationId == conversationId && x.UserId == userId &&
+                db.Conversations.Any(c => c.Id == conversationId && !c.IsDeleted), ct))
             throw new AbpAuthorizationException();
         var maxBytes = limits.GetMaxBytes();
         if (size <= 0 || size > maxBytes) throw new BusinessException("Collaboration:InvalidAttachmentSize");
@@ -64,7 +69,78 @@ public sealed class CollaborationAttachmentStore(
             ?? throw new BusinessException("Collaboration:AttachmentNotFound");
         if (!await db.ConversationMembers.AnyAsync(x => x.ConversationId == attachment.ConversationId && x.UserId == userId, ct))
             throw new AbpAuthorizationException();
+        if (attachment.MessageId.HasValue && await db.Messages.AnyAsync(x => x.Id == attachment.MessageId && x.RecalledAt != null, ct))
+            throw new BusinessException("Collaboration:AttachmentNotFound");
         return new AuthorizedDownload(attachment.FileName, attachment.ContentType, await container.GetAsync(attachment.BlobName, ct));
+    }
+
+    public async Task<ConversationDto> UploadAvatarAsync(Guid conversationId, string contentType, Stream content, long size,
+        CancellationToken ct = default)
+    {
+        var userId = currentUser.Id ?? throw new AbpAuthorizationException();
+        var conversation = await RequireManageableAsync(conversationId, userId, ct);
+        if (size <= 0 || size > ChatModerationRules.MaxAvatarBytes) throw new BusinessException("Collaboration:InvalidAvatarSize");
+        if (string.IsNullOrWhiteSpace(contentType) || !ChatModerationRules.AvatarContentTypes.Contains(contentType))
+            throw new BusinessException("Collaboration:InvalidAvatarType");
+        var blobName = $"conversations/{conversationId:N}/avatar/{guidGenerator.Create():N}";
+        await using var buffer = await AttachmentContent.BufferAsync(content, size, ct);
+        if (buffer.Length != size) throw new BusinessException("Collaboration:InvalidAvatarSize");
+        await container.SaveAsync(blobName, buffer, overrideExisting: false, cancellationToken: ct);
+        var previous = conversation.AvatarBlobName;
+        conversation.SetAvatar(blobName, contentType.ToLowerInvariant());
+        try { await db.SaveChangesAsync(ct); }
+        catch { await container.DeleteAsync(blobName, ct); throw; }
+        await DeleteBlobQuietlyAsync(previous, ct);
+        await NotifyUpdatedAsync(conversation, ct);
+        return CollaborationAppService.MapConversation(conversation, userId);
+    }
+
+    public async Task RemoveAvatarAsync(Guid conversationId, CancellationToken ct = default)
+    {
+        var userId = currentUser.Id ?? throw new AbpAuthorizationException();
+        var conversation = await RequireManageableAsync(conversationId, userId, ct);
+        var previous = conversation.AvatarBlobName;
+        if (previous is null) return;
+        conversation.ClearAvatar();
+        await db.SaveChangesAsync(ct);
+        await DeleteBlobQuietlyAsync(previous, ct);
+        await NotifyUpdatedAsync(conversation, ct);
+    }
+
+    public async Task<AuthorizedDownload?> DownloadAvatarAsync(Guid conversationId, CancellationToken ct = default)
+    {
+        var userId = currentUser.Id ?? throw new AbpAuthorizationException();
+        var conversation = await db.Conversations.AsNoTracking()
+            .Where(x => x.Id == conversationId && !x.IsDeleted && x.Members.Any(m => m.UserId == userId))
+            .Select(x => new { x.AvatarBlobName, x.AvatarContentType })
+            .SingleOrDefaultAsync(ct) ?? throw new AbpAuthorizationException();
+        if (conversation.AvatarBlobName is null || conversation.AvatarContentType is null) return null;
+        var stream = await container.GetOrNullAsync(conversation.AvatarBlobName, ct);
+        return stream is null ? null : new AuthorizedDownload("avatar", conversation.AvatarContentType, stream);
+    }
+
+    private async Task<Conversation> RequireManageableAsync(Guid conversationId, Guid userId, CancellationToken ct)
+    {
+        var conversation = await db.Conversations.Include(x => x.Members)
+            .SingleOrDefaultAsync(x => x.Id == conversationId && !x.IsDeleted && x.Members.Any(m => m.UserId == userId), ct)
+            ?? throw new AbpAuthorizationException("Conversation membership required.");
+        var isSystemAdmin = ChatModerationRules.IsSystemAdmin(currentUser.IsInRole("admin"), currentUser.IsInRole("bd-admin"));
+        if (!isSystemAdmin && conversation.Members.Single(x => x.UserId == userId).Role != ConversationMemberRole.Admin)
+            throw new AbpAuthorizationException("Conversation admin required.");
+        return conversation;
+    }
+
+    private async Task DeleteBlobQuietlyAsync(string? blobName, CancellationToken ct)
+    {
+        if (blobName is null) return;
+        try { await container.DeleteAsync(blobName, ct); }
+        catch (Exception exception) { logger.LogWarning(exception, "Failed to delete replaced conversation avatar {BlobName}", blobName); }
+    }
+
+    private async Task NotifyUpdatedAsync(Conversation conversation, CancellationToken ct)
+    {
+        try { await notifier.ConversationUpdatedAsync(conversation.Id, conversation.Members.Select(x => x.UserId).ToArray(), ct); }
+        catch (Exception exception) { logger.LogWarning(exception, "Realtime conversation update failed for {ConversationId}", conversation.Id); }
     }
 
     public async Task DeleteAsync(Guid attachmentId, CancellationToken ct = default)

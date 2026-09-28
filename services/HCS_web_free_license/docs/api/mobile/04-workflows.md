@@ -126,14 +126,24 @@ Upload: multipart `file`, query `kind=word` hoặc `kind=pdf`, max 50 MB.
 
 ## Instances
 
-`GET /api/workflows/instances?documentId={guid}&status={name}` — mảng (Web list không filter).
+`GET /api/workflows/instances?documentId={guid}&status={name}&scope&skip&take` — mảng (Web list không filter; `take` ≤ 200).
 
-DTO: `id`, `documentId`, `definitionId`, `status`, `currentStep`, `tasks[]`, `creationTime`.
+Mobile dùng bản phân trang:
+
+```text
+GET /api/workflows/instances/page?scope=mine&status&documentId&skip=0&take=20
+```
+
+`scope`: `all` (mặc định, như cũ), `mine` (có task giao cho tôi hoặc tôi đã quyết định), `decidedByMe`. Không phân biệt hoa thường; giá trị khác → `400`. `take` ≤ 100. Response `{ totalCount, items: WorkflowInstanceDto[] }`, mới tạo trước.
+
+DTO: `id`, `documentId`, `definitionId`, `status`, `currentStep`, `tasks[]`, `creationTime`, `currentStepCode`.
+
+`currentStepCode` = mã bước của task `Pending` đầu tiên (`null` khi hồ sơ đã xong) — tra `definition.steps[].code`. **Không** dùng `currentStep` làm index (hồ sơ import có giá trị kiểu `1002`).
 
 `WorkflowInstanceStatus`: `Running=0`, `Completed=1`, `Rejected=2`, `Cancelled=3`, `Returned=4`.  
 `ApprovalTaskStatus`: `Pending=0`, `Approved=1`, `Rejected=2`, `Cancelled=3`, `Returned=4`.
 
-Task: `id`, `instanceId`, `stepCode`, `status`, `decidedBy`, `decidedAt`, `assigneeUserId`, `dueAt`, `comment`.
+Task: `id`, `instanceId`, `stepCode`, `status`, `decidedBy`, `decidedAt`, `assigneeUserId`, `dueAt`, `comment`, `isOverdue` (`status == Pending && dueAt < now`, server tính lúc trả response).
 
 ### POST `/api/workflows/instances` — start
 

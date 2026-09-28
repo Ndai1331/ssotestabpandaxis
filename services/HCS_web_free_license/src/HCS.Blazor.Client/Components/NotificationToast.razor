@@ -166,6 +166,16 @@
             return;
         }
 
+        if (message.IsConversationMuted)
+        {
+            await InvokeAsync(() =>
+            {
+                if (!disposed)
+                    _ = RefreshChatUnreadAsync(lifecycleCts?.Token ?? CancellationToken.None);
+            });
+            return;
+        }
+
         await InvokeAsync(() =>
         {
             if (disposed)

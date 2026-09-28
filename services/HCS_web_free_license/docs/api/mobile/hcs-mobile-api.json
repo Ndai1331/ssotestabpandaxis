@@ -1,7 +1,7 @@
 {
   "info": {
     "title": "HCS Mobile API",
-    "version": "2026-09-23",
+    "version": "2026-09-28",
     "source": "Blazor Client + Gateway /api/* (không gọi port 44411–44415)",
     "note": "Web dùng cookie BFF. Mobile login in-app: POST /connect/token grant_type=password client_id=hcs-mobile. Gọi API bằng Authorization: Bearer. Không nhúng secret HCS_App."
   },
@@ -170,6 +170,31 @@
           "method": "GET",
           "path": "/api/identity/users/{userId}/avatar",
           "response": "binary; 404 nếu chưa có"
+        },
+        {
+          "name": "getProfileSummary",
+          "method": "GET",
+          "path": "/api/identity/my-profile-summary",
+          "response": {
+            "id": "guid",
+            "userName": "nv01",
+            "email": "",
+            "name": "An",
+            "surname": "Nguyễn",
+            "phoneNumber": "",
+            "displayName": "Nguyễn An",
+            "avatarUrl": "/api/identity/users/{id}/avatar",
+            "departments": [{ "id": "guid", "name": "Khoa Nội", "isPrimary": true }],
+            "positionId": "guid",
+            "positionName": "Trưởng khoa"
+          },
+          "note": "Không có userCode/dob/gender. Không có đăng ký tài khoản (self-registration tắt)."
+        },
+        {
+          "name": "getMyDepartments",
+          "method": "GET",
+          "path": "/api/organization/user-departments/mine",
+          "response": [{ "userId": "guid", "departmentId": "guid", "departmentName": "Khoa Nội", "positionId": "guid", "positionName": "Trưởng khoa" }]
         }
       ]
     },
@@ -228,7 +253,7 @@
         {
           "method": "GET",
           "path": "/api/projects",
-          "query": { "filter": "", "status": "Active", "skip": 0, "take": 20 },
+          "query": { "filter": "", "status": "Active", "skip": 0, "take": 20, "from": null, "to": null, "ownerDepartmentId": null },
           "response": {
             "totalCount": 1,
             "items": [
@@ -245,7 +270,8 @@
                 "memberCount": 3,
                 "taskCount": 12,
                 "canManage": true,
-                "canDelete": false
+                "canDelete": false,
+                "progressPercent": 40
               }
             ]
           }
@@ -301,6 +327,12 @@
           "path": "/api/projects/{id}/members/{memberId}",
           "note": "memberId = id bản ghi, không phải userId. Không tự xóa mình (Work:CannotRemoveSelf)."
         },
+        {
+          "method": "PUT",
+          "path": "/api/projects/{id}/members/{memberId}",
+          "request": { "role": "Manager" },
+          "note": "Manager|Supervisor|Member. Chỉ chủ dự án/admin. Work:CannotChangeOwnerRole. Trả ProjectMemberDto."
+        },
         { "method": "POST", "path": "/api/projects/{id}/chat-access", "response": "204" },
         { "method": "GET", "path": "/api/chat/conversations/by-project/{id}", "note": "404 nếu chưa có" }
       ]
@@ -315,7 +347,20 @@
         {
           "method": "GET",
           "path": "/api/project-tasks",
-          "query": { "projectId": "guid", "filter": "", "status": "New", "skip": 0, "take": 20 }
+          "query": {
+            "projectId": "guid",
+            "filter": "",
+            "status": "New",
+            "skip": 0,
+            "take": 20,
+            "from": null,
+            "to": null,
+            "priority": null,
+            "parentTaskId": null,
+            "rootOnly": false,
+            "assigneeUserId": null
+          },
+          "note": "Item có assigneeUserIds[]. from/to theo dueDate (gồm hai đầu)."
         },
         {
           "method": "GET",
@@ -369,7 +414,7 @@
               "canManageAssignments": true,
               "canCreateChild": true
             },
-            "assignments": [{ "id": "guid", "projectTaskId": "guid", "userId": "guid", "assignmentType": "Member" }],
+            "assignments": [{ "id": "guid", "projectTaskId": "guid", "userId": "guid", "assignmentType": "Member", "note": null }],
             "documents": [
               {
                 "id": "guid",
@@ -377,6 +422,19 @@
                 "documentId": "guid",
                 "documentCode": "VB-01",
                 "addedByUserId": "guid",
+                "canDelete": true,
+                "note": null,
+                "purpose": "REFERENCE"
+              }
+            ],
+            "files": [
+              {
+                "id": "guid",
+                "fileName": "bao-cao.pdf",
+                "contentType": "application/pdf",
+                "size": 1024,
+                "uploadedByUserId": "guid",
+                "createdAt": "2026-09-28T03:00:00Z",
                 "canDelete": true
               }
             ]
@@ -384,14 +442,29 @@
         },
         {
           "method": "POST",
+          "path": "/api/project-tasks/{id}/files",
+          "contentType": "multipart/form-data",
+          "field": "file",
+          "maxMb": 25,
+          "response": "ProjectTaskFileDto"
+        },
+        { "method": "GET", "path": "/api/project-tasks/{id}/files/{fileId}", "response": "binary" },
+        {
+          "method": "DELETE",
+          "path": "/api/project-tasks/{id}/files/{fileId}",
+          "note": "Người upload, người tạo task, chủ dự án hoặc admin. Work:CannotDeleteOthersFile."
+        },
+        {
+          "method": "POST",
           "path": "/api/project-tasks/{id}/assignments",
-          "request": { "userId": "guid", "assignmentType": "Member" }
+          "request": { "userId": "guid", "assignmentType": "Member", "note": null }
         },
         { "method": "DELETE", "path": "/api/project-tasks/{id}/assignments/{assignmentId}", "response": "204" },
         {
           "method": "POST",
           "path": "/api/project-tasks/{id}/documents",
-          "request": { "documentId": "guid", "documentCode": "VB-01" }
+          "request": { "documentId": "guid", "documentCode": "VB-01", "note": null, "purpose": "REFERENCE" },
+          "note": "purpose REPORT|REFERENCE (mặc định REFERENCE). note ≤ 1000."
         },
         {
           "method": "DELETE",
@@ -483,6 +556,27 @@
         },
         { "method": "GET", "path": "/api/signing/credentials/current" },
         { "method": "GET", "path": "/api/signing/signatures" },
+        { "method": "GET", "path": "/api/signing/signatures/{id}", "note": "404 nếu không thuộc user" },
+        {
+          "method": "GET",
+          "path": "/api/signing/history",
+          "query": { "skip": 0, "take": 20, "from": null, "toExclusive": null, "decision": "Approved" },
+          "response": { "totalCount": 1, "items": [{ "document": {}, "task": {}, "instance": {}, "definition": {}, "canDelete": false }] },
+          "note": "Task do tôi quyết định. decision: Approved|Rejected|Returned."
+        },
+        {
+          "method": "GET",
+          "path": "/api/signing/stats",
+          "query": { "from": null, "toExclusive": null },
+          "response": { "pending": 5, "approved": 12, "rejected": 1, "returned": 2, "overdue": 1 }
+        },
+        {
+          "method": "GET",
+          "path": "/api/workflows/instances/page",
+          "query": { "scope": "mine", "status": null, "documentId": null, "skip": 0, "take": 20 },
+          "response": { "totalCount": 1, "items": [] },
+          "note": "scope: all|mine|decidedByMe. Instance có currentStepCode; task có isOverdue."
+        },
         { "method": "GET", "path": "/api/signing/reports/documents/{documentId}" },
         { "method": "DELETE", "path": "/api/documents/{id}/submission", "response": "204" }
       ]
@@ -491,12 +585,38 @@
       "permissions": ["Collaboration.Chat", "Collaboration.Notifications", "Collaboration.Realtime"],
       "conversationType": { "User": 0, "Group": 1, "Project": 2, "Task": 3 },
       "signalR": "{gateway}/hubs/chat?access_token={access_token}",
-      "signalREvents": ["ReceiveMessage", "MessageDeleted", "NotificationReceived", "PresenceChanged"],
+      "signalREvents": [
+        "ReceiveMessage",
+        "MessageDeleted",
+        "MessageRecalled",
+        "MessageReactionsChanged",
+        "ConversationUpdated",
+        "ConversationDeleted",
+        "ConversationMuteChanged",
+        "NotificationReceived",
+        "PresenceChanged"
+      ],
       "endpoints": [
         { "method": "GET", "path": "/api/chat/conversations?skip=0&take=20" },
         { "method": "GET", "path": "/api/chat/conversations/{id}" },
+        { "method": "PUT", "path": "/api/chat/conversations/{id}", "request": { "name": "Tên nhóm", "description": "Mô tả" } },
+        { "method": "DELETE", "path": "/api/chat/conversations/{id}" },
+        { "method": "POST", "path": "/api/chat/conversations/{id}/clear-history" },
+        { "method": "PUT", "path": "/api/chat/conversations/{id}/mute", "request": { "muted": true } },
+        { "method": "POST", "path": "/api/chat/conversations/{id}/avatar", "contentType": "multipart/form-data", "field": "file", "maxMb": 2 },
+        { "method": "DELETE", "path": "/api/chat/conversations/{id}/avatar" },
+        { "method": "GET", "path": "/api/chat/conversations/{id}/attachments?kind=media&skip=0&take=30" },
         { "method": "GET", "path": "/api/chat/conversations/{id}/permissions" },
-        { "method": "GET", "path": "/api/chat/conversations/{id}/messages?skip=0&take=50" },
+        { "method": "GET", "path": "/api/chat/conversations/{id}/messages?take=50&beforeMessageId={oldestId}" },
+        { "method": "GET", "path": "/api/chat/messages/search?text={q}&conversationId=&skip=0&take=20" },
+        { "method": "GET", "path": "/api/chat/messages/saved?skip=0&take=20" },
+        { "method": "PUT", "path": "/api/chat/messages/{id}/save", "request": { "saved": true } },
+        { "method": "PUT", "path": "/api/chat/messages/{id}/reactions", "request": { "emoji": "👍" } },
+        { "method": "DELETE", "path": "/api/chat/messages/{id}/reactions" },
+        { "method": "POST", "path": "/api/chat/messages/{id}/recall" },
+        { "method": "PUT", "path": "/api/chat/messages/{id}/pin", "request": { "pinned": true } },
+        { "method": "POST", "path": "/api/chat/conversations/{id}/members", "request": { "userIds": ["guid"] } },
+        { "method": "GET", "path": "/api/chat/contacts/page?search=&skip=0&take=50" },
         { "method": "POST", "path": "/api/chat/conversations/{id}/read" },
         {
           "method": "POST",
@@ -533,7 +653,19 @@
         { "method": "GET", "path": "/api/notifications?unreadOnly=false&skip=0&take=20" },
         { "method": "GET", "path": "/api/notifications/unread-count" },
         { "method": "POST", "path": "/api/notifications/{id}/read" },
-        { "method": "POST", "path": "/api/notifications/read-all" }
+        { "method": "POST", "path": "/api/notifications/read-all" },
+        {
+          "method": "POST",
+          "path": "/api/notifications/devices",
+          "request": { "token": "fcm-or-apns-token", "platform": "android" },
+          "response": { "id": "guid", "platform": "android", "isActive": true }
+        },
+        {
+          "method": "POST",
+          "path": "/api/notifications/devices/unregister",
+          "request": { "token": "fcm-or-apns-token" },
+          "note": "Gọi khi logout, trước khi xoá access token. Idempotent."
+        }
       ]
     },
     "social": {
@@ -683,8 +815,12 @@
             "urgencyId": null,
             "confidentialityId": null,
             "from": null,
-            "to": null
-          }
+            "to": null,
+            "organizationUnitId": null,
+            "workflowDefinitionId": null,
+            "processingMethodId": null
+          },
+          "note": "Item có processingMethodId, isViewed, sentAt."
         },
         { "method": "GET", "path": "/api/documents/{id}" },
         {

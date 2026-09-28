@@ -109,8 +109,30 @@ public sealed record PagedSigningQueueDto(
     int CountByMe,
     IReadOnlyList<SigningQueueItemDto> Items);
 
+public sealed class GetSigningHistoryInput
+{
+    public int Skip { get; set; }
+    public int Take { get; set; }
+    public DateTime? From { get; set; }
+    public DateTime? ToExclusive { get; set; }
+    public ApprovalTaskStatus? Decision { get; set; }
+}
+
+public sealed record PagedSigningHistoryDto(int TotalCount, IReadOnlyList<SigningQueueItemDto> Items);
+
+public sealed class GetSigningStatsInput
+{
+    public DateTime? From { get; set; }
+    public DateTime? ToExclusive { get; set; }
+}
+
+public sealed record SigningStatsDto(int Pending, int Approved, int Rejected, int Returned, int Overdue);
+
 public interface ISigningAppService
 {
+    Task<PagedSigningHistoryDto> GetHistoryAsync(GetSigningHistoryInput? input = null, CancellationToken cancellationToken = default);
+    Task<SigningStatsDto> GetStatsAsync(GetSigningStatsInput? input = null, CancellationToken cancellationToken = default);
+    Task<UserSignatureDto?> GetSignatureAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SigningQueueItemDto>> GetQueueAsync(GetSigningQueueInput? input = null, CancellationToken cancellationToken = default);
     Task<PagedSigningQueueDto> GetQueuePageAsync(GetSigningQueueInput? input = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SigningProviderDefinitionDto>> GetProviderDefinitionsAsync(CancellationToken cancellationToken = default);

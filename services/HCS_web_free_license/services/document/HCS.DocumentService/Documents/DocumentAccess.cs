@@ -6,6 +6,7 @@ namespace HCS.DocumentService.Documents;
 internal static class DocumentAccess
 {
     public const string CreatedAction = "Created";
+    public const string ViewedAction = "Viewed";
     private static readonly string[] ElevatedRoles = ["admin", "lanhdao"];
 
     public static Guid RequireUser(ClaimsPrincipal? principal)

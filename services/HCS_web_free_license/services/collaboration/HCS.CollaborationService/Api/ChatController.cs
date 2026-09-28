@@ -10,8 +10,35 @@ namespace HCS.CollaborationService.Api;
 [ApiController, Authorize(Policy = CollaborationPermissions.Chat), Route("api/chat")]
 public sealed class ChatController(
     CollaborationAppService app,
+    ChatMessageFeatureAppService features,
     CollaborationAttachmentStore attachments) : AbpControllerBase
 {
+    [HttpGet("messages/search")]
+    public Task<PagedMessagesDto> SearchAllMessages([FromQuery] string? text, [FromQuery] Guid? conversationId,
+        [FromQuery] int skip = 0, [FromQuery] int take = 20, CancellationToken ct = default) =>
+        features.SearchAsync(text, conversationId, skip, take, ct);
+
+    [HttpGet("messages/saved")]
+    public Task<PagedMessagesDto> SavedMessages([FromQuery] int skip = 0, [FromQuery] int take = 20, CancellationToken ct = default) =>
+        features.GetSavedAsync(skip, take, ct);
+
+    [HttpPut("messages/{messageId:guid}/save")]
+    public Task SaveMessage(Guid messageId, [FromBody] SaveMessageInput input, CancellationToken ct) =>
+        features.SetSavedAsync(messageId, input.Saved, ct);
+
+    [HttpPut("messages/{messageId:guid}/reactions")]
+    public Task<IReadOnlyList<MessageReactionDto>> SetReaction(Guid messageId, [FromBody] SetMessageReactionInput input, CancellationToken ct) =>
+        features.SetReactionAsync(messageId, input.Emoji, ct);
+
+    [HttpDelete("messages/{messageId:guid}/reactions")]
+    public Task<IReadOnlyList<MessageReactionDto>> RemoveReaction(Guid messageId, CancellationToken ct) =>
+        features.RemoveReactionAsync(messageId, ct);
+
+    [HttpGet("conversations/{id:guid}/attachments")]
+    public Task<PagedConversationAttachmentsDto> ConversationAttachments(Guid id, [FromQuery] string? kind,
+        [FromQuery] int skip = 0, [FromQuery] int take = 30, CancellationToken ct = default) =>
+        features.GetAttachmentsAsync(id, kind, skip, take, ct);
+
     [HttpPost("conversations")]
     public Task<ConversationDto> CreateConversation(CreateConversationInput input, CancellationToken ct) => app.CreateConversationAsync(input, ct);
 
@@ -32,6 +59,31 @@ public sealed class ChatController(
 
     [HttpPut("conversations/{id:guid}/name")]
     public Task Rename(Guid id, [FromBody] RenameConversationInput input, CancellationToken ct) => app.RenameAsync(id, input.Name, ct);
+
+    [HttpPut("conversations/{id:guid}")]
+    public Task<ConversationDto> UpdateConversation(Guid id, [FromBody] UpdateConversationInput input, CancellationToken ct) => app.UpdateConversationAsync(id, input, ct);
+
+    [HttpDelete("conversations/{id:guid}")]
+    public Task DeleteConversation(Guid id, CancellationToken ct) => app.DeleteConversationAsync(id, ct);
+
+    [HttpPost("conversations/{id:guid}/clear-history")]
+    public Task ClearHistory(Guid id, CancellationToken ct) => app.ClearHistoryAsync(id, ct);
+
+    [HttpPut("conversations/{id:guid}/mute")]
+    public Task MuteConversation(Guid id, [FromBody] MuteConversationInput input, CancellationToken ct) => app.SetConversationMutedAsync(id, input.Muted, ct);
+
+    [HttpPost("conversations/{id:guid}/avatar")]
+    [RequestSizeLimit(ChatModerationRules.MaxAvatarBytes + 64 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ChatModerationRules.MaxAvatarBytes + 64 * 1024)]
+    public async Task<ConversationDto> UploadAvatar(Guid id, IFormFile file, CancellationToken ct)
+    { await using var stream = file.OpenReadStream(); return await attachments.UploadAvatarAsync(id, file.ContentType, stream, file.Length, ct); }
+
+    [HttpDelete("conversations/{id:guid}/avatar")]
+    public Task RemoveAvatar(Guid id, CancellationToken ct) => attachments.RemoveAvatarAsync(id, ct);
+
+    [HttpGet("conversations/{id:guid}/avatar")]
+    public async Task<IActionResult> Avatar(Guid id, CancellationToken ct)
+    { var file = await attachments.DownloadAvatarAsync(id, ct); return file is null ? NotFound() : File(file.Content, file.ContentType); }
 
     [HttpPut("conversations/{id:guid}/pin")]
     public Task PinConversation(Guid id, [FromBody] PinInput input, CancellationToken ct) => app.SetConversationPinnedAsync(id, input.Pinned, ct);
@@ -60,6 +112,9 @@ public sealed class ChatController(
     [HttpDelete("messages/{messageId:guid}")]
     public Task DeleteMessage(Guid messageId, CancellationToken ct) => app.DeleteMessageAsync(messageId, ct);
 
+    [HttpPost("messages/{messageId:guid}/recall")]
+    public Task RecallMessage(Guid messageId, CancellationToken ct) => app.RecallMessageAsync(messageId, ct);
+
     [HttpPut("messages/{messageId:guid}/pin")]
     public Task PinMessage(Guid messageId, PinInput input, CancellationToken ct) => app.SetMessagePinnedAsync(messageId, input.Pinned, ct);
 
@@ -70,7 +125,7 @@ public sealed class ChatController(
     public Task<int> Unread(CancellationToken ct) => app.GetTotalUnreadAsync(ct);
 
     [HttpGet("conversations/{conversationId:guid}/messages")]
-    public Task<PagedMessagesDto> Search(Guid conversationId, [FromQuery] string? keyword, [FromQuery] int skip = 0, [FromQuery] int take = 50, [FromQuery] bool pinnedOnly = false, CancellationToken ct = default) => app.SearchMessagesAsync(conversationId, keyword, skip, take, pinnedOnly, ct);
+    public Task<PagedMessagesDto> Search(Guid conversationId, [FromQuery] string? keyword, [FromQuery] int skip = 0, [FromQuery] int take = 50, [FromQuery] bool pinnedOnly = false, [FromQuery] Guid? beforeMessageId = null, CancellationToken ct = default) => app.SearchMessagesAsync(conversationId, keyword, skip, take, pinnedOnly, beforeMessageId, ct);
 
     [HttpGet("conversations/{conversationId:guid}/messages/{messageId:guid}/context")]
     public Task<MessageContextDto> Context(Guid conversationId, Guid messageId, [FromQuery] int before = 20, [FromQuery] int after = 20, CancellationToken ct = default) => app.GetMessageContextAsync(conversationId, messageId, before, after, ct);

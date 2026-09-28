@@ -74,7 +74,10 @@ Item unit: `{ id, departmentId, code, name, sortOrder, isActive }`.
 GET /api/organization/user-departments?userIds={guid}&userIds=
 GET /api/organization/user-departments?departmentId={guid}
 GET /api/organization/user-departments/catalog
+GET /api/organization/user-departments/mine
 ```
+
+`mine` (mobile): phòng ban / chức vụ của user hiện tại, chỉ cần đăng nhập → `[{ userId, departmentId, departmentName, positionId, positionName }]`, phòng chính đứng đầu. Hồ sơ gộp sẵn: `GET /api/identity/my-profile-summary` ([01-account.md](01-account.md)).
 
 Web social dùng query `userIds` để lấy `positionName`. Send-document có thể dùng catalog sendable — chỉ khi page gọi `GetSendableDepartmentsAsync`.
 

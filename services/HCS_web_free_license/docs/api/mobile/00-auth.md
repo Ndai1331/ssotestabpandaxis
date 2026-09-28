@@ -63,7 +63,7 @@ Dùng `token_endpoint`, `issuer`; logout/revoke nếu có `end_session_endpoint`
 
 ## 3. Login trong app (password grant)
 
-Form username/password **trong app**. POST thẳng Auth — giống ABP Commercial / MAUI.
+Form username/password **trong app**. POST thẳng Auth — giống ABP Commercial / MAUI. Không mở system browser.
 
 ```http
 POST {AUTH}/connect/token
@@ -88,10 +88,12 @@ Response:
 }
 ```
 
+Access token là JWS **3 đoạn** (`header.payload.signature`), header `typ: at+jwt`, `alg: RS256`, `aud` gồm `HCS`, `iss` = `{AUTH}/`.
+
 Refresh:
 
 ```http
-POST {token_endpoint}
+POST {AUTH}/connect/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=refresh_token&client_id=hcs-mobile&refresh_token={refresh_token}
@@ -101,10 +103,60 @@ Nếu refresh thất bại: xóa credential, đưa user về login. Không refre
 
 Đăng xuất: xóa token local; gọi `end_session_endpoint` / revoke nếu discovery có.
 
+### 3.1 Curl — login rồi gọi API
+
+Thay `{AUTH}` / `{API}` / user theo bệnh viện. Ví dụ BV199: `AUTH=https://auth.benhvien199.vn`, `API=https://api-hcs.benhvien199.vn` (host `auth-hcs.*` không resolve).
+
+```bash
+AUTH=https://auth.benhvien199.vn
+API=https://api-hcs.benhvien199.vn
+
+TOKEN=$(curl -sS -X POST "$AUTH/connect/token" \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=password' \
+  -d 'client_id=hcs-mobile' \
+  -d 'username=admin' \
+  -d 'password={password}' \
+  -d 'scope=openid profile email roles HCS offline_access' \
+  | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+
+curl -sS -D - -o /tmp/hcs-userinfo.json \
+  -H "Authorization: Bearer $TOKEN" \
+  "$AUTH/connect/userinfo"
+
+for path in \
+  '/api/account/my-profile' \
+  '/api/abp/application-configuration' \
+  '/api/language-management/languages/enabled' \
+  '/api/projects?skip=0&take=5' \
+  '/api/documents?skip=0&take=5' \
+  '/api/calendar' \
+  '/api/notifications?skip=0&take=5' \
+  '/api/chat/contacts/page?skip=0&take=5' \
+  '/api/hcs/system-branding/public'
+do
+  echo "======== $path ========"
+  curl -sS -o /tmp/hcs-api.body -w 'HTTP %{http_code}\n' \
+    -H "Authorization: Bearer $TOKEN" \
+    -H 'Accept: application/json' \
+    "$API$path"
+done
+```
+
+Kỳ vọng: token + userinfo + mọi `/api/*` ở trên **HTTP 200**. `application-configuration` có `currentUser.isAuthenticated: true`.
+
+Xem body một API:
+
+```bash
+curl -sS -H "Authorization: Bearer $TOKEN" "$API/api/account/my-profile" | python3 -m json.tool
+```
+
 ## 4. Gọi API
 
+**Một** header `Authorization: Bearer {access_token}`. Không gửi cookie BFF, không gửi hai lần Bearer.
+
 ```http
-GET {gateway}/api/account/my-profile
+GET {API}/api/account/my-profile
 Authorization: Bearer {access_token}
 Accept: application/json
 ```
@@ -116,7 +168,7 @@ JSON body thêm `Content-Type: application/json`. Upload dùng `multipart/form-d
 SignalR:
 
 ```text
-{gateway}/hubs/chat?access_token={access_token}
+{API}/hubs/chat?access_token={access_token}
 ```
 
 ## 5. Bootstrap ABP
@@ -140,7 +192,7 @@ Hai kiểu query:
 | Nhóm | Query | Ví dụ |
 |---|---|---|
 | Identity / OU / employee-directory | `skipCount`, `maxResultCount` | max 100 |
-| Document / Work / Chat / Social | `skip`, `take` | max 100 (social feed max 50) |
+| Document / Work / Chat / Social | `skip`, `take` | max 100 (social feed và chat contacts max 50) |
 
 Response paged chuẩn:
 
@@ -162,7 +214,7 @@ Enum trong JSON body Web thường serialize **số** (`status: 0`, `visibility:
 | `201` | Tạo thành công |
 | `204` | Thành công, không body |
 | `400` | Validation; đọc `error.validationErrors` |
-| `401` | Refresh một lần; nếu vẫn lỗi thì login. Gateway cũ reject `typ: at+jwt` — xem mục 7.1 |
+| `401` | Refresh một lần; nếu vẫn lỗi thì login. Phân biệt nguyên nhân ở mục 7.1 |
 | `403` | Thiếu permission — **không** đẩy về login |
 | `404` | Resource không có / empty |
 | `409` | Conflict (ví dụ `Work:EmployeeRatingAlreadySubmitted`) |
@@ -170,27 +222,31 @@ Enum trong JSON body Web thường serialize **số** (`status: 0`, `visibility:
 | `429` | Backoff |
 | `5xx` | Retry GET có giới hạn; POST chỉ retry khi có `idempotencyKey` |
 
-### 7.1 Gateway 401 `invalid_token` (ID2004) với token PKCE hợp lệ
+### 7.1 401 `invalid_token` — đọc log trước khi đổi client
 
-Triệu chứng (issuer / API host lấy từ env `HCS_AUTH_PUBLIC_HOST` / `HCS_API_PUBLIC_HOST` của từng bệnh viện):
+Token password/PKCE hợp lệ (`userinfo` 200) nhưng `/api/*` 401. Web cookie `.HCS.Bff` vẫn có thể 200 — Web không đi JwtBearer.
 
-- PKCE client `hcs-mobile` lấy được `access_token` (`typ: at+jwt`, `aud: ["HCS","HCS.BusManagementService"]`).
-- `GET /connect/userinfo` trên Auth Server → `200`.
-- Cùng Bearer gọi Gateway `/api/*` → `401`, `www-authenticate: Bearer error="invalid_token"`.
-- Web cookie `.HCS.Bff` (client `HCS_App`) vẫn `200` — Web không đi JwtBearer.
+Trên server:
 
-Nguyên nhân: Gateway `HCS.Mobile.Bearer` dùng Microsoft JwtBearer, mặc định chỉ chấp `typ: JWT`. OpenIddict phát hành access token `typ: at+jwt`. Userinfo validate local nên không dính rule này.
-
-Fix backend (cần **rebuild + redeploy Gateway**): `ValidTypes = at+jwt + JWT`, `ValidIssuers` lấy từ `Authentication__Authority` (có/không trailing slash), `Authentication__BearerMetadataAddress` trỏ discovery nội bộ (`http://auth-server:8080/.well-known/openid-configuration`). Collaboration JwtBearer cũng nhận `at+jwt` cho chat/social.
-
-Issuer công khai không hardcode bệnh viện — compose set `Authentication__Authority=https://${HCS_AUTH_PUBLIC_HOST}`.
-
-Sau deploy, kiểm tra lại (`{HCS_API_PUBLIC_HOST}` theo env bệnh viện):
-
-```http
-GET https://{HCS_API_PUBLIC_HOST}/api/account/my-profile
-Authorization: Bearer {access_token}
+```bash
+docker logs --since 10m hcs-apps-web-gateway-1 2>&1 | grep -E 'my-profile|IDX|Mobile bearer|401'
+docker logs --since 10m hcs-apps-platform-1 2>&1 | grep -E 'IDX|ID2004|JwtBearer|Bearer token rejected|401'
 ```
+
+| Log | Chỗ chết | Việc cần làm |
+|---|---|---|
+| Gateway **không** có `Proxying .../my-profile`; có `IDX14100` (no dots) | Token rác / không phải JWT | Gửi đúng `access_token`, một header `Bearer` |
+| Gateway **không** proxy; `typ` / issuer | Gateway JwtBearer | Image Gateway phải nhận `at+jwt` + `Authentication__Authority=https://${HCS_AUTH_PUBLIC_HOST}` |
+| Gateway `Proxying .../my-profile` rồi `response 401`; platform `IDX14309` (JWE IV) | YARP **nhân đôi** `Authorization` — JWS 3 đoạn bị nối thành 5 đoạn | **Rebuild + pull image `web-gateway`**. Transform xóa header cũ rồi gắn một JWT |
+| Gateway proxy 401; platform `ID2004` / OpenIddict | Service validate local, không dùng JWKS Auth | Resource API dùng JwtBearer (`HcsServiceJwtBearer`), không `UseLocalServer` |
+| Gateway proxy 401; platform `IDX10205` | Sai issuer | `AuthServer__Authority=https://${HCS_AUTH_PUBLIC_HOST}` |
+| Gateway proxy 401; platform `IDX10503` / signing key | Không lấy được JWKS | `AuthServer__MetadataAddress=http://auth-server:8080/.well-known/openid-configuration` + `extra_hosts` |
+| 401 **không** có `WWW-Authenticate` | Chưa gửi Bearer (Gateway bắt cookie) | Thêm `Authorization: Bearer {access_token}` |
+| 401 có `WWW-Authenticate: Bearer error="invalid_token"` | JwtBearer đã đọc header rồi reject | Xem platform log, không đoán từ client |
+
+Issuer không hardcode bệnh viện. Compose: `Authentication__Authority` / `AuthServer__Authority=https://${HCS_AUTH_PUBLIC_HOST}`.
+
+Sau khi pull `web-gateway` (và platform nếu đổi JwtBearer), chạy lại curl mục 3.1. `GET {API}/api/account/my-profile` phải 200.
 
 Lỗi ABP:
 

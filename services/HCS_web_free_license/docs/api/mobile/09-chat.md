@@ -22,7 +22,7 @@ Toast global (`NotificationToast`) cũng gọi unread-count + mark read trên m�
 | Mở hội thoại | `GET` | `/api/chat/conversations/{id}` |
 | Quyền action | `GET` | `/api/chat/conversations/{id}/permissions` |
 | Đánh dấu đọc | `POST` | `/api/chat/conversations/{id}/read` |
-| Messages | `GET` | `/api/chat/conversations/{id}/messages?skip&take` |
+| Messages | `GET` | `/api/chat/conversations/{id}/messages?take&beforeMessageId` (hoặc `skip`) |
 | Pinned | `GET` | cùng path `pinnedOnly=true` |
 | Context (scroll / nhảy tin) | `GET` | `/api/chat/conversations/{id}/messages/{messageId}/context?before&after` |
 | Upload | `POST` | `/api/chat/conversations/{id}/attachments` max 25 MB |
@@ -36,14 +36,34 @@ Toast global (`NotificationToast`) cũng gọi unread-count + mark read trên m�
 | Download file | `GET` | `/api/chat/attachments/{id}` |
 | Unread chat (toast) | `GET` | `/api/chat/unread-count` |
 
-`GET /api/chat/contacts/page` có trên client, **ChatWorkspace không gọi**.
+Route mới cho mobile (chi tiết hành vi: [12-api-request-status.md](12-api-request-status.md) mục 1):
+
+| Hành động | Method | Path |
+|---|---|---|
+| Sửa tên + mô tả nhóm | `PUT` | `/api/chat/conversations/{id}` `{ name, description }` |
+| Avatar nhóm | `POST` `DELETE` `GET` | `/api/chat/conversations/{id}/avatar` (POST multipart `file` ≤ 2 MB, jpeg/png/webp) |
+| Xoá hội thoại | `DELETE` | `/api/chat/conversations/{id}` (1-1: ẩn phía mình; nhóm: admin xoá cho mọi người; Project/Task: không xoá được) |
+| Xoá lịch sử phía mình | `POST` | `/api/chat/conversations/{id}/clear-history` |
+| Tắt thông báo | `PUT` | `/api/chat/conversations/{id}/mute` `{ muted }` |
+| Media / file / link | `GET` | `/api/chat/conversations/{id}/attachments?kind=media\|file\|link&skip&take` (take ≤ 100) |
+| Tìm tin toàn cục | `GET` | `/api/chat/messages/search?text&conversationId&skip&take` (text ≥ 2, take ≤ 50) |
+| Thu hồi tin | `POST` | `/api/chat/messages/{id}/recall` (chỉ người gửi, không giới hạn thời gian) |
+| Reaction | `PUT` `DELETE` | `/api/chat/messages/{id}/reactions` (PUT `{ emoji }` ≤ 32 ký tự) |
+| Lưu tin | `PUT` | `/api/chat/messages/{id}/save` `{ saved }` |
+| Tin đã lưu | `GET` | `/api/chat/messages/saved?skip&take` (take ≤ 50) |
+
+`GET /api/chat/contacts/page?search&skip&take` (take max 50, trả `{ totalCount, items }`) có trên client, **ChatWorkspace không gọi**. Mobile dùng route này cho picker cần nhiều hơn 50 người.
+
+Body cần lưu ý: thêm thành viên `{ "userIds": ["guid"] }` (max 100); pin tin/hội thoại `{ "pinned": true }`; đổi role `{ "role": 0|1 }`.
+
+Messages trả **mới nhất trước** (`take` ≤ 100). Tải tin cũ hơn: `GET .../messages?beforeMessageId={oldestId}&take=50` (server bỏ qua `skip`, `totalCount` = số tin cũ hơn; dừng khi trả ít hơn `take`). `createdAt` / `joinedAt` đã đúng (có backfill dữ liệu cũ).
 
 ## REST chat
 
 `ConversationType`: `User=0`, `Group=1`, `Project=2`, `Task=3`.  
 `ConversationMemberRole`: `Member=0`, `Admin=1`.
 
-Conversation: `id`, `type`, `name`, `description`, `projectId`, `taskId`, `lastMessage`, `lastMessageAt`, `unreadCount`, `isPinned`, `members: [{ userId, role, joinedAt }]`.
+Conversation: `id`, `type`, `name`, `description`, `projectId`, `taskId`, `lastMessage`, `lastMessageAt`, `unreadCount`, `isPinned`, `members: [{ userId, role, joinedAt }]`, `isMuted`, `avatarUrl` (`/api/chat/conversations/{id}/avatar?v=...` hoặc `null`; tải kèm header `Authorization`).
 
 Permissions: `{ canSend, canManageMembers, canRename, canLeave, canModerateMessages }`.
 
@@ -77,7 +97,10 @@ Text max 4000.
 }
 ```
 
-Message: `id`, `conversationId`, `senderUserId`, `text`, `createdAt`, `replyToMessageId`, `forwardedFromMessageId`, `isPinned`, `isDeleted`, `attachments[]`, `replyTo`, `forwardedFrom`.
+Message: `id`, `conversationId`, `senderUserId`, `text`, `createdAt`, `replyToMessageId`, `forwardedFromMessageId`, `isPinned`, `isDeleted`, `attachments[]`, `replyTo`, `forwardedFrom`, `isRecalled`, `isConversationMuted`, `reactions: [{ emoji, count, reactedByMe, userIds }]`, `isSaved`.
+
+- Tin thu hồi: `isRecalled: true`, `text: ""`, `attachments: []`, `isDeleted` vẫn `false` — hiển thị theo `isRecalled`.
+- `isConversationMuted` chỉ `true` trên event `ReceiveMessage` gửi tới người đã tắt thông báo hội thoại → **không** hiện toast/âm thanh. Push vẫn gửi, unread vẫn tăng.
 
 Upload trả `{ id, fileName, contentType, size, kind }` rồi đưa `id` vào `attachmentIds`. `AttachmentKind`: `File=0`, `Image=1`, `Video=2`, `Audio=3`.
 
@@ -103,6 +126,11 @@ Server events:
 |---|---|
 | `ReceiveMessage` | `ChatMessageDto` |
 | `MessageDeleted` | `{ conversationId, messageId }` |
+| `MessageRecalled` | `{ conversationId, messageId }` |
+| `MessageReactionsChanged` | `{ conversationId, messageId, reactions }` |
+| `ConversationUpdated` | `{ conversationId }` — load lại `GET /api/chat/conversations/{id}` |
+| `ConversationDeleted` | `{ conversationId }` — bỏ khỏi danh sách, đóng màn chat |
+| `ConversationMuteChanged` | `{ conversationId, muted }` — chỉ gửi tới thiết bị của chính user |
 | `NotificationReceived` | `NotificationDto` |
 | `PresenceChanged` | `{ userId, isOnline }` |
 
@@ -125,6 +153,24 @@ REST là nguồn đồng bộ: sau reconnect load lại conversations + messages
 
 `link` là route Web — map deep link, allow-list, không mở URL lạ.
 
-`POST /api/notifications/devices` (push) **không** được page Web gọi. Chốt contract push trước khi native dùng.
+Push device (Web không gọi, **mobile bắt buộc dùng**; endpoint cũ `/api/app/user-push-device-token/register` đã bỏ):
+
+```http
+POST /api/notifications/devices
+{ "token": "fcm-or-apns-token", "platform": "android" }
+```
+
+`token` bắt buộc ≤ 2048, `platform` ≤ 32. Trả `PushDeviceDto { id, platform, isActive }`. Idempotent theo token (gọi lại sẽ gán token cho user hiện tại).
+
+Logout — gọi **trước** khi xoá access token:
+
+```http
+POST /api/notifications/devices/unregister
+{ "token": "fcm-or-apns-token" }
+```
+
+Chỉ huỷ token của user hiện tại; token lạ / đã huỷ vẫn thành công (body rỗng).
+
+List thông báo và list hội thoại trả **mảng** (không có `totalCount`); tổng dùng `/api/notifications/count`, `/api/chat/unread-count`.
 
 Admin `POST /api/notifications` broadcast không thuộc scope user-facing này.

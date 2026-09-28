@@ -168,6 +168,77 @@ public sealed class WorkAssetService(IBlobContainer<WorkAssetBlobContainer> blob
         db.EventAttachments.Remove(item); await db.SaveChangesAsync(ct);
     }
 
+    public async Task<ProjectTaskFileDto> SaveTaskFileAsync(Guid taskId, Stream stream, string fileName,
+        string contentType, long size, CancellationToken ct)
+    {
+        if (size is <= 0 or > MaxFileSize) throw new BusinessException("Work:InvalidAssetSize");
+        await access.DemandTaskMemberAsync(taskId, ct);
+        var task = await db.ProjectTasks.AsNoTracking().SingleOrDefaultAsync(x => x.Id == taskId, ct)
+            ?? throw new EntityNotFoundException(typeof(ProjectTask), taskId);
+        var id = Guid.NewGuid();
+        var blobName = WorkAssetBlobNamePolicy.Task(taskId, id);
+        var safeName = Path.GetFileName(fileName);
+        await blobs.SaveAsync(blobName, stream, overrideExisting: false, cancellationToken: ct);
+        var item = new ProjectTaskAttachment(id, taskId, access.UserId, blobName,
+            string.IsNullOrWhiteSpace(safeName) ? "file" : safeName, contentType, size, DateTime.UtcNow);
+        db.ProjectTaskAttachments.Add(item);
+        try { await db.SaveChangesAsync(ct); }
+        catch { await blobs.DeleteAsync(blobName, cancellationToken: ct); throw; }
+        return MapTaskFile(item, task.CreatorId, await ProjectOwnerAsync(task.ProjectId, ct));
+    }
+
+    public async Task<IReadOnlyList<ProjectTaskFileDto>> GetTaskFilesAsync(ProjectTask task, Guid projectOwnerUserId,
+        CancellationToken ct)
+    {
+        var items = await db.ProjectTaskAttachments.AsNoTracking()
+            .Where(x => x.ProjectTaskId == task.Id)
+            .OrderBy(x => x.CreationTime)
+            .ToListAsync(ct);
+        return items.Select(x => MapTaskFile(x, task.CreatorId, projectOwnerUserId)).ToList();
+    }
+
+    public async Task<(Stream Stream, ProjectTaskFileDto File)> GetTaskFileAsync(Guid taskId, Guid fileId, CancellationToken ct)
+    {
+        await access.DemandTaskMemberAsync(taskId, ct);
+        var item = await db.ProjectTaskAttachments.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == fileId && x.ProjectTaskId == taskId, ct)
+            ?? throw new EntityNotFoundException(typeof(ProjectTaskAttachment), fileId);
+        var task = await db.ProjectTasks.AsNoTracking().SingleAsync(x => x.Id == taskId, ct);
+        var stream = await blobs.GetAsync(item.BlobName, cancellationToken: ct);
+        return (stream, MapTaskFile(item, task.CreatorId, await ProjectOwnerAsync(task.ProjectId, ct)));
+    }
+
+    public async Task DeleteTaskFileAsync(Guid taskId, Guid fileId, CancellationToken ct)
+    {
+        await access.DemandTaskMemberAsync(taskId, ct);
+        var item = await db.ProjectTaskAttachments.SingleOrDefaultAsync(x => x.Id == fileId && x.ProjectTaskId == taskId, ct)
+            ?? throw new EntityNotFoundException(typeof(ProjectTaskAttachment), fileId);
+        var task = await db.ProjectTasks.AsNoTracking().SingleAsync(x => x.Id == taskId, ct);
+        if (!WorkAccessQueries.CanDeleteTaskFile(item.UploadedByUserId, access.UserId, access.IsAdministrator,
+                task.CreatorId, await ProjectOwnerAsync(task.ProjectId, ct)))
+            throw new BusinessException("Work:CannotDeleteOthersFile");
+        db.ProjectTaskAttachments.Remove(item);
+        await db.SaveChangesAsync(ct);
+        await DeleteBlobsQuietlyAsync([item.BlobName], ct);
+    }
+
+    public async Task DeleteBlobsQuietlyAsync(IEnumerable<string> blobNames, CancellationToken ct)
+    {
+        foreach (var blobName in blobNames)
+        {
+            try { await blobs.DeleteAsync(blobName, cancellationToken: ct); }
+            catch (Exception ex) { logger.LogWarning(ex, "Work asset blob cleanup failed. BlobName={BlobName}", blobName); }
+        }
+    }
+
+    private Task<Guid> ProjectOwnerAsync(Guid projectId, CancellationToken ct) =>
+        db.Projects.AsNoTracking().Where(x => x.Id == projectId).Select(x => x.OwnerUserId).SingleAsync(ct);
+
+    private ProjectTaskFileDto MapTaskFile(ProjectTaskAttachment item, Guid? taskCreatorId, Guid projectOwnerUserId) =>
+        new(item.Id, item.FileName, item.ContentType, item.Size, item.UploadedByUserId, item.CreationTime,
+            WorkAccessQueries.CanDeleteTaskFile(item.UploadedByUserId, access.UserId, access.IsAdministrator,
+                taskCreatorId, projectOwnerUserId));
+
     private static SurveyFileReferenceDto Map(SurveyFileReference item) =>
         new(item.Id, item.SessionId, item.FileName, item.ContentType, item.Size);
     private static EventAttachmentDto Map(EventAttachment item) => new(item.Id, item.FileName, item.ContentType, item.Size);

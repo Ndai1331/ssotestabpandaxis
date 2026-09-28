@@ -37,6 +37,13 @@ public static class WorkAccessQueries
         || addedByUserId == userId
         || (addedByUserId is null && CanDeleteTask(taskCreatorId, userId, isAdministrator, projectOwnerUserId));
 
+    public static bool CanDeleteTaskFile(Guid uploadedByUserId, Guid userId, bool isAdministrator,
+        Guid? taskCreatorId, Guid projectOwnerUserId) =>
+        isAdministrator
+        || uploadedByUserId == userId
+        || taskCreatorId == userId
+        || projectOwnerUserId == userId;
+
     public static bool CanManageOwned(Guid ownerUserId, Guid userId, bool isAdministrator) =>
         isAdministrator || ownerUserId == userId;
 }

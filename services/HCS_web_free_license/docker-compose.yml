@@ -180,6 +180,7 @@ services:
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "true"
       RabbitMQ__EventBus__ClientName: HCS.PlatformService
+      Services__Organization__BaseUrl: http://organization:8080/
       RabbitMQ__EventBus__ExchangeName: hcs
   organization:
     <<: *hcs-image

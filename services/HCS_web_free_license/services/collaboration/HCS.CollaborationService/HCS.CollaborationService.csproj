@@ -7,6 +7,9 @@
     <RootNamespace>HCS.CollaborationService</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="HCS.CollaborationService.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../HCS.CollaborationService.Contracts/HCS.CollaborationService.Contracts.csproj" />
     <ProjectReference Include="../../../building-blocks/HCS.IntegrationEvents/HCS.IntegrationEvents.csproj" />
     <ProjectReference Include="../../../building-blocks/HCS.Logging/HCS.Logging.csproj" />

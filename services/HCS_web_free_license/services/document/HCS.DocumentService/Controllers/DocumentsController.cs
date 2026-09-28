@@ -15,9 +15,11 @@ public sealed class DocumentsController(
         [FromQuery] bool mine = false, [FromQuery] int skip = 0, [FromQuery] int take = 50,
         [FromQuery] int? sourceType = null, [FromQuery] Guid? documentTypeId = null, [FromQuery] Guid? sectorId = null,
         [FromQuery] Guid? urgencyId = null, [FromQuery] Guid? confidentialityId = null,
-        [FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null, CancellationToken cancellationToken = default) =>
+        [FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null,
+        [FromQuery] Guid? organizationUnitId = null, [FromQuery] Guid? workflowDefinitionId = null,
+        [FromQuery] Guid? processingMethodId = null, CancellationToken cancellationToken = default) =>
         documents.GetListAsync(filter, status, mine, skip, take, sourceType, documentTypeId, sectorId, urgencyId,
-            confidentialityId, from, to, cancellationToken);
+            confidentialityId, from, to, cancellationToken, organizationUnitId, workflowDefinitionId, processingMethodId);
     [HttpGet("next-codes")]
     public Task<DocumentNextCodesDto> GetNextCodes([FromQuery] int? sourceType, CancellationToken cancellationToken = default) =>
         documents.GetNextCodesAsync(sourceType, cancellationToken);

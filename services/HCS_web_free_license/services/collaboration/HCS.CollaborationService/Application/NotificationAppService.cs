@@ -124,12 +124,23 @@ public class NotificationAppService(CollaborationDbContext db, ICurrentUser curr
                 .SetProperty(x => x.ReadAt, now), ct);
     }
 
-    public async Task RegisterDeviceAsync(RegisterPushDeviceInput input, CancellationToken ct = default)
+    public async Task<PushDeviceDto> RegisterDeviceAsync(RegisterPushDeviceInput input, CancellationToken ct = default)
     {
         var me = UserId;
         var existing = await db.PushDeviceTokens.SingleOrDefaultAsync(x => x.Token == input.Token, ct);
-        if (existing is null) db.PushDeviceTokens.Add(new PushDeviceToken(guidGenerator.Create(), me, input.Token, input.Platform));
+        var device = existing ?? new PushDeviceToken(guidGenerator.Create(), me, input.Token, input.Platform);
+        if (existing is null) db.PushDeviceTokens.Add(device);
         else existing.AssignTo(me, input.Platform);
+        await db.SaveChangesAsync(ct);
+        return new PushDeviceDto(device.Id, device.Platform, device.IsActive);
+    }
+
+    public async Task UnregisterDeviceAsync(UnregisterPushDeviceInput input, CancellationToken ct = default)
+    {
+        var me = UserId;
+        var device = await db.PushDeviceTokens.SingleOrDefaultAsync(x => x.Token == input.Token && x.UserId == me, ct);
+        if (device is null || !device.IsActive) return;
+        device.Deactivate();
         await db.SaveChangesAsync(ct);
     }
 

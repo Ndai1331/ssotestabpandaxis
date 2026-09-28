@@ -22,7 +22,8 @@ public sealed class DocumentAppService(
     public async Task<PagedDocumentsDto> GetListAsync(string? filter = null, DocumentStatus? status = null,
         bool mine = false, int skip = 0, int take = 50, int? sourceType = null,
         Guid? documentTypeId = null, Guid? sectorId = null, Guid? urgencyId = null, Guid? confidentialityId = null,
-        DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+        DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default,
+        Guid? organizationUnitId = null, Guid? workflowDefinitionId = null, Guid? processingMethodId = null)
     {
         var principal = Principal;
         var userId = DocumentAccess.RequireUser(principal);
@@ -51,6 +52,15 @@ public sealed class DocumentAppService(
         if (confidentialityId.HasValue) query = query.Where(x => x.ConfidentialityId == confidentialityId);
         if (from.HasValue) query = query.Where(x => x.CreationTime >= from.Value.ToUniversalTime());
         if (to.HasValue) query = query.Where(x => x.CreationTime < to.Value.ToUniversalTime().AddDays(1));
+        if (organizationUnitId.HasValue) query = query.Where(x => x.OrganizationUnitId == organizationUnitId);
+        if (processingMethodId.HasValue) query = query.Where(x => x.ProcessingMethodId == processingMethodId);
+        if (workflowDefinitionId is { } definitionId)
+        {
+            // Archive documents start workflows through child submissions, so match either the document or its children.
+            query = query.Where(x => db.WorkflowInstances.Any(instance => instance.DefinitionId == definitionId
+                && (instance.DocumentId == x.Id
+                    || db.Documents.Any(child => child.Id == instance.DocumentId && child.ParentDocumentId == x.Id))));
+        }
         var totalCount = await query.LongCountAsync(cancellationToken);
         var items = await query.OrderByDescending(x => x.CreationTime).Skip(skip).Take(take)
             .Select(x => new
@@ -61,6 +71,9 @@ public sealed class DocumentAppService(
                          !x.History.Any(h => h.Action == DocumentSendState.RevokedAction &&
                              h.OccurredAt >= x.History.Where(s => s.Action == DocumentSendState.SentAction)
                                  .Max(s => s.OccurredAt)),
+                SentAt = x.History.Where(h => h.Action == DocumentSendState.SentAction)
+                    .Max(h => (DateTime?)h.OccurredAt),
+                IsViewed = x.History.Any(h => h.Action == DocumentAccess.ViewedAction && h.ActorUserId == userId),
                 WorkflowChildStatus = db.Documents
                     .Where(c => c.ParentDocumentId == x.Id && c.SourceType == DocumentSourceType.Workflow)
                     .OrderByDescending(c => c.CreationTime)
@@ -70,7 +83,11 @@ public sealed class DocumentAppService(
             .ToListAsync(cancellationToken);
         return new PagedDocumentsDto(totalCount, items.Select(x => MapList(
             x.Document, x.FileCount, x.IsSent,
-            DocumentStatusDisplay.Resolve(x.Document.Status, x.IsSent, x.WorkflowChildStatus))).ToList());
+            DocumentStatusDisplay.Resolve(x.Document.Status, x.IsSent, x.WorkflowChildStatus)) with
+        {
+            IsViewed = x.IsViewed,
+            SentAt = x.SentAt
+        }).ToList());
     }
 
     public async Task<DocumentNextCodesDto> GetNextCodesAsync(int? sourceType = null, CancellationToken cancellationToken = default)
@@ -110,6 +127,7 @@ public sealed class DocumentAppService(
             var document = new DocumentAggregate(Guid.NewGuid(), number, input.Title, input.Description, userId, now, sourceType);
             document.SetDocumentCode(documentCode);
             document.SetOrganizationUnit(input.OrganizationUnitId);
+            document.SetProcessingMethod(input.ProcessingMethodId);
             if (input.DocumentTypeId is not null || input.SectorId is not null || input.UrgencyId is not null || input.ConfidentialityId is not null)
                 document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, now);
             db.Documents.Add(document);
@@ -117,7 +135,7 @@ public sealed class DocumentAppService(
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
-                return Map(document);
+                return Map(document, userId);
             }
             catch (DbUpdateException exception) when (IsUniqueViolation(exception) && attempt < 2)
             {
@@ -142,7 +160,7 @@ public sealed class DocumentAppService(
         var document = await Query().SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (document is not null) DocumentAccess.EnsureCanView(document, userId, principal);
         if (document is null) return null;
-        var dto = Map(document);
+        var dto = Map(document, userId);
         if (document.SourceType == DocumentSourceType.Workflow || dto.Status != DocumentStatus.Draft)
             return dto;
         var child = await db.Documents.AsNoTracking()
@@ -167,11 +185,13 @@ public sealed class DocumentAppService(
         document.Update(input.Title, input.Description, userId, DateTime.UtcNow);
         document.SetDocumentCode(input.DocumentCode);
         document.SetOrganizationUnit(input.OrganizationUnitId);
+        // Web clients do not send this field yet; null keeps the value and Guid.Empty clears it.
+        if (input.ProcessingMethodId.HasValue) document.SetProcessingMethod(input.ProcessingMethodId);
         document.Classify(input.DocumentTypeId, input.SectorId, input.UrgencyId, input.ConfidentialityId, userId, DateTime.UtcNow);
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentUpdated", id, 200, null, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
-        return Map(document);
+        return Map(document, userId);
     }
 
     public async Task<DocumentDto> AssignAsync(Guid id, AssignDocumentRequest input, CancellationToken cancellationToken = default)
@@ -203,7 +223,7 @@ public sealed class DocumentAppService(
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentAssigned", id, 200, input.Responsibility, now);
         await db.SaveChangesAsync(cancellationToken);
-        return Map(document);
+        return Map(document, userId);
     }
 
     public async Task<DocumentDto> SubmitAsync(Guid id, CancellationToken cancellationToken = default)
@@ -220,7 +240,7 @@ public sealed class DocumentAppService(
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentSubmitted", id, 200, null, DateTime.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
-        return Map(document);
+        return Map(document, userId);
     }
 
     public async Task<DocumentDto> SendAsync(Guid id, SendDocumentRequest input, CancellationToken cancellationToken = default)
@@ -242,7 +262,7 @@ public sealed class DocumentAppService(
             EnqueueSentToInbox(document, userId, now, receiverUserId);
         AddAudit("DocumentSent", id, 200, input.ReceiverUserId?.ToString() ?? input.OrganizationUnitId?.ToString(), now);
         await db.SaveChangesAsync(cancellationToken);
-        return Map(document);
+        return Map(document, userId);
     }
 
     public async Task<DocumentDto> RevokeAsync(Guid id, CancellationToken cancellationToken = default)
@@ -262,7 +282,7 @@ public sealed class DocumentAppService(
             EnqueueInboxCleared(id, now);
         AddAudit("DocumentRevoked", id, 200, null, now);
         await db.SaveChangesAsync(cancellationToken);
-        return Map(document);
+        return Map(document, userId);
     }
 
     public async Task<DocumentDto> RecordActivityAsync(Guid id, DocumentActivityRequest input, CancellationToken cancellationToken = default)
@@ -286,7 +306,7 @@ public sealed class DocumentAppService(
         TrackNewChildren(db, document, existingAssignmentIds, existingHistoryIds);
         AddAudit("DocumentActivity", id, 200, input.Action, now);
         await db.SaveChangesAsync(cancellationToken);
-        return Map(document);
+        return Map(document, userId);
     }
 
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -445,10 +465,20 @@ public sealed class DocumentAppService(
         x.Assignments.Select(a => new DocumentAssignmentDto(a.Id, a.AssigneeUserId, a.Responsibility, a.AssignedAt, a.IsCurrent, a.StepCode)).ToList(),
         x.History.OrderBy(h => h.OccurredAt).Select(h => new DocumentHistoryDto(h.Id, h.Action, h.ActorUserId, h.Detail, h.OccurredAt)).ToList(),
         x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId,
-        x.Files.Count(f => !f.IsPendingDeletion), DocumentSendState.IsActivelySent(x.History), x.DocumentCode);
+        x.Files.Count(f => !f.IsPendingDeletion), DocumentSendState.IsActivelySent(x.History), x.DocumentCode,
+        x.ProcessingMethodId, false, LatestSentAt(x.History));
+
+    internal static DocumentDto Map(DocumentAggregate x, Guid viewerUserId) => Map(x) with
+    {
+        IsViewed = x.History.Any(h => h.Action == DocumentAccess.ViewedAction && h.ActorUserId == viewerUserId)
+    };
+
+    internal static DateTime? LatestSentAt(IEnumerable<DocumentHistory> history) =>
+        history.Where(h => h.Action == DocumentSendState.SentAction).Select(h => (DateTime?)h.OccurredAt).Max();
 
     private static DocumentDto MapList(DocumentAggregate x, int fileCount, bool isSent, DocumentStatus status) => new(x.Id, x.Number, x.Title, x.Description, status,
         x.DocumentTypeId, x.SectorId, x.UrgencyId, x.ConfidentialityId,
         Array.Empty<DocumentFileDto>(), Array.Empty<DocumentAssignmentDto>(), Array.Empty<DocumentHistoryDto>(),
-        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId, fileCount, isSent, x.DocumentCode);
+        x.CreationTime, x.SourceType, x.ParentDocumentId, x.FromUserId, x.OrganizationUnitId, fileCount, isSent, x.DocumentCode,
+        x.ProcessingMethodId);
 }

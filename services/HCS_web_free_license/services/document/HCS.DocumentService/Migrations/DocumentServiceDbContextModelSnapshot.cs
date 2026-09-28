@@ -25,9 +25,7 @@ namespace HCS.DocumentService.Migrations
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("HCS.DocumentService.Documents.DocumentAggregate", b =>
-            {
-                    b.Property<Guid?>("WorkflowFileId")
-                        .HasColumnType("uuid");
+                {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
@@ -63,6 +61,9 @@ namespace HCS.DocumentService.Migrations
                     b.Property<Guid?>("ParentDocumentId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ProcessingMethodId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("SectorId")
                         .HasColumnType("uuid");
 
@@ -86,9 +87,14 @@ namespace HCS.DocumentService.Migrations
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
+                    b.Property<Guid?>("WorkflowFileId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ParentDocumentId");
+
+                    b.HasIndex("ProcessingMethodId");
 
                     b.HasIndex("SourceType");
 
@@ -632,6 +638,9 @@ namespace HCS.DocumentService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AssigneeOverridesJson")
+                        .HasColumnType("jsonb");
+
                     b.Property<DateTime>("CreationTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -653,9 +662,6 @@ namespace HCS.DocumentService.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("ViewScopesJson")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("AssigneeOverridesJson")
                         .HasColumnType("jsonb");
 
                     b.HasKey("Id");

@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 namespace HCS.WorkManagementService.Controllers;
 
 [ApiController, Authorize(Policy = WorkPermissions.TasksRead), Route("api/project-tasks")]
-public sealed class ProjectTasksController(ProjectTaskAppService service) : ControllerBase
+public sealed class ProjectTasksController(ProjectTaskAppService service, WorkAssetService assets) : ControllerBase
 {
     [HttpGet]
-    public Task<PagedWorkDto<ProjectTaskDto>> GetList(Guid? projectId, string? filter, string? status, int skip = 0, int take = 20, CancellationToken ct = default) =>
-        service.GetListAsync(projectId, filter, status, skip, take, ct);
+    public Task<PagedWorkDto<ProjectTaskDto>> GetList([FromQuery] GetProjectTaskListInput input, CancellationToken ct = default) =>
+        service.GetListAsync(input, ct);
 
     [HttpGet("{id:guid}")]
     public Task<ProjectTaskDetailDto> Get(Guid id, CancellationToken ct) => service.GetAsync(id, ct);
@@ -50,6 +50,29 @@ public sealed class ProjectTasksController(ProjectTaskAppService service) : Cont
     public async Task<IActionResult> RemoveDocument(Guid id, Guid referenceId, CancellationToken ct)
     {
         await service.RemoveDocumentAsync(id, referenceId, ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/files"), Authorize(Policy = WorkPermissions.Tasks)]
+    [RequestSizeLimit(WorkAssetService.MaxFileSize + 1024 * 1024)]
+    public async Task<ProjectTaskFileDto> UploadFile(Guid id, IFormFile file, CancellationToken ct)
+    {
+        if (file is null || file.Length == 0) throw new BadHttpRequestException("File is required.");
+        await using var stream = file.OpenReadStream();
+        return await assets.SaveTaskFileAsync(id, stream, file.FileName, file.ContentType, file.Length, ct);
+    }
+
+    [HttpGet("{id:guid}/files/{fileId:guid}")]
+    public async Task<IActionResult> DownloadFile(Guid id, Guid fileId, CancellationToken ct)
+    {
+        var result = await assets.GetTaskFileAsync(id, fileId, ct);
+        return File(result.Stream, result.File.ContentType, result.File.FileName);
+    }
+
+    [HttpDelete("{id:guid}/files/{fileId:guid}"), Authorize(Policy = WorkPermissions.Tasks)]
+    public async Task<IActionResult> DeleteFile(Guid id, Guid fileId, CancellationToken ct)
+    {
+        await assets.DeleteTaskFileAsync(id, fileId, ct);
         return NoContent();
     }
 }

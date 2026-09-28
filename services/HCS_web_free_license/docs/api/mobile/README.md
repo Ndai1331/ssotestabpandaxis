@@ -2,7 +2,7 @@
 
 Tài liệu này mô tả **đúng các API mà trang Web đang gọi**, để native mobile làm parity. Nguồn sự thật: Blazor `*Client.cs` + call-site trong `Pages/*.razor`, không phải Swagger từng microservice.
 
-Cập nhật theo mã nguồn ngày 2026-09-21.
+Cập nhật theo mã nguồn ngày 2026-09-28 (bổ sung API riêng cho mobile: chat nâng cao, huỷ push token, hồ sơ gộp, lịch sử/thống kê ký, file task — xem [12-api-request-status.md](12-api-request-status.md)).
 
 ## Cách đọc
 
@@ -85,17 +85,18 @@ Không có: CRUD admin, danh mục quản trị, audit, service logs, branding, 
 | File | Nội dung |
 |---|---|
 | [00-auth.md](00-auth.md) | PKCE, header, bootstrap ABP, lỗi, phân trang |
-| [01-account.md](01-account.md) | Hồ sơ, mật khẩu, avatar |
+| [01-account.md](01-account.md) | Hồ sơ, hồ sơ gộp, mật khẩu, avatar |
 | [02-workspace.md](02-workspace.md) | Tổng quan: lịch, dự án, task, hàng đợi ký, thông báo |
 | [03-documents.md](03-documents.md) | Văn bản, file, gửi/thu hồi, ký số, chữ ký |
 | [04-workflows.md](04-workflows.md) | Loại / định nghĩa / mẫu / hồ sơ / quyết định |
-| [05-projects-tasks.md](05-projects-tasks.md) | Dự án, thành viên, công việc, tài liệu gắn task |
+| [05-projects-tasks.md](05-projects-tasks.md) | Dự án, thành viên, công việc, tài liệu và file gắn task |
 | [06-calendar.md](06-calendar.md) | Lịch công tác |
 | [07-events.md](07-events.md) | Sự kiện, điểm danh, QR, check-in |
 | [08-surveys.md](08-surveys.md) | Khảo sát quản trị + thu thập public |
-| [09-chat.md](09-chat.md) | Chat REST, SignalR, thông báo |
+| [09-chat.md](09-chat.md) | Chat REST, SignalR, thông báo, push device |
 | [10-social.md](10-social.md) | Feed, comment, reaction, media; rating trên profile |
 | [11-lookups.md](11-lookups.md) | OU, master-data GET, contacts, assignees |
+| [12-api-request-status.md](12-api-request-status.md) | Trạng thái đề xuất API mobile (chat, push, ký số, dự án) + **thay đổi bắt buộc** phía mobile |
 
 ## Lệch so với runbook cũ
 

@@ -42,6 +42,17 @@ public sealed class ApiContractTests
     }
 
     [Fact]
+    public void Mobile_signing_and_workflow_read_routes_are_exposed()
+    {
+        AssertHttpGet(typeof(SigningController), nameof(SigningController.GetHistory), "history");
+        AssertHttpGet(typeof(SigningController), nameof(SigningController.GetStats), "stats");
+        AssertHttpGet(typeof(SigningController), nameof(SigningController.GetSignature), "signatures/{id:guid}");
+        AssertHttpGet(typeof(WorkflowsController), nameof(WorkflowsController.GetInstancesPage), "instances/page");
+        Assert.Empty(typeof(SigningController).GetMethod(nameof(SigningController.GetStats))!
+            .GetCustomAttributes<AuthorizeAttribute>());
+    }
+
+    [Fact]
     public void Personal_signature_crud_routes_are_exposed()
     {
         AssertHttpPut(typeof(SigningController), nameof(SigningController.UpdateSignature), "signatures/{id:guid}");

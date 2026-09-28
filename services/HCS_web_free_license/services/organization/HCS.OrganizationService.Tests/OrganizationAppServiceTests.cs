@@ -121,6 +121,10 @@ public sealed class OrganizationAppServiceTests : OrganizationTestBase
         result.UserId.ShouldBe(userId);
         result.DepartmentId.ShouldBe(primary.Id);
         result.DepartmentName.ShouldBe("Primary department");
+
+        var all = await service.GetAllUserDepartmentsAsync(userId, ct);
+        all.Select(x => x.DepartmentId).ShouldBe([primary.Id, secondary.Id]);
+        (await service.GetAllUserDepartmentsAsync(Guid.NewGuid(), ct)).ShouldBeEmpty();
     }
 
     [Fact]

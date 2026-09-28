@@ -14,6 +14,8 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
     public DbSet<ConversationMember> ConversationMembers => Set<ConversationMember>();
     public DbSet<ChatMessage> Messages => Set<ChatMessage>();
     public DbSet<MessageAttachment> Attachments => Set<MessageAttachment>();
+    public DbSet<ChatMessageReaction> MessageReactions => Set<ChatMessageReaction>();
+    public DbSet<ChatSavedMessage> SavedMessages => Set<ChatSavedMessage>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<NotificationReceiver> NotificationReceivers => Set<NotificationReceiver>();
     public DbSet<PushDeviceToken> PushDeviceTokens => Set<PushDeviceToken>();
@@ -42,6 +44,8 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
             b.Property(x => x.Name).HasMaxLength(256);
             b.Property(x => x.Description).HasMaxLength(1024);
             b.Property(x => x.LastMessage).HasMaxLength(512);
+            b.Property(x => x.AvatarBlobName).HasMaxLength(512);
+            b.Property(x => x.AvatarContentType).HasMaxLength(128);
             b.HasIndex(x => x.ProjectId).IsUnique().HasFilter("\"Type\" = 2 AND \"ProjectId\" IS NOT NULL");
             b.HasIndex(x => x.TaskId).IsUnique().HasFilter("\"Type\" = 3 AND \"TaskId\" IS NOT NULL");
             b.HasIndex(x => new { x.DirectUserLowId, x.DirectUserHighId }).IsUnique()
@@ -70,6 +74,20 @@ public sealed class CollaborationDbContext(DbContextOptions<CollaborationDbConte
             b.HasIndex(x => new { x.ConversationId, x.IsPinned });
             b.HasMany(x => x.Attachments).WithOne().HasForeignKey(x => x.MessageId).OnDelete(DeleteBehavior.SetNull);
             b.HasOne<Conversation>().WithMany().HasForeignKey(x => x.ConversationId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<ChatMessageReaction>(b =>
+        {
+            b.ToTable("CollaborationChatMessageReactions"); b.ConfigureByConvention();
+            b.Property(x => x.Emoji).HasMaxLength(ChatMessageReaction.MaxEmojiLength).IsRequired();
+            b.HasIndex(x => new { x.MessageId, x.UserId }).IsUnique();
+            b.HasOne<ChatMessage>().WithMany().HasForeignKey(x => x.MessageId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<ChatSavedMessage>(b =>
+        {
+            b.ToTable("CollaborationChatSavedMessages"); b.ConfigureByConvention();
+            b.HasIndex(x => new { x.UserId, x.MessageId }).IsUnique();
+            b.HasIndex(x => new { x.UserId, x.CreationTime });
+            b.HasOne<ChatMessage>().WithMany().HasForeignKey(x => x.MessageId).OnDelete(DeleteBehavior.Cascade);
         });
         builder.Entity<MessageAttachment>(b =>
         {

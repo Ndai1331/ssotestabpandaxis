@@ -71,6 +71,9 @@ namespace HCS.CollaborationService.Data.Migrations
                     b.Property<Guid?>("PinnedByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("RecalledAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid?>("ReplyToMessageId")
                         .HasColumnType("uuid");
 
@@ -100,10 +103,81 @@ namespace HCS.CollaborationService.Data.Migrations
                     b.ToTable("CollaborationMessages", (string)null);
                 });
 
+            modelBuilder.Entity("HCS.CollaborationService.Domain.ChatMessageReaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<string>("Emoji")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("CollaborationChatMessageReactions", (string)null);
+                });
+
+            modelBuilder.Entity("HCS.CollaborationService.Domain.ChatSavedMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreationTime");
+
+                    b.Property<Guid?>("CreatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("CreatorId");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("UserId", "CreationTime");
+
+                    b.HasIndex("UserId", "MessageId")
+                        .IsUnique();
+
+                    b.ToTable("CollaborationChatSavedMessages", (string)null);
+                });
+
             modelBuilder.Entity("HCS.CollaborationService.Domain.Conversation", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("AvatarBlobName")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("AvatarContentType")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -212,6 +286,15 @@ namespace HCS.CollaborationService.Data.Migrations
                     b.Property<Guid?>("CreatorId")
                         .HasColumnType("uuid")
                         .HasColumnName("CreatorId");
+
+                    b.Property<DateTime?>("HiddenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("HistoryClearedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsMuted")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsPinned")
                         .HasColumnType("boolean");
@@ -939,6 +1022,24 @@ namespace HCS.CollaborationService.Data.Migrations
                     b.HasOne("HCS.CollaborationService.Domain.Conversation", null)
                         .WithMany()
                         .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HCS.CollaborationService.Domain.ChatMessageReaction", b =>
+                {
+                    b.HasOne("HCS.CollaborationService.Domain.ChatMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HCS.CollaborationService.Domain.ChatSavedMessage", b =>
+                {
+                    b.HasOne("HCS.CollaborationService.Domain.ChatMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

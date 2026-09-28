@@ -19,6 +19,7 @@ public class CollaborationAppService(
     IGuidGenerator guidGenerator,
     IClock clock,
     IChatRealtimeNotifier notifier,
+    ChatMessageMapper mapper,
     ILogger<CollaborationAppService> logger) : ApplicationService
 {
     private Guid UserId => currentUser.Id ?? throw new AbpAuthorizationException("Authenticated user required.");
@@ -45,8 +46,9 @@ public class CollaborationAppService(
         }
         if (existing is not null)
         {
-            if (existing.Members.All(x => x.UserId != me))
-                throw new AbpAuthorizationException("Conversation membership required.");
+            var existingMember = existing.Members.SingleOrDefault(x => x.UserId == me)
+                ?? throw new AbpAuthorizationException("Conversation membership required.");
+            if (existingMember.HiddenAt.HasValue) { existingMember.Unhide(); await db.SaveChangesAsync(ct); }
             return await ToConversationDto(existing, me, ct);
         }
 
@@ -63,13 +65,15 @@ public class CollaborationAppService(
             throw new BusinessException("Collaboration:MemberRequired");
         if (input.Type is ConversationType.Project or ConversationType.Task)
             await DemandWorkSubjectAccess(input.Type, input.ProjectId, input.TaskId, memberIds, ct);
+        var createdAt = clock.Now.ToUniversalTime();
         var conversation = new Conversation(guidGenerator.Create(), input.Type, input.Name, input.Description,
             input.ProjectId, input.TaskId,
             input.Type == ConversationType.User ? memberIds[0] : null,
-            input.Type == ConversationType.User ? memberIds[1] : null);
+            input.Type == ConversationType.User ? memberIds[1] : null,
+            createdAt);
         foreach (var userId in memberIds)
             conversation.Members.Add(new ConversationMember(guidGenerator.Create(), conversation.Id, userId,
-                userId == me ? ConversationMemberRole.Admin : ConversationMemberRole.Member));
+                userId == me ? ConversationMemberRole.Admin : ConversationMemberRole.Member, createdAt));
         db.Conversations.Add(conversation);
         try { await db.SaveChangesAsync(ct); }
         catch (DbUpdateException exception) when (PostgresErrors.IsUniqueViolation(exception) &&
@@ -103,7 +107,8 @@ public class CollaborationAppService(
         skip = Math.Max(skip, 0);
         take = Math.Clamp(take, 1, 100);
         var query = db.Conversations.AsNoTracking().Include(x => x.Members)
-            .Where(x => x.Members.Any(m => m.UserId == me));
+            .Where(x => !x.IsDeleted && x.Members.Any(m => m.UserId == me &&
+                (m.HiddenAt == null || (x.LastMessageAt != null && x.LastMessageAt > m.HiddenAt))));
         if (type.HasValue) query = query.Where(x => x.Type == type);
         if (pinnedOnly) query = query.Where(x => x.Members.Any(m => m.UserId == me && m.IsPinned));
         var items = await query.OrderByDescending(x => x.LastMessageAt).ThenByDescending(x => x.Id)
@@ -130,6 +135,57 @@ public class CollaborationAppService(
     public async Task RenameAsync(Guid id, string name, CancellationToken ct = default)
     {
         var conversation = await RequireAdmin(id, UserId, ct); conversation.Rename(name); await db.SaveChangesAsync(ct);
+        await NotifyConversationUpdatedAsync(conversation, ct);
+    }
+
+    public async Task<ConversationDto> UpdateConversationAsync(Guid id, UpdateConversationInput input, CancellationToken ct = default)
+    {
+        var conversation = await RequireAdmin(id, UserId, ct);
+        conversation.UpdateInfo(input.Name, input.Description);
+        await db.SaveChangesAsync(ct);
+        await NotifyConversationUpdatedAsync(conversation, ct);
+        return MapConversation(conversation, UserId);
+    }
+
+    public async Task DeleteConversationAsync(Guid id, CancellationToken ct = default)
+    {
+        var me = UserId;
+        var conversation = await RequireMember(id, me, ct);
+        var now = clock.Now.ToUniversalTime();
+        switch (conversation.Type)
+        {
+            case ConversationType.User:
+                conversation.Members.Single(x => x.UserId == me).Hide(now);
+                await db.SaveChangesAsync(ct);
+                break;
+            case ConversationType.Group:
+                if (!IsSystemAdmin && conversation.Members.Single(x => x.UserId == me).Role != ConversationMemberRole.Admin)
+                    throw new AbpAuthorizationException("Conversation admin required.");
+                conversation.MarkDeleted(me, now);
+                await db.SaveChangesAsync(ct);
+                var memberIds = conversation.Members.Select(x => x.UserId).ToArray();
+                await TryNotifyAsync(() => notifier.ConversationDeletedAsync(id, memberIds, ct), "conversation deletion", id);
+                break;
+            default:
+                throw new BusinessException("Collaboration:WorkConversationCannotBeDeleted");
+        }
+    }
+
+    public async Task ClearHistoryAsync(Guid id, CancellationToken ct = default)
+    {
+        var me = UserId;
+        var conversation = await RequireMember(id, me, ct);
+        conversation.Members.Single(x => x.UserId == me).ClearHistory(clock.Now.ToUniversalTime());
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task SetConversationMutedAsync(Guid id, bool muted, CancellationToken ct = default)
+    {
+        var me = UserId;
+        var member = await db.ConversationMembers.SingleOrDefaultAsync(x => x.ConversationId == id && x.UserId == me, ct)
+            ?? throw new AbpAuthorizationException();
+        member.SetMuted(muted); await db.SaveChangesAsync(ct);
+        await TryNotifyAsync(() => notifier.ConversationMuteChangedAsync(me, id, muted, ct), "conversation mute", id);
     }
 
     public async Task SetConversationPinnedAsync(Guid id, bool pinned, CancellationToken ct = default)
@@ -149,8 +205,9 @@ public class CollaborationAppService(
         if (conversation.Type is ConversationType.Project or ConversationType.Task)
             await DemandWorkSubjectAccess(conversation.Type, conversation.ProjectId, conversation.TaskId, userIds, ct);
         var existing = conversation.Members.Select(x => x.UserId).ToHashSet();
+        var joinedAt = clock.Now.ToUniversalTime();
         foreach (var userId in userIds.Where(x => !existing.Contains(x)))
-            conversation.Members.Add(new ConversationMember(guidGenerator.Create(), id, userId, ConversationMemberRole.Member));
+            conversation.Members.Add(new ConversationMember(guidGenerator.Create(), id, userId, ConversationMemberRole.Member, joinedAt));
         await db.SaveChangesAsync(ct);
     }
 
@@ -217,7 +274,7 @@ public class CollaborationAppService(
 
         var now = clock.Now.ToUniversalTime();
         var message = new ChatMessage(guidGenerator.Create(), input.ConversationId, UserId, text,
-            input.ClientMessageId, input.ReplyToMessageId);
+            input.ClientMessageId, input.ReplyToMessageId, creationTimeUtc: now);
         if (input.AttachmentIds.Count > 20) throw new BusinessException("Collaboration:TooManyAttachments");
         var attachmentIds = input.AttachmentIds.Distinct().ToArray();
         var attachments = await db.Attachments.Where(x => attachmentIds.Contains(x.Id)).ToListAsync(ct);
@@ -241,7 +298,8 @@ public class CollaborationAppService(
             return await MapMessageAsync(concurrentDuplicate, ct);
         }
         var dto = await MapMessageAsync(message, ct);
-        await TryNotifyAsync(() => notifier.MessageSentAsync(dto, recipientIds, ct), "message sent", message.Id);
+        var mutedIds = MutedRecipients(conversation, recipientIds);
+        await TryNotifyAsync(() => notifier.MessageSentAsync(dto, recipientIds, mutedIds, ct), "message sent", message.Id);
         return dto;
     }
 
@@ -249,11 +307,12 @@ public class CollaborationAppService(
     {
         var source = await db.Messages.Include(x => x.Attachments).SingleOrDefaultAsync(x => x.Id == messageId, ct)
             ?? throw new BusinessException("Collaboration:MessageNotFound");
+        if (source.IsDeleted || source.IsRecalled) throw new BusinessException("Collaboration:MessageNotFound");
         await RequireMember(source.ConversationId, UserId, ct);
         var target = await RequireMember(targetConversationId, UserId, ct);
         var text = ChatModerationRules.ForwardBody(comment);
         var now = clock.Now.ToUniversalTime();
-        var forwarded = new ChatMessage(guidGenerator.Create(), target.Id, UserId, text, forwardedFromMessageId: source.Id);
+        var forwarded = new ChatMessage(guidGenerator.Create(), target.Id, UserId, text, forwardedFromMessageId: source.Id, creationTimeUtc: now);
         db.Messages.Add(forwarded); target.SetLastMessage(text, now);
         var recipientIds = target.Members.Where(x => x.UserId != UserId).Select(x => x.UserId).ToArray();
         var evt = new ChatMessageSentEto(guidGenerator.Create(), now, CurrentCorrelationId(), target.Id,
@@ -261,7 +320,8 @@ public class CollaborationAppService(
         db.OutboxMessages.Add(new OutboxMessage(evt.EventId, nameof(ChatMessageSentEto), JsonSerializer.Serialize(evt), now));
         await SaveMessageAndIncrementUnreadAsync(target.Id, recipientIds, ct);
         var dto = await MapMessageAsync(forwarded, ct);
-        await TryNotifyAsync(() => notifier.MessageSentAsync(dto, recipientIds, ct), "forwarded message", forwarded.Id);
+        var mutedIds = MutedRecipients(target, recipientIds);
+        await TryNotifyAsync(() => notifier.MessageSentAsync(dto, recipientIds, mutedIds, ct), "forwarded message", forwarded.Id);
         return dto;
     }
 
@@ -278,10 +338,26 @@ public class CollaborationAppService(
         await TryNotifyAsync(() => notifier.MessageDeletedAsync(message.ConversationId, message.Id, recipients, ct), "message deletion", message.Id);
     }
 
+    public async Task RecallMessageAsync(Guid messageId, CancellationToken ct = default)
+    {
+        var message = await db.Messages.SingleOrDefaultAsync(x => x.Id == messageId, ct) ?? throw new BusinessException("Collaboration:MessageNotFound");
+        var conversation = await RequireMember(message.ConversationId, UserId, ct);
+        if (message.IsRecalled) return;
+        message.Recall(UserId, clock.Now.ToUniversalTime());
+        var latestId = await db.Messages.AsNoTracking().Where(x => x.ConversationId == conversation.Id)
+            .OrderByDescending(x => x.CreationTime).ThenByDescending(x => x.Id).Select(x => x.Id).FirstOrDefaultAsync(ct);
+        if (latestId == message.Id && conversation.LastMessageAt is { } lastMessageAt)
+            conversation.SetLastMessage(ChatModerationRules.RecalledPreview, lastMessageAt);
+        await db.SaveChangesAsync(ct);
+        var recipients = conversation.Members.Select(x => x.UserId).ToArray();
+        await TryNotifyAsync(() => notifier.MessageRecalledAsync(conversation.Id, message.Id, recipients, ct), "message recall", message.Id);
+    }
+
     public async Task SetMessagePinnedAsync(Guid messageId, bool pinned, CancellationToken ct = default)
     {
         var message = await db.Messages.SingleOrDefaultAsync(x => x.Id == messageId, ct) ?? throw new BusinessException("Collaboration:MessageNotFound");
         await RequireMember(message.ConversationId, UserId, ct);
+        if (pinned && (message.IsDeleted || message.IsRecalled)) throw new BusinessException("Collaboration:MessageNotFound");
         if (pinned) message.Pin(UserId, clock.Now.ToUniversalTime()); else message.Unpin();
         await db.SaveChangesAsync(ct);
     }
@@ -303,31 +379,42 @@ public class CollaborationAppService(
         return db.ConversationMembers.Where(x => x.UserId == me).SumAsync(x => x.UnreadCount, ct);
     }
 
-    public async Task<PagedMessagesDto> SearchMessagesAsync(Guid conversationId, string? keyword, int skip = 0, int take = 50, bool pinnedOnly = false, CancellationToken ct = default)
+    public async Task<PagedMessagesDto> SearchMessagesAsync(Guid conversationId, string? keyword, int skip = 0, int take = 50,
+        bool pinnedOnly = false, Guid? beforeMessageId = null, CancellationToken ct = default)
     {
-        await RequireMember(conversationId, UserId, ct);
+        var conversation = await RequireMember(conversationId, UserId, ct);
         take = Math.Clamp(take, 1, 100);
-        var query = db.Messages.AsNoTracking().Include(x => x.Attachments).Where(x => x.ConversationId == conversationId);
+        IQueryable<ChatMessage> query = VisibleMessages(conversation).Include(x => x.Attachments);
         if (pinnedOnly) query = query.Where(x => x.IsPinned && !x.IsDeleted);
         if (!string.IsNullOrWhiteSpace(keyword)) query = query.Where(x => !x.IsDeleted && EF.Functions.ILike(x.Text, $"%{keyword.Trim()}%"));
+        if (beforeMessageId.HasValue)
+        {
+            var cursor = await db.Messages.AsNoTracking()
+                .Where(x => x.Id == beforeMessageId && x.ConversationId == conversationId)
+                .Select(x => new { x.Id, x.CreationTime })
+                .SingleOrDefaultAsync(ct) ?? throw new BusinessException("Collaboration:MessageNotFound");
+            query = query.Where(x => x.CreationTime < cursor.CreationTime ||
+                (x.CreationTime == cursor.CreationTime && x.Id.CompareTo(cursor.Id) < 0));
+            skip = 0;
+        }
         var count = await query.LongCountAsync(ct);
-        var items = await query.OrderByDescending(x => x.CreationTime).Skip(Math.Max(skip, 0)).Take(take).ToListAsync(ct);
+        var items = await query.OrderByDescending(x => x.CreationTime).ThenByDescending(x => x.Id)
+            .Skip(Math.Max(skip, 0)).Take(take).ToListAsync(ct);
         return new PagedMessagesDto(count, await MapMessagesAsync(items, ct));
     }
 
     public async Task<MessageContextDto> GetMessageContextAsync(Guid conversationId, Guid messageId, int before = 20, int after = 20, CancellationToken ct = default)
     {
-        await RequireMember(conversationId, UserId, ct);
-        var target = await db.Messages.AsNoTracking().Include(x => x.Attachments).SingleOrDefaultAsync(x => x.Id == messageId && x.ConversationId == conversationId, ct)
+        var conversation = await RequireMember(conversationId, UserId, ct);
+        IQueryable<ChatMessage> visible = VisibleMessages(conversation).Include(x => x.Attachments);
+        var target = await visible.SingleOrDefaultAsync(x => x.Id == messageId, ct)
             ?? throw new BusinessException("Collaboration:MessageNotFound");
         before = Math.Clamp(before, 0, 50); after = Math.Clamp(after, 0, 50);
-        var previous = await db.Messages.AsNoTracking().Include(x => x.Attachments)
-            .Where(x => x.ConversationId == conversationId &&
-                (x.CreationTime < target.CreationTime || (x.CreationTime == target.CreationTime && x.Id.CompareTo(target.Id) < 0)))
+        var previous = await visible
+            .Where(x => x.CreationTime < target.CreationTime || (x.CreationTime == target.CreationTime && x.Id.CompareTo(target.Id) < 0))
             .OrderByDescending(x => x.CreationTime).ThenByDescending(x => x.Id).Take(before + 1).ToListAsync(ct);
-        var following = await db.Messages.AsNoTracking().Include(x => x.Attachments)
-            .Where(x => x.ConversationId == conversationId &&
-                (x.CreationTime > target.CreationTime || (x.CreationTime == target.CreationTime && x.Id.CompareTo(target.Id) > 0)))
+        var following = await visible
+            .Where(x => (x.CreationTime > target.CreationTime || (x.CreationTime == target.CreationTime && x.Id.CompareTo(target.Id) > 0)))
             .OrderBy(x => x.CreationTime).ThenBy(x => x.Id).Take(after + 1).ToListAsync(ct);
         var hasMoreBefore = previous.Count > before;
         var hasMoreAfter = following.Count > after;
@@ -353,8 +440,25 @@ public class CollaborationAppService(
     }
 
     private async Task<Conversation> RequireMember(Guid id, Guid userId, CancellationToken ct) =>
-        await db.Conversations.Include(x => x.Members).SingleOrDefaultAsync(x => x.Id == id && x.Members.Any(m => m.UserId == userId), ct)
+        await db.Conversations.Include(x => x.Members)
+            .SingleOrDefaultAsync(x => x.Id == id && !x.IsDeleted && x.Members.Any(m => m.UserId == userId), ct)
         ?? throw new AbpAuthorizationException("Conversation membership required.");
+
+    private IQueryable<ChatMessage> VisibleMessages(Conversation conversation)
+    {
+        var clearedAt = conversation.Members.Single(x => x.UserId == UserId).HistoryClearedAt;
+        var query = db.Messages.AsNoTracking().Where(x => x.ConversationId == conversation.Id);
+        return clearedAt.HasValue ? query.Where(x => x.CreationTime > clearedAt.Value) : query;
+    }
+
+    private static Guid[] MutedRecipients(Conversation conversation, IReadOnlyCollection<Guid> recipientIds) =>
+        conversation.Members.Where(x => x.IsMuted && recipientIds.Contains(x.UserId)).Select(x => x.UserId).ToArray();
+
+    private Task NotifyConversationUpdatedAsync(Conversation conversation, CancellationToken ct)
+    {
+        var memberIds = conversation.Members.Select(x => x.UserId).ToArray();
+        return TryNotifyAsync(() => notifier.ConversationUpdatedAsync(conversation.Id, memberIds, ct), "conversation update", conversation.Id);
+    }
 
     private async Task<Conversation> RequireAdmin(Guid id, Guid userId, CancellationToken ct)
     {
@@ -402,32 +506,24 @@ public class CollaborationAppService(
 
     private async Task<ConversationDto> ToConversationDto(Conversation c, Guid userId, CancellationToken ct)
     { await db.Entry(c).Collection(x => x.Members).LoadAsync(ct); return MapConversation(c, userId); }
-    private static ConversationDto MapConversation(Conversation c, Guid userId)
+    internal static ConversationDto MapConversation(Conversation c, Guid userId)
     {
         var me = c.Members.Single(x => x.UserId == userId);
-        return new(c.Id, c.Type, c.Name, c.Description, c.ProjectId, c.TaskId, c.LastMessage, c.LastMessageAt,
-            me.UnreadCount, me.IsPinned, c.Members.Select(x => new ConversationMemberDto(x.UserId, x.Role, x.CreationTime)).ToArray());
+        var lastMessage = c.LastMessageAt is { } lastAt && !me.CanSee(lastAt) ? null : c.LastMessage;
+        return new(c.Id, c.Type, c.Name, c.Description, c.ProjectId, c.TaskId, lastMessage, c.LastMessageAt,
+            me.UnreadCount, me.IsPinned, c.Members.Select(x => new ConversationMemberDto(x.UserId, x.Role, x.CreationTime)).ToArray(),
+            me.IsMuted, ConversationAvatarUrl(c));
     }
+
+    internal static string? ConversationAvatarUrl(Conversation c) =>
+        c.AvatarBlobName is null ? null : $"/api/chat/conversations/{c.Id:D}/avatar?v={c.AvatarBlobName[(c.AvatarBlobName.LastIndexOf('/') + 1)..]}";
     private bool IsSystemAdmin => ChatModerationRules.IsSystemAdmin(currentUser.IsInRole("admin"), currentUser.IsInRole("bd-admin"));
 
     private async Task<ChatMessageDto> MapMessageAsync(ChatMessage message, CancellationToken ct) =>
         (await MapMessagesAsync([message], ct))[0];
 
-    private async Task<IReadOnlyList<ChatMessageDto>> MapMessagesAsync(IReadOnlyList<ChatMessage> messages, CancellationToken ct)
-    {
-        var relatedIds = messages
-            .SelectMany(message => new Guid?[] { message.ReplyToMessageId, message.ForwardedFromMessageId })
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .Distinct()
-            .ToArray();
-        var related = relatedIds.Length == 0
-            ? new Dictionary<Guid, ChatMessage>()
-            : await db.Messages.AsNoTracking()
-                .Where(x => relatedIds.Contains(x.Id))
-                .ToDictionaryAsync(x => x.Id, ct);
-        return messages.Select(message => MapMessage(message, related)).ToArray();
-    }
+    private Task<IReadOnlyList<ChatMessageDto>> MapMessagesAsync(IReadOnlyList<ChatMessage> messages, CancellationToken ct) =>
+        mapper.MapAsync(messages, UserId, ct);
 
     internal static ChatMessageDto MapMessage(ChatMessage x, IReadOnlyDictionary<Guid, ChatMessage>? related = null)
     {
@@ -438,15 +534,17 @@ public class CollaborationAppService(
                 return null;
             }
 
-            return new ChatMessagePreviewDto(source.Id, source.SenderUserId,
-                source.IsDeleted ? string.Empty : source.Text, source.IsDeleted);
+            var hidden = source.IsDeleted || source.IsRecalled;
+            return new ChatMessagePreviewDto(source.Id, source.SenderUserId, hidden ? string.Empty : source.Text, hidden);
         }
 
         return new ChatMessageDto(x.Id, x.ConversationId, x.SenderUserId,
             x.Text, x.CreationTime, x.ReplyToMessageId, x.ForwardedFromMessageId, x.IsPinned, x.IsDeleted,
-            x.Attachments.Select(a => new MessageAttachmentDto(a.Id, a.FileName, a.ContentType, a.Size, a.Kind, a.MessageId)).ToArray(),
+            x.IsRecalled ? [] : x.Attachments.Select(a => new MessageAttachmentDto(a.Id, a.FileName, a.ContentType, a.Size, a.Kind, a.MessageId)).ToArray(),
             Preview(x.ReplyToMessageId, related),
-            Preview(x.ForwardedFromMessageId, related));
+            Preview(x.ForwardedFromMessageId, related),
+            x.IsRecalled,
+            Reactions: []);
     }
 
     private string CurrentDisplayName() =>
@@ -461,7 +559,14 @@ public class CollaborationAppService(
 
 public interface IChatRealtimeNotifier
 {
-    Task MessageSentAsync(ChatMessageDto message, IEnumerable<Guid> recipientUserIds, CancellationToken ct = default);
+    Task MessageSentAsync(ChatMessageDto message, IEnumerable<Guid> recipientUserIds,
+        IReadOnlyCollection<Guid> mutedRecipientUserIds, CancellationToken ct = default);
     Task MessageDeletedAsync(Guid conversationId, Guid messageId, IEnumerable<Guid> recipientUserIds, CancellationToken ct = default);
+    Task MessageRecalledAsync(Guid conversationId, Guid messageId, IEnumerable<Guid> recipientUserIds, CancellationToken ct = default);
+    Task ConversationUpdatedAsync(Guid conversationId, IEnumerable<Guid> memberUserIds, CancellationToken ct = default);
+    Task ConversationDeletedAsync(Guid conversationId, IEnumerable<Guid> memberUserIds, CancellationToken ct = default);
+    Task ConversationMuteChangedAsync(Guid userId, Guid conversationId, bool muted, CancellationToken ct = default);
+    Task MessageReactionsChangedAsync(Guid conversationId, Guid messageId, IReadOnlyList<MessageReactionDto> reactions,
+        IEnumerable<Guid> memberUserIds, CancellationToken ct = default);
     Task NotificationSentAsync(NotificationDto notification, CancellationToken ct = default);
 }

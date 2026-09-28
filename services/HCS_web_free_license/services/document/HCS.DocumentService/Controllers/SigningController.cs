@@ -21,6 +21,14 @@ public sealed class SigningController(ISigningAppService signing, ISigningKpiRep
         return signing.GetQueuePageAsync(input, cancellationToken);
     }
 
+    [HttpGet("history")]
+    public Task<PagedSigningHistoryDto> GetHistory([FromQuery] GetSigningHistoryInput input, CancellationToken cancellationToken) =>
+        signing.GetHistoryAsync(input, cancellationToken);
+
+    [HttpGet("stats")]
+    public Task<SigningStatsDto> GetStats([FromQuery] GetSigningStatsInput input, CancellationToken cancellationToken) =>
+        signing.GetStatsAsync(input, cancellationToken);
+
     [HttpGet("provider-definitions")]
     public Task<IReadOnlyList<SigningProviderDefinitionDto>> GetProviderDefinitions(CancellationToken cancellationToken) =>
         signing.GetProviderDefinitionsAsync(cancellationToken);
@@ -69,6 +77,9 @@ public sealed class SigningController(ISigningAppService signing, ISigningKpiRep
     [HttpGet("signatures")]
     public Task<IReadOnlyList<UserSignatureDto>> GetSignatures([FromQuery] Guid? userId, CancellationToken cancellationToken) =>
         signing.GetSignaturesAsync(userId, cancellationToken);
+    [HttpGet("signatures/{id:guid}")]
+    public async Task<ActionResult<UserSignatureDto>> GetSignature(Guid id, [FromQuery] Guid? userId, CancellationToken cancellationToken) =>
+        await signing.GetSignatureAsync(id, userId, cancellationToken) is { } result ? Ok(result) : NotFound();
     [HttpPost("signatures")]
     [RequestSizeLimit(2 * 1024 * 1024)]
     public async Task<UserSignatureDto> UploadSignature(IFormFile file, [FromForm] UserSignatureType? signatureType,

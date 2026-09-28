@@ -78,9 +78,35 @@ public sealed record DecideApprovalTaskRequest(bool Approve, string? Comment, st
     Guid? SigningAttemptId = null, Guid? SigningFileId = null);
 public sealed record ExtendWorkflowDueDateRequest(int AdditionalDays, string? Reason = null);
 public sealed record ApprovalTaskDto(Guid Id, Guid InstanceId, string StepCode, ApprovalTaskStatus Status, Guid? DecidedBy,
-    DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt, string? Comment = null);
+    DateTime? DecidedAt, Guid? AssigneeUserId, DateTime? DueAt, string? Comment = null, bool IsOverdue = false);
 public sealed record WorkflowInstanceDto(Guid Id, Guid DocumentId, Guid DefinitionId, WorkflowInstanceStatus Status,
-    int CurrentStep, IReadOnlyList<ApprovalTaskDto> Tasks, DateTime CreationTime);
+    int CurrentStep, IReadOnlyList<ApprovalTaskDto> Tasks, DateTime CreationTime, string? CurrentStepCode = null);
+
+public static class WorkflowInstanceScopes
+{
+    public const string All = "all";
+    public const string Mine = "mine";
+    public const string DecidedByMe = "decidedByMe";
+
+    public static string Normalize(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        null or "" or "all" => All,
+        "mine" => Mine,
+        "decidedbyme" => DecidedByMe,
+        _ => throw new ArgumentException("Invalid workflow instance scope.")
+    };
+}
+
+public sealed class GetWorkflowInstancesInput
+{
+    public Guid? DocumentId { get; set; }
+    public WorkflowInstanceStatus? Status { get; set; }
+    public string? Scope { get; set; }
+    public int Skip { get; set; }
+    public int Take { get; set; }
+}
+
+public sealed record PagedWorkflowInstancesDto(int TotalCount, IReadOnlyList<WorkflowInstanceDto> Items);
 
 public sealed record NextCodeDto(string Code);
 
@@ -98,6 +124,10 @@ public interface IWorkflowAppService
     Task<WorkflowTemplateDto?> GetTemplateAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<WorkflowInstanceDto>> GetInstancesAsync(Guid? documentId = null,
         WorkflowInstanceStatus? status = null, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<WorkflowInstanceDto>> GetInstancesAsync(GetWorkflowInstancesInput input,
+        CancellationToken cancellationToken = default);
+    Task<PagedWorkflowInstancesDto> GetInstancesPageAsync(GetWorkflowInstancesInput input,
+        CancellationToken cancellationToken = default);
     Task<WorkflowInstanceDto?> GetInstanceAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Guid> CreateDefinitionAsync(CreateWorkflowDefinitionRequest input, CancellationToken cancellationToken = default);
     Task UpdateDefinitionAsync(Guid id, UpdateWorkflowDefinitionRequest input, CancellationToken cancellationToken = default);

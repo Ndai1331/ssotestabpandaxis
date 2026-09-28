@@ -37,8 +37,10 @@ public sealed class OrganizationApiContractTests
             .ShouldBe("api/organization/user-departments");
         controller.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>().Single().Policy
             .ShouldBeNull();
-        controller.GetMethods().Count(x => x.GetCustomAttributes(typeof(HttpGetAttribute), true).Length > 0).ShouldBe(2);
+        controller.GetMethods().Count(x => x.GetCustomAttributes(typeof(HttpGetAttribute), true).Length > 0).ShouldBe(3);
         controller.GetMethods().Count(x => x.GetCustomAttributes(typeof(HttpPostAttribute), true).Length > 0).ShouldBe(0);
+        controller.GetMethod(nameof(UserDepartmentLookupController.Mine))!.GetCustomAttributes(typeof(HttpGetAttribute), true)
+            .Cast<HttpGetAttribute>().Single().Template.ShouldBe("mine");
     }
 
     [Theory]

@@ -209,6 +209,15 @@ public sealed class UserDepartmentLookupController(IOrganizationAppService servi
         return Ok(await Service.GetUserDepartmentsAsync(userIds ?? [], ct));
     }
 
+    // Self lookup: any signed-in user may read their own mappings without lookup roles.
+    [HttpGet("mine")]
+    public async Task<ActionResult<IReadOnlyList<UserDepartmentLookupDto>>> Mine(CancellationToken ct)
+    {
+        var sub = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(sub, out var userId)) return Forbid();
+        return Ok(await Service.GetAllUserDepartmentsAsync(userId, ct));
+    }
+
     [HttpGet("catalog")]
     public async Task<ActionResult<IReadOnlyList<DepartmentDto>>> Catalog(CancellationToken ct)
     {

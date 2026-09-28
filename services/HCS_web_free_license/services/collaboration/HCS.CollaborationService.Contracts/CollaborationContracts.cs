@@ -17,7 +17,16 @@ public static partial class CollaborationPermissions
 
 public sealed record ConversationDto(Guid Id, ConversationType Type, string? Name, string? Description,
     Guid? ProjectId, Guid? TaskId, string? LastMessage, DateTime? LastMessageAt,
-    int UnreadCount, bool IsPinned, IReadOnlyList<ConversationMemberDto> Members);
+    int UnreadCount, bool IsPinned, IReadOnlyList<ConversationMemberDto> Members,
+    bool IsMuted = false, string? AvatarUrl = null);
+
+public sealed record UpdateConversationInput(
+    [Required, StringLength(256)] string Name,
+    [StringLength(1024)] string? Description);
+public sealed record MuteConversationInput(bool Muted);
+public sealed record ConversationEventDto(Guid ConversationId);
+public sealed record ConversationMuteChangedDto(Guid ConversationId, bool Muted);
+public sealed record MessageRecalledDto(Guid ConversationId, Guid MessageId);
 
 public sealed record ConversationMemberDto(Guid UserId, ConversationMemberRole Role, DateTime JoinedAt);
 public sealed record PresenceChangedDto(Guid UserId, bool IsOnline);
@@ -62,7 +71,28 @@ public sealed record ChatMessagePreviewDto(Guid Id, Guid SenderUserId, string Te
 public sealed record ChatMessageDto(Guid Id, Guid ConversationId, Guid SenderUserId, string Text,
     DateTime CreatedAt, Guid? ReplyToMessageId, Guid? ForwardedFromMessageId, bool IsPinned,
     bool IsDeleted, IReadOnlyList<MessageAttachmentDto> Attachments,
-    ChatMessagePreviewDto? ReplyTo = null, ChatMessagePreviewDto? ForwardedFrom = null);
+    ChatMessagePreviewDto? ReplyTo = null, ChatMessagePreviewDto? ForwardedFrom = null,
+    bool IsRecalled = false,
+    // Only set on SignalR ReceiveMessage for recipients who muted the conversation; HTTP responses use ConversationDto.IsMuted.
+    bool IsConversationMuted = false,
+    IReadOnlyList<MessageReactionDto>? Reactions = null,
+    bool IsSaved = false);
+
+public sealed record MessageReactionDto(string Emoji, int Count, bool ReactedByMe, IReadOnlyList<Guid> UserIds);
+public sealed record MessageReactionsChangedDto(Guid ConversationId, Guid MessageId, IReadOnlyList<MessageReactionDto> Reactions);
+public sealed record SetMessageReactionInput([Required, StringLength(32)] string Emoji);
+public sealed record SaveMessageInput(bool Saved);
+
+public static class ConversationAttachmentKinds
+{
+    public const string Media = "media";
+    public const string File = "file";
+    public const string Link = "link";
+}
+
+public sealed record ConversationAttachmentItemDto(Guid MessageId, Guid SenderUserId, DateTime CreatedAt, string Url,
+    Guid? AttachmentId = null, string? FileName = null, string? ContentType = null, long? Size = null, AttachmentKind? Kind = null);
+public sealed record PagedConversationAttachmentsDto(long TotalCount, IReadOnlyList<ConversationAttachmentItemDto> Items);
 
 public sealed record MessageContextDto(ChatMessageDto Target, IReadOnlyList<ChatMessageDto> Before,
     IReadOnlyList<ChatMessageDto> After, bool HasMoreBefore = false, bool HasMoreAfter = false);
@@ -70,6 +100,10 @@ public sealed record MessageContextDto(ChatMessageDto Target, IReadOnlyList<Chat
 public static class ChatModerationRules
 {
     public const string ForwardedPlaceholder = "📤";
+    public const string RecalledPreview = "Tin nhắn đã được thu hồi";
+    public const int MaxAvatarBytes = 2 * 1024 * 1024;
+    public static readonly IReadOnlySet<string> AvatarContentTypes =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "image/jpeg", "image/png", "image/webp" };
 
     public static bool IsSystemAdmin(bool isAdmin, bool isBdAdmin) => isAdmin || isBdAdmin;
 
@@ -470,6 +504,8 @@ public sealed class CreateNotificationInput
 
 public sealed record RegisterPushDeviceInput([property: Required, StringLength(2048)] string Token,
     [property: StringLength(32)] string Platform);
+public sealed record UnregisterPushDeviceInput([property: Required, StringLength(2048)] string Token);
+public sealed record PushDeviceDto(Guid Id, string Platform, bool IsActive);
 
 public sealed record TaskFromMessageRequestedEto(Guid EventId, Guid MessageId, Guid ConversationId,
     Guid RequestedByUserId, string Title, string? Description, DateTime OccurredAt);

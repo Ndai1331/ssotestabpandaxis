@@ -24,6 +24,16 @@ Tab chữ ký nhúng `UserSignaturesPanel` → API signing trong [03-documents.m
 | Xóa avatar | `DELETE` | `/api/identity/profile/avatar` |
 | Avatar user khác (social/chat) | `GET` | `/api/identity/users/{userId}/avatar` |
 
+Hồ sơ gộp cho mobile (một lần gọi thay 3–4 API):
+
+```http
+GET /api/identity/my-profile-summary
+```
+
+→ `{ id, userName, email, name, surname, phoneNumber, displayName, avatarUrl, departments: [{ id, name, isPrimary }], positionId, positionName }`. `avatarUrl` = `/api/identity/users/{id}/avatar` hoặc `null`; `departments` rỗng nếu chưa gán hoặc Organization lỗi. Chỉ cần đăng nhập. Không có `userCode` / `dob` / `gender`. Sửa hồ sơ vẫn qua `PUT /api/account/my-profile`.
+
+**Không có đăng ký tài khoản**: `Abp.Account.IsSelfRegistrationEnabled` mặc định `false`, `POST /api/account/register` bị từ chối. App không hiển thị màn đăng ký.
+
 ## Endpoints
 
 ### GET `/api/account/my-profile`

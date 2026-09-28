@@ -27,5 +27,7 @@ public sealed class NotificationController(NotificationAppService app) : AbpCont
     [HttpPost("{notificationId:guid}/read")]
     public Task MarkRead(Guid notificationId, CancellationToken ct) => app.MarkReadAsync(notificationId, ct);
     [HttpPost("devices")]
-    public Task RegisterDevice(RegisterPushDeviceInput input, CancellationToken ct) => app.RegisterDeviceAsync(input, ct);
+    public Task<PushDeviceDto> RegisterDevice(RegisterPushDeviceInput input, CancellationToken ct) => app.RegisterDeviceAsync(input, ct);
+    [HttpPost("devices/unregister")]
+    public Task UnregisterDevice(UnregisterPushDeviceInput input, CancellationToken ct) => app.UnregisterDeviceAsync(input, ct);
 }

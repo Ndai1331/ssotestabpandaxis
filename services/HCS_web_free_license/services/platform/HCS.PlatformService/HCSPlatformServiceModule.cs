@@ -88,6 +88,13 @@ public sealed class HCSPlatformServiceModule : AbpModule
         context.Services.AddHttpContextAccessor();
 
         var configuration = context.Services.GetConfiguration();
+        context.Services.AddHttpClient("HCS.Organization", client =>
+        {
+            var baseUrl = configuration["Services:Organization:BaseUrl"];
+            if (!string.IsNullOrWhiteSpace(baseUrl))
+                client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
         Configure<AbpBlobStoringOptions>(options =>
         {
             options.Containers.Configure<AvatarBlobContainer>(container => container.UseHcsStorage(configuration));

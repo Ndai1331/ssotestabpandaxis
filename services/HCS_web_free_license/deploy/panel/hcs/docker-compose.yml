@@ -189,6 +189,7 @@ services:
       AuthServer__Audience: HCS
       AuthServer__RequireHttpsMetadata: "true"
       AuthServer__AllowUntrustedBackchannelCertificate: "false"
+      Services__Organization__BaseUrl: http://organization:8080/
 
   organization:
     <<: *hcs-image

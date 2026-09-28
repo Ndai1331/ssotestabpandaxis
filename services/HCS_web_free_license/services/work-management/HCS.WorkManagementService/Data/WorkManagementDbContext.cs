@@ -16,6 +16,7 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
     public DbSet<ProjectTask> ProjectTasks => Set<ProjectTask>();
     public DbSet<ProjectTaskAssignment> ProjectTaskAssignments => Set<ProjectTaskAssignment>();
     public DbSet<ProjectTaskDocument> ProjectTaskDocuments => Set<ProjectTaskDocument>();
+    public DbSet<ProjectTaskAttachment> ProjectTaskAttachments => Set<ProjectTaskAttachment>();
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
     public DbSet<CalendarEventParticipant> CalendarEventParticipants => Set<CalendarEventParticipant>();
     public DbSet<ManagedEvent> ManagedEvents => Set<ManagedEvent>();
@@ -74,6 +75,7 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
         {
             b.ToTable("ProjectTaskAssignments"); b.ConfigureByConvention();
             b.Property(x => x.AssignmentType).HasMaxLength(WorkConsts.TypeLength).IsRequired();
+            b.Property(x => x.Note).HasMaxLength(WorkConsts.NoteLength);
             b.HasIndex(x => new { x.ProjectTaskId, x.UserId, x.AssignmentType }).IsUnique();
             b.HasIndex(x => new { x.UserId, x.ProjectTaskId });
             b.HasOne<ProjectTask>().WithMany().HasForeignKey(x => x.ProjectTaskId).OnDelete(DeleteBehavior.Cascade);
@@ -82,8 +84,21 @@ public sealed class WorkManagementDbContext(DbContextOptions<WorkManagementDbCon
         {
             b.ToTable("ProjectTaskDocuments"); b.ConfigureByConvention();
             b.Property(x => x.DocumentCode).HasMaxLength(WorkConsts.CodeLength);
+            b.Property(x => x.Note).HasMaxLength(WorkConsts.NoteLength);
+            b.Property(x => x.Purpose).HasMaxLength(WorkConsts.StatusLength).IsRequired()
+                .HasDefaultValue(ProjectTaskDocument.ReferencePurpose);
             b.HasIndex(x => new { x.ProjectTaskId, x.DocumentId }).IsUnique(); b.HasIndex(x => x.DocumentId);
             b.HasIndex(x => x.AddedByUserId);
+            b.HasOne<ProjectTask>().WithMany().HasForeignKey(x => x.ProjectTaskId).OnDelete(DeleteBehavior.Cascade);
+        });
+        builder.Entity<ProjectTaskAttachment>(b =>
+        {
+            b.ToTable("ProjectTaskAttachments"); b.ConfigureByConvention();
+            b.Property(x => x.BlobName).HasMaxLength(512).IsRequired();
+            b.Property(x => x.FileName).HasMaxLength(WorkConsts.NameLength).IsRequired();
+            b.Property(x => x.ContentType).HasMaxLength(128).IsRequired();
+            b.HasIndex(x => x.BlobName).IsUnique();
+            b.HasIndex(x => new { x.ProjectTaskId, x.CreationTime });
             b.HasOne<ProjectTask>().WithMany().HasForeignKey(x => x.ProjectTaskId).OnDelete(DeleteBehavior.Cascade);
         });
         builder.Entity<CalendarEvent>(b =>

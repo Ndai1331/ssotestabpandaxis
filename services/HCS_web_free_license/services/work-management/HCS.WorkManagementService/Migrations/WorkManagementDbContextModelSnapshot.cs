@@ -725,6 +725,10 @@ namespace HCS.WorkManagementService.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<Guid>("ProjectTaskId")
                         .HasColumnType("uuid");
 
@@ -741,10 +745,56 @@ namespace HCS.WorkManagementService.Migrations
                     b.ToTable("ProjectTaskAssignments", "hcs_work");
                 });
 
+            modelBuilder.Entity("HCS.WorkManagementService.Domain.ProjectTaskAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BlobName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("ProjectTaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BlobName")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectTaskId", "CreationTime");
+
+                    b.ToTable("ProjectTaskAttachments", "hcs_work");
+                });
+
             modelBuilder.Entity("HCS.WorkManagementService.Domain.ProjectTaskDocument", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AddedByUserId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("DocumentCode")
@@ -754,11 +804,19 @@ namespace HCS.WorkManagementService.Migrations
                     b.Property<Guid>("DocumentId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AddedByUserId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<Guid>("ProjectTaskId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("REFERENCE");
 
                     b.HasKey("Id");
 
@@ -1332,6 +1390,15 @@ namespace HCS.WorkManagementService.Migrations
                 });
 
             modelBuilder.Entity("HCS.WorkManagementService.Domain.ProjectTaskAssignment", b =>
+                {
+                    b.HasOne("HCS.WorkManagementService.Domain.ProjectTask", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HCS.WorkManagementService.Domain.ProjectTaskAttachment", b =>
                 {
                     b.HasOne("HCS.WorkManagementService.Domain.ProjectTask", null)
                         .WithMany()

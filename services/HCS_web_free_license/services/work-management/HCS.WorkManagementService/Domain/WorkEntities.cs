@@ -11,6 +11,14 @@ public static class WorkConsts
     public const int StatusLength = 32;
     public const int TypeLength = 64;
     public const string CompletedStatus = "Completed";
+    public const int NoteLength = 1000;
+
+    public static string? NormalizeNote(string? note)
+    {
+        if (string.IsNullOrWhiteSpace(note)) return null;
+        var trimmed = note.Trim();
+        return trimmed.Length > NoteLength ? throw new BusinessException("Work:NoteTooLong") : trimmed;
+    }
 }
 
 public sealed class Project : FullAuditedAggregateRoot<Guid>
@@ -60,6 +68,7 @@ public sealed class ProjectMember : Entity<Guid>
     public string Role { get; private set; } = string.Empty;
     public bool IsActive { get; private set; }
     public void Deactivate() => IsActive = false;
+    public void SetRole(string role) => Role = Check.NotNullOrWhiteSpace(role, nameof(role), WorkConsts.TypeLength);
 }
 
 public sealed class ProjectTask : FullAuditedAggregateRoot<Guid>
@@ -114,24 +123,63 @@ public sealed class ProjectTask : FullAuditedAggregateRoot<Guid>
 public sealed class ProjectTaskAssignment : Entity<Guid>
 {
     private ProjectTaskAssignment() { }
-    public ProjectTaskAssignment(Guid id, Guid projectTaskId, Guid userId, string assignmentType) : base(id)
-        => (ProjectTaskId, UserId, AssignmentType) = (projectTaskId, userId,
+    public ProjectTaskAssignment(Guid id, Guid projectTaskId, Guid userId, string assignmentType, string? note = null) : base(id)
+    {
+        (ProjectTaskId, UserId, AssignmentType) = (projectTaskId, userId,
             Check.NotNullOrWhiteSpace(assignmentType, nameof(assignmentType), WorkConsts.TypeLength));
+        Note = WorkConsts.NormalizeNote(note);
+    }
     public Guid ProjectTaskId { get; private set; }
     public Guid UserId { get; private set; }
     public string AssignmentType { get; private set; } = string.Empty;
+    public string? Note { get; private set; }
 }
 
 public sealed class ProjectTaskDocument : Entity<Guid>
 {
+    public const string ReferencePurpose = "REFERENCE";
+    public const string ReportPurpose = "REPORT";
+
     private ProjectTaskDocument() { }
-    public ProjectTaskDocument(Guid id, Guid taskId, Guid documentId, string? documentCode, Guid? addedByUserId = null) : base(id)
-        => (ProjectTaskId, DocumentId, DocumentCode, AddedByUserId) = (taskId, documentId, documentCode,
+    public ProjectTaskDocument(Guid id, Guid taskId, Guid documentId, string? documentCode, Guid? addedByUserId = null,
+        string? note = null, string purpose = ReferencePurpose) : base(id)
+    {
+        (ProjectTaskId, DocumentId, DocumentCode, AddedByUserId) = (taskId, documentId, documentCode,
             addedByUserId is null || addedByUserId == Guid.Empty ? null : addedByUserId);
+        Note = WorkConsts.NormalizeNote(note);
+        Purpose = purpose is ReferencePurpose or ReportPurpose
+            ? purpose
+            : throw new BusinessException("Work:InvalidTaskDocumentPurpose");
+    }
     public Guid ProjectTaskId { get; private set; }
     public Guid DocumentId { get; private set; }
     public string? DocumentCode { get; private set; }
     public Guid? AddedByUserId { get; private set; }
+    public string? Note { get; private set; }
+    public string Purpose { get; private set; } = ReferencePurpose;
+}
+
+public sealed class ProjectTaskAttachment : Entity<Guid>
+{
+    private ProjectTaskAttachment() { }
+    public ProjectTaskAttachment(Guid id, Guid projectTaskId, Guid uploadedByUserId, string blobName, string fileName,
+        string contentType, long size, DateTime creationTime) : base(id)
+    {
+        ProjectTaskId = projectTaskId;
+        UploadedByUserId = uploadedByUserId == Guid.Empty ? throw new BusinessException("Work:OwnerRequired") : uploadedByUserId;
+        BlobName = Check.NotNullOrWhiteSpace(blobName, nameof(blobName), 512);
+        FileName = Check.NotNullOrWhiteSpace(fileName, nameof(fileName), WorkConsts.NameLength);
+        ContentType = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType.Trim();
+        Size = size;
+        CreationTime = WorkTimestamps.ToUtc(creationTime);
+    }
+    public Guid ProjectTaskId { get; private set; }
+    public Guid UploadedByUserId { get; private set; }
+    public string BlobName { get; private set; } = string.Empty;
+    public string FileName { get; private set; } = string.Empty;
+    public string ContentType { get; private set; } = string.Empty;
+    public long Size { get; private set; }
+    public DateTime CreationTime { get; private set; }
 }
 
 public sealed class CalendarEvent : FullAuditedAggregateRoot<Guid>

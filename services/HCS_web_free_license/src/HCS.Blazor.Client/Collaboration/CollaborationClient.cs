@@ -84,22 +84,29 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
     public Task<ConversationPermissionDto> GetPermissionsAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<ConversationPermissionDto>($"api/chat/conversations/{id:D}/permissions", cancellationToken);
 
-    public Task<PagedMessagesDto> GetMessagesAsync(
+    public async Task<PagedMessagesDto> GetMessagesAsync(
         Guid conversationId,
         int skip = 0,
         int take = 50,
         CancellationToken cancellationToken = default) =>
-        GetAsync<PagedMessagesDto>(
+        AsWebMessages(await GetAsync<PagedMessagesDto>(
             $"api/chat/conversations/{conversationId:D}/messages?skip={Math.Max(skip, 0)}&take={Math.Clamp(take, 1, 100)}",
-            cancellationToken);
+            cancellationToken));
 
-    public Task<PagedMessagesDto> GetPinnedMessagesAsync(
+    public async Task<PagedMessagesDto> GetPinnedMessagesAsync(
         Guid conversationId,
         int take = 50,
         CancellationToken cancellationToken = default) =>
-        GetAsync<PagedMessagesDto>(
+        AsWebMessages(await GetAsync<PagedMessagesDto>(
             $"api/chat/conversations/{conversationId:D}/messages?skip=0&take={Math.Clamp(take, 1, 100)}&pinnedOnly=true",
-            cancellationToken);
+            cancellationToken));
+
+    // The web chat renders recalled messages with its existing deleted-message ("is-recalled") UI.
+    internal static ChatMessageDto AsWebMessage(ChatMessageDto message) =>
+        message.IsRecalled ? message with { IsDeleted = true, Text = string.Empty, Attachments = [] } : message;
+
+    private static PagedMessagesDto AsWebMessages(PagedMessagesDto page) =>
+        page with { Items = page.Items.Select(AsWebMessage).ToArray() };
 
     public Task SetMessagePinnedAsync(
         Guid messageId,
@@ -152,15 +159,22 @@ internal sealed class CollaborationClient(IHttpClientFactory httpClientFactory)
             new { targetConversationId, comment },
             cancellationToken);
 
-    public Task<MessageContextDto> GetMessageContextAsync(
+    public async Task<MessageContextDto> GetMessageContextAsync(
         Guid conversationId,
         Guid messageId,
         int before = 20,
         int after = 20,
         CancellationToken cancellationToken = default) =>
-        GetAsync<MessageContextDto>(
+        AsWebContext(await GetAsync<MessageContextDto>(
             $"api/chat/conversations/{conversationId:D}/messages/{messageId:D}/context?before={Math.Clamp(before, 0, 50)}&after={Math.Clamp(after, 0, 50)}",
-            cancellationToken);
+            cancellationToken));
+
+    private static MessageContextDto AsWebContext(MessageContextDto context) => context with
+    {
+        Target = AsWebMessage(context.Target),
+        Before = context.Before.Select(AsWebMessage).ToArray(),
+        After = context.After.Select(AsWebMessage).ToArray()
+    };
 
     public Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(
         bool unreadOnly = false,
