@@ -17,7 +17,11 @@ namespace HCS.Blazor.Client.Collaboration;
 public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDisposable
 {
     private readonly SemaphoreSlim startLock = new(1, 1);
+    private readonly CancellationTokenSource lifetime = new();
     private HubConnection? connection;
+    private int disposed;
+    private int retryAttempt;
+    private int retryScheduled;
 
     public event Func<ChatMessageDto, Task>? MessageReceived;
     public event Func<Guid, Guid, Task>? MessageDeleted;
@@ -64,23 +68,32 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
                 connection.Reconnecting += _ => NotifyStatusAsync(HubConnectionState.Reconnecting);
                 connection.Reconnected += async _ =>
                 {
+                    retryAttempt = 0;
                     await NotifyStatusAsync(HubConnectionState.Connected);
                     await RefreshPresenceSnapshotAsync(CancellationToken.None);
                 };
-                connection.Closed += _ => NotifyStatusAsync(HubConnectionState.Disconnected);
+                connection.Closed += async _ =>
+                {
+                    await NotifyStatusAsync(HubConnectionState.Disconnected);
+                    ScheduleRetry();
+                };
             }
+
+            if (Volatile.Read(ref disposed) != 0)
+                return;
 
             if (connection.State == HubConnectionState.Disconnected)
             {
                 try
                 {
                     await connection.StartAsync(cancellationToken);
+                    retryAttempt = 0;
                     await NotifyStatusAsync(HubConnectionState.Connected);
                 }
                 catch
                 {
                     await NotifyStatusAsync(HubConnectionState.Disconnected);
-                    throw;
+                    ScheduleRetry();
                 }
             }
 
@@ -100,12 +113,54 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref disposed, 1) != 0)
+            return;
+
+        lifetime.Cancel();
         if (connection is not null)
         {
             await connection.DisposeAsync();
         }
 
+        lifetime.Dispose();
         startLock.Dispose();
+    }
+
+    private void ScheduleRetry()
+    {
+        if (Volatile.Read(ref disposed) != 0)
+            return;
+        if (Interlocked.CompareExchange(ref retryScheduled, 1, 0) != 0)
+            return;
+
+        _ = RetryLaterAsync(lifetime.Token);
+    }
+
+    private async Task RetryLaterAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var seconds = Math.Min(30, 2 << Math.Min(retryAttempt, 4));
+            retryAttempt = Math.Min(retryAttempt + 1, 5);
+            await Task.Delay(TimeSpan.FromSeconds(seconds), cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            Interlocked.Exchange(ref retryScheduled, 0);
+            return;
+        }
+
+        Interlocked.Exchange(ref retryScheduled, 0);
+        if (cancellationToken.IsCancellationRequested || Volatile.Read(ref disposed) != 0)
+            return;
+
+        try
+        {
+            await EnsureStartedAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private async Task RefreshPresenceSnapshotAsync(CancellationToken cancellationToken)
@@ -133,7 +188,7 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
         {
             foreach (var handler in received.GetInvocationList().Cast<Func<ChatMessageDto, Task>>())
             {
-                await handler(message);
+                await InvokeHandlerAsync(() => handler(message));
             }
         }
     }
@@ -145,7 +200,7 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
         {
             foreach (var handler in deleted.GetInvocationList().Cast<Func<Guid, Guid, Task>>())
             {
-                await handler(payload.ConversationId, payload.MessageId);
+                await InvokeHandlerAsync(() => handler(payload.ConversationId, payload.MessageId));
             }
         }
     }
@@ -157,7 +212,7 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
         {
             foreach (var handler in handlers.GetInvocationList().Cast<Func<NotificationDto, Task>>())
             {
-                await handler(notification);
+                await InvokeHandlerAsync(() => handler(notification));
             }
         }
     }
@@ -172,7 +227,7 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
         foreach (var handler in handlers.GetInvocationList().Cast<Func<PresenceChangedDto, Task>>())
         {
-            await handler(change);
+            await InvokeHandlerAsync(() => handler(change));
         }
     }
 
@@ -186,7 +241,7 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
         foreach (var handler in handlers.GetInvocationList().Cast<Func<IReadOnlyList<Guid>, Task>>())
         {
-            await handler(userIds);
+            await InvokeHandlerAsync(() => handler(userIds));
         }
     }
 
@@ -200,7 +255,19 @@ public sealed class ChatRealtimeConnection(Uri gatewayBaseAddress) : IAsyncDispo
 
         foreach (var handler in handlers.GetInvocationList().Cast<Func<HubConnectionState, Task>>())
         {
-            await handler(state);
+            await InvokeHandlerAsync(() => handler(state));
+        }
+    }
+
+    private static async Task InvokeHandlerAsync(Func<Task> handler)
+    {
+        try
+        {
+            await handler();
+        }
+        catch
+        {
+            // A disposed page must not turn a dropped socket into the app-wide error bar.
         }
     }
 

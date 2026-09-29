@@ -1621,6 +1621,63 @@ body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__opt
   padding: 0 12px !important;
 }
 
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop:has(.hcs-user-option) .select2-results__options {
+  max-height: 22rem;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__option:has(.hcs-user-option) {
+  align-items: center !important;
+  display: flex !important;
+  min-height: 0;
+  padding: 8px 4px !important;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .hcs-user-option {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .hcs-user-option__avatar {
+  align-self: center;
+  flex: 0 0 36px;
+  font-size: 12px;
+  font-weight: 600;
+  height: 36px;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  width: 36px;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .hcs-user-option__copy {
+  flex: 1 1 auto;
+  gap: 1px;
+  justify-content: center;
+  min-width: 0;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .hcs-user-option__name {
+  color: var(--color-gray-900, #0f172a);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .hcs-user-option__phone,
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .hcs-user-option__dept {
+  color: var(--color-muted, #64748b);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__option--highlighted .hcs-user-option__name,
+body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__option--selected .hcs-user-option__name {
+  color: var(--color-primary, #007f7c);
+}
+
 body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__option--highlighted.select2-results__option--selectable,
 body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__option--selected,
 body:has(.hcs-app-shell) .select2-dropdown.hcs-select2-pop .select2-results__option--selected.select2-results__option--highlighted {

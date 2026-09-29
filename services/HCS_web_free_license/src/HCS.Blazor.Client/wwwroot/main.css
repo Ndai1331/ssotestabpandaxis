@@ -371,10 +371,11 @@ body:has(.hcs-public-shell) .hcs-boot-screen {
 
 .hcs-user-option {
     align-items: center;
-    display: inline-flex;
+    display: flex;
     gap: .6rem;
     min-width: 0;
     vertical-align: middle;
+    width: 100%;
 }
 
 .hcs-user-option__avatar {
@@ -412,11 +413,9 @@ body:has(.hcs-public-shell) .hcs-boot-screen {
     font-size: .78rem;
 }
 
-.select2-results__option--highlighted .hcs-user-option__phone,
-.select2-results__option--highlighted .hcs-user-option__dept,
-.select2-results__option--selected .hcs-user-option__phone,
-.select2-results__option--selected .hcs-user-option__dept {
-    color: inherit;
+.select2-results__option--highlighted .hcs-user-option__name,
+.select2-results__option--selected .hcs-user-option__name {
+    color: var(--color-primary, #007f7c);
 }
 
 .hcs-workflow-step-meta-row {

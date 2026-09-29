@@ -36,6 +36,14 @@
 
 <main class="hcs-chat-page page-chat chat-app" aria-labelledby="chat-title" @onclick="CloseMessageMenu">
     <h1 id="chat-title" class="visually-hidden">@T("Chat:Title")</h1>
+    @if (realtimeUnavailable)
+    {
+        <p class="hcs-chat__realtime-warning" role="status">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 8 4 12l4 4M16 8l4 4-4 4"/><path d="M10 16 14 8"/></svg>
+            <span>@T("Chat:ConnectionUnavailable")</span>
+            <button class="hcs-chat__realtime-retry" type="button" @onclick="RetryRealtimeAsync">@T("Chat:Retry")</button>
+        </p>
+    }
     <section class="hcs-chat chat-shell @(infoOpen ? "hcs-chat--info-open is-info-open" : "hcs-chat--info-collapsed") @(IsDirectOrGroupInfo ? "chat-shell--compact-info" : null) @(mobileView == MobileView.Thread ? "is-thread-open" : null)" aria-label="@T("Chat:Title")">
         <aside class="hcs-chat__conversations chat-list @(mobileView == MobileView.List ? "hcs-chat__panel--mobile-active" : null)" aria-label="@T("Chat:ConversationList")">
             <div class="hcs-chat__toolbar chat-list-toolbar">
@@ -99,7 +107,14 @@
                                 <label class="hcs-chat__contact chat-contact">
                                     <input type="checkbox" checked="@selectedContactIds.Contains(contact.Id)" @onchange="args => ToggleContact(contact.Id, args)" />
                                     @UserAvatar(contact.Id, contact.DisplayName, avatarUrl: contact.AvatarUrl)
-                                    <span class="chat-contact-meta"><strong>@contact.DisplayName</strong><span>@@@contact.UserName</span></span>
+                                    <span class="chat-contact-meta">
+                                        <strong>@contact.DisplayName</strong>
+                                        <span>@@@contact.UserName</span>
+                                        @if (!string.IsNullOrWhiteSpace(contact.DepartmentName))
+                                        {
+                                            <span>@contact.DepartmentName</span>
+                                        }
+                                    </span>
                                 </label>
                             }
                         </div>
@@ -202,13 +217,6 @@
                         </button>
                     </div>
                 </header>
-                @if (realtimeUnavailable)
-                {
-                    <p class="hcs-chat__realtime-warning" role="status">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 8 4 12l4 4M16 8l4 4-4 4"/><path d="M10 16 14 8"/></svg>
-                        @T("Chat:ConnectionUnavailable")
-                    </p>
-                }
                 @if (pinnedMessages.Count > 0)
                 {
                     <div class="hcs-chat__pinned-bar chat-pin-bar @(pinnedPanelOpen ? "is-open" : null)">
@@ -1069,6 +1077,8 @@
         {
             await Realtime.EnsureStartedAsync();
             realtimeUnavailable = !Realtime.IsConnected;
+            if (realtimeUnavailable)
+                Logger.LogWarning("Chat realtime connection is unavailable. The client will retry without reloading the page.");
         }
         catch (Exception exception)
         {
@@ -1966,6 +1976,20 @@
 
     private static DateTime ToLocal(DateTime value) =>
         value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : DateTime.SpecifyKind(value, DateTimeKind.Utc).ToLocalTime();
+
+    private async Task RetryRealtimeAsync()
+    {
+        try
+        {
+            await Realtime.EnsureStartedAsync();
+            realtimeUnavailable = !Realtime.IsConnected;
+        }
+        catch (Exception exception)
+        {
+            LogChatError(exception, "retry realtime connection");
+            realtimeUnavailable = true;
+        }
+    }
 
     private async Task HandleRealtimeStatusAsync(HubConnectionState state)
     {

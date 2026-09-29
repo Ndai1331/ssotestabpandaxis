@@ -999,7 +999,7 @@
     "Chat:ProjectChatCreateFailed": "Không thể tạo trao đổi dự án.",
     "Chat:YouAreNotAMemberOfThisProjectChat": "Bạn không phải thành viên của trao đổi dự án này.",
     "Chat:WorkSubjectNotProvisioned": "Thành viên dự án đang đồng bộ. Đợi giây lát rồi thử lại.",
-    "Chat:ConnectionUnavailable": "Realtime tạm thời không khả dụng; dữ liệu vẫn được làm mới qua gateway.",
+    "Chat:ConnectionUnavailable": "Mất kết nối trò chuyện. Danh sách vẫn mở được; tin nhắn sẽ tự nối lại.",
     "Chat:Unread": "tin chưa đọc",
     "Chat:UnknownConversation": "Cuộc trao đổi",
     "Chat:CurrentUser": "Bạn",

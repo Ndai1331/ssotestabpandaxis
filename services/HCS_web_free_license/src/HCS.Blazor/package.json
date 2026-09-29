@@ -4,7 +4,9 @@
   "private": true,
   "dependencies": {
     "@abp/aspnetcore.mvc.ui.theme.leptonxlite": "~5.6.0",
-    "@abp/aspnetcore.components.server.leptonxlitetheme": "~5.6.0"
+    "@abp/aspnetcore.components.server.leptonxlitetheme": "~5.6.0",
+    "@fortawesome/fontawesome-free": "6.5.1",
+    "select2": "4.0.13"
   },
   "resolutions": {
     "jquery": "3.7.1"

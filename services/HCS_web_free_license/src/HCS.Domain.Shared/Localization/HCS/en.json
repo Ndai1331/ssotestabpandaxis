@@ -999,7 +999,7 @@
     "Chat:ProjectChatCreateFailed": "The project chat could not be created.",
     "Chat:YouAreNotAMemberOfThisProjectChat": "You are not a member of this project chat.",
     "Chat:WorkSubjectNotProvisioned": "Project members are still syncing. Wait a moment and try again.",
-    "Chat:ConnectionUnavailable": "Realtime is unavailable; data will still refresh through the gateway.",
+    "Chat:ConnectionUnavailable": "Chat is disconnected. The list still loads; messages reconnect on their own.",
     "Chat:Unread": "unread",
     "Chat:UnknownConversation": "Conversation",
     "Chat:CurrentUser": "You",
