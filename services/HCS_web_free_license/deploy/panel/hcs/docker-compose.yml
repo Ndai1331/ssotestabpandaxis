@@ -124,6 +124,7 @@ services:
     depends_on: { db-migrator: { condition: service_completed_successfully } }
     environment:
       <<: *common-env
+      # Public URLs. Replaces appsettings.Production.json.
       App__SelfUrl: https://${HCS_AUTH_PUBLIC_HOST}
       App__ClientUrl: https://${HCS_PUBLIC_HOST}
       App__GatewayUrl: https://${HCS_API_PUBLIC_HOST}
@@ -166,9 +167,6 @@ services:
     <<: *hcs-image
     image: ${HCS_DOCKER_REGISTRY:-longnguyen1331/hanhchinhso}:blazor
     ports: ["127.0.0.1:8081:8080"]
-    volumes:
-      - ./config/blazor-client.appsettings.json:/app/wwwroot/_content/HCS.Blazor.Client/appsettings.json:ro
-      - ./config/blazor-client.appsettings.json:/app/wwwroot/_content/HCS.Blazor.Client/appsettings.Production.json:ro
     depends_on: { db-migrator: { condition: service_completed_successfully } }
     environment:
       <<: *common-env
@@ -176,6 +174,10 @@ services:
       Bff__PublicOrigin: https://${HCS_API_PUBLIC_HOST}
       Bff__CookieDomain: ${Bff__CookieDomain}
       RemoteServices__Default__BaseUrl: https://${HCS_API_PUBLIC_HOST}/
+      # Browser WASM config. Replaces wwwroot/appsettings.Production.json.
+      BlazorClient__RemoteServices__Default__BaseUrl: https://${HCS_API_PUBLIC_HOST}/
+      BlazorClient__Bff__PublicOrigin: https://${HCS_API_PUBLIC_HOST}
+      BlazorClient__Bff__AccountUrl: https://${HCS_AUTH_PUBLIC_HOST}/Account/Manage
       DataProtection__Redis: ${HCS_REDIS_HOST:-redis}:6379,password=${HCS_REDIS_PASSWORD},ssl=False
 
   platform:

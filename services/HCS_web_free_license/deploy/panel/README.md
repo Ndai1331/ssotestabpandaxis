@@ -86,7 +86,7 @@ nano .env
 
 **Copy cùng** mật khẩu Postgres/MinIO từ axis stack trên `10.17.227.64` (xem `.env.example`). PFX trong `./.hcs-certs/`.
 
-Chỉnh WASM client nếu cần: `config/blazor-client.appsettings.json`.
+URL AuthServer và Blazor WASM lấy từ `HCS_PUBLIC_HOST`, `HCS_API_PUBLIC_HOST`, `HCS_AUTH_PUBLIC_HOST` trong `.env`. Không cần `appsettings.Production.json`.
 
 ---
 

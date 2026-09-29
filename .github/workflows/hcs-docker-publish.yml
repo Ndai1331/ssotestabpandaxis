@@ -1,4 +1,8 @@
-# Build and push selected HCS Community images to Docker Hub on push to main.
+# Build and push selected HCS Community images to Docker Hub.
+# A push to main/master builds only when the commit contains a service tag:
+#   [all]
+#   [blazor]
+#   [blazor, document]
 # Images: longnguyen1331/hanhchinhso:<service-name>
 #
 # Required GitHub repository secrets:
@@ -18,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       services:
-        description: "Space-separated service images to build (for example: blazor auth-server gateway)"
+        description: "Services to build, separated by spaces or commas (for example: blazor, document). Use all for every image."
         required: true
         type: string
         default: all
@@ -76,7 +80,8 @@ jobs:
           }
 
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            read -r -a requested_services <<< "${DISPATCH_SERVICES:-}"
+            dispatch_services="${DISPATCH_SERVICES//,/ }"
+            read -r -a requested_services <<< "${dispatch_services:-}"
             if ((${#requested_services[@]} == 0)); then
               echo "::error::Provide at least one service image, or use all."
               exit 1
@@ -101,18 +106,57 @@ jobs:
               esac
             done
           else
-            while IFS= read -r subject; do
-              if [[ "$subject" =~ ^\[all\]([[:space:]]|$) ]]; then
-                select_all=true
-              elif [[ "$subject" =~ ^\[([a-z0-9-]+)\]([[:space:]]|$) ]]; then
-                case "${BASH_REMATCH[1]}" in
-                  db-migrator|auth-server|web-gateway|blazor|platform|organization|document|work-management|collaboration)
-                    add_service "${BASH_REMATCH[1]}"
-                    ;;
-                esac
+            while IFS= read -r line; do
+              if [[ -z "$line" ]]; then
+                continue
               fi
+              while IFS= read -r group; do
+                if [[ -z "$group" ]]; then
+                  continue
+                fi
+                inner="${group#[}"
+                inner="${inner%]}"
+                if [[ ! "$inner" =~ ^[[:space:]]*[A-Za-z0-9-]+([[:space:]]*,[[:space:]]*[A-Za-z0-9-]+)*[[:space:]]*$ ]]; then
+                  continue
+                fi
+
+                IFS=',' read -r -a parts <<< "$inner"
+                group_unknown=()
+                group_known=()
+                for part in "${parts[@]}"; do
+                  name="${part#"${part%%[![:space:]]*}"}"
+                  name="${name%"${name##*[![:space:]]}"}"
+                  name="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')"
+                  case "$name" in
+                    all|db-migrator|auth-server|gateway|web-gateway|blazor|platform|organization|document|work-management|collaboration)
+                      group_known+=("$name")
+                      ;;
+                    *)
+                      group_unknown+=("$name")
+                      ;;
+                  esac
+                done
+
+                if ((${#group_unknown[@]} > 0)); then
+                  echo "::warning::Ignored unknown service in commit tag ${group}: ${group_unknown[*]}"
+                fi
+
+                for name in "${group_known[@]}"; do
+                  case "$name" in
+                    all)
+                      select_all=true
+                      ;;
+                    gateway)
+                      add_service web-gateway
+                      ;;
+                    *)
+                      add_service "$name"
+                      ;;
+                  esac
+                done
+              done < <(grep -oE '\[[^]]+\]' <<< "$line" || true)
             done < <(
-              jq -r 'if type == "array" then .[] | if type == "string" then split("\n")[0] else empty end else empty end' \
+              jq -r 'if type == "array" then .[] | if type == "string" then . else empty end else empty end' \
                 <<< "${PUSH_COMMIT_MESSAGES_JSON:-null}"
             )
           fi

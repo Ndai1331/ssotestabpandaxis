@@ -330,6 +330,25 @@ public sealed class HCSBlazorModule : AbpModule
         app.UseAbpRequestLocalization();
         app.UseCorrelationId();
         app.UseRouting();
+        var runtimeConfiguration = context.ServiceProvider.GetRequiredService<IConfiguration>();
+        if (BlazorClientRuntimeSettings.HasAnySetting(runtimeConfiguration))
+        {
+            // Fail at startup when the compose env is incomplete, before the browser loads a stale file.
+            var clientAppSettingsJson = BlazorClientRuntimeSettings.CreateJson(runtimeConfiguration);
+            app.Use(async (httpContext, next) =>
+            {
+                if (!BlazorClientRuntimeSettings.IsAppSettingsRequest(httpContext.Request.Path))
+                {
+                    await next();
+                    return;
+                }
+
+                httpContext.Response.ContentType = "application/json; charset=utf-8";
+                httpContext.Response.Headers["Cache-Control"] = "no-store";
+                await httpContext.Response.WriteAsync(clientAppSettingsJson);
+            });
+        }
+
         app.Use(async (httpContext, next) =>
         {
             var cookie = httpContext.RequestServices

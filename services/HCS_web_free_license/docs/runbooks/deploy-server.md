@@ -16,7 +16,7 @@ Hướng dẫn triển khai production cho **HCS Community**: data tách server,
 Blazor và Gateway **khác host** → bắt buộc `Bff__CookieDomain=htltech.vn` (cookie `.HCS.Bff` dùng chung parent domain).
 
 Mẫu `.env` sẵn: [`deploy/ubuntu/.env.example`](../../deploy/ubuntu/.env.example)  
-Cấu hình WASM client (API URL): [`deploy/ubuntu/config/blazor-client.appsettings.json`](../../deploy/ubuntu/config/blazor-client.appsettings.json)
+URL AuthServer và Blazor WASM lấy từ `HCS_PUBLIC_HOST`, `HCS_API_PUBLIC_HOST`, `HCS_AUTH_PUBLIC_HOST` trong `.env` (compose). Không đổi tên `appsettings.Production.json`.
 
 ## Kiến trúc
 
@@ -62,9 +62,21 @@ Chi tiết mạng/UFW: [`hcs-ubuntu24-two-server.md`](./hcs-ubuntu24-two-server.
 
 ## Phần A — CI/CD (GitHub → Docker Hub)
 
-Mỗi lần **push lên `main`**, GitHub Actions build và push 9 image:
+Push lên `main` chỉ build image khi **nội dung commit** có tag service. Không có tag thì workflow bỏ qua, không build.
 
-| Tag | Service |
+| Nội dung commit | Image được build |
+|-----------------|------------------|
+| `[all]` | cả 9 image |
+| `[blazor]` | chỉ Blazor |
+| `[blazor, document]` hoặc `[blazor,document]` | Blazor và Document |
+
+Tag có thể nằm ở dòng tiêu đề hoặc thân commit. `gateway` là alias của `web-gateway`.
+
+Ví dụ: `fix(blazor): sửa menu [blazor]` hoặc `[blazor, auth-server] cập nhật URL public`.
+
+Image trên Docker Hub:
+
+| Image | Service |
 |-----|---------|
 | `longnguyen1331/hanhchinhso:db-migrator` | DbMigrator |
 | `longnguyen1331/hanhchinhso:auth-server` | AuthServer |
@@ -80,7 +92,7 @@ Workflow: [`.github/workflows/hcs-docker-publish.yml`](../../../.github/workflow
 
 GitHub Secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
 
-Có thể chạy thủ công workflow với input `services` là danh sách image phân cách bằng dấu cách, ví dụ `blazor auth-server gateway`. `gateway` là alias của tag `web-gateway`; dùng `all` để build toàn bộ image.
+Có thể chạy thủ công workflow với input `services`, phân cách bằng dấu cách hoặc dấu phẩy, ví dụ `blazor, document`. `gateway` là alias của tag `web-gateway`; dùng `all` để build toàn bộ image.
 
 ---
 
@@ -142,21 +154,13 @@ HCS_DATAPROTECTION_PFX_PASSWORD=<pfx-password>
 
 Copy **cùng** mật khẩu Postgres/Redis/Rabbit/MinIO sang `.env` trên server Data.
 
-**Blazor WASM client** — chỉnh nếu domain khác mẫu:
+**AuthServer và Blazor WASM** lấy URL public từ `.env`, không từ `appsettings.Production.json`:
 
-`deploy/ubuntu/config/blazor-client.appsettings.json`:
-
-```json
-{
-  "RemoteServices": { "Default": { "BaseUrl": "https://api-hcs.htltech.vn/" } },
-  "Bff": {
-    "PublicOrigin": "https://api-hcs.htltech.vn",
-    "AccountUrl": "https://auth-hcs.htltech.vn/Account/Manage"
-  }
-}
-```
-
-File này được mount vào container Blazor khi `up-apps.sh`.
+| Biến `.env` | AuthServer | Blazor (trình duyệt) |
+|-------------|------------|----------------------|
+| `HCS_AUTH_PUBLIC_HOST` | `App__SelfUrl`, `AuthServer__Authority` | `AccountUrl` = `https://<host>/Account/Manage` |
+| `HCS_PUBLIC_HOST` | `App__ClientUrl` | `App__SelfUrl` của host Blazor |
+| `HCS_API_PUBLIC_HOST` | `App__GatewayUrl` | `RemoteServices` + `Bff:PublicOrigin` |
 
 ### B.2 TLS Let's Encrypt (4 SAN)
 
@@ -290,7 +294,7 @@ cd /opt/hcs/bd-workspace/services/HCS_web_free_license
 | Triệu chứng | Hướng xử lý |
 |-------------|-------------|
 | Login loop / không giữ session | Kiểm tra `Bff__CookieDomain=htltech.vn`; cookie `Secure` + HTTPS |
-| API 401 từ Blazor | `blazor-client.appsettings.json` phải trỏ `api-hcs.htltech.vn` |
+| API 401 từ Blazor | `.env` phải có đúng `HCS_API_PUBLIC_HOST`; image `blazor` phải là bản đọc `BlazorClient__*` |
 | OIDC redirect mismatch | OpenIddict `RootUrl` = API host; Keycloak redirect = auth host |
 | CORS error | Gateway `App__CorsOrigins` gồm Blazor + API origin |
 | JWT invalid issuer | Cert SAN đủ 4 domain; `extra_hosts` trong compose |
