@@ -1352,6 +1352,101 @@ body:has(.hcs-app-shell) .hcs-catalog-modal button.doc-action.is-danger:hover:no
   opacity: 0.45;
 }
 
+.hcs-app-shell .page-sign .docs-table .col-actions,
+.hcs-app-shell .page-sign .docs-table td:has(.doc-actions) {
+  min-width: 12.5rem;
+  overflow: visible;
+  width: auto;
+}
+
+.hcs-app-shell .page-sign .doc-actions,
+.hcs-app-shell .page-sign button.doc-action.has-count {
+  overflow: visible;
+  position: relative;
+}
+
+.hcs-app-shell .page-sign .doc-action-count {
+  background: var(--color-danger);
+  border-radius: 999px;
+  color: var(--color-white, #fff);
+  font-size: 0.65rem;
+  font-weight: 700;
+  height: 1.05rem;
+  line-height: 1.05rem;
+  min-width: 1.05rem;
+  padding: 0 0.2rem;
+  pointer-events: none;
+  position: absolute;
+  right: -0.2rem;
+  text-align: center;
+  top: -0.2rem;
+  z-index: 1;
+}
+
+body:has(.hcs-app-shell) .sign-related-tasks .sign-related-tasks__document,
+.hcs-app-shell .sign-related-tasks .sign-related-tasks__document {
+  color: var(--color-text-muted, #6b7280);
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+body:has(.hcs-app-shell) .sign-related-tasks .sign-related-tasks__empty,
+.hcs-app-shell .sign-related-tasks .sign-related-tasks__empty {
+  color: var(--color-text-muted, #6b7280);
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+body:has(.hcs-app-shell) .sign-related-tasks .sign-related-tasks__list,
+.hcs-app-shell .sign-related-tasks .sign-related-tasks__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+body:has(.hcs-app-shell) .sign-related-tasks .sign-related-task,
+.hcs-app-shell .sign-related-tasks .sign-related-task {
+  align-items: center;
+  appearance: none;
+  background: var(--color-white, #fff);
+  border: 1px solid var(--color-border, #eef0f4);
+  border-radius: var(--radius-md, 8px);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+body:has(.hcs-app-shell) .sign-related-tasks .sign-related-task:hover,
+.hcs-app-shell .sign-related-tasks .sign-related-task:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-white));
+}
+
+body:has(.hcs-app-shell) .sign-related-tasks .sign-related-task__title,
+.hcs-app-shell .sign-related-tasks .sign-related-task__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body:has(.hcs-app-shell) .sign-related-tasks .sign-related-task.is-done .sign-related-task__title,
+.hcs-app-shell .sign-related-tasks .sign-related-task.is-done .sign-related-task__title {
+  text-decoration: line-through;
+}
+
+body:has(.hcs-app-shell) .sign-related-tasks .sign-related-task__due,
+.hcs-app-shell .sign-related-tasks .sign-related-task__due {
+  color: var(--color-text-muted, #6b7280);
+  white-space: nowrap;
+}
+
 .hcs-app-shell .page-wf .hcs-status-icon {
   display: inline-flex;
   font-size: 14px;

@@ -241,6 +241,7 @@ public sealed class ProjectTaskAppService(
     WorkAssetService assets,
     IAutoCodeSettings? autoCode = null) : ITransientDependency
 {
+    public const int MaxDocumentIds = 100;
     private readonly IAutoCodeSettings codes = autoCode ?? DefaultAutoCodeSettings.Instance;
     public async Task<PagedWorkDto<ProjectTaskDto>> GetListAsync(GetProjectTaskListInput input, CancellationToken ct)
     {
@@ -264,6 +265,37 @@ public sealed class ProjectTaskAppService(
         var assignees = await WorkListFilters.AssigneeUserIdsAsync(db, rows.Select(x => x.Id).ToList(), ct);
         return new(total, rows.Select(x => Map(x, creatable.Contains(x.ProjectId), owners.GetValueOrDefault(x.ProjectId))
             with { AssigneeUserIds = assignees.GetValueOrDefault(x.Id, []) }).ToList());
+    }
+
+    public async Task<List<DocumentTaskSummaryDto>> GetByDocumentsAsync(IReadOnlyCollection<Guid>? documentIds, CancellationToken ct)
+    {
+        var ids = (documentIds ?? [])
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+        if (ids.Count == 0) return [];
+        if (ids.Count > MaxDocumentIds) throw new BusinessException("Work:TooManyDocumentIds");
+
+        var links = await db.ProjectTaskDocuments.AsNoTracking()
+            .Where(x => ids.Contains(x.DocumentId))
+            .Select(x => new { x.DocumentId, x.ProjectTaskId })
+            .ToListAsync(ct);
+        var taskIds = links.Select(x => x.ProjectTaskId).Distinct().ToList();
+        if (taskIds.Count == 0) return [];
+        var tasks = await db.ProjectTasks.AsNoTracking()
+            .Where(x => taskIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, ct);
+
+        return links
+            .Where(x => tasks.ContainsKey(x.ProjectTaskId))
+            .GroupBy(x => (x.DocumentId, x.ProjectTaskId))
+            .Select(group => group.First())
+            .Select(link => (Link: link, Task: tasks[link.ProjectTaskId]))
+            .OrderByDescending(x => x.Task.CreationTime)
+            .ThenBy(x => x.Task.Id)
+            .Select(x => new DocumentTaskSummaryDto(x.Task.Id, x.Link.DocumentId, x.Task.Title, x.Task.Status,
+                x.Task.Priority, x.Task.DueDate, x.Task.ProgressPercent))
+            .ToList();
     }
 
     public async Task<ProjectTaskDetailDto> GetAsync(Guid id, CancellationToken ct)

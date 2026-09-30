@@ -99,6 +99,8 @@ public sealed record ProjectTaskFileDto(Guid Id, string FileName, string Content
     Guid UploadedByUserId, DateTime CreatedAt, bool CanDelete = false);
 public sealed record ProjectTaskDetailDto(ProjectTaskDto Task, IReadOnlyList<TaskAssignmentDto> Assignments,
     IReadOnlyList<TaskDocumentReferenceDto> Documents, IReadOnlyList<ProjectTaskFileDto>? Files = null);
+public sealed record DocumentTaskSummaryDto(Guid Id, Guid DocumentId, string Title, string Status, string Priority,
+    DateTime DueDate, int ProgressPercent);
 
 public static class TaskNoteRules
 {

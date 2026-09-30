@@ -22,6 +22,8 @@ public sealed record TaskDocumentReferenceDto(Guid Id, Guid ProjectTaskId, Guid 
     Guid? AddedByUserId = null, bool CanDelete = false);
 public sealed record ProjectTaskDetailDto(
     ProjectTaskDto Task, List<TaskAssignmentDto> Assignments, List<TaskDocumentReferenceDto> Documents);
+public sealed record DocumentTaskSummaryDto(
+    Guid Id, Guid DocumentId, string Title, string Status, string Priority, DateTime DueDate, int ProgressPercent);
 
 public sealed record CreateProjectRequest(
     string? Code, string Name, string? Description, DateTime StartDate, DateTime EndDate, string Status, Guid? OwnerDepartmentId);

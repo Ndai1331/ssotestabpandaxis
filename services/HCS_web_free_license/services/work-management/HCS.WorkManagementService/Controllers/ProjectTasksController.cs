@@ -12,6 +12,10 @@ public sealed class ProjectTasksController(ProjectTaskAppService service, WorkAs
     public Task<PagedWorkDto<ProjectTaskDto>> GetList([FromQuery] GetProjectTaskListInput input, CancellationToken ct = default) =>
         service.GetListAsync(input, ct);
 
+    [HttpGet("by-documents")]
+    public Task<List<DocumentTaskSummaryDto>> GetByDocuments([FromQuery] Guid[]? documentIds, CancellationToken ct = default) =>
+        service.GetByDocumentsAsync(documentIds, ct);
+
     [HttpGet("{id:guid}")]
     public Task<ProjectTaskDetailDto> Get(Guid id, CancellationToken ct) => service.GetAsync(id, ct);
 

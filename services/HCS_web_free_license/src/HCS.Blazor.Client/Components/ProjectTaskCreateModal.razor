@@ -279,6 +279,9 @@
                 {
                     await TaskDocumentsPane.AttachExistingAsync(Documents, Work, created.Id, linked);
                     await ReloadCreatedDocumentsAsync();
+                    // The document link is what the signing queue counts. Refresh again after it exists.
+                    try { await OnCreated.InvokeAsync(); }
+                    catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Load); }
                 }
                 catch (Exception ex) { await NotifyErrorAsync(ex, BffErrorKind.Save); }
             }

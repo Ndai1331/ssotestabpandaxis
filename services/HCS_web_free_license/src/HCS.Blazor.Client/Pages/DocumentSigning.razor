@@ -3,12 +3,14 @@
 @attribute [Authorize]
 @inherits HCSComponentBase
 @inject DocumentClient Documents
+@inject WorkManagementClient Work
 @inject CollaborationClient Chat
 @inject OrganizationUnitCatalogClient OrganizationUnits
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime Js
 @inject Volo.Abp.AspNetCore.Components.Messages.IUiMessageService UiMessage
 @using HCS.Permissions
+@using Microsoft.Extensions.Logging
 @implements IAsyncDisposable
 
 <PageTitle>@L["Menu:DocumentSigning"] · HCS</PageTitle>
@@ -131,6 +133,16 @@
                                             {
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
                                             }
+                                        </button>
+                                    }
+                                    @{
+                                        var relatedTaskCount = RelatedTaskCount(item.Document.Id);
+                                    }
+                                    @if (relatedTaskCount > 0)
+                                    {
+                                        <button class="doc-action has-count" type="button" title="@L["Work:RelatedTasks"]" aria-label="@RelatedTasksLabel(relatedTaskCount)" @onclick="() => ShowRelatedTasksAsync(item)">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>
+                                            <span class="doc-action-count">@relatedTaskCount</span>
                                         </button>
                                     }
                                     @if (item.CanDelete)
@@ -424,7 +436,43 @@
         }
     </FooterActions>
 </DocumentPdfPreviewModal>
-<ProjectTaskCreateModal @ref="taskModal" />
+<ProjectTaskCreateModal @ref="taskModal" OnCreated="LoadRelatedTasksAsync" />
+<ProjectTaskViewModal @ref="taskViewModal" OnChanged="LoadRelatedTasksAsync" />
+<Modal @ref="relatedTasksModal">
+    <ModalContent Centered Size="ModalSize.Large" Class="hcs-catalog-modal sign-related-tasks">
+        <ModalHeader Class="hcs-catalog-modal__header">
+            <ModalTitle>@L["Work:RelatedTasks"]</ModalTitle>
+            <CloseButton Clicked="CloseRelatedTasksAsync" />
+        </ModalHeader>
+        <ModalBody Class="hcs-catalog-modal__body">
+            @if (relatedTasksItem is not null)
+            {
+                <p class="sign-related-tasks__document" title="@relatedTasksItem.Document.Title">@relatedTasksItem.Document.Title</p>
+            }
+            @if (SelectedRelatedTasks.Count == 0)
+            {
+                <p class="sign-related-tasks__empty">@L["Work:NoRelatedTasks"]</p>
+            }
+            else
+            {
+                <div class="sign-related-tasks__list">
+                    @foreach (var task in SelectedRelatedTasks)
+                    {
+                        var isDone = task.Status == "Completed";
+                        <button type="button" class="sign-related-task @(isDone ? "is-done" : null)" @onclick="() => OpenRelatedTaskAsync(task)">
+                            <span class="sign-related-task__title">@task.Title</span>
+                            <span class="sign-related-task__due">@task.DueDate.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                            <span class="@WorkUi.TaskBadgeDs(task.Status)">@L[WorkUi.TaskStatusKey(task.Status)]</span>
+                        </button>
+                    }
+                </div>
+            }
+        </ModalBody>
+        <ModalFooter Class="hcs-catalog-modal__footer">
+            <button type="button" class="btn hcs-catalog-close" @onclick="CloseRelatedTasksAsync">@L["Catalog:Close"]</button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
 <SubmitWorkflowModal @ref="submitModal" OnSubmitted="LoadAsync" />
 <WorkflowInfoModal @ref="infoModal" OnPreviewFile="PreviewInfoFileAsync" />
 @code {
@@ -440,7 +488,11 @@
     private SubmitWorkflowModal? submitModal;
     private DocumentPdfPreviewModal? previewModal;
     private ProjectTaskCreateModal? taskModal;
+    private ProjectTaskViewModal? taskViewModal;
+    private Modal? relatedTasksModal;
     private WorkflowInfoModal? infoModal;
+    private SigningQueueItem? relatedTasksItem;
+    private readonly Dictionary<Guid, List<DocumentTaskSummaryDto>> tasksByDocument = [];
     private SigningQueueItem? selected;
     private SigningQueueItem? previewing;
     private SigningQueueItem? infoItem;
@@ -665,6 +717,64 @@
     }
     private Task AssignFromPreviewAsync() =>
         taskModal?.ShowAsync(linkedDocumentId: previewing?.Document.Id) ?? Task.CompletedTask;
+
+    private int RelatedTaskCount(Guid documentId) =>
+        tasksByDocument.TryGetValue(documentId, out var tasks) ? tasks.Count : 0;
+
+    private string RelatedTasksLabel(int count) => $"{L["Work:RelatedTasks"].Value} ({count})";
+
+    private IReadOnlyList<DocumentTaskSummaryDto> SelectedRelatedTasks =>
+        relatedTasksItem is not null && tasksByDocument.TryGetValue(relatedTasksItem.Document.Id, out var tasks)
+            ? tasks
+            : [];
+
+    private async Task LoadRelatedTasksAsync()
+    {
+        var ids = queue.Select(item => item.Document.Id).Where(id => id != Guid.Empty).Distinct().ToArray();
+        if (ids.Length == 0)
+        {
+            tasksByDocument.Clear();
+            return;
+        }
+
+        try
+        {
+            var tasks = await Work.GetTasksByDocumentsAsync(ids);
+            tasksByDocument.Clear();
+            foreach (var group in tasks.GroupBy(task => task.DocumentId))
+                tasksByDocument[group.Key] = group.ToList();
+        }
+        catch (Exception ex)
+        {
+            tasksByDocument.Clear();
+            Logger.LogWarning(ex, "Failed to load tasks linked to the signing queue.");
+        }
+    }
+
+    private async Task ShowRelatedTasksAsync(SigningQueueItem item)
+    {
+        relatedTasksItem = item;
+        if (relatedTasksModal is not null) await relatedTasksModal.Show();
+    }
+
+    private async Task CloseRelatedTasksAsync()
+    {
+        if (relatedTasksModal is not null) await relatedTasksModal.Hide();
+        relatedTasksItem = null;
+    }
+
+    private async Task OpenRelatedTaskAsync(DocumentTaskSummaryDto task)
+    {
+        try
+        {
+            if (taskViewModal is not null) await taskViewModal.ShowAsync(task.Id);
+        }
+        catch (Exception ex)
+        {
+            await NotifyErrorAsync(ex);
+        }
+    }
+
     private Task PreviewInfoFileAsync(DocumentFileDto file)
     {
         if (infoItem is null) return Task.CompletedTask;
@@ -714,6 +824,7 @@
             }
 
             await LoadUserLookupsAsync();
+            await LoadRelatedTasksAsync();
             if (RelatedId is { } related && queue.FirstOrDefault(x => x.Document.Id == related) is { } match)
                 await OpenSign(match);
         }

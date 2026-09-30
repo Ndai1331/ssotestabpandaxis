@@ -128,6 +128,7 @@ public sealed class SecurityContractTests
     [InlineData(typeof(ProjectsController), nameof(ProjectsController.Get), WorkPermissions.ProjectsRead, null)]
     [InlineData(typeof(ProjectsController), nameof(ProjectsController.Create), WorkPermissions.ProjectsRead, WorkPermissions.Projects)]
     [InlineData(typeof(ProjectTasksController), nameof(ProjectTasksController.GetList), WorkPermissions.TasksRead, null)]
+    [InlineData(typeof(ProjectTasksController), nameof(ProjectTasksController.GetByDocuments), WorkPermissions.TasksRead, null)]
     [InlineData(typeof(ProjectTasksController), nameof(ProjectTasksController.Get), WorkPermissions.TasksRead, null)]
     [InlineData(typeof(ProjectTasksController), nameof(ProjectTasksController.Create), WorkPermissions.TasksRead, WorkPermissions.Tasks)]
     public void Workspace_read_apis_accept_dashboard_and_keep_writes_on_the_feature_permission(

@@ -56,6 +56,15 @@ public sealed class WorkManagementClient(IHttpClientFactory httpClientFactory, I
     public Task<ProjectTaskDetailDto> GetTaskAsync(Guid id, CancellationToken cancellationToken = default) =>
         GetAsync<ProjectTaskDetailDto>($"/api/project-tasks/{id:D}", cancellationToken);
 
+    public Task<List<DocumentTaskSummaryDto>> GetTasksByDocumentsAsync(
+        IReadOnlyCollection<Guid> documentIds, CancellationToken cancellationToken = default)
+    {
+        var ids = documentIds.Where(id => id != Guid.Empty).Distinct().ToArray();
+        if (ids.Length == 0) return Task.FromResult(new List<DocumentTaskSummaryDto>());
+        var query = string.Join('&', ids.Select(id => $"documentIds={id:D}"));
+        return GetAsync<List<DocumentTaskSummaryDto>>($"/api/project-tasks/by-documents?{query}", cancellationToken);
+    }
+
     public Task<NextCodeDto> GetNextTaskCodeAsync(Guid projectId, CancellationToken cancellationToken = default) =>
         GetAsync<NextCodeDto>($"/api/project-tasks/next-code?projectId={projectId:D}", cancellationToken);
 
